@@ -57,7 +57,23 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.151.x',String($('PLUMB_VERSION')).startsWith('2.151'));
+t('version 2.152.x',String($('PLUMB_VERSION')).startsWith('2.152'));
+
+/* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
+S('sync-scope');
+t('builder gets all five colls', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,sel,logs,pmts,mail');
+t('sub skips pmts+mail', $("syncCollsFor('sub').map(c=>c.sub).join()") === 'items,sel,logs');
+t('client skips mail only', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,sel,logs,pmts');
+t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,sel,logs,pmts,mail');
+t('siteRoleFor: members map wins over session role',
+  $("state.session={role:'client',auth:{uid:'uX'}};siteRoleFor({members:{uX:'sub'}})") === 'sub');
+t('siteRoleFor: falls back to session subs->sub',
+  $("state.session={role:'subs'};siteRoleFor({})") === 'sub');
+t('siteRoleFor: falls back to session client->client',
+  $("state.session={role:'client'};siteRoleFor(null)") === 'client');
+t('siteRoleFor: builder session -> builder',
+  $("state.session={role:'hillan'};siteRoleFor({})") === 'builder');
+$("state.session=null");
 t('SEED_VERSION 10',$('SEED_VERSION')===10);
 t('4 seed sites',$('state.projects.length')===4);
 t('no boot errors',w.__thrown.length===0,w.__thrown[0]);
