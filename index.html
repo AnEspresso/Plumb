@@ -906,6 +906,18 @@
     .house{width:min(34vw,360px);}
     .login .lh{font-size:1.35rem;}
     .role-seg{gap:14px;}
+    /* ── comfortable modals (Budget keeps its own 960px override) ── */
+    .pmodal{max-width:460px;}
+    /* ── hover affordances ── */
+    .ov-card:hover{transform:translateY(-2px);border-color:var(--ink-3);}
+    .overall.bgt-tap:hover{box-shadow:0 10px 30px rgba(27,25,22,.10);border-color:var(--ink-3);}
+    .bgt-row:hover,.bgt-act:hover{background:var(--surface-2);}
+    .bgt-edit:hover,.bgt-cnt:hover{background:var(--surface-2);border-color:var(--ink-3);}
+    .ss-card:hover,.site-switch:hover{background:var(--surface-2);}
+    .bgt-cardgrid{grid-template-columns:repeat(4,1fr);}
+    /* ── overview is site-agnostic: the site tabs rail hides there ── */
+    body:has(.overview.show) nav{display:none;}
+    body:has(.overview.show) .overview{left:0;}
   }
   @media(min-width:900px){ .hdr-sync{right:24px;} }
 
@@ -1289,7 +1301,13 @@
 .bgt-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0;cursor:pointer}
 .bgt-card .bgt-big{font-size:1.35rem;font-weight:700}
 .bgt-card .bgt-sub{color:var(--ink-3);font-size:.82rem;margin-top:2px}
-.bgt-tot{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin:4px 0 12px}
+#budgetScrim h4{font-size:26px;margin-bottom:10px}
+.bgt-cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-bottom:12px}
+.bgt-cardgrid b{display:block;font-size:1.05rem}
+.bgt-cardgrid b.ov{color:var(--clay)}
+.bgt-cardgrid span{color:var(--ink-3);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em}
+.bgt-open{display:flex;justify-content:flex-end;align-items:center;gap:3px;margin-top:10px;color:var(--ink-2);font-size:.84rem;font-weight:600}
+.bgt-tot{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin:4px 0 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 14px;text-align:center}
 .bgt-tot b{display:block;font-size:1.05rem}
 .bgt-tot b.bgt-em{font-size:1.3rem}
 .bgt-tot b.bgt-em.over{color:var(--clay)}
@@ -1309,7 +1327,10 @@
 .bgt-table td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
 .bgt-table td input,.bgt-table td select{width:100%;border:1px solid transparent;background:transparent;color:var(--ink);padding:5px 6px;border-radius:8px;font:inherit;font-size:.92rem}
 .bgt-table td input:focus,.bgt-table td select:focus{border-color:var(--line);background:var(--card);outline:none}
-.bgt-table td input.num{text-align:right}
+.bgt-table{table-layout:fixed}
+.bgt-table td input.num{text-align:right;-moz-appearance:textfield;appearance:textfield}
+.bgt-table td input.num::-webkit-inner-spin-button,.bgt-table td input.num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.bgt-edit{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:.76rem;font-weight:600;color:var(--ink-2);cursor:pointer;white-space:nowrap;font-family:inherit}
 .bgt-table tr.bgt-grph td{padding-top:16px;border-bottom:1px solid var(--line);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3)}
 .bgt-table td.over{color:var(--clay);font-weight:700}
 .bgt-table .bgt-cnt{color:var(--ink-3);font-size:.82rem;white-space:nowrap;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line)}
@@ -2452,7 +2473,7 @@
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.156.0 - New: desktop shell. On a wide screen Plumb now fills the window like a real desktop app - a proper left rail with the wordmark and tabs, content anchored beside it, and a full-screen sign-in. Phones are unchanged.';
+const PLUMB_VERSION='2.157.0 - Desktop comfort pass. The rail steps aside on the all-sites home, cards and rows respond on hover, modals sit at a comfortable width, the Budget card shows all four headline numbers with a clear View and edit affordance, the Budget title and totals read as a centered card, table columns line up with no cut-offs, trade menus sort A to Z, and every row has an explicit Edit button.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -5529,6 +5550,7 @@ function costSummary(p){
 let _costGroup='stage';try{_costGroup=localStorage.getItem('plumbCostGroup')||'stage';}catch(e){}
 let _clEditId=null,_caEditId=null,_caKind='committed';
 function setCostGroup(g){_costGroup=g==='trade'?'trade':'stage';try{localStorage.setItem('plumbCostGroup',_costGroup);}catch(e){}renderBudget();}
+function tradesAZ(){return SPECIALTIES.slice().sort((a,b)=>String(a.label).localeCompare(String(b.label)));}
 function stageName(id){const s=STAGES.find(x=>x.id===id);return s?s.name:'Other';}
 function budgetCardHTML(p){
   const cs=costSummary(p);
@@ -5536,14 +5558,19 @@ function budgetCardHTML(p){
     <div class="overall bgt-tap" onclick="openBudget()">
       <div class="top"><span class="lbl">Set up budget lines to track this build’s money — private to your team</span><span class="bgt-chev">›</span></div></div>`;
   const pct=cs.budget>0?Math.min(100,Math.round(cs.exposure/cs.budget*100)):(cs.exposure>0?100:0);
-  const overBits=cs.overLines?` · <b style="color:var(--clay)">${cs.overLines} line${cs.overLines===1?'':'s'} over</b>`:'';
-  const head=cs.over?`<span class="pct" style="color:var(--clay)">${invUsd(-cs.remaining)}</span><span class="lbl">over budget of ${invUsd(cs.budget)}${overBits}<span class="bgt-chev">›</span></span>`
-                    :`<span class="pct">${invUsd(cs.remaining)}</span><span class="lbl">remaining of ${invUsd(cs.budget)}${overBits}<span class="bgt-chev">›</span></span>`;
   return `<div class="eyebrow eyebrow-c" style="margin-top:6px">Budget</div>
     <div class="overall bgt-tap" onclick="openBudget()">
-      <div class="top">${head}</div>
-      <div class="pbar"><i class="${cs.over?'bgt-overbar':''}" style="width:${pct}%"></i></div></div>`;
+      <div class="bgt-cardgrid">
+        <div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
+        <div><b class="${cs.over?'ov':''}">${cs.over?invUsd(-cs.remaining):invUsd(cs.remaining)}</b><span>${cs.over?'Over budget':'Remaining'}</span></div>
+        <div><b>${invUsd(cs.committed)}</b><span>Signed for</span></div>
+        <div><b>${invUsd(cs.spent)}</b><span>Paid</span></div>
+      </div>
+      <div class="pbar"><i class="${cs.over?'bgt-overbar':''}" style="width:${pct}%"></i></div>
+      <div class="bgt-open">${cs.overLines?`<b style="color:var(--clay)">${cs.overLines} line${cs.overLines===1?'':'s'} over</b><span style="margin:0 4px">·</span>`:''}View &amp; edit budget<span class="bgt-chev">›</span></div>
+    </div>`;
 }
+
 
 function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');}
 function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}}
@@ -5592,7 +5619,7 @@ function openCostLine(id){
   document.getElementById('clHead').textContent=l?'Edit budget line':'New budget line';
   document.getElementById('clLabel').value=l?(l.label||''):'';
   document.getElementById('clBudget').value=l?(l.budget||''):'';
-  _costSel('clTrade',SPECIALTIES,l&&l.trade,'No trade tag');
+  _costSel('clTrade',tradesAZ(),l&&l.trade,'No trade tag');
   _costSel('clStage',STAGES.map(s=>({id:s.id,label:s.name})),l&&l.stage,'No stage tag');
   document.getElementById('clDelete').style.display=l?'block':'none';
   let ah='';
@@ -5668,24 +5695,24 @@ function budgetTableHTML(p){
     gl.forEach(l=>{const r=costLineRollup(p,l.id);const nActs=costActuals(p,l.id).length;
       rows+=`<tr data-line="${esc(String(l.id))}">
         <td><input value="${esc(l.label||'')}" onchange="bgtCellSave('${esc(String(l.id))}','label',this)"></td>
-        <td>${selCell(l.id,'trade',SPECIALTIES,l.trade)}</td>
+        <td>${selCell(l.id,'trade',tradesAZ(),l.trade)}</td>
         <td>${selCell(l.id,'stage',STAGES.map(s=>({id:s.id,label:s.name})),l.stage)}</td>
         <td class="n"><input class="num" type="number" value="${Number(l.budget)||0}" onchange="bgtCellSave('${esc(String(l.id))}','budget',this)"></td>
         <td class="n" id="bgtC-${esc(String(l.id))}">${invUsd(r.committed)}</td>
         <td class="n" id="bgtS-${esc(String(l.id))}">${invUsd(r.spent)}</td>
         <td class="n ${r.over?'over':''}" id="bgtL-${esc(String(l.id))}">${r.over?invUsd(-r.remaining)+' over':invUsd(r.remaining)}</td>
-        <td class="n"><span class="bgt-cnt" onclick="openCostLine('${esc(String(l.id))}')">${nActs} cost${nActs===1?'':'s'}</span></td>
+        <td class="n"><button class="bgt-edit" onclick="openCostLine('${esc(String(l.id))}')"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>${nActs} cost${nActs===1?'':'s'}</button></td>
       </tr>`;});
   });
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
   let unh='';
   if(un.length){unh=`<div class="bgt-grp" style="color:var(--clay)">Not assigned to a line</div>`+un.map(a=>`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`).join('');}
   return `<table class="bgt-table"><thead><tr>
-      <th>Line</th><th>Trade</th><th>Stage</th><th class="n">Budget</th><th class="n">Signed for</th><th class="n">Paid</th><th class="n">Left</th><th class="n">Costs</th>
+      <th style="width:23%">Line</th><th style="width:14%">Trade</th><th style="width:15%">Stage</th><th class="n" style="width:11%">Budget</th><th class="n" style="width:11%">Signed for</th><th class="n" style="width:11%">Paid</th><th class="n" style="width:9%">Left</th><th class="n" style="width:6%">Edit</th>
     </tr></thead><tbody>${rows}
     <tr class="bgt-qa">
       <td><input id="bgtQaName" placeholder="New budget line…" onkeydown="if(event.key==='Enter')bgtQuickAdd()"></td>
-      <td><select id="bgtQaTrade"><option value="">—</option>${SPECIALTIES.map(o=>`<option value="${esc(o.id)}">${esc(o.label)}</option>`).join('')}</select></td>
+      <td><select id="bgtQaTrade"><option value="">—</option>${tradesAZ().map(o=>`<option value="${esc(o.id)}">${esc(o.label)}</option>`).join('')}</select></td>
       <td><select id="bgtQaStage"><option value="">—</option>${STAGES.map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('')}</select></td>
       <td class="n"><input id="bgtQaBudget" class="num" type="number" placeholder="0" onkeydown="if(event.key==='Enter')bgtQuickAdd()"></td>
       <td colspan="4"><button class="b1 b-cancel" style="padding:7px 14px" onclick="bgtQuickAdd()">Add</button></td>

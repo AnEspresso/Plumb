@@ -57,9 +57,9 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.156.x',String($('PLUMB_VERSION')).startsWith('2.156'));
+t('version 2.157.x',String($('PLUMB_VERSION')).startsWith('2.157'));
 t('desktop rail brand present in nav', $("document.querySelector('nav .rail-brand .wordmark').textContent").includes('Plumb'));
-t('rail version filled at init', $("document.getElementById('railVer').textContent").includes('Plumb v2.156'));
+t('rail version filled at init', $("document.getElementById('railVer').textContent").includes('Plumb v2.157'));
 
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
 S('sync-scope');
@@ -420,11 +420,12 @@ let BS=JSON.parse($("JSON.stringify(costSummary(P()))"));
 t('Calderwood seed math (budget 229k, exposure 228.2k, 1 line over)',
   BS.budget===229000&&BS.committed===169700&&BS.spent===130200&&BS.exposure===228200&&BS.remaining===800&&BS.over===false&&BS.lines===6&&BS.overLines===1&&BS.unassigned===0, JSON.stringify(BS));
 $('renderBuild()');
-t('Build tab shows the budget card', el('budgetCard').innerHTML.includes('remaining')&&el('budgetCard').innerHTML.includes('1 line over'));
+t('Build tab card shows all four stats + open affordance',
+  ['Budget','Remaining','Signed for','Paid','View &amp; edit budget','1 line over'].every(s=>el('budgetCard').innerHTML.includes(s)));
 $("buildSeg('permits')");
 t('Progress hidden on Permits segment', el('buildSchedule').style.display==='none'&&el('overallBar').closest('#buildSchedule')!==null);
 $("buildSeg('subs')");
-t('budget card still visible on Subs segment', el('buildSchedule').style.display==='none'&&el('budgetCard').innerHTML.includes('remaining'));
+t('budget card still visible on Subs segment', el('buildSchedule').style.display==='none'&&el('budgetCard').innerHTML.includes('Remaining'));
 $("buildSeg('schedule')");
 t('Progress returns on Schedule segment', el('buildSchedule').style.display!=='none');
 $("setCostGroup('stage')");$('openBudget()');
@@ -441,6 +442,8 @@ $('openCostLine()');
 setVal('clLabel','Roofing package');setVal('clBudget','34000');
 $("document.getElementById('clTrade').value='roofing'");$("document.getElementById('clStage').value='cladding'");
 $('saveCostLine()');
+(function(){const labs=JSON.parse($("JSON.stringify([...document.getElementById('clTrade').options].slice(1).map(o=>o.text))"));
+  t('trade menu sorted A-Z', JSON.stringify(labs)===JSON.stringify(labs.slice().sort((a,b)=>a.localeCompare(b))), labs.slice(0,4).join(','));})();
 t('line added via modal', $("costLines(P()).length")===7&&$("JSON.stringify(costLines(P()).find(l=>l.label==='Roofing package'))").includes('34000'));
 // real quick-add actual through the modal
 const rid=$("costLines(P()).find(l=>l.label==='Roofing package').id");
@@ -474,6 +477,7 @@ $('renderBudget()');
 t('wide layout renders the table', el('budgetBody').innerHTML.includes('bgt-table')&&el('budgetBody').innerHTML.includes('Signed for'));
 t('six seed rows + quick-add row', $("document.querySelectorAll('#budgetBody tr[data-line]').length")===6&&$("document.querySelectorAll('#budgetBody tr.bgt-qa').length")===1);
 t('over cell rendered in table', el('budgetBody').innerHTML.includes('2,500 over'));
+t('explicit Edit buttons on table rows', $("document.querySelectorAll('#budgetBody .bgt-edit').length")===6);
 // in-place budget edit patches computed cells without re-render
 $("(function(){const tr=document.querySelector('tr[data-line]');const inp=tr.querySelector('input.num');inp.value='20000';inp.onchange({});})()");
 t('cell save updates rollup in place', $("costLineRollup(P(),'c1').budget")===20000&&el('bgtL-c1').textContent.includes('2,500'), el('bgtL-c1').textContent);
