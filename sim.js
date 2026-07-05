@@ -59,7 +59,7 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 S('boot');
 t('version 2.158.x',String($('PLUMB_VERSION')).startsWith('2.158'));
 t('desktop rail brand present in nav', $("document.querySelector('nav .rail-brand .wordmark').textContent").includes('Plumb'));
-t('rail version filled at init', $("document.getElementById('railVer').textContent").includes('Plumb v2.158'));
+t('rail foot carries the live sync pill', $("document.querySelector('nav .rail-foot .syncpill').textContent").includes('device'));
 
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
 S('sync-scope');

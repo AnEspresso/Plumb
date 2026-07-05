@@ -890,7 +890,7 @@
     .tab span{font-size:14px;font-weight:600;}
     .tab:hover{background:var(--surface-2);}
     /* ── header: brand lives in the rail now ── */
-    header{padding-left:256px;padding-right:32px;}
+    header{margin-left:232px;padding-left:24px;padding-right:32px;}
     #brand{display:none;}
     /* ── content region ── */
     main{padding-left:256px;padding-right:32px;padding-bottom:44px;}
@@ -932,8 +932,8 @@
     body:has(.overview.show) .overview{left:0;}
     /* ── sync status lives in the rail foot; the header pill is gone on desktop ── */
     .hdr-sync{display:none;}
-    .rail-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;}
-    .rail-foot #railVer{font-size:.68rem;white-space:nowrap;}
+    .rail-foot{display:block;}
+    .rail-foot .syncpill{width:100%;justify-content:center;white-space:nowrap;padding:7px 10px;box-sizing:border-box;}
     .login-copy{position:static;margin-top:auto;padding:22px 0 4px;}
     /* ── trades calendar: full width, actions + legend in a left column ── */
     #calview{left:0;}
@@ -2280,7 +2280,7 @@
       <button class="tab" data-v="build" onclick="go('build',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V9l5-4 5 4M4 20h16M14 20V5l6 4v11"/><path d="M8 20v-4h2v4"/></svg><span>Build</span></button>
       <button class="tab" data-v="files" onclick="go('files',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="11" r="2"/><path d="m3 17 5-4 4 3 3-2 6 5"/></svg><span>Files</span></button>
     </div>
-    <div class="rail-foot"><span class="syncpill"><span class="sd"></span>On this device</span><span id="railVer"></span></div>
+    <div class="rail-foot"><span class="syncpill"><span class="sd"></span>On this device</span></div>
   </nav>
 
   <button id="devDot" onpointerdown="_snapNow()" onclick="openDev()" aria-label="Open Workbench" title="Workbench">&#9881;</button>
@@ -2501,7 +2501,7 @@
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.158.0 - Sign-in refined: the house and wordmark hold a constant size and always own half the screen, controls tightened, copyright gets its own space. The header status pill now hides on desktop for real. Budget says Remaining everywhere. Logging a cost offers your subs in a Paid to menu, with someone-else and new-sub options.';
+const PLUMB_VERSION='2.158.1 - Rail cleanup. The header fade no longer covers the rail wordmark, and the sync pill owns the rail foot on a single line with the version number removed.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -8994,7 +8994,6 @@ async function devSelfTest(){
 
 /* ════════ init ════════ */
 (async function init(){
-  try{document.getElementById('railVer').textContent='Plumb v'+String(PLUMB_VERSION).split(' ')[0];}catch(e){}
   document.getElementById('todayDate').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'});
   buildChips();
   // The shell (.device) is overflow:hidden and must never scroll — main is the scroller.
