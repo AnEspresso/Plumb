@@ -88,6 +88,10 @@
   .eyebrow::after{content:"";flex:1;height:1px;background:var(--line);}
 .eyebrow-c{font-size:15px;font-weight:700;letter-spacing:.08em;color:var(--ink-2);}
 .rail-brand,.rail-foot{display:none;}
+/* the hero (house + wordmark + tagline) never shrinks and owns >= half the screen */
+.login-hero{min-height:50vh;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;width:100%;}
+.login-hero .house,.login-hero .wm,.login-hero .hairline{flex:none;}
+.login-inner{padding-bottom:max(64px,calc(env(safe-area-inset-bottom) + 48px));}
 .eyebrow-c::before{content:"";flex:1;height:1px;background:var(--line);}
   .eyebrow:first-child{margin-top:8px;}
 
@@ -901,10 +905,19 @@
     .grid{grid-template-columns:repeat(5,1fr);}
     .sitemenu{left:auto;right:22px;width:360px;}
     /* ── sign-in as a full landing ── */
-    .login-inner{max-width:560px;padding-top:7vh;}
-    .house{width:min(34vw,360px);}
-    .login .lh{font-size:1.35rem;}
-    .role-seg{gap:14px;}
+    .login-inner{max-width:560px;padding-top:0;}
+    .login-hero{min-height:52vh;}
+    .house{width:300px;}
+    .login-controls{max-width:430px;}
+    .mode-seg button{padding:8px 5px;font-size:13px;}
+    .role-seg{gap:12px;}
+    .role-seg button{padding:11px 5px;font-size:12.5px;}
+    .role-seg .ic{width:20px;height:20px;}
+    .login .lh{font-size:1.2rem;}
+    .login .ls{font-size:.84rem;}
+    .login-select,.login-enter,#liveControls input,#liveControls button{padding-top:11px;padding-bottom:11px;font-size:14px;}
+    /* runtime className rewrite strips .hdr-sync — hide the header pill by ID */
+    #hdrSync{display:none;}
     /* ── comfortable modals (Budget keeps its own 960px override) ── */
     .pmodal{max-width:460px;}
     /* ── hover affordances ── */
@@ -921,7 +934,7 @@
     .hdr-sync{display:none;}
     .rail-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;}
     .rail-foot #railVer{font-size:.68rem;white-space:nowrap;}
-    .login-copy{position:static;margin-top:34px;}
+    .login-copy{position:static;margin-top:auto;padding:22px 0 4px;}
     /* ── trades calendar: full width, actions + legend in a left column ── */
     #calview{left:0;}
     #calview .sv-body{padding-left:40px;padding-right:40px;}
@@ -1374,6 +1387,7 @@
   <div class="login" id="login">
     <div class="grid-bg"></div>
     <div class="login-inner">
+      <div class="login-hero">
       <svg class="house" viewBox="0 0 300 250" fill="none" stroke="#E7DCC6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <g class="stars">
           <path class="star" transform="translate(14,44) scale(1.4)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.3s"/><path class="star" transform="translate(40,78) scale(1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1.1s"/><path class="star" transform="translate(22,118) scale(1.6)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.6s"/><path class="star" transform="translate(46,150) scale(1.1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1.5s"/><path class="star" transform="translate(10,188) scale(1.3)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.2s"/><path class="star" transform="translate(34,222) scale(1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.9s"/><path class="star" transform="translate(28,62) scale(1.2)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1.8s"/><path class="star" transform="translate(268,52) scale(1.3)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.7s"/><path class="star" transform="translate(290,96) scale(1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1.3s"/><path class="star" transform="translate(256,132) scale(1.5)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.25s"/><path class="star" transform="translate(282,168) scale(1.1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1s"/><path class="star" transform="translate(264,206) scale(1.3)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.5s"/><path class="star" transform="translate(288,238) scale(1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1.6s"/><path class="star" transform="translate(276,76) scale(1.2)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:2s"/><path class="star" transform="translate(78,12) scale(1.2)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.4s"/><path class="star" transform="translate(132,8) scale(1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1.2s"/><path class="star" transform="translate(168,20) scale(1.4)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.85s"/><path class="star" transform="translate(214,10) scale(1.1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.55s"/><path class="star" transform="translate(104,26) scale(1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1.4s"/><path class="star" transform="translate(186,28) scale(1.2)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.95s"/><path class="star" transform="translate(56,22) scale(1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1.7s"/><path class="star" transform="translate(238,14) scale(1.3)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.65s"/><path class="star" transform="translate(120,242) scale(1.1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.35s"/><path class="star" transform="translate(176,238) scale(1)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:1.1s"/><path class="star" transform="translate(210,244) scale(1.2)" d="M0,-1L.2,-.2 1,0 .2,.2 0,1 -.2,.2 -1,0 -.2,-.2Z" style="animation-delay:.75s"/>
@@ -1479,6 +1493,7 @@
         <div class="tl">true to the build</div>
       </div>
       <div class="hairline"></div>
+      </div>
       <div class="login-controls">
         <div class="mode-seg">
           <button id="mode-demo" class="on" onclick="setMode('demo')">Demo</button>
@@ -1927,7 +1942,8 @@
         <label class="flabel">Budget line</label>
         <select class="finput" id="caLine"></select>
         <label class="flabel">Paid to</label>
-        <input class="finput" id="caPayee" placeholder="Timberline Framing">
+        <select class="finput" id="caPayeeSel" onchange="caPayeeChange()"></select>
+        <input class="finput" id="caPayee" placeholder="Name…" style="display:none;margin-top:8px">
         <label class="flabel">Note (optional)</label>
         <input class="finput" id="caNote" placeholder="Draw 2 of 4">
       </div>
@@ -2485,7 +2501,7 @@
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.157.2 - Fixes that stuck. The sync status now truly lives in the rail foot next to the version, the old header pill is hidden on desktop, and the sign-in copyright flows below the buttons instead of overlapping them.';
+const PLUMB_VERSION='2.158.0 - Sign-in refined: the house and wordmark hold a constant size and always own half the screen, controls tightened, copyright gets its own space. The header status pill now hides on desktop for real. Budget says Remaining everywhere. Logging a cost offers your subs in a Paid to menu, with someone-else and new-sub options.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -5612,7 +5628,7 @@ function renderBudget(){
     gl.forEach(l=>{const r=costLineRollup(p,l.id);
       h+=`<div class="bgt-row" onclick="openCostLine('${esc(String(l.id))}')">
         <div class="bgt-l"><b>${esc(l.label||'Untitled')}</b><i>${invUsd(r.exposure)} of ${invUsd(r.budget)} spoken for</i></div>
-        <div class="bgt-chip ${r.over?'over':''}">${r.over?invUsd(-r.remaining)+' over':invUsd(r.remaining)+' left'}</div>
+        <div class="bgt-chip ${r.over?'over':''}">${r.over?invUsd(-r.remaining)+' over':invUsd(r.remaining)+' remaining'}</div>
       </div>`;});
   });
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
@@ -5657,6 +5673,30 @@ function deleteCostLine(){
     body:n?('Its '+n+' logged cost'+(n===1?'':'s')+' will be deleted with it.'):'This only removes the line — no costs are logged on it.',
     onConfirm:()=>{Data.removeCost(_clEditId);closeCostLine();renderBudget();try{renderBuild();}catch(e){}toast('Line deleted');}});
 }
+function subNamesAZ(p){return [...new Set((p.subs||[]).map(s=>s.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
+function _fillPayeeSel(sel,current){
+  const names=subNamesAZ(P());
+  sel.innerHTML='<option value="">Paid to…</option>'
+    +names.map(n=>`<option value="${esc(n)}"${current===n?' selected':''}>${esc(n)}</option>`).join('')
+    +'<option value="__other">Someone else — type a name…</option>'
+    +'<option value="__new">+ New sub on this site…</option>';
+}
+function caPayeeChange(){
+  const sel=document.getElementById('caPayeeSel');const inp=document.getElementById('caPayee');
+  if(sel.value==='__new'){
+    sel.value='';
+    openPrompt({title:'New sub or supplier',placeholder:'Company name',onOk:(name)=>{
+      name=String(name||'').trim();if(!name)return;
+      const p=P();p.subs=p.subs||[];
+      if(!p.subs.some(s=>s.name===name))p.subs.push({id:'s'+Date.now().toString(36)+Math.floor(Math.random()*1e3),name,specialty:'general',cleared:null});
+      Data.commit();_fillPayeeSel(sel,name);inp.style.display='none';
+      toast('Added to this site’s subs');
+    }});
+    return;
+  }
+  inp.style.display=sel.value==='__other'?'block':'none';
+  if(sel.value==='__other'){try{inp.focus();}catch(e){}}
+}
 function setCaKind(k){_caKind=k==='spent'?'spent':'committed';
   document.getElementById('caKindC').className=_caKind==='committed'?'on':'';
   document.getElementById('caKindS').className=_caKind==='spent'?'on':'';}
@@ -5664,6 +5704,10 @@ function openCostActual(id,presetLineId){
   _caEditId=id||null;const p=P();const a=id?(p.costs||[]).find(x=>String(x.id)===String(id)&&x.rt==='actual'):null;
   document.getElementById('caHead').textContent=a?'Edit cost':'Log a cost';
   document.getElementById('caAmount').value=a?(a.amount||''):'';
+  const _sel=document.getElementById('caPayeeSel');const _known=a&&a.payee&&subNamesAZ(p).includes(a.payee);
+  _fillPayeeSel(_sel,_known?a.payee:'');
+  if(a&&a.payee&&!_known)_sel.value='__other';
+  document.getElementById('caPayee').style.display=(_sel.value==='__other')?'block':'none';
   document.getElementById('caPayee').value=a?(a.payee||''):'';
   document.getElementById('caNote').value=a?(a.note||''):'';
   setCaKind(a?a.kind:'committed');
@@ -5675,7 +5719,9 @@ function closeCostActual(){document.getElementById('costActualScrim').classList.
 function saveCostActual(){
   const amount=Number(document.getElementById('caAmount').value)||0;
   if(amount<=0){toast('Enter the amount');return;}
-  const patch={amount,kind:_caKind,lineId:document.getElementById('caLine').value||'',payee:document.getElementById('caPayee').value.trim(),note:document.getElementById('caNote').value.trim()};
+  const _ps=document.getElementById('caPayeeSel').value;
+  const payee=(_ps&&_ps!=='__other'&&_ps!=='__new')?_ps:document.getElementById('caPayee').value.trim();
+  const patch={amount,kind:_caKind,lineId:document.getElementById('caLine').value||'',payee,note:document.getElementById('caNote').value.trim()};
   if(_caEditId)Data.updateCost(_caEditId,patch);
   else Data.addCostActual(Object.assign({id:'ca'+Date.now().toString(36)+Math.floor(Math.random()*1e4),t:Date.now()},patch));
   closeCostActual();renderBudget();try{renderBuild();}catch(e){}toast(_caEditId?'Cost updated':'Cost logged');
@@ -5720,7 +5766,7 @@ function budgetTableHTML(p){
   let unh='';
   if(un.length){unh=`<div class="bgt-grp" style="color:var(--clay)">Not assigned to a line</div>`+un.map(a=>`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`).join('');}
   return `<table class="bgt-table"><thead><tr>
-      <th style="width:21%">Line</th><th style="width:14%">Trade</th><th style="width:14%">Stage</th><th class="n" style="width:11%">Budget</th><th class="n" style="width:11%">Signed for</th><th class="n" style="width:11%">Paid</th><th class="n" style="width:9%">Left</th><th class="n" style="width:9%">Edit</th>
+      <th style="width:20%">Line</th><th style="width:13%">Trade</th><th style="width:13%">Stage</th><th class="n" style="width:11%">Budget</th><th class="n" style="width:11%">Signed for</th><th class="n" style="width:11%">Paid</th><th class="n" style="width:12%">Remaining</th><th class="n" style="width:9%">Edit</th>
     </tr></thead><tbody>${rows}
     <tr class="bgt-qa">
       <td><input id="bgtQaName" placeholder="New budget line…" onkeydown="if(event.key==='Enter')bgtQuickAdd()"></td>

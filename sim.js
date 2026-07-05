@@ -57,9 +57,9 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.157.x',String($('PLUMB_VERSION')).startsWith('2.157'));
+t('version 2.158.x',String($('PLUMB_VERSION')).startsWith('2.158'));
 t('desktop rail brand present in nav', $("document.querySelector('nav .rail-brand .wordmark').textContent").includes('Plumb'));
-t('rail version filled at init', $("document.getElementById('railVer').textContent").includes('Plumb v2.157'));
+t('rail version filled at init', $("document.getElementById('railVer').textContent").includes('Plumb v2.158'));
 
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
 S('sync-scope');
@@ -448,10 +448,33 @@ t('line added via modal', $("costLines(P()).length")===7&&$("JSON.stringify(cost
 // real quick-add actual through the modal
 const rid=$("costLines(P()).find(l=>l.label==='Roofing package').id");
 $('openCostActual(null,'+JSON.stringify(rid)+')');
-setVal('caAmount','32500');$("setCaKind('spent')");setVal('caPayee','Summit Roofing');
+const payeeOpts=JSON.parse($("JSON.stringify([...document.getElementById('caPayeeSel').options].map(o=>o.value))"));
+t('payee menu lists site subs + other + new', payeeOpts.includes('__other')&&payeeOpts.includes('__new')&&payeeOpts.length>=4, payeeOpts.join('|'));
+(function(){const names=payeeOpts.filter(v=>v&&v!=='__other'&&v!=='__new');
+  t('payee subs sorted A-Z', JSON.stringify(names)===JSON.stringify(names.slice().sort((a,b)=>a.localeCompare(b))), names.join(','));})();
+setVal('caAmount','32500');$("setCaKind('spent')");
+$("document.getElementById('caPayeeSel').value='__other'");$('caPayeeChange()');
+setVal('caPayee','Summit Roofing');
 $('saveCostActual()');
 let RR=JSON.parse($("JSON.stringify(costLineRollup(P(),"+JSON.stringify(rid)+"))"));
 t('actual logged via modal', RR.spent===32500&&RR.remaining===1500&&!RR.over, JSON.stringify(RR));
+// picking a roster sub straight from the menu
+$('openCostActual(null,'+JSON.stringify(rid)+')');
+const firstSub=JSON.parse($("JSON.stringify([...document.getElementById('caPayeeSel').options].map(o=>o.value).filter(v=>v&&v!=='__other'&&v!=='__new'))"))[0];
+setVal('caAmount','100');$("document.getElementById('caPayeeSel').value="+JSON.stringify(firstSub));
+$('saveCostActual()');
+t('roster payee saved from menu', $("costActuals(P()).slice(-1)[0].payee")===firstSub, firstSub);
+$("Data.removeCost(costActuals(P()).slice(-1)[0].id)");
+// + New sub tie-in through the real prompt
+$('openCostActual(null,'+JSON.stringify(rid)+')');
+const nSubs0=$("P().subs.length");
+$("document.getElementById('caPayeeSel').value='__new'");$('caPayeeChange()');
+promptOK('Summit Roofing Co');
+t('new sub created and selected', $("P().subs.length")===nSubs0+1&&$("document.getElementById('caPayeeSel').value")==='Summit Roofing Co');
+setVal('caAmount','75');$('saveCostActual()');
+t('cost saved against the new sub', $("costActuals(P()).slice(-1)[0].payee")==='Summit Roofing Co');
+$("Data.removeCost(costActuals(P()).slice(-1)[0].id)");
+$("state.projects[1].subs=state.projects[1].subs.filter(s=>s.name!=='Summit Roofing Co')");
 // empty guards
 $('openCostLine()');setVal('clLabel','');$('saveCostLine()');
 t('unnamed line rejected', $("costLines(P()).length")===7);
@@ -532,7 +555,7 @@ const ACTIONS=[
   r=>{asBuilder();$('calMonth=null');$('renderCal()');$('openBk()');const p=PIDS[Math.floor(r()*4)];$("document.getElementById('bkSite').value='"+p+"'");$("bkFillSubs('"+p+"')");const os=JSON.parse($("JSON.stringify([...document.getElementById('bkSub').options].map(o=>o.value).filter(Boolean))"));if(!os.length){$('closeBk()');return;}$("document.getElementById('bkSub').value="+JSON.stringify(os[Math.floor(r()*os.length)]));const s=Date.now()+Math.floor(r()*30)*864e5;setVal('bkStart',new Date(s).toISOString().slice(0,10));setVal('bkEnd',new Date(s+Math.floor(r()*5)*864e5).toISOString().slice(0,10));setVal('bkNote','fz');$('bkSave()');},
   r=>{asBuilder();$("state.activeId='"+PIDS[Math.floor(r()*4)]+"'");$('invCompose()');setVal('invTitle2','Fuzz inv');setVal('invExLabel','Fuzz line');setVal('invExAmount',String(1+Math.floor(r()*900)));$('invSave('+(r()<0.5)+')');$("invMode='list'");},
   r=>{asBuilder();$("state.activeId='"+PIDS[Math.floor(r()*4)]+"'");$('openCostLine()');setVal('clLabel','Fz line '+Math.floor(r()*1e4));setVal('clBudget',String(1000+Math.floor(r()*90000)));$('saveCostLine()');$('closeCostLine()');},
-  r=>{asBuilder();$("state.activeId='"+PIDS[Math.floor(r()*4)]+"'");$('openCostActual()');setVal('caAmount',String(Math.floor(r()*50000)));$("setCaKind('"+(0.5>0.4?'spent':'committed')+"')");const ls=JSON.parse($("JSON.stringify(costLines(P()).map(l=>l.id))"));if(ls.length&&r()<0.8)$("document.getElementById('caLine').value="+JSON.stringify(ls[Math.floor(r()*ls.length)]));setVal('caPayee','Fz Co');$('saveCostActual()');$('closeCostActual()');},
+  r=>{asBuilder();$("state.activeId='"+PIDS[Math.floor(r()*4)]+"'");$('openCostActual()');setVal('caAmount',String(Math.floor(r()*50000)));$("setCaKind('"+(0.5>0.4?'spent':'committed')+"')");const ls=JSON.parse($("JSON.stringify(costLines(P()).map(l=>l.id))"));if(ls.length&&r()<0.8)$("document.getElementById('caLine').value="+JSON.stringify(ls[Math.floor(r()*ls.length)]));$("document.getElementById('caPayeeSel').value='__other'");$('caPayeeChange()');setVal('caPayee','Fz Co');$('saveCostActual()');$('closeCostActual()');},
   r=>{if($('state.projects.length')>=10)return;asBuilder();$('openNewSite()');setVal('nsName','Fz '+Math.floor(r()*1e5));setVal('nsStreet',Math.floor(r()*999)+' Fuzz Way');setVal('nsCity','Fuzzton');$('saveNewSite()');},
 ];
 const drainM=r=>{for(let g=0;g<4;g++){let acted=false;
