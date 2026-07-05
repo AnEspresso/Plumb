@@ -88,6 +88,7 @@
   .eyebrow::after{content:"";flex:1;height:1px;background:var(--line);}
 .eyebrow-c{font-size:15px;font-weight:700;letter-spacing:.08em;color:var(--ink-2);}
 .rail-brand,.rail-foot{display:none;}
+.login-copy{margin-top:26px;padding:12px 0;line-height:1.5;}
 .eyebrow-c::before{content:"";flex:1;height:1px;background:var(--line);}
   .eyebrow:first-child{margin-top:8px;}
 
@@ -918,6 +919,16 @@
     /* ── overview is site-agnostic: the site tabs rail hides there ── */
     body:has(.overview.show) nav{display:none;}
     body:has(.overview.show) .overview{left:0;}
+    /* ── sync status lives in the rail bottom, above the version line ── */
+    .hdr-sync{top:auto;right:auto;left:14px;bottom:58px;width:204px;justify-content:center;z-index:8;}
+    /* ── trades calendar: full width, actions + legend in a left column ── */
+    #calview{left:0;}
+    #calview .sv-body{padding-left:40px;padding-right:40px;}
+    #calview .cal-wrap{display:grid;grid-template-columns:280px minmax(0,1fr);column-gap:36px;align-items:start;max-width:1240px;margin:0 auto;}
+    #calview .cal-side{grid-column:1;grid-row:1;display:flex;flex-direction:column;gap:4px;position:sticky;top:16px;}
+    #calview .cal-main{grid-column:2;grid-row:1;min-width:0;}
+    #calview .cal-side .add-sub-btn{width:100%;margin:8px 0 0;}
+    #calview .cal-side .cal-legend{flex-direction:column;align-items:flex-start;gap:9px;padding:4px 2px 12px;border-bottom:1px solid var(--line);margin-bottom:6px;}
   }
   @media(min-width:900px){ .hdr-sync{right:24px;} }
 
@@ -2473,7 +2484,7 @@
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.157.0 - Desktop comfort pass. The rail steps aside on the all-sites home, cards and rows respond on hover, modals sit at a comfortable width, the Budget card shows all four headline numbers with a clear View and edit affordance, the Budget title and totals read as a centered card, table columns line up with no cut-offs, trade menus sort A to Z, and every row has an explicit Edit button.';
+const PLUMB_VERSION='2.157.1 - Desktop fixes. The sync status pill now lives at the bottom of the left rail instead of stretching behind it, the sign-in copyright has room to breathe, the trades calendar fills the window with its legend and actions in a left column, and the Edit buttons no longer crowd the budget table edge.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -5708,7 +5719,7 @@ function budgetTableHTML(p){
   let unh='';
   if(un.length){unh=`<div class="bgt-grp" style="color:var(--clay)">Not assigned to a line</div>`+un.map(a=>`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`).join('');}
   return `<table class="bgt-table"><thead><tr>
-      <th style="width:23%">Line</th><th style="width:14%">Trade</th><th style="width:15%">Stage</th><th class="n" style="width:11%">Budget</th><th class="n" style="width:11%">Signed for</th><th class="n" style="width:11%">Paid</th><th class="n" style="width:9%">Left</th><th class="n" style="width:6%">Edit</th>
+      <th style="width:21%">Line</th><th style="width:14%">Trade</th><th style="width:14%">Stage</th><th class="n" style="width:11%">Budget</th><th class="n" style="width:11%">Signed for</th><th class="n" style="width:11%">Paid</th><th class="n" style="width:9%">Left</th><th class="n" style="width:9%">Edit</th>
     </tr></thead><tbody>${rows}
     <tr class="bgt-qa">
       <td><input id="bgtQaName" placeholder="New budget line…" onkeydown="if(event.key==='Enter')bgtQuickAdd()"></td>
@@ -7912,10 +7923,10 @@ function renderCal(){
     :(calIsSub()
     ?`<button class="add-sub-btn" style="margin:12px 2px 0" onclick="openBk(null,Date.now())">Block time off (working elsewhere)\u2026</button>`
     :`<button class="add-sub-btn" style="margin:12px 2px 0" onclick="openBk(null,Date.now())">Schedule a subcontractor\u2026</button>`);
-  el.innerHTML='<div class="cal-wrap">'+chips+moveBanner+banner+wxBanner
+  el.innerHTML='<div class="cal-wrap"><div class="cal-main">'+chips+moveBanner+banner+wxBanner
     +`<div class="cal-nav"><div class="m">${calMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</div><div class="btns"><button onclick="calNav(-1)">\u2039</button><button class="today" onclick="calToday()">Today</button><button onclick="calNav(1)">\u203a</button></div></div>`
     +'<div class="cal-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>'
-    +'<div class="cal-grid">'+grid+'</div>'+legend+suggHTML+addBtn+subCrewBtn+exportBtn+hoBtn+'</div>';}
+    +'<div class="cal-grid">'+grid+'</div></div><div class="cal-side">'+legend+suggHTML+addBtn+subCrewBtn+exportBtn+hoBtn+'</div></div>';}
 function openDay(ts){calDay=ts;renderDay();document.getElementById('dayScrim').classList.add('show');}
 function closeDay(){document.getElementById('dayScrim').classList.remove('show');}
 function renderDay(){
