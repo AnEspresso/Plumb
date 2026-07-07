@@ -723,6 +723,10 @@ for(let i2=0;i2<16;i2++){
   const lifted=$("_tourLift?1:0");
   const bub=$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML");
   if(!bub.includes(String(i2+1)+' / 16')){tourOK=false;tourDetail='counter '+i2;break;}
+  // LAW 4 enforcement: bubble never faded; docked exactly when the orb works the page
+  if($("document.getElementById('tourBubble').style.opacity")==='0'){tourOK=false;tourDetail='LAW4 fade at '+i2;break;}
+  const wantDock=$("!!TOUR.grand["+i2+"].after");
+  if($("document.getElementById('tourBubble').classList.contains('tour-bub-dock')")!==wantDock){tourOK=false;tourDetail='LAW4 dock at '+i2;break;}
   if(i2!==0&&i2!==10&&!lifted){tourOK=false;tourDetail='no spotlight at '+i2;break;}
 }
 t('all 16 steps navigate, spotlight and count correctly', tourOK, tourDetail);
@@ -731,6 +735,7 @@ let backOK=true, backDetail='';
 for(let b=14;b>=0;b--){
   $('tourPrev()');await new Promise(r=>setTimeout(r,1650));
   if(!landmarks[b]()){backOK=false;backDetail='back landmark '+b;break;}
+  if($("document.getElementById('tourBubble').classList.contains('tour-bub-dock')")!==$("!!TOUR.grand["+b+"].after")){backOK=false;backDetail='LAW4 dock back '+b;break;}
 }
 t('walking BACKWARD lands every slide correctly too', backOK, backDetail);
 for(let f=1;f<16;f++){$('tourNext()');await new Promise(r=>setTimeout(r,350));}

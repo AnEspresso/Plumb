@@ -2658,7 +2658,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.167.2 - Motion truthing. The highlight ring now measures only when the screen is genuinely at rest so it lands right the first time and stays put, ping scrolling is one smooth motion with the ring riding its old box up before gliding to the next, orb presses wait for the scroll to finish so the calendar pill and every other target gets truly hit, and the description bubble stops fading and jumping - it glides between slides and parks in a quiet corner for the whole slide whenever the orb will be working the page.';
+const PLUMB_VERSION='2.167.3 - The Motion Laws. The four wizard rules are now enforced at single points in the engine: every measurement waits for the screen to be truly at rest, every scroll is one smooth motion with the ring riding its old box frame by frame, the orb never commits to a press until scrolling has finished anywhere it acts, and the bubble is positioned exactly once per slide - ring corrections and ping hops can no longer move it. Same highlights as before, both directions.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4308,11 +4308,12 @@ function tourEnd(){orbHide();tourUnlift();['tourCatch','tourSpot','tourBubble'].
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
 function tourNext(){tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
 function tourPrev(){tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
-function tourPlace(rect,instant,dock){
+function tourPlace(rect,instant,dock,skipBub){
   const spot=document.getElementById('tourSpot'),bub=document.getElementById('tourBubble');if(!spot||!bub)return;
   if(instant){spot.classList.add('nomorph');requestAnimationFrame(()=>spot.classList.remove('nomorph'));}
   if(rect){spot.style.opacity='1';spot.style.left=(rect.left-6)+'px';spot.style.top=(rect.top-6)+'px';spot.style.width=(rect.width+12)+'px';spot.style.height=(rect.height+12)+'px';}
   else{spot.style.left='50%';spot.style.top='50%';spot.style.width='0px';spot.style.height='0px';}
+  if(skipBub)return;                                   /* LAW 4: ring corrections never move the bubble */
   if(dock!==undefined)bub.classList.toggle('tour-bub-dock',!!dock);
   const vw=innerWidth,vh=innerHeight,bw=bub.offsetWidth,bh=bub.offsetHeight,gap=14;
   let top,left;
@@ -4345,9 +4346,9 @@ function tourStep(){
   _tapP.then(()=>{
   setTimeout(()=>{
     const el=step.sel?document.querySelector(step.sel):null;
-    if(el)try{el.scrollIntoView({block:'center',behavior:'auto'});}catch(e){}   // instant: let the ring glide, not the page
-    if(el)awaitSettle(el).then(()=>{});
-    setTimeout(()=>{
+    if(el)smoothScrollTo(el,0.35);                    // LAW 2: one smooth motion into place
+    (el?awaitSettle(el):Promise.resolve()).then(()=>{ // LAW 1: measure only at rest
+      if(_tok!==_gtTok)return;
       const bub=document.getElementById('tourBubble');if(!bub)return;
       const rect=el?el.getBoundingClientRect():null;
       if(el){const cs=getComputedStyle(el);_tourLiftPrev={pos:el.style.position,z:el.style.zIndex};
@@ -4360,18 +4361,18 @@ function tourStep(){
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="tour-next" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
-      tourPlace(rect,false,!!step.after);               // ring glides; action slides park the bubble in its corner up front
-      if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // layout often settles a beat later — correct invisibly
+      tourPlace(rect,false,!!step.after);               // ring glides; the bubble is placed ONCE for the slide (docked when the orb will work)
+      if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
         try{const rq=el.getBoundingClientRect();
-          if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true,!!step.after);}catch(e){}},90));
+          if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true,undefined,true);}catch(e){}},90));
       if(el)orbTo(el,{settle:true,rest:true,noscroll:true});else orbHide();   // glides to the edge — the orb is always followed
       if(el&&rect)setTimeout(()=>{                       // stabilization: layout can settle late — re-measure once
         try{const el2=step.sel?document.querySelector(step.sel):null;if(!el2)return;
           const r2=el2.getBoundingClientRect();
           if(r2&&(Math.abs(r2.top-rect.top)>4||Math.abs(r2.left-rect.left)>4||Math.abs(r2.height-rect.height)>4)){
-            tourPlace(r2,true,!!step.after);orbTo(el2,{settle:true,instant:true,rest:true,noscroll:true});}}catch(e){}},420);
+            tourPlace(r2,true,undefined,true);orbTo(el2,{settle:true,instant:true,rest:true,noscroll:true});}}catch(e){}},420);
       {const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';}
-    },el?150:40);
+    });
   },(step.nav||step.acts)?240:0);
   if(step.after)setTimeout(()=>{try{step.after(_tok);}catch(e){}},1100);
   });}
@@ -6304,6 +6305,18 @@ function startGrandTour(){
   if(appMode()!=='demo')enterDemo();
   setTimeout(()=>{try{startTour('grand');}catch(e){}},350);
 }
+/* ═══ TOUR MOTION LAWS (Peter's, 2026-07-07 — every frame, both directions) ═══
+   1. Rings land right the FIRST time and stay put: measure only when the target
+      is at rest (awaitSettle). Corrections, if ever needed, are instant+invisible.
+   2. Scrolling is ONE smooth motion; in ping sequences the ring RIDES its old box
+      up, then glides to the new one as the orb arrives.
+   3. The orb never commits to coordinates until scrolling has finished. Every
+      press hits the thing that is actually there.
+   4. The bubble never fades and never moves mid-slide. It glides once between
+      slides; on any slide where the orb works the page (step.after), it parks
+      in the top-right corner from the first frame.
+   Enforcement lives in: awaitSettle (rest), smoothScrollTo (one motion),
+   orbTo (unconditional settle), tourPlace(skipBub) (bubble placed once/slide). */
 /* ── The guide orb: glides to a control, taps it, then the screen answers. ── */
 function _orbEl(){return document.getElementById('tourOrb');}
 function _orbReduced(){try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}}
@@ -6343,10 +6356,8 @@ function orbTo(target,opts){
           else {if(opts.rest)o.classList.remove('active');res();}
         },opts.instant?220:580);
       };
-      if(off&&!opts.noscroll){                       /* the screen travels WITH the orb */
-        smoothScrollTo(el,0.42);
-        awaitSettle(el).then(go2);
-      } else go2();
+      if(off&&!opts.noscroll)smoothScrollTo(el,0.42);  /* the screen travels WITH the orb */
+      awaitSettle(el).then(go2);                       /* LAW 3: never commit until at rest */
     }catch(e){res();}
   });
 }
@@ -6355,18 +6366,18 @@ function tourAlive(tok){return tok===_gtTok&&document.body.classList.contains('o
    the spotlight RIDES it during the scroll — the ring leaves with its box. */
 function awaitSettle(el,trackEl,dock){
   return new Promise(res=>{
-    let last=null,stable=0,n=0;
+    let last=null,stable=0,frames=0;
     const tick=()=>{
       try{
         const r=el.getBoundingClientRect();
-        if(trackEl){const tr=trackEl.getBoundingClientRect();if(tr&&tr.height)tourPlace(tr,true,dock);}
-        if(last!==null&&Math.abs(r.top-last)<0.8){stable++;}else{stable=0;}
-        last=r.top;n++;
-        if(stable>=2||n>24){res();return;}
+        if(trackEl){const tr=trackEl.getBoundingClientRect();if(tr&&tr.height)tourPlace(tr,true,undefined,true);}
+        if(last!==null&&Math.abs(r.top-last)<0.6){stable++;}else{stable=0;}
+        last=r.top;frames++;
+        if((stable>=3&&frames>=6)||frames>110){res();return;}
       }catch(e){res();return;}
-      setTimeout(tick,70);
+      requestAnimationFrame(tick);
     };
-    tick();
+    requestAnimationFrame(tick);
   });
 }
 function smoothScrollTo(el,frac){
@@ -6390,7 +6401,7 @@ async function tourPing(sels,tok,dwell,startEl){
     smoothScrollTo(el,0.32);
     await awaitSettle(el,prev,true);                 /* the ring rides its old box out, then… */
     if(!tourAlive(tok))return;
-    try{const r2=el.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2,false,true);}catch(e){}   /* …glides down to the new one */
+    try{const r2=el.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2,false,undefined,true);}catch(e){}   /* …glides down to the new one */
     await orbTo(el,{tap:true,noscroll:true});
     await new Promise(r=>setTimeout(r,dwell||700));
     prev=el;
