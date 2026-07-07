@@ -6,10 +6,12 @@
 const qbo = require('./qbo');
 
 function requireBuilder(site, uid) {
+  // Production writes members as STRINGS: members[uid] === 'builder' | 'sub' | 'client'.
+  // Strict allow-list: only 'builder' exports. (Object {role} tolerated for any legacy doc.)
   const m = (site.members || {})[uid];
   if (!m) return false;
-  const r = String(m.role || '').toLowerCase();
-  return r !== 'client' && r !== 'sub' && r !== 'subs';
+  const role = typeof m === 'string' ? m : String(m.role || '');
+  return role.toLowerCase() === 'builder';
 }
 
 function toISODate(t) {
@@ -27,8 +29,10 @@ async function exportCosts(db, uid, siteId) {
   const site = siteSnap.data();
   if (!requireBuilder(site, uid)) return { ok: false, reason: 'not-your-site' };
 
-  // Site display name for the QBO Customer: prefer street from retired meta or doc fields
+  // Site display name for the QBO Customer. In production docs the street lives
+  // inside the meta MAP (see 3863 Robina doc shape); tolerate every historical shape.
   let street = site.street || '';
+  if (!street && site.meta && typeof site.meta === 'object') street = site.meta.street || '';
   if (!street && typeof site.meta === 'string') { try { street = (JSON.parse(site.meta) || {}).street || ''; } catch (e) {} }
   if (!street) street = 'Plumb site ' + siteId;
 
