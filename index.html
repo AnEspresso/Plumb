@@ -1395,6 +1395,7 @@ body.on-tour .tour-card{display:block;}
 .tour-mute{width:38px;height:38px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:12px;
   cursor:pointer;font-size:15px;}
 .tour-exit{display:block;margin:8px auto 0;font-size:12px;}
+.tour-mute-mini{background:none;border:1px solid rgba(231,220,198,.3);border-radius:10px;padding:4px 9px;margin-right:8px;cursor:pointer;font-size:14px;}
 .install-gate{position:fixed;inset:0;z-index:220;display:none;flex-direction:column;align-items:center;justify-content:center;
   background:#15130F;color:#E7DCC6;text-align:center;padding:32px 28px calc(env(safe-area-inset-bottom,0px) + 28px);}
 .install-gate.show{display:flex;}
@@ -2029,16 +2030,6 @@ body.on-tour .tour-card{display:block;}
 
   <!-- ───── EXCURSION BANNER + TOUR CARD ───── -->
   <div class="exc-banner" id="excBanner">Example build — your account is untouched<button onclick="exitDemo()">Exit demo</button></div>
-  <div class="tour-card" id="tourCard">
-    <div class="tour-dots" id="tourDots"></div>
-    <div class="tour-text" id="tourText"></div>
-    <div class="tour-row">
-      <button class="tour-mute" id="tourMute" onclick="tourToggleMute()" aria-label="Voice on or off"></button>
-      <button class="b1 b-cancel" id="tourBack" onclick="gtStep(-1)">Back</button>
-      <button class="b1 b-go" id="tourNext" style="flex:1" onclick="gtStep(1)">Next</button>
-    </div>
-    <button class="la-link tour-exit" onclick="endGrandTour()">Exit tour</button>
-  </div>
 
   <!-- ───── INSTALL GATE (phones in a browser tab) ───── -->
   <div class="install-gate" id="installGate">
@@ -2622,7 +2613,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.165.0 - New: onboarding. The splash is one simple sign-in with a quiet explore-the-example link, first sign-in offers a welcome fork, and Show me around runs a voiced eight-step tour where Plumb drives the example build itself - including what your homeowner and subs each see. The demo is now a safe excursion with a banner and an exit that lands you right back home, replayable anytime from the gear.';
+const PLUMB_VERSION='2.165.1 - The tour got its spotlight back. The guided walkthrough now uses the gliding highlight ring - every step lights up the exact control it is talking about while Plumb moves through the example build, with the voice and the set-up-my-first-site finish intact.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4205,6 +4196,16 @@ const TOUR={team:[
  {sel:'#svUpdate',title:'Post an update',body:'Snap a photo from the field and it posts straight back to the builder\u2019s log.'},
  {sel:'#subtab-selections',tap:true,title:'Your selections',body:'The selections that fall under your trade, confirmed before you build. Tap to see them.'},
  {title:'You\u2019re set',body:'That\u2019s your whole view. When a builder invites you to a real job, this is exactly how it\u2019ll look.'}
+],grand:[
+ {sel:'.capture-card',title:'The Log',body:'The heartbeat of a build. Every day gets one line \u2014 who was on site, what got done \u2014 and Take a photo files each shot by date and area automatically.',nav:()=>{try{go('log');}catch(e){}}},
+ {sel:'[data-d=waiting]',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues. When this list is empty, nobody is stuck.',nav:()=>{try{go('decisions');}catch(e){}}},
+ {sel:'.cal-door',title:'Build',body:'Your command center: stages in construction order, permits, subs \u2014 and the trades calendar one tap away, showing who is on site and when.',nav:()=>{try{go('build');buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}}},
+ {sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build is 800 dollars from its budget, one line is over \u2014 and every cost can flow straight into QuickBooks.',nav:()=>{try{go('build');openBudget();}catch(e){}}},
+ {sel:'#billingCard',title:'Homeowner billing',body:'The other side of money \u2014 upgrades, credits, invoices the homeowner approves with one tap. What they owe and what they have paid, always current.',nav:()=>{try{closeBudget();go('build');}catch(e){}}},
+ {sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',nav:()=>{try{Data.setSession({role:'client',site:'p2'});clientTab='home';renderClient();showClientView();}catch(e){}}},
+ {sel:'#svPacket',title:'What subs see',body:'Each sub gets only their piece \u2014 their schedule, their install packet, a button to post updates from the field. No noise from other trades.',nav:()=>{try{Data.setSession({role:'subs',name:'Clearwater Plumbing'});renderSubView();openSubSite('p2');}catch(e){}}},
+ {sel:'#ovCards',title:'One honest record',body:'That is Plumb \u2014 the same build, shaped for every hand that touches it. Ready to set up your first site?',cta:'Set up my first site',
+  nav:()=>{try{Data.setSession({role:'hillan',name:'Demo Builder'});const sv=document.querySelector('.subview.show');if(sv)sv.classList.remove('show');renderAll();showOverview();}catch(e){}}}
 ],client:[
  {title:'Welcome home',body:'This is your view of the build \u2014 a calm picture of where things stand. Tap the highlights or use Next.',nav:()=>{try{clientGo('home');}catch(e){}}},
  {sel:'.cl-hero',title:'At a glance',body:'How far along, whether you\u2019re on track, and what\u2019s next on site \u2014 the answer to \u201chow\u2019s it going?\u201d without a single text.'},
@@ -4261,7 +4262,8 @@ function tourStep(){
         +'<div class="tour-h">'+step.title+'</div><div class="tour-b">'+step.body+'</div>'
         +'<div class="tour-foot">'+(last?'<span></span>':'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>')+'<div>'
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
-        +'<button class="tour-next" onclick="tourNext()">'+(last?'Done':'Next')+'</button></div></div>';
+        +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
+        +'<button class="tour-next" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
       tourPlace(rect);                                  // ring glides to the new target (CSS transition)
       setTimeout(()=>{const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';},170); // fade in once it has mostly arrived
     },el?150:40);
@@ -6166,49 +6168,13 @@ function maybeWelcome(){
 function welcomeDone(){try{localStorage.setItem('plumbWelcomed','1');}catch(e){}
   document.getElementById('welcomeScrim').classList.remove('show');}
 
-/* ── The tour: Plumb drives the example build and narrates. ── */
-const GRAND_TOUR=[
- {t:'This is the Log — the heartbeat of a build. Every day gets one line: who was on site, what got done. Tap Take a photo and it files itself by date and area, no folders to manage.',
-  go:function(){go('log');}},
- {t:'To-Do gathers everything waiting on a person — questions from your subs, homeowner sign-offs, open site issues. When this screen is empty, nobody is stuck.',
-  go:function(){go('decisions');}},
- {t:'Build is your command center. Stages track progress in construction order, and every crew booking lives on the trades calendar one tap away.',
-  go:function(){go('build');try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}}},
- {t:'Money, private to your team. This build is 800 dollars from its budget — and one line is over. Signed-for and paid are tracked separately, and every cost can flow straight into QuickBooks.',
-  go:function(){go('build');openBudget();}},
- {t:'Billing is the homeowner side of money — upgrades, credits, invoices with one-tap approval. What they owe and what they have paid, always current.',
-  go:function(){closeBudget();go('build');}},
- {t:'Now the part homeowners love. This is THEIR view of the same build — progress, decisions waiting on them, what to pay. No logins to explain; you send one link.',
-  go:function(){Data.setSession({role:'client',site:'p2'});try{clientTab='home';}catch(e){}renderClient();showClientView();}},
- {t:'And your subs? Each one sees only their piece — their schedule, their install packet, a button to post an update. No noise from other trades.',
-  go:function(){Data.setSession({role:'subs',name:'Clearwater Plumbing'});renderSubView();try{openSubSite('p2');}catch(e){}}},
- {t:'That is Plumb — one honest record of the build, shaped differently for every hand that touches it. Ready to set up your first site?',
-  go:function(){Data.setSession({role:'hillan',name:'Demo Builder'});try{document.querySelector('.subview.show')&&document.querySelector('.subview.show').classList.remove('show');}catch(e){}renderAll();showOverview();}}
-];
-let _gtI=-1;
+/* ── The grand tour rides the legacy spotlight engine as role 'grand'. ── */
 function startGrandTour(){
   welcomeDone();
   if(appMode()!=='demo')enterDemo();
-  document.body.classList.add('on-tour');
-  _gtI=-1;gtStep(1);
+  setTimeout(()=>{try{startTour('grand');}catch(e){}},350);
 }
-function gtStep(d){
-  _gtI=Math.max(0,Math.min(GRAND_TOUR.length-1,_gtI+d));
-  const s=GRAND_TOUR[_gtI];
-  try{s.go();}catch(e){}
-  document.getElementById('tourText').textContent=s.t;
-  document.getElementById('tourDots').innerHTML=GRAND_TOUR.map((_,i)=>'<i class="'+(i===_gtI?'on':'')+'"></i>').join('');
-  document.getElementById('tourBack').style.display=_gtI===0?'none':'';
-  document.getElementById('tourNext').textContent=_gtI===GRAND_TOUR.length-1?'Set up my first site':'Next';
-  if(_gtI===GRAND_TOUR.length-1)document.getElementById('tourNext').onclick=function(){endGrandTour();exitDemo();try{openNewSite();}catch(e){}};
-  else document.getElementById('tourNext').onclick=function(){gtStep(1);};
-  tourSpeak(s.t);
-  tourMuteRender();
-}
-function endGrandTour(silent){
-  document.body.classList.remove('on-tour');_gtI=-1;
-  try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
-}
+function endGrandTour(silent){try{tourEnd();}catch(e){}try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
 /* voice: hunt for the best local voice; pre-recorded audio drops in later via tour-audio/{i}.mp3 */
 let _tourVoice;
 function tourPickVoice(){
@@ -6220,7 +6186,7 @@ function tourPickVoice(){
 }
 function tourMuted(){try{return localStorage.getItem('plumbTourMute')==='1';}catch(e){return false;}}
 function tourToggleMute(){try{localStorage.setItem('plumbTourMute',tourMuted()?'0':'1');}catch(e){}
-  if(tourMuted()){try{speechSynthesis.cancel();}catch(e){}}else if(_gtI>=0)tourSpeak(GRAND_TOUR[_gtI].t);
+  if(tourMuted()){try{speechSynthesis.cancel();}catch(e){}}else{try{const s=_tourSteps&&_tourSteps[_tourIdx];if(s&&s.body)tourSpeak(s.body);}catch(e){}}
   tourMuteRender();}
 function tourMuteRender(){const b=document.getElementById('tourMute');if(b)b.textContent=tourMuted()?'\uD83D\uDD07':'\uD83D\uDD0A';}
 function tourSpeak(text){

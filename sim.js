@@ -674,7 +674,7 @@ $('closeBudget()');
 S('onboarding');
 // splash is one door: choosers exist in DOM but the era CSS hides them; explore link present
 t('splash keeps live controls + explore link', $("!!document.querySelector('.login-explore')")===true&&$("!!document.getElementById('realControls')")===true);
-t('grand tour + legacy role tours coexist', $("typeof startGrandTour")==='function'&&$("typeof startTour")==='function'&&$("GRAND_TOUR.length")===8&&$("Object.keys(TOUR).sort().join()")==='client,sub,team');
+t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='function'&&$("Array.isArray(TOUR.grand)")===true&&$("TOUR.grand.length")===8&&$("TOUR.grand.every(s=>s.sel&&s.title&&s.body)")===true);
 // excursion from a live session: flip out, come home with session + activeId intact
 asBuilder();
 $("localStorage.setItem('plumb.mode','real')");
@@ -690,9 +690,9 @@ $('maybeWelcome()');
 t('welcome fork shows for a fresh live builder', $("document.getElementById('welcomeScrim').classList.contains('show')")===true);
 $('welcomeDone()');$('maybeWelcome()');
 t('welcome respects the once flag', $("document.getElementById('welcomeScrim').classList.contains('show')")===false);
-// the grand tour: every step executes and lands where it claims
-$('startGrandTour()');
-t('tour engaged on the example build', $("document.body.classList.contains('on-tour')")===true&&$("appMode()")==='demo');
+// grand tour: every step navigates, spotlights a real element, and narrates
+$('enterDemo()');$("startTour('grand')");
+await new Promise(r=>setTimeout(r,900));
 const landmarks=[
   ()=>$("document.getElementById('view-log').classList.contains('active')")===true,
   ()=>$("document.getElementById('view-decisions').classList.contains('active')")===true,
@@ -704,16 +704,18 @@ const landmarks=[
   ()=>$("state.session.role")==='hillan',
 ];
 let tourOK=true, tourDetail='';
-for(let i=0;i<8;i++){
-  if(i>0)$('gtStep(1)');
-  const txt=$("document.getElementById('tourText').textContent");
-  if(!txt||txt.length<40){tourOK=false;tourDetail='step '+i+' text';break;}
-  if(!landmarks[i]()){tourOK=false;tourDetail='step '+i+' landmark';break;}
+for(let i2=0;i2<8;i2++){
+  if(i2>0){$('tourNext()');await new Promise(r=>setTimeout(r,700));}
+  if(!landmarks[i2]()){tourOK=false;tourDetail='landmark '+i2;break;}
+  const lifted=$("_tourLift?1:0");
+  const bub=$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML");
+  if(!bub.includes(String(i2+1)+' / 8')){tourOK=false;tourDetail='counter '+i2;break;}
+  if(i2!==3&&i2!==4&&!lifted){tourOK=false;tourDetail='no spotlight at '+i2;break;}
 }
-t('all 8 tour steps narrate and navigate correctly', tourOK, tourDetail);
-t('final step invites first-site setup', $("document.getElementById('tourNext').textContent")==='Set up my first site');
-$('endGrandTour()');$('exitDemo()');
-t('post-tour exit is clean', $("appMode()")==='real'&&$("document.body.classList.contains('on-tour')")===false);
+t('all 8 steps navigate, spotlight and count correctly', tourOK, tourDetail);
+t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my first site'));
+$('tourEnd()');$('exitDemo()');
+t('post-tour exit is clean', $("appMode()")==='real'&&$("_tourLift?1:0")===0);
 // voice layer: guarded everywhere, mute round-trips
 t('speech guarded in jsdom (no speechSynthesis)', await $("Promise.resolve().then(()=>{tourSpeak('hello');return true;})")===true);
 $('tourToggleMute()');
