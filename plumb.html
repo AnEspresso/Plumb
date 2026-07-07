@@ -1407,6 +1407,18 @@ body.on-tour .tour-card{display:block;}
 .tour-mute{width:38px;height:38px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:12px;
   cursor:pointer;font-size:15px;}
 .tour-exit{display:block;margin:8px auto 0;font-size:12px;}
+#tourOrb{position:fixed;left:-40px;top:-40px;width:20px;height:20px;border-radius:50%;z-index:2004;pointer-events:none;
+  background:radial-gradient(circle at 35% 35%, #F3E4C8, #CBA268 55%, rgba(203,162,104,.0) 78%);
+  box-shadow:0 0 12px 4px rgba(203,162,104,.55), 0 0 34px 10px rgba(203,162,104,.28);
+  opacity:0;transform:translate(-50%,-50%);
+  transition:left .55s cubic-bezier(.4,0,.2,1), top .55s cubic-bezier(.4,0,.2,1), opacity .3s;}
+#tourOrb.show{opacity:1;}
+#tourOrb.tap{animation:orbTap .38s ease;}
+#tourOrb.tap::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid rgba(203,162,104,.8);
+  animation:orbRipple .5s ease-out forwards;}
+@keyframes orbTap{0%{transform:translate(-50%,-50%) scale(1);}45%{transform:translate(-50%,-50%) scale(.55);}100%{transform:translate(-50%,-50%) scale(1);}}
+@keyframes orbRipple{from{transform:scale(.6);opacity:1;}to{transform:scale(2.4);opacity:0;}}
+@media (prefers-reduced-motion: reduce){#tourOrb{display:none !important;}}
 .tour-mute-mini{background:none;border:1px solid rgba(231,220,198,.3);border-radius:10px;padding:4px 9px;margin-right:8px;cursor:pointer;font-size:14px;}
 .install-gate{position:fixed;inset:0;z-index:220;display:none;flex-direction:column;align-items:center;justify-content:center;
   background:#15130F;color:#E7DCC6;text-align:center;padding:32px 28px calc(env(safe-area-inset-bottom,0px) + 28px);}
@@ -2049,6 +2061,8 @@ body.on-tour .tour-card{display:block;}
     <button class="exc-exit" onclick="exitDemo()">Exit demo</button>
   </div>
 
+  <div id="tourOrb"></div>
+
   <!-- ───── INSTALL GATE (phones in a browser tab) ───── -->
   <div class="install-gate" id="installGate">
     <div class="wm" style="justify-content:center"><span class="dot"></span>Plumb</div>
@@ -2631,7 +2645,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.166.0 - The tour grew up. Sixteen slides now walk every area of Plumb - the at-a-glance site view, the daily log, waiting items, selections and sign-offs, stages, the trades calendar, permits and inspections, your sub roster, the private budget, homeowner billing, auto-filed photos, per-trade documents, and what homeowners and subs each see - all spotlighted and voiced.';
+const PLUMB_VERSION='2.166.1 - The tour got a guide. A glowing orb now travels the screen with the walkthrough, tapping the actual buttons - the tabs, the Homeowner and Sub switches, the Budget card - so you watch Plumb operate itself before each screen answers. Honors reduced-motion settings.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4217,35 +4231,35 @@ const TOUR={team:[
 ],grand:[
  {title:'Welcome to Plumb',body:'One place where your whole build lives \u2014 the daily record, the schedule, your subs, your homeowner, and the money \u2014 each person seeing exactly what they should. Let\u2019s walk one example home together.',
   nav:()=>{try{demoRole('hillan');}catch(e){}}},
- {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the current stage and percent complete, what the build is waiting on, and who is next on site. The answer to how is it going, before anyone asks.',
+ {tap:'#ovCards .ov-card',sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the current stage and percent complete, what the build is waiting on, and who is next on site. The answer to how is it going, before anyone asks.',
   nav:()=>{try{demoRole('hillan');openSiteFromOverview('p2');go('log');}catch(e){}}},
  {sel:'.capture-card',title:'The daily log',body:'Every day gets one line \u2014 who was on site, what got done \u2014 and Take a photo files each shot by date and area automatically. Six months later, you can prove exactly what happened and when.',
   nav:()=>{try{go('log');}catch(e){}}},
- {sel:'[data-d=waiting]',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues \u2014 in one list. When this screen is empty, nobody is stuck.',
+ {tap:'nav .tab[data-v=decisions]',sel:'[data-d=waiting]',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues \u2014 in one list. When this screen is empty, nobody is stuck.',
   nav:()=>{try{go('decisions');decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}},
- {sel:'[data-d=selections]',title:'Selections & sign-offs',body:'Finishes and fixtures live here \u2014 priced, specced, and signed by the homeowner before anyone builds them. No more he-said-she-said about the countertop.',
+ {tap:'[data-d=selections]',sel:'[data-d=selections]',title:'Selections & sign-offs',body:'Finishes and fixtures live here \u2014 priced, specced, and signed by the homeowner before anyone builds them. No more he-said-she-said about the countertop.',
   nav:()=>{try{decSeg('selections',document.querySelector('[data-d=selections]'));}catch(e){}}},
- {sel:'#buildSchedule .overall',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
+ {tap:'nav .tab[data-v=build]',sel:'#buildSchedule .overall',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
   nav:()=>{try{go('build');buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}}},
  {sel:'.cal-door',title:'The trades calendar',body:'Every crew booking across every job \u2014 who is on site and when, with double-bookings flagged before they burn a day. Subs confirm with one tap.',
   nav:()=>{try{go('build');}catch(e){}}},
- {sel:'#buildPermits',title:'Permits & inspections',body:'Every permit and inspection for the jurisdiction, tracked from Not started to Passed \u2014 so the rough-in inspection never sneaks up on you.',
+ {tap:'[data-b=permits]',sel:'#buildPermits',title:'Permits & inspections',body:'Every permit and inspection for the jurisdiction, tracked from Not started to Passed \u2014 so the rough-in inspection never sneaks up on you.',
   nav:()=>{try{buildSeg('permits',document.querySelector('[data-b=permits]'));}catch(e){}}},
- {sel:'#buildSubs',title:'Your subs',body:'The roster for this site \u2014 who is cleared, who is booked, who owes you paperwork. Invite a new sub by text and they land in their own view.',
+ {tap:'[data-b=subs]',sel:'#buildSubs',title:'Your subs',body:'The roster for this site \u2014 who is cleared, who is booked, who owes you paperwork. Invite a new sub by text and they land in their own view.',
   nav:()=>{try{buildSeg('subs',document.querySelector('[data-b=subs]'));}catch(e){}}},
- {sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build is 800 dollars from its budget, one line is over \u2014 and every cost can flow straight into QuickBooks.',
+ {tap:'#budgetCard .overall',sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build is 800 dollars from its budget, one line is over \u2014 and every cost can flow straight into QuickBooks.',
   nav:()=>{try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));openBudget();}catch(e){}}},
  {sel:'#billingCard',title:'Homeowner billing',body:'The other side of money \u2014 upgrades, credits, invoices the homeowner approves with one tap. What they owe and what they have paid, always current.',
   nav:()=>{try{closeBudget();go('build');}catch(e){}}},
- {sel:'#filesPhotos',title:'Photos, filed for you',body:'Every capture lands here by date and area \u2014 no folders, no renaming. Search by trade or stage when the drywaller asks what was behind that wall.',
+ {tap:'nav .tab[data-v=files]',sel:'#filesPhotos',title:'Photos, filed for you',body:'Every capture lands here by date and area \u2014 no folders, no renaming. Search by trade or stage when the drywaller asks what was behind that wall.',
   nav:()=>{try{go('files');filesSeg('photos',document.querySelector('[data-fl=photos]'));}catch(e){}}},
- {sel:'#filesDocs',title:'Documents',body:'Contracts, plans, and the packet each sub needs \u2014 shared deliberately, per trade. What you hand the plumber is not what you hand the painter.',
+ {tap:'[data-fl=docs]',sel:'#filesDocs',title:'Documents',body:'Contracts, plans, and the packet each sub needs \u2014 shared deliberately, per trade. What you hand the plumber is not what you hand the painter.',
   nav:()=>{try{filesSeg('docs',document.querySelector('[data-fl=docs]'));}catch(e){}}},
- {sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',
+ {tap:'.exc-roles button[data-r=client]',sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',
   nav:()=>{try{demoRole('client');}catch(e){}}},
- {sel:'#svPacket',title:'What subs see',body:'Each sub gets only their piece \u2014 their schedule, their install packet, a button to post updates from the field. No noise from other trades.',
+ {tap:'.exc-roles button[data-r=subs]',sel:'#svPacket',title:'What subs see',body:'Each sub gets only their piece \u2014 their schedule, their install packet, a button to post updates from the field. No noise from other trades.',
   nav:()=>{try{demoRole('subs');}catch(e){}}},
- {sel:'#ovCards',title:'One honest record',body:'That is Plumb \u2014 the same build, shaped for every hand that touches it. Ready to set up your first site?',cta:'Set up my first site',
+ {tap:'.exc-roles button[data-r=hillan]',sel:'#ovCards',title:'One honest record',body:'That is Plumb \u2014 the same build, shaped for every hand that touches it. Ready to set up your first site?',cta:'Set up my first site',
   nav:()=>{try{demoRole('hillan');}catch(e){}}}
 ],client:[
  {title:'Welcome home',body:'This is your view of the build \u2014 a calm picture of where things stand. Tap the highlights or use Next.',nav:()=>{try{clientGo('home');}catch(e){}}},
@@ -4268,7 +4282,7 @@ function startTour(role){_tourSteps=TOUR[role]||TOUR.team;_tourIdx=0;
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
-function tourEnd(){tourUnlift();['tourCatch','tourSpot','tourBubble'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+function tourEnd(){orbHide();tourUnlift();['tourCatch','tourSpot','tourBubble'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
 function tourNext(){tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
 function tourPrev(){tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
@@ -4288,7 +4302,9 @@ function tourStep(){
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
   const bub0=document.getElementById('tourBubble');if(bub0)bub0.style.opacity='0';   // fade current bubble out
   const spot0=document.getElementById('tourSpot');if(step.nav&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
-  if(step.nav){try{step.nav();}catch(e){}}
+  const _afterTap=()=>{if(step.nav){try{step.nav();}catch(e){}}};
+  const _tapP=(step.tap&&!_orbReduced())?orbTo(step.tap,{tap:true}).then(_afterTap):(Promise.resolve().then(_afterTap));
+  _tapP.then(()=>{
   setTimeout(()=>{
     const el=step.sel?document.querySelector(step.sel):null;
     if(el)try{el.scrollIntoView({block:'center',behavior:'auto'});}catch(e){}   // instant: let the ring glide, not the page
@@ -4306,9 +4322,10 @@ function tourStep(){
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="tour-next" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
       tourPlace(rect);                                  // ring glides to the new target (CSS transition)
+      if(el)orbTo(el);else orbHide();                   // the orb settles where the story is
       setTimeout(()=>{const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';},170); // fade in once it has mostly arrived
     },el?150:40);
-  },step.nav?240:0);}
+  },step.nav?240:0);});}
 function tmplPickLevel(id){const op=orgPrefs();op.customLevel=id;saveOrgPrefs(op);renderPeople();
   const n=(SETUP_LEVELS.find(l=>l.id===id)||{}).n||id;toast(n+' — spec sheets now ask '+specTotals(id)+' questions');}
 let _tmplCat=null;
@@ -6227,6 +6244,27 @@ function startGrandTour(){
   if(appMode()!=='demo')enterDemo();
   setTimeout(()=>{try{startTour('grand');}catch(e){}},350);
 }
+/* ── The guide orb: glides to a control, taps it, then the screen answers. ── */
+function _orbEl(){return document.getElementById('tourOrb');}
+function _orbReduced(){try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}}
+function orbTo(target,opts){
+  return new Promise(res=>{
+    try{
+      const o=_orbEl();const el=typeof target==='string'?document.querySelector(target):target;
+      if(!o||!el||_orbReduced()){res();return;}
+      const r=el.getBoundingClientRect();
+      if(!r||(!r.width&&!r.height)){res();return;}
+      o.classList.add('show');
+      o.style.left=(r.left+r.width/2)+'px';o.style.top=(r.top+r.height/2)+'px';
+      setTimeout(()=>{
+        if(opts&&opts.tap){o.classList.remove('tap');void o.offsetWidth;o.classList.add('tap');
+          setTimeout(res,320);}
+        else res();
+      },580);
+    }catch(e){res();}
+  });
+}
+function orbHide(){try{const o=_orbEl();if(o){o.classList.remove('show','tap');}}catch(e){}}
 function endGrandTour(silent){try{tourEnd();}catch(e){}try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
 /* voice: hunt for the best local voice; pre-recorded audio drops in later via tour-audio/{i}.mp3 */
 let _tourVoice;
