@@ -2631,7 +2631,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.165.2 - Demo fixes. The tour now steps into the example site so every spotlight lands on the real thing, the homeowner and sub views own the full window during the demo, and the demo banner no longer covers the app - it also gained Builder, Homeowner and Sub buttons so you can hop between the three views anytime, with Exit demo always one tap away.';
+const PLUMB_VERSION='2.166.0 - The tour grew up. Sixteen slides now walk every area of Plumb - the at-a-glance site view, the daily log, waiting items, selections and sign-offs, stages, the trades calendar, permits and inspections, your sub roster, the private budget, homeowner billing, auto-filed photos, per-trade documents, and what homeowners and subs each see - all spotlighted and voiced.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4215,16 +4215,32 @@ const TOUR={team:[
  {sel:'#subtab-selections',tap:true,title:'Your selections',body:'The selections that fall under your trade, confirmed before you build. Tap to see them.'},
  {title:'You\u2019re set',body:'That\u2019s your whole view. When a builder invites you to a real job, this is exactly how it\u2019ll look.'}
 ],grand:[
- {sel:'.capture-card',title:'The Log',body:'The heartbeat of a build. Every day gets one line \u2014 who was on site, what got done \u2014 and Take a photo files each shot by date and area automatically.',
+ {title:'Welcome to Plumb',body:'One place where your whole build lives \u2014 the daily record, the schedule, your subs, your homeowner, and the money \u2014 each person seeing exactly what they should. Let\u2019s walk one example home together.',
+  nav:()=>{try{demoRole('hillan');}catch(e){}}},
+ {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the current stage and percent complete, what the build is waiting on, and who is next on site. The answer to how is it going, before anyone asks.',
   nav:()=>{try{demoRole('hillan');openSiteFromOverview('p2');go('log');}catch(e){}}},
- {sel:'[data-d=waiting]',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues. When this list is empty, nobody is stuck.',
-  nav:()=>{try{go('decisions');}catch(e){}}},
- {sel:'.cal-door',title:'Build',body:'Your command center: stages in construction order, permits, subs \u2014 and the trades calendar one tap away, showing who is on site and when.',
+ {sel:'.capture-card',title:'The daily log',body:'Every day gets one line \u2014 who was on site, what got done \u2014 and Take a photo files each shot by date and area automatically. Six months later, you can prove exactly what happened and when.',
+  nav:()=>{try{go('log');}catch(e){}}},
+ {sel:'[data-d=waiting]',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues \u2014 in one list. When this screen is empty, nobody is stuck.',
+  nav:()=>{try{go('decisions');decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}},
+ {sel:'[data-d=selections]',title:'Selections & sign-offs',body:'Finishes and fixtures live here \u2014 priced, specced, and signed by the homeowner before anyone builds them. No more he-said-she-said about the countertop.',
+  nav:()=>{try{decSeg('selections',document.querySelector('[data-d=selections]'));}catch(e){}}},
+ {sel:'#buildSchedule .overall',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
   nav:()=>{try{go('build');buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}}},
+ {sel:'.cal-door',title:'The trades calendar',body:'Every crew booking across every job \u2014 who is on site and when, with double-bookings flagged before they burn a day. Subs confirm with one tap.',
+  nav:()=>{try{go('build');}catch(e){}}},
+ {sel:'#buildPermits',title:'Permits & inspections',body:'Every permit and inspection for the jurisdiction, tracked from Not started to Passed \u2014 so the rough-in inspection never sneaks up on you.',
+  nav:()=>{try{buildSeg('permits',document.querySelector('[data-b=permits]'));}catch(e){}}},
+ {sel:'#buildSubs',title:'Your subs',body:'The roster for this site \u2014 who is cleared, who is booked, who owes you paperwork. Invite a new sub by text and they land in their own view.',
+  nav:()=>{try{buildSeg('subs',document.querySelector('[data-b=subs]'));}catch(e){}}},
  {sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build is 800 dollars from its budget, one line is over \u2014 and every cost can flow straight into QuickBooks.',
-  nav:()=>{try{go('build');openBudget();}catch(e){}}},
+  nav:()=>{try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));openBudget();}catch(e){}}},
  {sel:'#billingCard',title:'Homeowner billing',body:'The other side of money \u2014 upgrades, credits, invoices the homeowner approves with one tap. What they owe and what they have paid, always current.',
   nav:()=>{try{closeBudget();go('build');}catch(e){}}},
+ {sel:'#filesPhotos',title:'Photos, filed for you',body:'Every capture lands here by date and area \u2014 no folders, no renaming. Search by trade or stage when the drywaller asks what was behind that wall.',
+  nav:()=>{try{go('files');filesSeg('photos',document.querySelector('[data-fl=photos]'));}catch(e){}}},
+ {sel:'#filesDocs',title:'Documents',body:'Contracts, plans, and the packet each sub needs \u2014 shared deliberately, per trade. What you hand the plumber is not what you hand the painter.',
+  nav:()=>{try{filesSeg('docs',document.querySelector('[data-fl=docs]'));}catch(e){}}},
  {sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',
   nav:()=>{try{demoRole('client');}catch(e){}}},
  {sel:'#svPacket',title:'What subs see',body:'Each sub gets only their piece \u2014 their schedule, their install packet, a button to post updates from the field. No noise from other trades.',
@@ -4268,7 +4284,7 @@ function tourPlace(rect){
   }else{top=(vh-bh)/2;left=(vw-bw)/2;}
   bub.style.top=top+'px';bub.style.left=left+'px';}
 function tourStep(){
-  try{const _s=_tourSteps[_tourIdx];if(_s&&_s.body)tourSpeak(_s.body);}catch(e){}
+  try{const _s=_tourSteps[_tourIdx];if(_s&&_s.body)tourSpeak((_s.title?_s.title+'. ':'')+_s.body);}catch(e){}
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
   const bub0=document.getElementById('tourBubble');if(bub0)bub0.style.opacity='0';   // fade current bubble out
   const spot0=document.getElementById('tourSpot');if(step.nav&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
@@ -6223,7 +6239,7 @@ function tourPickVoice(){
 }
 function tourMuted(){try{return localStorage.getItem('plumbTourMute')==='1';}catch(e){return false;}}
 function tourToggleMute(){try{localStorage.setItem('plumbTourMute',tourMuted()?'0':'1');}catch(e){}
-  if(tourMuted()){try{speechSynthesis.cancel();}catch(e){}}else{try{const s=_tourSteps&&_tourSteps[_tourIdx];if(s&&s.body)tourSpeak(s.body);}catch(e){}}
+  if(tourMuted()){try{speechSynthesis.cancel();}catch(e){}}else{try{const s=_tourSteps&&_tourSteps[_tourIdx];if(s&&s.body)tourSpeak((s.title?s.title+'. ':'')+s.body);}catch(e){}}
   tourMuteRender();}
 function tourMuteRender(){const b=document.getElementById('tourMute');if(b)b.textContent=tourMuted()?'\uD83D\uDD07':'\uD83D\uDD0A';}
 function tourSpeak(text){

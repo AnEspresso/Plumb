@@ -57,7 +57,7 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.165.x',String($('PLUMB_VERSION')).startsWith('2.165'));
+t('version 2.166.x',String($('PLUMB_VERSION')).startsWith('2.166'));
 // error buffer hygiene: age-out + cap
 $("localStorage.setItem('plumb.errors',JSON.stringify([{t:Date.now()-20*86400000,k:'rules',m:'ancient',v:'2.152.0',mode:'real'}].concat(Array.from({length:30},(_,i)=>({t:Date.now()-i*1000,k:'x',m:'fresh'+i,v:'t',mode:'demo'})))))");
 t('devErrors ages out 14d+ and caps at 20', (function(){const a=JSON.parse($("JSON.stringify(devErrors())"));return a.length===20&&a.every(x=>x.m!=='ancient');})());
@@ -674,7 +674,7 @@ $('closeBudget()');
 S('onboarding');
 // splash is one door: choosers exist in DOM but the era CSS hides them; explore link present
 t('splash keeps live controls + explore link', $("!!document.querySelector('.login-explore')")===true&&$("!!document.getElementById('realControls')")===true);
-t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='function'&&$("Array.isArray(TOUR.grand)")===true&&$("TOUR.grand.length")===8&&$("TOUR.grand.every(s=>s.sel&&s.title&&s.body)")===true);
+t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='function'&&$("Array.isArray(TOUR.grand)")===true&&$("TOUR.grand.length")===16&&$("TOUR.grand.every(s=>s.title&&s.body)")===true&&$("TOUR.grand.slice(1).every(s=>s.sel)")===true);
 // excursion from a live session: flip out, come home with session + activeId intact
 asBuilder();
 $("localStorage.setItem('plumb.mode','real')");
@@ -693,26 +693,38 @@ t('welcome respects the once flag', $("document.getElementById('welcomeScrim').c
 // grand tour: every step navigates, spotlights a real element, and narrates
 $('enterDemo()');$("startTour('grand')");
 await new Promise(r=>setTimeout(r,900));
+const L_OV=()=>$("document.getElementById('overview').classList.contains('show')");
+const L_ACT=v=>$("document.getElementById('view-"+v+"').classList.contains('active')");
+const L_PANE=id=>$("document.getElementById('"+id+"').style.display")!=='none';
 const landmarks=[
-  ()=>$("document.getElementById('view-log').classList.contains('active')")===true&&$("document.getElementById('overview').classList.contains('show')")===false,
-  ()=>$("document.getElementById('view-decisions').classList.contains('active')")===true,
-  ()=>$("document.getElementById('view-build').classList.contains('active')")===true,
+  ()=>L_OV()===true&&$("appMode()")==='demo',
+  ()=>L_ACT('log')&&L_OV()===false,
+  ()=>L_ACT('log'),
+  ()=>L_ACT('decisions'),
+  ()=>L_ACT('decisions'),
+  ()=>L_ACT('build')&&L_PANE('buildSchedule'),
+  ()=>L_ACT('build'),
+  ()=>L_PANE('buildPermits'),
+  ()=>L_PANE('buildSubs'),
   ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===true,
-  ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===false,
-  ()=>$("state.session.role")==='client'&&$("document.getElementById('clientview').classList.contains('show')")===true&&$("document.getElementById('overview').classList.contains('show')")===false,
-  ()=>$("state.session.role")==='subs'&&$("document.getElementById('subview').classList.contains('show')")===true&&$("document.getElementById('clientview').classList.contains('show')")===false,
-  ()=>$("state.session.role")==='hillan'&&$("document.getElementById('overview').classList.contains('show')")===true&&$("document.getElementById('subview').classList.contains('show')")===false,
+  ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===false&&L_ACT('build'),
+  ()=>L_ACT('files')&&L_PANE('filesPhotos'),
+  ()=>L_PANE('filesDocs'),
+  ()=>$("state.session.role")==='client'&&$("document.getElementById('clientview').classList.contains('show')")===true&&L_OV()===false,
+  ()=>$("state.session.role")==='subs'&&$("document.getElementById('subview').classList.contains('show')")===true,
+  ()=>$("state.session.role")==='hillan'&&L_OV()===true,
 ];
+
 let tourOK=true, tourDetail='';
-for(let i2=0;i2<8;i2++){
+for(let i2=0;i2<16;i2++){
   if(i2>0){$('tourNext()');await new Promise(r=>setTimeout(r,700));}
   if(!landmarks[i2]()){tourOK=false;tourDetail='landmark '+i2;break;}
   const lifted=$("_tourLift?1:0");
   const bub=$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML");
-  if(!bub.includes(String(i2+1)+' / 8')){tourOK=false;tourDetail='counter '+i2;break;}
-  if(i2!==3&&i2!==4&&!lifted){tourOK=false;tourDetail='no spotlight at '+i2;break;}
+  if(!bub.includes(String(i2+1)+' / 16')){tourOK=false;tourDetail='counter '+i2;break;}
+  if(i2!==0&&i2!==10&&!lifted){tourOK=false;tourDetail='no spotlight at '+i2;break;}
 }
-t('all 8 steps navigate, spotlight and count correctly', tourOK, tourDetail);
+t('all 16 steps navigate, spotlight and count correctly', tourOK, tourDetail);
 t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my first site'));
 $('tourEnd()');$('exitDemo()');
 t('post-tour exit is clean', $("appMode()")==='real'&&$("_tourLift?1:0")===0);
