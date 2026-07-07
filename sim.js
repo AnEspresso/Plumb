@@ -694,14 +694,14 @@ t('welcome respects the once flag', $("document.getElementById('welcomeScrim').c
 $('enterDemo()');$("startTour('grand')");
 await new Promise(r=>setTimeout(r,900));
 const landmarks=[
-  ()=>$("document.getElementById('view-log').classList.contains('active')")===true,
+  ()=>$("document.getElementById('view-log').classList.contains('active')")===true&&$("document.getElementById('overview').classList.contains('show')")===false,
   ()=>$("document.getElementById('view-decisions').classList.contains('active')")===true,
   ()=>$("document.getElementById('view-build').classList.contains('active')")===true,
   ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===true,
   ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===false,
-  ()=>$("state.session.role")==='client',
-  ()=>$("state.session.role")==='subs',
-  ()=>$("state.session.role")==='hillan',
+  ()=>$("state.session.role")==='client'&&$("document.getElementById('clientview').classList.contains('show')")===true&&$("document.getElementById('overview').classList.contains('show')")===false,
+  ()=>$("state.session.role")==='subs'&&$("document.getElementById('subview').classList.contains('show')")===true&&$("document.getElementById('clientview').classList.contains('show')")===false,
+  ()=>$("state.session.role")==='hillan'&&$("document.getElementById('overview').classList.contains('show')")===true&&$("document.getElementById('subview').classList.contains('show')")===false,
 ];
 let tourOK=true, tourDetail='';
 for(let i2=0;i2<8;i2++){
@@ -716,6 +716,16 @@ t('all 8 steps navigate, spotlight and count correctly', tourOK, tourDetail);
 t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my first site'));
 $('tourEnd()');$('exitDemo()');
 t('post-tour exit is clean', $("appMode()")==='real'&&$("_tourLift?1:0")===0);
+// banner role buttons: three chips, hop to each hat cleanly, active mark follows
+$('enterDemo()');
+t('banner offers Builder/Homeowner/Sub + exit', $("document.querySelectorAll('.exc-roles button').length")===3&&$("!!document.querySelector('.exc-exit')")===true);
+$("demoRole('client')");
+t('Homeowner chip: client view full, overview hidden, chip lit', $("state.session.role")==='client'&&$("document.getElementById('clientview').classList.contains('show')")===true&&$("document.getElementById('overview').classList.contains('show')")===false&&$("document.querySelector('.exc-roles button[data-r=client]').classList.contains('on')")===true);
+$("demoRole('subs')");
+t('Sub chip swaps cleanly', $("state.session.role")==='subs'&&$("document.getElementById('subview').classList.contains('show')")===true&&$("document.getElementById('clientview').classList.contains('show')")===false);
+$("demoRole('hillan')");
+t('Builder chip returns home', $("state.session.role")==='hillan'&&$("document.getElementById('overview').classList.contains('show')")===true);
+$('exitDemo()');
 // voice layer: guarded everywhere, mute round-trips
 t('speech guarded in jsdom (no speechSynthesis)', await $("Promise.resolve().then(()=>{tourSpeak('hello');return true;})")===true);
 $('tourToggleMute()');
