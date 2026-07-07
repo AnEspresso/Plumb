@@ -57,7 +57,7 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.164.x',String($('PLUMB_VERSION')).startsWith('2.164'));
+t('version 2.165.x',String($('PLUMB_VERSION')).startsWith('2.165'));
 // error buffer hygiene: age-out + cap
 $("localStorage.setItem('plumb.errors',JSON.stringify([{t:Date.now()-20*86400000,k:'rules',m:'ancient',v:'2.152.0',mode:'real'}].concat(Array.from({length:30},(_,i)=>({t:Date.now()-i*1000,k:'x',m:'fresh'+i,v:'t',mode:'demo'})))))");
 t('devErrors ages out 14d+ and caps at 20', (function(){const a=JSON.parse($("JSON.stringify(devErrors())"));return a.length===20&&a.every(x=>x.m!=='ancient');})());
@@ -669,6 +669,63 @@ $('qbRenderLine()');
 t('qb line explains the gate in demo', el('qbLine').innerHTML.includes('Sign in live'));
 t('telemetry beat/event are no-throw when sync is off', await $("Promise.all([Sync.beat(),Sync.event('x','y')]).then(()=>true,()=>false)")===true);
 $('closeBudget()');
+
+/* ════ 14k · ONBOARDING: splash, welcome fork, grand tour, excursions ════ */
+S('onboarding');
+// splash is one door: choosers exist in DOM but the era CSS hides them; explore link present
+t('splash keeps live controls + explore link', $("!!document.querySelector('.login-explore')")===true&&$("!!document.getElementById('realControls')")===true);
+t('grand tour + legacy role tours coexist', $("typeof startGrandTour")==='function'&&$("typeof startTour")==='function'&&$("GRAND_TOUR.length")===8&&$("Object.keys(TOUR).sort().join()")==='client,sub,team');
+// excursion from a live session: flip out, come home with session + activeId intact
+asBuilder();
+$("localStorage.setItem('plumb.mode','real')");
+$("state.session={role:'hillan',name:'Real Me',auth:{uid:'uTest'}};state.activeId=null;persist&&persist()");
+$('enterDemo()');
+t('excursion runs in demo with banner + builder session', $("appMode()")==='demo'&&$("document.body.classList.contains('on-excursion')")===true&&$("state.session.role")==='hillan'&&$("(state.projects||[]).length")>0);
+$('exitDemo()');
+t('exit lands home: real mode, banner gone, suspend cleared', $("appMode()")==='real'&&$("document.body.classList.contains('on-excursion')")===false&&$("localStorage.getItem('plumbSuspend')")===null);
+// welcome fork fires only for empty live builder accounts, once
+$("localStorage.removeItem('plumbWelcomed')");
+$("state.session={role:'hillan',name:'Real Me'};state.projects=[];");
+$('maybeWelcome()');
+t('welcome fork shows for a fresh live builder', $("document.getElementById('welcomeScrim').classList.contains('show')")===true);
+$('welcomeDone()');$('maybeWelcome()');
+t('welcome respects the once flag', $("document.getElementById('welcomeScrim').classList.contains('show')")===false);
+// the grand tour: every step executes and lands where it claims
+$('startGrandTour()');
+t('tour engaged on the example build', $("document.body.classList.contains('on-tour')")===true&&$("appMode()")==='demo');
+const landmarks=[
+  ()=>$("document.getElementById('view-log').classList.contains('active')")===true,
+  ()=>$("document.getElementById('view-decisions').classList.contains('active')")===true,
+  ()=>$("document.getElementById('view-build').classList.contains('active')")===true,
+  ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===true,
+  ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===false,
+  ()=>$("state.session.role")==='client',
+  ()=>$("state.session.role")==='subs',
+  ()=>$("state.session.role")==='hillan',
+];
+let tourOK=true, tourDetail='';
+for(let i=0;i<8;i++){
+  if(i>0)$('gtStep(1)');
+  const txt=$("document.getElementById('tourText').textContent");
+  if(!txt||txt.length<40){tourOK=false;tourDetail='step '+i+' text';break;}
+  if(!landmarks[i]()){tourOK=false;tourDetail='step '+i+' landmark';break;}
+}
+t('all 8 tour steps narrate and navigate correctly', tourOK, tourDetail);
+t('final step invites first-site setup', $("document.getElementById('tourNext').textContent")==='Set up my first site');
+$('endGrandTour()');$('exitDemo()');
+t('post-tour exit is clean', $("appMode()")==='real'&&$("document.body.classList.contains('on-tour')")===false);
+// voice layer: guarded everywhere, mute round-trips
+t('speech guarded in jsdom (no speechSynthesis)', await $("Promise.resolve().then(()=>{tourSpeak('hello');return true;})")===true);
+$('tourToggleMute()');
+t('mute persists', $("localStorage.getItem('plumbTourMute')")==='1');
+$('tourToggleMute()');
+// crash recovery: suspend flag at boot forces the trip home (unit-level)
+$("localStorage.setItem('plumbSuspend','1');localStorage.setItem('plumb.mode','demo')");
+t('crash marker + demo mode is the recovery precondition', $("!!localStorage.getItem('plumbSuspend')&&appMode()==='demo'")===true);
+$("localStorage.removeItem('plumbSuspend');localStorage.setItem('plumb.mode','demo')");
+// settings + devpanel doors exist
+t('gear rows offer tour + example build', $("!!document.getElementById('welcomeScrim')")===true&&el('devpanel').innerHTML.includes('Replay the tour'));
+asBuilder();$("state.activeId='p2'");$("localStorage.removeItem('plumbWelcomed')");
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');

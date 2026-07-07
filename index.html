@@ -586,7 +586,12 @@
   @keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
   .login .hairline{width:46px;height:1px;background:rgba(231,220,198,.25);margin:26px 0 22px;opacity:0;animation:fadeUp .5s ease 2.9s forwards;}
   .login-controls{width:100%;opacity:0;animation:fadeUp .6s ease 3s forwards;}
-  .login-copy{position:static;width:100%;margin-top:30px;padding:14px 0 calc(env(safe-area-inset-bottom,0px) + 6px);text-align:center;font-size:10.5px;letter-spacing:.05em;color:rgba(231,220,198,.34);opacity:0;animation:fadeUp .6s ease 3.1s forwards;}
+  /* Onboarding-era splash: one door (sign in). Demo machinery survives underneath
+   for excursions + the tour, but the mode/role choosers never render. */
+.mode-seg,#demoControls{display:none !important;}
+.login-explore{display:block;margin:18px auto 0;background:none;border:none;font-family:inherit;
+  font-size:13.5px;color:rgba(231,220,198,.55);text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.login-copy{position:static;width:100%;margin-top:30px;padding:14px 0 calc(env(safe-area-inset-bottom,0px) + 6px);text-align:center;font-size:10.5px;letter-spacing:.05em;color:rgba(231,220,198,.34);opacity:0;animation:fadeUp .6s ease 3.1s forwards;}
   .login-install{display:flex;align-items:center;justify-content:center;gap:7px;width:fit-content;margin:13px auto 0;background:rgba(231,220,198,.1);border:1px solid rgba(231,220,198,.24);color:#E7DCC6;font-family:inherit;font-size:13px;font-weight:600;padding:12px 18px;border-radius:14px;cursor:pointer;}
   .login-install svg{width:16px;height:16px;}
   .inst-steps{list-style:none;margin:0;padding:0;counter-reset:s;}
@@ -1371,6 +1376,25 @@
   font-family:inherit;font-size:13.5px;font-weight:600;color:var(--ink-2);text-align:left}
 .cal-door svg{width:16px;height:16px;flex:none;color:var(--oak)}
 .cal-door .bgt-chev{margin-left:auto}
+.exc-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:210;background:#3E3427;color:#E7DCC6;
+  font-size:13px;font-weight:600;padding:9px 14px calc(env(safe-area-inset-top,0px)*0 + 9px);text-align:center;}
+.exc-banner button{margin-left:12px;background:rgba(231,220,198,.14);border:1px solid rgba(231,220,198,.3);color:#E7DCC6;
+  border-radius:999px;padding:3px 12px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+body.on-excursion .exc-banner{display:block;}
+body.on-excursion .device{padding-top:38px;}
+.tour-card{display:none;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom,0px));z-index:215;
+  background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px 16px 10px;
+  box-shadow:0 18px 50px rgba(27,25,22,.35);max-width:520px;margin:0 auto;}
+body.on-tour .tour-card{display:block;}
+.tour-dots{display:flex;gap:6px;justify-content:center;margin-bottom:8px;}
+.tour-dots i{width:6px;height:6px;border-radius:50%;background:var(--line);}
+.tour-dots i.on{background:var(--oak);}
+.tour-text{font-size:14.5px;line-height:1.55;color:var(--ink);min-height:44px;}
+.tour-row{display:flex;gap:8px;align-items:center;margin-top:12px;}
+.tour-row .b1{padding:10px 16px;}
+.tour-mute{width:38px;height:38px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:12px;
+  cursor:pointer;font-size:15px;}
+.tour-exit{display:block;margin:8px auto 0;font-size:12px;}
 .install-gate{position:fixed;inset:0;z-index:220;display:none;flex-direction:column;align-items:center;justify-content:center;
   background:#15130F;color:#E7DCC6;text-align:center;padding:32px 28px calc(env(safe-area-inset-bottom,0px) + 28px);}
 .install-gate.show{display:flex;}
@@ -1582,6 +1606,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><rect x="4" y="17" width="16" height="4" rx="1.5"/></svg>
           Add App to Home Screen
         </button>
+        <button class="login-explore" onclick="enterDemoGuided(true)">Just looking? Explore the example build</button>
       </div>
       <div class="login-copy">© 2026 Plumb · All rights reserved</div>
     </div>
@@ -1989,6 +2014,30 @@
       <div class="info-body" id="bcBody"></div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-cancel" style="flex:1" onclick="closeBudgetCopy()">Cancel</button></div>
     </div>
+  </div>
+
+  <!-- ───── WELCOME FORK (first live sign-in, no sites) ───── -->
+  <div class="pmodal-scrim" id="welcomeScrim">
+    <div class="pmodal" style="text-align:center">
+      <h4>Welcome to Plumb</h4>
+      <div class="ls" style="margin:-4px 0 18px">Your workspace is ready. Want the two-minute walkthrough first?</div>
+      <button class="b1 b-go" style="width:100%;margin-bottom:10px" onclick="startGrandTour()">Show me around</button>
+      <button class="b1 b-cancel" style="width:100%" onclick="welcomeDone();openNewSite()">Set up my first site</button>
+      <button class="la-link" style="display:block;margin:14px auto 0" onclick="welcomeDone()">I’ll explore on my own</button>
+    </div>
+  </div>
+
+  <!-- ───── EXCURSION BANNER + TOUR CARD ───── -->
+  <div class="exc-banner" id="excBanner">Example build — your account is untouched<button onclick="exitDemo()">Exit demo</button></div>
+  <div class="tour-card" id="tourCard">
+    <div class="tour-dots" id="tourDots"></div>
+    <div class="tour-text" id="tourText"></div>
+    <div class="tour-row">
+      <button class="tour-mute" id="tourMute" onclick="tourToggleMute()" aria-label="Voice on or off"></button>
+      <button class="b1 b-cancel" id="tourBack" onclick="gtStep(-1)">Back</button>
+      <button class="b1 b-go" id="tourNext" style="flex:1" onclick="gtStep(1)">Next</button>
+    </div>
+    <button class="la-link tour-exit" onclick="endGrandTour()">Exit tour</button>
   </div>
 
   <!-- ───── INSTALL GATE (phones in a browser tab) ───── -->
@@ -2468,6 +2517,11 @@
       <button class="dev-btn" onclick="devConnectSync()"><span><span>Connect / reconnect sync</span><span class="d">Saves config on this device &amp; starts live cross-device sync</span></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2"/><path d="M18 4v5h-5M6 20v-5h5"/></svg></span></button>
       <div class="eyebrow" style="margin-top:16px">QuickBooks</div>
       <div id="qbLine" style="font-size:13.5px;margin:6px 0 12px"></div>
+      <div class="eyebrow" style="margin-top:16px">Demo &amp; tour</div>
+      <div style="display:flex;gap:8px;margin:6px 0 12px">
+        <button class="b1 b-cancel" style="flex:1" onclick="closeDev();enterDemo()">Explore the example build</button>
+        <button class="b1 b-cancel" style="flex:1" onclick="closeDev();startGrandTour()">Replay the tour</button>
+      </div>
       <input id="appCheckInput" class="dev-ta" style="min-height:0;height:auto" placeholder="App Check reCAPTCHA v3 site key (optional)" />
       <input id="vapidInput" class="dev-ta" style="min-height:0;height:auto" placeholder="FCM Web Push VAPID public key (for lock-screen push)" />
       <div id="grantCard" style="display:none">
@@ -2568,7 +2622,7 @@
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.164.0 - The server phase begins. Plumb now has its own Cloud Functions backend: connect your QuickBooks company from the Dev panel and send logged costs straight into QuickBooks as expenses - payees become Vendors, each site becomes a Customer, exports never duplicate, and telemetry now flows through the server with direct database access closed off.';
+const PLUMB_VERSION='2.165.0 - New: onboarding. The splash is one simple sign-in with a quiet explore-the-example link, first sign-in offers a welcome fork, and Show me around runs a voiced eight-step tour where Plumb drives the example build itself - including what your homeowner and subs each see. The demo is now a safe excursion with a banner and an exit that lands you right back home, replayable anytime from the gear.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4063,7 +4117,8 @@ function renderSettings(){
     }else{
       rows+='<div class="empty" style="padding:8px 0 12px">Homeowner portals and templates manage your real company — switch to <b>Live</b> to use them.</div>';
     }
-    rows+=SET_GEAR_ROW('How Plumb works','Take the guided tour','closeSettings();startTour(\'team\')',I.how);
+    rows+=SET_GEAR_ROW('How Plumb works','Take the guided tour','closeSettings();startGrandTour()',I.how);
+    rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
     if(devAllowed())rows+=SET_GEAR_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()',I.dev);
   }else{
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
@@ -4187,6 +4242,7 @@ function tourPlace(rect){
   }else{top=(vh-bh)/2;left=(vw-bw)/2;}
   bub.style.top=top+'px';bub.style.left=left+'px';}
 function tourStep(){
+  try{const _s=_tourSteps[_tourIdx];if(_s&&_s.body)tourSpeak(_s.body);}catch(e){}
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
   const bub0=document.getElementById('tourBubble');if(bub0)bub0.style.opacity='0';   // fade current bubble out
   const spot0=document.getElementById('tourSpot');if(step.nav&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
@@ -4555,6 +4611,7 @@ function doLogin(){
 }
 function setChrome(dark){const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',dark?'#15130F':'#F2EEE6');document.body.classList.toggle('chrome-dark',dark);}
 function routeAfterLogin(){document.getElementById('login').classList.add('hide');setChrome(false);
+  try{setTimeout(maybeWelcome,400);}catch(e){}
   const role=state.session&&state.session.role;
   if(role==='subs')showSubView();else if(role==='client')showClientView();else showOverview();}
 function logout(){Data.setSession(null);logEvent('logout','');setChrome(true);
@@ -6066,6 +6123,118 @@ async function qbExportNow(){
   }catch(e){toast('Export failed: '+e.message);}finally{_qbBusy=false;}
 }
 try{window.addEventListener('message',ev=>{if(ev&&ev.data==='qb-connected'){toast('QuickBooks connected ✓');qbRefreshStatus();}});}catch(e){}
+
+/* ── Demo excursions: visit the example build, come home untouched. Demo and
+   live state live under SEPARATE storage keys, so entering is a mode flip; the
+   suspend flag only drives the banner and crash recovery. ── */
+function onExcursion(){try{return !!localStorage.getItem('plumbSuspend');}catch(e){return false;}}
+function enterDemo(){
+  try{localStorage.setItem('plumbSuspend', state.session?'1':'splash');}catch(e){}
+  setMode('demo');load();
+  Data.setSession({role:'hillan',name:'Demo Builder'});
+  state.activeId=state.activeId||((state.projects[0]||{}).id)||null;
+  document.body.classList.add('on-excursion');
+  document.getElementById('login').classList.add('hide');setChrome(false);
+  renderAll();showOverview();
+}
+function exitDemo(){
+  endGrandTour(true);
+  const cameFrom=(function(){try{return localStorage.getItem('plumbSuspend');}catch(e){return '1';}})();
+  try{localStorage.removeItem('plumbSuspend');}catch(e){}
+  document.body.classList.remove('on-excursion');
+  setMode('real');load();
+  if(cameFrom==='splash'||!state.session){
+    Data.setSession(null);
+    document.getElementById('login').classList.remove('hide');setChrome(true);updateHeader();
+  } else {
+    renderAll();routeAfterLogin();
+    maybeWelcome();  /* fresh accounts return to the fork to set up site #1 */
+  }
+}
+function enterDemoGuided(fromSplash){enterDemo();startGrandTour();}
+
+/* ── Welcome fork: first live sign-in with an empty workspace ── */
+function maybeWelcome(){
+  try{
+    if(appMode()!=='real'||!state.session)return;
+    if((state.session.role||'hillan')!=='hillan')return;
+    if((state.projects||[]).length)return;
+    if(localStorage.getItem('plumbWelcomed'))return;
+    document.getElementById('welcomeScrim').classList.add('show');
+  }catch(e){}
+}
+function welcomeDone(){try{localStorage.setItem('plumbWelcomed','1');}catch(e){}
+  document.getElementById('welcomeScrim').classList.remove('show');}
+
+/* ── The tour: Plumb drives the example build and narrates. ── */
+const GRAND_TOUR=[
+ {t:'This is the Log — the heartbeat of a build. Every day gets one line: who was on site, what got done. Tap Take a photo and it files itself by date and area, no folders to manage.',
+  go:function(){go('log');}},
+ {t:'To-Do gathers everything waiting on a person — questions from your subs, homeowner sign-offs, open site issues. When this screen is empty, nobody is stuck.',
+  go:function(){go('decisions');}},
+ {t:'Build is your command center. Stages track progress in construction order, and every crew booking lives on the trades calendar one tap away.',
+  go:function(){go('build');try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}}},
+ {t:'Money, private to your team. This build is 800 dollars from its budget — and one line is over. Signed-for and paid are tracked separately, and every cost can flow straight into QuickBooks.',
+  go:function(){go('build');openBudget();}},
+ {t:'Billing is the homeowner side of money — upgrades, credits, invoices with one-tap approval. What they owe and what they have paid, always current.',
+  go:function(){closeBudget();go('build');}},
+ {t:'Now the part homeowners love. This is THEIR view of the same build — progress, decisions waiting on them, what to pay. No logins to explain; you send one link.',
+  go:function(){Data.setSession({role:'client',site:'p2'});try{clientTab='home';}catch(e){}renderClient();showClientView();}},
+ {t:'And your subs? Each one sees only their piece — their schedule, their install packet, a button to post an update. No noise from other trades.',
+  go:function(){Data.setSession({role:'subs',name:'Clearwater Plumbing'});renderSubView();try{openSubSite('p2');}catch(e){}}},
+ {t:'That is Plumb — one honest record of the build, shaped differently for every hand that touches it. Ready to set up your first site?',
+  go:function(){Data.setSession({role:'hillan',name:'Demo Builder'});try{document.querySelector('.subview.show')&&document.querySelector('.subview.show').classList.remove('show');}catch(e){}renderAll();showOverview();}}
+];
+let _gtI=-1;
+function startGrandTour(){
+  welcomeDone();
+  if(appMode()!=='demo')enterDemo();
+  document.body.classList.add('on-tour');
+  _gtI=-1;gtStep(1);
+}
+function gtStep(d){
+  _gtI=Math.max(0,Math.min(GRAND_TOUR.length-1,_gtI+d));
+  const s=GRAND_TOUR[_gtI];
+  try{s.go();}catch(e){}
+  document.getElementById('tourText').textContent=s.t;
+  document.getElementById('tourDots').innerHTML=GRAND_TOUR.map((_,i)=>'<i class="'+(i===_gtI?'on':'')+'"></i>').join('');
+  document.getElementById('tourBack').style.display=_gtI===0?'none':'';
+  document.getElementById('tourNext').textContent=_gtI===GRAND_TOUR.length-1?'Set up my first site':'Next';
+  if(_gtI===GRAND_TOUR.length-1)document.getElementById('tourNext').onclick=function(){endGrandTour();exitDemo();try{openNewSite();}catch(e){}};
+  else document.getElementById('tourNext').onclick=function(){gtStep(1);};
+  tourSpeak(s.t);
+  tourMuteRender();
+}
+function endGrandTour(silent){
+  document.body.classList.remove('on-tour');_gtI=-1;
+  try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
+}
+/* voice: hunt for the best local voice; pre-recorded audio drops in later via tour-audio/{i}.mp3 */
+let _tourVoice;
+function tourPickVoice(){
+  try{
+    const vs=speechSynthesis.getVoices()||[];
+    const score=v=>(/premium|enhanced|natural|neural/i.test(v.name)?4:0)+(/samantha|ava|allison|daniel|karen/i.test(v.name)?2:0)+(v.lang==='en-US'?1:0)+(v.localService?1:0);
+    _tourVoice=vs.filter(v=>/^en/.test(v.lang)).sort((a,b)=>score(b)-score(a))[0]||null;
+  }catch(e){_tourVoice=null;}
+}
+function tourMuted(){try{return localStorage.getItem('plumbTourMute')==='1';}catch(e){return false;}}
+function tourToggleMute(){try{localStorage.setItem('plumbTourMute',tourMuted()?'0':'1');}catch(e){}
+  if(tourMuted()){try{speechSynthesis.cancel();}catch(e){}}else if(_gtI>=0)tourSpeak(GRAND_TOUR[_gtI].t);
+  tourMuteRender();}
+function tourMuteRender(){const b=document.getElementById('tourMute');if(b)b.textContent=tourMuted()?'\uD83D\uDD07':'\uD83D\uDD0A';}
+function tourSpeak(text){
+  try{
+    if(tourMuted()||typeof speechSynthesis==='undefined')return;
+    speechSynthesis.cancel();
+    if(!_tourVoice)tourPickVoice();
+    const u=new SpeechSynthesisUtterance(text);
+    if(_tourVoice)u.voice=_tourVoice;
+    u.rate=1.0;u.pitch=1.0;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+try{if(typeof speechSynthesis!=='undefined')speechSynthesis.onvoiceschanged=tourPickVoice;}catch(e){}
 function igBrowser(){
   try{sessionStorage.setItem('plumbBrowserOK','1');}catch(e){}
   try{document.getElementById('installGate').classList.remove('show');}catch(e){}
@@ -9306,6 +9475,7 @@ async function devSelfTest(){
   renderAll();
   updateFabBadge();
   setRole('hillan');
+  try{if(!state.session&&appMode()!=='real'&&!localStorage.getItem('plumbSuspend'))setMode('real');}catch(e){}
   updateLoginMode();
   setChrome(true);
   refreshInstallEntry();
@@ -9315,6 +9485,14 @@ async function devSelfTest(){
   try{if(state.session)localStorage.removeItem('plumbPendingInvite');}catch(e){}
   maybeNudgeInstall();
   try{if(!state.session)consumeInviteLink();}catch(e){}
+  try{
+    if(localStorage.getItem('plumbSuspend')){ /* killed mid-excursion: come home */
+      localStorage.removeItem('plumbSuspend');
+      if(appMode()!=='real'){setMode('real');load();updateHeader();renderAll();
+        if(state.session){document.getElementById('login').classList.add('hide');setChrome(false);routeAfterLogin();}}
+    }
+  }catch(e){}
+  try{maybeWelcome();}catch(e){}
   try{maybeInstallGate();}catch(e){}
   if(state.session){routeAfterLogin();}
   if(typeof window!=='undefined'){window.addEventListener('load',()=>{try{Sync.init();}catch(e){}});setTimeout(()=>{try{if(!Sync.on)Sync.init();}catch(e){}},1200);}
