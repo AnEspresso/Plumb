@@ -57,7 +57,7 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.166.x',String($('PLUMB_VERSION')).startsWith('2.166'));
+t('version 2.167.x',String($('PLUMB_VERSION')).startsWith('2.167'));
 // error buffer hygiene: age-out + cap
 $("localStorage.setItem('plumb.errors',JSON.stringify([{t:Date.now()-20*86400000,k:'rules',m:'ancient',v:'2.152.0',mode:'real'}].concat(Array.from({length:30},(_,i)=>({t:Date.now()-i*1000,k:'x',m:'fresh'+i,v:'t',mode:'demo'})))))");
 t('devErrors ages out 14d+ and caps at 20', (function(){const a=JSON.parse($("JSON.stringify(devErrors())"));return a.length===20&&a.every(x=>x.m!=='ancient');})());
@@ -674,7 +674,7 @@ $('closeBudget()');
 S('onboarding');
 // splash is one door: choosers exist in DOM but the era CSS hides them; explore link present
 t('splash keeps live controls + explore link', $("!!document.querySelector('.login-explore')")===true&&$("!!document.getElementById('realControls')")===true);
-t('guide orb present, guarded, choreographed', $("!!document.getElementById('tourOrb')")===true&&await $("orbTo('#nope').then(()=>true)")===true&&await $("orbTo(null,{tap:true}).then(()=>true)")===true&&$("TOUR.grand.filter(s=>s.tap).length")===15&&$("typeof orbTaps")==='function');
+t('guide orb present, guarded, choreographed', $("!!document.getElementById('tourOrb')")===true&&await $("orbTo('#nope').then(()=>true)")===true&&await $("orbTo(null,{tap:true}).then(()=>true)")===true&&$("TOUR.grand.every(s=>Array.isArray(s.acts)&&s.acts.length)")===true&&$("TOUR.grand.filter(s=>s.acts.some(a=>a.tap)).length")===15&&$("typeof orbTaps")==='function'&&$("typeof tourPing")==='function'&&$("TOUR.grand.filter(s=>s.after).length")===6);
 t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='function'&&$("Array.isArray(TOUR.grand)")===true&&$("TOUR.grand.length")===16&&$("TOUR.grand.every(s=>s.title&&s.body)")===true&&$("TOUR.grand.slice(1).every(s=>s.sel)")===true&&$("typeof tourGoto")==='function');
 // excursion from a live session: flip out, come home with session + activeId intact
 asBuilder();
@@ -693,7 +693,7 @@ $('welcomeDone()');$('maybeWelcome()');
 t('welcome respects the once flag', $("document.getElementById('welcomeScrim').classList.contains('show')")===false);
 // grand tour: every step navigates, spotlights a real element, and narrates
 $('enterDemo()');$("startTour('grand')");
-await new Promise(r=>setTimeout(r,1150));
+await new Promise(r=>setTimeout(r,1650));
 const L_OV=()=>$("document.getElementById('overview').classList.contains('show')");
 const L_ACT=v=>$("document.getElementById('view-"+v+"').classList.contains('active')");
 const L_PANE=id=>$("document.getElementById('"+id+"').style.display")!=='none';
@@ -704,8 +704,8 @@ const landmarks=[
   ()=>L_ACT('decisions'),
   ()=>L_ACT('decisions'),
   ()=>L_ACT('build')&&L_PANE('buildSchedule'),
-  ()=>L_ACT('build'),
-  ()=>L_PANE('buildPermits'),
+  ()=>$("document.getElementById('calview').classList.contains('show')")===true,
+  ()=>L_PANE('buildPermits')&&$("document.getElementById('calview').classList.contains('show')")===false,
   ()=>L_PANE('buildSubs'),
   ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===true,
   ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===false&&L_ACT('build'),
@@ -718,7 +718,7 @@ const landmarks=[
 
 let tourOK=true, tourDetail='';
 for(let i2=0;i2<16;i2++){
-  if(i2>0){$('tourNext()');await new Promise(r=>setTimeout(r,1150));}
+  if(i2>0){$('tourNext()');await new Promise(r=>setTimeout(r,1650));}
   if(!landmarks[i2]()){tourOK=false;tourDetail='landmark '+i2;break;}
   const lifted=$("_tourLift?1:0");
   const bub=$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML");
@@ -729,7 +729,7 @@ t('all 16 steps navigate, spotlight and count correctly', tourOK, tourDetail);
 // Peter's Back bug, encoded forever: walk 16 → 1 and every landmark must still hold
 let backOK=true, backDetail='';
 for(let b=14;b>=0;b--){
-  $('tourPrev()');await new Promise(r=>setTimeout(r,1150));
+  $('tourPrev()');await new Promise(r=>setTimeout(r,1650));
   if(!landmarks[b]()){backOK=false;backDetail='back landmark '+b;break;}
 }
 t('walking BACKWARD lands every slide correctly too', backOK, backDetail);

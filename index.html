@@ -668,7 +668,10 @@
   .cl-hero .pbar i{display:block;height:100%;background:var(--oak);border-radius:4px;}
   .cl-hero .nx{font-size:12.5px;color:rgba(242,238,230,.7);margin-top:12px;line-height:1.4;}
   .cl-hero .nx b{color:var(--paper);font-weight:600;}
-  .cl-nav{flex:0 0 auto;padding:9px 16px max(12px,env(safe-area-inset-bottom));}
+  .cl-nav{flex:0 0 auto;padding:9px 16px max(12px,env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid var(--line);}
+.cl-nav .tabs{display:flex;flex-direction:row;gap:6px;max-width:640px;margin:0 auto;padding:0;}
+.cl-nav .tab{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;}
+.subview .sv-body{flex:1 1 auto;min-height:0;overflow-y:auto;}
   #clientview .sv-body{padding-bottom:14px;}
   .cl-stats{display:flex;gap:10px;margin-bottom:18px;}
   .cl-stat{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:13px 14px;}
@@ -2651,7 +2654,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.166.4 - Spotlight precision. The Stages, Permits and Subs slides now ring the exact card instead of a wrapper, the ring re-measures itself once after the page settles so it can never sit askew, the Photos and Documents slides visibly click their tab and segment before landing on each search box, and every orb press is one consistent, more pronounced push with a stronger ripple.';
+const PLUMB_VERSION='2.167.0 - The tour learned stagecraft. The screen now scrolls with the orb so every press is seen, the To-Do and Photos slides click their buttons in both directions, the Stages slide walks the stage list top to bottom, the trades calendar actually opens and closes itself, the photo and document slides tour their content, the homeowner and sub slides highlight several features while narrating, and the orb is followed on every move. Also: the waiting counter now says waiting on you, permits mention automatic city updates, and the homeowner and sub bottom bars are properly sized on large screens.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3425,7 +3428,7 @@ function renderSiteSummary(){
       <div class="ss-bar"><span style="width:${pct}%"></span></div></div>
     <div class="ss-cards">
       <button class="ss-card${waiting?' hot':''}" onclick="go('decisions')">
-        <div class="ss-num">${waiting}</div><div class="ss-lbl">${waiting?'waiting':'all clear'}</div></button>
+        <div class="ss-num">${waiting}</div><div class="ss-lbl">${waiting?'waiting on you':'all clear'}</div></button>
       <button class="ss-card" onclick="openNextSite()">
         <div class="ss-next">${nextLine}</div><div class="ss-lbl">next on site</div></button>
     </div>`;}
@@ -4236,37 +4239,46 @@ const TOUR={team:[
  {title:'You\u2019re set',body:'That\u2019s your whole view. When a builder invites you to a real job, this is exactly how it\u2019ll look.'}
 ],grand:[
  {title:'Welcome to Plumb',body:'One place where your whole build lives \u2014 the daily record, the schedule, your subs, your homeowner, and the money \u2014 each person seeing exactly what they should. Let\u2019s walk one example home together.',
-  nav:()=>{try{demoRole('hillan');}catch(e){}}},
- {tap:'#ovCards .ov-card',sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the current stage and percent complete, what the build is waiting on, and who is next on site. The answer to how is it going, before anyone asks.',
-  nav:()=>{tourGoto('log');}},
- {tap:'.capture-card',sel:'.capture-card',title:'The daily log',body:'Every day gets one line \u2014 who was on site, what got done \u2014 and Take a photo files each shot by date and area automatically. Six months later, you can prove exactly what happened and when.',
-  nav:()=>{tourGoto('log');}},
- {tap:'nav .tab[data-v=decisions]',sel:'[data-d=waiting]',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues \u2014 in one list. When this screen is empty, nobody is stuck.',
-  nav:()=>{tourGoto('decisions','waiting');}},
- {tap:'[data-d=selections]',sel:'[data-d=selections]',title:'Selections & sign-offs',body:'Finishes and fixtures live here \u2014 priced, specced, and signed by the homeowner before anyone builds them. No more he-said-she-said about the countertop.',
-  nav:()=>{tourGoto('decisions','selections');}},
- {tap:'nav .tab[data-v=build]',sel:'#buildSchedule .overall .top',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
-  nav:()=>{tourGoto('build','schedule');}},
- {tap:'.cal-door',sel:'.cal-door',title:'The trades calendar',body:'Every crew booking across every job \u2014 who is on site and when, with double-bookings flagged before they burn a day. Subs confirm with one tap.',
-  nav:()=>{tourGoto('build','schedule');}},
- {tap:'[data-b=permits]',sel:'#buildPermits .permit-row',title:'Permits & inspections',body:'Every permit and inspection for the jurisdiction, tracked from Not started to Passed \u2014 so the rough-in inspection never sneaks up on you.',
-  nav:()=>{tourGoto('build','permits');}},
- {tap:'[data-b=subs]',sel:'#buildSubs .spec-group .subrow',title:'Your subs',body:'The roster for this site \u2014 who is cleared, who is booked, who owes you paperwork. Invite a new sub by text and they land in their own view.',
-  nav:()=>{tourGoto('build','subs');}},
- {tap:'#budgetCard .overall',sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build is 800 dollars from its budget, one line is over \u2014 and every cost can flow straight into QuickBooks.',
-  nav:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},
- {tap:'#budgetScrim .pmodal .b-go',sel:'#billingCard',title:'Homeowner billing',body:'The other side of money \u2014 upgrades, credits, invoices the homeowner approves with one tap. What they owe and what they have paid, always current.',
-  nav:()=>{tourGoto('build','schedule');}},
- {tap:['nav .tab[data-v=files]','[data-fl=photos]'],sel:'#filesPhotos .searchbar',title:'Photos, filed for you',body:'Every capture lands here by date and area \u2014 no folders, no renaming. Search by trade or stage when the drywaller asks what was behind that wall.',
-  nav:()=>{tourGoto('files','photos');}},
- {tap:'[data-fl=docs]',sel:'#filesDocs .searchbar',title:'Documents',body:'Contracts, plans, and the packet each sub needs \u2014 shared deliberately, per trade. What you hand the plumber is not what you hand the painter.',
-  nav:()=>{tourGoto('files','docs');}},
- {tap:'.exc-roles button[data-r=client]',sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',
-  nav:()=>{try{demoRole('client');}catch(e){}}},
- {tap:'.exc-roles button[data-r=subs]',sel:'#svPacket',title:'What subs see',body:'Each sub gets only their piece \u2014 their schedule, their install packet, a button to post updates from the field. No noise from other trades.',
-  nav:()=>{try{demoRole('subs');}catch(e){}}},
- {tap:'.exc-roles button[data-r=hillan]',sel:'#ovCards',title:'One honest record',body:'That is Plumb \u2014 the same build, shaped for every hand that touches it. Ready to set up your first site?',cta:'Set up my first site',
-  nav:()=>{try{demoRole('hillan');}catch(e){}}}
+  acts:[{do:()=>demoRole('hillan')}]},
+ {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the current stage and percent complete, what the build is waiting on, and who is next on site. The answer to how is it going, before anyone asks.',
+  acts:[{do:()=>demoRole('hillan')},{tap:'#ovCards .ov-card',do:()=>{openSiteFromOverview('p2');go('log');}}]},
+ {sel:'.capture-card',title:'The daily log',body:'Every day gets one line \u2014 who was on site, what got done \u2014 and Take a photo files each shot by date and area automatically. Six months later, you can prove exactly what happened and when.',
+  acts:[{do:()=>tourGoto('log')},{tap:'.capture-card'}]},
+ {sel:'[data-d=waiting]',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues \u2014 in one list. When this screen is empty, nobody is stuck.',
+  acts:[{tap:'nav .tab[data-v=decisions]',do:()=>tourGoto('decisions')},{tap:'[data-d=waiting]',jump:true,do:()=>{try{decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}}]},
+ {sel:'[data-d=selections]',title:'Selections & sign-offs',body:'Finishes and fixtures live here \u2014 priced, specced, and signed by the homeowner before anyone builds them. No more he-said-she-said about the countertop.',
+  acts:[{do:()=>tourGoto('decisions','waiting')},{tap:'[data-d=selections]',do:()=>{try{decSeg('selections',document.querySelector('[data-d=selections]'));}catch(e){}}}]},
+ {sel:'#buildSchedule .overall .top',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
+  acts:[{tap:'nav .tab[data-v=build]',do:()=>tourGoto('build','schedule')}],
+  after:(tok)=>{const st=[...document.querySelectorAll('#stageList .stage')].filter((_,k)=>k%2===0).slice(0,5);tourPing(st,tok,650);}},
+ {sel:'#calview .sv-head',title:'The trades calendar',body:'Every crew booking across every job \u2014 who is on site and when, with double-bookings flagged before they burn a day. Subs confirm with one tap.',
+  acts:[{do:()=>tourGoto('build','schedule')},{tap:'.cal-door',do:()=>{try{calSiteFilter=state.activeId;openCal();}catch(e){}}}],
+  after:async(tok)=>{await new Promise(r=>setTimeout(r,5600));if(!tourAlive(tok))return;
+    await orbTo('#calview .ov-logout',{tap:true});if(!tourAlive(tok))return;
+    try{closeCal();}catch(e){}
+    setTimeout(()=>{try{if(!tourAlive(tok))return;const d2=document.querySelector('.cal-door');if(d2){const r2=d2.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2);orbTo(d2,{settle:true,rest:true});}}catch(e){}},420);}},
+ {sel:'#buildPermits .permit-row',title:'Permits & inspections',body:'Every permit and inspection for the jurisdiction, tracked from Not started to Passed \u2014 so the rough-in inspection never sneaks up on you. Where your city posts results online, Plumb can pull them in automatically.',
+  acts:[{do:()=>tourGoto('build','schedule')},{tap:'[data-b=permits]',do:()=>{try{buildSeg('permits',document.querySelector('[data-b=permits]'));}catch(e){}}}]},
+ {sel:'#buildSubs .spec-group .subrow',title:'Your subs',body:'The roster for this site \u2014 who is cleared, who is booked, who owes you paperwork. Invite a new sub by text and they land in their own view.',
+  acts:[{do:()=>tourGoto('build','permits')},{tap:'[data-b=subs]',do:()=>{try{buildSeg('subs',document.querySelector('[data-b=subs]'));}catch(e){}}}]},
+ {sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build is 800 dollars from its budget, one line is over \u2014 and every cost can flow straight into QuickBooks.',
+  acts:[{do:()=>tourGoto('build','subs')},{tap:'#budgetCard .overall',do:()=>{try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}try{openBudget();}catch(e){}}}]},
+ {sel:'#billingCard',title:'Homeowner billing',body:'The other side of money \u2014 upgrades, credits, invoices the homeowner approves with one tap. What they owe and what they have paid, always current.',
+  acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .pmodal .b-go',do:()=>{try{closeBudget();}catch(e){}}}]},
+ {sel:'#filesPhotos .searchbar',title:'Photos, filed for you',body:'Every capture lands here by date and area \u2014 no folders, no renaming. Search by trade or stage when the drywaller asks what was behind that wall.',
+  acts:[{tap:'nav .tab[data-v=files]',do:()=>tourGoto('files')},{tap:'[data-fl=photos]',jump:true,do:()=>{try{filesSeg('photos',document.querySelector('[data-fl=photos]'));}catch(e){}}}],
+  after:(tok)=>{tourPing([...document.querySelectorAll('#filesPhotos .day-group')].slice(0,3),tok,750);}},
+ {sel:'#filesDocs .searchbar',title:'Documents',body:'Contracts, plans, and the packet each sub needs \u2014 shared deliberately, per trade. What you hand the plumber is not what you hand the painter.',
+  acts:[{do:()=>tourGoto('files','photos')},{tap:'[data-fl=docs]',do:()=>{try{filesSeg('docs',document.querySelector('[data-fl=docs]'));}catch(e){}}}],
+  after:(tok)=>{const ds=[...document.querySelectorAll('#filesDocs .doc')];tourPing([ds[0],ds[2],ds[4]].filter(Boolean),tok,750);}},
+ {sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',
+  acts:[{tap:'.exc-roles button[data-r=client]',do:()=>demoRole('client')}],
+  after:(tok)=>{tourPing(['.cl-stats','.cl-concern'],tok,900);}},
+ {sel:'#svPacket',title:'What subs see',body:'Each sub gets only their piece \u2014 their schedule, their install packet, a button to post updates from the field. No noise from other trades.',
+  acts:[{tap:'.exc-roles button[data-r=subs]',do:()=>demoRole('subs')}],
+  after:(tok)=>{tourPing(['.sv-banner','#svUpdate'],tok,900);}},
+ {sel:'#ovCards',title:'One honest record',body:'That is Plumb \u2014 the same build, shaped for every hand that touches it. Ready to set up your first site?',cta:'Set up my first site',
+  acts:[{tap:'.exc-roles button[data-r=hillan]',do:()=>demoRole('hillan')}]}
 ],client:[
  {title:'Welcome home',body:'This is your view of the build \u2014 a calm picture of where things stand. Tap the highlights or use Next.',nav:()=>{try{clientGo('home');}catch(e){}}},
  {sel:'.cl-hero',title:'At a glance',body:'How far along, whether you\u2019re on track, and what\u2019s next on site \u2014 the answer to \u201chow\u2019s it going?\u201d without a single text.'},
@@ -4307,12 +4319,23 @@ function tourStep(){
   try{const _s=_tourSteps[_tourIdx];if(_s&&_s.body)tourSpeak((_s.title?_s.title+'. ':'')+_s.body);}catch(e){}
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
   const bub0=document.getElementById('tourBubble');if(bub0)bub0.style.opacity='0';   // fade current bubble out
-  const spot0=document.getElementById('tourSpot');if(step.nav&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
-  if(step.nav)orbHide();                                   // never glide across a screen change
-  const _afterTap=()=>{if(step.nav){try{step.nav();}catch(e){}}};
-  const _tapP=(step.tap&&!_orbReduced())
-    ?orbTaps(step.tap,!!step.nav).then(_afterTap)
-    :(Promise.resolve().then(_afterTap));
+  const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
+  _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
+  let _tapP;
+  if(step.acts){
+    _tapP=Promise.resolve();
+    step.acts.forEach(a=>{
+      _tapP=_tapP.then(()=>a.tap&&!_orbReduced()?orbTaps(a.tap,!!a.jump):null)
+                 .then(()=>{if(a.do)try{a.do();}catch(e){}})
+                 .then(()=>new Promise(r=>setTimeout(r,a.wait||160)));
+    });
+  } else {
+    if(step.nav)orbHide();
+    const _afterTap=()=>{if(step.nav){try{step.nav();}catch(e){}}};
+    _tapP=(step.tap&&!_orbReduced())
+      ?orbTaps(step.tap,!!step.nav).then(_afterTap)
+      :(Promise.resolve().then(_afterTap));
+  }
   _tapP.then(()=>{
   setTimeout(()=>{
     const el=step.sel?document.querySelector(step.sel):null;
@@ -4331,15 +4354,17 @@ function tourStep(){
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="tour-next" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
       tourPlace(rect);                                  // ring glides to the new target (CSS transition)
-      if(el)orbTo(el,{settle:true,instant:!!step.nav,rest:true});else orbHide();   // parked at the edge, faded to a whisper
+      if(el)orbTo(el,{settle:true,rest:true,noscroll:true});else orbHide();   // glides to the edge — the orb is always followed
       if(el&&rect)setTimeout(()=>{                       // stabilization: layout can settle late — re-measure once
         try{const el2=step.sel?document.querySelector(step.sel):null;if(!el2)return;
           const r2=el2.getBoundingClientRect();
           if(r2&&(Math.abs(r2.top-rect.top)>4||Math.abs(r2.left-rect.left)>4||Math.abs(r2.height-rect.height)>4)){
-            tourPlace(r2);orbTo(el2,{settle:true,instant:true,rest:true});}}catch(e){}},420);
+            tourPlace(r2);orbTo(el2,{settle:true,instant:true,rest:true,noscroll:true});}}catch(e){}},420);
       setTimeout(()=>{const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';},170); // fade in once it has mostly arrived
     },el?150:40);
-  },step.nav?240:0);});}
+  },(step.nav||step.acts)?240:0);
+  if(step.after)setTimeout(()=>{try{step.after(_tok);}catch(e){}},1100);
+  });}
 function tmplPickLevel(id){const op=orgPrefs();op.customLevel=id;saveOrgPrefs(op);renderPeople();
   const n=(SETUP_LEVELS.find(l=>l.id===id)||{}).n||id;toast(n+' — spec sheets now ask '+specTotals(id)+' questions');}
 let _tmplCat=null;
@@ -6277,31 +6302,53 @@ function _orbPlace(o,x,y,instant){
   o.style.left=x+'px';o.style.top=y+'px';
   if(instant){void o.offsetWidth;o.classList.remove('noglide');}
 }
+let _gtTok=0;
 function orbTo(target,opts){
   opts=opts||{};
   return new Promise(res=>{
     try{
       const o=_orbEl();const el=typeof target==='string'?document.querySelector(target):target;
       if(!o||!el||_orbReduced()){res();return;}
-      const r=el.getBoundingClientRect();
+      let r=el.getBoundingClientRect();
       if(!r||(!r.width&&!r.height)){res();return;}
-      let x,y;
-      if(opts.settle){
-        const pad=20;
-        if(r.right+pad+26<window.innerWidth){x=r.right+pad;y=r.top+r.height/2;}
-        else if(r.left-pad-26>0){x=r.left-pad;y=r.top+r.height/2;}
-        else {x=r.left+r.width/2;y=Math.max(30,r.top-pad);}
-        y=Math.min(Math.max(30,y),window.innerHeight-30);
-      } else {x=r.left+r.width/2;y=r.top+r.height/2;}
-      o.classList.add('show','active');
-      _orbPlace(o,x,y,opts.instant);
-      setTimeout(()=>{
-        if(opts.tap){o.classList.remove('tap');void o.offsetWidth;o.classList.add('tap');
-          setTimeout(()=>{if(opts.rest)o.classList.remove('active');res();},430);}
-        else {if(opts.rest)o.classList.remove('active');res();}
-      },opts.instant?220:580);
+      const off=r.top<70||r.bottom>window.innerHeight-90||r.left<0||r.right>window.innerWidth;
+      const go2=()=>{
+        r=el.getBoundingClientRect();
+        if(!r||(!r.width&&!r.height)){res();return;}
+        let x,y;
+        if(opts.settle){
+          const pad=20;
+          if(r.right+pad+26<window.innerWidth){x=r.right+pad;y=r.top+r.height/2;}
+          else if(r.left-pad-26>0){x=r.left-pad;y=r.top+r.height/2;}
+          else {x=r.left+r.width/2;y=Math.max(30,r.top-pad);}
+          y=Math.min(Math.max(30,y),window.innerHeight-30);
+        } else {x=r.left+r.width/2;y=r.top+r.height/2;}
+        o.classList.add('show','active');
+        _orbPlace(o,x,y,opts.instant);
+        setTimeout(()=>{
+          if(opts.tap){o.classList.remove('tap');void o.offsetWidth;o.classList.add('tap');
+            setTimeout(()=>{if(opts.rest)o.classList.remove('active');res();},430);}
+          else {if(opts.rest)o.classList.remove('active');res();}
+        },opts.instant?220:580);
+      };
+      if(off&&!opts.noscroll){                       /* the screen travels WITH the orb */
+        try{el.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}
+        setTimeout(go2,460);
+      } else go2();
     }catch(e){res();}
   });
+}
+function tourAlive(tok){return tok===_gtTok&&document.body.classList.contains('on-excursion');}
+async function tourPing(sels,tok,dwell){
+  for(const s of (sels||[])){
+    if(!tourAlive(tok))return;
+    const el=typeof s==='string'?document.querySelector(s):s;
+    if(!el)continue;
+    await orbTo(el,{tap:true});
+    if(!tourAlive(tok))return;
+    try{const r2=el.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2);}catch(e){}
+    await new Promise(r=>setTimeout(r,dwell||700));
+  }
 }
 function orbTaps(taps,instantFirst){
   const list=Array.isArray(taps)?taps:[taps];
