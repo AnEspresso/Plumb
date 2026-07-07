@@ -1429,9 +1429,8 @@ body.on-tour .tour-card{display:block;}
 @keyframes orbTap{0%{transform:translate(-50%,-50%) scale(1);}32%{transform:translate(-50%,-50%) scale(.48);filter:blur(.5px) brightness(1.7);box-shadow:0 0 26px 12px rgba(203,162,104,.55), 0 0 60px 26px rgba(203,162,104,.25);}100%{transform:translate(-50%,-50%) scale(1);}}
 @keyframes orbRipple{from{transform:scale(.5);opacity:1;}to{transform:scale(3);opacity:0;}}
 @media (prefers-reduced-motion: reduce){#tourOrb{display:none !important;}}
-#tourBubble{transition:top .3s ease,left .3s ease,max-width .3s ease;}
-#tourBubble.tour-bub-dock{top:14px !important;left:auto !important;right:14px !important;bottom:auto !important;
-  max-width:300px;font-size:12.5px;opacity:.96;}
+#tourBubble{transition:top .5s cubic-bezier(.4,0,.2,1),left .5s cubic-bezier(.4,0,.2,1),max-width .3s ease;}
+#tourBubble.tour-bub-dock{max-width:300px;font-size:12.5px;opacity:.96;}
 #tourBubble.tour-bub-dock .tour-b{font-size:12px;line-height:1.45;}
 .tour-mute-mini{background:none;border:1px solid rgba(231,220,198,.3);border-radius:10px;padding:4px 9px;margin-right:8px;cursor:pointer;font-size:14px;}
 .install-gate{position:fixed;inset:0;z-index:220;display:none;flex-direction:column;align-items:center;justify-content:center;
@@ -2659,7 +2658,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.167.1 - Wizard precision pass. The orb now presses the exact site it opens, the highlight ring lands cleanly with no jitter on Stages, Permits and Subs, the trades calendar door is pressed and the highlight rings the double-booking banner, the tour bubble steps aside to a corner whenever the orb walks stages, photos, documents or the homeowner cards so they never collide, spec-d is spelled like a builder says it, and the final card offers Play in the demo alongside Set up my first site.';
+const PLUMB_VERSION='2.167.2 - Motion truthing. The highlight ring now measures only when the screen is genuinely at rest so it lands right the first time and stays put, ping scrolling is one smooth motion with the ring riding its old box up before gliding to the next, orb presses wait for the scroll to finish so the calendar pill and every other target gets truly hit, and the description bubble stops fading and jumping - it glides between slides and parks in a quiet corner for the whole slide whenever the orb will be working the page.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4255,7 +4254,7 @@ const TOUR={team:[
   acts:[{do:()=>tourGoto('decisions','waiting')},{tap:'[data-d=selections]',do:()=>{try{decSeg('selections',document.querySelector('[data-d=selections]'));}catch(e){}}}]},
  {sel:'#buildSchedule .overall .top',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
   acts:[{tap:'nav .tab[data-v=build]',do:()=>tourGoto('build','schedule')}],
-  after:(tok)=>{const st=[...document.querySelectorAll('#stageList .stage')].filter((_,k)=>k%2===0).slice(0,5);tourPing(st,tok,650);}},
+  after:(tok)=>{const st=[...document.querySelectorAll('#stageList .stage')].filter((_,k)=>k%2===0).slice(0,5);tourPing(st,tok,650,document.querySelector('#buildSchedule .overall .top'));}},
  {sel:'#calview .pkt-banner, #calview .cal-grid',title:'The trades calendar',body:'Every crew booking across every job \u2014 who is on site and when, with double-bookings flagged before they burn a day. Subs confirm with one tap.',
   acts:[{do:()=>tourGoto('build','schedule')},{tap:'.cal-door',do:()=>{try{calSiteFilter=state.activeId;openCal();}catch(e){}}}],
   after:async(tok)=>{await new Promise(r=>setTimeout(r,5600));if(!tourAlive(tok))return;
@@ -4272,16 +4271,16 @@ const TOUR={team:[
   acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .pmodal .b-go',do:()=>{try{closeBudget();}catch(e){}}}]},
  {sel:'#filesPhotos .searchbar',title:'Photos, filed for you',body:'Every capture lands here by date and area \u2014 no folders, no renaming. Search by trade or stage when the drywaller asks what was behind that wall.',
   acts:[{tap:'nav .tab[data-v=files]',do:()=>tourGoto('files')},{tap:'[data-fl=photos]',jump:true,do:()=>{try{filesSeg('photos',document.querySelector('[data-fl=photos]'));}catch(e){}}}],
-  after:(tok)=>{tourPing([...document.querySelectorAll('#filesPhotos .day-group')].slice(0,3),tok,750);}},
+  after:(tok)=>{tourPing([...document.querySelectorAll('#filesPhotos .day-group')].slice(0,3),tok,750,document.querySelector('#filesPhotos .searchbar'));}},
  {sel:'#filesDocs .searchbar',title:'Documents',body:'Contracts, plans, and the packet each sub needs \u2014 shared deliberately, per trade. What you hand the plumber is not what you hand the painter.',
   acts:[{do:()=>tourGoto('files','photos')},{tap:'[data-fl=docs]',do:()=>{try{filesSeg('docs',document.querySelector('[data-fl=docs]'));}catch(e){}}}],
-  after:(tok)=>{const ds=[...document.querySelectorAll('#filesDocs .doc')];tourPing([ds[0],ds[2],ds[4]].filter(Boolean),tok,750);}},
+  after:(tok)=>{const ds=[...document.querySelectorAll('#filesDocs .doc')];tourPing([ds[0],ds[2],ds[4]].filter(Boolean),tok,750,document.querySelector('#filesDocs .searchbar'));}},
  {sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',
   acts:[{tap:'.exc-roles button[data-r=client]',do:()=>demoRole('client')}],
-  after:(tok)=>{tourPing(['.cl-stats','.cl-concern'],tok,900);}},
+  after:(tok)=>{tourPing(['.cl-stats','.cl-concern'],tok,900,document.querySelector('.cl-hero'));}},
  {sel:'#svPacket',title:'What subs see',body:'Each sub gets only their piece \u2014 their schedule, their install packet, a button to post updates from the field. No noise from other trades.',
   acts:[{tap:'.exc-roles button[data-r=subs]',do:()=>demoRole('subs')}],
-  after:(tok)=>{tourPing(['.sv-banner','#svUpdate'],tok,900);}},
+  after:(tok)=>{tourPing(['.sv-banner','#svUpdate'],tok,900,document.querySelector('#svPacket'));}},
  {sel:'#ovCards',title:'One honest record',body:'That is Plumb \u2014 the same build, shaped for every hand that touches it. Ready to set up your first site?',cta:'Set up my first site',
   acts:[{tap:'.exc-roles button[data-r=hillan]',do:()=>demoRole('hillan')}]}
 ],client:[
@@ -4309,14 +4308,16 @@ function tourEnd(){orbHide();tourUnlift();['tourCatch','tourSpot','tourBubble'].
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
 function tourNext(){tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
 function tourPrev(){tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
-function tourPlace(rect,instant){
+function tourPlace(rect,instant,dock){
   const spot=document.getElementById('tourSpot'),bub=document.getElementById('tourBubble');if(!spot||!bub)return;
   if(instant){spot.classList.add('nomorph');requestAnimationFrame(()=>spot.classList.remove('nomorph'));}
   if(rect){spot.style.opacity='1';spot.style.left=(rect.left-6)+'px';spot.style.top=(rect.top-6)+'px';spot.style.width=(rect.width+12)+'px';spot.style.height=(rect.height+12)+'px';}
   else{spot.style.left='50%';spot.style.top='50%';spot.style.width='0px';spot.style.height='0px';}
+  if(dock!==undefined)bub.classList.toggle('tour-bub-dock',!!dock);
   const vw=innerWidth,vh=innerHeight,bw=bub.offsetWidth,bh=bub.offsetHeight,gap=14;
   let top,left;
-  if(rect){
+  if(bub.classList.contains('tour-bub-dock')){top=14;left=vw-bw-14;}   /* action slides: the bubble owns a quiet corner for the WHOLE slide */
+  else if(rect){
     top=(rect.bottom+gap+bh<vh)?rect.bottom+gap:Math.max(12,rect.top-gap-bh);
     left=Math.min(Math.max(12,rect.left+rect.width/2-bw/2),vw-bw-12);
   }else{top=(vh-bh)/2;left=(vw-bw)/2;}
@@ -4324,7 +4325,6 @@ function tourPlace(rect,instant){
 function tourStep(){
   try{const _s=_tourSteps[_tourIdx];if(_s&&_s.body)tourSpeak((_s.title?_s.title+'. ':'')+_s.body);}catch(e){}
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
-  const bub0=document.getElementById('tourBubble');if(bub0)bub0.style.opacity='0';   // fade current bubble out
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
   let _tapP;
@@ -4346,6 +4346,7 @@ function tourStep(){
   setTimeout(()=>{
     const el=step.sel?document.querySelector(step.sel):null;
     if(el)try{el.scrollIntoView({block:'center',behavior:'auto'});}catch(e){}   // instant: let the ring glide, not the page
+    if(el)awaitSettle(el).then(()=>{});
     setTimeout(()=>{
       const bub=document.getElementById('tourBubble');if(!bub)return;
       const rect=el?el.getBoundingClientRect():null;
@@ -4359,17 +4360,17 @@ function tourStep(){
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="tour-next" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
-      tourPlace(rect);                                  // ring glides to the new target (CSS transition)
+      tourPlace(rect,false,!!step.after);               // ring glides; action slides park the bubble in its corner up front
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // layout often settles a beat later — correct invisibly
         try{const rq=el.getBoundingClientRect();
-          if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true);}catch(e){}},90));
+          if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true,!!step.after);}catch(e){}},90));
       if(el)orbTo(el,{settle:true,rest:true,noscroll:true});else orbHide();   // glides to the edge — the orb is always followed
       if(el&&rect)setTimeout(()=>{                       // stabilization: layout can settle late — re-measure once
         try{const el2=step.sel?document.querySelector(step.sel):null;if(!el2)return;
           const r2=el2.getBoundingClientRect();
           if(r2&&(Math.abs(r2.top-rect.top)>4||Math.abs(r2.left-rect.left)>4||Math.abs(r2.height-rect.height)>4)){
-            tourPlace(r2,true);orbTo(el2,{settle:true,instant:true,rest:true,noscroll:true});}}catch(e){}},420);
-      setTimeout(()=>{const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';},170); // fade in once it has mostly arrived
+            tourPlace(r2,true,!!step.after);orbTo(el2,{settle:true,instant:true,rest:true,noscroll:true});}}catch(e){}},420);
+      {const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';}
     },el?150:40);
   },(step.nav||step.acts)?240:0);
   if(step.after)setTimeout(()=>{try{step.after(_tok);}catch(e){}},1100);
@@ -6343,37 +6344,59 @@ function orbTo(target,opts){
         },opts.instant?220:580);
       };
       if(off&&!opts.noscroll){                       /* the screen travels WITH the orb */
-        try{el.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}
-        setTimeout(go2,460);
+        smoothScrollTo(el,0.42);
+        awaitSettle(el).then(go2);
       } else go2();
     }catch(e){res();}
   });
 }
 function tourAlive(tok){return tok===_gtTok&&document.body.classList.contains('on-excursion');}
-function scrollUpper(el){
-  try{el.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}
-  setTimeout(()=>{try{let p=el.parentElement;
-    while(p&&p!==document.body){const cs=getComputedStyle(p);
-      if(/auto|scroll/.test(cs.overflowY)&&p.scrollHeight>p.clientHeight+4){p.scrollBy({top:Math.round(window.innerHeight*0.16),behavior:'smooth'});break;}
-      p=p.parentElement;}}catch(e){}},380);
+/* Poll until the target stops moving (scroll/layout at rest). If trackEl is given,
+   the spotlight RIDES it during the scroll — the ring leaves with its box. */
+function awaitSettle(el,trackEl,dock){
+  return new Promise(res=>{
+    let last=null,stable=0,n=0;
+    const tick=()=>{
+      try{
+        const r=el.getBoundingClientRect();
+        if(trackEl){const tr=trackEl.getBoundingClientRect();if(tr&&tr.height)tourPlace(tr,true,dock);}
+        if(last!==null&&Math.abs(r.top-last)<0.8){stable++;}else{stable=0;}
+        last=r.top;n++;
+        if(stable>=2||n>24){res();return;}
+      }catch(e){res();return;}
+      setTimeout(tick,70);
+    };
+    tick();
+  });
 }
-async function tourPing(sels,tok,dwell){
-  const bub=document.getElementById('tourBubble');
+function smoothScrollTo(el,frac){
   try{
-    if(bub)bub.classList.add('tour-bub-dock');       /* bubble steps aside — orb and ring own the stage */
-    for(const s of (sels||[])){
-      if(!tourAlive(tok))return;
-      const el=typeof s==='string'?document.querySelector(s):s;
-      if(!el)continue;
-      scrollUpper(el);
-      await new Promise(r=>setTimeout(r,560));
-      if(!tourAlive(tok))return;
-      try{const r2=el.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2);}catch(e){}
-      await orbTo(el,{tap:true,noscroll:true});
-      await new Promise(r=>setTimeout(r,dwell||700));
-    }
-  } finally { if(bub)bub.classList.remove('tour-bub-dock'); }
+    let p=el.parentElement;
+    while(p&&p!==document.body){const cs=getComputedStyle(p);
+      if(/auto|scroll/.test(cs.overflowY)&&p.scrollHeight>p.clientHeight+4)break;p=p.parentElement;}
+    if(!p||p===document.body){el.scrollIntoView({block:'center',behavior:'smooth'});return;}
+    const pr=p.getBoundingClientRect(),r=el.getBoundingClientRect();
+    const target=p.scrollTop+(r.top-pr.top)-Math.round(window.innerHeight*(frac==null?0.3:frac));
+    p.scrollTo({top:Math.max(0,target),behavior:'smooth'});
+  }catch(e){try{el.scrollIntoView({block:'center',behavior:'smooth'});}catch(_){}}
 }
+
+async function tourPing(sels,tok,dwell,startEl){
+  let prev=startEl||null;
+  for(const s of (sels||[])){
+    if(!tourAlive(tok))return;
+    const el=typeof s==='string'?document.querySelector(s):s;
+    if(!el)continue;
+    smoothScrollTo(el,0.32);
+    await awaitSettle(el,prev,true);                 /* the ring rides its old box out, then… */
+    if(!tourAlive(tok))return;
+    try{const r2=el.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2,false,true);}catch(e){}   /* …glides down to the new one */
+    await orbTo(el,{tap:true,noscroll:true});
+    await new Promise(r=>setTimeout(r,dwell||700));
+    prev=el;
+  }
+}
+
 function orbTaps(taps,instantFirst){
   const list=Array.isArray(taps)?taps:[taps];
   let p=Promise.resolve();
