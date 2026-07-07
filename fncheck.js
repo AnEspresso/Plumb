@@ -64,7 +64,7 @@ const server = http.createServer((req, res) => {
   await db.collection('qb').doc('u1').set({ realmId: 'R9', accessToken: 'acc1', refreshToken: 'ref1', expiresAt: Date.now() + 3600e3, env: 'sandbox' });
 
   /* seed a site owned by u1, with two exportable actuals + one line + one already-exported */
-  await db.collection('sites').doc('s1').set({ street: '288 Calderwood Ln', members: { u1: { role: 'team', name: 'Dean' } }, memberUids: ['u1'] });
+  await db.collection('sites').doc('s1').set({ meta: { street: '288 Calderwood Ln', city: 'Ferndale' }, members: { u1: 'builder', uclient: 'client', usub: 'sub' }, memberUids: ['u1', 'uclient', 'usub'] }); // REAL shapes: street in meta map, members as strings
   const costs = db.collection('sites').doc('s1').collection('costs');
   await costs.doc('c1').set({ data: { id: 'c1', rt: 'line', label: 'Plumbing', budget: 24000 }, updatedAt: 1, updatedBy: 'devA' });
   await costs.doc('ca1').set({ data: { id: 'ca1', rt: 'actual', kind: 'spent', amount: 17500, payee: 'Hollis Excavating', note: 'mobilization, "phase 1"', t: Date.parse('2026-06-01') }, updatedAt: 1, updatedBy: 'devA' });
@@ -72,12 +72,18 @@ const server = http.createServer((req, res) => {
   await costs.doc('ca3').set({ data: { id: 'ca3', rt: 'actual', kind: 'spent', amount: 500, payee: 'Hollis Excavating', qbId: 'P1', t: Date.now() }, updatedAt: 1, updatedBy: 'devA' });
 
   /* gates */
-  t('membership gate: client denied', requireBuilder({ members: { u2: { role: 'client' } } }, 'u2') === false);
+  t('membership gate: client STRING denied (production shape)', requireBuilder({ members: { u2: 'client' } }, 'u2') === false);
+  t('membership gate: sub STRING denied', requireBuilder({ members: { u3: 'sub' } }, 'u3') === false);
+  t('membership gate: builder STRING allowed', requireBuilder({ members: { u1: 'builder' } }, 'u1') === true);
+  t('membership gate: legacy object shape still judged by role', requireBuilder({ members: { u4: { role: 'client' } } }, 'u4') === false && requireBuilder({ members: { u5: { role: 'builder' } } }, 'u5') === true);
   t('membership gate: stranger denied', requireBuilder({ members: {} }, 'zz') === false);
   t('date formatting', toISODate(Date.parse('2026-06-01T12:00:00')) === '2026-06-01');
   await db.collection('qb').doc('u2').set({ realmId: 'R9', accessToken: 'accX', refreshToken: 'refX', expiresAt: Date.now() + 3600e3 });
   const r0 = await exportCosts(db, 'u2', 's1');
   t('non-member export refused even when connected', r0.ok === false && r0.reason === 'not-your-site', JSON.stringify(r0));
+  await db.collection('qb').doc('uclient').set({ realmId: 'R9', accessToken: 'accC', refreshToken: 'refC', expiresAt: Date.now() + 3600e3 });
+  const rc = await exportCosts(db, 'uclient', 's1');
+  t('HOMEOWNER member with own QB refused — costs stay private to the builder', rc.ok === false && rc.reason === 'not-your-site', JSON.stringify(rc));
   const rn = await exportCosts(db, 'u-noqb', 's1');
   t('unconnected user refused', rn.ok === false && rn.reason === 'not-connected');
 
