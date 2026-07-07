@@ -675,7 +675,7 @@ S('onboarding');
 // splash is one door: choosers exist in DOM but the era CSS hides them; explore link present
 t('splash keeps live controls + explore link', $("!!document.querySelector('.login-explore')")===true&&$("!!document.getElementById('realControls')")===true);
 t('guide orb present, guarded, choreographed', $("!!document.getElementById('tourOrb')")===true&&await $("orbTo('#nope').then(()=>true)")===true&&await $("orbTo(null,{tap:true}).then(()=>true)")===true&&$("TOUR.grand.filter(s=>s.tap).length")===12);
-t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='function'&&$("Array.isArray(TOUR.grand)")===true&&$("TOUR.grand.length")===16&&$("TOUR.grand.every(s=>s.title&&s.body)")===true&&$("TOUR.grand.slice(1).every(s=>s.sel)")===true);
+t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='function'&&$("Array.isArray(TOUR.grand)")===true&&$("TOUR.grand.length")===16&&$("TOUR.grand.every(s=>s.title&&s.body)")===true&&$("TOUR.grand.slice(1).every(s=>s.sel)")===true&&$("typeof tourGoto")==='function');
 // excursion from a live session: flip out, come home with session + activeId intact
 asBuilder();
 $("localStorage.setItem('plumb.mode','real')");
@@ -726,6 +726,15 @@ for(let i2=0;i2<16;i2++){
   if(i2!==0&&i2!==10&&!lifted){tourOK=false;tourDetail='no spotlight at '+i2;break;}
 }
 t('all 16 steps navigate, spotlight and count correctly', tourOK, tourDetail);
+// Peter's Back bug, encoded forever: walk 16 → 1 and every landmark must still hold
+let backOK=true, backDetail='';
+for(let b=14;b>=0;b--){
+  $('tourPrev()');await new Promise(r=>setTimeout(r,1150));
+  if(!landmarks[b]()){backOK=false;backDetail='back landmark '+b;break;}
+}
+t('walking BACKWARD lands every slide correctly too', backOK, backDetail);
+for(let f=1;f<16;f++){$('tourNext()');await new Promise(r=>setTimeout(r,350));}
+await new Promise(r=>setTimeout(r,900));
 t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my first site'));
 $('tourEnd()');$('exitDemo()');
 t('post-tour exit is clean', $("appMode()")==='real'&&$("_tourLift?1:0")===0);
