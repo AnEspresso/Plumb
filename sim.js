@@ -57,7 +57,13 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.163.x',String($('PLUMB_VERSION')).startsWith('2.163'));
+t('version 2.164.x',String($('PLUMB_VERSION')).startsWith('2.164'));
+// error buffer hygiene: age-out + cap
+$("localStorage.setItem('plumb.errors',JSON.stringify([{t:Date.now()-20*86400000,k:'rules',m:'ancient',v:'2.152.0',mode:'real'}].concat(Array.from({length:30},(_,i)=>({t:Date.now()-i*1000,k:'x',m:'fresh'+i,v:'t',mode:'demo'})))))");
+t('devErrors ages out 14d+ and caps at 20', (function(){const a=JSON.parse($("JSON.stringify(devErrors())"));return a.length===20&&a.every(x=>x.m!=='ancient');})());
+$("trapError('test','newest','sim')");
+t('trapError prunes on write too', (function(){const a=JSON.parse($("localStorage.getItem('plumb.errors')"));return a.length<=20&&a[0].m==='newest';})());
+$("localStorage.removeItem('plumb.errors')");
 t('desktop rail brand present in nav', $("document.querySelector('nav .rail-brand .wordmark').textContent").includes('Plumb'));
 t('rail foot carries the live sync pill', $("document.querySelector('nav .rail-foot .syncpill').textContent").includes('device'));
 
@@ -649,6 +655,20 @@ $('igBrowser()');
 t('continue-in-browser hides the gate and remembers for the session', $("document.getElementById('installGate').classList.contains('show')")===false&&$("sessionStorage.getItem('plumbBrowserOK')")==='1');
 $("sessionStorage.removeItem('plumbBrowserOK')");
 asBuilder();$("state.activeId='p2'");
+
+/* ════ 14j · SERVER PHASE CLIENT PLUMBING ════ */
+S('server plumbing');
+asBuilder();$("state.activeId='p2'");
+t('fnCall + qb surface defined', $("typeof fnCall")==='function'&&$("typeof qbExportNow")==='function'&&$("typeof qbRefreshStatus")==='function');
+t('fnCall refuses when signed out of Firebase', await $("fnCall('qbStatus',{}).then(()=>'ok',e=>e.message)")==='sign in first');
+t('qb gated OFF in demo mode', $('qbEligible()')===false);
+$('renderBudget()');
+t('no QuickBooks button in a demo budget', !el('budgetBody').innerHTML.includes('Send new costs to QuickBooks'));
+t('dev panel carries the QuickBooks line', $("!!document.getElementById('qbLine')")===true);
+$('qbRenderLine()');
+t('qb line explains the gate in demo', el('qbLine').innerHTML.includes('Sign in live'));
+t('telemetry beat/event are no-throw when sync is off', await $("Promise.all([Sync.beat(),Sync.event('x','y')]).then(()=>true,()=>false)")===true);
+$('closeBudget()');
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');

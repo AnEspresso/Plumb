@@ -2466,6 +2466,8 @@
       <div class="sync-status" id="devSyncStatus">Local only — paste a Firebase config to go live.</div>
       <textarea id="fbConfigInput" class="dev-ta" rows="5" placeholder='Paste Firebase web config JSON, e.g. {"apiKey":"…","authDomain":"…","projectId":"…","appId":"…"}'></textarea>
       <button class="dev-btn" onclick="devConnectSync()"><span><span>Connect / reconnect sync</span><span class="d">Saves config on this device &amp; starts live cross-device sync</span></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2"/><path d="M18 4v5h-5M6 20v-5h5"/></svg></span></button>
+      <div class="eyebrow" style="margin-top:16px">QuickBooks</div>
+      <div id="qbLine" style="font-size:13.5px;margin:6px 0 12px"></div>
       <input id="appCheckInput" class="dev-ta" style="min-height:0;height:auto" placeholder="App Check reCAPTCHA v3 site key (optional)" />
       <input id="vapidInput" class="dev-ta" style="min-height:0;height:auto" placeholder="FCM Web Push VAPID public key (for lock-screen push)" />
       <div id="grantCard" style="display:none">
@@ -2566,7 +2568,7 @@
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.163.0 - Install help now speaks every platform. Safari on Mac gets File then Add to Dock, desktop Firefox gets an honest answer with alternatives, Samsung Internet and Firefox on Android get their own steps, Chrome and Edge and Firefox on iPhone get real install steps instead of a detour through Safari, and in-app browsers get a copy-link path on the install wall too.';
+const PLUMB_VERSION='2.164.0 - The server phase begins. Plumb now has its own Cloud Functions backend: connect your QuickBooks company from the Dev panel and send logged costs straight into QuickBooks as expenses - payees become Vendors, each site becomes a Customer, exports never duplicate, and telemetry now flows through the server with direct database access closed off.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4865,6 +4867,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       try{if(this.mode==='live')backfillMemberships();}catch(e){}
       try{if(this.mode==='live')stampMemberUids();}catch(e){}
       this.subscribe();this.startHeartbeat();this.pushAll();try{CloudFiles.flush();}catch(e){}try{if(this.mode==='live')watchClaims();}catch(e){}try{if(this.mode==='live')setTimeout(()=>{try{Org.init();}catch(e){}},1200);}catch(e){}try{setTimeout(()=>{try{Notify.startSweep();Notify.captureToken();}catch(e){}},2500);}catch(e){}try{setTimeout(()=>{try{backfillPhotos();}catch(e){}},3000);}catch(e){}
+      try{qbRefreshStatus();}catch(e){}
       logEvent('syncConnected',cfg.projectId+' · '+this.mode+' · '+this.authKind);
       try{setSync('synced');}catch(e){}
       return true;
@@ -5016,19 +5019,14 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       },err=>this._permFail('site records',err));
       this.unsub.push(u);});},
   startHeartbeat(){if(!this.ready())return;this.beat();clearInterval(this._hb);this._hb=setInterval(()=>this.beat(),60000);},
-  async beat(){if(!this.ready())return;const s=state.session||{};try{await this.db.collection('telemetry').doc(this.deviceId).set({device:this.deviceId,mode:this.mode||'demo',role:s.role||'—',name:s.name||'',site:s.site||state.activeId||'',lastActive:Date.now(),ua:(typeof navigator!=='undefined'?navigator.userAgent:'').slice(0,140)},{merge:true});}catch(e){}},
-  async event(name,detail){if(!this.ready())return;try{await this.db.collection('telemetry').doc(this.deviceId).collection('events').add({name:name||'',detail:(detail==null?'':''+detail),role:(state.session&&state.session.role)||'—',t:Date.now()});}catch(e){}},
-  async loadUsage(){if(!this.ready())return null;const out=[];try{const snap=await this.db.collection('telemetry').get();
-    for(const doc of snap.docs){const d=doc.data();let events=[];try{const es=await this.db.collection('telemetry').doc(doc.id).collection('events').orderBy('t','desc').limit(10).get();events=es.docs.map(e=>e.data());}catch(e){}out.push(Object.assign({id:doc.id,events:events},d));}
-    out.sort((a,b)=>(b.lastActive||0)-(a.lastActive||0));}catch(e){console.warn('usage load',e);return null;}return out;},
-  async clearTelemetry(){if(!this.ready())return {ok:false,n:0};let n=0;
-    try{const snap=await this.db.collection('telemetry').get();
-      for(const doc of snap.docs){
-        try{const es=await this.db.collection('telemetry').doc(doc.id).collection('events').get();for(const e of es.docs){try{await e.ref.delete();}catch(_){}}}catch(_){}
-        try{await doc.ref.delete();n++;}catch(_){}
-      }
-    }catch(e){return {ok:false,n:n,err:(e&&e.message)||'failed'};}
-    return {ok:true,n:n};},
+  async beat(){if(!this.ready())return;const s=state.session||{};try{await fnCall('telemetryBeat',{deviceId:this.deviceId,mode:this.mode||'demo',role:s.role||'—',name:s.name||'',v:(typeof PLUMB_VERSION!=='undefined'?PLUMB_VERSION.split(' ')[0]:''),ua:(typeof navigator!=='undefined'?navigator.userAgent:'').slice(0,140)});}catch(e){}},
+  async event(name,detail){if(!this.ready())return;try{await fnCall('telemetryEvent',{deviceId:this.deviceId,name:name||'',detail:(detail==null?'':''+detail),role:(state.session&&state.session.role)||'—'});}catch(e){}},
+  async loadUsage(){if(!this.ready())return null;
+    try{const r=await fnCall('telemetryUsage',{});const out=(r&&r.devices)||[];
+      out.sort((a,b)=>(b.lastActive||b.t||0)-(a.lastActive||a.t||0));return out;
+    }catch(e){console.warn('usage load',e);return null;}},
+  async clearTelemetry(){if(!this.ready())return {ok:false,n:0};
+    try{const r=await fnCall('telemetryClear',{});return {ok:true,n:(r&&r.n)||0};}catch(e){return {ok:false,n:0};}},
   _notifReady:{},
   disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._shadow={};this._notifReady={};clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
 };
@@ -5428,17 +5426,19 @@ function rerenderCurrent(){try{
   else{updateHeader();renderAll();}
 }catch(e){}}
 /* ── error trap: every uncaught error is recorded for the Workbench bug report ── */
+function pruneErrors(a){const cut=Date.now()-14*86400000;return (a||[]).filter(x=>x&&x.t>cut).slice(0,20);}
 function trapError(kind,msg,where){try{
-  const a=JSON.parse(localStorage.getItem('plumb.errors')||'[]');
+  let a=JSON.parse(localStorage.getItem('plumb.errors')||'[]');
   a.unshift({t:Date.now(),k:kind,m:String(msg).slice(0,300),w:String(where||'').slice(0,120),v:(typeof PLUMB_VERSION!=='undefined'?PLUMB_VERSION.split(' ')[0]:'?'),mode:appMode()});
-  localStorage.setItem('plumb.errors',JSON.stringify(a.slice(0,50)));
+  a=pruneErrors(a);
+  localStorage.setItem('plumb.errors',JSON.stringify(a));
   const b=document.getElementById('errBadge');if(b){b.textContent=a.length;b.style.display='';}
 }catch(e){}}
 if(typeof window!=='undefined'){
   window.addEventListener('error',e=>trapError('error',(e.error&&e.error.message)||e.message,(e.filename||'')+':'+(e.lineno||'')));
   window.addEventListener('unhandledrejection',e=>trapError('promise',(e.reason&&e.reason.message)||e.reason,''));
 }
-function devErrors(){try{return JSON.parse(localStorage.getItem('plumb.errors')||'[]');}catch(e){return [];}}
+function devErrors(){try{return pruneErrors(JSON.parse(localStorage.getItem('plumb.errors')||'[]'));}catch(e){return [];}}
 function devCopyBugReport(){
   const errs=devErrors();const ev=(state.eventLog||[]).slice(-30).reverse();
   const rep=['PLUMB BUG REPORT','version: '+PLUMB_VERSION,'mode: '+appMode()+' · role: '+((state.session||{}).role||'-')+' · sync: '+syncStatus,
@@ -5764,7 +5764,8 @@ function renderBudget(){
   <div class="bgt-toggle"><span>Group</span><div class="bgt-mini"><button class="${_costGroup==='stage'?'on':''}" onclick="setCostGroup('stage')">By stage</button><button class="${_costGroup==='trade'?'on':''}" onclick="setCostGroup('trade')">By trade</button></div></div>`;
   h=h.replace('<div class="bgt-tot">','<div class="bgt-tot" id="bgtTotals">');
   const copyBtn=budgetSources().length?`<button class="la-link" style="display:block;margin:14px auto 0" onclick="openBudgetCopy()">Copy budget lines from another site…</button>`:'';
-  const exportBtn=copyBtn+`<button class="la-link" style="display:block;margin:10px auto 2px" onclick="exportCosts()">Download costs for your accountant (.csv)</button>`;
+  const qbBtn=(qbEligible()&&_qbState&&_qbState.connected)?`<button class="la-link" style="display:block;margin:12px auto 0;font-weight:700" onclick="qbExportNow()">Send new costs to QuickBooks</button>`:'';
+  const exportBtn=qbBtn+copyBtn+`<button class="la-link" style="display:block;margin:10px auto 2px" onclick="exportCosts()">Download costs for your accountant (.csv)</button>`;
   if(isWideBudget()){document.getElementById('budgetBody').innerHTML=h+budgetTableHTML(p)+exportBtn;return;}
   if(!lines.length)h+=`<div class="empty">No budget lines yet. Add one \u2014 or copy another site\u2019s budget below \u2014 to start tracking this build\u2019s money.</div>`;
   const groups=[];
@@ -5786,7 +5787,7 @@ function renderBudget(){
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
   if(un.length){
     h+=`<div class="bgt-grp" style="color:var(--clay)">Not assigned to a line</div>`;
-    un.forEach(a=>{h+=`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`;});
+    un.forEach(a=>{h+=`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${a.qbId?' <b style=\"color:var(--sage);font-size:.72em\">QB✓</b>':''}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`;});
   }
   document.getElementById('budgetBody').innerHTML=h+exportBtn;
 }
@@ -5921,7 +5922,7 @@ function budgetTableHTML(p){
   });
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
   let unh='';
-  if(un.length){unh=`<div class="bgt-grp" style="color:var(--clay)">Not assigned to a line</div>`+un.map(a=>`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`).join('');}
+  if(un.length){unh=`<div class="bgt-grp" style="color:var(--clay)">Not assigned to a line</div>`+un.map(a=>`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${a.qbId?' <b style=\"color:var(--sage);font-size:.72em\">QB✓</b>':''}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`).join('');}
   return `<table class="bgt-table"><thead><tr>
       <th style="width:20%">Line</th><th style="width:13%">Trade</th><th style="width:13%">Stage</th><th class="n" style="width:11%">Budget</th><th class="n" style="width:11%">Signed for</th><th class="n" style="width:11%">Paid</th><th class="n" style="width:12%">Remaining</th><th class="n" style="width:9%">Edit</th>
     </tr></thead><tbody>${rows}
@@ -6027,6 +6028,44 @@ function maybeInstallGate(){
   }catch(e){return false;}
 }
 function igInstall(){try{if(deferredPrompt){deferredPrompt.prompt();}}catch(e){}}
+/* ── QuickBooks client plumbing (Live builders with cloud sync) ── */
+let _qbState=null;
+function qbEligible(){try{return appMode()==='real'&&Sync.ready()&&state.session&&state.session.role==='hillan';}catch(e){return false;}}
+async function qbRefreshStatus(){
+  if(!qbEligible()){_qbState=null;qbRenderLine();return;}
+  try{_qbState=await fnCall('qbStatus',{});}catch(e){_qbState=null;}
+  qbRenderLine();try{renderBudget();}catch(e){}
+}
+function qbRenderLine(){
+  const el=document.getElementById('qbLine');if(!el)return;
+  if(!qbEligible()){el.innerHTML='<span class="dev-dim">Sign in live with cloud sync to connect QuickBooks.</span>';return;}
+  if(_qbState&&_qbState.connected){
+    el.innerHTML='<b style="color:var(--sage)">Connected</b> · '+esc(_qbState.company||_qbState.realmId||'')+' · '+esc(_qbState.env||'')+
+      ' <button class="la-link" style="margin-left:10px" onclick="qbDisconnect()">Disconnect</button>';
+  } else {
+    el.innerHTML='<button class="b1 b-go" style="padding:9px 18px" onclick="qbConnect()">Connect QuickBooks</button>';
+  }
+}
+async function qbConnect(){
+  try{const r=await fnCall('qbConnect',{});window.open(r.url,'_blank','noopener');toast('Finish connecting in the QuickBooks window');}
+  catch(e){toast('Could not start: '+e.message);}
+}
+async function qbDisconnect(){
+  try{await fnCall('qbDisconnect',{});_qbState=null;qbRenderLine();try{renderBudget();}catch(e){}toast('QuickBooks disconnected');}catch(e){toast(e.message);}
+}
+let _qbBusy=false;
+async function qbExportNow(){
+  if(_qbBusy)return;_qbBusy=true;
+  try{
+    toast('Sending costs to QuickBooks…');
+    const r=await fnCall('qbExportCosts',{siteId:String(state.activeId)});
+    if(!r.ok){toast(r.reason==='not-connected'?'Connect QuickBooks first (gear → Dev)':'Export refused: '+r.reason);return;}
+    let msg=r.created+' sent'+(r.skipped?' · '+r.skipped+' already in QuickBooks':'');
+    if(r.failures&&r.failures.length)msg+=' · '+r.failures.length+' failed';
+    toast(msg);try{renderBudget();}catch(e){}
+  }catch(e){toast('Export failed: '+e.message);}finally{_qbBusy=false;}
+}
+try{window.addEventListener('message',ev=>{if(ev&&ev.data==='qb-connected'){toast('QuickBooks connected ✓');qbRefreshStatus();}});}catch(e){}
 function igBrowser(){
   try{sessionStorage.setItem('plumbBrowserOK','1');}catch(e){}
   try{document.getElementById('installGate').classList.remove('show');}catch(e){}
@@ -8863,6 +8902,19 @@ function pickChip(el){const row=el.closest('.chip-row');if(row)[...row.querySele
    iPhone/Safari has no install API, so we show the manual steps. */
 let deferredPrompt=null;
 function isStandalone(){try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(e){return false;}}
+/* ── Plumb server (Cloud Functions): callable-lite protocol ── */
+const FN_BASE='https://us-central1-plumb-467a0.cloudfunctions.net/';
+async function fnCall(name,data){
+  const u=(typeof firebase!=='undefined'&&firebase.auth&&firebase.auth().currentUser);
+  if(!u)throw new Error('sign in first');
+  const tok=await u.getIdToken();
+  const r=await fetch(FN_BASE+name,{method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
+    body:JSON.stringify({data:data||{}})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||('server '+r.status));
+  return j.result;
+}
 function isIOSdevice(){try{const ua=navigator.userAgent||'';return /iphone|ipad|ipod/i.test(ua)||((navigator.platform==='MacIntel')&&navigator.maxTouchPoints>1);}catch(e){return false;}}
 function isSafariBrowser(){try{const ua=navigator.userAgent||'';return /safari/i.test(ua)&&!/crios|fxios|edgios|chrome|android/i.test(ua);}catch(e){return true;}}
 function isInAppBrowser(){try{return /FBAN|FBAV|Instagram|Line\/|Twitter|GSA\/|Snapchat|Pinterest|LinkedIn|MicroMessenger|TikTok/i.test(navigator.userAgent||'');}catch(e){return false;}}
@@ -9031,7 +9083,7 @@ function devSaveVapid(){const v=(document.getElementById('vapidInput')||{value:'
   try{if(v)localStorage.setItem('plumb.fcm.vapid',v);else localStorage.removeItem('plumb.fcm.vapid');}catch(e){}
   toast(v?'Push key saved — registering device':'Push key cleared');
   if(v)Notify.captureToken();}
-async function openDev(){if(!devAllowed()){toast('Workbench is limited to the owner account');return;}if(!_lastLayoutSnap||Date.now()-_snapAt>1500){try{_lastLayoutSnap=buildLayoutSnap();}catch(e){}}document.getElementById('devpanel').classList.add('show');try{renderDevGrants();}catch(e){}try{renderDevErrors();}catch(e){}try{const ai=document.getElementById('appCheckInput');if(ai)ai.value=appCheckKey()||'';const vi=document.getElementById('vapidInput');if(vi)vi.value=Notify.vapid();renderLocalState();renderEventLog();renderFeedbackList();devSyncStatusText();}catch(e){}try{await refreshDev();}catch(e){}}
+async function openDev(){try{qbRefreshStatus();}catch(e){}if(!devAllowed()){toast('Workbench is limited to the owner account');return;}if(!_lastLayoutSnap||Date.now()-_snapAt>1500){try{_lastLayoutSnap=buildLayoutSnap();}catch(e){}}document.getElementById('devpanel').classList.add('show');try{renderDevGrants();}catch(e){}try{renderDevErrors();}catch(e){}try{const ai=document.getElementById('appCheckInput');if(ai)ai.value=appCheckKey()||'';const vi=document.getElementById('vapidInput');if(vi)vi.value=Notify.vapid();renderLocalState();renderEventLog();renderFeedbackList();devSyncStatusText();}catch(e){}try{await refreshDev();}catch(e){}}
 function devSyncStatusText(){const el=document.getElementById('devSyncStatus');if(!el)return;const cfg=fbConfig();
   if(Sync.on){el.innerHTML='<b style="color:#9ED3AB">● Live</b> · project <code>'+esc((cfg&&cfg.projectId)||'')+'</code> · this device <code>'+esc(Sync.deviceId||'')+'</code>'+((Sync.authKind==='account'&&Sync.uid)?(' \u00b7 account <code>'+esc(Sync.uid.slice(0,8)+'\u2026')+'</code>'):(' \u00b7 <b style="color:#C8785F">no account \u2014 sign in</b>'));}
   else if(cfg){el.innerHTML='Config saved, not connected'+(Sync.err?' — '+esc(Sync.err):'')+'. Tap Connect.';}
@@ -9293,7 +9345,9 @@ if('serviceWorker' in navigator){
       });
       try{ reg.update(); }catch(e){}
       setInterval(function(){ try{ reg.update(); }catch(e){} }, 60*60*1000);  // hourly check
-    }).catch(function(){/* SW optional; app works without it */});
+    }).catch(function(){/* transient fetch failures happen mid-update; retry once, then let it go — the app works without it */
+      setTimeout(function(){try{navigator.serviceWorker.register('sw.js').then(function(reg){window.__plumbSW=reg;}).catch(function(){});}catch(e){}},4000);
+    });
   });
 }
 

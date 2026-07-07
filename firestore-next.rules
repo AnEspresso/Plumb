@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+
+    match /sites/{siteId} {
+      function isLive()   { return resource.data.mode == 'live'; }
+      function stamped()  { return resource.data.memberUids != null; }
+      function isMember() { return stamped() && request.auth.uid in resource.data.memberUids; }
+      function isBuilder(){ return resource.data.members != null
+                                   && resource.data.members[request.auth.uid] == 'builder'; }
+
+      allow read: if signedIn() && (!isLive() || isMember());
+
+      allow create: if signedIn()
+        && (request.resource.data.mode != 'live'
+            || (request.resource.data.members[request.auth.uid] == 'builder'
+                && request.auth.uid in request.resource.data.memberUids));
+
+      allow update: if signedIn() && (!isLive() || isBuilder());
+      allow delete: if false;
+
+      match /{recordColl}/{recordId} {
+        function site()  { return get(/databases/$(database)/documents/sites/$(siteId)).data; }
+        function sMem()  { return site().members; }
+        function sRole() { return sMem()[request.auth.uid]; }
+        function sScoped(){ return site().mode == 'live'; }
+
+        allow read: if signedIn()
+          && (!sScoped()
+              || (recordColl == 'pmts' ? sRole() in ['builder','client']
+                  : recordColl in ['mail','costs'] ? sRole() == 'builder'
+                  : sRole() != null));
+        allow write: if signedIn()
+          && (!sScoped()
+              || sRole() == 'builder'
+              || (sRole() == 'sub'    && recordColl in ['items','logs'])
+              || (sRole() == 'client' && recordColl in ['sel','items']));
+      }
+    }
+
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revoked','revokedAt']);
+      allow delete: if false;
+
+      match /claims/{uid} {
+        allow read: if signedIn();
+        allow create: if signedIn() && uid == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    match /orgs/{orgId} {
+      allow read: if signedIn() && resource.data.members[request.auth.uid] != null;
+      allow create: if signedIn() && request.resource.data.members[request.auth.uid] == 'builder';
+      allow update: if signedIn()
+        && resource.data.members[request.auth.uid] == 'builder'
+        && request.resource.data.members[request.auth.uid] == 'builder';
+      allow delete: if false;
+    }
+
+    match /users/{userId} {
+      function okUserShape() {
+        return request.resource.data.keys().hasOnly(
+                 ['name','email','rpRole','provider','fcm','tokens','t','createdAt','updatedAt'])
+               && request.resource.size() < 50;
+      }
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create, update: if signedIn() && request.auth.uid == userId && okUserShape();
+      allow delete: if false;
+    }
+
+    // Telemetry moved server-side (Cloud Functions with Admin SDK bypass rules).
+    // Clients get nothing: the header/body mismatch class of abuse dies here.
+    match /telemetry/{deviceId} {
+      allow read, write: if false;
+      match /events/{eventId} {
+        allow read, write: if false;
+      }
+    }
+    // QuickBooks tokens + OAuth states are server-only secrets.
+    match /qb/{uid} { allow read, write: if false; }
+    match /qbStates/{stateId} { allow read, write: if false; }
+  }
+}
