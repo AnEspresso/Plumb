@@ -1,0 +1,35 @@
+name: Deploy Cloud Functions
+on:
+  push:
+    branches: [main]
+    paths: ['functions/**', 'firebase.json', '.github/workflows/deploy-functions.yml']
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - name: Install function dependencies
+        run: cd functions && npm ci || npm install --no-audit --no-fund
+
+      - name: Write runtime .env from repo secrets
+        run: |
+          cat > functions/.env << EOF
+          INTUIT_CLIENT_ID=${{ secrets.INTUIT_CLIENT_ID }}
+          INTUIT_CLIENT_SECRET=${{ secrets.INTUIT_CLIENT_SECRET }}
+          QB_ENV=${{ secrets.QB_ENV || 'sandbox' }}
+          OWNER_UIDS=${{ secrets.OWNER_UIDS }}
+          APP_ORIGINS=https://siteplumb.com,https://www.siteplumb.com,https://anespresso.github.io
+          EOF
+
+      - name: Auth with the Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+
+      - name: Deploy functions
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: npx firebase-tools@latest deploy --only functions --project plumb-467a0 --non-interactive --force
