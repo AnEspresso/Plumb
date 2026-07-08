@@ -2659,7 +2659,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.167.4 - Law five. If the orb must press something the bubble is covering before the bubble has taken its place for the slide, the bubble makes its single move early - gliding to its corner while the orb travels - so a press can never land on it, in either direction. Also fixed: the brief empty white bubble when the tour starts, and the final card now shows Play in the demo as the black button with Set up my first site in gold.';
+const PLUMB_VERSION='2.167.5 - Law five, ironclad. When the bubble must clear out of a press path, the orb now waits for that glide to finish before pressing - previously fast presses could land while the bubble was still mid-flight. The bubble still moves exactly once per slide; the press simply refuses to fire until the target is truly uncovered, in both directions.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4330,18 +4330,19 @@ function tourStep(){
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
   step.__dock=false;
-  window._law5=(pr)=>{                                     // LAW 5: press under the bubble? bubble moves NOW, once
-    try{
-      if(step.__dock)return;
-      const bub=document.getElementById('tourBubble');if(!bub)return;
-      const br=bub.getBoundingClientRect();if(!br||!br.height)return;
-      if(pr.left<br.right&&pr.right>br.left&&pr.top<br.bottom&&pr.bottom>br.top){
-        step.__dock=true;
-        bub.classList.add('tour-bub-dock');
-        const bw=bub.offsetWidth;
-        bub.style.top='14px';bub.style.left=(innerWidth-bw-14)+'px';
-      }
-    }catch(e){}
+  window._law5=(pr)=>{                                     // LAW 5: press under the bubble? bubble moves NOW, once,
+    try{                                                   //         and the press WAITS until it has cleared
+      const bub=document.getElementById('tourBubble');if(!bub)return false;
+      const br=bub.getBoundingClientRect();if(!br||!br.height)return false;
+      const hit=pr.left<br.right&&pr.right>br.left&&pr.top<br.bottom&&pr.bottom>br.top;
+      if(!hit)return false;
+      if(step.__dock)return true;                          // already moving/moved — press still waits it out
+      step.__dock=true;
+      bub.classList.add('tour-bub-dock');
+      const bw=bub.offsetWidth;
+      bub.style.top='14px';bub.style.left=(innerWidth-bw-14)+'px';
+      return true;
+    }catch(e){return false;}
   };
   let _tapP;
   if(step.acts){
@@ -6367,14 +6368,15 @@ function orbTo(target,opts){
           else {x=r.left+r.width/2;y=Math.max(30,r.top-pad);}
           y=Math.min(Math.max(30,y),window.innerHeight-30);
         } else {x=r.left+r.width/2;y=r.top+r.height/2;}
-        if(opts.tap&&typeof window._law5==='function'){try{window._law5(r);}catch(e){}}
+        let l5wait=0;
+        if(opts.tap&&typeof window._law5==='function'){try{if(window._law5(r))l5wait=560;}catch(e){}}   /* LAW 5: never press until the bubble has cleared */
         o.classList.add('show','active');
         _orbPlace(o,x,y,opts.instant);
         setTimeout(()=>{
           if(opts.tap){o.classList.remove('tap');void o.offsetWidth;o.classList.add('tap');
             setTimeout(()=>{if(opts.rest)o.classList.remove('active');res();},430);}
           else {if(opts.rest)o.classList.remove('active');res();}
-        },opts.instant?220:580);
+        },(opts.instant?220:580)+l5wait);
       };
       if(off&&!opts.noscroll)smoothScrollTo(el,0.42);  /* the screen travels WITH the orb */
       awaitSettle(el).then(go2);                       /* LAW 3: never commit until at rest */

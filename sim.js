@@ -741,6 +741,11 @@ t('walking BACKWARD lands every slide correctly too', backOK, backDetail);
 for(let f=1;f<16;f++){$('tourNext()');await new Promise(r=>setTimeout(r,350));}
 await new Promise(r=>setTimeout(r,900));
 t('LAW 5 hook armed per slide', $("typeof window._law5")==='function');
+$("(function(){const b=document.getElementById('tourBubble');b.getBoundingClientRect=()=>({left:100,right:400,top:100,bottom:300,width:300,height:200});})()");
+const l5a=$("window._law5({left:150,right:250,top:150,bottom:250})");
+const l5b=$("window._law5({left:150,right:250,top:150,bottom:250})");
+const l5c=$("window._law5({left:900,right:990,top:900,bottom:990})");
+t('LAW 5: covered press moves bubble once, waits thereafter, ignores clear presses', l5a===true&&l5b===true&&l5c===false&&$("document.getElementById('tourBubble').classList.contains('tour-bub-dock')")===true);
 t('finale buttons: demo=black, first-site=gold', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-gold')&&$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-next" onclick="tourEnd()">Play in the demo'));
 t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my first site'));
 $('tourEnd()');$('exitDemo()');
