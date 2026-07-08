@@ -798,6 +798,7 @@
   .tour-foot>div{display:flex;gap:8px;}
   .tour-back{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);border-radius:10px;padding:8px 13px;font-family:inherit;font-size:13px;font-weight:650;cursor:pointer;}
   .tour-next{background:var(--ink);color:var(--paper);border:none;border-radius:10px;padding:8px 15px;font-family:inherit;font-size:13px;font-weight:650;cursor:pointer;}
+.tour-gold{background:#CBA268;color:#241E15;border:none;border-radius:10px;padding:8px 15px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
   .ov-hero{flex:0 0 auto;text-align:center;min-width:46px;}
   .ov-hero .hn{font-size:26px;font-weight:700;line-height:1;color:var(--sage);}
   .ov-hero.attn .hn{color:var(--clay);}
@@ -2658,7 +2659,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.167.3 - The Motion Laws. The four wizard rules are now enforced at single points in the engine: every measurement waits for the screen to be truly at rest, every scroll is one smooth motion with the ring riding its old box frame by frame, the orb never commits to a press until scrolling has finished anywhere it acts, and the bubble is positioned exactly once per slide - ring corrections and ping hops can no longer move it. Same highlights as before, both directions.';
+const PLUMB_VERSION='2.167.4 - Law five. If the orb must press something the bubble is covering before the bubble has taken its place for the slide, the bubble makes its single move early - gliding to its corner while the orb travels - so a press can never land on it, in either direction. Also fixed: the brief empty white bubble when the tour starts, and the final card now shows Play in the demo as the black button with Set up my first site in gold.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4297,7 +4298,7 @@ function startTour(role){_tourSteps=TOUR[role]||TOUR.team;_tourIdx=0;
   if(!document.getElementById('tourCatch')){
     const c=document.createElement('div');c.id='tourCatch';c.className='tour-catch';
     const s=document.createElement('div');s.id='tourSpot';s.className='tour-spot';
-    const b=document.createElement('div');b.id='tourBubble';b.className='tour-bubble';
+    const b=document.createElement('div');b.id='tourBubble';b.className='tour-bubble';b.style.opacity='0';
     document.body.appendChild(c);document.body.appendChild(s);document.body.appendChild(b);
   }
   tourStep();}
@@ -4328,6 +4329,20 @@ function tourStep(){
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
+  step.__dock=false;
+  window._law5=(pr)=>{                                     // LAW 5: press under the bubble? bubble moves NOW, once
+    try{
+      if(step.__dock)return;
+      const bub=document.getElementById('tourBubble');if(!bub)return;
+      const br=bub.getBoundingClientRect();if(!br||!br.height)return;
+      if(pr.left<br.right&&pr.right>br.left&&pr.top<br.bottom&&pr.bottom>br.top){
+        step.__dock=true;
+        bub.classList.add('tour-bub-dock');
+        const bw=bub.offsetWidth;
+        bub.style.top='14px';bub.style.left=(innerWidth-bw-14)+'px';
+      }
+    }catch(e){}
+  };
   let _tapP;
   if(step.acts){
     _tapP=Promise.resolve();
@@ -4357,11 +4372,11 @@ function tourStep(){
       const last=_tourIdx>=_tourSteps.length-1;
       bub.innerHTML='<div class="tour-step">'+(_tourIdx+1)+' / '+_tourSteps.length+'</div>'
         +'<div class="tour-h">'+step.title+'</div><div class="tour-b">'+step.body+'</div>'
-        +'<div class="tour-foot">'+(last?'<button class="tour-skip" onclick="tourEnd()">Play in the demo</button>':'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>')+'<div>'
+        +'<div class="tour-foot">'+(last?'<button class="tour-next" onclick="tourEnd()">Play in the demo</button>':'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>')+'<div>'
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
-        +'<button class="tour-next" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
-      tourPlace(rect,false,!!step.after);               // ring glides; the bubble is placed ONCE for the slide (docked when the orb will work)
+        +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
+      tourPlace(rect,false,!!step.after||!!step.__dock); // ring glides; the bubble is placed ONCE for the slide (docked when the orb works, or when LAW 5 moved it early)
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
         try{const rq=el.getBoundingClientRect();
           if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true,undefined,true);}catch(e){}},90));
@@ -6315,8 +6330,12 @@ function startGrandTour(){
    4. The bubble never fades and never moves mid-slide. It glides once between
       slides; on any slide where the orb works the page (step.after), it parks
       in the top-right corner from the first frame.
+   5. If the orb must press BEFORE the slide's single bubble placement and the
+      press target sits under the bubble, the bubble's one move fires EARLY —
+      gliding to its corner as the orb travels — so the orb never presses the
+      bubble. Both directions.
    Enforcement lives in: awaitSettle (rest), smoothScrollTo (one motion),
-   orbTo (unconditional settle), tourPlace(skipBub) (bubble placed once/slide). */
+   orbTo (unconditional settle + LAW-5 hook), tourPlace(skipBub) (bubble once/slide). */
 /* ── The guide orb: glides to a control, taps it, then the screen answers. ── */
 function _orbEl(){return document.getElementById('tourOrb');}
 function _orbReduced(){try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}}
@@ -6348,6 +6367,7 @@ function orbTo(target,opts){
           else {x=r.left+r.width/2;y=Math.max(30,r.top-pad);}
           y=Math.min(Math.max(30,y),window.innerHeight-30);
         } else {x=r.left+r.width/2;y=r.top+r.height/2;}
+        if(opts.tap&&typeof window._law5==='function'){try{window._law5(r);}catch(e){}}
         o.classList.add('show','active');
         _orbPlace(o,x,y,opts.instant);
         setTimeout(()=>{

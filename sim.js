@@ -740,6 +740,8 @@ for(let b=14;b>=0;b--){
 t('walking BACKWARD lands every slide correctly too', backOK, backDetail);
 for(let f=1;f<16;f++){$('tourNext()');await new Promise(r=>setTimeout(r,350));}
 await new Promise(r=>setTimeout(r,900));
+t('LAW 5 hook armed per slide', $("typeof window._law5")==='function');
+t('finale buttons: demo=black, first-site=gold', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-gold')&&$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-next" onclick="tourEnd()">Play in the demo'));
 t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my first site'));
 $('tourEnd()');$('exitDemo()');
 t('post-tour exit is clean', $("appMode()")==='real'&&$("_tourLift?1:0")===0);
