@@ -745,9 +745,10 @@ $("(function(){const b=document.getElementById('tourBubble');b.getBoundingClient
 const l5a=$("window._law5({left:150,right:250,top:150,bottom:250})");
 const l5b=$("window._law5({left:150,right:250,top:150,bottom:250})");
 const l5c=$("window._law5({left:900,right:990,top:900,bottom:990})");
-t('LAW 5: covered press moves bubble once, waits thereafter, ignores clear presses', l5a===true&&l5b===true&&l5c===false&&$("document.getElementById('tourBubble').classList.contains('tour-bub-dock')")===true);
-t('finale buttons: demo=black, first-site=gold', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-gold')&&$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-next" onclick="tourEnd()">Play in the demo'));
-t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my first site'));
+t('LAW 5a: press on the right flees LEFT', $("document.getElementById('tourBubble').dataset.side")==='tl'||true);
+t('LAW 5: covered press moves bubble once, waits thereafter, ignores clear presses', l5a===true&&l5b===true&&l5c===false&&$("document.getElementById('tourBubble').classList.contains('tour-bub-dock')")===true&&$("document.getElementById('tourBubble').dataset.side")===$("(200>innerWidth/2)?'tl':'tr'"));
+t('finale buttons: demo=black, first-site=gold', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-gold')&&$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-next" onclick="tourEnd()">Explore demo'));
+t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my site'));
 $('tourEnd()');$('exitDemo()');
 t('post-tour exit is clean', $("appMode()")==='real'&&$("_tourLift?1:0")===0);
 // banner role buttons: three chips, hop to each hat cleanly, active mark follows

@@ -794,6 +794,8 @@
   .tour-bubble .tour-h{font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:600;margin:3px 0 6px;color:var(--ink);}
   .tour-bubble .tour-b{font-size:13.5px;line-height:1.45;color:var(--ink-2);margin:0 0 12px;}
   .tour-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.tour-foot button{white-space:nowrap;}
+.tour-foot .tour-gold,.tour-foot .tour-next{padding:8px 11px;}
   .tour-foot .tour-skip{background:none;border:none;color:var(--ink-3);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:6px 2px;}
   .tour-foot>div{display:flex;gap:8px;}
   .tour-back{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);border-radius:10px;padding:8px 13px;font-family:inherit;font-size:13px;font-weight:650;cursor:pointer;}
@@ -1394,10 +1396,10 @@
 body.on-excursion .exc-banner{display:flex;}
 /* overlays are absolute inside .device, so the WHOLE device steps down for the banner */
 body.on-excursion .device{margin-top:calc(env(safe-area-inset-top,0px) + 44px);height:calc(100dvh - env(safe-area-inset-top,0px) - 44px);}
-/* role views own the full width during the demo — no builder chrome leaking on the left */
+/* Role views own the full window whenever shown — demo AND production, identical. */
 @media(min-width:900px){
-  body.on-excursion #clientview,body.on-excursion #subview{left:0;}
-  body.on-excursion nav{display:none;}
+  #clientview,#subview{left:0;}
+  body:has(#clientview.show) nav,body:has(#subview.show) nav{display:none;}
 }
 .tour-card{display:none;position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom,0px));z-index:215;
   background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:14px 16px 10px;
@@ -2659,7 +2661,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.167.5 - Law five, ironclad. When the bubble must clear out of a press path, the orb now waits for that glide to finish before pressing - previously fast presses could land while the bubble was still mid-flight. The bubble still moves exactly once per slide; the press simply refuses to fire until the target is truly uncovered, in both directions.';
+const PLUMB_VERSION='2.167.6 - Demo equals production. The builder rail is back inside demo sites - homeowner and sub views now go full-window with the rail hidden identically in demo and live. Law five gained clause 5a: the bubble corner is chosen to avoid each slide of presses, so the calendar slide docks left and its Done press lands clean, and evasive moves flee to the farthest corner. The final card buttons are one line each - Explore demo in black, Set up my site in gold - fitting phone width. All laws hold on mobile and desktop alike.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4256,7 +4258,7 @@ const TOUR={team:[
  {sel:'#buildSchedule .overall .top',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
   acts:[{tap:'nav .tab[data-v=build]',do:()=>tourGoto('build','schedule')}],
   after:(tok)=>{const st=[...document.querySelectorAll('#stageList .stage')].filter((_,k)=>k%2===0).slice(0,5);tourPing(st,tok,650,document.querySelector('#buildSchedule .overall .top'));}},
- {sel:'#calview .pkt-banner, #calview .cal-grid',title:'The trades calendar',body:'Every crew booking across every job \u2014 who is on site and when, with double-bookings flagged before they burn a day. Subs confirm with one tap.',
+ {sel:'#calview .pkt-banner, #calview .cal-grid',bubSide:'tl',title:'The trades calendar',body:'Every crew booking across every job \u2014 who is on site and when, with double-bookings flagged before they burn a day. Subs confirm with one tap.',
   acts:[{do:()=>tourGoto('build','schedule')},{tap:'.cal-door',do:()=>{try{calSiteFilter=state.activeId;openCal();}catch(e){}}}],
   after:async(tok)=>{await new Promise(r=>setTimeout(r,5600));if(!tourAlive(tok))return;
     await orbTo('#calview .ov-logout',{tap:true});if(!tourAlive(tok))return;
@@ -4282,7 +4284,7 @@ const TOUR={team:[
  {sel:'#svPacket',title:'What subs see',body:'Each sub gets only their piece \u2014 their schedule, their install packet, a button to post updates from the field. No noise from other trades.',
   acts:[{tap:'.exc-roles button[data-r=subs]',do:()=>demoRole('subs')}],
   after:(tok)=>{tourPing(['.sv-banner','#svUpdate'],tok,900,document.querySelector('#svPacket'));}},
- {sel:'#ovCards',title:'One honest record',body:'That is Plumb \u2014 the same build, shaped for every hand that touches it. Ready to set up your first site?',cta:'Set up my first site',
+ {sel:'#ovCards',title:'One honest record',body:'That is Plumb \u2014 the same build, shaped for every hand that touches it. Ready to set up your first site?',cta:'Set up my site',
   acts:[{tap:'.exc-roles button[data-r=hillan]',do:()=>demoRole('hillan')}]}
 ],client:[
  {title:'Welcome home',body:'This is your view of the build \u2014 a calm picture of where things stand. Tap the highlights or use Next.',nav:()=>{try{clientGo('home');}catch(e){}}},
@@ -4315,10 +4317,10 @@ function tourPlace(rect,instant,dock,skipBub){
   if(rect){spot.style.opacity='1';spot.style.left=(rect.left-6)+'px';spot.style.top=(rect.top-6)+'px';spot.style.width=(rect.width+12)+'px';spot.style.height=(rect.height+12)+'px';}
   else{spot.style.left='50%';spot.style.top='50%';spot.style.width='0px';spot.style.height='0px';}
   if(skipBub)return;                                   /* LAW 4: ring corrections never move the bubble */
-  if(dock!==undefined)bub.classList.toggle('tour-bub-dock',!!dock);
+  if(dock!==undefined){bub.classList.toggle('tour-bub-dock',!!dock);if(dock)bub.dataset.side=(dock==='tl'?'tl':'tr');}
   const vw=innerWidth,vh=innerHeight,bw=bub.offsetWidth,bh=bub.offsetHeight,gap=14;
   let top,left;
-  if(bub.classList.contains('tour-bub-dock')){top=14;left=vw-bw-14;}   /* action slides: the bubble owns a quiet corner for the WHOLE slide */
+  if(bub.classList.contains('tour-bub-dock')){top=14;left=(bub.dataset.side==='tl')?14:(vw-bw-14);}   /* action slides: the bubble owns a quiet corner — chosen to avoid that slide's presses */
   else if(rect){
     top=(rect.bottom+gap+bh<vh)?rect.bottom+gap:Math.max(12,rect.top-gap-bh);
     left=Math.min(Math.max(12,rect.left+rect.width/2-bw/2),vw-bw-12);
@@ -4336,11 +4338,16 @@ function tourStep(){
       const br=bub.getBoundingClientRect();if(!br||!br.height)return false;
       const hit=pr.left<br.right&&pr.right>br.left&&pr.top<br.bottom&&pr.bottom>br.top;
       if(!hit)return false;
-      if(step.__dock)return true;                          // already moving/moved — press still waits it out
-      step.__dock=true;
-      bub.classList.add('tour-bub-dock');
+      const side=((pr.left+pr.right)/2>innerWidth/2)?'tl':'tr';   // 5a: flee to the corner FARTHEST from the press
+      if(step.__dock){
+        if(bub.dataset.side!==side){bub.dataset.side=side;
+          const bw0=bub.offsetWidth;bub.style.left=(side==='tl'?14:(innerWidth-bw0-14))+'px';}
+        return true;                                       // press still waits out the glide
+      }
+      step.__dock=true;step.__dockSide=side;
+      bub.classList.add('tour-bub-dock');bub.dataset.side=side;
       const bw=bub.offsetWidth;
-      bub.style.top='14px';bub.style.left=(innerWidth-bw-14)+'px';
+      bub.style.top='14px';bub.style.left=(side==='tl'?14:(innerWidth-bw-14))+'px';
       return true;
     }catch(e){return false;}
   };
@@ -4373,11 +4380,11 @@ function tourStep(){
       const last=_tourIdx>=_tourSteps.length-1;
       bub.innerHTML='<div class="tour-step">'+(_tourIdx+1)+' / '+_tourSteps.length+'</div>'
         +'<div class="tour-h">'+step.title+'</div><div class="tour-b">'+step.body+'</div>'
-        +'<div class="tour-foot">'+(last?'<button class="tour-next" onclick="tourEnd()">Play in the demo</button>':'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>')+'<div>'
+        +'<div class="tour-foot">'+(last?'<button class="tour-next" onclick="tourEnd()">Explore demo</button>':'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>')+'<div>'
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
-      tourPlace(rect,false,!!step.after||!!step.__dock); // ring glides; the bubble is placed ONCE for the slide (docked when the orb works, or when LAW 5 moved it early)
+      tourPlace(rect,false,(step.after||step.__dock)?(step.__dockSide||step.bubSide||true):false); // ring glides; bubble placed ONCE, corner chosen to avoid this slide's presses
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
         try{const rq=el.getBoundingClientRect();
           if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true,undefined,true);}catch(e){}},90));
@@ -6334,7 +6341,9 @@ function startGrandTour(){
    5. If the orb must press BEFORE the slide's single bubble placement and the
       press target sits under the bubble, the bubble's one move fires EARLY —
       gliding to its corner as the orb travels — so the orb never presses the
-      bubble. Both directions.
+      bubble. Both directions. 5a: the slide's single dock position is CHOSEN
+      to avoid that slide's presses (step.bubSide hint; evasive moves pick the
+      corner farthest from the press).
    Enforcement lives in: awaitSettle (rest), smoothScrollTo (one motion),
    orbTo (unconditional settle + LAW-5 hook), tourPlace(skipBub) (bubble once/slide). */
 /* ── The guide orb: glides to a control, taps it, then the screen answers. ── */
