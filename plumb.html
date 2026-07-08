@@ -2666,7 +2666,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.168.1 - Law six and two fixes. New law: the bubble always takes the least important place on the screen - on phones it docks as a slim band in whichever half is away from the spotlight and the action, and evasive moves flee to the opposite band. Fixed: slide three now visibly re-files the demo photo on every run instead of silently skipping when it already exists, and starting the walkthrough now dismisses the first-run setup sheet so nothing blocks the tour.';
+const PLUMB_VERSION='2.168.2 - The Daily Log, performed in full. Slide three now files the photo, rings it where it landed, opens the daily log sheet, writes the day in front of you, presses Save, and rings the finished entry - all while the narration runs, on phone and desktop alike. Law six now governs every slide on phones: the bubble always takes the far band, never the story.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4254,8 +4254,26 @@ const TOUR={team:[
   acts:[{do:()=>demoRole('hillan')}]},
  {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the current stage and percent complete, what the build is waiting on, and who is next on site. The answer to how is it going, before anyone asks.',
   acts:[{do:()=>demoRole('hillan')},{tap:'#ovCards .ov-card[onclick*="p2"]',do:()=>{openSiteFromOverview('p2');go('log');}}]},
- {sel:'#view-log .thumb, #view-log .feed .item, .capture-card',title:'The Daily Log',body:'Watch this. One press, and the shot files itself \u2014 today\u2019s date, the right area, no typing, no camera roll. Every day gets one line and every photo lands where it belongs. Six months later, you can prove exactly what happened, and when.',
-  acts:[{do:()=>tourGoto('log')},{tap:'.capture-card .cap-btn',do:()=>{try{tourDemoPhoto();}catch(e){}}}]},
+ {sel:'.capture-card',bubSide:'tb',title:'The Daily Log',body:'Watch this. One press files the shot \u2014 today\u2019s date, the right area, no camera roll. Then the day gets its one line, saved the moment you write it. Six months later, you can prove exactly what happened, and when.',
+  acts:[{do:()=>tourGoto('log')},{tap:'.capture-card .cap-btn',do:()=>{try{tourDemoPhoto();}catch(e){}}}],
+  after:async(tok)=>{
+    await new Promise(r=>setTimeout(r,700));if(!tourAlive(tok))return;
+    const shot=[...document.querySelectorAll('#view-log .feed .item')].find(e=>e.textContent.includes('Waste lines'));
+    if(shot)await tourPing([shot],tok,1500,document.querySelector('.capture-card'));
+    if(!tourAlive(tok))return;
+    await orbTo('.daylog',{tap:true});if(!tourAlive(tok))return;
+    try{openSheet(true);}catch(e){}
+    await new Promise(r=>setTimeout(r,650));if(!tourAlive(tok))return;
+    const ta=document.getElementById('cNote');
+    if(ta&&!String(ta.value||'').trim())ta.value='Crew of 2 \u2014 waste lines strapped, second-floor bath.';
+    if(ta)await tourPing([ta],tok,1600,shot||document.querySelector('.daylog'));
+    if(!tourAlive(tok))return;
+    await orbTo('#saveBtn',{tap:true});if(!tourAlive(tok))return;
+    try{save();}catch(e){try{closeSheet();}catch(_){}}
+    await new Promise(r=>setTimeout(r,600));if(!tourAlive(tok))return;
+    const row=[...document.querySelectorAll('#view-log *')].find(e=>e.textContent.includes('waste lines strapped')&&e.children.length<4&&!e.closest('.feed'));
+    if(row)await tourPing([row],tok,1400,null);
+  }},
  {sel:'[data-d=waiting]',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues \u2014 in one list. When this screen is empty, nobody is stuck.',
   acts:[{tap:'nav .tab[data-v=decisions]',do:()=>tourGoto('decisions')},{tap:'[data-d=waiting]',jump:true,do:()=>{try{decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}}]},
  {sel:'[data-d=selections]',title:'Selections & sign-offs',body:'Finishes and fixtures live here \u2014 priced, spec\u2019d, and signed by the homeowner before anyone builds them. No more he-said-she-said about the countertop.',
@@ -4340,7 +4358,7 @@ function tourPlace(rect,instant,dock,skipBub){
   if(rect){spot.style.opacity='1';spot.style.left=(rect.left-6)+'px';spot.style.top=(rect.top-6)+'px';spot.style.width=(rect.width+12)+'px';spot.style.height=(rect.height+12)+'px';}
   else{spot.style.left='50%';spot.style.top='50%';spot.style.width='0px';spot.style.height='0px';}
   if(skipBub)return;                                   /* LAW 4: ring corrections never move the bubble */
-  if(dock!==undefined){bub.classList.toggle('tour-bub-dock',!!dock);if(dock&&innerWidth>=700)bub.dataset.side=(dock==='tl'?'tl':'tr');else if(dock&&(dock==='tl'||dock==='tr'))bub.dataset.side='';else if(!dock)bub.dataset.side='';if(!bub.classList.contains('tour-bub-dock'))bub.style.width='';}
+  if(dock!==undefined){bub.classList.toggle('tour-bub-dock',!!dock);if(dock==='tb'||dock==='bb')bub.dataset.side=dock;else if(dock&&innerWidth>=700)bub.dataset.side=(dock==='tl'?'tl':'tr');else if(dock&&(dock==='tl'||dock==='tr'))bub.dataset.side='';else if(!dock)bub.dataset.side='';if(!bub.classList.contains('tour-bub-dock')&&innerWidth>=700)bub.style.width='';}
   const vw=innerWidth,vh=innerHeight,bw=bub.offsetWidth,bh=bub.offsetHeight,gap=14;
   let top,left;
   if(bub.classList.contains('tour-bub-dock')){
@@ -4352,6 +4370,12 @@ function tourPlace(rect,instant,dock,skipBub){
       top=(side==='tb')?12:(vh-bh2-12);left=12;
     } else {top=14;left=(bub.dataset.side==='tl')?14:(vw-bw-14);}
   }   /* action slides: the bubble owns the least important place — chosen to avoid that slide's action */
+  else if(rect&&vw<700){                                 /* LAW 6 on phones: EVERY slide's bubble takes the far band */
+    bub.style.width='calc(100vw - 24px)';
+    const bh2=bub.offsetHeight;
+    const below=(rect.top+rect.height/2)<vh/2;
+    top=below?(vh-bh2-12):12;left=12;
+  }
   else if(rect){
     top=(rect.bottom+gap+bh<vh)?rect.bottom+gap:Math.max(12,rect.top-gap-bh);
     left=Math.min(Math.max(12,rect.left+rect.width/2-bw/2),vw-bw-12);
