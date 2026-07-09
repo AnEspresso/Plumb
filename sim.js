@@ -57,7 +57,10 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.169.x',String($('PLUMB_VERSION')).startsWith('2.169'));
+t('version 2.17x',String($('PLUMB_VERSION')).startsWith('2.17'));
+t('photo queue categorizer present', $("typeof impPhotoFiles")==='function'&&$("typeof _impNext")==='function'&&$("typeof _impAfterSave")==='function');
+t('company lookup present', $("typeof webCompanyPick")==='function'&&$("typeof webCompanyChose")==='function');
+t('shared photo intake present', $("typeof handlePhotoFile")==='function');
 t('tour-audio engine present', $("typeof tourNarrate")==='function'&&$("typeof tourAudioStop")==='function');
 // error buffer hygiene: age-out + cap
 $("localStorage.setItem('plumb.errors',JSON.stringify([{t:Date.now()-20*86400000,k:'rules',m:'ancient',v:'2.152.0',mode:'real'}].concat(Array.from({length:30},(_,i)=>({t:Date.now()-i*1000,k:'x',m:'fresh'+i,v:'t',mode:'demo'})))))");
