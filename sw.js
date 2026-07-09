@@ -1,6 +1,6 @@
 /* Plumb service worker — caches the app shell for offline use.
    Bump CACHE when you ship a new build so clients update. */
-const CACHE = 'plumb-v2.169.2';
+const CACHE = 'plumb-v2.169.3';
 const SHELL = [
   './',
   'index.html',
@@ -35,7 +35,27 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // App shell / same-origin: cache-first, fall back to network, update cache.
+  // The app shell itself: NETWORK-FIRST with a short timeout, cache fallback.
+  // New builds appear on the next launch; offline still works from cache.
+  const isShell = req.mode === 'navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/');
+  if (url.origin === location.origin && isShell) {
+    e.respondWith((async () => {
+      try {
+        const net = await Promise.race([
+          fetch(req, { cache: 'no-cache' }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 3500))
+        ]);
+        const copy = net.clone();
+        caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+        return net;
+      } catch (_) {
+        return (await caches.match(req)) || (await caches.match('index.html'));
+      }
+    })());
+    return;
+  }
+
+  // Other same-origin assets: cache-first, fall back to network, update cache.
   if (url.origin === location.origin) {
     e.respondWith(
       caches.match(req).then(hit =>
