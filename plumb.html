@@ -2666,7 +2666,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.168.2 - The Daily Log, performed in full. Slide three now files the photo, rings it where it landed, opens the daily log sheet, writes the day in front of you, presses Save, and rings the finished entry - all while the narration runs, on phone and desktop alike. Law six now governs every slide on phones: the bubble always takes the far band, never the story.';
+const PLUMB_VERSION='2.168.3 - A warmer voice. The tour now hunts for the most human voice your device has - premium and enhanced voices rank first, robotic novelty voices are banned - and re-checks when the voice list finishes loading instead of settling for the default robot. Narration is spoken sentence by sentence with natural pauses, dashes read as breaths, and the title lands a touch slower. Tip: on iPhone, downloading Ava Premium under Settings, Accessibility, Spoken Content, Voices makes it dramatically better and Plumb will pick it up automatically.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -6536,11 +6536,29 @@ function endGrandTour(silent){try{tourEnd();}catch(e){}try{if(window.speechSynth
 let _tourVoice;
 function tourPickVoice(){
   try{
-    const vs=speechSynthesis.getVoices()||[];
-    const score=v=>(/premium|enhanced|natural|neural/i.test(v.name)?4:0)+(/samantha|ava|allison|daniel|karen/i.test(v.name)?2:0)+(v.lang==='en-US'?1:0)+(v.localService?1:0);
-    _tourVoice=vs.filter(v=>/^en/.test(v.lang)).sort((a,b)=>score(b)-score(a))[0]||null;
+    const vs=(speechSynthesis.getVoices()||[]).filter(v=>/^en/i.test(v.lang));
+    if(!vs.length){_tourVoice=null;return;}
+    /* Rank by what actually sounds human, best first. */
+    const NAMES=['ava (premium)','zoe (premium)','ava (enhanced)','evan (enhanced)','joelle (enhanced)',
+      'samantha (enhanced)','allison (enhanced)','tom (enhanced)','nathan (enhanced)','noelle (enhanced)',
+      'ava','zoe','samantha','allison','daniel','karen','moira'];
+    const score=v=>{
+      const n=v.name.toLowerCase();
+      let s=0;
+      const idx=NAMES.findIndex(x=>n===x||n.startsWith(x));
+      if(idx>-1)s+=(NAMES.length-idx)*10;
+      if(/premium/.test(n))s+=60;else if(/enhanced/.test(n))s+=40;
+      else if(/natural|neural|siri/.test(n))s+=30;
+      if(/google (us|uk) english/i.test(v.name))s+=25;      /* Android/Chrome best */
+      if(/^en-US/i.test(v.lang))s+=6;else if(/^en-GB/i.test(v.lang))s+=3;
+      if(v.localService)s+=4;
+      if(/compact|espeak|eloquence|fred|zarvox|albert|trinoids|whisper|bells|organ|cellos|bad news/i.test(n))s-=100;
+      return s;
+    };
+    _tourVoice=vs.sort((a,b)=>score(b)-score(a))[0]||null;
   }catch(e){_tourVoice=null;}
 }
+try{if(typeof speechSynthesis!=='undefined')speechSynthesis.addEventListener('voiceschanged',()=>{try{tourPickVoice();}catch(e){}});}catch(e){}
 function tourMuted(){try{return localStorage.getItem('plumbTourMute')==='1';}catch(e){return false;}}
 function tourToggleMute(){try{localStorage.setItem('plumbTourMute',tourMuted()?'0':'1');}catch(e){}
   if(tourMuted()){try{speechSynthesis.cancel();}catch(e){}}else{try{const s=_tourSteps&&_tourSteps[_tourIdx];if(s&&s.body)tourSpeak((s.title?s.title+'. ':'')+s.body);}catch(e){}}
@@ -6551,10 +6569,20 @@ function tourSpeak(text){
     if(tourMuted()||typeof speechSynthesis==='undefined')return;
     speechSynthesis.cancel();
     if(!_tourVoice)tourPickVoice();
-    const u=new SpeechSynthesisUtterance(text);
-    if(_tourVoice)u.voice=_tourVoice;
-    u.rate=1.0;u.pitch=1.0;
-    speechSynthesis.speak(u);
+    /* Prosody prep: dashes become real pauses, and each sentence is its own
+       utterance so the voice breathes instead of steamrolling. */
+    const clean=String(text)
+      .replace(/\u2014|\u2013|--/g,', ')
+      .replace(/\u00b7/g,', ')
+      .replace(/\s+/g,' ').trim();
+    const parts=clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[clean];
+    parts.forEach((s,i)=>{
+      const u=new SpeechSynthesisUtterance(s.trim());
+      if(_tourVoice)u.voice=_tourVoice;
+      u.rate=0.97;u.pitch=1.02;
+      if(i===0)u.rate=0.94;                       /* the title lands a touch slower */
+      speechSynthesis.speak(u);
+    });
   }catch(e){}
 }
 try{if(typeof speechSynthesis!=='undefined')speechSynthesis.onvoiceschanged=tourPickVoice;}catch(e){}
