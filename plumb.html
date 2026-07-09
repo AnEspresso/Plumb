@@ -2666,7 +2666,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.168.3 - A warmer voice. The tour now hunts for the most human voice your device has - premium and enhanced voices rank first, robotic novelty voices are banned - and re-checks when the voice list finishes loading instead of settling for the default robot. Narration is spoken sentence by sentence with natural pauses, dashes read as breaths, and the title lands a touch slower. Tip: on iPhone, downloading Ava Premium under Settings, Accessibility, Spoken Content, Voices makes it dramatically better and Plumb will pick it up automatically.';
+const PLUMB_VERSION='2.169.2 - Harness-certified motion. A real-browser law harness now drives the whole tour in both directions on phone and desktop, measuring the ring, bubble and orb sixty times a second. Fixes it forced: the orb tap glow retires itself so rest detection is never fooled, ping rides hand the ring off to the incoming box with a single predictive glide instead of chasing the old one off-screen, the phone bubble band always picks the side with least ring overlap and its width is never silently clamped, and after-sequences now wait for the ring to be fully at rest before the first ride so a slide can never bounce.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4348,7 +4348,7 @@ function startTour(role){_tourSteps=TOUR[role]||TOUR.team;_tourIdx=0;
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
-function tourEnd(){orbHide();tourUnlift();['tourCatch','tourSpot','tourBubble'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+function tourEnd(){orbHide();tourAudioStop();tourUnlift();['tourCatch','tourSpot','tourBubble'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
 function tourNext(){tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
 function tourPrev(){tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
@@ -4358,23 +4358,26 @@ function tourPlace(rect,instant,dock,skipBub){
   if(rect){spot.style.opacity='1';spot.style.left=(rect.left-6)+'px';spot.style.top=(rect.top-6)+'px';spot.style.width=(rect.width+12)+'px';spot.style.height=(rect.height+12)+'px';}
   else{spot.style.left='50%';spot.style.top='50%';spot.style.width='0px';spot.style.height='0px';}
   if(skipBub)return;                                   /* LAW 4: ring corrections never move the bubble */
-  if(dock!==undefined){bub.classList.toggle('tour-bub-dock',!!dock);if(dock==='tb'||dock==='bb')bub.dataset.side=dock;else if(dock&&innerWidth>=700)bub.dataset.side=(dock==='tl'?'tl':'tr');else if(dock&&(dock==='tl'||dock==='tr'))bub.dataset.side='';else if(!dock)bub.dataset.side='';if(!bub.classList.contains('tour-bub-dock')&&innerWidth>=700)bub.style.width='';}
+  if(dock!==undefined){bub.classList.toggle('tour-bub-dock',!!dock);if(dock==='tb'||dock==='bb')bub.dataset.side=dock;else if(dock&&innerWidth>=700)bub.dataset.side=(dock==='tl'?'tl':'tr');else if(dock&&(dock==='tl'||dock==='tr'))bub.dataset.side='';else if(!dock)bub.dataset.side='';if(!bub.classList.contains('tour-bub-dock')&&innerWidth>=700){bub.style.width='';bub.style.maxWidth='';}}
   const vw=innerWidth,vh=innerHeight,bw=bub.offsetWidth,bh=bub.offsetHeight,gap=14;
   let top,left;
   if(bub.classList.contains('tour-bub-dock')){
-    if(vw<700){                                          /* LAW 6: phones dock a full-width band opposite the action */
-      let side=bub.dataset.side;
-      if(side!=='tb'&&side!=='bb'){side=(rect&&(rect.top+rect.height/2)<vh/2)?'bb':'tb';bub.dataset.side=side;}
-      bub.style.width='calc(100vw - 24px)';
+    if(vw<700){                                          /* LAW 6: phones dock the band with the LEAST ring overlap */
+      bub.style.width='calc(100vw - 24px)';bub.style.maxWidth='calc(100vw - 24px)';
       const bh2=bub.offsetHeight;
+      let side=bub.dataset.side;
+      if(rect){
+        const ovT=Math.max(0,Math.min(12+bh2,rect.top+rect.height)-Math.max(12,rect.top));
+        const ovB=Math.max(0,Math.min(vh-12,rect.top+rect.height)-Math.max(vh-12-bh2,rect.top));
+        side=(ovT<=ovB)?'tb':'bb';bub.dataset.side=side;
+      } else if(side!=='tb'&&side!=='bb'){side='tb';bub.dataset.side=side;}
       top=(side==='tb')?12:(vh-bh2-12);left=12;
     } else {top=14;left=(bub.dataset.side==='tl')?14:(vw-bw-14);}
   }   /* action slides: the bubble owns the least important place — chosen to avoid that slide's action */
-  else if(rect&&vw<700){                                 /* LAW 6 on phones: EVERY slide's bubble takes the far band */
-    bub.style.width='calc(100vw - 24px)';
+  else if(rect&&vw<700){                                 /* LAW 6 on phones: EVERY slide's bubble takes the larger free band */
+    bub.style.width='calc(100vw - 24px)';bub.style.maxWidth='calc(100vw - 24px)';
     const bh2=bub.offsetHeight;
-    const below=(rect.top+rect.height/2)<vh/2;
-    top=below?(vh-bh2-12):12;left=12;
+    top=(rect.top>=vh-rect.bottom)?12:(vh-bh2-12);left=12;
   }
   else if(rect){
     top=(rect.bottom+gap+bh<vh)?rect.bottom+gap:Math.max(12,rect.top-gap-bh);
@@ -4382,7 +4385,7 @@ function tourPlace(rect,instant,dock,skipBub){
   }else{top=(vh-bh)/2;left=(vw-bw)/2;}
   bub.style.top=top+'px';bub.style.left=left+'px';}
 function tourStep(){
-  try{const _s=_tourSteps[_tourIdx];if(_s&&_s.body)tourSpeak((_s.title?_s.title+'. ':'')+_s.body);}catch(e){}
+  try{const _s=_tourSteps[_tourIdx];if(_s)tourNarrate(_s,_tourIdx);}catch(e){}
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
@@ -4397,7 +4400,7 @@ function tourStep(){
         ?(((pr.top+pr.bottom)/2<innerHeight/2)?'bb':'tb')          // LAW 6 on phones: flee to the opposite BAND
         :(((pr.left+pr.right)/2>innerWidth/2)?'tl':'tr');          // 5a on desktop: farthest corner
       const place=()=>{bub.dataset.side=side;
-        if(side==='tb'||side==='bb'){bub.style.width='calc(100vw - 24px)';const bh0=bub.offsetHeight;
+        if(side==='tb'||side==='bb'){bub.style.width='calc(100vw - 24px)';bub.style.maxWidth='calc(100vw - 24px)';const bh0=bub.offsetHeight;
           bub.style.left='12px';bub.style.top=(side==='tb'?12:(innerHeight-bh0-12))+'px';}
         else{const bw0=bub.offsetWidth;bub.style.top='14px';bub.style.left=(side==='tl'?14:(innerWidth-bw0-14))+'px';}};
       if(step.__dock){
@@ -6468,6 +6471,7 @@ function orbTo(target,opts){
         _orbPlace(o,x,y,opts.instant);
         setTimeout(()=>{
           if(opts.tap){o.classList.remove('tap');void o.offsetWidth;o.classList.add('tap');
+            setTimeout(()=>{o.classList.remove('tap');},580);
             setTimeout(()=>{if(opts.rest)o.classList.remove('active');res();},430);}
           else {if(opts.rest)o.classList.remove('active');res();}
         },(opts.instant?220:580)+l5wait);
@@ -6482,11 +6486,20 @@ function tourAlive(tok){return tok===_gtTok&&document.body.classList.contains('o
    the spotlight RIDES it during the scroll — the ring leaves with its box. */
 function awaitSettle(el,trackEl,dock){
   return new Promise(res=>{
-    let last=null,stable=0,frames=0;
+    let last=null,stable=0,frames=0,trk=trackEl;
     const tick=()=>{
       try{
         const r=el.getBoundingClientRect();
-        if(trackEl){const tr=trackEl.getBoundingClientRect();if(tr&&tr.height)tourPlace(tr,true,undefined,true);}
+        if(trk){
+          let tr=trk.getBoundingClientRect();
+          if(trk!==el&&tr&&tr.bottom<90){                 /* LAW 2: old box has left — glide ONCE to where */
+            const er=el.getBoundingClientRect();          /* the new box will land, and let it arrive.   */
+            tourPlace({left:er.left,top:Math.round(window.innerHeight*0.32),width:er.width,height:er.height,
+              right:er.right,bottom:Math.round(window.innerHeight*0.32)+er.height},false,undefined,true);
+            trk=null;
+          }
+          else if(tr&&tr.height)tourPlace(tr,true,undefined,true);
+        }
         if(last!==null&&Math.abs(r.top-last)<0.6){stable++;}else{stable=0;}
         last=r.top;frames++;
         if((stable>=3&&frames>=6)||frames>110){res();return;}
@@ -6508,7 +6521,23 @@ function smoothScrollTo(el,frac){
   }catch(e){try{el.scrollIntoView({block:'center',behavior:'smooth'});}catch(_){}}
 }
 
+function awaitSpotRest(){
+  return new Promise(res=>{
+    const sp=document.getElementById('tourSpot');if(!sp){res();return;}
+    let last=null,stable=0,n=0;
+    const tick=()=>{try{
+      const t=sp.getBoundingClientRect().top;
+      if(last!==null&&Math.abs(t-last)<0.6)stable++;else stable=0;
+      last=t;n++;
+      if(stable>=3||n>80){setTimeout(res,280);return;} /* a clear beat between landing and the next motion */
+    }catch(e){res();return;}
+    requestAnimationFrame(tick);};
+    requestAnimationFrame(tick);
+  });
+}
 async function tourPing(sels,tok,dwell,startEl){
+  await awaitSpotRest();                             /* LAW 2: the ride starts from rest, never mid-glide */
+  if(!tourAlive(tok))return;
   let prev=startEl||null;
   for(const s of (sels||[])){
     if(!tourAlive(tok))return;
@@ -6531,8 +6560,30 @@ function orbTaps(taps,instantFirst){
   return p;
 }
 function orbHide(){try{const o=_orbEl();if(o){o.classList.remove('show','tap','active');}}catch(e){}}
-function endGrandTour(silent){try{tourEnd();}catch(e){}try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
-/* voice: hunt for the best local voice; pre-recorded audio drops in later via tour-audio/{i}.mp3 */
+function endGrandTour(silent){try{tourEnd();}catch(e){}tourAudioStop();try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
+/* voice: pre-recorded narration plays from tour-audio/{n}.mp3 when present;
+   otherwise the best local speechSynthesis voice carries the tour. */
+let _tourAudio=null,_tourPre=null;
+function tourAudioStop(){try{if(_tourAudio){_tourAudio.onerror=null;_tourAudio.pause();_tourAudio=null;}}catch(e){}}
+function tourNarrate(step,idx){
+  try{
+    if(!step||!step.body)return;
+    tourAudioStop();
+    try{if(typeof speechSynthesis!=='undefined')speechSynthesis.cancel();}catch(e){}
+    if(tourMuted())return;
+    const text=(step.title?step.title+'. ':'')+step.body;
+    const isGrand=(typeof TOUR!=='undefined'&&_tourSteps===TOUR.grand);
+    if(isGrand&&typeof Audio!=='undefined'){
+      const a=new Audio('tour-audio/'+(idx+1)+'.mp3');
+      a.preload='auto';
+      a.onerror=()=>{if(_tourAudio===a){_tourAudio=null;tourSpeak(text);}};
+      _tourAudio=a;
+      const p=a.play();
+      if(p&&p.catch)p.catch(()=>{if(_tourAudio===a){_tourAudio=null;tourSpeak(text);}});
+      try{_tourPre=new Audio('tour-audio/'+(idx+2)+'.mp3');_tourPre.preload='auto';_tourPre.onerror=()=>{};}catch(e){}
+    } else tourSpeak(text);
+  }catch(e){try{tourSpeak((step.title?step.title+'. ':'')+step.body);}catch(_){}}
+}
 let _tourVoice;
 function tourPickVoice(){
   try{
@@ -6561,7 +6612,7 @@ function tourPickVoice(){
 try{if(typeof speechSynthesis!=='undefined')speechSynthesis.addEventListener('voiceschanged',()=>{try{tourPickVoice();}catch(e){}});}catch(e){}
 function tourMuted(){try{return localStorage.getItem('plumbTourMute')==='1';}catch(e){return false;}}
 function tourToggleMute(){try{localStorage.setItem('plumbTourMute',tourMuted()?'0':'1');}catch(e){}
-  if(tourMuted()){try{speechSynthesis.cancel();}catch(e){}}else{try{const s=_tourSteps&&_tourSteps[_tourIdx];if(s&&s.body)tourSpeak((s.title?s.title+'. ':'')+s.body);}catch(e){}}
+  if(tourMuted()){tourAudioStop();try{speechSynthesis.cancel();}catch(e){}}else{try{const s=_tourSteps&&_tourSteps[_tourIdx];if(s)tourNarrate(s,_tourIdx);}catch(e){}}
   tourMuteRender();}
 function tourMuteRender(){const b=document.getElementById('tourMute');if(b)b.textContent=tourMuted()?'\uD83D\uDD07':'\uD83D\uDD0A';}
 function tourSpeak(text){

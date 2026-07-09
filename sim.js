@@ -57,7 +57,8 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.168.x',String($('PLUMB_VERSION')).startsWith('2.168'));
+t('version 2.169.x',String($('PLUMB_VERSION')).startsWith('2.169'));
+t('tour-audio engine present', $("typeof tourNarrate")==='function'&&$("typeof tourAudioStop")==='function');
 // error buffer hygiene: age-out + cap
 $("localStorage.setItem('plumb.errors',JSON.stringify([{t:Date.now()-20*86400000,k:'rules',m:'ancient',v:'2.152.0',mode:'real'}].concat(Array.from({length:30},(_,i)=>({t:Date.now()-i*1000,k:'x',m:'fresh'+i,v:'t',mode:'demo'})))))");
 t('devErrors ages out 14d+ and caps at 20', (function(){const a=JSON.parse($("JSON.stringify(devErrors())"));return a.length===20&&a.every(x=>x.m!=='ancient');})());
