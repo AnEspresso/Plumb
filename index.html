@@ -2671,7 +2671,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.170.1 - Field fixes from the first card scan. Scanning now shows live progress - getting the reader, then reading the card with a percentage - instead of a silent minute. Parsing is far tougher: logo noise lines are discarded, the company and website recover from the email domain when the print reads rough, phone numbers keep their opening parenthesis and prefer the Direct line, addresses pick up their city and zip, and stray OCR crumbs are trimmed from names. The company lookup now searches Google Places first so local contractors are found, falling back to the brand directory and manual entry - and the name prompt and results list open above the add-subcontractor modal instead of behind it.';
+const PLUMB_VERSION='2.171.1 - The voice is back on phones. Narration now speaks the instant you tap Next - inside the tap itself, which is what iPhones require - and only hands off to recorded audio once the tour-audio files are confirmed to exist on the site. Includes a nudge for an iPhone quirk that sometimes leaves the speech queue paused.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4276,27 +4276,44 @@ const TOUR={team:[
  {sel:'.capture-card',bubSide:'tb',title:'The Daily Log',body:'Watch this. One press files the shot \u2014 today\u2019s date, the right area, no camera roll. Then the day gets its one line, saved the moment you write it. Six months later, you can prove exactly what happened, and when.',
   acts:[{do:()=>tourGoto('log')},{tap:'.capture-card .cap-btn',do:()=>{try{tourDemoPhoto();}catch(e){}}}],
   after:async(tok)=>{
-    await new Promise(r=>setTimeout(r,700));if(!tourAlive(tok))return;
-    const shot=[...document.querySelectorAll('#view-log .feed .item')].find(e=>e.textContent.includes('Waste lines'));
-    if(shot)await tourPing([shot],tok,1500,document.querySelector('.capture-card'));
+    await new Promise(r=>setTimeout(r,600));if(!tourAlive(tok))return;
+    /* the shot just filed \u2014 the orb points at it; the ring stays on the stage */
+    const shot=([...document.querySelectorAll('#view-log .feed .item')].find(e=>e.textContent.includes('Waste lines'))||{closest:()=>null});
+    if(shot&&shot.getBoundingClientRect)await tourPoint([shot],tok,1100);
     if(!tourAlive(tok))return;
+    /* stage 2: the entry sheet \u2014 ring the WHOLE sheet, orb writes the day */
     await orbTo('.daylog',{tap:true});if(!tourAlive(tok))return;
     try{openSheet(true);}catch(e){}
-    await new Promise(r=>setTimeout(r,650));if(!tourAlive(tok))return;
+    await new Promise(r=>setTimeout(r,500));if(!tourAlive(tok))return;
+    await ringStage('#sheet',tok);if(!tourAlive(tok))return;
     const ta=document.getElementById('cNote');
     if(ta&&!String(ta.value||'').trim())ta.value='Crew of 2 \u2014 waste lines strapped, second-floor bath.';
-    if(ta)await tourPing([ta],tok,1600,shot||document.querySelector('.daylog'));
+    if(ta)await tourPoint([ta],tok,1200);
     if(!tourAlive(tok))return;
     await orbTo('#saveBtn',{tap:true});if(!tourAlive(tok))return;
     try{save();}catch(e){try{closeSheet();}catch(_){}}
-    await new Promise(r=>setTimeout(r,600));if(!tourAlive(tok))return;
-    const row=[...document.querySelectorAll('#view-log *')].find(e=>e.textContent.includes('waste lines strapped')&&e.children.length<4&&!e.closest('.feed'));
-    if(row)await tourPing([row],tok,1400,null);
+    await new Promise(r=>setTimeout(r,500));if(!tourAlive(tok))return;
+    /* stage 3: the daily log itself, with today\u2019s line \u2014 orb points at it */
+    const rowTxt=[...document.querySelectorAll('#view-log *')].find(e=>e.textContent.includes('waste lines strapped')&&e.children.length<4&&!e.closest('.feed'));
+    const row=rowTxt?(rowTxt.closest('.entry')||rowTxt.closest('[class]')||rowTxt):null;
+    const block=row?(row.closest('.loghist')||row.parentElement):document.querySelector('.daylog');
+    if(block)await ringStage(block,tok);
+    if(row)await tourPoint([row],tok,1000);
   }},
- {sel:'[data-d=waiting]',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues \u2014 in one list. When this screen is empty, nobody is stuck.',
-  acts:[{tap:'nav .tab[data-v=decisions]',do:()=>tourGoto('decisions')},{tap:'[data-d=waiting]',jump:true,do:()=>{try{decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}}]},
- {sel:'[data-d=selections]',title:'Selections & sign-offs',body:'Finishes and fixtures live here \u2014 priced, spec\u2019d, and signed by the homeowner before anyone builds them. No more he-said-she-said about the countertop.',
-  acts:[{do:()=>tourGoto('decisions','waiting')},{tap:'[data-d=selections]',do:()=>{try{decSeg('selections',document.querySelector('[data-d=selections]'));}catch(e){}}}]},
+{sel:'#decWaiting',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues \u2014 in one list. When this screen is empty, nobody is stuck.',
+  acts:[{tap:'nav .tab[data-v=decisions]',do:()=>tourGoto('decisions')},{tap:'[data-d=waiting]',jump:true,do:()=>{try{decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}}],
+  after:async(tok)=>{
+    await new Promise(r=>setTimeout(r,1200));if(!tourAlive(tok))return;
+    const rows=[...document.querySelectorAll('#decWaiting > *')].filter(e=>e.getBoundingClientRect().height>34).slice(1,3);
+    if(rows.length)await tourPoint(rows,tok,900);
+  }},
+ {sel:'#decSelections',title:'Selections & sign-offs',body:'Finishes and fixtures live here \u2014 priced, spec\u2019d, and signed by the homeowner before anyone builds them. No more he-said-she-said about the countertop.',
+  acts:[{do:()=>tourGoto('decisions','waiting')},{tap:'[data-d=selections]',do:()=>{try{decSeg('selections',document.querySelector('[data-d=selections]'));}catch(e){}}}],
+  after:async(tok)=>{
+    await new Promise(r=>setTimeout(r,1200));if(!tourAlive(tok))return;
+    const rows=[...document.querySelectorAll('#decSelections > *')].filter(e=>e.getBoundingClientRect().height>34).slice(1,3);
+    if(rows.length)await tourPoint(rows,tok,900);
+  }},
  {sel:'#buildSchedule .overall .top',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
   acts:[{tap:'nav .tab[data-v=build]',do:()=>tourGoto('build','schedule')}],
   after:(tok)=>{const st=[...document.querySelectorAll('#stageList .stage')].filter((_,k)=>k%2===0).slice(0,4);tourPing(st,tok,650,document.querySelector('#buildSchedule .overall .top'));}},
@@ -4336,10 +4353,14 @@ const TOUR={team:[
  {sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',
   acts:[{tap:'.exc-roles button[data-r=client]',do:()=>demoRole('client')}],
   after:(tok)=>{tourPing(['.cl-stats','.cl-concern'],tok,900,document.querySelector('.cl-hero'));}},
- {sel:'#clBody .feed .item, .cl-hero',title:'One record, everywhere',body:'That photo you filed three minutes ago? Your homeowner is already looking at it. The spec you attached? Riding in Clearwater\u2019s packet. You write it once \u2014 and every phone on the job is current, live, without a single call.',
+ {sel:'#clBody .feed, .cl-hero',title:'One record, everywhere',body:'That photo you filed three minutes ago? Your homeowner is already looking at it. The spec you attached? Riding in Clearwater\u2019s packet. You write it once \u2014 and every phone on the job is current, live, without a single call.',
   acts:[{do:()=>demoRole('client')},{tap:'#cltab-progress',do:()=>{try{clientGo('progress');}catch(e){}}}],
-  after:async(tok)=>{await new Promise(r=>setTimeout(r,4800));if(!tourAlive(tok))return;
-    const prev=document.querySelector('#clBody .feed .item')||document.querySelector('.cl-hero');
+  after:async(tok)=>{
+    await new Promise(r=>setTimeout(r,900));if(!tourAlive(tok))return;
+    const it=document.querySelector('#clBody .feed .item');
+    if(it)await tourPoint([it],tok,1200);
+    await new Promise(r=>setTimeout(r,2400));if(!tourAlive(tok))return;
+    const prev=document.querySelector('#clBody .feed')||document.querySelector('.cl-hero');
     await orbTo('.exc-roles button[data-r=subs]',{tap:true});if(!tourAlive(tok))return;
     try{demoRole('subs');}catch(e){}
     const pk=document.querySelector('#svPacket');
@@ -6425,6 +6446,7 @@ function tourGoto(view,seg){
   }catch(e){}
 }
 function startGrandTour(){
+  try{tourAudioProbe();}catch(e){}
   welcomeDone();
   try{closeStart();}catch(e){}
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
@@ -6554,6 +6576,32 @@ function awaitSpotRest(){
     requestAnimationFrame(tick);
   });
 }
+/* ringStage: settle-gated, animated ring move to a large stable region.
+   The bubble is never touched (LAW 4) \u2014 stage changes are ring-only. */
+async function ringStage(sel,tok){
+  const el=typeof sel==='string'?document.querySelector(sel):sel;
+  if(!el||!tourAlive(tok))return null;
+  smoothScrollTo(el,0.22);
+  await awaitSettle(el);
+  if(!tourAlive(tok))return null;
+  try{const r=el.getBoundingClientRect();if(r&&r.height)tourPlace(r,false,undefined,true);}catch(e){}
+  await awaitSpotRest();
+  return el;
+}
+/* tourPoint: the orb alone visits and pulses each target \u2014 the ring stays
+   framing the stage. Presses and pointing share the same gesture. */
+async function tourPoint(sels,tok,dwell){
+  for(const s of (sels||[])){
+    if(!tourAlive(tok))return;
+    const el=typeof s==='string'?document.querySelector(s):s;
+    if(!el)continue;
+    smoothScrollTo(el,0.36);
+    await awaitSettle(el);
+    if(!tourAlive(tok))return;
+    await orbTo(el,{tap:true,noscroll:true});
+    await new Promise(r=>setTimeout(r,dwell||800));
+  }
+}
 async function tourPing(sels,tok,dwell,startEl){
   await awaitSpotRest();                             /* LAW 2: the ride starts from rest, never mid-glide */
   if(!tourAlive(tok))return;
@@ -6584,6 +6632,12 @@ function endGrandTour(silent){try{tourEnd();}catch(e){}tourAudioStop();try{if(wi
    otherwise the best local speechSynthesis voice carries the tour. */
 let _tourAudio=null,_tourPre=null;
 function tourAudioStop(){try{if(_tourAudio){_tourAudio.onerror=null;_tourAudio.pause();_tourAudio=null;}}catch(e){}}
+function tourAudioProbe(){
+  if(window._tourAudioOK!==undefined)return;
+  window._tourAudioOK='checking';
+  try{fetch('tour-audio/1.mp3',{method:'HEAD'}).then(r=>{window._tourAudioOK=!!(r&&r.ok);}).catch(()=>{window._tourAudioOK=false;});}
+  catch(e){window._tourAudioOK=false;}
+}
 function tourNarrate(step,idx){
   try{
     if(!step||!step.body)return;
@@ -6592,6 +6646,10 @@ function tourNarrate(step,idx){
     if(tourMuted())return;
     const text=(step.title?step.title+'. ':'')+step.body;
     const isGrand=(typeof TOUR!=='undefined'&&_tourSteps===TOUR.grand);
+    tourAudioProbe();
+    /* iOS only speaks when speech STARTS inside the tap gesture \u2014 so unless
+       narration files are KNOWN to exist, speak synchronously right now. */
+    if(window._tourAudioOK!==true){tourSpeak(text);return;}
     if(isGrand&&typeof Audio!=='undefined'){
       const a=new Audio('tour-audio/'+(idx+1)+'.mp3');
       a.preload='auto';
@@ -6653,6 +6711,7 @@ function tourSpeak(text){
       if(i===0)u.rate=0.94;                       /* the title lands a touch slower */
       speechSynthesis.speak(u);
     });
+    setTimeout(()=>{try{speechSynthesis.resume();}catch(e){}},80);   /* iOS: nudge a queue it sometimes leaves paused */
   }catch(e){}
 }
 try{if(typeof speechSynthesis!=='undefined')speechSynthesis.onvoiceschanged=tourPickVoice;}catch(e){}

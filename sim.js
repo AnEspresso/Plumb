@@ -678,7 +678,7 @@ $('closeBudget()');
 S('onboarding');
 // splash is one door: choosers exist in DOM but the era CSS hides them; explore link present
 t('splash keeps live controls + explore link', $("!!document.querySelector('.login-explore')")===true&&$("!!document.getElementById('realControls')")===true);
-t('guide orb present, guarded, choreographed', $("!!document.getElementById('tourOrb')")===true&&await $("orbTo('#nope').then(()=>true)")===true&&await $("orbTo(null,{tap:true}).then(()=>true)")===true&&$("TOUR.grand.every(s=>Array.isArray(s.acts)&&s.acts.length)")===true&&$("TOUR.grand.filter(s=>s.acts.some(a=>a.tap)).length")===15&&$("typeof orbTaps")==='function'&&$("typeof tourPing")==='function'&&$("TOUR.grand.filter(s=>s.after).length")===8&&$("typeof tourDemoPhoto")==='function'&&$("typeof tourDemoDoc")==='function');
+t('guide orb present, guarded, choreographed', $("!!document.getElementById('tourOrb')")===true&&await $("orbTo('#nope').then(()=>true)")===true&&await $("orbTo(null,{tap:true}).then(()=>true)")===true&&$("TOUR.grand.every(s=>Array.isArray(s.acts)&&s.acts.length)")===true&&$("TOUR.grand.filter(s=>s.acts.some(a=>a.tap)).length")===15&&$("typeof orbTaps")==='function'&&$("typeof tourPing")==='function'&&$("TOUR.grand.filter(s=>s.after).length")===10&&$("typeof tourDemoPhoto")==='function'&&$("typeof tourDemoDoc")==='function');
 t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='function'&&$("Array.isArray(TOUR.grand)")===true&&$("TOUR.grand.length")===16&&$("TOUR.grand.every(s=>s.title&&s.body)")===true&&$("TOUR.grand.slice(1).every(s=>s.sel)")===true&&$("typeof tourGoto")==='function');
 // excursion from a live session: flip out, come home with session + activeId intact
 asBuilder();
