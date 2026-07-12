@@ -2680,7 +2680,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.172.0 - The hands-on tour. Getting to Know Plumb is now interactive: on the Daily Log, Selections, Billing, Install Packet and the plumber slides, the ring frames the stage, the voice tells you what to do, the orb circles the spot and previews the press - and then waits, because the tap is yours. A gold frame opens over exactly the invited control and nothing else. Finish the step and the tour congratulates you and moves on by itself. Get stuck and it helps: a hint at twenty seconds, then Show me and Skip at forty. Coming back to a completed task shows it checked off, and every fresh demo starts clean. Law seven, added to the charter: the orb invites, it never presses.';
+const PLUMB_VERSION='2.172.0 - The hands-on tour, synchronized. Getting to Know Plumb is now interactive: on the Daily Log, Selections, Billing, Install Packet and plumber slides the ring frames the stage, the voice tells you what to do, the orb circles the spot and previews the press, and a gold frame opens over exactly the invited control - the tap is yours, and finishing a step advances the tour itself. Stuck twenty seconds brings a hint, forty brings Show me and Skip. Going back shows tasks checked off and every fresh demo starts clean. The bubble now tells each slide of story from its very first frame, so narration, ring, orb and scrolling always speak about the same thing. Law seven: the orb invites, it never presses.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4457,6 +4457,22 @@ function tourStep(){
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
   try{taskCleanup();}catch(e){}
+  /* The bubble tells THIS slide's story from frame one \u2014 content swaps now,
+     position glides once at placement (LAW 4). */
+  try{
+    const bubE=document.getElementById('tourBubble');
+    if(bubE&&_tourSteps===TOUR.grand){
+      const lastE=_tourIdx>=_tourSteps.length-1;
+      bubE.classList.remove('tour-do');
+      bubE.innerHTML='<div class="tour-step">'+(_tourIdx+1)+' / '+_tourSteps.length+'</div>'
+        +'<div class="tour-h">'+esc(step.title||'')+'</div>'
+        +'<div class="tour-b">'+esc(step.body||'')+'</div>'
+        +'<div class="tour-foot">'+(lastE?'<button class="tour-next" onclick="tourEnd()">Explore demo</button>':'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>')+'<div>'
+        +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
+        +'<button class="tour-mute-mini" onclick="tourMuteToggle()">'+(tourMuted()?'\ud83d\udd07':'\ud83d\udd0a')+'</button>'
+        +'<button class="'+(lastE&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(lastE&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(lastE?(step.cta||'Done'):'Next')+'</button></div></div>';
+    }
+  }catch(e){}
   step.__dock=false;
   window._law5=(pr)=>{                                     // LAW 5: press under the bubble? bubble moves NOW, once,
     try{                                                   //         and the press WAITS until it has cleared
