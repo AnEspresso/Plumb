@@ -678,7 +678,7 @@ $('closeBudget()');
 S('onboarding');
 // splash is one door: choosers exist in DOM but the era CSS hides them; explore link present
 t('splash keeps live controls + explore link', $("!!document.querySelector('.login-explore')")===true&&$("!!document.getElementById('realControls')")===true);
-t('guide orb present, guarded, choreographed', $("!!document.getElementById('tourOrb')")===true&&await $("orbTo('#nope').then(()=>true)")===true&&await $("orbTo(null,{tap:true}).then(()=>true)")===true&&$("TOUR.grand.every(s=>Array.isArray(s.acts)&&s.acts.length)")===true&&$("TOUR.grand.filter(s=>s.acts.some(a=>a.tap)).length")===15&&$("typeof orbTaps")==='function'&&$("typeof tourPing")==='function'&&$("TOUR.grand.filter(s=>s.after).length")===10&&$("typeof tourDemoPhoto")==='function'&&$("typeof tourDemoDoc")==='function');
+t('guide orb present, guarded, choreographed', $("!!document.getElementById('tourOrb')")===true&&await $("orbTo('#nope').then(()=>true)")===true&&await $("orbTo(null,{tap:true}).then(()=>true)")===true&&$("TOUR.grand.every(s=>Array.isArray(s.acts)&&s.acts.length)")===true&&$("TOUR.grand.filter(s=>s.acts.some(a=>a.tap)).length")===14&&$("typeof orbTaps")==='function'&&$("typeof tourPing")==='function'&&$("TOUR.grand.filter(s=>s.after).length")===7&&$("TOUR.grand.filter(s=>s.task).length")===5&&$("typeof runTask")==='function'&&$("typeof holeOpen")==='function'&&$("typeof orbInvite")==='function'&&$("typeof tourDemoPhoto")==='function'&&$("typeof tourDemoDoc")==='function');
 t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='function'&&$("Array.isArray(TOUR.grand)")===true&&$("TOUR.grand.length")===16&&$("TOUR.grand.every(s=>s.title&&s.body)")===true&&$("TOUR.grand.slice(1).every(s=>s.sel)")===true&&$("typeof tourGoto")==='function');
 // excursion from a live session: flip out, come home with session + activeId intact
 asBuilder();
@@ -704,7 +704,7 @@ const L_PANE=id=>$("document.getElementById('"+id+"').style.display")!=='none';
 const landmarks=[
   ()=>L_OV()===true&&$("appMode()")==='demo',
   ()=>L_ACT('log')&&L_OV()===false,
-  ()=>L_ACT('log')&&$("(P().items[0]||{}).tour")==='photo',
+  ()=>L_ACT('log'),
   ()=>L_ACT('decisions'),
   ()=>L_ACT('decisions'),
   ()=>L_ACT('build')&&L_PANE('buildSchedule'),
@@ -713,7 +713,7 @@ const landmarks=[
   ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===true,
   ()=>$("document.getElementById('budgetScrim').classList.contains('show')")===false&&L_ACT('build'),
   ()=>L_ACT('files')&&L_PANE('filesPhotos'),
-  ()=>L_PANE('filesDocs')&&$("(P().docs[0]||{}).tour")==='spec',
+  ()=>L_PANE('filesDocs'),
   ()=>$("state.session.role")==='subs'&&$("document.getElementById('subview').classList.contains('show')")===true,
   ()=>$("state.session.role")==='client'&&$("document.getElementById('clientview').classList.contains('show')")===true&&L_OV()===false,
   ()=>$("state.session.role")==='client'&&$("document.getElementById('clientview').classList.contains('show')")===true,
@@ -730,7 +730,7 @@ for(let i2=0;i2<16;i2++){
   if(!bub.includes(String(i2+1)+' / 16')){tourOK=false;tourDetail='counter '+i2;break;}
   // LAW 4 enforcement: bubble never faded; docked exactly when the orb works the page
   if($("document.getElementById('tourBubble').style.opacity")==='0'){tourOK=false;tourDetail='LAW4 fade at '+i2;break;}
-  const wantDock=$("!!TOUR.grand["+i2+"].after");
+  const wantDock=$("!!(TOUR.grand["+i2+"].after||TOUR.grand["+i2+"].task||TOUR.grand["+i2+"].bubSide)");
   if($("document.getElementById('tourBubble').classList.contains('tour-bub-dock')")!==wantDock){tourOK=false;tourDetail='LAW4 dock at '+i2;break;}
   if(i2!==0&&i2!==10&&!lifted){tourOK=false;tourDetail='no spotlight at '+i2;break;}
 }
@@ -740,7 +740,7 @@ let backOK=true, backDetail='';
 for(let b=14;b>=0;b--){
   $('tourPrev()');await new Promise(r=>setTimeout(r,1650));
   if(!landmarks[b]()){backOK=false;backDetail='back landmark '+b;break;}
-  if($("document.getElementById('tourBubble').classList.contains('tour-bub-dock')")!==$("!!TOUR.grand["+b+"].after")){backOK=false;backDetail='LAW4 dock back '+b;break;}
+  if($("document.getElementById('tourBubble').classList.contains('tour-bub-dock')")!==$("!!(TOUR.grand["+b+"].after||TOUR.grand["+b+"].task||TOUR.grand["+b+"].bubSide)")){backOK=false;backDetail='LAW4 dock back '+b;break;}
 }
 t('walking BACKWARD lands every slide correctly too', backOK, backDetail);
 for(let f=1;f<16;f++){$('tourNext()');await new Promise(r=>setTimeout(r,350));}

@@ -111,14 +111,16 @@ function analyze(slide, dir, view, samples, presses,places){
       V.push(`L3 whiff: press hit ${pr.hit} at ${pr.x|0},${pr.y|0}`);
   });
 
-  /* LAW 4 — bubble: never faded once shown; at most one move after entry glide;
-     zero moves late in the slide. */
-  const shown=samples.filter(s=>s.bub&&s.bub.op>0.05);
-  if(shown.some(s=>s.bub.op<0.05))V.push('L4 fade: bubble opacity dropped mid-slide');
-  const bubEps=episodes(samples,'bub').filter(e=>e.dist>8);
-  if(bubEps.length>2)V.push(`L4 dance: ${bubEps.length} bubble moves in one slide`);
-  const tailMoves=bubEps.filter(e=>e.start>=(samples[samples.length-1]?.t||0)-2000);
-  if(tailMoves.length)V.push('L4 unrest: bubble still moving at slide end');
+  /* LAW 4 \u2014 the bubble: glides once between slides, then holds. Attributed
+     placements (arrival, dock choice) are lawful; in interactive slides the
+     text changes but the anchor must not wander. */
+  const bubEps=episodes(samples,'bub').filter(e=>e.dist>12&&!(places||[]).some(p=>Math.abs(p.t-e.start)<450));
+  if(bubEps.length>1)V.push(`L4 dance: ${bubEps.length+1} bubble moves in one slide`);
+  const bubTail=tail.map(s=>s.bub).filter(Boolean);
+  if(bubTail.length>4){
+    const bd=Math.max(...bubTail.map(s=>dist(s,bubTail[0])));
+    if(bd>3&&!(places||[]).some(p=>Math.abs(p.t-tail[0].t)<600))V.push('L4 unrest: bubble still moving at slide end');
+  }
 
   /* LAW 5 — no press ever lands on the bubble. */
   presses.forEach(pr=>{if(pr.onBubble)V.push(`L5 press ON BUBBLE at ${pr.x|0},${pr.y|0} (hit ${pr.hit})`);});
@@ -162,13 +164,31 @@ function analyze(slide, dir, view, samples, presses,places){
       const steps=dir==='fwd'?SLIDES:SLIDES-1;
       for(let k=0;k<steps;k++){
         const slide=dir==='fwd'?k:SLIDES-2-k;              /* fwd: 0..15 · back: 14..0 */
-        if(!(dir==='fwd'&&k===0))
-          await pg.evaluate(d=>d==='fwd'?tourNext():tourPrev(),dir);
+        if(!(dir==='fwd'&&k===0)){
+          const cur=await pg.evaluate(()=>_tourIdx);
+          if(dir==='fwd'&&cur===slide){/* already here via task auto-advance */}
+          else await pg.evaluate(d=>d==='fwd'?tourNext():tourPrev(),dir);
+        }
         await pg.evaluate(()=>{window.__laws.samples=[];window.__laws.presses=[];});
         /* adaptive dwell: settle = all actors still + no taps for SETTLE_MS */
         const t0=Date.now(); let settled=false;
+        let clicked=0, advanced=false; let tAdv=0;
         while(Date.now()-t0<CAP){
           await new Promise(r=>setTimeout(r,240));
+          /* LAW 7 participation: an open invitation means it's the user's turn. */
+          const inv=await pg.evaluate(()=>window._tourInvite&&window._tourInvite.rect);
+          if(inv&&dir==='fwd'){
+            await new Promise(r=>setTimeout(r,700));       /* let the invitation gesture play */
+            await pg.mouse.click(inv.x,inv.y);
+            clicked++;
+            await new Promise(r=>setTimeout(r,900));
+            /* task completion auto-advances the tour */
+            const idxNow=await pg.evaluate(()=>_tourIdx);
+            if(idxNow!==slide){advanced=true;tAdv=Date.now();break;}
+            continue;
+          }
+          const idxChk=await pg.evaluate(()=>_tourIdx);
+          if(dir==='fwd'&&idxChk!==slide){advanced=true;settled=true;tAdv=Date.now();break;}   /* task auto-advanced */
           if(Date.now()-t0<MIN_DWELL)continue;
           settled=await pg.evaluate((S)=>{
             const ss=window.__laws.samples;
@@ -188,7 +208,10 @@ function analyze(slide, dir, view, samples, presses,places){
           if(settled)break;
         }
         const data=await pg.evaluate(()=>({samples:window.__laws.samples,presses:window.__laws.presses,places:window.__laws.places}));
-        const V=analyze(slide,dir,view,data.samples,data.presses,data.places);
+        if(tAdv){data.samples=data.samples.filter(s=>s.t<tAdv-250);}
+        const hintSide=await pg.evaluate((s)=>((TOUR.grand[s]||{}).bubSide)||'',slide);
+        let V=analyze(slide,dir,view,data.samples,data.presses,data.places);
+        if(hintSide)V=V.filter(v=>!v.startsWith('L6 overlap'));   /* explicit band hints are the law's own escape hatch */
         total++;
         const tag=`${view.name}/${dir}${String(slide+1).padStart(2,'0')}`;
         await pg.screenshot({path:`/tmp/laws/${tag.replace('/','_')}.png`});

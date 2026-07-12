@@ -791,7 +791,16 @@
   .td-soontx{flex:1;font-size:13px;color:var(--ink-2);}
   .td-more{font-size:12px;color:var(--ink-3);padding:4px 2px;}
   .tour-catch{position:fixed;inset:0;z-index:1999;background:transparent;}
-  .tour-spot.nomorph{transition:none !important;}
+  .tc-p{position:fixed;z-index:1998;background:transparent;}
+.tour-holeframe{position:fixed;z-index:2001;pointer-events:none;border:2px dashed #CBA268;border-radius:14px;
+  box-shadow:0 0 0 3px rgba(203,162,104,.14);animation:holepulse 1.6s ease-in-out infinite;}
+@keyframes holepulse{0%,100%{box-shadow:0 0 0 3px rgba(203,162,104,.12);}50%{box-shadow:0 0 0 7px rgba(203,162,104,.26);}}
+#tourOrb.invite{animation:orbinvite 1.5s ease-in-out infinite;}
+@keyframes orbinvite{0%,100%{transform:scale(1);}50%{transform:scale(1.22);}}
+#tourBubble.tour-do .tour-b{color:#7a5a1f;font-weight:600;}
+.tour-rescue{display:flex;gap:8px;margin-top:10px;}
+.tour-rescue button{flex:1;}
+.tour-spot.nomorph{transition:none !important;}
 .tour-spot{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(27,25,22,.66);outline:3px solid var(--oak);outline-offset:3px;pointer-events:none;z-index:2000;transition:left .36s cubic-bezier(.4,0,.2,1),top .36s cubic-bezier(.4,0,.2,1),width .36s cubic-bezier(.4,0,.2,1),height .36s cubic-bezier(.4,0,.2,1),opacity .2s ease;}
   .tour-bubble{position:fixed;z-index:2003;width:min(330px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px 13px;box-shadow:0 16px 44px rgba(0,0,0,.3);opacity:1;transition:opacity .22s ease;pointer-events:auto;}
   .tour-bubble .tour-step{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink-3);text-transform:uppercase;}
@@ -2671,7 +2680,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.171.1 - The voice is back on phones. Narration now speaks the instant you tap Next - inside the tap itself, which is what iPhones require - and only hands off to recorded audio once the tour-audio files are confirmed to exist on the site. Includes a nudge for an iPhone quirk that sometimes leaves the speech queue paused.';
+const PLUMB_VERSION='2.172.0 - The hands-on tour. Getting to Know Plumb is now interactive: on the Daily Log, Selections, Billing, Install Packet and the plumber slides, the ring frames the stage, the voice tells you what to do, the orb circles the spot and previews the press - and then waits, because the tap is yours. A gold frame opens over exactly the invited control and nothing else. Finish the step and the tour congratulates you and moves on by itself. Get stuck and it helps: a hint at twenty seconds, then Show me and Skip at forty. Coming back to a completed task shows it checked off, and every fresh demo starts clean. Law seven, added to the charter: the orb invites, it never presses.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4273,33 +4282,23 @@ const TOUR={team:[
   acts:[{do:()=>demoRole('hillan')}]},
  {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the current stage and percent complete, what the build is waiting on, and who is next on site. The answer to how is it going, before anyone asks.',
   acts:[{do:()=>demoRole('hillan')},{tap:'#ovCards .ov-card[onclick*="p2"]',do:()=>{openSiteFromOverview('p2');go('log');}}]},
- {sel:'.capture-card',bubSide:'tb',title:'The Daily Log',body:'Watch this. One press files the shot \u2014 today\u2019s date, the right area, no camera roll. Then the day gets its one line, saved the moment you write it. Six months later, you can prove exactly what happened, and when.',
-  acts:[{do:()=>tourGoto('log')},{tap:'.capture-card .cap-btn',do:()=>{try{tourDemoPhoto();}catch(e){}}}],
-  after:async(tok)=>{
-    await new Promise(r=>setTimeout(r,600));if(!tourAlive(tok))return;
-    /* the shot just filed \u2014 the orb points at it; the ring stays on the stage */
-    const shot=([...document.querySelectorAll('#view-log .feed .item')].find(e=>e.textContent.includes('Waste lines'))||{closest:()=>null});
-    if(shot&&shot.getBoundingClientRect)await tourPoint([shot],tok,1100);
-    if(!tourAlive(tok))return;
-    /* stage 2: the entry sheet \u2014 ring the WHOLE sheet, orb writes the day */
-    await orbTo('.daylog',{tap:true});if(!tourAlive(tok))return;
-    try{openSheet(true);}catch(e){}
-    await new Promise(r=>setTimeout(r,500));if(!tourAlive(tok))return;
-    await ringStage('#sheet',tok);if(!tourAlive(tok))return;
-    const ta=document.getElementById('cNote');
-    if(ta&&!String(ta.value||'').trim())ta.value='Crew of 2 \u2014 waste lines strapped, second-floor bath.';
-    if(ta)await tourPoint([ta],tok,1200);
-    if(!tourAlive(tok))return;
-    await orbTo('#saveBtn',{tap:true});if(!tourAlive(tok))return;
-    try{save();}catch(e){try{closeSheet();}catch(_){}}
-    await new Promise(r=>setTimeout(r,500));if(!tourAlive(tok))return;
-    /* stage 3: the daily log itself, with today\u2019s line \u2014 orb points at it */
-    const rowTxt=[...document.querySelectorAll('#view-log *')].find(e=>e.textContent.includes('waste lines strapped')&&e.children.length<4&&!e.closest('.feed'));
-    const row=rowTxt?(rowTxt.closest('.entry')||rowTxt.closest('[class]')||rowTxt):null;
-    const block=row?(row.closest('.loghist')||row.parentElement):document.querySelector('.daylog');
-    if(block)await ringStage(block,tok);
-    if(row)await tourPoint([row],tok,1000);
-  }},
+ {sel:'.capture-card',bubSide:'tb',title:'The Daily Log',body:'This is the heart of it \u2014 the record that builds itself. Your turn: file a photo and write the day. I\u2019ll show you where to press.',
+  acts:[{do:()=>tourGoto('log')}],
+  task:{payoff:'You just kept the record \u2014 photo filed, day written. That habit is the whole Daily Log.',
+    steps:[
+      {t:'.capture-card .cap-btn',say:'Press Take a photo \u2014 the shot files itself by date and area.',
+       hint:'The big button in the dark card \u2014 press it.',
+       intercept:()=>{try{tourDemoPhoto();toast('Filed \u2014 in the real app this opens your camera');}catch(e){}},
+       done:()=>{try{return (P().items[0]||{}).tour==='photo';}catch(e){return false;}},
+       payoff:'Filed \u2014 today\u2019s date, Primary Bath, no typing.'},
+      {t:'.daylog',say:'Now open the daily log to write today\u2019s line.',
+       hint:'Tap the Add today\u2019s entry row.',
+       done:()=>{try{return document.getElementById('sheet').classList.contains('show');}catch(e){return false;}}},
+      {t:'#saveBtn',say:'I started the line for you \u2014 press Save entry.',
+       hint:'The Save entry button at the bottom of the sheet.',
+       pre:()=>{try{const ta=document.getElementById('cNote');if(ta&&!String(ta.value||'').trim())ta.value='Crew of 2 \u2014 waste lines strapped, second-floor bath.';}catch(e){}},
+       done:()=>{try{return !document.getElementById('sheet').classList.contains('show')&&(P().logs||[]).some(l=>String(l.text||'').includes('waste lines'));}catch(e){return false;}}}
+    ]}},
 {sel:'#decWaiting',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open site issues \u2014 in one list. When this screen is empty, nobody is stuck.',
   acts:[{tap:'nav .tab[data-v=decisions]',do:()=>tourGoto('decisions')},{tap:'[data-d=waiting]',jump:true,do:()=>{try{decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}}],
   after:async(tok)=>{
@@ -4307,14 +4306,18 @@ const TOUR={team:[
     const rows=[...document.querySelectorAll('#decWaiting > *')].filter(e=>e.getBoundingClientRect().height>34).slice(1,3);
     if(rows.length)await tourPoint(rows,tok,900);
   }},
- {sel:'#decSelections',title:'Selections & sign-offs',body:'Finishes and fixtures live here \u2014 priced, spec\u2019d, and signed by the homeowner before anyone builds them. No more he-said-she-said about the countertop.',
+ {sel:'#decSelections',bubSide:'tb',title:'Selections & sign-offs',body:'Finishes and fixtures \u2014 priced, spec\u2019d, and signed before anyone builds them. Open one and see the whole story of a fixture.',
   acts:[{do:()=>tourGoto('decisions','waiting')},{tap:'[data-d=selections]',do:()=>{try{decSeg('selections',document.querySelector('[data-d=selections]'));}catch(e){}}}],
-  after:async(tok)=>{
-    await new Promise(r=>setTimeout(r,1200));if(!tourAlive(tok))return;
-    const rows=[...document.querySelectorAll('#decSelections > *')].filter(e=>e.getBoundingClientRect().height>34).slice(1,3);
-    if(rows.length)await tourPoint(rows,tok,900);
-  }},
- {sel:'#buildSchedule .overall .top',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
+  task:{payoff:'Price, spec, sign-off \u2014 one screen. No more he-said-she-said about the countertop.',
+    steps:[
+      {t:()=>document.querySelector('#decSelections .sel-row .si'),say:'Tap any selection to open it.',
+       hint:'Tap one of the fixture rows.',
+       done:()=>{try{return document.getElementById('selScrim').classList.contains('show');}catch(e){return false;}}},
+      {t:'#selScrim .pmodal .b-cancel',say:'Look it over \u2014 price, spec, status \u2014 then close it.',
+       hint:'Press Cancel to close the selection.',
+       done:()=>{try{return !document.getElementById('selScrim').classList.contains('show');}catch(e){return false;}}}
+    ]}},
+{sel:'#buildSchedule .overall .top',title:'Stages',body:'The build in construction order, each stage tracking its own progress and records. Mark one complete and the whole picture \u2014 yours and the homeowner\u2019s \u2014 updates.',
   acts:[{tap:'nav .tab[data-v=build]',do:()=>tourGoto('build','schedule')}],
   after:(tok)=>{const st=[...document.querySelectorAll('#stageList .stage')].filter((_,k)=>k%2===0).slice(0,4);tourPing(st,tok,650,document.querySelector('#buildSchedule .overall .top'));}},
  {sel:'#calview .pkt-banner, #calview .cal-grid',bubSide:'tl',title:'The trades calendar',body:'Every crew booking across every job \u2014 who is on site and when, with double-bookings flagged before they burn a day. Subs confirm with one tap.',
@@ -4333,27 +4336,46 @@ const TOUR={team:[
     if(row)await tourPing([row],tok,900,prev);}},
  {sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build is 800 dollars from its budget, one line is over \u2014 and every cost can flow straight into QuickBooks.',
   acts:[{do:()=>tourGoto('build','subs')},{tap:'#budgetCard .overall',do:()=>{try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}try{openBudget();}catch(e){}}}]},
- {sel:'#billingCard',title:'Homeowner billing',body:'The other side of money \u2014 upgrades, credits, invoices the homeowner approves with one tap. What they owe and what they have paid, always current.',
-  acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .pmodal .b-go',do:()=>{try{closeBudget();}catch(e){}}}]},
- {sel:'#filesPhotos .searchbar',title:'Files, kept for you',body:'Every capture lands here by date and area \u2014 including the shot you just took, already filed under today. Search by trade or stage when the drywaller asks what was behind that wall. Documents live one tab over, shared per trade.',
+ {sel:'#billingCard',bubSide:'tb',title:'Homeowner billing',body:'The other side of money \u2014 upgrades, credits, invoices the homeowner approves with one tap. Open the ledger and see where every dollar stands.',
+  acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .pmodal .b-go',do:()=>{try{closeBudget();}catch(e){}}}],
+  task:{payoff:'What they owe, what they\u2019ve paid, what\u2019s waiting on them \u2014 always current, never a spreadsheet.',
+    steps:[
+      {t:()=>document.querySelector('#billingCard [onclick]')||document.getElementById('billingCard'),
+       say:'Tap the billing card to open the homeowner ledger.',
+       hint:'The Homeowner billing card \u2014 tap it.',
+       done:()=>{try{return document.getElementById('invScrim').classList.contains('show');}catch(e){return false;}}},
+      {t:'#invScrim .pmodal .b-go',say:'That\u2019s the running ledger \u2014 press Done when you\u2019ve had a look.',
+       hint:'The Done button closes it.',
+       done:()=>{try{return !document.getElementById('invScrim').classList.contains('show');}catch(e){return false;}}}
+    ]}},
+{sel:'#filesPhotos .searchbar',title:'Files, kept for you',body:'Every capture lands here by date and area \u2014 including the shot you just took, already filed under today. Search by trade or stage when the drywaller asks what was behind that wall. Documents live one tab over, shared per trade.',
   acts:[{tap:'nav .tab[data-v=files]',do:()=>tourGoto('files')},{tap:'[data-fl=photos]',jump:true,do:()=>{try{filesSeg('photos',document.querySelector('[data-fl=photos]'));}catch(e){}}}],
   after:(tok)=>{tourPing([...document.querySelectorAll('#filesPhotos .day-group')].slice(0,2),tok,800,document.querySelector('#filesPhotos .searchbar'));}},
- {sel:'#filesDocs .doc',title:'The Install Packet',body:'This is where the Install Packet is born. Attach the fixture spec to Plumbing \u2014 like so \u2014 and every plumber you clear carries it in their pocket. Exactly what they need on site, and nothing that is not theirs.',
-  acts:[{do:()=>tourGoto('files','photos')},{tap:'[data-fl=docs]',do:()=>{try{filesSeg('docs',document.querySelector('[data-fl=docs]'));}catch(e){}}},{tap:'#filesDocs .add-sub-btn',do:()=>{try{tourDemoDoc();}catch(e){}}}]},
- {sel:'#svPacket',title:'The Packet, delivered',body:'Now the sub\u2019s side. Clearwater Plumbing opens their packet \u2014 and the spec you attached ten seconds ago is already inside. No email, no did-you-get-it. The Install Packet travels by itself.',
-  acts:[{tap:'.exc-roles button[data-r=subs]',do:()=>demoRole('subs')},{tap:'#svPacket',do:()=>{try{openSubPacket('p2','plumbing');}catch(e){}}}],
-  after:async(tok)=>{await new Promise(r=>setTimeout(r,700));if(!tourAlive(tok))return;
-    const spec=[...document.querySelectorAll('#infoBody *')].find(e=>e.textContent&&e.textContent.includes('Fixture Spec')&&e.children.length<4);
-    const prev=document.querySelector('#svPacket');
-    if(spec)await tourPing([spec],tok,2000,prev);
-    if(!tourAlive(tok))return;
-    await orbTo('#infoScrim .pmodal .b-go',{tap:true});if(!tourAlive(tok))return;
-    try{document.getElementById('infoScrim').classList.remove('show');}catch(e){}
-    setTimeout(()=>{try{if(!tourAlive(tok))return;const p2=document.querySelector('#svPacket');if(p2){const r2=p2.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2,true,undefined,true);orbTo(p2,{settle:true,rest:true});}}catch(e){}},420);}},
- {sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',
+ {sel:'#filesDocs',bubSide:'tb',title:'The Install Packet',body:'This is where the Install Packet is born. Attach a document to a trade, and every sub you clear carries it in their pocket. Try it.',
+  acts:[{do:()=>tourGoto('files','photos')},{tap:'[data-fl=docs]',do:()=>{try{filesSeg('docs',document.querySelector('[data-fl=docs]'));}catch(e){}}}],
+  task:{payoff:'Attached to Plumbing \u2014 and already in every cleared plumber\u2019s packet. Nothing that is not theirs.',
+    steps:[
+      {t:'#filesDocs .add-sub-btn',say:'Press Add document \u2014 I\u2019ll hand you a fixture spec to attach.',
+       hint:'The add button at the top of Documents.',
+       intercept:()=>{try{tourDemoDoc();toast('Attached \u2014 in the real app you pick any PDF');}catch(e){}},
+       done:()=>{try{return (P().docs[0]||{}).tour==='spec';}catch(e){return false;}}}
+    ]}},
+{sel:'#svPacket',bubSide:'tb',title:'The Packet, delivered',body:'Now you\u2019re the plumber. That spec you just attached? See for yourself \u2014 open your packet.',
+  acts:[{tap:'.exc-roles button[data-r=subs]',do:()=>demoRole('subs')}],
+  task:{payoff:'No email, no did-you-get-it. The Install Packet travels by itself.',
+    steps:[
+      {t:'#svPacket',say:'Open your install packet.',
+       hint:'Tap the packet card.',
+       done:()=>{try{return document.getElementById('infoScrim').classList.contains('show');}catch(e){return false;}},
+       payoff:'There it is \u2014 Fixture Spec, Rev C, attached ten seconds ago.'},
+      {t:'#infoScrim .pmodal .b-go',say:'Press Done \u2014 you\u2019ve got what you need.',
+       hint:'The Done button.',
+       done:()=>{try{return !document.getElementById('infoScrim').classList.contains('show');}catch(e){return false;}}}
+    ]}},
+{sel:'.cl-hero',title:'What homeowners see',body:'This is THEIR view of the same build \u2014 progress, decisions waiting on them, what to pay. No app to teach; you send one link.',
   acts:[{tap:'.exc-roles button[data-r=client]',do:()=>demoRole('client')}],
   after:(tok)=>{tourPing(['.cl-stats','.cl-concern'],tok,900,document.querySelector('.cl-hero'));}},
- {sel:'#clBody .feed, .cl-hero',title:'One record, everywhere',body:'That photo you filed three minutes ago? Your homeowner is already looking at it. The spec you attached? Riding in Clearwater\u2019s packet. You write it once \u2014 and every phone on the job is current, live, without a single call.',
+ {sel:'#clBody .feed, #clBody, .cl-hero',bubSide:'bb',title:'One record, everywhere',body:'That photo you filed three minutes ago? Your homeowner is already looking at it. The spec you attached? Riding in Clearwater\u2019s packet. You write it once \u2014 and every phone on the job is current, live, without a single call.',
   acts:[{do:()=>demoRole('client')},{tap:'#cltab-progress',do:()=>{try{clientGo('progress');}catch(e){}}}],
   after:async(tok)=>{
     await new Promise(r=>setTimeout(r,900));if(!tourAlive(tok))return;
@@ -4365,7 +4387,7 @@ const TOUR={team:[
     try{demoRole('subs');}catch(e){}
     const pk=document.querySelector('#svPacket');
     if(pk)await tourPing([pk],tok,1200,prev);}},
- {sel:'#ovCards',title:'One honest record',body:'The Daily Log. The Install Packet. One record, live in every hand that touches the build. That is Plumb. Ready to set up your first site?',cta:'Set up my site',
+ {sel:'#ovCards',bubSide:'tb',title:'One honest record',body:'The Daily Log. The Install Packet. One record, live in every hand that touches the build. That is Plumb. Ready to set up your first site?',cta:'Set up my site',
   acts:[{tap:'.exc-roles button[data-r=hillan]',do:()=>demoRole('hillan')}]}
 ],client:[
  {title:'Welcome home',body:'This is your view of the build \u2014 a calm picture of where things stand. Tap the highlights or use Next.',nav:()=>{try{clientGo('home');}catch(e){}}},
@@ -4377,7 +4399,10 @@ const TOUR={team:[
  {title:'That\u2019s it',body:'No app to learn \u2014 just open it whenever you want to see how your home is coming along.'}
 ]};
 let _tourSteps=[],_tourIdx=0,_tourLift=null,_tourLiftPrev=null,_tourTapEl=null,_tourTapFn=null;
-function startTour(role){_tourSteps=TOUR[role]||TOUR.team;_tourIdx=0;
+function startTour(role){
+  try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
+  try{document.getElementById('installGate').classList.remove('show');}catch(e){}
+  _tourSteps=TOUR[role]||TOUR.team;_tourIdx=0;window._tourBack=false;try{_tourSteps.forEach(s=>{delete s.__done;});}catch(e){}
   if(!document.getElementById('tourCatch')){
     const c=document.createElement('div');c.id='tourCatch';c.className='tour-catch';
     const s=document.createElement('div');s.id='tourSpot';s.className='tour-spot';
@@ -4388,10 +4413,10 @@ function startTour(role){_tourSteps=TOUR[role]||TOUR.team;_tourIdx=0;
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
-function tourEnd(){orbHide();tourAudioStop();tourUnlift();['tourCatch','tourSpot','tourBubble'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+function tourEnd(){orbHide();tourAudioStop();try{taskCleanup();}catch(e){}tourUnlift();['tourCatch','tourSpot','tourBubble'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
-function tourNext(){tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
-function tourPrev(){tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
+function tourNext(){window._tourBack=false;tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
+function tourPrev(){window._tourBack=true;tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
 function tourPlace(rect,instant,dock,skipBub){
   const spot=document.getElementById('tourSpot'),bub=document.getElementById('tourBubble');if(!spot||!bub)return;
   if(instant){spot.classList.add('nomorph');requestAnimationFrame(()=>spot.classList.remove('nomorph'));}
@@ -4414,10 +4439,12 @@ function tourPlace(rect,instant,dock,skipBub){
       top=(side==='tb')?12:(vh-bh2-12);left=12;
     } else {top=14;left=(bub.dataset.side==='tl')?14:(vw-bw-14);}
   }   /* action slides: the bubble owns the least important place — chosen to avoid that slide's action */
-  else if(rect&&vw<700){                                 /* LAW 6 on phones: EVERY slide's bubble takes the larger free band */
-    bub.style.width='calc(100vw - 24px)';bub.style.maxWidth='calc(100vw - 24px)';
+  else if(rect&&vw<700){                                 /* LAW 6 on phones: EVERY slide's bubble takes the least-overlap band */
+    if(!bub.querySelector('.tour-gold')){bub.style.width='calc(100vw - 24px)';bub.style.maxWidth='calc(100vw - 24px)';}
     const bh2=bub.offsetHeight;
-    top=(rect.top>=vh-rect.bottom)?12:(vh-bh2-12);left=12;
+    const ovTop=Math.max(0,Math.min(rect.bottom,12+bh2)-Math.max(rect.top,12));
+    const ovBot=Math.max(0,Math.min(rect.bottom,vh-12)-Math.max(rect.top,vh-12-bh2));
+    top=(ovBot<ovTop)?(vh-bh2-12):12;left=12;
   }
   else if(rect){
     top=(rect.bottom+gap+bh<vh)?rect.bottom+gap:Math.max(12,rect.top-gap-bh);
@@ -4429,6 +4456,7 @@ function tourStep(){
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
+  try{taskCleanup();}catch(e){}
   step.__dock=false;
   window._law5=(pr)=>{                                     // LAW 5: press under the bubble? bubble moves NOW, once,
     try{                                                   //         and the press WAITS until it has cleared
@@ -4439,7 +4467,8 @@ function tourStep(){
       const side=(innerWidth<700)
         ?(((pr.top+pr.bottom)/2<innerHeight/2)?'bb':'tb')          // LAW 6 on phones: flee to the opposite BAND
         :(((pr.left+pr.right)/2>innerWidth/2)?'tl':'tr');          // 5a on desktop: farthest corner
-      const place=()=>{bub.dataset.side=side;
+      const place=()=>{try{window.__laws&&window.__laws.places.push({t:Date.now(),top:null,inst:0,who:'law5'});}catch(e){}
+        bub.dataset.side=side;
         if(side==='tb'||side==='bb'){bub.style.width='calc(100vw - 24px)';bub.style.maxWidth='calc(100vw - 24px)';const bh0=bub.offsetHeight;
           bub.style.left='12px';bub.style.top=(side==='tb'?12:(innerHeight-bh0-12))+'px';}
         else{const bw0=bub.offsetWidth;bub.style.top='14px';bub.style.left=(side==='tl'?14:(innerWidth-bw0-14))+'px';}};
@@ -4485,7 +4514,7 @@ function tourStep(){
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
-      tourPlace(rect,false,(step.after||step.__dock)?(step.__dockSide||step.bubSide||true):false); // ring glides; bubble placed ONCE, corner chosen to avoid this slide's presses
+      tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false); // ring glides; bubble placed ONCE, corner chosen to avoid this slide's presses
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
         try{const rq=el.getBoundingClientRect();
           if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true,undefined,true);}catch(e){}},90));
@@ -4498,7 +4527,12 @@ function tourStep(){
       {const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';}
     });
   },(step.nav||step.acts)?240:0);
-  if(step.after)setTimeout(()=>{try{step.after(_tok);}catch(e){}},1100);
+  if(step.task){
+    const doneAll=step.__done||step.task.steps.every(s2=>{try{return s2.done&&s2.done();}catch(e){return false;}});
+    if(doneAll||window._tourBack){setTimeout(()=>{try{bubDo('\u2713 '+(step.task.payoff||'Already done.'));}catch(e){}},900);}
+    else setTimeout(()=>{try{runTask(step,_tok);}catch(e){}},1500);
+  }
+  else if(step.after)setTimeout(()=>{try{step.after(_tok);}catch(e){}},1100);
   });}
 function tmplPickLevel(id){const op=orgPrefs();op.customLevel=id;saveOrgPrefs(op);renderPeople();
   const n=(SETUP_LEVELS.find(l=>l.id===id)||{}).n||id;toast(n+' — spec sheets now ask '+specTotals(id)+' questions');}
@@ -6295,6 +6329,7 @@ function maybeInstallGate(){
   try{
     if(!isCoarseMobile()||isStandalonePWA())return false;
     if(sessionStorage.getItem('plumbBrowserOK')==='1')return false;
+    if(document.getElementById('tourCatch'))return false;   /* never over the tour */
     const g=document.getElementById('installGate');if(!g)return false;
     const inv=(localStorage.getItem('plumbPendingInvite')||'');
     document.getElementById('igLead').textContent=inv
@@ -6473,6 +6508,10 @@ function startGrandTour(){
       the slide. On narrow screens the dock is a full-width band in whichever
       half (top/bottom) is farther from the spotlight and the action; evasive
       moves flee to the opposite band.
+   7. In interactive beats the orb INVITES \u2014 glide, circle, press-preview \u2014
+      but never presses. The user's tap is the only press. The input hole
+      opens exactly over the invitation and nowhere else, and every invited
+      task has a rescue: hint, then Show-me, then skip.
    Enforcement lives in: awaitSettle (rest), smoothScrollTo (one motion),
    orbTo (unconditional settle + LAW-5 hook), tourPlace(skipBub) (bubble once/slide). */
 /* ── The guide orb: glides to a control, taps it, then the screen answers. ── */
@@ -6575,6 +6614,107 @@ function awaitSpotRest(){
     requestAnimationFrame(tick);};
     requestAnimationFrame(tick);
   });
+}
+/* \u2550\u2550 THE HANDS-ON ENGINE (LAW 7): the user does the work \u2550\u2550 */
+window._tourInvite=null;window._taskCtl=null;
+function holeOpen(el){
+  holeClose();
+  const r=el.getBoundingClientRect(),pad=8;
+  const t=Math.max(0,r.top-pad),l=Math.max(0,r.left-pad),
+        b=Math.min(innerHeight,r.bottom+pad),ri=Math.min(innerWidth,r.right+pad);
+  const mk=(css)=>{const d=document.createElement('div');d.className='tc-p';d.style.cssText=css;document.body.appendChild(d);return d;};
+  mk('top:0;left:0;right:0;height:'+t+'px');
+  mk('top:'+b+'px;left:0;right:0;bottom:0');
+  mk('top:'+t+'px;left:0;width:'+l+'px;height:'+(b-t)+'px');
+  mk('top:'+t+'px;left:'+ri+'px;right:0;height:'+(b-t)+'px');
+  const f=document.createElement('div');f.className='tour-holeframe';
+  f.style.cssText='top:'+t+'px;left:'+l+'px;width:'+(ri-l)+'px;height:'+(b-t)+'px';
+  document.body.appendChild(f);
+  const c=document.getElementById('tourCatch');if(c)c.style.pointerEvents='none';
+  window._tourInvite={rect:{x:(l+ri)/2,y:(t+b)/2}};
+}
+function holeClose(){
+  document.querySelectorAll('.tc-p,.tour-holeframe').forEach(e=>e.remove());
+  const c=document.getElementById('tourCatch');if(c)c.style.pointerEvents='';
+  window._tourInvite=null;
+}
+async function orbInvite(el,tok){
+  if(!el||!tourAlive(tok))return;
+  const o=_orbEl();if(!o)return;
+  await orbTo(el,{settle:true,rest:true,noscroll:true});
+  if(!tourAlive(tok))return;
+  const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  if(!r.width||r.top<-4||r.bottom>innerHeight+4)return;   /* never gesture at nothing */
+  const rx=Math.min(r.width/2+16,120),ry=Math.min(r.height/2+14,64);
+  await new Promise(res=>{const t0=performance.now();
+    const spin=(t)=>{const p=(t-t0)/950;
+      if(p>=1||!tourAlive(tok)){res();return;}
+      const a=-Math.PI/2+p*2*Math.PI;
+      _orbPlace(o,cx+Math.cos(a)*rx,cy+Math.sin(a)*ry,true);
+      requestAnimationFrame(spin);};
+    requestAnimationFrame(spin);});
+  if(!tourAlive(tok))return;
+  _orbPlace(o,cx,cy,false);
+  await new Promise(r2=>setTimeout(r2,320));
+  o.classList.remove('tap');void o.offsetWidth;o.classList.add('tap');   /* preview only \u2014 LAW 7 */
+  setTimeout(()=>{o.classList.remove('tap');o.classList.add('invite');},520);
+  _orbPlace(o,Math.min(cx+rx+26,innerWidth-24),cy,false);
+}
+function bubDo(say,rescueHtml){
+  const bub=document.getElementById('tourBubble');if(!bub)return;
+  bub.classList.add('tour-do');
+  const b=bub.querySelector('.tour-b');
+  if(b)b.innerHTML=esc(say)+(rescueHtml||'');
+}
+function taskCleanup(){
+  holeClose();
+  const o=_orbEl();if(o)o.classList.remove('invite');
+  const bub=document.getElementById('tourBubble');if(bub)bub.classList.remove('tour-do');
+  if(window._taskCtl){window._taskCtl.timers.forEach(clearTimeout);
+    if(window._taskCtl.icept)document.removeEventListener('click',window._taskCtl.icept,true);
+    window._taskCtl=null;}
+}
+async function runTask(step,tok){
+  const T=step.task;if(!T)return;
+  for(const inv of T.steps){
+    if(!tourAlive(tok))return;
+    if(inv.done&&inv.done()){continue;}
+    try{if(inv.pre)inv.pre();}catch(e){}
+    const el=typeof inv.t==='function'?inv.t():document.querySelector(inv.t);
+    if(!el)continue;
+    smoothScrollTo(el,0.4);await awaitSettle(el);
+    if(!tourAlive(tok))return;
+    const ctl={timers:[],icept:null};window._taskCtl=ctl;
+    if(inv.intercept){
+      ctl.icept=(e)=>{const hit=e.target&&(el===e.target||el.contains(e.target));
+        if(hit){e.preventDefault();e.stopPropagation();try{inv.intercept();}catch(_){}}};
+      document.addEventListener('click',ctl.icept,true);
+    }
+    try{document.getElementById('installScrim').classList.remove('show');}catch(e){}
+    try{document.getElementById('installGate').classList.remove('show');}catch(e){}
+    holeOpen(el);
+    bubDo(inv.say);
+    try{tourSpeak(inv.say);}catch(e){}
+    orbInvite(el,tok);
+    ctl.timers.push(setTimeout(()=>{if(!tourAlive(tok))return;
+      bubDo((inv.hint||'Tap inside the gold frame.'));orbInvite(el,tok);},20000));
+    ctl.timers.push(setTimeout(()=>{if(!tourAlive(tok))return;
+      bubDo(inv.say,'<div class="tour-rescue"><button class="tour-skip" onclick="window._taskShow&&window._taskShow()">Show me</button><button class="tour-skip" onclick="window._taskSkip&&window._taskSkip()">Skip this</button></div>');},40000));
+    let skipped=false;
+    window._taskShow=()=>{try{if(inv.intercept)inv.intercept();else el.click();}catch(e){}};
+    window._taskSkip=()=>{skipped=true;};
+    await new Promise(res=>{const poll=()=>{
+      if(!tourAlive(tok)||skipped||(inv.done&&inv.done())){res();return;}
+      setTimeout(poll,240);};poll();});
+    taskCleanup();
+    if(!tourAlive(tok))return;
+    if(inv.payoff&&!skipped){bubDo(inv.payoff);try{tourSpeak(inv.payoff);}catch(e){}
+      await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;}
+  }
+  if(!tourAlive(tok))return;
+  step.__done=true;
+  bubDo('\u2713 '+(T.payoff||'Done.'));try{tourSpeak(T.payoff||'');}catch(e){}
+  setTimeout(()=>{if(tourAlive(tok))tourNext();},2600);
 }
 /* ringStage: settle-gated, animated ring move to a large stable region.
    The bubble is never touched (LAW 4) \u2014 stage changes are ring-only. */
@@ -9695,6 +9835,7 @@ function openInstall(){
   } else {
     body.innerHTML='<div class="inst-note">Open your browser menu (<b>⋮</b>) and choose <b>Install app</b> or <b>Add to Home screen</b>.</div>';
   }
+  if(document.getElementById('tourCatch'))return;          /* never over the tour \u2014 it re-offers next visit */
   document.getElementById('installScrim').classList.add('show');
 }
 function closeInstall(){document.getElementById('installScrim').classList.remove('show');}
