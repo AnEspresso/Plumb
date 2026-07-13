@@ -60,11 +60,14 @@ const dist=(a,b)=>Math.hypot((a.x+a.w/2)-(b.x+b.w/2),(a.y+a.h/2)-(b.y+b.h/2));
 
 /* Movement episodes: stationary → moving → stationary, with metadata. */
 function episodes(samples, key){
+  /* the bubble is an ANCHORED card: its words change its size, not its place.
+     Judge it by its anchor (top-left); symmetric actors by their centers. */
+  const dK=(a,b)=>key==='bub'?Math.hypot(a.x-b.x,a.y-b.y):dist(a,b);
   const eps=[]; let cur=null, still0=null;
   for(let i=1;i<samples.length;i++){
     const a=samples[i-1][key], b=samples[i][key];
     if(!a||!b)continue;
-    const d=dist(a,b);
+    const d=dK(a,b);
     if(d>2.5){
       if(!cur)cur={start:samples[i].t,from:a,stillBefore:still0?samples[i-1].t-still0:0,revs:0,lastDy:0,scroll:0};
       cur.scroll+=Math.abs((samples[i].sc||0)-(samples[i-1].sc||0));
@@ -99,7 +102,8 @@ function analyze(slide, dir, view, samples, presses,places){
   const endSpots=tail.map(s=>s.spot).filter(Boolean);
   if(endSpots.length>4){
     const drift=Math.max(...endSpots.map(s=>dist(s,endSpots[0])));
-    if(drift>3)V.push(`L1 unrest: ring drifting ${drift|0}px at slide end`);
+    const staged=(places||[]).some(p=>p.t>=tail[0].t-600);   /* attributed re-stage inside the tail is choreography */
+    if(drift>3&&!staged)V.push(`L1 unrest: ring drifting ${drift|0}px at slide end`);
   }
 
   /* LAW 2 — one smooth motion: no double-reversal bounces per episode. */
@@ -118,7 +122,7 @@ function analyze(slide, dir, view, samples, presses,places){
   if(bubEps.length>1)V.push(`L4 dance: ${bubEps.length+1} bubble moves in one slide`);
   const bubTail=tail.map(s=>s.bub).filter(Boolean);
   if(bubTail.length>4){
-    const bd=Math.max(...bubTail.map(s=>dist(s,bubTail[0])));
+    const bd=Math.max(...bubTail.map(s=>Math.hypot(s.x-bubTail[0].x,s.y-bubTail[0].y)));
     if(bd>8&&!(places||[]).some(p=>Math.abs(p.t-tail[0].t)<600))V.push('L4 unrest: bubble still moving at slide end');  /* >8px: text-swap reflow tolerance; real wandering measured 450px+ */
   }
 
