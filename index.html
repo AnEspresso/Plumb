@@ -2681,7 +2681,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.173.2 - Read from your second flight log and screenshot. The finale bubble now sheds the fixed card width it inherits from earlier slides, so Set up my site sits fully inside the modal on desktop. The flight recorder also logs rescue hints and offers, and a task abandoned by pressing Back is recorded as aborted instead of done.';
+const PLUMB_VERSION='2.174.0 - Staged from your four screenshots. The homeowner slide frames hero through decisions instead of pinging the concern button, Selections stages just the list rather than the money summary, the To-Do slide is now a real performance - the orb presses a sign-off, the ring follows into the open selection, and the orb closes it - and the daily-log prompt frames both the capture card and the entry it points to. Pointing gestures are now honest: the orb circles things it is only showing and presses only what actually opens, it never scrolls unless a target is off screen, and the ring re-measures its stage after any scroll instead of drifting off it. The voice also pronounces record and live correctly now.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4292,7 +4292,7 @@ const TOUR={team:[
        intercept:()=>{try{tourDemoPhoto();toast('Filed \u2014 in the real app this opens your camera');}catch(e){}},
        done:()=>{try{return (P().items[0]||{}).tour==='photo';}catch(e){return false;}},
        payoff:'Filed \u2014 today\u2019s date, Primary Bath, no typing.'},
-      {t:'.daylog',say:'Now open the daily log to write today\u2019s line.',
+      {t:'.daylog',stage:()=>unionRect('.capture-card','.daylog'),say:'Now open the daily log to write today\u2019s line.',
        hint:'Tap the Add today\u2019s entry row.',
        done:()=>{try{return document.getElementById('sheet').classList.contains('show');}catch(e){return false;}}},
       {t:'#saveBtn',stage:'#sheet',say:'I started the line for you \u2014 press Save entry.',
@@ -4303,15 +4303,29 @@ const TOUR={team:[
 {sel:'#decWaiting',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open issues \u2014 in one list. When this screen is empty, nobody on your job is stuck.',
   acts:[{tap:'nav .tab[data-v=decisions]',do:()=>tourGoto('decisions')},{tap:'[data-d=waiting]',jump:true,do:()=>{try{decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}}],
   after:async(tok)=>{
-    await new Promise(r=>setTimeout(r,1200));if(!tourAlive(tok))return;
-    const rows=[...document.querySelectorAll('#decWaiting > *')].filter(e=>e.getBoundingClientRect().height>34).slice(1,3);
-    if(rows.length)await tourPoint(rows,tok,900);
+    await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
+    const issue=document.querySelector('#decWaiting .item');
+    if(issue)await tourPoint([issue],tok,1000);
+    if(!tourAlive(tok))return;
+    const si=document.querySelector('#decWaiting .si');
+    if(!si)return;
+    await tourPoint([si],tok,200,{press:true});
+    try{si.click();}catch(e){}
+    await new Promise(r=>setTimeout(r,600));if(!tourAlive(tok))return;
+    if(document.getElementById('selScrim').classList.contains('show')){
+      await ringStage('#selScrim .pmodal',tok);if(!tourAlive(tok))return;
+      await new Promise(r=>setTimeout(r,2600));if(!tourAlive(tok))return;
+      const x=document.querySelector('#selScrim .pmodal .b-cancel');
+      if(x){await orbTo(x,{tap:true,noscroll:true});try{x.click();}catch(e){}}
+      await new Promise(r=>setTimeout(r,500));if(!tourAlive(tok))return;
+      await ringStage('#decWaiting',tok);
+    }
   }},
- {sel:'#decSelections',bubSide:'tb',title:'Selections & sign-offs',body:'Finishes and fixtures \u2014 priced, spec\u2019d, and signed before anyone builds them. Open one and see the whole story of a fixture.',
+ {sel:'#selList',bubSide:'tb',title:'Selections & sign-offs',body:'Finishes and fixtures \u2014 priced, spec\u2019d, and signed before anyone builds them. Open one and see the whole story of a fixture.',
   acts:[{do:()=>tourGoto('decisions','waiting')},{tap:'[data-d=selections]',do:()=>{try{decSeg('selections',document.querySelector('[data-d=selections]'));}catch(e){}}}],
   task:{payoff:'Price, spec, sign-off \u2014 one screen, one truth. No more \u2018he said, she said\u2019 about the countertop.',
     steps:[
-      {t:()=>document.querySelector('#decSelections .sel-row .si'),say:'Tap any selection to open it.',
+      {t:()=>document.querySelector('#selList .sel-row .si'),say:'Tap any selection to open it.',
        hint:'Tap one of the fixture rows.',
        done:()=>{try{return document.getElementById('selScrim').classList.contains('show');}catch(e){return false;}}},
       {t:'#selScrim .pmodal .b-cancel',stage:'#selScrim .pmodal',say:'Look it over \u2014 price, spec, status \u2014 then close it.',
@@ -4374,9 +4388,13 @@ const TOUR={team:[
        hint:'The Done button.',
        done:()=>{try{return !document.getElementById('infoScrim').classList.contains('show');}catch(e){return false;}}}
     ]}},
-{sel:'.cl-hero',title:'What homeowners see',body:'This is their view of the same build \u2014 progress, decisions waiting on them, what to pay. Nothing to install, nothing to teach: you send one link.',
+{sel:'.cl-hero',stageRect:()=>unionRect('.cl-hero','[id^=cldec]'),title:'What homeowners see',body:'This is their view of the same build \u2014 progress, decisions waiting on them, what to pay. Nothing to install, nothing to teach: you send one link.',
   acts:[{tap:'.exc-roles button[data-r=client]',do:()=>demoRole('client')}],
-  after:(tok)=>{tourPing(['.cl-stats','.cl-concern'],tok,900,document.querySelector('.cl-hero'));}},
+  after:async(tok)=>{
+    await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
+    const spots=['.cl-hero','.cl-stats','[id^=cldec]'].map(s2=>document.querySelector(s2)).filter(Boolean);
+    if(spots.length)await tourPoint(spots,tok,1000);
+  }},
  {sel:'#clBody .feed, #clBody, .cl-hero',bubSide:'bb',title:'One record, everywhere',body:'That photo you filed minutes ago? Your homeowner is already looking at it. The spec you attached? Riding in Clearwater\u2019s packet. Write it once \u2014 and every phone on the job is current. Live. No calls.',
   acts:[{do:()=>demoRole('client')},{tap:'#cltab-progress',do:()=>{try{clientGo('progress');}catch(e){}}}],
   after:async(tok)=>{
@@ -4544,6 +4562,8 @@ function tourStep(){
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
+      if(step.stageRect){try{const r2=step.stageRect();if(r2&&r2.height)rect=r2;window._stageEl=step.stageRect;}catch(e){}}
+      else window._stageEl=el||null;
       tlog('ring',(step.sel||'(no stage)')+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
       tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false); // ring glides; bubble placed ONCE, corner chosen to avoid this slide's presses
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
@@ -6775,12 +6795,31 @@ async function runTask(step,tok){
   try{await tourSpeak(T.payoff||'');}catch(e){}          /* the congratulation finishes before the tour moves */
   setTimeout(()=>{if(tourAlive(tok))tourNext();},readBeat(T.payoff,800));
 }
+/* unionRect: one frame around two regions \u2014 the stage spans the story */
+function unionRect(a,b){
+  const ea=typeof a==='string'?document.querySelector(a):a;
+  const eb=typeof b==='string'?document.querySelector(b):b;
+  if(!ea)return eb?eb.getBoundingClientRect():null;
+  if(!eb)return ea.getBoundingClientRect();
+  const ra=ea.getBoundingClientRect(),rb=eb.getBoundingClientRect();
+  const top=Math.min(ra.top,rb.top),left=Math.min(ra.left,rb.left);
+  return {top,left,bottom:Math.max(ra.bottom,rb.bottom),right:Math.max(ra.right,rb.right),
+    width:Math.max(ra.right,rb.right)-left,height:Math.max(ra.bottom,rb.bottom)-top};
+}
 /* ringStage: settle-gated, animated ring move to a large stable region.
    The bubble is never touched (LAW 4) \u2014 stage changes are ring-only. */
 async function ringStage(sel,tok){
-  tlog('restage',typeof sel==='string'?sel:'el');
+  tlog('restage',typeof sel==='string'?sel:'fn');
+  if(typeof sel==='function'){                            /* rect-producing stage (e.g. a union) */
+    const r=sel();if(!r||!tourAlive(tok))return null;
+    window._stageEl=sel;
+    tourPlace(r,false,undefined,true);
+    await awaitSpotRest();
+    return null;
+  }
   const el=typeof sel==='string'?document.querySelector(sel):sel;
   if(!el||!tourAlive(tok))return null;
+  window._stageEl=el;
   smoothScrollTo(el,0.22);
   await awaitSettle(el);
   if(!tourAlive(tok))return null;
@@ -6788,17 +6827,45 @@ async function ringStage(sel,tok){
   await awaitSpotRest();
   return el;
 }
+/* re-glue: after any scroll, the ring re-measures its stage (LAW 1: instantly) */
+function stageReglue(){
+  try{
+    const s=window._stageEl;if(!s)return;
+    const r=typeof s==='function'?s():s.getBoundingClientRect();
+    if(r&&r.height)tourPlace(r,true,undefined,true);
+  }catch(e){}
+}
 /* tourPoint: the orb alone visits and pulses each target \u2014 the ring stays
    framing the stage. Presses and pointing share the same gesture. */
-async function tourPoint(sels,tok,dwell){
+async function tourPoint(sels,tok,dwell,opts){
+  opts=opts||{};
   for(const s of (sels||[])){
     if(!tourAlive(tok))return;
     const el=typeof s==='string'?document.querySelector(s):s;
     if(!el)continue;
-    smoothScrollTo(el,0.36);
-    await awaitSettle(el);
-    if(!tourAlive(tok))return;
-    await orbTo(el,{tap:true,noscroll:true});
+    const r0=el.getBoundingClientRect();
+    if(r0.top<70||r0.bottom>innerHeight-90){              /* scroll only when the target is out of frame */
+      smoothScrollTo(el,0.36);
+      await awaitSettle(el);
+      if(!tourAlive(tok))return;
+      stageReglue();
+    }
+    if(opts.press){await orbTo(el,{tap:true,noscroll:true});}   /* a press means something OPENS */
+    else{                                                        /* pointing is a circle, never a fake click */
+      await orbTo(el,{settle:true,rest:true,noscroll:true});
+      if(!tourAlive(tok))return;
+      const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+      const rx=Math.min(r.width/2+14,110),ry=Math.min(r.height/2+12,56);
+      const o=_orbEl();
+      await new Promise(res=>{const t0=performance.now();
+        const spin=(t)=>{const p=(t-t0)/900;
+          if(p>=1||!tourAlive(tok)){res();return;}
+          const a=-Math.PI/2+p*2*Math.PI;
+          _orbPlace(o,cx+Math.cos(a)*rx,cy+Math.sin(a)*ry,true);
+          requestAnimationFrame(spin);};
+        requestAnimationFrame(spin);});
+      _orbPlace(o,Math.min(cx+rx+22,innerWidth-24),cy,false);
+    }
     await new Promise(r=>setTimeout(r,dwell||800));
   }
 }
@@ -6898,6 +6965,10 @@ function speakify(t){
   return String(t)
     .replace(/\u2713/g,'')
     .replace(/spec\u2019d/gi,'specked')
+    /* heteronyms: force the noun REH-cord; the adjective LIVE becomes plain words */
+    .replace(/\brecord(s?)\b/gi,'reccord$1')
+    .replace(/\bLive\. No calls\./,'In real time. No calls.')
+    .replace(/, live in every hand/i,', up to date in every hand')
     .replace(/\u2014|\u2013|--/g,'. ')           /* dashes become full-stop pauses */
     .replace(/\u00b7/g,', ')
     .replace(/\u2019(?=[a-z])/gi,"'")                    /* it's, how's \u2014 keep the apostrophe */
