@@ -1453,6 +1453,7 @@ body.on-tour .tour-card{display:block;}
 @media (prefers-reduced-motion: reduce){#tourOrb{display:none !important;}}
 #tourBubble{transition:top .5s cubic-bezier(.4,0,.2,1),left .5s cubic-bezier(.4,0,.2,1),max-width .3s ease;}
 #tourBubble.tour-bub-dock{max-width:300px;font-size:12.5px;opacity:.96;}
+  #tourBubble.tour-bub-dock:has(.tour-gold){max-width:min(410px,calc(100vw - 28px));width:auto;}
 #tourBubble.tour-bub-dock .tour-b{font-size:12px;line-height:1.45;}
 .tour-mute-mini{background:none;border:1px solid rgba(231,220,198,.3);border-radius:10px;padding:4px 9px;margin-right:8px;cursor:pointer;font-size:14px;}
 .install-gate{position:fixed;inset:0;z-index:220;display:none;flex-direction:column;align-items:center;justify-content:center;
@@ -2680,7 +2681,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.173.1 - The story before the instructions. On hands-on slides, the voice now finishes the entire feature description before giving directions - previously the first instruction cut the story off mid-sentence. Superseded narration also stops cleanly now instead of weaving stray sentences into the new slide, quotation marks are silent, and muted viewers get equivalent reading time before their first prompt.';
+const PLUMB_VERSION='2.173.2 - Read from your second flight log and screenshot. The finale bubble now sheds the fixed card width it inherits from earlier slides, so Set up my site sits fully inside the modal on desktop. The flight recorder also logs rescue hints and offers, and a task abandoned by pressing Back is recorded as aborted instead of done.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4439,14 +4440,20 @@ function tourPlace(rect,instant,dock,skipBub){
       } else if(side!=='tb'&&side!=='bb'){side='tb';bub.dataset.side=side;}
       top=(side==='tb')?12:(vh-bh2-12);left=12;
     } else {
-      /* a docked card holds its size while its words change */
+      /* a docked card holds its size while its words change; gold finale sizes itself */
       if(!bub.querySelector('.tour-gold')){bub.style.width='300px';}
+      else{bub.style.width='';bub.style.maxWidth='';}
       const bw2=bub.getBoundingClientRect().width||bw;
+      if(bub.querySelector('.tour-gold')&&bub.dataset.side!=='tl'){
+        bub.style.right='14px';bub.style.left='';bub.style.top='14px';return;   /* right-anchored: width can never overflow */
+      }
+      bub.style.right='';
       top=14;left=(bub.dataset.side==='tl')?14:(vw-bw2-14);
     }
   }   /* action slides: the bubble owns the least important place — chosen to avoid that slide's action */
   else if(rect&&vw<700){                                 /* LAW 6 on phones: EVERY slide's bubble takes the least-overlap band */
     if(!bub.querySelector('.tour-gold')){bub.style.width='calc(100vw - 24px)';bub.style.maxWidth='calc(100vw - 24px)';}
+    else{bub.style.width='';bub.style.maxWidth='';}
     const bh2=bub.offsetHeight;
     const ovTop=Math.max(0,Math.min(rect.bottom,12+bh2)-Math.max(rect.top,12));
     const ovBot=Math.max(0,Math.min(rect.bottom,vh-12)-Math.max(rect.top,vh-12-bh2));
@@ -6741,8 +6748,10 @@ async function runTask(step,tok){
     try{tourSpeak(inv.say);}catch(e){}
     orbInvite(el,tok);
     ctl.timers.push(setTimeout(()=>{if(!tourAlive(tok))return;
+      tlog('hint',(typeof inv.t==='string'?inv.t:'fn'));
       bubDo((inv.hint||'Tap inside the gold frame.'));orbInvite(el,tok);},20000));
     ctl.timers.push(setTimeout(()=>{if(!tourAlive(tok))return;
+      tlog('rescue-offered',(typeof inv.t==='string'?inv.t:'fn'));
       bubDo(inv.say,'<div class="tour-rescue"><button class="tour-skip" onclick="window._taskShow&&window._taskShow()">Show me</button><button class="tour-skip" onclick="window._taskSkip&&window._taskSkip()">Skip this</button></div>');},40000));
     let skipped=false;
     window._taskShow=()=>{try{if(inv.intercept)inv.intercept();else el.click();}catch(e){}};
@@ -6750,7 +6759,7 @@ async function runTask(step,tok){
     await new Promise(res=>{const poll=()=>{
       if(!tourAlive(tok)||skipped||(inv.done&&inv.done())){res();return;}
       setTimeout(poll,240);};poll();});
-    tlog(skipped?'skipped':'done',(typeof inv.t==='string'?inv.t:'fn'));
+    tlog(!tourAlive(tok)?'aborted':(skipped?'skipped':'done'),(typeof inv.t==='string'?inv.t:'fn'));
     taskCleanup();
     if(!tourAlive(tok))return;
     if(inv.stageAfter&&!skipped){await ringStage(inv.stageAfter,tok);if(!tourAlive(tok))return;}   /* the payoff plays over the RIGHT frame */
