@@ -2680,7 +2680,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.172.1 - The scene box follows the action. During hands-on steps, when your tap opens the entry sheet, a selection, the billing ledger or the install packet, the highlight ring now re-frames onto that surface instead of outlining the covered screen behind it, and returns home for the payoff. Every tour beat is also written to a flight log that rides along in Copy bug report, so any glitch on a real phone arrives as an exact, timestamped record.';
+const PLUMB_VERSION='2.172.2 - Read from your flight log. When your tap opens a surface, the scene box now re-frames the instant the step completes - before the congratulation plays - so the packet payoff is spoken over the open packet, not the card behind it. The flight recorder also names stage-less slides cleanly.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4367,8 +4367,9 @@ const TOUR={team:[
       {t:'#svPacket',say:'Open your install packet.',
        hint:'Tap the packet card.',
        done:()=>{try{return document.getElementById('infoScrim').classList.contains('show');}catch(e){return false;}},
+       stageAfter:'#infoScrim .pmodal',
        payoff:'There it is \u2014 Fixture Spec, Rev C, attached ten seconds ago.'},
-      {t:'#infoScrim .pmodal .b-go',stage:'#infoScrim .pmodal',say:'Press Done \u2014 you\u2019ve got what you need.',
+      {t:'#infoScrim .pmodal .b-go',say:'Press Done \u2014 you\u2019ve got what you need.',
        hint:'The Done button.',
        done:()=>{try{return !document.getElementById('infoScrim').classList.contains('show');}catch(e){return false;}}}
     ]}},
@@ -4531,7 +4532,7 @@ function tourStep(){
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
-      tlog('ring',step.sel+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
+      tlog('ring',(step.sel||'(no stage)')+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
       tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false); // ring glides; bubble placed ONCE, corner chosen to avoid this slide's presses
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
         try{const rq=el.getBoundingClientRect();
@@ -6734,6 +6735,7 @@ async function runTask(step,tok){
     tlog(skipped?'skipped':'done',(typeof inv.t==='string'?inv.t:'fn'));
     taskCleanup();
     if(!tourAlive(tok))return;
+    if(inv.stageAfter&&!skipped){await ringStage(inv.stageAfter,tok);if(!tourAlive(tok))return;}   /* the payoff plays over the RIGHT frame */
     if(inv.payoff&&!skipped){bubDo(inv.payoff);try{tourSpeak(inv.payoff);}catch(e){}
       await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;}
   }
