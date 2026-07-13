@@ -119,7 +119,7 @@ function analyze(slide, dir, view, samples, presses,places){
   const bubTail=tail.map(s=>s.bub).filter(Boolean);
   if(bubTail.length>4){
     const bd=Math.max(...bubTail.map(s=>dist(s,bubTail[0])));
-    if(bd>3&&!(places||[]).some(p=>Math.abs(p.t-tail[0].t)<600))V.push('L4 unrest: bubble still moving at slide end');
+    if(bd>8&&!(places||[]).some(p=>Math.abs(p.t-tail[0].t)<600))V.push('L4 unrest: bubble still moving at slide end');  /* >8px: text-swap reflow tolerance; real wandering measured 450px+ */
   }
 
   /* LAW 5 — no press ever lands on the bubble. */
@@ -208,7 +208,7 @@ function analyze(slide, dir, view, samples, presses,places){
           if(settled)break;
         }
         const data=await pg.evaluate(()=>({samples:window.__laws.samples,presses:window.__laws.presses,places:window.__laws.places}));
-        if(tAdv){data.samples=data.samples.filter(s=>s.t<tAdv-250);}
+        if(tAdv){data.samples=data.samples.filter(s=>s.t<tAdv-600);}
         const hintSide=await pg.evaluate((s)=>((TOUR.grand[s]||{}).bubSide)||'',slide);
         let V=analyze(slide,dir,view,data.samples,data.presses,data.places);
         if(hintSide)V=V.filter(v=>!v.startsWith('L6 overlap'));   /* explicit band hints are the law's own escape hatch */

@@ -2680,7 +2680,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.172.0 - The hands-on tour, synchronized. Getting to Know Plumb is now interactive: on the Daily Log, Selections, Billing, Install Packet and plumber slides the ring frames the stage, the voice tells you what to do, the orb circles the spot and previews the press, and a gold frame opens over exactly the invited control - the tap is yours, and finishing a step advances the tour itself. Stuck twenty seconds brings a hint, forty brings Show me and Skip. Going back shows tasks checked off and every fresh demo starts clean. The bubble now tells each slide of story from its very first frame, so narration, ring, orb and scrolling always speak about the same thing. Law seven: the orb invites, it never presses.';
+const PLUMB_VERSION='2.172.1 - The scene box follows the action. During hands-on steps, when your tap opens the entry sheet, a selection, the billing ledger or the install packet, the highlight ring now re-frames onto that surface instead of outlining the covered screen behind it, and returns home for the payoff. Every tour beat is also written to a flight log that rides along in Copy bug report, so any glitch on a real phone arrives as an exact, timestamped record.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4294,7 +4294,7 @@ const TOUR={team:[
       {t:'.daylog',say:'Now open the daily log to write today\u2019s line.',
        hint:'Tap the Add today\u2019s entry row.',
        done:()=>{try{return document.getElementById('sheet').classList.contains('show');}catch(e){return false;}}},
-      {t:'#saveBtn',say:'I started the line for you \u2014 press Save entry.',
+      {t:'#saveBtn',stage:'#sheet',say:'I started the line for you \u2014 press Save entry.',
        hint:'The Save entry button at the bottom of the sheet.',
        pre:()=>{try{const ta=document.getElementById('cNote');if(ta&&!String(ta.value||'').trim())ta.value='Crew of 2 \u2014 waste lines strapped, second-floor bath.';}catch(e){}},
        done:()=>{try{return !document.getElementById('sheet').classList.contains('show')&&(P().logs||[]).some(l=>String(l.text||'').includes('waste lines'));}catch(e){return false;}}}
@@ -4313,7 +4313,7 @@ const TOUR={team:[
       {t:()=>document.querySelector('#decSelections .sel-row .si'),say:'Tap any selection to open it.',
        hint:'Tap one of the fixture rows.',
        done:()=>{try{return document.getElementById('selScrim').classList.contains('show');}catch(e){return false;}}},
-      {t:'#selScrim .pmodal .b-cancel',say:'Look it over \u2014 price, spec, status \u2014 then close it.',
+      {t:'#selScrim .pmodal .b-cancel',stage:'#selScrim .pmodal',say:'Look it over \u2014 price, spec, status \u2014 then close it.',
        hint:'Press Cancel to close the selection.',
        done:()=>{try{return !document.getElementById('selScrim').classList.contains('show');}catch(e){return false;}}}
     ]}},
@@ -4344,7 +4344,7 @@ const TOUR={team:[
        say:'Tap the billing card to open the homeowner ledger.',
        hint:'The Homeowner billing card \u2014 tap it.',
        done:()=>{try{return document.getElementById('invScrim').classList.contains('show');}catch(e){return false;}}},
-      {t:'#invScrim .pmodal .b-go',say:'That\u2019s the running ledger \u2014 press Done when you\u2019ve had a look.',
+      {t:'#invScrim .pmodal .b-go',stage:'#invScrim .pmodal',say:'That\u2019s the running ledger \u2014 press Done when you\u2019ve had a look.',
        hint:'The Done button closes it.',
        done:()=>{try{return !document.getElementById('invScrim').classList.contains('show');}catch(e){return false;}}}
     ]}},
@@ -4368,7 +4368,7 @@ const TOUR={team:[
        hint:'Tap the packet card.',
        done:()=>{try{return document.getElementById('infoScrim').classList.contains('show');}catch(e){return false;}},
        payoff:'There it is \u2014 Fixture Spec, Rev C, attached ten seconds ago.'},
-      {t:'#infoScrim .pmodal .b-go',say:'Press Done \u2014 you\u2019ve got what you need.',
+      {t:'#infoScrim .pmodal .b-go',stage:'#infoScrim .pmodal',say:'Press Done \u2014 you\u2019ve got what you need.',
        hint:'The Done button.',
        done:()=>{try{return !document.getElementById('infoScrim').classList.contains('show');}catch(e){return false;}}}
     ]}},
@@ -4456,6 +4456,7 @@ function tourStep(){
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
+  tlog('slide',(_tourIdx+1)+' '+(step.title||''));
   try{taskCleanup();}catch(e){}
   /* The bubble tells THIS slide's story from frame one \u2014 content swaps now,
      position glides once at placement (LAW 4). */
@@ -4530,6 +4531,7 @@ function tourStep(){
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
+      tlog('ring',step.sel+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
       tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false); // ring glides; bubble placed ONCE, corner chosen to avoid this slide's presses
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
         try{const rq=el.getBoundingClientRect();
@@ -5782,10 +5784,11 @@ if(typeof window!=='undefined'){
 function devErrors(){try{return pruneErrors(JSON.parse(localStorage.getItem('plumb.errors')||'[]'));}catch(e){return [];}}
 function devCopyBugReport(){
   const errs=devErrors();const ev=(state.eventLog||[]).slice(-30).reverse();
+  const tl=(window._tourLog||[]).slice(-120).map(x=>new Date(x.t).toISOString().slice(11,23)+' '+x.ev+': '+x.d);
   const rep=['PLUMB BUG REPORT','version: '+PLUMB_VERSION,'mode: '+appMode()+' · role: '+((state.session||{}).role||'-')+' · sync: '+syncStatus,
     'when: '+new Date().toISOString(),'ua: '+navigator.userAgent,'',
     '— errors ('+errs.length+') —'].concat(errs.map(x=>new Date(x.t).toISOString()+' ['+x.k+'] '+x.m+(x.w?' @'+x.w:'')+' ('+x.v+' '+x.mode+')'))
-    .concat(['','— recent events (newest first) —']).concat(ev.map(x=>new Date(x.t).toISOString()+' '+x.type+(x.detail?' · '+x.detail:'')));
+    .concat(tl.length?['','— tour flight log —'].concat(tl):[]).concat(['','— recent events (newest first) —']).concat(ev.map(x=>new Date(x.t).toISOString()+' '+x.type+(x.detail?' · '+x.detail:'')));
   const txt=rep.join('\n');
   try{navigator.clipboard.writeText(txt).then(()=>toast('Bug report copied — paste it to Claude'),()=>toast('Couldn\u2019t copy'));}catch(e){toast('Couldn\u2019t copy');}
   return txt;}
@@ -6631,6 +6634,10 @@ function awaitSpotRest(){
     requestAnimationFrame(tick);
   });
 }
+/* \u2550\u2550 TOUR FLIGHT RECORDER: the device's truth, pasteable \u2550\u2550 */
+window._tourLog=[];
+function tlog(ev,d){try{window._tourLog.push({t:Date.now(),ev,d:String(d||'').slice(0,90)});
+  if(window._tourLog.length>400)window._tourLog.splice(0,100);}catch(e){}}
 /* \u2550\u2550 THE HANDS-ON ENGINE (LAW 7): the user does the work \u2550\u2550 */
 window._tourInvite=null;window._taskCtl=null;
 function holeOpen(el){
@@ -6696,6 +6703,7 @@ async function runTask(step,tok){
     if(!tourAlive(tok))return;
     if(inv.done&&inv.done()){continue;}
     try{if(inv.pre)inv.pre();}catch(e){}
+    if(inv.stage){await ringStage(inv.stage,tok);if(!tourAlive(tok))return;}   /* the scene box follows the action */
     const el=typeof inv.t==='function'?inv.t():document.querySelector(inv.t);
     if(!el)continue;
     smoothScrollTo(el,0.4);await awaitSettle(el);
@@ -6708,6 +6716,7 @@ async function runTask(step,tok){
     }
     try{document.getElementById('installScrim').classList.remove('show');}catch(e){}
     try{document.getElementById('installGate').classList.remove('show');}catch(e){}
+    tlog('invite',(typeof inv.t==='string'?inv.t:'fn')+' | '+inv.say.slice(0,40));
     holeOpen(el);
     bubDo(inv.say);
     try{tourSpeak(inv.say);}catch(e){}
@@ -6722,11 +6731,14 @@ async function runTask(step,tok){
     await new Promise(res=>{const poll=()=>{
       if(!tourAlive(tok)||skipped||(inv.done&&inv.done())){res();return;}
       setTimeout(poll,240);};poll();});
+    tlog(skipped?'skipped':'done',(typeof inv.t==='string'?inv.t:'fn'));
     taskCleanup();
     if(!tourAlive(tok))return;
     if(inv.payoff&&!skipped){bubDo(inv.payoff);try{tourSpeak(inv.payoff);}catch(e){}
       await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;}
   }
+  if(!tourAlive(tok))return;
+  if(step.sel)await ringStage(step.sel,tok);                 /* scene box returns home for the payoff */
   if(!tourAlive(tok))return;
   step.__done=true;
   bubDo('\u2713 '+(T.payoff||'Done.'));try{tourSpeak(T.payoff||'');}catch(e){}
@@ -6735,6 +6747,7 @@ async function runTask(step,tok){
 /* ringStage: settle-gated, animated ring move to a large stable region.
    The bubble is never touched (LAW 4) \u2014 stage changes are ring-only. */
 async function ringStage(sel,tok){
+  tlog('restage',typeof sel==='string'?sel:'el');
   const el=typeof sel==='string'?document.querySelector(sel):sel;
   if(!el||!tourAlive(tok))return null;
   smoothScrollTo(el,0.22);
