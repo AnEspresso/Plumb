@@ -794,7 +794,10 @@
   .tc-p{position:fixed;z-index:1998;background:transparent;}
 .tour-holeframe{position:fixed;z-index:2001;pointer-events:none;border:2px dashed #CBA268;border-radius:14px;
   box-shadow:0 0 0 3px rgba(203,162,104,.14);animation:holepulse 1.6s ease-in-out infinite;}
-@keyframes holepulse{0%,100%{box-shadow:0 0 0 3px rgba(203,162,104,.12);}50%{box-shadow:0 0 0 7px rgba(203,162,104,.26);}}
+@keyframes holepulse{0%,100%{box-shadow:0 0 0 3px rgba(203,162,104,.18);border-color:#CBA268;}
+  50%{box-shadow:0 0 0 10px rgba(203,162,104,.42);border-color:#E8C083;}}
+.tour-next-glow{animation:nextglow 1.4s ease-in-out infinite;}
+@keyframes nextglow{0%,100%{box-shadow:0 0 0 0 rgba(203,162,104,.0);}50%{box-shadow:0 0 0 8px rgba(203,162,104,.38);}}
 #tourOrb.invite{animation:orbinvite 1.5s ease-in-out infinite;}
 @keyframes orbinvite{0%,100%{transform:scale(1);}50%{transform:scale(1.22);}}
 #tourBubble.tour-do .tour-b{color:#7a5a1f;font-weight:600;}
@@ -2681,7 +2684,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.174.1 - The homeowner slide holds its full frame. Slide fourteen now recomputes its hero-through-decisions stage after the client view finishes rendering, instead of collapsing to just the hero card when the decisions list arrives a beat late.';
+const PLUMB_VERSION='2.175.0 - Participate or move on, always clear. When it is your turn, the gold frame now pulses brighter while the orb circles it; when a slide has finished its show, the orb walks to the Next button, circles it, and Next glows. Taking the photo on the Daily Log now opens the real entry sheet, where the orb files the shot for you - picks the area, points out the crew and open-item flag, switches on sharing with the homeowner - then hands you the Save. The permits slide walks its list and the whole sub roster instead of pinning one row, the daily-log framing no longer slices the black card, hands-on slides no longer repeat their instructions twice, and the spoken word record is forced harder toward the noun.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4283,21 +4286,34 @@ const TOUR={team:[
   acts:[{do:()=>demoRole('hillan')}]},
  {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the stage you\u2019re in, the percent complete, what\u2019s waiting on you, and who\u2019s next on site. The answer to \u2018how\u2019s it going?\u2019 \u2014 before anyone has to ask.',
   acts:[{do:()=>demoRole('hillan')},{tap:'#ovCards .ov-card[onclick*="p2"]',do:()=>{openSiteFromOverview('p2');go('log');}}]},
- {sel:'.capture-card',bubSide:'tb',title:'The Daily Log',body:'This is the heart of Plumb \u2014 the record that builds itself. Your turn: file a photo, then write the day. I\u2019ll show you exactly where to press.',
+ {sel:'.capture-card',bubSide:'tb',title:'The Daily Log',body:'This is the heart of Plumb \u2014 the record that builds itself. A photo files itself by date and area; the day takes one line. Your turn \u2014 I\u2019ll point.',
   acts:[{do:()=>tourGoto('log')}],
   task:{payoff:'You just kept the record \u2014 photo filed, day written. Do that once a day, and months later you can prove exactly what happened on site.',
     steps:[
-      {t:'.capture-card .cap-btn',say:'Press Take a photo \u2014 the shot files itself by date and area.',
+      {t:'.capture-card .cap-btn',say:'Now you: press Take a photo.',
        hint:'The big button in the dark card \u2014 press it.',
-       intercept:()=>{try{tourDemoPhoto();toast('Filed \u2014 in the real app this opens your camera');}catch(e){}},
-       done:()=>{try{return (P().items[0]||{}).tour==='photo';}catch(e){return false;}},
-       payoff:'Filed \u2014 today\u2019s date, Primary Bath, no typing.'},
-      {t:'.daylog',stage:()=>unionRect('.capture-card','.daylog'),say:'Now open the daily log to write today\u2019s line.',
-       hint:'Tap the Add today\u2019s entry row.',
-       done:()=>{try{return document.getElementById('sheet').classList.contains('show');}catch(e){return false;}}},
-      {t:'#saveBtn',stage:'#sheet',say:'I started the line for you \u2014 press Save entry.',
+       intercept:()=>{try{tourDemoPhoto();openSheet(false);
+         const ta=document.getElementById('cNote');if(ta&&!String(ta.value||'').trim())ta.value='Crew of 2 \u2014 waste lines strapped, second-floor bath.';
+         toast('Filed \u2014 in the real app this opens your camera');}catch(e){}},
+       done:()=>{try{return document.getElementById('sheet').classList.contains('show');}catch(e){return false;}},
+       stageAfter:'#sheet',
+       perform:async(tok)=>{
+         /* the orb files the shot: area, crew, share \u2014 then the day is yours to save */
+         const chip=[...document.querySelectorAll('#sheet .chip')].find(c=>/Primary Bath/i.test(c.textContent));
+         if(chip){await orbTo(chip,{tap:true,noscroll:true});try{chip.click();}catch(e){}
+           await new Promise(r=>setTimeout(r,700));if(!tourAlive(tok))return;}
+         const crew=document.getElementById('crewSelect');
+         if(crew)await tourPoint([crew],tok,900);
+         if(!tourAlive(tok))return;
+         const sh=document.getElementById('shareToggle');
+         if(sh){await orbTo(sh,{tap:true,noscroll:true});try{if(!sh.checked)sh.click();}catch(e){}
+           await new Promise(r=>setTimeout(r,600));if(!tourAlive(tok))return;}
+         const fl=document.getElementById('flag');
+         if(fl)await tourPoint([fl],tok,700);
+       },
+       payoff:'Area, crew, shared with the homeowner \u2014 filed like a pro.'},
+      {t:'#saveBtn',say:'The day\u2019s line is written \u2014 press Save entry.',
        hint:'The Save entry button at the bottom of the sheet.',
-       pre:()=>{try{const ta=document.getElementById('cNote');if(ta&&!String(ta.value||'').trim())ta.value='Crew of 2 \u2014 waste lines strapped, second-floor bath.';}catch(e){}},
        done:()=>{try{return !document.getElementById('sheet').classList.contains('show')&&(P().logs||[]).some(l=>String(l.text||'').includes('waste lines'));}catch(e){return false;}}}
     ]}},
 {sel:'#decWaiting',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open issues \u2014 in one list. When this screen is empty, nobody on your job is stuck.',
@@ -4321,7 +4337,7 @@ const TOUR={team:[
       await ringStage('#decWaiting',tok);
     }
   }},
- {sel:'#selList',bubSide:'tb',title:'Selections & sign-offs',body:'Finishes and fixtures \u2014 priced, spec\u2019d, and signed before anyone builds them. Open one and see the whole story of a fixture.',
+ {sel:'#selList',bubSide:'tb',title:'Selections & sign-offs',body:'Finishes and fixtures \u2014 priced, spec\u2019d, and signed before anyone builds them. Every fixture tells its whole story on one card.',
   acts:[{do:()=>tourGoto('decisions','waiting')},{tap:'[data-d=selections]',do:()=>{try{decSeg('selections',document.querySelector('[data-d=selections]'));}catch(e){}}}],
   task:{payoff:'Price, spec, sign-off \u2014 one screen, one truth. No more \u2018he said, she said\u2019 about the countertop.',
     steps:[
@@ -4334,24 +4350,32 @@ const TOUR={team:[
     ]}},
 {sel:'#buildSchedule .overall .top',title:'Stages',body:'The build in construction order. Each stage tracks its own progress, photos, and records \u2014 mark one complete, and the whole picture updates for you and your homeowner.',
   acts:[{tap:'nav .tab[data-v=build]',do:()=>tourGoto('build','schedule')}],
-  after:(tok)=>{const st=[...document.querySelectorAll('#stageList .stage')].filter((_,k)=>k%2===0).slice(0,4);tourPing(st,tok,650,document.querySelector('#buildSchedule .overall .top'));}},
+  after:async(tok)=>{const st=[...document.querySelectorAll('#stageList .stage')].filter((_,k)=>k%2===0).slice(0,4);await tourPing(st,tok,650,document.querySelector('#buildSchedule .overall .top'));}},
  {sel:'#calview .pkt-banner, #calview .cal-grid',bubSide:'tl',title:'The trades calendar',body:'Every crew booking across every job \u2014 who\u2019s on site, and when. Double-bookings get flagged before they burn a day, and subs confirm with one tap.',
   acts:[{do:()=>tourGoto('build','schedule')},{tap:'.cal-door',do:()=>{try{calSiteFilter=state.activeId;openCal();}catch(e){}}}],
   after:async(tok)=>{await new Promise(r=>setTimeout(r,5600));if(!tourAlive(tok))return;
     await orbTo('#calview .ov-logout',{tap:true});if(!tourAlive(tok))return;
     try{closeCal();}catch(e){}
     setTimeout(()=>{try{if(!tourAlive(tok))return;const d2=document.querySelector('.cal-door');if(d2){const r2=d2.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2,true,undefined,true);orbTo(d2,{settle:true,rest:true});}}catch(e){}},420);}},
- {sel:'#buildPermits .permit-row',title:'Permits, inspections & your subs',body:'Every permit and inspection, tracked from \u2018not started\u2019 to \u2018passed\u2019 \u2014 where your city posts results online, Plumb pulls them in. One tab over is your roster: who\u2019s cleared, who\u2019s booked, who owes you paperwork.',
+ {sel:'#buildPermits',title:'Permits, inspections & your subs',body:'Every permit and inspection, tracked from \u2018not started\u2019 to \u2018passed\u2019 \u2014 where your city posts results online, Plumb pulls them in. One tab over is your roster: who\u2019s cleared, who\u2019s booked, who owes you paperwork.',
   acts:[{do:()=>tourGoto('build','schedule')},{tap:'[data-b=permits]',do:()=>{try{buildSeg('permits',document.querySelector('[data-b=permits]'));}catch(e){}}}],
-  after:async(tok)=>{await new Promise(r=>setTimeout(r,4600));if(!tourAlive(tok))return;
-    const prev=document.querySelector('#buildPermits .permit-row');
-    await orbTo('[data-b=subs]',{tap:true});if(!tourAlive(tok))return;
-    try{buildSeg('subs',document.querySelector('[data-b=subs]'));}catch(e){}
-    const row=document.querySelector('#buildSubs .spec-group .subrow');
-    if(row)await tourPing([row],tok,900,prev);}},
- {sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build sits 800 dollars from budget with one line over \u2014 and every cost can flow straight into QuickBooks.',
+  after:async(tok)=>{
+    await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
+    const prows=[...document.querySelectorAll('#buildPermits .permit-row')].slice(0,2);
+    if(prows.length)await tourPoint(prows,tok,950);
+    if(!tourAlive(tok))return;
+    const tab=document.querySelector('[data-b=subs]');
+    if(!tab)return;
+    await orbTo(tab,{tap:true,noscroll:true});
+    try{buildSeg('subs',tab);}catch(e){}
+    await new Promise(r=>setTimeout(r,700));if(!tourAlive(tok))return;
+    await ringStage('#buildSubs',tok);if(!tourAlive(tok))return;
+    const srows=[...document.querySelectorAll('#buildSubs .subrow')].slice(0,3);
+    if(srows.length)await tourPoint(srows,tok,900);
+  }},
+{sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build sits 800 dollars from budget with one line over \u2014 and every cost can flow straight into QuickBooks.',
   acts:[{do:()=>tourGoto('build','subs')},{tap:'#budgetCard .overall',do:()=>{try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}try{openBudget();}catch(e){}}}]},
- {sel:'#billingCard',bubSide:'tb',title:'Homeowner billing',body:'The other side of the money \u2014 upgrades, credits, and invoices the homeowner approves with one tap. Open the ledger and see where every dollar stands.',
+ {sel:'#billingCard',bubSide:'tb',title:'Homeowner billing',body:'The other side of the money \u2014 upgrades, credits, and invoices the homeowner approves with one tap. The ledger below always knows where every dollar stands.',
   acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .pmodal .b-go',do:()=>{try{closeBudget();}catch(e){}}}],
   task:{payoff:'What they owe, what they\u2019ve paid, what\u2019s waiting on them \u2014 always current. Never another spreadsheet.',
     steps:[
@@ -4365,8 +4389,8 @@ const TOUR={team:[
     ]}},
 {sel:'#filesPhotos .searchbar',title:'Files, kept for you',body:'Every photo lands here by date and area \u2014 including the shot you just took, already filed under today. Search by trade or stage when the drywaller asks what\u2019s behind that wall. Documents live one tab over.',
   acts:[{tap:'nav .tab[data-v=files]',do:()=>tourGoto('files')},{tap:'[data-fl=photos]',jump:true,do:()=>{try{filesSeg('photos',document.querySelector('[data-fl=photos]'));}catch(e){}}}],
-  after:(tok)=>{tourPing([...document.querySelectorAll('#filesPhotos .day-group')].slice(0,2),tok,800,document.querySelector('#filesPhotos .searchbar'));}},
- {sel:'#filesDocs',bubSide:'tb',title:'The Install Packet',body:'This is where the Install Packet is born. Attach a document to a trade \u2014 and every sub you\u2019ve cleared carries it in their pocket. Try it.',
+  after:async(tok)=>{await tourPing([...document.querySelectorAll('#filesPhotos .day-group')].slice(0,2),tok,800,document.querySelector('#filesPhotos .searchbar'));}},
+ {sel:'#filesDocs',bubSide:'tb',title:'The Install Packet',body:'This is where the Install Packet is born \u2014 attach a document to a trade, and every cleared sub carries it in their pocket, kept current.',
   acts:[{do:()=>tourGoto('files','photos')},{tap:'[data-fl=docs]',do:()=>{try{filesSeg('docs',document.querySelector('[data-fl=docs]'));}catch(e){}}}],
   task:{payoff:'Attached to Plumbing \u2014 and already in every cleared plumber\u2019s packet. Exactly what they need, and nothing that isn\u2019t theirs.',
     steps:[
@@ -4375,7 +4399,7 @@ const TOUR={team:[
        intercept:()=>{try{tourDemoDoc();toast('Attached \u2014 in the real app you pick any PDF');}catch(e){}},
        done:()=>{try{return (P().docs[0]||{}).tour==='spec';}catch(e){return false;}}}
     ]}},
-{sel:'#svPacket',bubSide:'tb',title:'The Packet, delivered',body:'Now you\u2019re the plumber. That spec you just attached? See for yourself \u2014 open your packet.',
+{sel:'#svPacket',bubSide:'tb',title:'The Packet, delivered',body:'Now you\u2019re the plumber \u2014 and the spec you just attached is already waiting in your pocket.',
   acts:[{tap:'.exc-roles button[data-r=subs]',do:()=>demoRole('subs')}],
   task:{payoff:'No email, no did-you-get-it. The Install Packet travels by itself.',
     steps:[
@@ -4583,7 +4607,14 @@ function tourStep(){
     if(doneAll||window._tourBack){setTimeout(()=>{try{bubDo('\u2713 '+(step.task.payoff||'Already done.'));}catch(e){}},900);}
     else setTimeout(()=>{try{runTask(step,_tok);}catch(e){}},700);
   }
-  else if(step.after)setTimeout(()=>{try{step.after(_tok);}catch(e){}},1100);
+  else if(step.after)setTimeout(()=>{try{
+    Promise.resolve(step.after(_tok)).then(()=>{if(tourAlive(_tok))cueNext(_tok);}).catch(()=>{});
+  }catch(e){}},1100);
+  else setTimeout(()=>{try{
+    (window._narrDone||Promise.resolve()).then(()=>{
+      setTimeout(()=>{if(tourAlive(_tok))cueNext(_tok);},tourMuted()?readBeat((step.title||'')+' '+(step.body||''),700):600);
+    });
+  }catch(e){}},900);
   });}
 function tmplPickLevel(id){const op=orgPrefs();op.customLevel=id;saveOrgPrefs(op);renderPeople();
   const n=(SETUP_LEVELS.find(l=>l.id===id)||{}).n||id;toast(n+' — spec sheets now ask '+specTotals(id)+' questions');}
@@ -6712,8 +6743,9 @@ async function orbInvite(el,tok){
   if(!tourAlive(tok))return;
   _orbPlace(o,cx,cy,false);
   await new Promise(r2=>setTimeout(r2,320));
+  const g=(window._orbGen=(window._orbGen||0)+1);
   o.classList.remove('tap');void o.offsetWidth;o.classList.add('tap');   /* preview only \u2014 LAW 7 */
-  setTimeout(()=>{o.classList.remove('tap');o.classList.add('invite');},520);
+  setTimeout(()=>{if(g!==window._orbGen)return;o.classList.remove('tap');o.classList.add('invite');},520);
   _orbPlace(o,Math.min(cx+rx+26,innerWidth-24),cy,false);
 }
 function bubDo(say,rescueHtml){
@@ -6727,7 +6759,31 @@ function readBeat(text,base){
   const w=String(text||'').split(/\s+/).length;
   return Math.min(3200,700+w*175);                          /* silent readers get reading time */
 }
+async function cueNext(tok){
+  if(!tourAlive(tok))return;
+  const bub=document.getElementById('tourBubble');if(!bub)return;
+  const nb=bub.querySelector('.tour-gold')||[...bub.querySelectorAll('.tour-next')].pop();
+  if(!nb)return;
+  nb.classList.add('tour-next-glow');
+  const r=nb.getBoundingClientRect();if(!r.width)return;
+  const o=_orbEl();if(!o)return;
+  window._orbGen=(window._orbGen||0)+1;                    /* LAW 5: no stray ripples over the bubble */
+  o.classList.remove('tap','invite');
+  await orbTo(nb,{settle:true,rest:true,noscroll:true});
+  if(!tourAlive(tok)){nb.classList.remove('tour-next-glow');return;}
+  const cx=r.left+r.width/2,cy=r.top+r.height/2;
+  const rx=r.width/2+12,ry=r.height/2+10;
+  await new Promise(res=>{const t0=performance.now();
+    const spin=(t)=>{const p=(t-t0)/850;
+      if(p>=1||!tourAlive(tok)){res();return;}
+      const a=-Math.PI/2+p*2*Math.PI;
+      _orbPlace(o,cx+Math.cos(a)*rx,cy+Math.sin(a)*ry,true);
+      requestAnimationFrame(spin);};
+    requestAnimationFrame(spin);});
+  _orbPlace(o,Math.min(cx+rx+20,innerWidth-24),cy,false);
+}
 function taskCleanup(){
+  try{document.querySelectorAll('.tour-next-glow').forEach(e=>e.classList.remove('tour-next-glow'));}catch(e){}
   holeClose();
   const o=_orbEl();if(o)o.classList.remove('invite');
   const bub=document.getElementById('tourBubble');if(bub)bub.classList.remove('tour-do');
@@ -6783,6 +6839,10 @@ async function runTask(step,tok){
     taskCleanup();
     if(!tourAlive(tok))return;
     if(inv.stageAfter&&!skipped){await ringStage(inv.stageAfter,tok);if(!tourAlive(tok))return;}   /* the payoff plays over the RIGHT frame */
+    if(inv.perform&&!skipped){
+      bubDo(inv.performSay||'Watch \u2014 I\u2019ll file this one.');
+      try{tourSpeak(inv.performSay||'Watch. I will file this one.');}catch(e){}
+      try{await inv.perform(tok);}catch(e){}if(!tourAlive(tok))return;}
     if(inv.payoff&&!skipped){bubDo(inv.payoff);
       try{await tourSpeak(inv.payoff);}catch(e){}
       await new Promise(r=>setTimeout(r,readBeat(inv.payoff,350)));if(!tourAlive(tok))return;}
@@ -6811,7 +6871,12 @@ function unionRect(a,b){
 async function ringStage(sel,tok){
   tlog('restage',typeof sel==='string'?sel:'fn');
   if(typeof sel==='function'){                            /* rect-producing stage (e.g. a union) */
-    const r=sel();if(!r||!tourAlive(tok))return null;
+    let r=sel();if(!r||!tourAlive(tok))return null;
+    if(r.top<74||r.bottom>innerHeight-70){                /* bring the whole story into frame first */
+      const sc=document.querySelector('main')||document.scrollingElement;
+      if(sc){sc.scrollTop+=(r.top-88);await new Promise(z=>setTimeout(z,420));r=sel()||r;}
+    }
+    if(!tourAlive(tok))return null;
     window._stageEl=sel;
     tourPlace(r,false,undefined,true);
     await awaitSpotRest();
@@ -6966,7 +7031,7 @@ function speakify(t){
     .replace(/\u2713/g,'')
     .replace(/spec\u2019d/gi,'specked')
     /* heteronyms: force the noun REH-cord; the adjective LIVE becomes plain words */
-    .replace(/\brecord(s?)\b/gi,'reccord$1')
+    .replace(/\brecord(s?)\b/gi,'reck erd$1')
     .replace(/\bLive\. No calls\./,'In real time. No calls.')
     .replace(/, live in every hand/i,', up to date in every hand')
     .replace(/\u2014|\u2013|--/g,'. ')           /* dashes become full-stop pauses */
