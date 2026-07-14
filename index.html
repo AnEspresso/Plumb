@@ -2681,7 +2681,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.174.0 - Staged from your four screenshots. The homeowner slide frames hero through decisions instead of pinging the concern button, Selections stages just the list rather than the money summary, the To-Do slide is now a real performance - the orb presses a sign-off, the ring follows into the open selection, and the orb closes it - and the daily-log prompt frames both the capture card and the entry it points to. Pointing gestures are now honest: the orb circles things it is only showing and presses only what actually opens, it never scrolls unless a target is off screen, and the ring re-measures its stage after any scroll instead of drifting off it. The voice also pronounces record and live correctly now.';
+const PLUMB_VERSION='2.174.1 - The homeowner slide holds its full frame. Slide fourteen now recomputes its hero-through-decisions stage after the client view finishes rendering, instead of collapsing to just the hero card when the decisions list arrives a beat late.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4388,7 +4388,7 @@ const TOUR={team:[
        hint:'The Done button.',
        done:()=>{try{return !document.getElementById('infoScrim').classList.contains('show');}catch(e){return false;}}}
     ]}},
-{sel:'.cl-hero',stageRect:()=>unionRect('.cl-hero','[id^=cldec]'),title:'What homeowners see',body:'This is their view of the same build \u2014 progress, decisions waiting on them, what to pay. Nothing to install, nothing to teach: you send one link.',
+{sel:'.cl-hero',stageRect:()=>unionRect('.cl-hero','[id^=cldec]'),bubSide:'bb',title:'What homeowners see',body:'This is their view of the same build \u2014 progress, decisions waiting on them, what to pay. Nothing to install, nothing to teach: you send one link.',
   acts:[{tap:'.exc-roles button[data-r=client]',do:()=>demoRole('client')}],
   after:async(tok)=>{
     await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
@@ -4567,7 +4567,7 @@ function tourStep(){
       tlog('ring',(step.sel||'(no stage)')+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
       tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false); // ring glides; bubble placed ONCE, corner chosen to avoid this slide's presses
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
-        try{const rq=el.getBoundingClientRect();
+        try{const rq=step.stageRect?step.stageRect():el.getBoundingClientRect();
           if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true,undefined,true);}catch(e){}},90));
       if(el)orbTo(el,{settle:true,rest:true,noscroll:true});else orbHide();   // glides to the edge — the orb is always followed
       if(el&&rect)setTimeout(()=>{                       // stabilization: layout can settle late — re-measure once
