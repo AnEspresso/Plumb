@@ -111,8 +111,40 @@ const server = http.createServer((req, res) => {
   const tok = (await db.collection('qb').doc('u1').get()).data();
   t('expired access refreshes and persists the ROTATED pair', r3.created === 1 && state.refreshes === 1 && tok.refreshToken === 'ref2' && tok.accessToken === 'acc2', JSON.stringify({ r3, refreshes: state.refreshes, ref: tok.refreshToken }));
 
+
+  /* ── account deletion lifecycle (real cloud shapes: project under meta, string members) ── */
+  const { deleteAccount } = require('./functions/lib/deleteAccount');
+  await db.collection('sites').doc('sD').set({ meta: { street: '12 Maple Ct' }, mode: 'live', members: { dU: 'builder', h2: 'client' }, memberUids: ['dU', 'h2'], memberInfo: { dU: { name: 'Del' }, h2: { name: 'Hank' } } });
+  await db.collection('sites').doc('sD').collection('items').doc('i1').set({ data: { id: 'i1' }, updatedAt: 1 });
+  await db.collection('sites').doc('sD').collection('costs').doc('c9').set({ data: { id: 'c9' }, updatedAt: 1 });
+  await db.collection('sites').doc('sE').set({ meta: { street: '44 Birch Rd' }, mode: 'live', members: { bZ: 'builder', dU: 'sub' }, memberUids: ['bZ', 'dU'], memberInfo: { bZ: {}, dU: { name: 'Del', trade: 'HVAC' } } });
+  await db.collection('qb').doc('dU').set({ refreshToken: 'r', realmId: 'R1' });
+  await db.collection('users').doc('dU').set({ name: 'Del', email: 'del@x.test' });
+  await db.collection('telemetry').doc('devD').set({ uid: 'dU', device: 'devD' });
+  await db.collection('telemetry').doc('devD').collection('events').add({ name: 'e', uid: 'dU', t: 1 });
+  await db.collection('invites').doc('PB-1').collection('claims').doc('dU').set({ email: 'del@x.test', name: 'Del' });
+  const authMock = { deleted: [], async deleteUser(u) { this.deleted.push(u); } };
+  const bucketMock = { prefixes: [], async deleteFiles(o) { this.prefixes.push(o.prefix); } };
+
+  const pv = await deleteAccount(db, authMock, bucketMock, 'dU', false, 'del@x.test');
+  t('delete preview names the built site from meta', pv.ok && pv.preview.ownedSites.length === 1 && pv.preview.ownedSites[0] === '12 Maple Ct', JSON.stringify(pv));
+  t('delete preview counts the sub membership + sees qb (string sub never cascades)', pv.preview.memberSites === 1 && pv.preview.qb === true);
+  t('preview touches nothing', (await db.collection('sites').doc('sD').get()).exists && authMock.deleted.length === 0);
+
+  const ex = await deleteAccount(db, authMock, bucketMock, 'dU', true, 'del@x.test');
+  t('execute reports the work', ex.ok && ex.deleted.sites === 1 && ex.deleted.memberships === 1, JSON.stringify(ex));
+  t('built site destroyed with its subcollections', !(await db.collection('sites').doc('sD').get()).exists && (await db.collection('sites').doc('sD').collection('items').get()).empty && (await db.collection('sites').doc('sD').collection('costs').get()).empty);
+  t('storage prefix cleared for the destroyed site', bucketMock.prefixes.length === 1 && bucketMock.prefixes[0] === 'live/sites/sD/', JSON.stringify(bucketMock.prefixes));
+  const sE = (await db.collection('sites').doc('sE').get()).data();
+  t('membership stripped, project intact', !(sE.memberUids || []).includes('dU') && sE.members.dU === undefined && sE.memberInfo.dU === undefined && sE.members.bZ === 'builder' && sE.meta.street === '44 Birch Rd', JSON.stringify(sE));
+  t('qb tokens gone', !(await db.collection('qb').doc('dU').get()).exists);
+  t('profile doc gone', !(await db.collection('users').doc('dU').get()).exists);
+  t('uid-stamped telemetry gone (doc + events)', !(await db.collection('telemetry').doc('devD').get()).exists && (await db.collection('telemetry').doc('devD').collection('events').get()).empty);
+  t('invite claim carrying their email gone', !(await db.collection('invites').doc('PB-1').collection('claims').doc('dU').get()).exists);
+  t('auth user deleted, exactly once, last', authMock.deleted.length === 1 && authMock.deleted[0] === 'dU');
+
   server.close();
-  console.log('fncheck: ' + PASS + ' checks across oauth/dedupe/purchases/idempotency/gates/refresh');
+  console.log('fncheck: ' + PASS + ' checks across oauth/dedupe/purchases/idempotency/gates/refresh/deletion');
   if (FAILS.length) { console.log('FAIL (' + FAILS.length + '):'); FAILS.forEach(f => console.log('  x ' + f)); process.exit(1); }
   console.log('PASS: server export lifecycle holds.');
   process.exit(0);

@@ -845,6 +845,44 @@ $("localStorage.removeItem('plumbSuspend');localStorage.setItem('plumb.mode','de
 t('gear rows offer tour + example build', $("!!document.getElementById('welcomeScrim')")===true&&el('devpanel').innerHTML.includes('Replay the tour'));
 asBuilder();$("state.activeId='p2'");$("localStorage.removeItem('plumbWelcomed')");
 
+/* ════ 14l · PRIVACY & LEGAL + ACCOUNT DELETION ════ */
+S('legal');
+asBuilder();
+t('legal + delete-account plumbing present', $("typeof openLegal")==='function'&&$("typeof openDeleteAccount")==='function'&&$("typeof delAcctExecute")==='function'&&$("typeof _delWipeLocal")==='function');
+t('policy urls point at siteplumb.com', $("LEGAL_URL.privacy")==='https://siteplumb.com/privacy.html'&&$("LEGAL_URL.terms")==='https://siteplumb.com/terms.html');
+t('forgot-password names the real sender', $("liveForgot.toString().indexOf('noreply@siteplumb.com')>=0")===true);
+t('sign-in form carries the consent line', (el('laForm').innerHTML.indexOf('Terms of Service')>=0)&&(el('laForm').innerHTML.indexOf('privacy.html')>=0));
+$('renderSettings()');
+t('settings shows the Privacy & legal row (builder)', el('settingsBody').innerHTML.indexOf('Privacy &amp; legal')>=0);
+asSub('Ray Delgado');$('renderSettings()');
+t('settings shows the row for subs too', el('settingsBody').innerHTML.indexOf('Privacy &amp; legal')>=0);
+asBuilder();
+// demo / no-live-account: hub offers policies but no server deletion
+$('openLegal()');
+t('legal hub renders both policy rows', el('legalBody').innerHTML.indexOf('Privacy Policy')>=0&&el('legalBody').innerHTML.indexOf('Terms of Service')>=0);
+t('no delete row without a live account', el('legalBody').innerHTML.indexOf('Delete my account')<0);
+$('closeLegal()');
+// live account: delete row appears; preview renders; DELETE gate arms the button
+$("state.session.auth={uid:'simU1'}");
+$('openLegal()');
+t('delete row appears with a live account', el('legalBody').innerHTML.indexOf('Delete my account')>=0);
+$('closeLegal()');
+$("window.__realFnCall=window.fnCall;window.fnCall=async(n,d)=>{window.__fnLog=(window.__fnLog||[]).concat([{n,d}]);return (d&&d.confirm)?{ok:true,deleted:{sites:1,memberships:1}}:{ok:true,preview:{ownedSites:['288 Calderwood Ln'],memberSites:2,qb:true}};}");
+await $('openDeleteAccount()');
+t('preview lists the owned site by name', el('delAcctBody').innerHTML.indexOf('288 Calderwood Ln')>=0);
+t('preview counts stripped memberships + qb', el('delAcctBody').innerHTML.indexOf('2 other sites')>=0&&el('delAcctBody').innerHTML.indexOf('QuickBooks')>=0);
+t('confirm button starts disabled', el('delAcctGo').disabled===true);
+setVal('delAcctInput','delete');$('delAcctGate()');
+t('lowercase does not arm it', el('delAcctGo').disabled===true);
+setVal('delAcctInput','DELETE');$('delAcctGate()');
+t('typed DELETE arms it', el('delAcctGo').disabled===false);
+$("localStorage.setItem('plumb.state.real.v1','x');localStorage.setItem('plumb.liveAuth','y');localStorage.setItem('plumbPendingInvite','z')");
+await $('delAcctExecute()');
+t('execute sent {confirm:true} after the preview call', (function(){const L=JSON.parse($("JSON.stringify(window.__fnLog)"));return L.length===2&&!L[0].d.confirm&&L[1].d.confirm===true;})());
+t('device wiped: real store, live profile, pending invite all gone', $("localStorage.getItem('plumb.state.real.v1')")===null&&$("localStorage.getItem('plumb.liveAuth')")===null&&$("localStorage.getItem('plumbPendingInvite')")===null);
+t('goodbye copy shown', el('delAcctBody').innerHTML.indexOf('deleted')>=0);
+$('closeDelAcct()');$("state.session.auth=undefined");$("window.fnCall=window.__realFnCall");$("delete window.__fnLog");
+
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');
 function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}

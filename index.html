@@ -1663,6 +1663,7 @@ body.on-tour .tour-card{display:block;}
               <button class="la-link" onclick="liveForgot()">Forgot password</button>
               <button class="la-link" onclick="document.getElementById('laInviteRow').style.display='';this.style.display='none'">I have an invite code</button>
             </div>
+            <div class="la-hint" style="text-align:center;margin-top:9px">By signing in or creating an account you agree to the <a href="https://siteplumb.com/terms.html" target="_blank" rel="noopener" style="color:var(--oak)">Terms of Service</a> and <a href="https://siteplumb.com/privacy.html" target="_blank" rel="noopener" style="color:var(--oak)">Privacy Policy</a>.</div>
             <button class="la-link la-skip" onclick="realEnter()">Continue without an account (this device only)</button>
           </div>
         </div>
@@ -2147,6 +2148,22 @@ body.on-tour .tour-card{display:block;}
       <h4>Schedule — all sites</h4>
       <div class="info-body" id="schedBody"></div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeSchedule()">Done</button></div>
+    </div>
+  </div>
+
+  <div class="pmodal-scrim" id="legalScrim">
+    <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
+      <h4>Privacy &amp; legal</h4>
+      <div class="info-body" id="legalBody"></div>
+      <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeLegal()">Done</button></div>
+    </div>
+  </div>
+
+  <div class="pmodal-scrim" id="delAcctScrim">
+    <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
+      <h4>Delete account</h4>
+      <div class="info-body" id="delAcctBody"></div>
+      <div class="row2" style="margin-top:14px"><button class="b1" style="flex:1" onclick="closeDelAcct()">Keep my account</button></div>
     </div>
   </div>
 
@@ -2700,7 +2717,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.177.0 - Resetting a forgotten password now happens inside Plumb. The emailed link opens the app itself, verifies the code, and asks for the new password on a proper Plumb screen, then signs you straight in. Expired or already-used links, which happen because every fresh request cancels the older one and each link works exactly once, now explain themselves and offer to send a new link on the spot instead of showing a bare Google error page.';
+const PLUMB_VERSION='2.178.0 - Plumb now stands on proper legal footing. Settings gains a Privacy and legal section linking the Privacy Policy and Terms of Service at siteplumb.com, the sign-in screen notes the agreement, and deleting your account is now built in: the app first shows exactly what deletion touches, asks you to type DELETE, then erases the sign-in, profile and notification tokens on the server. A builder sees the owned sites listed by name, since those are destroyed for every member; work that subs and homeowners posted to a project they joined stays with that project. The forgot-password note also names the real sender, noreply at siteplumb.com.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3827,7 +3844,7 @@ async function liveForgot(){
   if(laFirebaseReady()){
     try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());
       await firebase.auth().sendPasswordResetEmail(email,{url:location.origin+location.pathname});
-      const sender='noreply@'+(((fbConfig()||{}).authDomain)||'the app');
+      const sender='noreply@siteplumb.com';
       laOk('If an account exists for '+email+', a reset link is on its way. It comes from '+sender+' — check spam or junk if it doesn\u2019t arrive in a minute or two. No email means no account exists under exactly this address.');
       logEvent('pwResetRequested',email.replace(/^(.).*(@.*)$/,'$1\u2026$2'));}
     catch(err){
@@ -3905,6 +3922,69 @@ async function pwResetResend(){
 async function liveSignOut(){
   try{if(laFirebaseReady()&&firebase.apps.length)await firebase.auth().signOut();}catch(e){}
   laSaveProfile(null);Data.setSession(null);logEvent('logout','liveAccount');laRenderState();toast('Signed out');}
+/* ── Privacy & legal + account deletion (Tier 2) ──
+   The policy documents are static pages beside the app (privacy.html,
+   terms.html) so they have public URLs for consoles and listings. Deletion is
+   server-authoritative: the deleteAccount function previews what the erasure
+   touches (builder-owned sites cascade for everyone; mere memberships strip),
+   the person types DELETE, the server does the work, the device wipes last. */
+const LEGAL_URL={privacy:'https://siteplumb.com/privacy.html',terms:'https://siteplumb.com/terms.html'};
+function _isLiveAccount(){return !!(state.session&&state.session.auth&&state.session.auth.uid);}
+function legalOpenPrivacy(){try{window.open(LEGAL_URL.privacy,'_blank','noopener');}catch(e){}logEvent('legalOpened','privacy');}
+function legalOpenTerms(){try{window.open(LEGAL_URL.terms,'_blank','noopener');}catch(e){}logEvent('legalOpened','terms');}
+function openLegal(){
+  const el=document.getElementById('legalBody');if(!el)return;
+  const I={shield:'<path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12.5l2 2 3.5-4"/>',
+    doc:'<path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+    bin:'<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/>'};
+  let rows='';
+  rows+=SET_GEAR_ROW('Privacy Policy','What Plumb stores, and why','closeLegal();legalOpenPrivacy()',I.shield);
+  rows+=SET_GEAR_ROW('Terms of Service','The agreement for using Plumb','closeLegal();legalOpenTerms()',I.doc);
+  if(_isLiveAccount())rows+=SET_GEAR_ROW('Delete my account','Erase your account and its data — permanent','closeLegal();openDeleteAccount()',I.bin);
+  else if(appMode()==='real'&&laProfile())rows+=SET_GEAR_ROW('Erase this device-only account','Removes it from this device — permanent','closeLegal();eraseLocalAccount()',I.bin);
+  else rows+='<div class="empty" style="padding:8px 0 12px">Account deletion appears here once you are signed in to a live account.</div>';
+  el.innerHTML=rows;
+  document.getElementById('legalScrim').classList.add('show');}
+function closeLegal(){document.getElementById('legalScrim').classList.remove('show');}
+function _delWipeLocal(){
+  try{Sync.disconnect();}catch(e){}
+  try{if(laFirebaseReady()&&firebase.apps.length)firebase.auth().signOut();}catch(e){}
+  ['plumb.state.real.v1','plumb.liveAuth','plumbPendingInvite'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});}
+function eraseLocalAccount(){
+  const p=laProfile();if(!p||p.provider!=='local'){toast('No device-only account signed in');return;}
+  confirmDelete({title:'Erase this account?',body:'The device-only account for <b>'+esc(p.email||'')+'</b> and everything it stored on this device is erased. There is no cloud copy to recover from.',onConfirm:()=>{
+    const acc=laAccounts();delete acc[p.email];delete acc[String(p.email||'').toLowerCase()];laSaveAccounts(acc);
+    _delWipeLocal();logEvent('accountErased','local');
+    toast('Erased');setTimeout(()=>{try{location.replace('./');}catch(e){}},600);}});}
+async function openDeleteAccount(){
+  const b=document.getElementById('delAcctBody');if(!b)return;
+  b.innerHTML='<div class="empty" style="padding:14px 0">Checking what deleting your account touches…</div>';
+  document.getElementById('delAcctScrim').classList.add('show');
+  try{const r=await fnCall('deleteAccount',{});renderDelAcct((r&&r.preview)||{});}
+  catch(e){b.innerHTML='<div class="empty" style="padding:14px 0">Couldn’t reach the server — check your connection and try again.<br><span style="font-size:11.5px;color:#8A8273">'+esc((e&&e.message)||'')+'</span></div>';}}
+function renderDelAcct(pv){
+  const b=document.getElementById('delAcctBody');if(!b)return;
+  const owned=pv.ownedSites||[];
+  let h='<div style="font-size:13.5px;line-height:1.5;color:var(--ink-2)">Deleting your account permanently erases your sign-in, your profile, and your notification tokens. This cannot be undone.</div>';
+  if(owned.length){
+    h+='<div style="margin-top:12px;font-size:13.5px;font-weight:600;color:var(--clay)">You are the builder on '+owned.length+' live '+(owned.length===1?'site':'sites')+'. '+(owned.length===1?'It':'They')+' will be destroyed for everyone — homeowners and subs lose access, and every record, photo, selection, invoice and document goes too:</div>';
+    h+='<div style="margin-top:8px">'+owned.map(nm=>'<div class="day-row avr" style="cursor:default"><div style="flex:1"><div class="n">'+esc(nm)+'</div></div></div>').join('')+'</div>';}
+  if(pv.memberSites)h+='<div style="margin-top:10px;font-size:12.5px;color:var(--ink-2)">Your access to '+pv.memberSites+' other '+(pv.memberSites===1?'site':'sites')+' is removed. Logs and photos you already posted there stay part of those projects.</div>';
+  if(pv.qb)h+='<div style="margin-top:10px;font-size:12.5px;color:var(--ink-2)">Your QuickBooks connection is disconnected and its tokens are deleted.</div>';
+  h+='<div class="la-fld" style="margin-top:14px"><input id="delAcctInput" placeholder="Type DELETE to confirm" autocapitalize="characters" autocomplete="off" oninput="delAcctGate()"></div>';
+  h+='<button class="login-enter" id="delAcctGo" disabled style="background:var(--clay);margin-top:10px" onclick="delAcctExecute()">Delete my account forever</button>';
+  b.innerHTML=h;delAcctGate();}
+function delAcctGate(){const i=document.getElementById('delAcctInput'),g=document.getElementById('delAcctGo');if(g)g.disabled=!(i&&i.value.trim()==='DELETE');}
+async function delAcctExecute(){
+  const g=document.getElementById('delAcctGo');if(!g||g.disabled)return;
+  g.disabled=true;g.textContent='Deleting…';
+  try{await fnCall('deleteAccount',{confirm:true});
+    logEvent('accountDeleted','live');
+    _delWipeLocal();
+    const b=document.getElementById('delAcctBody');if(b)b.innerHTML='<div class="empty" style="padding:14px 0">Your account and its data are deleted. Thanks for building with Plumb.</div>';
+    setTimeout(()=>{try{location.replace('./');}catch(e){}},1600);}
+  catch(e){g.disabled=false;g.textContent='Delete my account forever';toast((e&&e.message)||'Could not delete — try again');}}
+function closeDelAcct(){document.getElementById('delAcctScrim').classList.remove('show');}
 /* ── Steps 4/5: org membership, invites, claims ──
    members:{uid:'builder'|'sub'|'client'} + memberInfo:{uid:{name,trade}} live on the
    site meta doc (synced). The builder hands out an invite code; the invitee files a
@@ -4280,6 +4360,7 @@ function renderSettings(){
   }
   const _fbn=(state.feedback||[]).filter(f=>!f.done).length;
   rows+=SET_GEAR_ROW('Report a problem or idea',_fbn?(_fbn+' open '+(_fbn===1?'item':'items')):'Share a bug or suggestion with the team','closeSettings();openFeedback()','<path d="M8 8a4 4 0 0 1 8 0v3a4 4 0 0 1-8 0z"/><path d="M12 12v6M5 9H3m18 0h-2M5 15H3m18 0h-2M9 5 7 3m8 2 2-2"/>');
+  rows+=SET_GEAR_ROW('Privacy &amp; legal','Policies, your data &amp; account deletion','closeSettings();openLegal()','<path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12.5l2 2 3.5-4"/>');
   rows+=SET_GEAR_ROW('Sign out','','closeSettings();logout()',I.out);
   rows+='<div class="set-ver">Plumb '+esc(PLUMB_VERSION)+'</div>';
   el.innerHTML=rows;}
