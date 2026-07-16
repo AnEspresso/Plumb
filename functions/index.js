@@ -8,6 +8,7 @@ const admin = require('firebase-admin');
 const crypto = require('crypto');
 const qbo = require('./lib/qbo');
 const { exportCosts } = require('./lib/exportCosts');
+const { deleteAccount } = require('./lib/deleteAccount');
 
 setGlobalOptions({ region: 'us-central1', maxInstances: 5 });
 admin.initializeApp();
@@ -105,6 +106,19 @@ exports.qbExportCosts = onRequest(async (req, res) => {
   if (!siteId) { res.status(400).json({ error: 'siteId required' }); return; }
   try { res.json({ result: await exportCosts(db, user.uid, siteId) }); }
   catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
+});
+
+/* ── Account deletion: preview without {confirm}, execute with it. The bucket
+   name is explicit — this project uses a new-style firebasestorage.app bucket,
+   which the Admin SDK's appspot.com default would miss. ── */
+exports.deleteAccount = onRequest(async (req, res) => {
+  if (cors(req, res)) return;
+  const user = await requireUser(req, res); if (!user) return;
+  try {
+    const bucket = admin.storage().bucket(process.env.PLUMB_BUCKET || 'plumb-467a0.firebasestorage.app');
+    const r = await deleteAccount(db, admin.auth(), bucket, user.uid, !!body(req).confirm, String(user.email || '').toLowerCase());
+    res.json({ result: r });
+  } catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
 });
 
 /* ── Telemetry through the server: clients lose direct Firestore access ── */
