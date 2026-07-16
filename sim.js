@@ -930,6 +930,7 @@ $("state.session=JSON.parse(window.__snapS2);delete window.__snapS2");
 t('a healthy session is left alone', $('_orphanSessionGuard()')===false&&$('state.session')!==null);
 // self-test: probe and verification target the same site
 t('self-test verifies the site it probed', $("devSelfTest.toString().indexOf('String(tgt.id)')>=0")===true);
+t('self-test photo check honors cloud copies', $("devSelfTest.toString().indexOf('no copy anywhere')>=0&&devSelfTest.toString().indexOf('photoUrl')>=0")===true);
 // cleanup: no real-mode residue may leak into later sections or fuzz
 $("['plumb.mode','plumb.liveAuth','plumb.state.real.uA.v1','plumb.state.real.uB.v1','plumb.state.real.device.v1'].forEach(k=>localStorage.removeItem(k))");
 asBuilder();

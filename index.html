@@ -2717,7 +2717,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.179.0 - Every live account now keeps its own private workspace on this device. Signing in on a shared computer no longer shows the previous accounts sites, each account keeps its own offline copy, and the old shared store migrates automatically to its owner. Deleting an account now fully signs the device out. The workbench carryover self-test also probes and verifies the same site, so a stale site selection no longer reports false failures.';
+const PLUMB_VERSION='2.179.1 - The workbench self-test now judges photo safety the way multi-device use actually works: a photo counts as safe when a copy exists on this device or in the cloud, and it warns only for photos with no copy anywhere. Devices that did not take the photos no longer raise a warning.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -10573,9 +10573,10 @@ async function devSelfTest(){
     log.push((found?'PASS':'FAIL')+'  metadata round-trip (localStorage)');
     log.push((found&&found.status==='open'?'PASS':'FAIL')+'  open-item carryover preserved');
     log.push((reread.projects.length===state.projects.length?'PASS':'WARN')+'  all '+state.projects.length+' sites persisted');
-    const keys=await idbKeys();
-    const allPhotoItems=state.projects.reduce((a,p)=>a+p.items.filter(i=>i.photoId).length,0);
-    log.push((keys.length>=allPhotoItems?'PASS':'WARN')+'  photo store covers this mode\u2019s records ('+keys.length+' blobs total; demo & live share the store)');
+    const keys=await idbKeys();const kset=new Set(keys);
+    let withPhoto=0,atRisk=0;
+    state.projects.forEach(p=>p.items.forEach(i=>{if(i.photoId){withPhoto++;if(!kset.has(i.photoId)&&!i.photoUrl&&!i.fileUrl)atRisk++;}}));
+    log.push((atRisk===0?'PASS':'WARN')+'  photos safe: '+withPhoto+' records, '+keys.length+' stored on this device, rest in the cloud'+(atRisk?(' \u2014 '+atRisk+' with no copy anywhere'):''));
     log.push((Array.isArray(reread.feedback)?'PASS':'WARN')+'  feedback list persists');
     log.push((Array.isArray(reread.eventLog)?'PASS':'WARN')+'  event log persists');
     log.push('PASS  IndexedDB reachable');
