@@ -2717,7 +2717,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.179.1 - The workbench self-test now judges photo safety the way multi-device use actually works: a photo counts as safe when a copy exists on this device or in the cloud, and it warns only for photos with no copy anywhere. Devices that did not take the photos no longer raise a warning.';
+const PLUMB_VERSION='2.179.2 - Completes shared-computer isolation: the workspace now swaps the moment the signed-in account changes, so signing in as a different account starts from that accounts own store instead of carrying the previous workspace along in memory. Signing out lands on an empty device workspace.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3714,7 +3714,15 @@ function realEnter(){
 const RP_ROLES={owner:'Owner / General contractor',pm:'Project manager',superintendent:'Superintendent',office:'Office / Selections coordinator'};
 let laMode='signin';
 function laProfile(){try{return JSON.parse(localStorage.getItem('plumb.liveAuth')||'null');}catch(e){return null;}}
-function laSaveProfile(p){try{localStorage.setItem('plumb.liveAuth',JSON.stringify(p));}catch(e){}}
+function laSaveProfile(p){
+  /* Saving a profile can change which account owns the live workspace. Swap the
+     in-memory state to the new owner store the moment that happens — the old
+     workspace stays in its own slot and never follows a different sign-in.
+     (Part 2 of per-account stores: 2.179.0 split the keys; this swaps state.) */
+  let before=null;try{if(appMode()==='real')before=storeKey();}catch(e){}
+  try{localStorage.setItem('plumb.liveAuth',JSON.stringify(p));}catch(e){}
+  try{if(before!==null&&storeKey()!==before)load();}catch(e){}
+}
 function laAccounts(){try{return JSON.parse(localStorage.getItem('plumb.liveAccounts')||'{}');}catch(e){return {};}}
 function laSaveAccounts(a){try{localStorage.setItem('plumb.liveAccounts',JSON.stringify(a));}catch(e){}}
 function laHash(str){let h=0x811c9dc5;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return 'h'+h.toString(36);}

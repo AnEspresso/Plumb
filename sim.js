@@ -928,6 +928,23 @@ $("state.session={role:'hillan',mode:'real',auth:{uid:'ghost'}}");
 t('orphan account session cleared at boot', $('_orphanSessionGuard()')===true&&$('state.session')===null);
 $("state.session=JSON.parse(window.__snapS2);delete window.__snapS2");
 t('a healthy session is left alone', $('_orphanSessionGuard()')===false&&$('state.session')!==null);
+// profile swap: the workspace follows the ACCOUNT, never the browser (Peter, Mac, 2026-07-16 round 2)
+$("window.__snapS3=JSON.stringify(state)");
+$("localStorage.setItem('plumb.liveAuth',JSON.stringify({provider:'firebase',uid:'uA'}))");
+$('load()');
+$("state.projects=[{id:901,name:'A-only',street:'A-only',items:[],logs:[],docs:[],subs:[],stageDone:{},selections:[],payments:[],members:{},memberInfo:{}}];state.activeId=901");
+$('persist()');
+$("laSaveProfile({provider:'firebase',uid:'uB'})");
+t('signing in as another account swaps to an empty workspace', Number($('state.projects.length'))===0);
+$("state.projects=[{id:902,name:'B-only',street:'B-only',items:[],logs:[],docs:[],subs:[],stageDone:{},selections:[],payments:[],members:{},memberInfo:{}}];state.activeId=902");
+$('persist()');
+$("laSaveProfile({provider:'firebase',uid:'uA'})");
+t('switching back restores the first accounts own workspace', Number($('state.projects.length'))===1&&$('state.projects[0].name')==='A-only');
+t('the first accounts store never gained the seconds site', $("localStorage.getItem('plumb.state.real.uA.v1').indexOf('B-only')")===-1);
+$("localStorage.removeItem('plumb.state.real.device.v1')");
+$("laSaveProfile(null)");
+t('signing out lands on the empty device workspace', Number($('state.projects.length'))===0);
+$("state=JSON.parse(window.__snapS3);delete window.__snapS3");
 // self-test: probe and verification target the same site
 t('self-test verifies the site it probed', $("devSelfTest.toString().indexOf('String(tgt.id)')>=0")===true);
 t('self-test photo check honors cloud copies', $("devSelfTest.toString().indexOf('no copy anywhere')>=0&&devSelfTest.toString().indexOf('photoUrl')>=0")===true);
