@@ -877,10 +877,13 @@ t('lowercase does not arm it', el('delAcctGo').disabled===true);
 setVal('delAcctInput','DELETE');$('delAcctGate()');
 t('typed DELETE arms it', el('delAcctGo').disabled===false);
 $("localStorage.setItem('plumb.state.real.v1','x');localStorage.setItem('plumb.liveAuth','y');localStorage.setItem('plumbPendingInvite','z')");
+$("window.__snapSt=JSON.stringify(state)");
 await $('delAcctExecute()');
 t('execute sent {confirm:true} after the preview call', (function(){const L=JSON.parse($("JSON.stringify(window.__fnLog)"));return L.length===2&&!L[0].d.confirm&&L[1].d.confirm===true;})());
 t('device wiped: real store, live profile, pending invite all gone', $("localStorage.getItem('plumb.state.real.v1')")===null&&$("localStorage.getItem('plumb.liveAuth')")===null&&$("localStorage.getItem('plumbPendingInvite')")===null);
 t('goodbye copy shown', el('delAcctBody').innerHTML.indexOf('deleted')>=0);
+t('memory signed out too', $('state.session')===null&&Number($('state.projects.length'))===0);
+$("state=JSON.parse(window.__snapSt);delete window.__snapSt");$('persist()');
 $('closeDelAcct()');$("state.session.auth=undefined");$("window.fnCall=window.__realFnCall");$("delete window.__fnLog");
 // Regression (Peter, iPhone, 2026-07-16): stale plumb.mode='real' + stored firebase
 // profile + DEMO session must NOT offer the device-only erase row.
@@ -897,6 +900,38 @@ $('openLegal()');
 t('local-provider account in a live session gets the erase row', el('legalBody').innerHTML.indexOf('Erase this device-only account')>=0);
 $('closeLegal()');
 $("localStorage.removeItem('plumb.mode')");$("localStorage.removeItem('plumb.liveAuth')");
+asBuilder();
+
+/* ════ 14m · PER-ACCOUNT WORKSPACES (shared-computer isolation) ════ */
+S('per-account stores');
+t('store plumbing present', $("typeof _realOwner")==='function'&&$("typeof _migrateRealStore")==='function'&&$("typeof _orphanSessionGuard")==='function');
+$("localStorage.setItem('plumb.mode','real')");
+$("localStorage.setItem('plumb.liveAuth',JSON.stringify({provider:'firebase',uid:'uA',email:'a@x.test'}))");
+t('live store is keyed by the account', $('storeKey()')==='plumb.state.real.uA.v1');
+$("localStorage.setItem('plumb.liveAuth',JSON.stringify({provider:'firebase',uid:'uB',email:'b@x.test'}))");
+t('a second account gets its own key', $('storeKey()')==='plumb.state.real.uB.v1');
+$("localStorage.removeItem('plumb.liveAuth')");
+t('no account falls back to the device key', $('storeKey()')==='plumb.state.real.device.v1');
+// migration: legacy shared store hands itself to the signed-in owner, once
+$("localStorage.setItem('plumb.state.real.v1','legacy-payload')");
+$("localStorage.setItem('plumb.liveAuth',JSON.stringify({provider:'firebase',uid:'uA'}))");
+t('migration reports work done', $('_migrateRealStore()')===true);
+t('legacy store migrated to its owner and retired', $("localStorage.getItem('plumb.state.real.uA.v1')")==='legacy-payload'&&$("localStorage.getItem('plumb.state.real.v1')")===null);
+$("localStorage.setItem('plumb.state.real.v1','second-legacy')");
+$('_migrateRealStore()');
+t('migration never clobbers an existing store', $("localStorage.getItem('plumb.state.real.uA.v1')")==='legacy-payload'&&$("localStorage.getItem('plumb.state.real.v1')")===null);
+t('migration is a no-op when nothing is left', $('_migrateRealStore()')===false);
+// orphan guard: an account session with no saved profile signs out at boot
+$("localStorage.removeItem('plumb.liveAuth')");
+$("window.__snapS2=JSON.stringify(state.session)");
+$("state.session={role:'hillan',mode:'real',auth:{uid:'ghost'}}");
+t('orphan account session cleared at boot', $('_orphanSessionGuard()')===true&&$('state.session')===null);
+$("state.session=JSON.parse(window.__snapS2);delete window.__snapS2");
+t('a healthy session is left alone', $('_orphanSessionGuard()')===false&&$('state.session')!==null);
+// self-test: probe and verification target the same site
+t('self-test verifies the site it probed', $("devSelfTest.toString().indexOf('String(tgt.id)')>=0")===true);
+// cleanup: no real-mode residue may leak into later sections or fuzz
+$("['plumb.mode','plumb.liveAuth','plumb.state.real.uA.v1','plumb.state.real.uB.v1','plumb.state.real.device.v1'].forEach(k=>localStorage.removeItem(k))");
 asBuilder();
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */

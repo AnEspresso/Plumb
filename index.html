@@ -2717,7 +2717,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.178.2 - Softens the delete-account warning into professional language: sites a builder owns are now described as permanently removed for all members rather than destroyed, with the same facts stated plainly. Policy pages use the same wording.';
+const PLUMB_VERSION='2.179.0 - Every live account now keeps its own private workspace on this device. Signing in on a shared computer no longer shows the previous accounts sites, each account keeps its own offline copy, and the old shared store migrates automatically to its owner. Deleting an account now fully signs the device out. The workbench carryover self-test also probes and verifies the same site, so a stale site selection no longer reports false failures.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -2758,7 +2758,20 @@ function renderDevGrants(){
 const LOG_MAX=200;
 const STORE_KEY='plumb.state.v1';
 function appMode(){try{return localStorage.getItem('plumb.mode')==='real'?'real':'demo';}catch(e){return 'demo';}}
-function storeKey(){return appMode()==='real'?'plumb.state.real.v1':STORE_KEY;}
+function _realOwner(){try{const p=JSON.parse(localStorage.getItem('plumb.liveAuth')||'null');return (p&&p.provider==='firebase'&&p.uid)?String(p.uid):'device';}catch(e){return 'device';}}
+function storeKey(){return appMode()==='real'?('plumb.state.real.'+_realOwner()+'.v1'):STORE_KEY;}
+/* One-time migration: the legacy shared real store belonged to whoever is signed
+   in on this device today — hand it to that owner and retire the shared key, so
+   the next account to sign in here starts with its own private workspace. */
+function _migrateRealStore(){try{
+  const legacy=localStorage.getItem('plumb.state.real.v1');
+  if(legacy===null)return false;
+  const k='plumb.state.real.'+_realOwner()+'.v1';
+  if(localStorage.getItem(k)===null)localStorage.setItem(k,legacy);
+  localStorage.removeItem('plumb.state.real.v1');
+  return true;
+}catch(e){return false;}}
+_migrateRealStore();
 function emptyState(){return {projects:[],activeId:null,showSamples:false,seeded:true,feedback:[],eventLog:[],session:null};}
 const AREA_GROUPS=[
   {g:'Rooms',a:['Kitchen','Pantry','Dining Room','Living Room','Primary Suite','Primary Bath','Hall Bath','Bath 2','Bath 3','Jack & Jill Bath','Powder Room','Bedrooms','Office / Study','Laundry','Mudroom','Closets','Stairs / Hall','Basement','Attic','Garage']},
@@ -3947,9 +3960,17 @@ function openLegal(){
   document.getElementById('legalScrim').classList.add('show');}
 function closeLegal(){document.getElementById('legalScrim').classList.remove('show');}
 function _delWipeLocal(){
+  let sk=null;try{if(appMode()==='real')sk=storeKey();}catch(e){}
+  try{state.session=null;state.projects=[];state.activeId=null;}catch(e){}   // stragglers now persist a signed-out state
   try{Sync.disconnect();}catch(e){}
   try{if(laFirebaseReady()&&firebase.apps.length)firebase.auth().signOut();}catch(e){}
-  ['plumb.state.real.v1','plumb.liveAuth','plumbPendingInvite'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});}
+  [sk,'plumb.state.real.v1','plumb.liveAuth','plumbPendingInvite'].forEach(k=>{try{if(k)localStorage.removeItem(k);}catch(e){}});}
+/* Boot belt: a persisted session claiming an account uid with no matching saved
+   profile is an orphan (interrupted deletion, cleared profile) — sign it out. */
+function _orphanSessionGuard(){try{
+  if(appMode()==='real'&&state.session&&state.session.auth&&state.session.auth.uid&&!laProfile()){
+    state.session=null;persistLocalOnly();return true;}
+}catch(e){}return false;}
 function eraseLocalAccount(){
   const p=laProfile();if(!p||p.provider!=='local'){toast('No device-only account signed in');return;}
   confirmDelete({title:'Erase this account?',body:'The device-only account for <b>'+esc(p.email||'')+'</b> and everything it stored on this device is erased. There is no cloud copy to recover from.',onConfirm:()=>{
@@ -10544,9 +10565,10 @@ async function devSelfTest(){
   const snap=JSON.stringify(state);
   try{
     const probe={id:999999,cap:'__carryover_probe__',area:'Whole House',crew:'',issue:true,status:'open',sw:'dark',t:Date.now(),day:0};
-    P().items.push(probe);persist();
+    const tgt=P();if(!tgt)throw new Error('no sites to probe');
+    tgt.items.push(probe);persist();
     const reread=JSON.parse(localStorage.getItem(storeKey()));
-    const rp=reread.projects.find(p=>p.id===state.activeId);
+    const rp=reread.projects.find(p=>String(p.id)===String(tgt.id));
     const found=rp&&rp.items.find(i=>i.id===999999);
     log.push((found?'PASS':'FAIL')+'  metadata round-trip (localStorage)');
     log.push((found&&found.status==='open'?'PASS':'FAIL')+'  open-item carryover preserved');
@@ -10557,7 +10579,7 @@ async function devSelfTest(){
     log.push((Array.isArray(reread.feedback)?'PASS':'WARN')+'  feedback list persists');
     log.push((Array.isArray(reread.eventLog)?'PASS':'WARN')+'  event log persists');
     log.push('PASS  IndexedDB reachable');
-    P().items=P().items.filter(i=>i.id!==999999);persist();
+    tgt.items=tgt.items.filter(i=>i.id!==999999);persist();
     log.push('—  probe cleaned up, state restored');
   }catch(err){log.push('FAIL  '+err.message);localStorage.setItem(storeKey(),snap);}
   out.textContent=log.join('\n');refreshDev();renderLocalState();
@@ -10572,6 +10594,7 @@ async function devSelfTest(){
   // absolutely-positioned nav mid-screen). Pin it back to 0 whenever anything scrolls it.
   try{const _dev=document.querySelector('.device');if(_dev){const _pin=()=>{if(_dev.scrollTop||_dev.scrollLeft){_dev.scrollTop=0;_dev.scrollLeft=0;}};_dev.addEventListener('scroll',_pin,{passive:true});_pin();}}catch(e){}
   load();
+  try{_orphanSessionGuard();}catch(e){}
   try{db=await idb();await hydratePhotos();}catch(e){}
   updateHeader();
   renderAll();
