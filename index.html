@@ -2717,7 +2717,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.178.1 - Fixes the Privacy and legal hub offering the erase device-only account row inside a demo session on devices that normally run live. The row now appears only when a real device-only account is actually signed in; the hub no longer trusts the stale mode toggle the sign-in screen leaves behind.';
+const PLUMB_VERSION='2.178.2 - Softens the delete-account warning into professional language: sites a builder owns are now described as permanently removed for all members rather than destroyed, with the same facts stated plainly. Policy pages use the same wording.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3967,7 +3967,7 @@ function renderDelAcct(pv){
   const owned=pv.ownedSites||[];
   let h='<div style="font-size:13.5px;line-height:1.5;color:var(--ink-2)">Deleting your account permanently erases your sign-in, your profile, and your notification tokens. This cannot be undone.</div>';
   if(owned.length){
-    h+='<div style="margin-top:12px;font-size:13.5px;font-weight:600;color:var(--clay)">You are the builder on '+owned.length+' live '+(owned.length===1?'site':'sites')+'. '+(owned.length===1?'It':'They')+' will be destroyed for everyone — homeowners and subs lose access, and every record, photo, selection, invoice and document goes too:</div>';
+    h+='<div style="margin-top:12px;font-size:13.5px;font-weight:600;color:var(--clay)">You are the builder on '+owned.length+' live '+(owned.length===1?'site':'sites')+'. Deleting your account permanently removes '+(owned.length===1?'it':'them')+' for all members — homeowners and subcontractors lose access, along with every record, photo, selection, invoice and document:</div>';
     h+='<div style="margin-top:8px">'+owned.map(nm=>'<div class="day-row avr" style="cursor:default"><div style="flex:1"><div class="n">'+esc(nm)+'</div></div></div>').join('')+'</div>';}
   if(pv.memberSites)h+='<div style="margin-top:10px;font-size:12.5px;color:var(--ink-2)">Your access to '+pv.memberSites+' other '+(pv.memberSites===1?'site':'sites')+' is removed. Logs and photos you already posted there stay part of those projects.</div>';
   if(pv.qb)h+='<div style="margin-top:10px;font-size:12.5px;color:var(--ink-2)">Your QuickBooks connection is disconnected and its tokens are deleted.</div>';
