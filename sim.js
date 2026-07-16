@@ -882,6 +882,22 @@ t('execute sent {confirm:true} after the preview call', (function(){const L=JSON
 t('device wiped: real store, live profile, pending invite all gone', $("localStorage.getItem('plumb.state.real.v1')")===null&&$("localStorage.getItem('plumb.liveAuth')")===null&&$("localStorage.getItem('plumbPendingInvite')")===null);
 t('goodbye copy shown', el('delAcctBody').innerHTML.indexOf('deleted')>=0);
 $('closeDelAcct()');$("state.session.auth=undefined");$("window.fnCall=window.__realFnCall");$("delete window.__fnLog");
+// Regression (Peter, iPhone, 2026-07-16): stale plumb.mode='real' + stored firebase
+// profile + DEMO session must NOT offer the device-only erase row.
+$("localStorage.setItem('plumb.mode','real')");
+$("localStorage.setItem('plumb.liveAuth',JSON.stringify({provider:'firebase',email:'p@x.test',name:'P',uid:'uN8'}))");
+$('openLegal()');
+t('stale-mode demo session gets no erase row', el('legalBody').innerHTML.indexOf('device-only account')<0);
+t('and shows the once-signed-in note instead', el('legalBody').innerHTML.indexOf('once you are signed in')>=0);
+$('closeLegal()');
+// a genuine device-only account in a live session DOES get the row
+$("localStorage.setItem('plumb.liveAuth',JSON.stringify({provider:'local',email:'d@x.test',name:'D'}))");
+$("state.session={role:'hillan',name:'D',mode:'real'}");
+$('openLegal()');
+t('local-provider account in a live session gets the erase row', el('legalBody').innerHTML.indexOf('Erase this device-only account')>=0);
+$('closeLegal()');
+$("localStorage.removeItem('plumb.mode')");$("localStorage.removeItem('plumb.liveAuth')");
+asBuilder();
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');

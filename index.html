@@ -2717,7 +2717,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.178.0 - Plumb now stands on proper legal footing. Settings gains a Privacy and legal section linking the Privacy Policy and Terms of Service at siteplumb.com, the sign-in screen notes the agreement, and deleting your account is now built in: the app first shows exactly what deletion touches, asks you to type DELETE, then erases the sign-in, profile and notification tokens on the server. A builder sees the owned sites listed by name, since those are destroyed for every member; work that subs and homeowners posted to a project they joined stays with that project. The forgot-password note also names the real sender, noreply at siteplumb.com.';
+const PLUMB_VERSION='2.178.1 - Fixes the Privacy and legal hub offering the erase device-only account row inside a demo session on devices that normally run live. The row now appears only when a real device-only account is actually signed in; the hub no longer trusts the stale mode toggle the sign-in screen leaves behind.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3941,7 +3941,7 @@ function openLegal(){
   rows+=SET_GEAR_ROW('Privacy Policy','What Plumb stores, and why','closeLegal();legalOpenPrivacy()',I.shield);
   rows+=SET_GEAR_ROW('Terms of Service','The agreement for using Plumb','closeLegal();legalOpenTerms()',I.doc);
   if(_isLiveAccount())rows+=SET_GEAR_ROW('Delete my account','Erase your account and its data — permanent','closeLegal();openDeleteAccount()',I.bin);
-  else if(appMode()==='real'&&laProfile())rows+=SET_GEAR_ROW('Erase this device-only account','Removes it from this device — permanent','closeLegal();eraseLocalAccount()',I.bin);
+  else if(state.session&&state.session.mode==='real'&&(laProfile()||{}).provider==='local')rows+=SET_GEAR_ROW('Erase this device-only account','Removes it from this device — permanent','closeLegal();eraseLocalAccount()',I.bin);
   else rows+='<div class="empty" style="padding:8px 0 12px">Account deletion appears here once you are signed in to a live account.</div>';
   el.innerHTML=rows;
   document.getElementById('legalScrim').classList.add('show');}
