@@ -269,16 +269,29 @@
     letter-spacing:-.01em;padding:16px;border-radius:15px;cursor:pointer;transition:transform .15s;}
   .save:active{transform:scale(.98);}.save:disabled{opacity:.4;}
 
-  .lightbox{position:absolute;inset:0;z-index:60;background:rgba(15,13,10,.92);display:none;flex-direction:column;
-    align-items:center;justify-content:center;padding:28px;}
+  /* Full-screen media viewer. It used to sit at z-index 60 - under every modal
+     (119+), which is why a photo tapped inside Edit item seemed to do nothing
+     and then turned up once the modal was dismissed. Fixed to the viewport,
+     above the modal layer, edge to edge. */
+  .lightbox{position:fixed;inset:0;z-index:2100;background:rgba(15,13,10,.94);display:none;flex-direction:column;
+    align-items:center;justify-content:center;padding:28px;overscroll-behavior:contain;}
   .lightbox.show{display:flex;animation:rise .3s;}
-  .lightbox img{max-width:100%;max-height:72%;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.5);}
-  .lightbox .cap{color:#F2EEE6;margin-top:18px;text-align:center;font-size:15px;font-weight:500;max-width:90%;}
-  .lightbox .meta{color:rgba(242,238,230,.55);font-size:12.5px;margin-top:5px;}
-  .lightbox.textonly .cap{font-family:'Fraunces',Georgia,serif;font-size:21px;font-weight:600;line-height:1.45;max-width:84%;}
-  .lightbox.textonly .meta{font-size:13px;margin-top:11px;}
+  .lb-stage{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;touch-action:none;}
+  .lb-stage img,.lb-stage video{max-width:100%;max-height:100%;display:block;transform-origin:center center;
+    will-change:transform;-webkit-user-select:none;user-select:none;}
+  .lightbox .cap{position:absolute;left:0;right:0;bottom:calc(46px + env(safe-area-inset-bottom));z-index:2;
+    color:#F2EEE6;text-align:center;font-size:15px;font-weight:500;padding:0 24px;
+    text-shadow:0 1px 14px rgba(0,0,0,.8);transition:opacity .18s;}
+  .lightbox .meta{position:absolute;left:0;right:0;bottom:calc(24px + env(safe-area-inset-bottom));z-index:2;
+    color:rgba(242,238,230,.62);font-size:12.5px;text-align:center;padding:0 24px;
+    text-shadow:0 1px 14px rgba(0,0,0,.8);transition:opacity .18s;}
+  .lightbox.zoomed .cap,.lightbox.zoomed .meta{opacity:0;pointer-events:none;}
+  .lightbox.textonly .lb-stage{display:none;}
+  .lightbox.textonly .cap{position:static;font-family:'Fraunces',Georgia,serif;font-size:21px;font-weight:600;
+    line-height:1.45;max-width:84%;text-shadow:none;}
+  .lightbox.textonly .meta{position:static;font-size:13px;margin-top:11px;text-shadow:none;}
   .lightbox .x{position:absolute;top:max(16px,env(safe-area-inset-top));right:18px;width:38px;height:38px;border-radius:50%;
-    background:rgba(242,238,230,.14);border:none;color:#fff;cursor:pointer;display:grid;place-items:center;}
+    background:rgba(242,238,230,.14);border:none;color:#fff;cursor:pointer;display:grid;place-items:center;z-index:3;}
   .lightbox .x svg{width:18px;height:18px;}
 
   .empty{text-align:center;color:var(--ink-3);font-size:13.5px;padding:40px 20px;}
@@ -1876,7 +1889,7 @@ body.on-tour .tour-card{display:block;}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>
           <div class="t">Add a photo (optional)</div>
         </div>
-        <input type="file" id="cFile" accept="image/*" capture="environment" hidden onchange="onConcernPhoto(event)">
+        <input type="file" id="cFile" accept="image/*" hidden onchange="onConcernPhoto(event)">
       </div>
       <textarea id="cNote" rows="3" placeholder="What's the concern? e.g. paint scuff on the stair wall" style="width:100%;border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:12px 13px;font-family:inherit;font-size:14px;color:var(--ink);outline:none;resize:vertical;box-sizing:border-box"></textarea>
       <div class="row2" style="margin-top:12px"><button class="b1 b-cancel" onclick="closeConcern()">Cancel</button><button class="b1 b-go" onclick="submitConcern()">Send to builder</button></div>
@@ -2577,7 +2590,7 @@ body.on-tour .tour-card{display:block;}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>
         <div class="t">Take or choose a photo</div>
       </div>
-      <input type="file" id="file" accept="image/*" capture="environment" hidden onchange="onPhoto(event)">
+      <input type="file" id="file" accept="image/*" hidden onchange="onPhoto(event)">
     </div>
     <div class="field-lbl">Note</div>
     <textarea class="ti" id="caption" rows="2" oninput="growNote(this)" placeholder="A few words…"></textarea>
@@ -2599,9 +2612,12 @@ body.on-tour .tour-card{display:block;}
     </div>
   </div>
 
-  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <div class="lightbox" id="lightbox">
     <button class="x" onclick="closeLightbox()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-    <img id="lbImg" src="" alt="">
+    <div class="lb-stage" id="lbStage">
+      <img id="lbImg" src="" alt="">
+      <video id="lbVid" playsinline controls preload="metadata" style="display:none"></video>
+    </div>
     <div class="cap" id="lbCap"></div>
     <div class="meta" id="lbMeta"></div>
   </div>
@@ -2633,7 +2649,7 @@ body.on-tour .tour-card{display:block;}
         <button class="qf-btn" onclick="subScanCard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><path d="M13 10h6M13 14h4"/></svg>Scan card</button>
         <button class="qf-btn" onclick="subFromWebsite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>Website</button>
       </div>
-      <input id="subScanInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="subCardPicked(this)">
+      <input id="subScanInput" type="file" accept="image/*" style="display:none" onchange="subCardPicked(this)">
       <input id="subName" placeholder="Company or name">
       <select id="subSpec"></select>
       <input id="subContact" placeholder="Contact name (optional)" autocomplete="off">
@@ -2790,7 +2806,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.182.0 - The invite now survives the crossing from browser to home screen. It used to be stripped from the address bar at boot, seconds before the install gate promised that it would come with you, and on iOS a home screen web app gets its own storage so nothing else carried it. The code now stays in the URL until it is redeemed. A slim top bar replaces the full-screen nudge for invitees, with Copy code as a fallback, and it does not pretend it can open the app because on iOS no web page can';
+const PLUMB_VERSION='2.183.0 - Two fixes from the jobsite. The photo button offers your library again: it carried a capture attribute, which on iOS is a hard instruction to open the camera and hide everything else. And the full screen viewer now sits above the modal layer instead of underneath it, which is why a photo tapped inside Edit item looked like it did nothing and then turned up after the modal closed. It fills the screen, pinch and double tap zoom, drag to pan, and video playback is wired for when capture arrives';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -10834,12 +10850,86 @@ async function save(){
   if(state.session&&state.session.role==='subs')renderSubView();}
 
 /* ════════ lightbox ════════ */
-function openLightbox(id){const it=(P().items||[]).find(x=>x.id===id);if(!it)return;const img=document.getElementById('lbImg');
-  const _psrc=photoSrc(it);if(_psrc){img.src=_psrc;img.style.display='';}else{img.style.display='none';}
-  document.getElementById('lightbox').classList.toggle('textonly',!_psrc);
-  document.getElementById('lbCap').textContent=it.cap;document.getElementById('lbMeta').textContent=`${it.area} · ${timeAgo(it.t)}`;
-  document.getElementById('lightbox').classList.add('show');}
-function closeLightbox(){document.getElementById('lightbox').classList.remove('show');}
+/* -- Full-screen media viewer (v2.183.0) --
+   Pinch to zoom, spread to zoom in, drag to pan once zoomed, double-tap to
+   toggle. A single tap closes - except on video, where a tap belongs to the
+   native controls and the X button is the way out. Every photo surface in the
+   app already routes through openLightbox, so fixing it here fixes the Files
+   grid, the feed and the Edit item thumb at once. */
+const _lb={scale:1,x:0,y:0,sx:0,sy:0,ox:0,oy:0,d0:1,s0:1,pts:new Map(),moved:false,lastTap:0,el:null,isVideo:false};
+function _lbApply(){
+  const box=document.getElementById('lightbox');
+  if(_lb.el)_lb.el.style.transform='translate('+_lb.x+'px,'+_lb.y+'px) scale('+_lb.scale+')';
+  if(box)box.classList.toggle('zoomed',_lb.scale>1.02);}
+function _lbClamp(){
+  if(_lb.scale<=1){_lb.scale=1;_lb.x=0;_lb.y=0;return;}
+  const el=_lb.el;if(!el)return;
+  const w=el.offsetWidth||0,h=el.offsetHeight||0;
+  const vw=(typeof window!=='undefined'&&window.innerWidth)||0,vh=(typeof window!=='undefined'&&window.innerHeight)||0;
+  const ox=Math.max(0,(w*_lb.scale-vw)/2),oy=Math.max(0,(h*_lb.scale-vh)/2);
+  _lb.x=Math.max(-ox,Math.min(ox,_lb.x));
+  _lb.y=Math.max(-oy,Math.min(oy,_lb.y));}
+function _lbReset(){_lb.scale=1;_lb.x=0;_lb.y=0;_lb.pts.clear();_lb.moved=false;_lbApply();}
+function _lbZoomTo(s){_lb.scale=Math.max(1,Math.min(6,s));if(_lb.scale<=1){_lb.x=0;_lb.y=0;}_lbClamp();_lbApply();}
+function _lbDown(e){
+  _lb.pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(_lb.pts.size===1){_lb.moved=false;_lb.sx=e.clientX;_lb.sy=e.clientY;_lb.ox=_lb.x;_lb.oy=_lb.y;}
+  else if(_lb.pts.size===2){const p=[..._lb.pts.values()];
+    _lb.d0=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)||1;_lb.s0=_lb.scale;_lb.moved=true;}}
+function _lbMove(e){
+  if(!_lb.pts.has(e.pointerId))return;
+  _lb.pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(_lb.pts.size>=2){const p=[..._lb.pts.values()];
+    const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)||1;
+    _lb.scale=Math.max(1,Math.min(6,_lb.s0*(d/_lb.d0)));_lb.moved=true;
+    _lbClamp();_lbApply();if(e.cancelable)e.preventDefault();return;}
+  if(_lb.scale>1.02){
+    _lb.x=_lb.ox+(e.clientX-_lb.sx);_lb.y=_lb.oy+(e.clientY-_lb.sy);
+    if(Math.abs(e.clientX-_lb.sx)>6||Math.abs(e.clientY-_lb.sy)>6)_lb.moved=true;
+    _lbClamp();_lbApply();if(e.cancelable)e.preventDefault();}}
+function _lbUp(e){
+  _lb.pts.delete(e.pointerId);
+  if(_lb.pts.size)return;
+  if(!_lb.moved&&!_lb.isVideo){
+    const now=Date.now();
+    if(now-_lb.lastTap<300){_lb.lastTap=0;_lbZoomTo(_lb.scale>1.02?1:2.5);}
+    else{_lb.lastTap=now;setTimeout(()=>{if(_lb.lastTap===now&&_lb.scale<=1.02)closeLightbox();},310);}
+  }
+  if(_lb.scale<=1.02){_lb.x=0;_lb.y=0;_lbApply();}}
+function _lbBind(){
+  const st=document.getElementById('lbStage');
+  if(!st||st._bound)return;st._bound=1;
+  st.addEventListener('pointerdown',_lbDown);
+  st.addEventListener('pointermove',_lbMove,{passive:false});
+  st.addEventListener('pointerup',_lbUp);
+  st.addEventListener('pointercancel',_lbUp);
+  st.addEventListener('dblclick',ev=>{if(ev.cancelable)ev.preventDefault();});
+  try{document.addEventListener('keydown',ev=>{
+    if(ev.key==='Escape'&&document.getElementById('lightbox').classList.contains('show'))closeLightbox();});}catch(err){}}
+/* The one entry point. kind is optional - a video is recognised by extension too,
+   so the day capture lands this half already works. */
+function openMediaView(src,cap,meta,kind){
+  const box=document.getElementById('lightbox');if(!box)return;
+  _lbBind();
+  const img=document.getElementById('lbImg'),vid=document.getElementById('lbVid');
+  const isVid=kind==='video'||/\.(mp4|mov|m4v|webm)(\?|$)/i.test(String(src||''));
+  _lb.isVideo=!!(src&&isVid);
+  if(src&&isVid){img.style.display='none';img.removeAttribute('src');
+    vid.style.display='';vid.src=src;_lb.el=vid;}
+  else if(src){try{vid.pause();}catch(e){}vid.removeAttribute('src');vid.style.display='none';
+    img.style.display='';img.src=src;_lb.el=img;}
+  else{img.style.display='none';vid.style.display='none';_lb.el=null;}
+  box.classList.toggle('textonly',!src);
+  document.getElementById('lbCap').textContent=cap||'';
+  document.getElementById('lbMeta').textContent=meta||'';
+  _lbReset();
+  box.classList.add('show');}
+function openLightbox(id){const it=(P().items||[]).find(x=>x.id===id);if(!it)return;
+  openMediaView(photoSrc(it),it.cap,(it.area||'')+' · '+timeAgo(it.t));}
+function closeLightbox(){
+  const box=document.getElementById('lightbox');if(box)box.classList.remove('show');
+  try{const v=document.getElementById('lbVid');if(v){v.pause();}}catch(e){}
+  _lbReset();}
 
 /* ════════ record detail / edit (Recent + Items) ════════ */
 let editingRecId=null;

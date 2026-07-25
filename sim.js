@@ -1192,6 +1192,65 @@ $("sessionStorage.removeItem('plumbInvBarOff')");
 $("document.getElementById('invBar').classList.remove('show')");
 asBuilder();
 
+/* ════ 14q · FULL-SCREEN MEDIA VIEWER + PHOTO PICKER ════ */
+S('media viewer');
+// THE PICKER BUG: capture="environment" is a hard instruction on iOS - camera
+// only, library hidden. The button said "Take or choose" and could not choose.
+t('no file input forces the camera any more', SRC.indexOf('capture="environment"')===-1);
+t('the entry picker still accepts images', SRC.indexOf('id="file" accept="image/*"')>=0);
+
+// THE Z-INDEX BUG: the viewer sat at 60, under every modal (119+), so a photo
+// tapped inside Edit item appeared to do nothing until the modal was dismissed.
+t('the viewer is fixed to the viewport, not a parent box', SRC.indexOf('.lightbox{position:fixed')>=0);
+t('the viewer outranks the modal layer', (function(){
+  const m=/\.lightbox\{position:fixed;inset:0;z-index:(\d+)/.exec(SRC);
+  return !!m&&Number(m[1])>130;})());
+t('the zoom stage swallows browser gestures', SRC.indexOf('touch-action:none')>=0);
+
+t('viewer plumbing present', $("typeof openMediaView")==='function'&&$("typeof closeLightbox")==='function'
+  &&$("typeof _lbZoomTo")==='function'&&$("typeof _lbClamp")==='function'&&$("typeof _lbReset")==='function');
+t('the stage and both media elements exist', !!el('lbStage')&&!!el('lbImg')&&!!el('lbVid'));
+t('every photo surface still routes through one door', $("openLightbox.toString().indexOf('openMediaView')")>=0);
+
+// showing a photo
+$("openMediaView('blob:fake/one','Footing rebar tied','Foundation - 2h ago')");
+t('a photo opens full screen', $("document.getElementById('lightbox').classList.contains('show')")===true
+  &&$("document.getElementById('lbImg').style.display")===''&&$("document.getElementById('lbVid').style.display")==='none');
+t('caption and meta carry through', $("document.getElementById('lbCap').textContent")==='Footing rebar tied'
+  &&$("document.getElementById('lbMeta').textContent")==='Foundation - 2h ago');
+t('a photo is not treated as video', $('_lb.isVideo')===false);
+t('it opens unzoomed', $('_lb.scale')===1&&$('_lb.x')===0&&$('_lb.y')===0);
+
+// zoom behaviour
+$('_lbZoomTo(2.5)');
+t('spread zooms in', $('_lb.scale')===2.5&&$("document.getElementById('lightbox').classList.contains('zoomed')")===true);
+$('_lbZoomTo(99)');
+t('zoom is capped so it cannot be lost', $('_lb.scale')===6);
+$('_lbZoomTo(0.2)');
+t('pinching past fit snaps back to fit and recentres', $('_lb.scale')===1&&$('_lb.x')===0&&$('_lb.y')===0
+  &&$("document.getElementById('lightbox').classList.contains('zoomed')")===false);
+$('_lb.scale=3;_lb.x=99999;_lb.y=-99999;_lbClamp()');
+t('panning cannot drag the photo off into space', Math.abs($('_lb.x'))<1e5&&Math.abs($('_lb.y'))<1e5);
+
+// video path: recognised by extension so the viewer half is ready ahead of capture
+$("openMediaView('https://x.test/clip.mov','Pour','Foundation')");
+t('a video plays in the video element, not the img', $("document.getElementById('lbVid').style.display")===''
+  &&$("document.getElementById('lbImg').style.display")==='none'&&$('_lb.isVideo')===true);
+t('tap-to-close stands down for video so native controls keep the tap',
+  $("_lbUp.toString().indexOf('_lb.isVideo')")>=0);
+
+// text-only entries still work
+$("openMediaView('','Poured at 6am, no photo','Foundation')");
+t('a note with no photo still reads as a card', $("document.getElementById('lightbox').classList.contains('textonly')")===true
+  &&$("document.getElementById('lbCap').textContent")==='Poured at 6am, no photo');
+
+// closing
+$('_lb.scale=4;_lb.x=50');
+$('closeLightbox()');
+t('closing hides it and forgets the zoom', $("document.getElementById('lightbox').classList.contains('show')")===false
+  &&$('_lb.scale')===1&&$('_lb.x')===0);
+$("document.getElementById('lbImg').removeAttribute('src')");
+
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');
 function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
