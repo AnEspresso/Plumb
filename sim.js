@@ -1274,6 +1274,50 @@ $('closeLightbox()');
 
 $("document.getElementById('lbImg').removeAttribute('src')");
 
+/* ════ 14r · QA ROUND: PICKER REBUILD, PASSWORD CONFIRM, HANDOFF HONESTY ════ */
+S('picker rebuild');
+// The v2.183.0 fix stripped capture from the HTML but resetSheet() rebuilds the
+// input in JS - and was putting it straight back. The library came back for
+// exactly one open per page load.
+t('nothing re-adds the camera-only flag at runtime', SRC.indexOf("setAttribute('capture'")===-1);
+t('the rebuild helper no longer takes a capture flag',
+  /function rebuildDrop\(dropId,phId,phInner,inputId,onchange\)/.test(SRC));
+t('resetSheet rebuilds a library-capable input', $("resetSheet.toString().indexOf('onPhoto)')")>=0);
+t('the entry input still accepts images', SRC.indexOf('id="file" accept="image/*"')>=0);
+
+S('password confirm');
+t('signup has a second password box', !!el('laPass2')&&!!el('laPass2Row'));
+$("laMode='signup';liveAuthToggle()");          // land deterministically on signin
+t('it is hidden on the sign-in form', $("document.getElementById('laPass2Row').style.display")==='none');
+$("laMode='signin';liveAuthToggle()");
+t('switching to signup reveals it', $("document.getElementById('laPass2Row').style.display")===''
+  &&$("document.getElementById('laNameRow').style.display")==='');
+$("laMode='signup';liveAuthToggle()");
+t('switching back to signin hides it again', $("document.getElementById('laPass2Row').style.display")==='none');
+// mismatch must be caught before any account is created
+$("laMode='signup'");
+$("document.getElementById('laEmail').value='new@x.test'");
+$("document.getElementById('laName').value='Newbie'");
+$("document.getElementById('laPass').value='correcthorse'");
+$("document.getElementById('laPass2').value='corretchorse'");
+$('liveAuthSubmit()');
+t('a mistyped confirmation is refused', $("document.getElementById('laErr').textContent")==='Those passwords do not match.',
+  $("document.getElementById('laErr').textContent"));
+$("document.getElementById('laPass2').value='correcthorse'");
+$("document.getElementById('laErr').textContent=''");
+t('matching passwords clear that gate', $("(function(){liveAuthSubmit();return document.getElementById('laErr').textContent;})()")!=='Those passwords do not match.');
+$("['laEmail','laName','laPass','laPass2'].forEach(id=>document.getElementById(id).value='')");
+$("laMode='signup';liveAuthToggle()");
+
+S('handoff honesty');
+// Add to Home Screen launches at the manifest start_url, so the invite in the
+// address bar does NOT cross on iOS. The clipboard is the only thing that does.
+t('the install route copies the code on the way out', $("invBarHowTo.toString().indexOf('invBarCopy()')")>=0);
+t('nothing promises the invite crosses by itself', SRC.indexOf('your invite comes with you')===-1);
+t('confirming the email refreshes an open Settings sheet', $("_evMark.toString().indexOf('renderSettings')")>=0);
+t('the signup receipt got shorter', $("_evAfterSignup.toString().length")<640, String($("_evAfterSignup.toString().length")));
+asBuilder();
+
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');
 function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}

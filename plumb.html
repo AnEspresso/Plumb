@@ -1692,6 +1692,7 @@ body.on-tour .tour-card{display:block;}
             <div class="la-fld" id="laNameRow" style="display:none"><input id="laName" placeholder="Your name" autocomplete="name"></div>
             <div class="la-fld"><input id="laEmail" type="email" placeholder="Email" autocomplete="email"></div>
             <div class="la-fld"><input id="laPass" type="password" placeholder="Password" autocomplete="current-password"></div>
+            <div class="la-fld" id="laPass2Row" style="display:none"><input id="laPass2" type="password" placeholder="Confirm password" autocomplete="new-password"></div>
             <div class="la-fld" id="laRoleRow" style="display:none">
               <select id="laRole">
                 <option value="owner">Owner / General contractor</option>
@@ -2818,7 +2819,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.183.2 - Second pass at the landscape photo fix. The stage was still a grid with centred items, and centring stops the single auto track from stretching, so the track sized itself to the image and a percentage on the image was circular again. The media is now pinned to the stage with absolute insets and letterboxed by object fit, so there is no track and no percentage left to collapse';
+const PLUMB_VERSION='2.184.0 - QA round. The photo picker fix only held until the sheet closed, because resetSheet rebuilds that input in JavaScript and was putting the camera-only flag straight back on - it is gone from the rebuild now. Signup asks for the password twice. The confirmation receipt says less. And the invite bar stops implying the code can cross to a home screen copy on its own, because Add to Home Screen launches at the manifest start address and the code is not in it - so the bar now puts the code on your clipboard on the way to the install steps';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3831,6 +3832,8 @@ function laFirebaseReady(){return !!(fbConfig()&&typeof firebase!=='undefined'&&
 function laErr(msg){const e=document.getElementById('laErr');if(!e)return;if(msg){e.textContent=msg;e.style.display='';}else e.style.display='none';}
 function liveAuthToggle(){laMode=laMode==='signin'?'signup':'signin';laErr('');
   document.getElementById('laNameRow').style.display=laMode==='signup'?'':'none';
+  document.getElementById('laPass2Row').style.display=laMode==='signup'?'':'none';
+  try{document.getElementById('laPass2').value='';}catch(e){}
   document.getElementById('laRoleRow').style.display=laMode==='signup'?'':'none';
   document.getElementById('laGo').textContent=laMode==='signup'?'Create account':'Sign in';
   document.getElementById('laToggle').textContent=laMode==='signup'?'I have an account — sign in':'Create account';
@@ -3918,6 +3921,7 @@ async function liveAuthSubmit(){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){laErr('Enter a valid email address.');return;}
   if(laMode==='signup'&&!name){laErr('Enter your name.');return;}
   if(laMode==='signup'&&pass.length<8){laErr('Password must be at least 8 characters.');return;}
+  if(laMode==='signup'&&pass!==(document.getElementById('laPass2').value||'')){laErr('Those passwords do not match.');return;}
   if(!pass){laErr('Enter your password.');return;}
   const btn=document.getElementById('laGo');btn.disabled=true;const old=btn.textContent;btn.textContent='…';
   try{
@@ -4011,7 +4015,9 @@ let _evLastSend=0;
 function _evProfile(){const p=laProfile();return (p&&p.provider==='firebase')?p:null;}
 function _evNeeded(){const p=_evProfile();return !!(p&&!p.emailVerified);}
 function _evMark(v){const p=laProfile();if(!p)return;if(!!p.emailVerified===!!v)return;
-  p.emailVerified=!!v;laSaveProfile(p);try{laRenderState();}catch(e){}}
+  p.emailVerified=!!v;laSaveProfile(p);try{laRenderState();}catch(e){}
+  try{const s=document.getElementById('settingsScrim');
+    if(s&&s.classList.contains('show'))renderSettings();}catch(e){}}
 function _evErr(m){const e=document.getElementById('evErr');if(!e)return;e.textContent=m||'';e.style.display=m?'':'none';}
 function evClose(){try{document.getElementById('evScrim').classList.remove('show');}catch(e){}}
 function _evShow(title,html){
@@ -4027,7 +4033,7 @@ async function _evSend(user){
   catch(e){logEvent('verifySendFailed',String((e&&e.code)||'').slice(0,40));return false;}}
 function _evAfterSignup(email){
   _evShow('Confirm your email',
-    'We sent a confirmation link to <b>'+esc(email)+'</b>. Tap it when it arrives - it comes from noreply@siteplumb.com, so check spam if it is slow.<br><br>This is what makes <b>Forgot password</b> work. If that address is wrong, sign out and create the account again with the right one - nothing recovers it later.');}
+    'We sent a link to <b>'+esc(email)+'</b>. Tap it to confirm - check spam if it is slow.<br><br>Confirming is what makes <b>Forgot password</b> work.');}
 function evOpenFromSettings(){
   const p=_evProfile()||{};
   _evShow('Confirm your email',
@@ -7098,7 +7104,7 @@ function maybeInstallGate(){
     const g=document.getElementById('installGate');if(!g)return false;
     const inv=(localStorage.getItem('plumbPendingInvite')||'');
     document.getElementById('igLead').textContent=inv
-      ?'You\u2019ve been invited to a build site. Add Plumb to your home screen to join \u2014 your invite comes with you.'
+      ?'You\u2019ve been invited to a build site. Copy your code first, then add Plumb to your home screen and paste it in.'
       :'Plumb works best from your home screen \u2014 full screen, faster, and ready for the jobsite.';
     const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
     document.getElementById('igIos').style.display=ios?'flex':'none';
@@ -7906,7 +7912,7 @@ function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(
 /* raise a concern */
 let concernPhotoId=null;
 function openConcern(){concernPhotoId=null;document.getElementById('cNote').value='';
-  rebuildDrop('cDrop','cDropPh',DROP_CAM_SVG+'<div class="t">Add a photo (optional)</div>','cFile',onConcernPhoto,true);
+  rebuildDrop('cDrop','cDropPh',DROP_CAM_SVG+'<div class="t">Add a photo (optional)</div>','cFile',onConcernPhoto);
   document.getElementById('concernScrim').classList.add('show');}
 function closeConcern(){document.getElementById('concernScrim').classList.remove('show');}
 
@@ -7973,7 +7979,7 @@ function closeLedgerDetail(){document.getElementById('ledgerScrim').classList.re
 let ideaPhotoId=null;
 function openIdea(){ideaPhotoId=null;document.getElementById('iNote').value='';
   document.querySelectorAll('#ideaSeg button').forEach((b,i)=>b.classList.toggle('on',i===0));
-  rebuildDrop('iDrop','iDropPh',DROP_CAM_SVG+'<span>Add a photo (optional)</span>','iFile',onIdeaPhoto,false);
+  rebuildDrop('iDrop','iDropPh',DROP_CAM_SVG+'<span>Add a photo (optional)</span>','iFile',onIdeaPhoto);
   document.getElementById('ideaScrim').classList.add('show');}
 function closeIdea(){document.getElementById('ideaScrim').classList.remove('show');}
 function pickIdeaType(btn){document.querySelectorAll('#ideaSeg button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
@@ -9294,8 +9300,11 @@ async function shareInvite(code){
    is the URL: iOS saves the address of the page you are looking at when you Add
    to Home Screen. That is why the invite now stays in the address bar until it
    is actually redeemed (it used to be stripped at boot, about 2.6s before the
-   install gate even appeared, which quietly falsified the gate promise that
-   "your invite comes with you"). Copy code is the belt to that braces. */
+   install gate even appeared). That helps a browser reload and an Android
+   install, but NOT an iOS home-screen copy: Add to Home Screen launches at the
+   manifest start_url ("."), so the query string is dropped whatever we do.
+   The clipboard is the only thing that crosses, which is why the install
+   route copies the code on its way out. */
 function invPendingCode(){try{
   const u=(new URLSearchParams(location.search||'').get('invite')||'').trim();
   return (u||localStorage.getItem('plumbPendingInvite')||'').trim().toUpperCase();}catch(e){return '';}}
@@ -9306,7 +9315,13 @@ function _invClearHandoff(){
 function invBarDismiss(){
   try{const b=document.getElementById('invBar');if(b)b.classList.remove('show');}catch(e){}
   try{sessionStorage.setItem('plumbInvBarOff','1');}catch(e){}}
-function invBarHowTo(){logEvent('inviteBarInstall','');try{openInstall();}catch(e){}}
+function invBarHowTo(){
+  /* The home-screen copy launches at the manifest start_url, so the invite in
+     this address bar does NOT survive the crossing on iOS. Put it on the
+     clipboard on the way out - that is the only thing that does survive. */
+  logEvent('inviteBarInstall','');
+  try{invBarCopy();}catch(e){}
+  setTimeout(()=>{try{openInstall();}catch(e){}},260);}
 function invBarCopy(){
   const c=invPendingCode();
   if(!c){toast('No invite code to copy');return;}
@@ -9332,7 +9347,7 @@ function maybeInviteBar(){
     if(!invPendingCode())return false;
     const bar=document.getElementById('invBar');if(!bar)return false;
     const s=document.getElementById('invBarS');
-    if(s)s.textContent='Already have Plumb on your home screen? Open it there - the code travels with this page. If not, add it: tap Share, then Add to Home Screen.';
+    if(s)s.textContent='Already have Plumb on your home screen? Copy the code, open Plumb there and paste it. If you do not have it yet, Add to home screen does both for you.';
     setTimeout(()=>{try{bar.classList.add('show');}catch(e){}},700);
     logEvent('inviteBarShown','');
     return true;
@@ -10831,18 +10846,19 @@ function closeSheet(){
    the placeholder AND the hidden file input inside it. Rebuilding from these canonical
    templates (instead of re-attaching surviving nodes) is the only safe reset. ── */
 const DROP_CAM_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>';
-function rebuildDrop(dropId,phId,phInner,inputId,onchange,capture){
+function rebuildDrop(dropId,phId,phInner,inputId,onchange){
   const drop=document.getElementById(dropId);if(!drop)return;
   drop.innerHTML='';
   const ph=document.createElement('div');ph.className='ph';ph.id=phId;ph.innerHTML=phInner;
   drop.appendChild(ph);
   const inp=document.createElement('input');inp.type='file';inp.id=inputId;inp.accept='image/*';
-  if(capture)inp.setAttribute('capture','environment');
+  /* NEVER set capture here. It is a hard camera-only instruction on iOS, and
+     this rebuild runs on every sheet close - which silently undid the fix. */
   inp.hidden=true;inp.onchange=onchange;drop.appendChild(inp);}
 function resetSheet(){pendingPhotoId=null;document.getElementById('caption').value='';document.getElementById('flag').classList.remove('on');document.getElementById('shareToggle').classList.remove('on');
   document.querySelectorAll('.sheet .chip').forEach(c=>c.classList.remove('on'));
   const cs=document.getElementById('crewSelect');if(cs)cs.selectedIndex=0;
-  rebuildDrop('drop','dropPh',DROP_CAM_SVG+'<div class="t">Take or choose a photo</div>','file',onPhoto,true);}
+  rebuildDrop('drop','dropPh',DROP_CAM_SVG+'<div class="t">Take or choose a photo</div>','file',onPhoto);}
 function onPhoto(e){handlePhotoFile(e.target.files[0]);}
 async function handlePhotoFile(f){if(!f)return;toast('Saving photo…');
   try{const id=await processPhoto(f);pendingPhotoId=id;document.getElementById('drop').innerHTML=`<img src="${photoURLs[id]}" alt="">`;logEvent('photoSaved',id+' ('+Math.round(f.size/1024)+'KB src)');}
