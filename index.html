@@ -277,14 +277,23 @@
     align-items:center;justify-content:center;padding:28px;overscroll-behavior:contain;}
   .lightbox.show{display:flex;animation:rise .3s;}
   .lb-stage{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;touch-action:none;}
-  .lb-stage img,.lb-stage video{max-width:100%;max-height:100%;display:block;transform-origin:center center;
-    will-change:transform;-webkit-user-select:none;user-select:none;}
+  /* width/height 100% + object-fit, NOT max-height:100%. The stage is a grid
+     whose row track is auto, so a percentage max-height is circular and gets
+     dropped - which left tall photos overflowing and clipped in landscape. */
+  .lb-stage img,.lb-stage video{width:100%;height:100%;object-fit:contain;display:block;
+    transform-origin:center center;will-change:transform;-webkit-user-select:none;user-select:none;}
   .lightbox .cap{position:absolute;left:0;right:0;bottom:calc(46px + env(safe-area-inset-bottom));z-index:2;
     color:#F2EEE6;text-align:center;font-size:15px;font-weight:500;padding:0 24px;
     text-shadow:0 1px 14px rgba(0,0,0,.8);transition:opacity .18s;}
   .lightbox .meta{position:absolute;left:0;right:0;bottom:calc(24px + env(safe-area-inset-bottom));z-index:2;
     color:rgba(242,238,230,.62);font-size:12.5px;text-align:center;padding:0 24px;
     text-shadow:0 1px 14px rgba(0,0,0,.8);transition:opacity .18s;}
+  /* In landscape the photo fills the height, so the caption necessarily sits
+     over it. The scrim keeps it readable against any image. */
+  .lightbox .lb-scrim{position:absolute;left:0;right:0;bottom:0;height:150px;z-index:1;
+    background:linear-gradient(to top,rgba(15,13,10,.82),rgba(15,13,10,0));
+    pointer-events:none;transition:opacity .18s;}
+  .lightbox.zoomed .lb-scrim,.lightbox.textonly .lb-scrim{opacity:0;}
   .lightbox.zoomed .cap,.lightbox.zoomed .meta{opacity:0;pointer-events:none;}
   .lightbox.textonly .lb-stage{display:none;}
   .lightbox.textonly .cap{position:static;font-family:'Fraunces',Georgia,serif;font-size:21px;font-weight:600;
@@ -2618,6 +2627,7 @@ body.on-tour .tour-card{display:block;}
       <img id="lbImg" src="" alt="">
       <video id="lbVid" playsinline controls preload="metadata" style="display:none"></video>
     </div>
+    <div class="lb-scrim"></div>
     <div class="cap" id="lbCap"></div>
     <div class="meta" id="lbMeta"></div>
   </div>
@@ -2806,7 +2816,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.183.0 - Two fixes from the jobsite. The photo button offers your library again: it carried a capture attribute, which on iOS is a hard instruction to open the camera and hide everything else. And the full screen viewer now sits above the modal layer instead of underneath it, which is why a photo tapped inside Edit item looked like it did nothing and then turned up after the modal closed. It fills the screen, pinch and double tap zoom, drag to pan, and video playback is wired for when capture arrives';
+const PLUMB_VERSION='2.183.1 - Landscape fix for the photo viewer. The media was sized with a percentage max height inside a grid whose row is auto sized, which is circular, so the browser dropped it: only the width was constrained and tall photos overflowed and were clipped, showing a centre crop or a near black slice. Sizing is now object fit contain, panning is bounded by the picture rather than the full bleed box, the caption sits on a scrim so it stays readable over an image, and rotating the phone resets the zoom instead of stranding it';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -10861,10 +10871,17 @@ function _lbApply(){
   const box=document.getElementById('lightbox');
   if(_lb.el)_lb.el.style.transform='translate('+_lb.x+'px,'+_lb.y+'px) scale('+_lb.scale+')';
   if(box)box.classList.toggle('zoomed',_lb.scale>1.02);}
+function _lbFit(){                     /* the letterboxed picture inside the full-bleed box */
+  const el=_lb.el;if(!el)return{w:0,h:0};
+  const bw=el.offsetWidth||0,bh=el.offsetHeight||0;
+  const nw=el.naturalWidth||el.videoWidth||0,nh=el.naturalHeight||el.videoHeight||0;
+  if(!nw||!nh||!bw||!bh)return{w:bw,h:bh};
+  const s=Math.min(bw/nw,bh/nh);
+  return{w:nw*s,h:nh*s};}
 function _lbClamp(){
   if(_lb.scale<=1){_lb.scale=1;_lb.x=0;_lb.y=0;return;}
   const el=_lb.el;if(!el)return;
-  const w=el.offsetWidth||0,h=el.offsetHeight||0;
+  const f=_lbFit();const w=f.w||0,h=f.h||0;
   const vw=(typeof window!=='undefined'&&window.innerWidth)||0,vh=(typeof window!=='undefined'&&window.innerHeight)||0;
   const ox=Math.max(0,(w*_lb.scale-vw)/2),oy=Math.max(0,(h*_lb.scale-vh)/2);
   _lb.x=Math.max(-ox,Math.min(ox,_lb.x));
@@ -10904,6 +10921,8 @@ function _lbBind(){
   st.addEventListener('pointerup',_lbUp);
   st.addEventListener('pointercancel',_lbUp);
   st.addEventListener('dblclick',ev=>{if(ev.cancelable)ev.preventDefault();});
+  try{['resize','orientationchange'].forEach(evt=>window.addEventListener(evt,()=>{
+    if(document.getElementById('lightbox').classList.contains('show'))_lbReset();}));}catch(err){}
   try{document.addEventListener('keydown',ev=>{
     if(ev.key==='Escape'&&document.getElementById('lightbox').classList.contains('show'))closeLightbox();});}catch(err){}}
 /* The one entry point. kind is optional - a video is recognised by extension too,

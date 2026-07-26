@@ -1249,6 +1249,23 @@ $('_lb.scale=4;_lb.x=50');
 $('closeLightbox()');
 t('closing hides it and forgets the zoom', $("document.getElementById('lightbox').classList.contains('show')")===false
   &&$('_lb.scale')===1&&$('_lb.x')===0);
+
+// v2.183.1 landscape regression: a percentage max-height inside an auto-sized
+// grid row is circular and gets dropped, so only width constrained and tall
+// photos overflowed. object-fit removes the question.
+t('media is sized by object-fit, not a percentage height', SRC.indexOf('object-fit:contain')>=0
+  &&SRC.indexOf('.lb-stage img,.lb-stage video{max-height:100%')===-1);
+t('the caption rides a scrim so it stays readable over a photo', SRC.indexOf('lb-scrim')>=0&&$("!!document.querySelector('.lb-scrim')")===true);
+t('panning is bounded by the picture, not the full-bleed box', $("typeof _lbFit")==='function'
+  &&$("_lbClamp.toString().indexOf('_lbFit()')")>=0);
+t('rotating the phone cannot strand a zoomed photo', $("_lbBind.toString().indexOf('orientationchange')")>=0);
+$("openMediaView('blob:fake/two','Landscape check','Site')");
+$('_lbZoomTo(3)');
+$('_lbClamp()');
+t('clamping a zoomed photo with no natural size does not blow up',
+  Number.isFinite($('_lb.x'))&&Number.isFinite($('_lb.y'))&&$('_lb.scale')===3);
+$('closeLightbox()');
+
 $("document.getElementById('lbImg').removeAttribute('src')");
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
