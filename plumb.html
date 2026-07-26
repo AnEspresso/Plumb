@@ -276,11 +276,13 @@
   .lightbox{position:fixed;inset:0;z-index:2100;background:rgba(15,13,10,.94);display:none;flex-direction:column;
     align-items:center;justify-content:center;padding:28px;overscroll-behavior:contain;}
   .lightbox.show{display:flex;animation:rise .3s;}
-  .lb-stage{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;touch-action:none;}
-  /* width/height 100% + object-fit, NOT max-height:100%. The stage is a grid
-     whose row track is auto, so a percentage max-height is circular and gets
-     dropped - which left tall photos overflowing and clipped in landscape. */
-  .lb-stage img,.lb-stage video{width:100%;height:100%;object-fit:contain;display:block;
+  .lb-stage{position:absolute;inset:0;overflow:hidden;touch-action:none;}
+  /* The media is PINNED to the stage box with insets - not sized by a
+     percentage against a content-sized track, which is what kept collapsing.
+     object-fit letterboxes the picture inside that fixed box, so the fit is
+     correct at any orientation and there is nothing left to resolve. */
+  .lb-stage img,.lb-stage video{position:absolute;top:0;left:0;right:0;bottom:0;
+    width:100%;height:100%;object-fit:contain;display:block;
     transform-origin:center center;will-change:transform;-webkit-user-select:none;user-select:none;}
   .lightbox .cap{position:absolute;left:0;right:0;bottom:calc(46px + env(safe-area-inset-bottom));z-index:2;
     color:#F2EEE6;text-align:center;font-size:15px;font-weight:500;padding:0 24px;
@@ -2816,7 +2818,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.183.1 - Landscape fix for the photo viewer. The media was sized with a percentage max height inside a grid whose row is auto sized, which is circular, so the browser dropped it: only the width was constrained and tall photos overflowed and were clipped, showing a centre crop or a near black slice. Sizing is now object fit contain, panning is bounded by the picture rather than the full bleed box, the caption sits on a scrim so it stays readable over an image, and rotating the phone resets the zoom instead of stranding it';
+const PLUMB_VERSION='2.183.2 - Second pass at the landscape photo fix. The stage was still a grid with centred items, and centring stops the single auto track from stretching, so the track sized itself to the image and a percentage on the image was circular again. The media is now pinned to the stage with absolute insets and letterboxed by object fit, so there is no track and no percentage left to collapse';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};

@@ -1255,6 +1255,12 @@ t('closing hides it and forgets the zoom', $("document.getElementById('lightbox'
 // photos overflowed. object-fit removes the question.
 t('media is sized by object-fit, not a percentage height', SRC.indexOf('object-fit:contain')>=0
   &&SRC.indexOf('.lb-stage img,.lb-stage video{max-height:100%')===-1);
+// v2.183.2: centring a grid stops its auto track stretching, so the track sizes
+// to the image and percentages go circular again. No track, no percentage.
+t('the stage is not a centred grid', SRC.indexOf('.lb-stage{position:absolute;inset:0;overflow:hidden')>=0
+  &&SRC.indexOf('.lb-stage{position:absolute;inset:0;display:grid')===-1);
+t('the media is pinned to the stage box by insets',
+  /\.lb-stage img,\.lb-stage video\{position:absolute;top:0;left:0;right:0;bottom:0;/.test(SRC));
 t('the caption rides a scrim so it stays readable over a photo', SRC.indexOf('lb-scrim')>=0&&$("!!document.querySelector('.lb-scrim')")===true);
 t('panning is bounded by the picture, not the full-bleed box', $("typeof _lbFit")==='function'
   &&$("_lbClamp.toString().indexOf('_lbFit()')")>=0);
