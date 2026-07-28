@@ -1318,6 +1318,39 @@ t('confirming the email refreshes an open Settings sheet', $("_evMark.toString()
 t('the signup receipt got shorter', $("_evAfterSignup.toString().length")<640, String($("_evAfterSignup.toString().length")));
 asBuilder();
 
+/* ════ 14s · ACTION-CODE LINKS ARRIVE UNOBSTRUCTED ════ */
+S('action-code arrival');
+// A reset/verify link is a one-shot credential. The install gate lives at 220
+// and the reset modal at 119, so the gate covered the dialog outright and the
+// tap that dismissed it revealed whatever was left.
+t('the pending-code guard exists', $("typeof _authActionPending")==='function');
+t('no code means nothing is suppressed', $('_authActionPending()')===false);
+t('the install gate stands down for an action link', $("maybeInstallGate.toString().indexOf('_authActionPending()')")>=0);
+t('the welcome card stands down too', $("maybeWelcome.toString().indexOf('_authActionPending()')")>=0);
+t('so does the soft install nudge', $("maybeNudgeInstall.toString().indexOf('_authActionPending()')")>=0);
+t('the gate really does outrank the modal it was covering', (function(){
+  const g=/\.install-gate\{position:fixed;inset:0;z-index:(\d+)/.exec(SRC);
+  const m=/id="pwResetScrim" style="z-index:(\d+)/.exec(SRC);
+  return !!g&&!!m&&Number(g[1])>Number(m[1]);})());
+
+// a cold landing can beat the SDK - wait for it rather than giving up
+t('both handlers wait for the sign-in library', $("typeof _awaitFirebase")==='function'
+  &&$("consumeAuthAction.toString().indexOf('_awaitFirebase')")>=0
+  &&$("_evConsume.toString().indexOf('_awaitFirebase')")>=0);
+t('boot waits for the handler before drawing anything else', SRC.indexOf('await consumeAuthAction()')>=0);
+
+// confirmation must be visible, not a toast under a full-screen takeover
+t('confirming shows a dialog, not just a toast', $("_evConsume.toString().indexOf('_evShow(')")>=0);
+$("_evShow('Email confirmed','<b>a@b.test</b> is confirmed.',true)");
+t('a success dialog hides Resend and offers Done',
+  $("document.getElementById('evResend').style.display")==='none'
+  &&$("document.getElementById('evLater').textContent")==='Done');
+$("_evShow('Confirm your email','still pending')");
+t('the pending dialog still offers Resend and Later',
+  $("document.getElementById('evResend').style.display")===''
+  &&$("document.getElementById('evLater').textContent")==='Later');
+$('evClose()');
+
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');
 function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}

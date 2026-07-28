@@ -1990,7 +1990,7 @@ body.on-tour .tour-card{display:block;}
     <div class="pmodal" style="max-width:360px">
       <h4 id="evTitle">Confirm your email</h4>
       <p id="evBody" style="font-size:14px;line-height:1.5;color:var(--ink-2);margin:0 2px 12px"></p>
-      <div class="row2" style="margin-top:12px"><button class="b1 b-cancel" onclick="evClose()">Later</button><button class="b1 b-go" id="evResend" onclick="evResend()">Resend link</button></div>
+      <div class="row2" style="margin-top:12px"><button class="b1 b-cancel" id="evLater" onclick="evClose()">Later</button><button class="b1 b-go" id="evResend" onclick="evResend()">Resend link</button></div>
       <p id="evErr" style="display:none;font-size:13px;color:var(--clay);margin:10px 2px 0"></p>
     </div>
   </div>
@@ -2819,7 +2819,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.184.0 - QA round. The photo picker fix only held until the sheet closed, because resetSheet rebuilds that input in JavaScript and was putting the camera-only flag straight back on - it is gone from the rebuild now. Signup asks for the password twice. The confirmation receipt says less. And the invite bar stops implying the code can cross to a home screen copy on its own, because Add to Home Screen launches at the manifest start address and the code is not in it - so the bar now puts the code on your clipboard on the way to the install steps';
+const PLUMB_VERSION='2.185.0 - Reset and verify links were being intercepted. The add-to-home-screen gate sits above every modal, so it covered the set-a-new-password dialog and the confirmation notice, and dismissing it revealed whatever was left underneath. A link carrying a one-shot code now suppresses the gate, the install nudge and the welcome card outright, boot waits for the handler before drawing anything else, and both handlers wait for the sign-in library to load rather than giving up when a cold page beats it. Confirming an email now says so in a dialog you cannot miss';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -4020,9 +4020,12 @@ function _evMark(v){const p=laProfile();if(!p)return;if(!!p.emailVerified===!!v)
     if(s&&s.classList.contains('show'))renderSettings();}catch(e){}}
 function _evErr(m){const e=document.getElementById('evErr');if(!e)return;e.textContent=m||'';e.style.display=m?'':'none';}
 function evClose(){try{document.getElementById('evScrim').classList.remove('show');}catch(e){}}
-function _evShow(title,html){
+function _evShow(title,html,done){
   const T=document.getElementById('evTitle'),B=document.getElementById('evBody');if(!T||!B)return;
   T.textContent=title;B.innerHTML=html;_evErr('');
+  try{const r=document.getElementById('evResend'),l=document.getElementById('evLater');
+    if(r)r.style.display=done?'none':'';           // nothing to resend once it worked
+    if(l)l.textContent=done?'Done':'Later';}catch(e){}
   document.getElementById('evScrim').classList.add('show');}
 async function _evSend(user){
   if(!user)return false;
@@ -4066,13 +4069,18 @@ async function _evRecheck(){
 async function _evConsume(code){
   try{history.replaceState(null,'',location.origin+location.pathname);}catch(e){}
   try{setMode('real');}catch(e){}
-  if(!laFirebaseReady())return;
+  if(!(await _awaitFirebase(6000)))return;
   try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());}catch(e){}
   logEvent('verifyLinkOpened','');
   try{
     await firebase.auth().applyActionCode(code);
-    try{const u=await laFirebaseUser(2500);if(u)await u.reload();}catch(e){}
-    _evMark(true);logEvent('verifyConfirmed','link');toast('Email confirmed - thank you');
+    let who='';
+    try{const u=await laFirebaseUser(2500);if(u){await u.reload();who=u.email||'';}}catch(e){}
+    if(!who)try{who=(laProfile()||{}).email||'';}catch(e){}
+    _evMark(true);logEvent('verifyConfirmed','link');
+    _evShow('Email confirmed',
+      (who?'<b>'+esc(who)+'</b> is confirmed.':'Your address is confirmed.')+
+      ' Forgot password will reach you here now.',true);
   }catch(err){
     const c=(err&&err.code)||'';
     if(c==='auth/invalid-action-code'||c==='auth/expired-action-code'){
@@ -4083,6 +4091,24 @@ async function _evConsume(code){
   }}
 if(typeof document!=='undefined')document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible')setTimeout(()=>{try{_evRecheck();}catch(e){}},400);});
+/* A reset or verify link carries a one-shot credential with a short life. When
+   one arrives, NOTHING may take the screen ahead of it: the install gate lives
+   at z-index 220 and the reset modal at 119, so the gate covered the dialog
+   completely and the tap that dismissed the gate revealed whatever remained.
+   Both landing pages are also reached before the Firebase SDK has finished
+   loading, so the handler now waits for it rather than bailing out. */
+function _authActionPending(){
+  try{const q=new URLSearchParams(location.search||'');
+    const m=q.get('mode')||'';
+    return !!((q.get('oobCode')||'').trim()&&(m==='resetPassword'||m==='verifyEmail'));
+  }catch(e){return false;}}
+async function _awaitFirebase(ms){
+  const t0=Date.now(),cap=ms||6000;
+  while(Date.now()-t0<cap){
+    if(laFirebaseReady())return true;
+    await new Promise(r=>setTimeout(r,120));
+  }
+  return laFirebaseReady();}
 async function consumeAuthAction(){
   let mode='',code='';
   try{const q=new URLSearchParams(location.search||'');mode=q.get('mode')||'';code=(q.get('oobCode')||'').trim();}catch(e){return;}
@@ -4090,7 +4116,7 @@ async function consumeAuthAction(){
   if(mode==='verifyEmail'){await _evConsume(code);return;}
   try{history.replaceState(null,'',location.origin+location.pathname);}catch(e){}
   try{setMode('real');}catch(e){}
-  if(!laFirebaseReady()){toast('Connect sync to reset a password');return;}
+  if(!(await _awaitFirebase(6000))){toast('Connect sync to reset a password');return;}
   try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());}catch(e){}
   logEvent('pwResetLinkOpened','');
   try{
@@ -7098,6 +7124,7 @@ function stashInviteFromURL(){
 }
 function maybeInstallGate(){
   try{
+    if(_authActionPending())return false;   // never over a one-shot credential
     if(!isCoarseMobile()||isStandalonePWA())return false;
     if(sessionStorage.getItem('plumbBrowserOK')==='1')return false;
     if(document.getElementById('tourCatch'))return false;   /* never over the tour */
@@ -7230,6 +7257,7 @@ function enterDemoGuided(fromSplash){enterDemo();startGrandTour();}
 /* ── Welcome fork: first live sign-in with an empty workspace ── */
 function maybeWelcome(){
   try{
+    if(_authActionPending())return;
     if(appMode()!=='real'||!state.session)return;
     if((state.session.role||'hillan')!=='hillan')return;
     if((state.projects||[]).length)return;
@@ -10820,7 +10848,7 @@ function openInSafari(){const url=location.href;let copied=false;try{if(navigato
 async function doInstall(){if(!deferredPrompt){toast('Use your browser menu → Install');return;}try{deferredPrompt.prompt();await deferredPrompt.userChoice;}catch(e){}deferredPrompt=null;closeInstall();}
 function refreshInstallEntry(){const b=document.getElementById('loginInstall');if(b)b.style.display=isStandalone()?'none':'';}
 function installRequestedByUrl(){try{const p=new URLSearchParams(location.search||'');return p.has('install')||p.has('a2hs');}catch(e){return false;}}
-function maybeNudgeInstall(){try{if(isStandalone())return;if(installRequestedByUrl()){openInstall();return;}if(localStorage.getItem('plumb.installNudged'))return;setTimeout(()=>{if(!isStandalone()){openInstall();try{localStorage.setItem('plumb.installNudged','1');}catch(e){}}},2600);}catch(e){}}
+function maybeNudgeInstall(){try{if(_authActionPending())return;if(isStandalone())return;if(installRequestedByUrl()){openInstall();return;}if(localStorage.getItem('plumb.installNudged'))return;setTimeout(()=>{if(!isStandalone()){openInstall();try{localStorage.setItem('plumb.installNudged','1');}catch(e){}}},2600);}catch(e){}}
 if(typeof window!=='undefined'){
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;refreshInstallEntry();});
   window.addEventListener('appinstalled',()=>{deferredPrompt=null;const b=document.getElementById('loginInstall');if(b)b.style.display='none';try{toast('Plumb installed');}catch(e){}});
@@ -11243,7 +11271,7 @@ async function devSelfTest(){
   let _invBarUp=false;try{_invBarUp=maybeInviteBar();}catch(e){}
   if(!_invBarUp)maybeNudgeInstall();                 // the slim bar stands the full-screen nudge down
   try{if(!state.session)consumeInviteLink();}catch(e){}
-  try{consumeAuthAction();}catch(e){}
+  try{await consumeAuthAction();}catch(e){}   // returns instantly when no code is present
   setTimeout(()=>{try{_evRecheck();}catch(e){}},1500);
   try{
     if(localStorage.getItem('plumbSuspend')){ /* killed mid-excursion: come home */
