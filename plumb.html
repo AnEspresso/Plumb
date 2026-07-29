@@ -211,7 +211,8 @@
   .ti:focus{border-color:var(--oak-soft);}
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
   #areaChips,#recAreaChips{display:block;margin-bottom:18px;}
-  .chip-group-lbl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin:13px 2px 7px;}
+  .chip-group-lbl{font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:19px 2px 9px;}
+  .chips>.chip-group-lbl:first-child{margin-top:4px;}
   .chip-group-lbl:first-child{margin-top:0;}
   .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
   .sheet-select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:13px 14px;
@@ -2608,7 +2609,6 @@ body.on-tour .tour-card{display:block;}
     </div>
     <div class="field-lbl">Note</div>
     <textarea class="ti" id="caption" rows="2" oninput="growNote(this)" placeholder="A few words…"></textarea>
-    <div class="field-lbl">Area</div>
     <div class="chips" id="areaChips"></div>
     <div class="field-lbl" id="sheetAssignLbl">Assign to <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-3)">· optional</span></div>
     <select class="sheet-select" id="crewSelect" onchange="onCrewChange(this)"></select>
@@ -2821,7 +2821,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.189.0 - Tags now read the way the work is actually described. Mechanical becomes HVAC, because nobody on a site asks for the mechanical guy. Exterior slash Siding and Exterior slash Grading lose a prefix the group already supplies. Site becomes Sitework. And the finishes tag that read Stairs slash Railings is just Railings, since two chips saying stairs - one a place, one a scope - was the kind of thing you have to stop and think about. Nothing was rewritten in your records: the old wording is translated on the way out, so existing entries match their stage and show the new label straight away, and they adopt it for real the next time you save one';
+const PLUMB_VERSION='2.190.0 - Picker reads properly now: the group headings are heavier and better spaced, the redundant Area label above Area slash Rooms is gone since the headings say it, and General leads. Two real faults came out of this round. The lock between Whole House and the rooms is a property rather than a class, so closing the sheet cleared the highlight but left the rooms greyed with nothing selected to explain why - that is what you saw haunting the next entry. And the daily log was offering an Area picker whose answer was thrown away on save, so it no longer asks. Today entry also stops wearing its own text as a subtitle and simply appears in the log list, reading as Today';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -2883,8 +2883,8 @@ const AREA_GROUPS=[
      fastest answer when the whole job is the subject - and it is mutually
      exclusive with the rooms above it. Finishes is its own group because a
      builder filters by trade at least as often as by place. */
-  {g:'Area/Rooms',k:'rooms',a:['Kitchen','Pantry','Dining Room','Living Room','Great Room','Foyer / Entry','Primary Suite','Primary Bath','Hall Bath','Bath 2','Bath 3','Jack & Jill Bath','Powder Room','Bedrooms','Office / Study','Bonus Room','Laundry','Mudroom','Closets','Stairs / Hall','Basement','Crawlspace','Attic','Garage']},
   {g:'General',k:'general',a:['Whole House']},
+  {g:'Area/Rooms',k:'rooms',a:['Kitchen','Pantry','Dining Room','Living Room','Great Room','Foyer / Entry','Primary Suite','Primary Bath','Hall Bath','Bath 2','Bath 3','Jack & Jill Bath','Powder Room','Bedrooms','Office / Study','Bonus Room','Laundry','Mudroom','Closets','Stairs / Hall','Basement','Crawlspace','Attic','Garage']},
   {g:'Structure & systems',k:'sys',a:['Foundation','Framing','Roof','Windows / Doors','HVAC','Electrical','Plumbing','Insulation','Drywall']},
   {g:'Finishes',k:'fin',a:['Cabinets','Countertops','Flooring','Tile','Trim / Millwork','Paint','Fireplace','Railings']},
   {g:'Exterior & site',k:'ext',a:['Siding','Masonry / Stone','Grading','Driveway / Flatwork','Deck / Porch','Gutters','Landscaping','Septic / Well','Sitework']}
@@ -3583,11 +3583,13 @@ function fmtLogDate(d){if(d===todayStr())return 'Today';if(d===dateStrFrom(Date.
 function renderDayLog(){
   const logs=(P().logs||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
   const today=logs.find(l=>l.date===todayStr());
-  if(today){document.getElementById('logTitle').textContent="Today's entry";document.getElementById('logSub').textContent=today.text;}
-  else{document.getElementById('logTitle').textContent="Add today's entry";document.getElementById('logSub').textContent="Crew, conditions, what got done";}
-  const hist=logs.filter(l=>l.date!==todayStr());
+  /* The button stays a button. It used to wear today's text as its subtitle,
+     which made the way IN look like the record itself - the record is the list
+     below, where today reads as Today alongside every other day. */
+  document.getElementById('logTitle').textContent=today?"Edit today's entry":"Add today's entry";
+  document.getElementById('logSub').textContent='Crew, conditions, what got done';
   const wrap=document.getElementById('logHistory');if(!wrap)return;
-  wrap.innerHTML=hist.length?hist.map(l=>`<div class="loghist-item" onclick="openSheet(true,'${l.date}')">
+  wrap.innerHTML=logs.length?logs.map(l=>`<div class="loghist-item" onclick="openSheet(true,'${l.date}')">
     <div class="d">${fmtLogDate(l.date)}</div><div class="x">${esc(l.text)}</div></div>`).join(''):'';
 }
 function renderAll(){if(!P()){try{updateHeader();}catch(e){}return;}renderSiteSummary();renderFeed();renderDayLog();renderPhotos();renderIssues();renderDocs();renderBuild();renderSelections();}
@@ -10937,7 +10939,9 @@ function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDa
   document.getElementById('sheetSub').textContent=isSub?'Photo first — your builder sees this on their feed.':(asLog?(editingLogDate===todayStr()?'Crew, conditions, what got done.':'Editing '+fmtLogDate(editingLogDate)+'.'):'Photo first — everything else is optional.');
   document.getElementById('saveBtn').textContent=isSub?'Send to builder':(asLog?'Save entry':'Add to log');
   ['sheetAssignLbl','crewSelect','crewSelect__ss','sheetShareRow'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isSub?'none':'';});
+  {const ac=document.getElementById('areaChips');if(ac)ac.style.display=asLog?'none':'';}   // a day is not a place, and saveLog never stored one
   if(asLog){const e=(P().logs||[]).find(l=>l.date===editingLogDate);document.getElementById('caption').value=e?e.text:'';document.getElementById('shareToggle').classList.toggle('on',!!(e&&e.share));}
+  syncAreaExclusivity(document.getElementById('areaChips'));
   document.getElementById('scrim').classList.add('show');document.getElementById('sheet').classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('caption')));}
 function _impAfterSave(){
   if((window._impQueue||[]).length){setTimeout(_impNext,260);}
@@ -10960,7 +10964,8 @@ function rebuildDrop(dropId,phId,phInner,inputId,onchange){
      this rebuild runs on every sheet close - which silently undid the fix. */
   inp.hidden=true;inp.onchange=onchange;drop.appendChild(inp);}
 function resetSheet(){pendingPhotoId=null;document.getElementById('caption').value='';document.getElementById('flag').classList.remove('on');document.getElementById('shareToggle').classList.remove('on');
-  document.querySelectorAll('.sheet .chip').forEach(c=>c.classList.remove('on'));
+  document.querySelectorAll('.sheet .chip').forEach(c=>{c.classList.remove('on');c.disabled=false;});
+  syncAreaExclusivity(document.getElementById('areaChips'));   // lock is a property - clearing classes does not lift it
   const cs=document.getElementById('crewSelect');if(cs)cs.selectedIndex=0;
   rebuildDrop('drop','dropPh',DROP_CAM_SVG+'<div class="t">Take or choose a photo</div>','file',onPhoto);}
 function onPhoto(e){handlePhotoFile(e.target.files[0]);}

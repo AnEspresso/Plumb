@@ -59,7 +59,7 @@ const promptOK=v=>{setVal('promptInput',v);$('confirmPrompt()');};
 
 /* ════ 1 · BOOT & SEED ════ */
 S('boot');
-t('version 2.18x',String($('PLUMB_VERSION')).startsWith('2.18'));
+t('version string is well formed',/^\d+\.\d+\.\d+ - \S/.test(String($('PLUMB_VERSION'))),String($('PLUMB_VERSION')).slice(0,24));
 t('photo queue categorizer present', $("typeof impPhotoFiles")==='function'&&$("typeof _impNext")==='function'&&$("typeof _impAfterSave")==='function');
 t('company lookup present', $("typeof webCompanyPick")==='function'&&$("typeof webCompanyChose")==='function');
 t('shared photo intake present', $("typeof handlePhotoFile")==='function');
@@ -1428,9 +1428,10 @@ asBuilder();
 
 /* ════ 14u · TAXONOMY SHAPE + WHOLE HOUSE EXCLUSIVITY ════ */
 S('taxonomy shape');
-t('rooms come first, then Whole House', $("AREA_GROUPS[0].k")==='rooms'&&$("AREA_GROUPS[1].k")==='general'
-  &&$("AREA_GROUPS[1].a[0]")==='Whole House');
-t('the rooms label is tight enough not to wrap', $("AREA_GROUPS[0].g")==='Area/Rooms');
+t('General leads, then Area/Rooms', $("AREA_GROUPS[0].k")==='general'&&$("AREA_GROUPS[1].k")==='rooms'
+  &&$("AREA_GROUPS[0].a[0]")==='Whole House');
+t('the rooms label is tight enough not to wrap',
+  $("AREA_GROUPS.find(g=>g.k==='rooms').g")==='Area/Rooms');
 t('finishes are their own group', $("AREA_GROUPS.some(g=>g.k==='fin')")===true);
 t('every group carries a key the exclusivity rule can read',
   $("AREA_GROUPS.every(g=>!!g.k)")===true);
@@ -1452,6 +1453,45 @@ t('every name a record could be holding still resolves to a real tag',
   $("['Kitchen','Bath 3','Stairs / Hall','Site','Mechanical','Exterior / Siding','Exterior / Grading','Stairs / Railings','Living Room','Whole House'].every(a=>AREAS.indexOf(areaTags(a)[0])>=0)")===true,
   $("['Kitchen','Bath 3','Stairs / Hall','Site','Mechanical','Exterior / Siding','Exterior / Grading','Stairs / Railings','Living Room','Whole House'].filter(a=>AREAS.indexOf(areaTags(a)[0])===-1).join('|')"));
 
+
+
+S('the lock does not haunt the next entry');
+// disabled is a PROPERTY. Clearing the "on" class left rooms greyed with nothing
+// selected to explain why - it followed you into the next sheet.
+$("state.activeId='p1'");$("openSheet(false)");$("_simClearChips()");
+$("(function(){const c=[...document.querySelectorAll('#areaChips .chip')];window.__W=c.find(x=>x.dataset.area==='Whole House');window.__R=c.find(x=>x.dataset.grp==='rooms');})()");
+$("pickChip(window.__R)");
+t('picking a room locks Whole House', $("window.__W.disabled")===true);
+$("closeSheet()");$("resetSheet()");
+t('resetting the sheet lifts the lock', $("window.__W.disabled")===false
+  &&$("document.querySelectorAll('#areaChips .chip.on').length")===0);
+$("openSheet(false)");
+t('and the next entry opens with nothing greyed',
+  $("[...document.querySelectorAll('#areaChips .chip')].every(c=>c.disabled===false)")===true);
+$("closeSheet()");$("delete window.__W;delete window.__R");
+
+S('a day is not a place');
+$("openSheet(true)");
+t('the daily log does not offer an area it would throw away',
+  $("document.getElementById('areaChips').style.display")==='none');
+$("closeSheet()");$("openSheet(false)");
+t('a normal entry still gets the picker', $("document.getElementById('areaChips').style.display")==='');
+$("closeSheet()");
+
+S('daily log reads as a record');
+$("P().logs=[{date:todayStr(),text:'This is Today'},{date:'2026-07-20',text:'Older day'}]");
+$("renderDayLog()");
+t('the button stays a button, not a readout',
+  $("document.getElementById('logTitle').textContent")==="Edit today's entry"
+  &&$("document.getElementById('logSub').textContent")==='Crew, conditions, what got done');
+t('today appears in the list with every other day',
+  $("document.getElementById('logHistory').textContent").indexOf('This is Today')>=0
+  &&$("document.getElementById('logHistory').textContent").indexOf('Older day')>=0);
+t('and it reads as Today', $("document.getElementById('logHistory').textContent").indexOf('Today')>=0);
+$("P().logs=[]");$("renderDayLog()");
+t('with nothing logged the button invites one',
+  $("document.getElementById('logTitle').textContent")==="Add today's entry");
+asBuilder();
 
 S('renamed tags keep old records whole');
 // Records hold the old strings. They are translated on the way OUT, so an entry
