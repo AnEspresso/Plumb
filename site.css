@@ -18,7 +18,12 @@ body{
   font-family:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;
 }
-h1,h2,h3,.fr{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em;}
+/* WONK 0 turns off Fraunces quirky alternates - the swashed f and hooked
+   j/y that read as a glitch rather than a choice. SOFT 0 keeps the
+   terminals crisp. Both pinned in the font URL too, so the browser never
+   has a wonky instance to fall back on. */
+h1,h2,h3,.fr{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em;
+  font-variation-settings:'SOFT' 0,'WONK' 0;font-optical-sizing:auto;}
 a{color:inherit;}
 img{max-width:100%;display:block;}
 .wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px;}
