@@ -8,8 +8,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Plumb">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="icon" type="image/png" href="../icon-192.png">
 <link rel="manifest" href="manifest.json">
 <title>Plumb</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2821,7 +2821,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.190.0 - Picker reads properly now: the group headings are heavier and better spaced, the redundant Area label above Area slash Rooms is gone since the headings say it, and General leads. Two real faults came out of this round. The lock between Whole House and the rooms is a property rather than a class, so closing the sheet cleared the highlight but left the rooms greyed with nothing selected to explain why - that is what you saw haunting the next entry. And the daily log was offering an Area picker whose answer was thrown away on save, so it no longer asks. Today entry also stops wearing its own text as a subtitle and simply appears in the log list, reading as Today';
+const PLUMB_VERSION='2.191.0 - The app moves to slash app so the site root can carry a real front door. Icon links now reach one level up rather than duplicating the files, the manifest starts and scopes itself at the new folder, and the worker at the old root exists only to stand the previous registration down and clear its caches. Everyone with it on their home screen adds it once more from the new address, and the marketing page sends any installed copy straight through if it lands on the root';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
