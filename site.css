@@ -18,12 +18,16 @@ body{
   font-family:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;
 }
-/* WONK 0 turns off Fraunces quirky alternates - the swashed f and hooked
-   j/y that read as a glitch rather than a choice. SOFT 0 keeps the
-   terminals crisp. Both pinned in the font URL too, so the browser never
-   has a wonky instance to fall back on. */
-h1,h2,h3,.fr{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em;
-  font-variation-settings:'SOFT' 0,'WONK' 0;font-optical-sizing:auto;}
+/* Fraunces auto-switches to its display design at large sizes, and that is
+   where the swashed f, hooked j/y and looped d live - they are the OPTICAL
+   SIZE, not a glitch, and not the wonk axis. The app never shows them because
+   it sets Fraunces small. Pinning opsz to the text design makes the site's
+   headlines use the same letterforms the app already does. WONK 0 and SOFT 0
+   stay off so no quirky alternates sneak back in either style. */
+h1,h2,h3,.fr,.q p,.origin blockquote,.step .when,.brand .wm,.brand .tag{
+  font-optical-sizing:none;
+  font-variation-settings:'SOFT' 0,'WONK' 0,'opsz' 30;}
+h1,h2,h3,.fr{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em;}
 a{color:inherit;}
 img{max-width:100%;display:block;}
 .wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px;}
