@@ -1989,6 +1989,17 @@ body.on-tour .tour-card{display:block;}
     </div>
   </div>
 
+  <div class="pmodal-scrim" id="exitDemoScrim" style="z-index:130">
+    <div class="pmodal" style="max-width:360px">
+      <h4>Done looking around?</h4>
+      <p style="font-size:14px;line-height:1.5;color:var(--ink-2);margin:0 2px 14px">
+        That was a demo house — nothing you tapped is saved anywhere.</p>
+      <button class="b1 b-go" style="width:100%;margin-bottom:9px" onclick="exitDemoToApp()">Set up my own builds</button>
+      <button class="b1 b-cancel" style="width:100%" onclick="exitDemoToSite()">Back to the website</button>
+      <button class="la-link" style="display:block;margin:13px auto 0" onclick="exitDemoStay()">Keep exploring</button>
+    </div>
+  </div>
+
   <div class="pmodal-scrim" id="evScrim" style="z-index:119">
     <div class="pmodal" style="max-width:360px">
       <h4 id="evTitle">Confirm your email</h4>
@@ -2821,7 +2832,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.193.0 - The demo money layer now reads like a real set of books. Line items follow the NAHB 2024 Cost of Construction shares - interior finishes near a quarter of the job, rough-ins near a fifth - scaled to Metro Detroit custom pricing by suburb, so Troy carries about a million and Birmingham more. Draws are paid toward their contracts so pooled exposure is visible, a winter concrete overrun shows amber instead of hiding, change orders sit as their own records the way money that never rewrites itself should, and the finished house has most of its payments already marked in QuickBooks. Maple Court stays empty on purpose, so the empty state still gets seen';
+const PLUMB_VERSION='2.194.0 - Two demo fixes. Entering by link now happens at the very end of boot: it used to run in the middle, and the recovery step right after it mistook the fresh demo for a tab killed mid tour and forced real mode straight back, leaving every site card painted but dead to the tap. And leaving the demo is a choice now rather than a shove to the sign in screen: set up your own builds, or go back to the website';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -7318,7 +7329,16 @@ function enterDemo(){
   document.getElementById('login').classList.add('hide');setChrome(false);
   renderAll();showOverview();excRoles();
 }
-function exitDemo(){
+/* Exit is a fork, not a shove. Someone who came from the marketing site should
+   land back on it; someone ready to start gets the sign-in. */
+function exitDemo(){try{document.getElementById('exitDemoScrim').classList.add('show');}catch(e){}}
+function exitDemoStay(){try{document.getElementById('exitDemoScrim').classList.remove('show');}catch(e){}}
+function exitDemoToSite(){
+  try{document.getElementById('exitDemoScrim').classList.remove('show');}catch(e){}
+  try{localStorage.removeItem('plumbSuspend');}catch(e){}
+  location.href='/';}
+function exitDemoToApp(){
+  try{document.getElementById('exitDemoScrim').classList.remove('show');}catch(e){}
   endGrandTour(true);
   const cameFrom=(function(){try{return localStorage.getItem('plumbSuspend');}catch(e){return '1';}})();
   try{localStorage.removeItem('plumbSuspend');}catch(e){}
@@ -11447,8 +11467,6 @@ async function devSelfTest(){
   if(!_invBarUp)maybeNudgeInstall();                 // the slim bar stands the full-screen nudge down
   try{if(!state.session)consumeInviteLink();}catch(e){}
   try{await consumeAuthAction();}catch(e){}   // returns instantly when no code is present
-  if(_DEMO_ON_ARRIVAL&&!state.session){try{history.replaceState(null,'',location.pathname);}catch(e){}
-    try{enterDemo();}catch(e){}}
   setTimeout(()=>{try{_evRecheck();}catch(e){}},1500);
   try{
     if(localStorage.getItem('plumbSuspend')){ /* killed mid-excursion: come home */
@@ -11460,6 +11478,16 @@ async function devSelfTest(){
   try{maybeWelcome();}catch(e){}
   try{maybeInstallGate();}catch(e){}
   if(state.session){routeAfterLogin();}
+  /* The demo entry runs LAST. It used to run mid-boot, and the very next block
+     - the plumbSuspend recovery - saw the flag enterDemo had just set, decided
+     the tab had been killed mid-excursion, and forced real mode straight back.
+     The cards stayed painted from the demo render while state.projects was
+     already the real, empty list - visible, and dead to every tap. Nothing is
+     allowed to run after this. */
+  if(_DEMO_ON_ARRIVAL&&!state.session){
+    try{history.replaceState(null,'',location.pathname);}catch(e){}
+    try{enterDemo();}catch(e){}
+  }
   if(typeof window!=='undefined'){window.addEventListener('load',()=>{try{Sync.init();}catch(e){}});setTimeout(()=>{try{if(!Sync.on)Sync.init();}catch(e){}},1200);}
 })();
 </script>
