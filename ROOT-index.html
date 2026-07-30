@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<!--
+  ─────────────────────────────────────────────────────────────────────────
+  NAME IS A VARIABLE. Trademark clearance is still open, so every visible
+  instance of the product name is wrapped in <b class="wm">…</b> and every
+  domain reference sits in one place. To rename:
+      1. Find/replace  Plumb  ->  NewName      (only inside class="wm")
+      2. Find/replace  siteplumb.com  ->  newdomain.com
+      3. Swap the two <title> tags and og:site_name below
+  Nothing else encodes the name. No image contains it.
+  ─────────────────────────────────────────────────────────────────────────
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Plumb — construction management your homeowner actually likes</title>
+<meta name="description" content="Field management for custom home builders: daily logs, photos, selections, budgets and a homeowner portal that stops the what-is-happening texts. Works with no signal.">
+<link rel="canonical" href="https://siteplumb.com/">
+<meta name="theme-color" content="#F2EEE6">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Plumb">
+<meta property="og:title" content="Plumb — construction management your homeowner actually likes">
+<meta property="og:description" content="Built on a real custom home. Daily logs, selections, budgets, and a homeowner portal that ends the what-is-happening texts.">
+<meta property="og:url" content="https://siteplumb.com/">
+<meta property="og:image" content="https://siteplumb.com/icon-512.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Plumb — construction management your homeowner actually likes">
+<meta name="twitter:description" content="Built on a real custom home. Works with no signal.">
+<meta name="twitter:image" content="https://siteplumb.com/icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="/">
+      <span class="dot"></span>
+      <b class="wm">Plumb</b>
+      <span class="tag">true to the build</span>
+    </a>
+    <a class="lnk hide-s" href="#day">How it works</a>
+    <a class="lnk hide-s" href="/homeowners.html">For homeowners</a>
+    <a class="lnk hide-s" href="/switch.html">Leaving CoConstruct</a>
+    <a class="btn sm" href="/app/">Open the app</a>
+  </div>
+</header>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="grid-bg"></div>
+  <div class="wrap hero-in">
+    <div>
+      <p class="eyebrow">Field management for custom home builders</p>
+      <h1>Your client stops texting <em>“any update?”</em></h1>
+      <p class="lede">
+        Not because you asked them to. Because they can already see the photo
+        you took this morning, filed to the right room, without you writing a
+        single email.
+      </p>
+      <div class="hero-cta">
+        <a class="btn" href="/app/">Open the example build</a>
+        <a class="btn ghost" href="#partner">Become a design partner</a>
+      </div>
+      <p class="hero-note">No account needed to look around. Nothing to install.</p>
+    </div>
+
+    <div class="hero-art">
+      <!-- SIGNATURE: the house draws itself in build order as you scroll. -->
+      <svg id="house" viewBox="0 0 400 330" role="img"
+           aria-label="A line drawing of a house assembling itself in build order.">
+        <!-- ground -->
+        <path class="ln warm" data-stage="0" d="M20 300 H380"/>
+        <!-- footings / foundation -->
+        <path class="ln thin" data-stage="1" d="M78 300 V268 H322 V300"/>
+        <path class="ln thin" data-stage="1" d="M78 268 H322"/>
+        <!-- framing: posts + plates -->
+        <path class="ln" data-stage="2" d="M78 268 V150"/>
+        <path class="ln" data-stage="2" d="M322 268 V150"/>
+        <path class="ln" data-stage="2" d="M78 150 H322"/>
+        <path class="ln" data-stage="2" d="M200 268 V150"/>
+        <path class="ln" data-stage="2" d="M78 210 H322"/>
+        <!-- roof -->
+        <path class="ln" data-stage="3" d="M62 150 L200 58 L338 150"/>
+        <path class="ln thin" data-stage="3" d="M200 58 V150"/>
+        <!-- chimney -->
+        <path class="ln thin" data-stage="3" d="M286 104 V64 H306 V119"/>
+        <!-- windows -->
+        <path class="ln" data-stage="4" d="M104 168 H150 V206 H104 Z"/>
+        <path class="ln" data-stage="4" d="M250 168 H296 V206 H250 Z"/>
+        <path class="ln thin" data-stage="4" d="M127 168 V206 M104 187 H150"/>
+        <path class="ln thin" data-stage="4" d="M273 168 V206 M250 187 H296"/>
+        <path class="ln" data-stage="4" d="M104 228 H150 V268 H104 Z"/>
+        <path class="ln" data-stage="4" d="M250 228 H296 V268 H250 Z"/>
+        <!-- door + dormer -->
+        <path class="ln" data-stage="4" d="M180 268 V222 H220 V268"/>
+        <path class="ln thin" data-stage="4" d="M212 246 h4"/>
+        <path class="ln thin" data-stage="4" d="M176 128 H224 V150 M176 128 L200 108 L224 128"/>
+        <!-- siding / trim -->
+        <path class="ln thin warm" data-stage="5" d="M78 150 H322 M78 236 H322"/>
+        <path class="ln thin warm" data-stage="5" d="M62 150 H78 M322 150 H338"/>
+        <path class="ln warm" data-stage="5" d="M20 300 H78 M322 300 H380"/>
+      </svg>
+      <div class="stage-read" id="stageRead">Ground line</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ THE PROBLEM ══ -->
+<section class="s tint" id="problem">
+  <div class="wrap">
+    <p class="eyebrow rv">What actually goes wrong</p>
+    <h2 class="rv">The build is fine. The paper trail is the problem.</h2>
+    <p class="sub rv">
+      Nobody loses a custom home over framing. They lose it over a tile
+      nobody approved, a change order nobody wrote down, and a client who
+      found out from the neighbour.
+    </p>
+    <div class="quotes">
+      <div class="q rv">
+        <p>“I have four hundred photos on my phone and no idea which house they belong to.”</p>
+        <div class="who">The camera roll problem</div>
+      </div>
+      <div class="q rv">
+        <p>“She picked the faucet in March. In August nobody could prove which one.”</p>
+        <div class="who">The selections problem</div>
+      </div>
+      <div class="q rv">
+        <p>“I know what I signed. I don’t know what I’ve actually paid out.”</p>
+        <div class="who">The money problem</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ THREE VIEWS ══ -->
+<section class="s" id="views">
+  <div class="wrap">
+    <p class="eyebrow rv">One job, three doors</p>
+    <h2 class="rv">Everyone sees their own part. Nobody sees your margins.</h2>
+    <p class="sub rv">
+      The same site opens differently depending on who signs in. That isn’t a
+      permissions screen you have to configure — it’s the whole design.
+    </p>
+    <div class="views">
+      <div class="view rv">
+        <div class="role">Builder</div>
+        <h3>Everything</h3>
+        <p>The full job. Costs, contracts, subs, selections, the lot.</p>
+        <ul>
+          <li>Daily log that files itself by date and area</li>
+          <li>Budget lines, signed contracts, payments against them</li>
+          <li>Open items with an owner and a due date</li>
+          <li>Stage progress across every site you run</li>
+        </ul>
+      </div>
+      <div class="view rv">
+        <div class="role">Homeowner</div>
+        <h3>Their house</h3>
+        <p>Progress, their selections, and the decisions you need from them.</p>
+        <ul>
+          <li>Photos you chose to share, nothing you didn’t</li>
+          <li>Selections with prices and a one-tap approval</li>
+          <li>Who’s on site this week — no sub names, no notes</li>
+          <li>Invoices and what’s outstanding</li>
+        </ul>
+      </div>
+      <div class="view rv">
+        <div class="role">Subcontractor</div>
+        <h3>Their scope</h3>
+        <p>Their trade, their dates, their spec. Nothing about anyone else.</p>
+        <ul>
+          <li>Only items assigned to their trade</li>
+          <li>Install specs and the finishes that affect them</li>
+          <li>Confirm or decline a date</li>
+          <li>Never sees pricing, contracts, or other subs</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ A DAY ON SITE ══ -->
+<section class="s tint" id="day">
+  <div class="wrap">
+    <p class="eyebrow rv">A day on site</p>
+    <h2 class="rv">Four taps, standing in the mud.</h2>
+    <p class="sub rv">
+      This is the whole interaction model. If it takes longer than the walk
+      to your truck, it won’t get used — so it doesn’t.
+    </p>
+
+    <div class="day">
+      <div class="step rv">
+        <div class="shot">
+          <div class="ph">Screenshot: the Log tab with today’s photo prompt<br>and the recent feed underneath</div>
+          <div class="cap">Log · what happened on site today</div>
+        </div>
+        <div>
+          <p class="when">7:40am</p>
+          <h3>Photograph the thing, not the paperwork</h3>
+          <p>Snap it, tap the room, tap the trade. It’s filed by date and area
+             before you’ve put your phone away. Add a note if it needs one —
+             most don’t.</p>
+        </div>
+      </div>
+
+      <div class="step rv">
+        <div class="shot">
+          <div class="ph">Screenshot: an entry flagged as an open item,<br>assigned to a trade</div>
+          <div class="cap">To-Do · open items with an owner</div>
+        </div>
+        <div>
+          <p class="when">10:15am</p>
+          <h3>Anything wrong becomes an open item</h3>
+          <p>One toggle turns a photo into something with an owner and a due
+             date. It stops being a thing you have to remember and starts
+             being a thing that’s tracked.</p>
+        </div>
+      </div>
+
+      <div class="step rv">
+        <div class="shot">
+          <div class="ph">Screenshot: the homeowner’s progress view<br>with shared photos and a decision waiting</div>
+          <div class="cap">Homeowner portal · their house only</div>
+        </div>
+        <div>
+          <p class="when">4:00pm</p>
+          <h3>Your client already knows</h3>
+          <p>The photos you marked shareable are on their progress view. So
+             is the tile decision you need by Friday. The “any update?” text
+             doesn’t get sent, because the answer arrived first.</p>
+        </div>
+      </div>
+
+      <div class="step rv">
+        <div class="shot">
+          <div class="ph">Screenshot: the money card showing budget,<br>signed, paid and projected</div>
+          <div class="cap">Money · budget, signed, paid, projected</div>
+        </div>
+        <div>
+          <p class="when">6:30pm, at the kitchen table</p>
+          <h3>What you signed versus what you’ve paid</h3>
+          <p>Contracts you pay against, payments linked to them, and the gap
+             shown plainly. Export the paid ones to QuickBooks. A signed
+             contract never becomes an expense until money moves.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SELECTIONS + MONEY ══ -->
+<section class="s" id="depth">
+  <div class="wrap">
+    <p class="eyebrow rv">Where custom builds actually go wrong</p>
+    <h2 class="rv">Selections and money, treated seriously.</h2>
+    <p class="sub rv">
+      These are the two things a spec builder can shrug off and a custom
+      builder cannot. They get the most careful part of the app.
+    </p>
+    <div class="split">
+      <div class="card rv">
+        <h3>Selections</h3>
+        <p>Every finish, with its allowance, its real price, and the upcharge
+           in between. The homeowner approves in one tap and the approval is
+           dated. Install specs ride along to the sub who needs them.</p>
+        <p class="fine">Answered early, installs stay on schedule. That’s the
+           whole reason it exists.</p>
+      </div>
+      <div class="card rv">
+        <h3>Job costing</h3>
+        <p>Budget lines with revisions that keep their reason. Signed
+           contracts you log payments against. Overspend shows amber rather
+           than hiding. Change orders keep their history instead of
+           overwriting it.</p>
+        <p class="fine">Editing money never rewrites it — the rule the whole
+           money layer is built on.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ OFFLINE ══ -->
+<section class="s ink" id="offline">
+  <div class="wrap offline">
+    <div>
+      <p class="eyebrow rv">Built for a basement with no bars</p>
+      <h2 class="rv">It works with no signal. Not “mostly”.</h2>
+      <p class="sub rv">
+        Everything you do is saved on the device first and syncs when there’s
+        something to sync to. Photos, notes, costs, approvals. Walk into a
+        poured basement, log twenty items, come back up — it catches up
+        without being asked.
+      </p>
+      <div class="pill-row rv">
+        <span class="pill on">Synced · live</span>
+        <span class="pill">Offline · saved here</span>
+        <span class="pill">Saving…</span>
+      </div>
+    </div>
+    <div class="card rv">
+      <h3>This was tested the hard way</h3>
+      <p>During development a live sync incident wiped a site’s records. Every
+         device still held its own copy, and the whole job republished itself
+         on reconnect. Nothing was lost.</p>
+      <p class="fine">That wasn’t a feature demo. It was a bad afternoon that
+         the design happened to survive.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ORIGIN ══ -->
+<section class="s tint" id="origin">
+  <div class="wrap origin">
+    <div>
+      <p class="eyebrow rv">Why it’s different</p>
+      <blockquote class="rv">
+        I didn’t build this for builders. I built it because
+        <em>I was the homeowner</em>, and I couldn’t find out what was
+        happening at my own house.
+      </blockquote>
+    </div>
+    <div class="body">
+      <p class="rv">Every other tool in this category was built by contractors,
+        for contractors. The client portal was added later, because someone
+        asked for it.</p>
+      <p class="rv"><b class="wm">Plumb</b> was written during a real custom
+        build, by the person standing on the wrong side of the information. The
+        homeowner experience isn’t a module bolted on — it’s the thing that
+        came first, and the builder side grew around it.</p>
+      <p class="rv">That’s also why the daily log takes four taps. It was used
+        every day on a live jobsite before it was shown to anyone.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ HONEST LIMITS ══ -->
+<section class="s" id="limits">
+  <div class="wrap">
+    <p class="eyebrow rv">Read this before you get excited</p>
+    <h2 class="rv">Who this isn’t for, yet.</h2>
+    <p class="sub rv">
+      You’ll find this out in week one anyway. Better you hear it from me
+      than discover it after migrating a job.
+    </p>
+    <div class="limits">
+      <div class="limit rv">
+        <h4>Estimating and takeoff <span>not built</span></h4>
+        <p>There’s no bid or proposal side. If you buy software mainly to win
+           work, this isn’t it yet. Budgets start once you’ve got the job.</p>
+      </div>
+      <div class="limit rv">
+        <h4>Crew time tracking <span>not built</span></h4>
+        <p>No timesheets, no clock-in, no payroll hours. Plenty of tools do
+           this well and they’re cheap.</p>
+      </div>
+      <div class="limit rv">
+        <h4>Subs still need chasing <span>be realistic</span></h4>
+        <p>The sub view is genuinely narrow and useful. Some subs will still
+           ignore it and answer their phone instead. That’s the trade, not the
+           software.</p>
+      </div>
+      <div class="limit rv">
+        <h4>One person builds it <span>early</span></h4>
+        <p>Support is me, and I answer. That means fast fixes and honest
+           answers, and it also means no 24-hour call centre. Judge
+           accordingly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA ══ -->
+<section class="s tint" id="partner">
+  <div class="wrap">
+    <div class="cta-box rv">
+      <p class="eyebrow">Design partners</p>
+      <h2>Looking for a handful of builders who’ll be blunt.</h2>
+      <p>
+        Free while we work together. In exchange I want the truth about what’s
+        missing, and permission to fix it fast. If you’re running two to twenty
+        custom homes and you’ve got an opinion, that’s the whole requirement.
+      </p>
+      <div class="mailrow">
+        <a class="btn" href="mailto:hello@siteplumb.com?subject=Design%20partner">Email me</a>
+        <a class="btn ghost" href="/app/">Look around first</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <a class="brand" href="/" style="margin-right:0">
+      <span class="dot"></span><b class="wm">Plumb</b>
+    </a>
+    <a href="/app/">Open the app</a>
+    <a href="/homeowners.html">For homeowners</a>
+    <a href="/switch.html">Leaving CoConstruct</a>
+    <a href="/app/privacy.html">Privacy</a>
+    <a href="/app/terms.html">Terms</a>
+    <span class="sp">© 2026</span>
+  </div>
+</footer>
+
+<script>
+/* An installed copy launches at the site root. Send it to the app rather than
+   showing a sales page to someone who already signed up. */
+(function(){
+  try{
+    var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+    if(standalone)location.replace('/app/');
+  }catch(e){}
+})();
+
+/* nav hairline once you leave the hero */
+(function(){
+  var nav=document.getElementById('nav');
+  var onScroll=function(){nav.classList.toggle('stuck',window.scrollY>10);};
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+})();
+
+/* reveal */
+(function(){
+  var els=[].slice.call(document.querySelectorAll('.rv'));
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in');});return;}
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}
+    });
+  },{rootMargin:'0px 0px -12% 0px',threshold:.08});
+  els.forEach(function(e,i){e.style.transitionDelay=(Math.min(i%3,2)*70)+'ms';io.observe(e);});
+})();
+
+/* ── SIGNATURE: the house draws itself in build order ──
+   Each path knows its stage. Scrolling through the hero advances the build,
+   so the drawing is the subject rather than an ornament beside it. */
+(function(){
+  var svg=document.getElementById('house');if(!svg)return;
+  var read=document.getElementById('stageRead');
+  var NAMES=['Ground line','Foundation','Framing','Roof','Windows & doors','Siding & trim'];
+  var paths=[].slice.call(svg.querySelectorAll('.ln'));
+  function measure(p){
+    try{ if(typeof p.getTotalLength==='function'){var L=p.getTotalLength();if(L>0)return L;} }catch(e){}
+    return 0;
+  }
+  var lens=paths.map(measure);
+  function finish(){                       /* the safe end state, always reachable */
+    paths.forEach(function(p){p.style.strokeDasharray='none';p.style.strokeDashoffset=0;});
+    if(read)read.textContent='Finished';
+  }
+  var reduce=false;
+  try{reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  if(reduce||lens.some(function(L){return !L;})){finish();return;}
+  paths.forEach(function(p,i){
+    p.style.setProperty('--len',lens[i]);
+    p.style.strokeDasharray=lens[i];p.style.strokeDashoffset=lens[i];
+  });
+
+  var STAGES=6;
+  function draw(prog){                     /* prog 0..1 across the whole build */
+    var span=1/STAGES;
+    for(var s=0;s<STAGES;s++){
+      var local=Math.max(0,Math.min(1,(prog-s*span)/span));
+      paths.forEach(function(p,i){
+        if(+p.dataset.stage!==s)return;
+        p.style.strokeDashoffset=lens[i]*(1-local);
+      });
+    }
+    if(read){
+      var idx=Math.min(STAGES-1,Math.floor(prog*STAGES));
+      read.textContent=prog>=.999?'Finished':NAMES[idx];
+    }
+  }
+
+  var hero=document.querySelector('.hero');
+  function onScroll(){
+    var r=hero.getBoundingClientRect();
+    /* 0 when the hero top meets the viewport top, 1 once it has travelled
+       most of its own height - the build completes as the hero leaves. */
+    var travelled=Math.min(1,Math.max(0,(-r.top+120)/(r.height*.72)));
+    draw(travelled);
+  }
+  /* run it once on load so the house is already partly built, then follow scroll */
+  var t0=null;
+  function intro(ts){
+    if(!t0)t0=ts;
+    var k=Math.min(1,(ts-t0)/1500);
+    draw(k*0.34);
+    if(k<1)requestAnimationFrame(intro);
+    else addEventListener('scroll',onScroll,{passive:true});
+  }
+  requestAnimationFrame(intro);
+})();
+</script>
+</body>
+</html>
