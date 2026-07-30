@@ -261,3 +261,10 @@ footer a:hover{color:var(--ink);}
   #house .ln{stroke-dashoffset:0 !important;}
   .btn:hover{transform:none;}
 }
+
+/* NO FRAUNCES ITALICS. The calligraphic f, j, y and looped d live in the italic
+   design itself - at every size, on every axis setting - so pinning axes can
+   never remove them. Emphasis inside Fraunces is carried by the gold color
+   alone. Hanken (body text) may still italicise; it is a grotesk and stays
+   clean. */
+h1 em,.origin blockquote,.origin blockquote em,.q p,.brand .tag{font-style:normal;}
