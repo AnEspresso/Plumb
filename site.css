@@ -1,0 +1,254 @@
+/* Plumb marketing site — one stylesheet for every page.
+   Palette and type are lifted directly from the app so the site and the
+   product cannot drift apart. Change a token here, it changes everywhere. */
+:root{
+  --paper:#F2EEE6; --surface:#FBF9F4; --surface-2:#F7F3EB;
+  --ink:#1B1916; --ink-2:#5C564C; --ink-3:#928B7E;
+  --line:#E4DDD0; --line-2:#EDE7DB;
+  --oak:#B0895A; --oak-soft:#CDB48C; --clay:#B0604A; --sage:#6F7B58;
+  --r:18px; --r-sm:13px;
+  --shadow:0 1px 2px rgba(27,25,22,.04), 0 8px 24px rgba(27,25,22,.05);
+  --shadow-lift:0 2px 6px rgba(27,25,22,.06), 0 18px 48px rgba(27,25,22,.10);
+  --wrap:1080px;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.fr{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em;}
+a{color:inherit;}
+img{max-width:100%;display:block;}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px;}
+.eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 14px;
+}
+
+/* ── the blueprint field the house is drawn on ── */
+.grid-bg{
+  position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line-2) 1px,transparent 1px),linear-gradient(90deg,var(--line-2) 1px,transparent 1px);
+  background-size:34px 34px;
+  mask-image:radial-gradient(ellipse 80% 70% at 50% 35%,#000 40%,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 35%,#000 40%,transparent 100%);
+}
+
+/* ── nav ── */
+header.nav{
+  position:sticky;top:0;z-index:40;background:rgba(242,238,230,.86);
+  backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid transparent;
+  transition:border-color .25s;
+}
+header.nav.stuck{border-bottom-color:var(--line);}
+.nav-in{display:flex;align-items:center;gap:18px;height:66px;}
+.brand{display:flex;align-items:baseline;gap:9px;text-decoration:none;margin-right:auto;}
+.brand .dot{width:8px;height:8px;border-radius:50%;background:var(--oak);align-self:center;}
+.brand .wm{font-family:'Fraunces',Georgia,serif;font-size:23px;font-weight:700;letter-spacing:-.015em;}
+.brand .tag{font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:13px;color:var(--oak);font-weight:400;}
+.nav a.lnk{font-size:14.5px;font-weight:500;color:var(--ink-2);text-decoration:none;}
+.nav a.lnk:hover{color:var(--ink);}
+@media(max-width:720px){.nav a.lnk.hide-s{display:none;} .brand .tag{display:none;}}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font:inherit;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer;
+  padding:12px 20px;border-radius:999px;border:1px solid var(--ink);
+  background:var(--ink);color:var(--paper);transition:transform .16s,box-shadow .2s;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift);}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);}
+.btn.ghost:hover{border-color:var(--oak);}
+.btn.sm{padding:9px 16px;font-size:14px;}
+
+/* ── hero ── */
+.hero{position:relative;overflow:hidden;padding:74px 0 0;}
+.hero-in{position:relative;display:grid;grid-template-columns:1.06fr .94fr;gap:52px;align-items:center;}
+h1{
+  font-size:clamp(38px,6.1vw,68px);line-height:1.04;margin:0 0 22px;font-weight:600;
+}
+h1 em{font-style:italic;font-weight:400;color:var(--oak);}
+.lede{font-size:19.5px;line-height:1.58;color:var(--ink-2);margin:0 0 30px;max-width:35ch;}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+.hero-note{font-size:13.5px;color:var(--ink-3);margin:16px 0 0;}
+.hero-art{position:relative;min-height:400px;display:grid;place-items:center;}
+#house{width:100%;max-width:430px;height:auto;overflow:visible;}
+/* No dash properties here on purpose: with no script, or in a browser that
+   cannot measure a path, the house simply renders finished. The drawing
+   animation is an enhancement and owns those properties from JS. */
+#house .ln{
+  fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+}
+#house .ln.warm{stroke:var(--oak);}
+#house .ln.thin{stroke-width:1.1;}
+.stage-read{
+  position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
+  font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--oak);white-space:nowrap;
+}
+@media(max-width:880px){
+  .hero{padding-top:34px;}
+  .hero-in{grid-template-columns:1fr;gap:22px;}
+  .hero-art{order:-1;min-height:270px;}
+  #house{max-width:320px;}
+  .lede{max-width:none;}
+}
+
+/* ── generic section rhythm ── */
+section.s{padding:96px 0;position:relative;}
+section.s.tint{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+section.s.ink{background:var(--ink);color:var(--surface-2);border:0;}
+section.s.ink .eyebrow{color:var(--oak-soft);}
+section.s.ink h2{color:#F6F1E7;}
+h2{font-size:clamp(28px,3.7vw,42px);line-height:1.14;margin:0 0 18px;}
+.sub{font-size:18px;color:var(--ink-2);max-width:56ch;margin:0 0 40px;}
+section.s.ink .sub{color:rgba(246,241,231,.72);}
+@media(max-width:720px){section.s{padding:64px 0;}}
+
+/* ── quote block: the problem in a builder's words ── */
+.quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.q{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:26px 24px 22px;box-shadow:var(--shadow);
+}
+.q p{
+  font-family:'Fraunces',Georgia,serif;font-size:19px;line-height:1.42;font-style:italic;
+  margin:0 0 14px;color:var(--ink);
+}
+.q .who{font-size:12.5px;color:var(--ink-3);font-weight:600;letter-spacing:.02em;}
+@media(max-width:860px){.quotes{grid-template-columns:1fr;}}
+
+/* ── three views ── */
+.views{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.view{
+  border:1px solid var(--line);border-radius:var(--r);padding:28px 26px;background:var(--surface);
+  box-shadow:var(--shadow);
+}
+.view .role{
+  font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--oak);margin:0 0 12px;
+}
+.view h3{font-size:22px;margin:0 0 10px;}
+.view p{margin:0 0 16px;font-size:15.5px;color:var(--ink-2);}
+.view ul{margin:0;padding:0;list-style:none;font-size:14.5px;}
+.view li{padding:7px 0 7px 20px;position:relative;border-top:1px solid var(--line-2);color:var(--ink-2);}
+.view li:first-child{border-top:0;}
+.view li:before{
+  content:"";position:absolute;left:2px;top:15px;width:7px;height:7px;border-radius:50%;
+  background:var(--oak-soft);
+}
+@media(max-width:860px){.views{grid-template-columns:1fr;}}
+
+/* ── a day on site: shot + caption pairs ── */
+.day{display:grid;gap:56px;}
+.step{display:grid;grid-template-columns:.9fr 1.1fr;gap:44px;align-items:center;}
+.step:nth-child(even) .shot{order:2;}
+.step .when{
+  font-family:'Fraunces',Georgia,serif;font-size:13px;font-weight:700;color:var(--oak);
+  letter-spacing:.04em;margin:0 0 10px;
+}
+.step h3{font-size:26px;margin:0 0 12px;line-height:1.2;}
+.step p{margin:0;color:var(--ink-2);font-size:16.5px;}
+.shot{
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface);
+  box-shadow:var(--shadow-lift);
+}
+.shot .cap{
+  font-size:11.5px;color:var(--ink-3);padding:9px 14px;border-top:1px solid var(--line-2);
+  background:var(--surface-2);letter-spacing:.03em;
+}
+.shot .ph{
+  aspect-ratio:9/16;max-height:440px;display:grid;place-items:center;text-align:center;
+  padding:24px;color:var(--ink-3);font-size:13px;line-height:1.5;
+  background:
+    linear-gradient(var(--line-2) 1px,transparent 1px) 0 0/100% 30px,
+    var(--surface-2);
+}
+@media(max-width:860px){
+  .step{grid-template-columns:1fr;gap:20px;}
+  .step:nth-child(even) .shot{order:0;}
+  .shot .ph{aspect-ratio:4/3;max-height:none;}
+}
+
+/* ── money / selections split ── */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.card{
+  border:1px solid var(--line);border-radius:var(--r);padding:30px 28px;background:var(--surface);
+  box-shadow:var(--shadow);
+}
+section.s.ink .card{background:rgba(255,255,255,.045);border-color:rgba(246,241,231,.16);box-shadow:none;}
+.card h3{font-size:23px;margin:0 0 12px;}
+section.s.ink .card h3{color:#F6F1E7;}
+.card p{margin:0 0 14px;color:var(--ink-2);font-size:16px;}
+section.s.ink .card p{color:rgba(246,241,231,.7);}
+.card .fine{font-size:14px;color:var(--ink-3);margin:0;}
+section.s.ink .card .fine{color:rgba(246,241,231,.5);}
+@media(max-width:820px){.split{grid-template-columns:1fr;}}
+
+/* ── offline strip ── */
+.offline{display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center;}
+.pill-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+.pill{
+  font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;
+  border:1px solid rgba(246,241,231,.2);color:rgba(246,241,231,.82);
+}
+.pill.on{border-color:var(--sage);color:#CFD8BE;}
+@media(max-width:820px){.offline{grid-template-columns:1fr;gap:24px;}}
+
+/* ── origin story ── */
+.origin{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;}
+.origin blockquote{
+  margin:0;font-family:'Fraunces',Georgia,serif;font-size:clamp(22px,2.7vw,30px);
+  line-height:1.32;font-weight:400;
+}
+.origin blockquote em{color:var(--oak);font-style:italic;}
+.origin .body p{color:var(--ink-2);font-size:16.5px;margin:0 0 16px;}
+.origin .body p:last-child{margin:0;}
+@media(max-width:820px){.origin{grid-template-columns:1fr;gap:26px;}}
+
+/* ── honest limits ── */
+.limits{display:grid;grid-template-columns:repeat(2,1fr);gap:0 40px;
+  border-top:1px solid var(--line);}
+.limit{padding:22px 0;border-bottom:1px solid var(--line);}
+.limit h4{
+  margin:0 0 6px;font-size:16.5px;font-family:'Hanken Grotesk',sans-serif;font-weight:700;
+  display:flex;align-items:baseline;gap:9px;
+}
+.limit h4 span{
+  font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--clay);border:1px solid rgba(176,96,74,.34);border-radius:4px;padding:2px 6px;
+  white-space:nowrap;
+}
+.limit p{margin:0;font-size:15px;color:var(--ink-2);}
+@media(max-width:820px){.limits{grid-template-columns:1fr;}}
+
+/* ── cta ── */
+.cta-box{
+  border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+  padding:46px 40px;box-shadow:var(--shadow-lift);text-align:center;
+}
+.cta-box h2{margin:0 0 14px;}
+.cta-box p{color:var(--ink-2);max-width:52ch;margin:0 auto 26px;font-size:17px;}
+.mailrow{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+.mailrow .btn{padding:14px 24px;}
+@media(max-width:720px){.cta-box{padding:34px 22px;}}
+
+/* ── footer ── */
+footer{border-top:1px solid var(--line);padding:44px 0 60px;color:var(--ink-3);font-size:14px;}
+.foot{display:flex;flex-wrap:wrap;gap:20px 34px;align-items:baseline;}
+footer a{text-decoration:none;color:var(--ink-2);}
+footer a:hover{color:var(--ink);}
+.foot .sp{margin-left:auto;}
+
+/* ── reveal on scroll ── */
+.rv{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s cubic-bezier(.22,.9,.3,1);}
+.rv.in{opacity:1;transform:none;}
+:focus-visible{outline:2px solid var(--oak);outline-offset:3px;border-radius:4px;}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+  .rv{opacity:1;transform:none;transition:none;}
+  #house .ln{stroke-dashoffset:0 !important;}
+  .btn:hover{transform:none;}
+}
