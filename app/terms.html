@@ -36,7 +36,7 @@
 </head>
 <body>
 <div class="wrap">
-<a class="back" href="./">← Back to the app</a>
+<a class="back" href="./" onclick="event.preventDefault();if(history.length>1){history.back();}else{window.close();setTimeout(function(){location.href='./';},250);}return false;">← Back</a>
 <header>
   <a class="wordmark" href="https://siteplumb.com">SitePlumb</a>
   <div class="tagline">true to the build</div>

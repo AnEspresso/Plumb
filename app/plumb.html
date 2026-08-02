@@ -2846,12 +2846,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.201.0 - The example build grows from four sites to ten, one at every stage of a real year: permits in review, framing, insulation and drywall, interior finishes, a closed job in its warranty window, and a spec with finishes held for a buyer. Every site carries stage-true selections and a full money story, and the demo reseeds on every entry so its dates always hang off today';
+const PLUMB_VERSION='2.202.0 - The demo role chips now stay on the site you were viewing. Homeowner and Sub used to jump back to Calderwood and Clearwater Plumbing no matter where you stood - a leftover from the one-site demo. The sub hat picks the sites plumber when it has one, then any cleared sub';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785631800000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785632400000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -7958,8 +7958,17 @@ function demoRole(r){
   try{document.getElementById('infoScrim').classList.remove('show');}catch(e){}
   try{document.getElementById('overview').classList.remove('show');}catch(e){}
   try{document.querySelectorAll('.subview.show').forEach(x=>x.classList.remove('show'));}catch(e){}
-  if(r==='client'){Data.setSession({role:'client',site:'p2'});showClientView();}
-  else if(r==='subs'){Data.setSession({role:'subs',name:'Clearwater Plumbing'});showSubView();try{openSubSite('p2');}catch(e){}}
+  /* Role hops stay on the site you were just looking at. The hardcoded p2 and
+     Clearwater date from the one-hero-site demo; with ten sites, jumping back
+     to Calderwood read as a bug. The sub hat prefers the sites plumber (the
+     tour narrates one on Calderwood), then any cleared sub, then the first. */
+  const sid=String(state.activeId||'p2');
+  if(r==='client'){Data.setSession({role:'client',site:sid});showClientView();}
+  else if(r==='subs'){
+    const pr=(state.projects||[]).find(x=>String(x.id)===sid)||(state.projects||[])[0]||{};
+    const roster=pr.subs||[];
+    const pick=roster.find(x=>x.specialty==='plumb')||roster.find(x=>x.cleared)||roster[0]||{};
+    Data.setSession({role:'subs',name:pick.name||'Clearwater Plumbing'});showSubView();try{openSubSite(sid);}catch(e){}}
   else{Data.setSession({role:'hillan',name:'Demo Builder'});renderAll();showOverview();}
   excRoles();
 }
