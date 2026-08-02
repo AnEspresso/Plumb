@@ -4,8 +4,7 @@ name: SitePlumb QA
 #   ritual  - the proven suite: syntax, parity, scans, subfilter, sim (jsdom),
 #             qa.js (real Chrome: hit-tests, fonts, pixel baselines*).
 #   engines - Playwright smoke in real WebKit (the Safari engine) and Firefox.
-#             Marked continue-on-error until validated green once; then remove
-#             that line to make it blocking.
+#             Blocking: engines went green on run 3, so failures now gate.
 # * Pixel baselines: the runner has no qa-baseline/ directory, so qa.js
 #   auto-blesses on each run there - pixel regression stays a local-ritual
 #   feature; every other qa.js check is fully active in CI.
@@ -68,7 +67,6 @@ jobs:
 
   engines:
     runs-on: ubuntu-latest
-    continue-on-error: true   # remove after the first green run to make blocking
     defaults: { run: { working-directory: app } }
     steps:
       - uses: actions/checkout@v4
