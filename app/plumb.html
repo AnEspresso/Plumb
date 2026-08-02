@@ -1719,7 +1719,7 @@ body.on-tour .tour-card{display:block;}
               <button class="la-link" onclick="liveForgot()">Forgot password</button>
               <button class="la-link" onclick="document.getElementById('laInviteRow').style.display='';this.style.display='none'">I have an invite code</button>
             </div>
-            <div class="la-hint" style="text-align:center;margin-top:9px">By signing in or creating an account you agree to the <a href="https://siteplumb.com/terms.html" target="_blank" rel="noopener" style="color:var(--oak)">Terms of Service</a> and <a href="https://siteplumb.com/privacy.html" target="_blank" rel="noopener" style="color:var(--oak)">Privacy Policy</a>.</div>
+            <div class="la-hint" style="text-align:center;margin-top:9px">By signing in or creating an account you agree to the <a href="https://siteplumb.com/app/terms.html" target="_blank" rel="noopener" style="color:var(--oak)">Terms of Service</a> and <a href="https://siteplumb.com/app/privacy.html" target="_blank" rel="noopener" style="color:var(--oak)">Privacy Policy</a>.</div>
             <button class="la-link la-skip" onclick="realEnter()">Continue without an account (this device only)</button>
           </div>
         </div>
@@ -2846,12 +2846,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.199.0 - The product is now SitePlumb everywhere a person reads the name - wordmarks, titles, the walkthrough, invites, the manifest, the marketing site and the legal pages - matching the domain it already lives on. Internal keys and constants keep their old names so existing installs carry on untouched';
+const PLUMB_VERSION='2.200.0 - Privacy and Terms open again from inside the app. The legal pages moved to the app folder with the 2.195 relocation but the in-app links still pointed at the old root address and answered 404';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785630600000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785631200000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -4300,7 +4300,7 @@ async function liveSignOut(){
    server-authoritative: the deleteAccount function previews what the erasure
    touches (builder-owned sites cascade for everyone; mere memberships strip),
    the person types DELETE, the server does the work, the device wipes last. */
-const LEGAL_URL={privacy:'https://siteplumb.com/privacy.html',terms:'https://siteplumb.com/terms.html'};
+const LEGAL_URL={privacy:'https://siteplumb.com/app/privacy.html',terms:'https://siteplumb.com/app/terms.html'};
 function _isLiveAccount(){return !!(state.session&&state.session.auth&&state.session.auth.uid);}
 function legalOpenPrivacy(){try{window.open(LEGAL_URL.privacy,'_blank','noopener');}catch(e){}logEvent('legalOpened','privacy');}
 function legalOpenTerms(){try{window.open(LEGAL_URL.terms,'_blank','noopener');}catch(e){}logEvent('legalOpened','terms');}

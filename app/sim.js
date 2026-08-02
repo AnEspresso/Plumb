@@ -851,7 +851,7 @@ asBuilder();$("state.activeId='p2'");$("localStorage.removeItem('plumbWelcomed')
 S('legal');
 asBuilder();
 t('legal + delete-account plumbing present', $("typeof openLegal")==='function'&&$("typeof openDeleteAccount")==='function'&&$("typeof delAcctExecute")==='function'&&$("typeof _delWipeLocal")==='function');
-t('policy urls point at siteplumb.com', $("LEGAL_URL.privacy")==='https://siteplumb.com/privacy.html'&&$("LEGAL_URL.terms")==='https://siteplumb.com/terms.html');
+t('policy urls point at the app folder', $("LEGAL_URL.privacy")==='https://siteplumb.com/app/privacy.html'&&$("LEGAL_URL.terms")==='https://siteplumb.com/app/terms.html');
 t('forgot-password names the real sender', $("liveForgot.toString().indexOf('noreply@siteplumb.com')>=0")===true);
 t('sign-in form carries the consent line', (el('laForm').innerHTML.indexOf('Terms of Service')>=0)&&(el('laForm').innerHTML.indexOf('privacy.html')>=0));
 $('renderSettings()');
