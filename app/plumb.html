@@ -7,11 +7,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Plumb">
+<meta name="apple-mobile-web-app-title" content="SitePlumb">
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <link rel="icon" type="image/png" href="../icon-192.png">
 <link rel="manifest" href="manifest.json">
-<title>Plumb</title>
+<title>SitePlumb</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9,500&family=Source+Serif+4:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -66,7 +66,7 @@
     justify-content:space-between;background:linear-gradient(var(--paper),var(--paper) 70%, transparent);
     position:relative;z-index:5;flex:0 0 auto;}
   .brand{display:flex;flex-direction:column;gap:2px;cursor:pointer;}
-  /* Serif policy: Fraunces appears ONLY in the Plumb wordmark (glyphs P,l,u,m,b
+  /* Serif policy: Fraunces appears ONLY in the SitePlumb wordmark (glyphs P,l,u,m,b
      carry none of its hooked J / descending f, which are intrinsic to the roman
      design and untouchable by any axis). All other serif text sets Source
      Serif 4, whose letterforms are conventional at every size. */
@@ -1655,7 +1655,7 @@ body.on-tour .tour-card{display:block;}
         </g>
       </svg>
       <div class="wm">
-        <div class="n">Plumb</div>
+        <div class="n">SitePlumb</div>
         <div class="tl">true to the build</div>
       </div>
       <div class="hairline"></div>
@@ -1729,7 +1729,7 @@ body.on-tour .tour-card{display:block;}
         </button>
         <button class="login-explore" onclick="enterDemoGuided(true)">Just looking? Explore the example build</button>
       </div>
-      <div class="login-copy">© 2026 Plumb · All rights reserved</div>
+      <div class="login-copy">© 2026 SitePlumb · All rights reserved</div>
     </div>
   </div>
 
@@ -1737,7 +1737,7 @@ body.on-tour .tour-card{display:block;}
   <div class="overview" id="overview">
     <div class="ov-head">
       <div>
-        <div class="wm"><span class="dot"></span>Plumb</div>
+        <div class="wm"><span class="dot"></span>SitePlumb</div>
         <div class="who" id="ovWho">Builder</div>
       </div>
       <div class="hdr-col"><div class="hdr-actions"><button class="ov-logout" id="ovCompanyBtn" style="padding:8px 10px" onclick="openCompany()" title="Company"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button><button class="ov-logout" style="padding:8px 10px" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="ov-logout" onclick="logout()">Sign out</button></div><span class="syncpill" id="ovSync"><span class="sd"></span>On this device</span></div>
@@ -1785,7 +1785,7 @@ body.on-tour .tour-card{display:block;}
       <div id="rosterCount" style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:8px"></div>
       <div class="lbl" style="margin-top:14px">Give a sub live access</div>
       <p style="margin:0 0 8px;color:var(--ink-3);font-size:12.5px">Invite codes are per-site — pick the site, then the sub, and we’ll generate their code.</p>
-      <button class="add-sub-btn" onclick="inviteSubFlow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite a sub to Plumb…</button>
+      <button class="add-sub-btn" onclick="inviteSubFlow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite a sub to SitePlumb…</button>
       <button class="add-sub-btn" style="margin-top:10px;opacity:.85" onclick="subsOnSite()">Manage subs on a specific site…</button>
     </div>
   </div>
@@ -1863,7 +1863,7 @@ body.on-tour .tour-card{display:block;}
   <div class="subview" id="subview">
     <div class="sv-head">
       <div>
-        <div class="wm"><span class="dot"></span>Plumb</div>
+        <div class="wm"><span class="dot"></span>SitePlumb</div>
         <div class="who" id="svWho">Subcontractor</div>
       </div>
       <div class="hdr-actions"><button class="ov-logout" style="padding:8px 10px" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="ov-logout" onclick="logout()">Sign out</button></div>
@@ -1881,7 +1881,7 @@ body.on-tour .tour-card{display:block;}
   <div class="subview" id="clientview">
     <div class="sv-head">
       <div>
-        <div class="wm"><span class="dot"></span>Plumb</div>
+        <div class="wm"><span class="dot"></span>SitePlumb</div>
         <div class="who" id="clWho">Homeowner</div>
       </div>
       <div class="hdr-actions"><button class="ov-logout" style="padding:8px 10px" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="ov-logout" onclick="logout()">Sign out</button></div>
@@ -1918,7 +1918,7 @@ body.on-tour .tour-card{display:block;}
   <header>
     <button class="back-btn" id="backBtn" onclick="backToOverview()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
     <div class="brand" id="brand">
-      <div class="wordmark"><span class="dot"></span>Plumb</div>
+      <div class="wordmark"><span class="dot"></span>SitePlumb</div>
       <div class="tagline">true to the build</div>
     </div>
     <button class="ctx site-switch" id="siteBtn" onclick="toggleSiteMenu()">
@@ -2092,7 +2092,7 @@ body.on-tour .tour-card{display:block;}
   <!-- generic info / demo prompt modal -->
   <div class="pmodal-scrim" id="startScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4 id="startTitle">Welcome to Plumb</h4>
+      <h4 id="startTitle">Welcome to SitePlumb</h4>
       <div class="info-body" id="startBody"></div>
     </div>
   </div>
@@ -2108,7 +2108,7 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="setupScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4 id="setupTitle">Welcome to Plumb</h4>
+      <h4 id="setupTitle">Welcome to SitePlumb</h4>
       <div class="info-body" id="setupBody"></div>
       <div class="row2" style="margin-top:14px">
         <button class="b1 b-cancel" id="setupBack" onclick="setupNav(-1)">Back</button>
@@ -2226,7 +2226,7 @@ body.on-tour .tour-card{display:block;}
   <!-- ───── WELCOME FORK (first live sign-in, no sites) ───── -->
   <div class="pmodal-scrim" id="welcomeScrim">
     <div class="pmodal" style="text-align:center">
-      <h4>Welcome to Plumb</h4>
+      <h4>Welcome to SitePlumb</h4>
       <div class="ls" style="margin:-4px 0 18px">Your workspace is ready. Want the two-minute walkthrough first?</div>
       <button class="b1 b-go" style="width:100%;margin-bottom:10px" onclick="startGrandTour()">Show me around</button>
       <button class="b1 b-cancel" style="width:100%" onclick="welcomeDone();openNewSite()">Set up my first site</button>
@@ -2247,24 +2247,24 @@ body.on-tour .tour-card{display:block;}
 
   <!-- ───── INSTALL GATE (phones in a browser tab) ───── -->
   <div class="install-gate" id="installGate">
-    <div class="wm" style="justify-content:center"><span class="dot"></span>Plumb</div>
+    <div class="wm" style="justify-content:center"><span class="dot"></span>SitePlumb</div>
     <div class="tagline" style="margin-top:4px">true to the build</div>
     <div class="ig-lead" id="igLead"></div>
     <div class="ig-steps" id="igIos" style="display:none">
       <div class="ig-step" id="igStepShare"><b>1</b>Tap the <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin:0 4px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg><b>Share</b><span style="margin-left:4px">button in the toolbar</span></div>
       <div class="ig-step" id="igStepDots" style="display:none"><b>1</b>Tap<b style="margin:0 5px">⋯</b>by the address bar, then<b style="margin-left:5px">Share</b></div>
       <div class="ig-step"><b>2</b>Choose <b style="margin:0 4px">Add to Home Screen</b></div>
-      <div class="ig-step"><b>3</b>Open <b style="margin:0 4px">Plumb</b> from your home screen</div>
+      <div class="ig-step"><b>3</b>Open <b style="margin:0 4px">SitePlumb</b> from your home screen</div>
       <div class="ig-hint">Can’t find Share? It may be behind the ⋯ button — Safari’s layout moves it.</div>
     </div>
-    <button class="ig-install" id="igAndroidBtn" style="display:none" onclick="igInstall()">Install Plumb</button>
+    <button class="ig-install" id="igAndroidBtn" style="display:none" onclick="igInstall()">Install SitePlumb</button>
     <div class="ig-steps" id="igGeneric" style="display:none">
       <div class="ig-step">Open your browser menu and choose <b style="margin-left:4px">Install app</b></div>
     </div>
     <div class="ig-steps" id="igInApp" style="display:none">
       <div class="ig-step">This in-app browser can’t install apps.</div>
       <button class="ig-install" style="margin-top:6px" onclick="openInSafari()">Copy link for Safari</button>
-      <div class="ig-hint">Paste it into Safari (or Chrome) to install Plumb.</div>
+      <div class="ig-hint">Paste it into Safari (or Chrome) to install SitePlumb.</div>
     </div>
     <button class="la-link ig-skip" onclick="igBrowser()">Continue in browser this time</button>
   </div>
@@ -2361,7 +2361,7 @@ body.on-tour .tour-card{display:block;}
   <div class="pmodal-scrim" id="jurisScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4>Permit jurisdiction</h4>
-      <div class="sub" style="font-size:12.5px;color:var(--ink-2);margin:-6px 0 14px;text-align:center">Where this site's permits live, so Plumb can deep-link and parse status emails.</div>
+      <div class="sub" style="font-size:12.5px;color:var(--ink-2);margin:-6px 0 14px;text-align:center">Where this site's permits live, so SitePlumb can deep-link and parse status emails.</div>
       <div class="fld-label">City</div>
       <input id="jCity" placeholder="e.g. Troy, MI">
       <div class="fld-label">Permit system</div>
@@ -2374,7 +2374,7 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="installScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4>Add Plumb to your Home Screen</h4>
+      <h4>Add SitePlumb to your Home Screen</h4>
       <div class="sub" style="font-size:12.5px;color:var(--ink-2);margin:-6px 0 14px;text-align:center">Opens full-screen like a real app — one tap to launch.</div>
       <div id="installBody"></div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeInstall()">Got it</button></div>
@@ -2480,7 +2480,7 @@ body.on-tour .tour-card{display:block;}
       <h4 id="srTitle">Mark complete</h4>
       <div class="sr-sub" id="srSub"></div>
       <div id="srBody"></div>
-      <div class="sr-note">Plumb won't block you — this is your sign-off that the stage is done. Use the checklist above to confirm inspections, open items and approvals are handled first.</div>
+      <div class="sr-note">SitePlumb won't block you — this is your sign-off that the stage is done. Use the checklist above to confirm inspections, open items and approvals are handled first.</div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-cancel" onclick="closeStageReview()">Cancel</button><button class="b1 b-go" onclick="confirmStageComplete()">Mark complete</button></div>
     </div>
   </div>
@@ -2515,7 +2515,7 @@ body.on-tour .tour-card{display:block;}
       <div id="logHistory"></div>
       <div class="eyebrow">Recent</div>
       <div class="feed" id="feed"></div>
-      <div class="copyright" id="copyright">© 2026 Plumb</div>
+      <div class="copyright" id="copyright">© 2026 SitePlumb</div>
     </section>
 
     <section class="view" id="view-files">
@@ -2606,7 +2606,7 @@ body.on-tour .tour-card{display:block;}
 
   <nav>
     <div class="rail-brand">
-      <div class="wordmark"><span class="dot"></span>Plumb</div>
+      <div class="wordmark"><span class="dot"></span>SitePlumb</div>
       <div class="tagline">true to the build</div>
     </div>
     <div class="tabs">
@@ -2723,7 +2723,7 @@ body.on-tour .tour-card{display:block;}
   </div>
   <div class="devpanel" id="devpanel">
     <div class="dev-head">
-      <div class="t"><span class="b">Dev</span> Plumb workbench</div>
+      <div class="t"><span class="b">Dev</span> SitePlumb workbench</div>
       <button class="x" onclick="closeDev()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
     <div class="dev-body">
@@ -2838,7 +2838,7 @@ body.on-tour .tour-card{display:block;}
       <div class="dev-sec">Danger zone</div>
       <button class="dev-btn danger" onclick="devReset()"><span><span>Erase all data</span><span class="d">Wipe records, logs &amp; every photo</span></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg></span></button>
 
-      <div class="dev-note">Plumb developer workbench · hidden from field users<br>Tap the © line 5× · password-gated · close to return.</div>
+      <div class="dev-note">SitePlumb developer workbench · hidden from field users<br>Tap the © line 5× · password-gated · close to return.</div>
     </div>
   </div>
 
@@ -2846,12 +2846,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.197.0 - The hooked capital J and descending f turned out to be intrinsic to the Fraunces roman glyphs and no axis setting can remove them. Fraunces now appears only in the Plumb wordmark and every other serif surface sets Source Serif 4 whose letterforms are conventional at every size';
+const PLUMB_VERSION='2.199.0 - The product is now SitePlumb everywhere a person reads the name - wordmarks, titles, the walkthrough, invites, the manifest, the marketing site and the legal pages - matching the domain it already lives on. Internal keys and constants keep their old names so existing installs carry on untouched';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785629400000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785630600000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -3815,7 +3815,7 @@ function scheduleSuggested(pid,idx){
   try{bkSyncBtns();}catch(e){}try{bkRenderPacket();}catch(e){}}
 
 /* ════════ multi-site switcher ════════ */
-function updateHeader(){const p=P();document.getElementById('siteName').textContent=p?(p.street||p.name):'Plumb';document.getElementById('siteCity').textContent=(p&&p.city)||'';try{refreshWx();}catch(e){}toggleDevDot();}
+function updateHeader(){const p=P();document.getElementById('siteName').textContent=p?(p.street||p.name):'SitePlumb';document.getElementById('siteCity').textContent=(p&&p.city)||'';try{refreshWx();}catch(e){}toggleDevDot();}
 function refreshWx(){const p=P();const el=document.getElementById('siteWx');if(!el)return;const city=((p&&p.city)||'').trim();const st=((p&&p.state)||'').trim();if(!city){el.textContent='';return;}try{Weather.ensure(city,st);}catch(e){}wxPaint(city,st);}
 function wxPaint(city,st){const el=document.getElementById('siteWx');if(!el)return;const c=Weather.cur&&Weather.cur[Weather.key(city,st)];el.textContent=(c&&typeof c.t==='number')?(c.t+'\u00b0 '+Weather.label(c.code)):'';}
 function toggleSiteMenu(){const open=document.getElementById('siteMenu').classList.contains('show');open?closeSiteMenu():openSiteMenu();}
@@ -3857,7 +3857,7 @@ function cdCancel(){_cdAction=null;document.getElementById('confirmDelScrim').cl
 function cdConfirm(){const f=_cdAction;_cdAction=null;
   document.getElementById('confirmDelScrim').classList.remove('show');
   if(typeof f==='function')try{f();}catch(e){console.warn('confirmDelete action failed',e);}}
-/* Themed yes/no confirm — Plumb's own dialog in place of the OS confirm() box.
+/* Themed yes/no confirm — SitePlumb's own dialog in place of the OS confirm() box.
    opts: {title, body, okLabel, cancelLabel, danger, onConfirm, onCancel}.
    danger:true paints the action button clay. Async by design: the "proceed"
    work lives in onConfirm; onCancel runs on Cancel / backdrop / grip. */
@@ -4054,7 +4054,7 @@ async function liveAuthSubmit(){
       if(laMode==='signup'){
         cred=await firebase.auth().createUserWithEmailAndPassword(email,pass);
         try{await cred.user.updateProfile({displayName:name});}catch(e){}
-        try{if(firebase.firestore)await firebase.firestore().collection('users').doc(cred.user.uid).set({name,email,rpRole,createdAt:Date.now()},{merge:true});}catch(e){console.warn('[Plumb] users/{uid} write deferred',e);}
+        try{if(firebase.firestore)await firebase.firestore().collection('users').doc(cred.user.uid).set({name,email,rpRole,createdAt:Date.now()},{merge:true});}catch(e){console.warn('[SitePlumb] users/{uid} write deferred',e);}
         try{await _evSend(cred.user);}catch(e){}
       }else{
         cred=await firebase.auth().signInWithEmailAndPassword(email,pass);
@@ -4111,7 +4111,7 @@ async function liveForgot(){
 }
 /* ── In-app password reset: the emailed action link lands HERE (mode=resetPassword&
    oobCode=...) once the console template Action URL points at the app. We verify
-   the code, take the new password in Plumb chrome, confirm, then sign the person
+   the code, take the new password in SitePlumb chrome, confirm, then sign the person
    straight in. Expired or superseded codes (each new request kills the last one,
    and codes are single-use) get a friendly resend path instead of Google 404-ese. */
 let _prCode=null,_prEmail=null;
@@ -4310,8 +4310,8 @@ function openLegal(){
     doc:'<path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
     bin:'<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/>'};
   let rows='';
-  rows+=SET_GEAR_ROW('Privacy Policy','What Plumb stores, and why','closeLegal();legalOpenPrivacy()',I.shield);
-  rows+=SET_GEAR_ROW('Terms of Service','The agreement for using Plumb','closeLegal();legalOpenTerms()',I.doc);
+  rows+=SET_GEAR_ROW('Privacy Policy','What SitePlumb stores, and why','closeLegal();legalOpenPrivacy()',I.shield);
+  rows+=SET_GEAR_ROW('Terms of Service','The agreement for using SitePlumb','closeLegal();legalOpenTerms()',I.doc);
   if(_isLiveAccount())rows+=SET_GEAR_ROW('Delete my account','Erase your account and its data — permanent','closeLegal();openDeleteAccount()',I.bin);
   else if(state.session&&state.session.mode==='real'&&(laProfile()||{}).provider==='local')rows+=SET_GEAR_ROW('Erase this device-only account','Removes it from this device — permanent','closeLegal();eraseLocalAccount()',I.bin);
   else rows+='<div class="empty" style="padding:8px 0 12px">Account deletion appears here once you are signed in to a live account.</div>';
@@ -4361,7 +4361,7 @@ async function delAcctExecute(){
   try{await fnCall('deleteAccount',{confirm:true});
     logEvent('accountDeleted','live');
     _delWipeLocal();
-    const b=document.getElementById('delAcctBody');if(b)b.innerHTML='<div class="empty" style="padding:14px 0">Your account and its data are deleted. Thanks for building with Plumb.</div>';
+    const b=document.getElementById('delAcctBody');if(b)b.innerHTML='<div class="empty" style="padding:14px 0">Your account and its data are deleted. Thanks for building with SitePlumb.</div>';
     setTimeout(()=>{try{location.replace('./');}catch(e){}},1600);}
   catch(e){g.disabled=false;g.textContent='Delete my account forever';toast((e&&e.message)||'Could not delete — try again');}}
 function closeDelAcct(){document.getElementById('delAcctScrim').classList.remove('show');}
@@ -4461,7 +4461,7 @@ function openSetupReview(){
      <button class="add-sub-btn" style="margin-top:8px" onclick="closeInfo();openSetup()">Adjust in the wizard…</button>`);}
 let setupStep=0,setupDraft=null;
 const SETUP_LEVELS=[
-  {id:'production',n:'Production',d:'Set plans, limited options. Plumb keeps selections short and pre-answers most install specs.'},
+  {id:'production',n:'Production',d:'Set plans, limited options. SitePlumb keeps selections short and pre-answers most install specs.'},
   {id:'semi',n:'Semi-custom',d:'Buyers choose within your lines. The balanced default — selections and spec sheets per trade.'},
   {id:'custom',n:'Full custom',d:'Anything goes. Every selection open, full spec sheets, homeowner decisions tracked closely.'}];
 function openSetup(){
@@ -4488,7 +4488,7 @@ function __renderSetup(){
   const back=document.getElementById('setupBack'),next=document.getElementById('setupNext');
   back.style.display=setupStep===0?'none':'';
   next.textContent=setupStep===3?'Finish':'Next';
-  if(setupStep===0){t.textContent='Welcome to Plumb';
+  if(setupStep===0){t.textContent='Welcome to SitePlumb';
     b.innerHTML=`<p style="margin:0 0 10px">A few minutes now sets up your whole company — your team, your subs, and how you run selections. Everything here can be changed later from <b>People &amp; invites</b>.</p>
       <div class="lbl">Company name</div>
       <input id="suCompany" placeholder="e.g. Hilltop Homes" value="${esc(setupDraft.company||'')}">
@@ -4510,7 +4510,7 @@ function __renderSetup(){
         <select id="suRosterTrade">${SPECIALTIES.map(sp=>`<option value="${sp.id}">${esc(sp.label)}</option>`).join('')}</select></div>
       <button class="add-sub-btn" onclick="setupAddRoster()">Add to roster</button>`;}
   else{t.textContent='How custom are your builds?';
-    b.innerHTML=`<p style="margin:0 0 10px">This tunes how Plumb handles selections and install spec sheets. It\u2019s the starting point for your selection templates — refinable per site.</p>
+    b.innerHTML=`<p style="margin:0 0 10px">This tunes how SitePlumb handles selections and install spec sheets. It\u2019s the starting point for your selection templates — refinable per site.</p>
       <div class="setup-cards">${SETUP_LEVELS.map(l=>`<div class="setup-card${setupDraft.customLevel===l.id?' on':''}" onclick="setupPickLevel('${l.id}')"><div class="n">${l.n}</div><div class="d">${l.d}</div></div>`).join('')}</div>`;}
 }
 function finishSetup(skipped){
@@ -4522,7 +4522,7 @@ function finishSetup(skipped){
   closeSetup();
   if(skipped){toast('Setup skipped — run it any time from People & invites');return;}
   showInfo('You\u2019re set up',`<p style="margin:0 0 10px"><b>${esc(setupDraft.company||'Your company')}</b> is ready. Your roster and selections style apply to every new site automatically.</p>
-    <p style="margin:0 0 10px">Want to see Plumb in action first? The <b>Demo</b> on the sign-in screen is a fully built sample site — a safe place to learn the feed, stages, selections and specs before your real build.</p>
+    <p style="margin:0 0 10px">Want to see SitePlumb in action first? The <b>Demo</b> on the sign-in screen is a fully built sample site — a safe place to learn the feed, stages, selections and specs before your real build.</p>
     <p style="color:var(--ink-3);font-size:12.5px;margin:0">Change any of this later: People &amp; invites → Run first-time setup again.</p>`);
   logEvent('setupDone',setupDraft.customLevel+' · '+setupDraft.subRoster.length+' subs');}
 
@@ -4536,9 +4536,9 @@ function openStart(){renderStart();document.getElementById('startScrim').classLi
 function closeStart(){document.getElementById('startScrim').classList.remove('show');}
 function renderStart(){
   const el=document.getElementById('startBody');if(!el)return;
-  document.getElementById('startTitle').textContent='Welcome to Plumb';
+  document.getElementById('startTitle').textContent='Welcome to SitePlumb';
   el.innerHTML=`
-    <p style="margin:0 0 14px;color:var(--ink-2);font-size:14px;line-height:1.5">Let\u2019s get one job into Plumb. Pick whichever fits where you are right now — you can do the other next.</p>
+    <p style="margin:0 0 14px;color:var(--ink-2);font-size:14px;line-height:1.5">Let\u2019s get one job into SitePlumb. Pick whichever fits where you are right now — you can do the other next.</p>
     <button class="start-door" onclick="startPath('import')">
       <div class="sd-ic">\u{1F4E5}</div>
       <div><div class="t">A job I\u2019m already building</div><div class="d">Bring an in-flight job in — pull a sub from contacts, forward a permit, drop in site photos. Your scattered job, in one place.</div></div></button>
@@ -4641,7 +4641,7 @@ async function impContacts(){
 }
 function impForward(){
   const p=impSite()||P();const inbox=inboxFor(p);
-  showInfo('Forward it to this job',`<p style="margin:0 0 10px;font-size:14px;line-height:1.5">Forward any permit, inspection notice, quote, or email to this job\u2019s private inbox and Plumb files it on the site automatically:</p>
+  showInfo('Forward it to this job',`<p style="margin:0 0 10px;font-size:14px;line-height:1.5">Forward any permit, inspection notice, quote, or email to this job\u2019s private inbox and SitePlumb files it on the site automatically:</p>
     <div onclick="copyText('${esc(inbox)}')" style="font-family:ui-monospace,Menlo,monospace;font-size:15px;text-align:center;background:var(--surface-2);border-radius:12px;padding:13px;cursor:pointer;word-break:break-all">${esc(inbox)}</div>
     <div style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:6px">Tap to copy</div>
     <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0"><b>One at a time:</b> forward any single email here. <b>Hands-off:</b> in Gmail/Outlook set up an auto-forward <i>filter</i> (e.g. anything from your permit office or this client) to this address, and it files itself. Save it as a contact \u2014 \u201cPlumb \u2014 ${esc((p&&(p.street||p.name))||'this job')}\u201d \u2014 so it\u2019s one tap.</p>`);
@@ -4688,7 +4688,7 @@ function startConverge(){
     : conv==='new'
       ? `<button class="add-sub-btn" style="margin-top:12px" onclick="closeInfo();openNewSite()">Set up a new build too\u2026</button>`
       : '';
-  showInfo('You\u2019re rolling',`<p style="margin:0 0 12px;font-size:14px;line-height:1.55"><b>${esc((p&&(p.street||p.name))||'Your job')}</b> is in Plumb. Two quick moves make it pay off right away:</p>
+  showInfo('You\u2019re rolling',`<p style="margin:0 0 12px;font-size:14px;line-height:1.55"><b>${esc((p&&(p.street||p.name))||'Your job')}</b> is in SitePlumb. Two quick moves make it pay off right away:</p>
     <button class="add-sub-btn" onclick="closeInfo();openPeopleMode('homeowner')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V21H3z"/><path d="M9 21v-6h6v6"/></svg>Invite the homeowner \u2014 stop the \u201cwhat\u2019s happening?\u201d texts</button>
     <button class="add-sub-btn" style="margin-top:8px" onclick="closeInfo();openSubsRoster()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite the sub coming this week</button>
     ${otherBtn}
@@ -4730,20 +4730,20 @@ function renderSettings(){
     }else{
       rows+='<div class="empty" style="padding:8px 0 12px">Homeowner portals and templates manage your real company — switch to <b>Live</b> to use them.</div>';
     }
-    rows+=SET_GEAR_ROW('How Plumb works','Take the guided tour','closeSettings();startGrandTour()',I.how);
+    rows+=SET_GEAR_ROW('How SitePlumb works','Take the guided tour','closeSettings();startGrandTour()',I.how);
     rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
     if(devAllowed())rows+=SET_GEAR_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()',I.dev);
   }else{
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     if(role==='subs')rows+=SET_GEAR_ROW('My schedule','Your bookings & blocked time','closeSettings();openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
-    rows+=SET_GEAR_ROW('How Plumb works','Take the guided tour','closeSettings();startTour(\''+(role==='client'?'client':'sub')+'\')',I.how);
+    rows+=SET_GEAR_ROW('How SitePlumb works','Take the guided tour','closeSettings();startTour(\''+(role==='client'?'client':'sub')+'\')',I.how);
   }
   const _fbn=(state.feedback||[]).filter(f=>!f.done).length;
   rows+=SET_GEAR_ROW('Report a problem or idea',_fbn?(_fbn+' open '+(_fbn===1?'item':'items')):'Share a bug or suggestion with the team','closeSettings();openFeedback()','<path d="M8 8a4 4 0 0 1 8 0v3a4 4 0 0 1-8 0z"/><path d="M12 12v6M5 9H3m18 0h-2M5 15H3m18 0h-2M9 5 7 3m8 2 2-2"/>');
   try{if(_evNeeded())rows+=SET_GEAR_ROW('Confirm your email','Unconfirmed - this is what makes Forgot password work','closeSettings();evOpenFromSettings()','<path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/>');}catch(e){}
   rows+=SET_GEAR_ROW('Privacy &amp; legal','Policies, your data &amp; account deletion','closeSettings();openLegal()','<path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12.5l2 2 3.5-4"/>');
   rows+=SET_GEAR_ROW('Sign out','','closeSettings();logout()',I.out);
-  rows+='<div class="set-ver">Plumb '+esc(PLUMB_VERSION)+'</div>';
+  rows+='<div class="set-ver">SitePlumb '+esc(PLUMB_VERSION)+'</div>';
   el.innerHTML=rows;}
 function openEditSites(){renderEditSites();document.getElementById('esScrim').classList.add('show');}
 function closeEditSites(){document.getElementById('esScrim').classList.remove('show');}
@@ -4802,8 +4802,8 @@ function jumpToSubs(){try{go('subs');}catch(e){}}
    optional nav() hooks; tap the highlighted control to try it, or Next to skip
    ahead. Role walkthroughs live in TOUR{}. ── */
 const TOUR={team:[
- {title:'Welcome to Plumb',body:'A quick tour of how Plumb runs your jobs. Tap the highlighted spots to try them, or use Next to skip ahead \u2014 and Skip to leave anytime.',nav:()=>{try{showOverview();}catch(e){}}},
- {sel:'#ovToday',title:'Today',body:'Plumb watches every job and tells you what needs you \u2014 a crew arriving before specs are signed, a sub double-booked, a site gone quiet.'},
+ {title:'Welcome to SitePlumb',body:'A quick tour of how SitePlumb runs your jobs. Tap the highlighted spots to try them, or use Next to skip ahead \u2014 and Skip to leave anytime.',nav:()=>{try{showOverview();}catch(e){}}},
+ {sel:'#ovToday',title:'Today',body:'SitePlumb watches every job and tells you what needs you \u2014 a crew arriving before specs are signed, a sub double-booked, a site gone quiet.'},
  {sel:'#ovCompanyBtn',title:'Company',body:'One button for everything company-wide: your trades calendar, invoices, subcontractor roster, team, and adding a job.'},
  {sel:'#ovCards .ov-card',title:'Your jobs',body:'Each home shows its open count, progress, and what\u2019s on deck. We\u2019ll step into one now.',nav:()=>{try{showOverview();}catch(e){}}},
  {sel:'#siteSummary',title:'The site at a glance',body:'A job opens calm: current stage and %, what it\u2019s waiting on, and who\u2019s next on site.',nav:()=>{try{const sp=state.projects||[];const pick=sp.find(p=>!p.sample)||sp[0];if(pick)openSiteFromOverview(pick.id);}catch(e){}}},
@@ -4815,17 +4815,17 @@ const TOUR={team:[
 ],sub:[
  {title:'Welcome',body:'This is your contractor view \u2014 only your part of each job, nothing to wade through. Tap the highlights or use Next.',nav:()=>{try{subBackToList();}catch(e){}}},
  {sel:'#subCards',title:'Your sites',body:'Every home you\u2019re assigned to. A flag means something on your scope needs attention.',nav:()=>{try{subBackToList();}catch(e){}}},
- {sel:'.sv-banner',title:'Cleared to start',body:'Plumb tells you the moment the site super marks the site ready for your trade \u2014 no calls, no guessing.',nav:()=>{try{const sp=subProjects();if(sp[0])openSubSite(sp[0].id);}catch(e){}}},
+ {sel:'.sv-banner',title:'Cleared to start',body:'SitePlumb tells you the moment the site super marks the site ready for your trade \u2014 no calls, no guessing.',nav:()=>{try{const sp=subProjects();if(sp[0])openSubSite(sp[0].id);}catch(e){}}},
  {sel:'#svPacket',title:'Your install packet',body:'Specs, approved selections and documents for your scope \u2014 everything you need to start, in one tap.'},
  {sel:'#svUpdate',title:'Post an update',body:'Snap a photo from the field and it posts straight back to the builder\u2019s log.'},
  {sel:'#subtab-selections',tap:true,title:'Your selections',body:'The selections that fall under your trade, confirmed before you build. Tap to see them.'},
  {title:'You\u2019re set',body:'That\u2019s your whole view. When a builder invites you to a real job, this is exactly how it\u2019ll look.'}
 ],grand:[
- {title:'Welcome to Plumb',body:'Group texts, lost photos, and \u2018did anyone tell the plumber?\u2019 Building runs on scattered information. Plumb gathers it into one living record \u2014 the daily story, the schedule, your subs, your homeowner, the money. Let\u2019s walk one example home.',
+ {title:'Welcome to SitePlumb',body:'Group texts, lost photos, and \u2018did anyone tell the plumber?\u2019 Building runs on scattered information. SitePlumb gathers it into one living record \u2014 the daily story, the schedule, your subs, your homeowner, the money. Let\u2019s walk one example home.',
   acts:[{do:()=>demoRole('hillan')}]},
  {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the stage you\u2019re in, the percent complete, what\u2019s waiting on you, and who\u2019s next on site. The answer to \u2018how\u2019s it going?\u2019 \u2014 before anyone has to ask.',
   acts:[{do:()=>demoRole('hillan')},{tap:'#ovCards .ov-card[onclick*="p2"]',do:()=>{openSiteFromOverview('p2');go('log');}}]},
- {sel:'.capture-card',bubSide:'tb',title:'The Daily Log',body:'This is the heart of Plumb \u2014 the record that builds itself. A photo files itself by date and area; the day takes one line. Your turn \u2014 I\u2019ll point.',
+ {sel:'.capture-card',bubSide:'tb',title:'The Daily Log',body:'This is the heart of SitePlumb \u2014 the record that builds itself. A photo files itself by date and area; the day takes one line. Your turn \u2014 I\u2019ll point.',
   acts:[{do:()=>tourGoto('log')}],
   task:{payoff:'You just kept the record \u2014 photo filed, day written. Do that once a day, and months later you can prove exactly what happened on site.',
     steps:[
@@ -4896,7 +4896,7 @@ const TOUR={team:[
     await orbTo('#calview .ov-logout',{tap:true});if(!tourAlive(tok))return;
     try{closeCal();}catch(e){}
     setTimeout(()=>{try{if(!tourAlive(tok))return;const d2=document.querySelector('.cal-door');if(d2){const r2=d2.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2,true,undefined,true);orbTo(d2,{settle:true,rest:true});}}catch(e){}},420);}},
- {sel:'#buildPermits',title:'Permits, inspections & your subs',body:'Every permit and inspection, tracked from \u2018not started\u2019 to \u2018passed\u2019 \u2014 where your city posts results online, Plumb pulls them in. One tab over is your roster: who\u2019s cleared, who\u2019s booked, who owes you paperwork.',
+ {sel:'#buildPermits',title:'Permits, inspections & your subs',body:'Every permit and inspection, tracked from \u2018not started\u2019 to \u2018passed\u2019 \u2014 where your city posts results online, SitePlumb pulls them in. One tab over is your roster: who\u2019s cleared, who\u2019s booked, who owes you paperwork.',
   acts:[{do:()=>tourGoto('build','schedule')},{tap:'[data-b=permits]',do:()=>{try{buildSeg('permits',document.querySelector('[data-b=permits]'));}catch(e){}}}],
   after:async(tok)=>{
     await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
@@ -4970,7 +4970,7 @@ const TOUR={team:[
     try{demoRole('subs');}catch(e){}
     const pk=document.querySelector('#svPacket');
     if(pk)await tourPing([pk],tok,1200,prev);}},
- {sel:'#ovCards',bubSide:'tb',title:'One honest record',body:'The Daily Log. The Install Packet. One record, live in every hand that touches the build. That\u2019s Plumb. Ready to set up your first site?',cta:'Set up my site',
+ {sel:'#ovCards',bubSide:'tb',title:'One honest record',body:'The Daily Log. The Install Packet. One record, live in every hand that touches the build. That\u2019s SitePlumb. Ready to set up your first site?',cta:'Set up my site',
   acts:[{tap:'.exc-roles button[data-r=hillan]',do:()=>demoRole('hillan')}]}
 ],client:[
  {title:'Welcome home',body:'This is your view of the build \u2014 a calm picture of where things stand. Tap the highlights or use Next.',nav:()=>{try{clientGo('home');}catch(e){}}},
@@ -5331,7 +5331,7 @@ function __renderPeople(){
       +'<button class="add-sub-btn" style="margin-top:8px" onclick="openCtBuild()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Build your own…</button>'
       +'<p style="margin:6px 0 0;color:var(--ink-3);font-size:12px">The three presets shape every sheet automatically. <b>Build your own</b> lets you pick each question by hand across all trades and save it as a named template.</p>'
       +'<div class="lbl" style="margin-top:16px">Install spec sheets</div>'
-      +'<p style="margin:0 0 8px;color:var(--ink-3);font-size:12.5px">'+(activeCustomTemplate()?'A custom template is active — edit it above to change its questions.':'What Plumb asks per trade before install. Tap a category to switch built-ins off or add your own questions.')+'</p>'
+      +'<p style="margin:0 0 8px;color:var(--ink-3);font-size:12.5px">'+(activeCustomTemplate()?'A custom template is active — edit it above to change its questions.':'What SitePlumb asks per trade before install. Tap a category to switch built-ins off or add your own questions.')+'</p>'
       +cats.map(c=>{const f=specTemplate(c);const b=f.filter(x=>x.who==='builder').length;const h=f.filter(x=>x.who==='homeowner').length;const mine=f.filter(x=>x.org).length;
         return `<div class="subrow" style="cursor:pointer${activeCustomTemplate()?';opacity:.6':''}" onclick="tmplCatTap('${esc(c)}')"><div class="si"><div class="n">${esc(c)}</div><div class="d">${b} builder field${b===1?'':'s'} · ${h} homeowner decision${h===1?'':'s'}${mine?' · <b>'+mine+' yours</b>':''}</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px;color:var(--ink-3)"><path d="M9 6l6 6-6 6"/></svg></div>`;}).join('');
     return;}
@@ -5409,7 +5409,7 @@ async function createInvite(role,subId,opts){opts=opts||{};
       <div class="fld-hint" style="margin:0 2px 4px">Or give them just the code:</div>
       <div class="code-box" onclick="copyText('${code}')">${code}</div>
       <div style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:6px">Tap to copy \u2014 or press &amp; hold to select just the code</div>
-      <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0">They open Plumb → <b>Live</b> → \u201cI have an invite code\u201d and create their account with their role. They join <b>all</b> of your sites — and new sites include them automatically.${opts.setup?' Because this invite <b>hands off setup</b>, they\u2019ll get the full company setup wizard when they first sign in.':''}</p>`);
+      <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0">They open SitePlumb → <b>Live</b> → \u201cI have an invite code\u201d and create their account with their role. They join <b>all</b> of your sites — and new sites include them automatically.${opts.setup?' Because this invite <b>hands off setup</b>, they\u2019ll get the full company setup wizard when they first sign in.':''}</p>`);
     try{renderPeople();}catch(e){}
     return;}
   const p=P();let name='',trade='',subId2='';
@@ -5426,7 +5426,7 @@ async function createInvite(role,subId,opts){opts=opts||{};
     <div class="fld-hint" style="margin:0 2px 4px">Or give them just the code:</div>
     <div class="code-box" onclick="copyText('${code}')">${code}</div>
     <div style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:6px">Tap to copy \u2014 or press &amp; hold to select just the code</div>
-    <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0">They open Plumb → <b>Live</b> → \u201cI have an invite code\u201d, create their account, and they\u2019ll join this site automatically once your device confirms it.</p>`);}
+    <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0">They open SitePlumb → <b>Live</b> → \u201cI have an invite code\u201d, create their account, and they\u2019ll join this site automatically once your device confirms it.</p>`);}
 const _claimWatch={};
 function watchClaims(){
   if(!Sync.ready()||appMode()!=='real')return;
@@ -5435,7 +5435,7 @@ function watchClaims(){
     if(_claimWatch[code])return;_claimWatch[code]=true;
     const u=Sync.db.collection('invites').doc(code).collection('claims').onSnapshot(snap=>{
       snap.docChanges().forEach(ch=>{if(ch.type==='removed')return;approveClaim(code,ch.doc.id,ch.doc.data()||{});});
-    },err=>console.warn('[Plumb] claims',err));
+    },err=>console.warn('[SitePlumb] claims',err));
     Sync.unsub.push(u);};
   (state.projects||[]).forEach(p=>(p.invites||[]).forEach(inv=>{if(inv.status==='open')watch(inv.code);}));
   laTeamInvites().forEach(inv=>{if(inv.status==='open')watch(inv.code);});}
@@ -5538,7 +5538,7 @@ function subsOnSite(){
   openPick({title:'Subcontractors \u2014 which site?',
     options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' sub'+(p.subs.length===1?'':'s')):'No subs yet')+(p.city?' \u00b7 '+p.city:'')})),
     onPick:go});}
-/* #1: invite a sub to Plumb from the roster screen. Codes are per-site, so this
+/* #1: invite a sub to SitePlumb from the roster screen. Codes are per-site, so this
    walks site → sub, skipping subs who already have a live invite, then hands off
    to the same createInvite('sub') used on the sub row. */
 function inviteSubFlow(){
@@ -5792,7 +5792,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     if(typeof firebase==='undefined'){this.err='Firebase SDK not loaded (offline?).';setSync('local');return false;}
     try{
       if(!firebase.apps.length)firebase.initializeApp(cfg);
-      try{const ak=appCheckKey();if(ak&&firebase.appCheck){firebase.appCheck().activate(ak,true);this.appCheck=true;}}catch(e){console.warn('[Plumb] App Check activate failed',e);}
+      try{const ak=appCheckKey();if(ak&&firebase.appCheck){firebase.appCheck().activate(ak,true);this.appCheck=true;}}catch(e){console.warn('[SitePlumb] App Check activate failed',e);}
       this.db=firebase.firestore();
       try{await this.db.enablePersistence({synchronizeTabs:true});}catch(e){}
       this.mode=appMode()==='real'?'live':'demo';
@@ -5817,7 +5817,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       logEvent('syncConnected',cfg.projectId+' · '+this.mode+' · '+this.authKind);
       try{setSync('synced');}catch(e){}
       return true;
-    }catch(e){this.err=(e&&e.message)||'init failed';this.on=false;setSync('local');console.warn('[Plumb] sync init failed',e);
+    }catch(e){this.err=(e&&e.message)||'init failed';this.on=false;setSync('local');console.warn('[SitePlumb] sync init failed',e);
       this._retries=(this._retries||0)+1;
       if(/account sign-in not restored/.test(this.err)&&this._retries>=2&&!this._reloginNudged){
         this._reloginNudged=true;
@@ -5993,7 +5993,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       },err=>{
         if(err&&err.code==='permission-denied'&&gen===1){    // first-generation denial: forgive once, re-attach silently
           if(!this._reArmed[sid]){this._reArmed[sid]=true;
-            console.warn('[Plumb] site records denied on first attach - re-arming',sid);
+            console.warn('[SitePlumb] site records denied on first attach - re-arming',sid);
             delete this._listening[sid];
             setTimeout(()=>{try{this._subSite(sid);}catch(e){}},this._reArmDelay||1200);}
           return;}
@@ -6061,7 +6061,7 @@ const CloudFiles={
   }
 };
 /* ── Step 8 layer 1: notifications. A client-side Notify engine — OS
-   notifications via the service worker while Plumb is running or backgrounded,
+   notifications via the service worker while SitePlumb is running or backgrounded,
    an in-app notice center, and deadline sweeps. Remote-event hooks observe the
    sync ingestion read-only; own echoes and first-connect floods never notify.
    Layer 2 (true closed-app push) is the FCM token capture + Cloud Function. ── */
@@ -6170,8 +6170,8 @@ const Notify={
       if(!tok)return;
       const uid=(state.session&&state.session.auth&&state.session.auth.uid)||Sync.uid;if(!uid)return;
       await Sync.db.collection('users').doc(uid).set({fcm:{[tok]:Date.now()}},{merge:true});
-      console.log('[Plumb] FCM token registered');
-    }catch(e){console.warn('[Plumb] fcm token',e);}}
+      console.log('[SitePlumb] FCM token registered');
+    }catch(e){console.warn('[SitePlumb] fcm token',e);}}
 };
 /* Map a notice key to the screen that holds its subject, so a tap on the
    notice opens the right place. Builder routes through the site tabs; the
@@ -6283,15 +6283,15 @@ function openNotifyCenter(){
   const a=Notify.list();
   const stand=(typeof matchMedia!=='undefined')&&matchMedia('(display-mode: standalone)').matches;
   let permRow='';
-  if(perm==='unsupported')permRow='<div class="pkt-banner warn">This browser can\u2019t show notifications.'+((/iPhone|iPad/.test(typeof navigator!=='undefined'?navigator.userAgent:'')&&!stand)?' On iPhone, add Plumb to your Home Screen first (Share → Add to Home Screen), then enable here.':'')+'</div>';
+  if(perm==='unsupported')permRow='<div class="pkt-banner warn">This browser can\u2019t show notifications.'+((/iPhone|iPad/.test(typeof navigator!=='undefined'?navigator.userAgent:'')&&!stand)?' On iPhone, add SitePlumb to your Home Screen first (Share → Add to Home Screen), then enable here.':'')+'</div>';
   else if(perm==='granted')permRow='<div class="pkt-banner ok"><b>Notifications on.</b> You\u2019ll hear about what\u2019s yours — issues, deadlines, invoices, site-ready.</div>';
-  else if(perm==='denied')permRow='<div class="pkt-banner warn"><b>Blocked.</b> Enable notifications for Plumb in your device settings, then come back.</div>';
+  else if(perm==='denied')permRow='<div class="pkt-banner warn"><b>Blocked.</b> Enable notifications for SitePlumb in your device settings, then come back.</div>';
   else permRow='<button class="b1 b-go" style="width:100%" onclick="Notify.enable().then(()=>openNotifyCenter())">Turn on notifications</button>';
   showInfo('Notifications',permRow
     +(((state.session||{}).role==='hillan')?`<div class="subrow" style="cursor:pointer;margin-top:14px" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Billing alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span style="color:var(--ink-3);font-size:17px;padding-left:6px;flex:0 0 auto">›</span></div>`:'')
     +'<div class="lbl" style="margin-top:14px">Recent</div>'
     +(noticeRecentHTML())
-    +'<p style="margin:10px 0 0;color:var(--ink-3);font-size:12px">Heads-up while Plumb is open or in the background. Lock-screen push with the app fully closed needs the one-time server setup in the push guide.</p>');}
+    +'<p style="margin:10px 0 0;color:var(--ink-3);font-size:12px">Heads-up while SitePlumb is open or in the background. Lock-screen push with the app fully closed needs the one-time server setup in the push guide.</p>');}
 /* ── Org settings doc: orgs/{orgId} holds company truth — setup prefs, the
    team invite list, and an org members map. The id travels on site meta, so
    teammates discover it through the sites they already sync. Prefs are
@@ -6350,7 +6350,7 @@ const Org={
         const d=(snap&&snap.exists!==false&&snap.data&&snap.data())||null;if(!d)return;
         if(d.updatedBy===Sync.deviceId)return;
         if(this._absorb(d)==='local')this.schedule();
-      },err=>console.warn('[Plumb] org',err));
+      },err=>console.warn('[SitePlumb] org',err));
       Sync.unsub.push(this._unsub);
     }catch(e){}},
   schedule(){if(this._timer)return;this._timer=setTimeout(()=>{this._timer=null;this.push();},700);},
@@ -6360,7 +6360,7 @@ const Org={
     const members={};(state.projects||[]).forEach(p=>{Object.keys(p.members||{}).forEach(uid=>{if(p.members[uid]==='builder')members[uid]='builder';});});
     const me=(state.session&&state.session.auth&&state.session.auth.uid)||Sync.uid;if(me)members[me]='builder';
     try{await Sync.db.collection('orgs').doc(id).set({id,prefs:orgPrefs(),teamInvites:laTeamInvites(),members,updatedAt:this._at()||Date.now(),updatedBy:Sync.deviceId});}
-    catch(e){console.warn('[Plumb] org push',e);}}
+    catch(e){console.warn('[SitePlumb] org push',e);}}
 };
 function stripForSync(p){try{const c=JSON.parse(JSON.stringify(p));return c;}catch(e){return p;}}
 /* ── Granular sync: split a project into a low-churn meta doc + per-record collections.
@@ -7107,7 +7107,7 @@ function openCostActual(id,presetLineId){
   setCaKind(a?a.kind:'committed');
   caPayeeSync();
   document.getElementById('caQbFlag').innerHTML=(a&&a.qbId)?
-    `<div class="fld-hint" style="margin-top:10px;color:var(--clay)">Already in QuickBooks${a.qbEdited?' · edited here after export — make sure QuickBooks matches':''}. Plumb can’t change the QuickBooks copy.</div>`:'';
+    `<div class="fld-hint" style="margin-top:10px;color:var(--clay)">Already in QuickBooks${a.qbEdited?' · edited here after export — make sure QuickBooks matches':''}. SitePlumb can’t change the QuickBooks copy.</div>`:'';
   document.getElementById('caDelete').style.display=a?'block':'none';
   document.getElementById('costActualScrim').classList.add('show');
 }
@@ -7129,7 +7129,7 @@ function saveCostActual(){
   if(a&&a.qbId&&(Number(a.amount)!==amount||String(a.payee||'')!==payee||a.t!==patch.t)){
     patch.qbEdited=Date.now();
     openConfirm({title:'Already in QuickBooks',okLabel:'Save here anyway',
-      body:'This cost was exported. Plumb can’t change the QuickBooks copy — saving here means the two won’t match until you fix it in QuickBooks. It will stay flagged until then.',
+      body:'This cost was exported. SitePlumb can’t change the QuickBooks copy — saving here means the two won’t match until you fix it in QuickBooks. It will stay flagged until then.',
       onConfirm:apply});
     return;
   }
@@ -7268,8 +7268,8 @@ function maybeInstallGate(){
     const g=document.getElementById('installGate');if(!g)return false;
     const inv=(localStorage.getItem('plumbPendingInvite')||'');
     document.getElementById('igLead').textContent=inv
-      ?'You\u2019ve been invited to a build site. Copy your code first, then add Plumb to your home screen and paste it in.'
-      :'Plumb works best from your home screen \u2014 full screen, faster, and ready for the jobsite.';
+      ?'You\u2019ve been invited to a build site. Copy your code first, then add SitePlumb to your home screen and paste it in.'
+      :'SitePlumb works best from your home screen \u2014 full screen, faster, and ready for the jobsite.';
     const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
     document.getElementById('igIos').style.display=ios?'flex':'none';
     if(ios){/* iOS 26+ Safari default (Compact) hides Share behind ⋯; Chrome/Edge/Firefox keep a toolbar Share */
@@ -7369,12 +7369,14 @@ function exitDemoStay(){try{document.getElementById('exitDemoScrim').classList.r
 function exitDemoToSite(){
   try{document.getElementById('exitDemoScrim').classList.remove('show');}catch(e){}
   try{localStorage.removeItem('plumbSuspend');}catch(e){}
+  try{sessionStorage.removeItem('plumbTourOffered');}catch(e){}
   location.href='/';}
 function exitDemoToApp(){
   try{document.getElementById('exitDemoScrim').classList.remove('show');}catch(e){}
   endGrandTour(true);
   const cameFrom=(function(){try{return localStorage.getItem('plumbSuspend');}catch(e){return '1';}})();
   try{localStorage.removeItem('plumbSuspend');}catch(e){}
+  try{sessionStorage.removeItem('plumbTourOffered');}catch(e){}
   document.body.classList.remove('on-excursion');
   setMode('real');load();
   if(cameFrom==='splash'||!state.session){
@@ -8873,7 +8875,7 @@ async function invShare(projId,invId){
 /* In-app print preview. We never window.open() — in a standalone iOS PWA that
    replaces the app with a page that has no way back (force-quit only). Instead
    we lay the invoice over the app at z-index 130 and isolate it for printing
-   with a body.printing print stylesheet, so Done always returns to Plumb. */
+   with a body.printing print stylesheet, so Done always returns to SitePlumb. */
 function _pvEnsureStyle(){
   if(document.getElementById('pvStyle'))return;
   const s=document.createElement('style');s.id='pvStyle';
@@ -9048,7 +9050,7 @@ function openForwardHelp(){const j=P().jurisdiction||{};const addr=esc(j.inbox||
   const addrW=addr.replace(/([@.])/g,'$1<wbr>');
   const chip=`<button type="button" class="copy-chip" onclick="copyInbox()">${addrW}<span class="cc-tag">Copy</span></button>`;
   showInfo('How to forward permit emails',`
-    <p style="margin:0 0 10px">Whenever the city emails a permit or inspection update, send a copy to this site's inbox and Plumb posts it under <b>Incoming updates</b>:</p>
+    <p style="margin:0 0 10px">Whenever the city emails a permit or inspection update, send a copy to this site's inbox and SitePlumb posts it under <b>Incoming updates</b>:</p>
     <p style="margin:0 0 12px">${chip}</p>
     <div class="fld-label" style="margin-top:2px">Step-by-step for your email provider</div>
     <select class="fld-select" id="mailProvSel" data-ss-title="Your email provider" onchange="if(this.value){window.open(this.value,'_blank','noopener');this.selectedIndex=0;}">
@@ -9178,8 +9180,8 @@ function renderSubs(){
       ${groups[sp.id].map(s=>{
         const openN=visibleItems().filter(it=>it.crew===sp.label&&it.issue&&it.status==='open').length;
         const inv=appMode()==='real'?((P().invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked')):null;
-        const invHTML=appMode()!=='real'?'' : inv?(inv.status==='joined'?'<span class="cleared">In Plumb</span>':'<span class="cleared" style="opacity:.65">Invited</span>')
-          :`<button class="rm" style="color:var(--oak)" onclick="createInvite('sub','${s.id}')" title="Invite to Plumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg></button>`;
+        const invHTML=appMode()!=='real'?'' : inv?(inv.status==='joined'?'<span class="cleared">In SitePlumb</span>':'<span class="cleared" style="opacity:.65">Invited</span>')
+          :`<button class="rm" style="color:var(--oak)" onclick="createInvite('sub','${s.id}')" title="Invite to SitePlumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg></button>`;
         return `<div class="subrow">
           <div class="si" style="cursor:pointer" onclick="openSubDetail('${s.id}')"><div class="n">${esc(s.name)}</div><div class="d">${s.phone?esc(s.phone)+' · ':''}${openN?openN+' open item'+(openN===1?'':'s'):'no open items'}</div></div>
           ${s.cleared?`<span class="cleared">Cleared</span>`:''}<button class="rm" style="color:var(--oak)" onclick="openPacket('${s.id}')" title="Install packet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9zM9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 11h6M9 15h6"/></svg></button>${invHTML}
@@ -9473,13 +9475,13 @@ async function shareInvite(code){
   // Code sits alone on its own line so the recipient can double-tap just the
   // code to select it, without grabbing the surrounding directions.
   const msg=
-    'You\u2019re invited to Plumb (it\u2019s how we\u2019ll coordinate the build).\n\n'+
+    'You\u2019re invited to SitePlumb (it\u2019s how we\u2019ll coordinate the build).\n\n'+
     'Easiest way \u2014 just tap this link, it sets everything up:\n'+link+'\n\n'+
-    'Or enter it by hand. Open Plumb \u2192 Live \u2192 \u201cI have an invite code,\u201d then enter:\n\n'+
+    'Or enter it by hand. Open SitePlumb \u2192 Live \u2192 \u201cI have an invite code,\u201d then enter:\n\n'+
     code+'\n';
   let copied=false;
   try{await navigator.clipboard.writeText(code);copied=true;}catch(e){}
-  try{if(navigator.share){await navigator.share({title:'Your Plumb invite',text:msg});return;}}catch(e){/* user closed the sheet */}
+  try{if(navigator.share){await navigator.share({title:'Your SitePlumb invite',text:msg});return;}}catch(e){/* user closed the sheet */}
   toast(copied?'Code copied \u2014 invite text ready to paste':'Couldn\u2019t copy on this device \u2014 long-press the code instead');}
 /* On load, if the app was opened from an invite link, reveal and prefill the
    code field. Returning users land on Sign in; new users tap Create account —
@@ -9534,7 +9536,7 @@ function invBarCopy(){
   const flash=()=>{try{const b=document.getElementById('invBarCopy');
       if(b&&!b._busy){b._busy=1;const o=b.textContent;b.textContent='Copied';
         setTimeout(()=>{b.textContent=o;b._busy=0;},1800);}}catch(e){}
-    toast('Code '+c+' copied - in Plumb tap I have an invite code, then Paste code');
+    toast('Code '+c+' copied - in SitePlumb tap I have an invite code, then Paste code');
     logEvent('inviteBarCopied','');};
   try{if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(c).then(flash,()=>toast('Your invite code is '+c));return;}}catch(e){}
@@ -9553,7 +9555,7 @@ function maybeInviteBar(){
     if(!invPendingCode())return false;
     const bar=document.getElementById('invBar');if(!bar)return false;
     const s=document.getElementById('invBarS');
-    if(s)s.textContent='Already have Plumb on your home screen? Copy the code, open Plumb there and paste it. If you do not have it yet, Add to home screen does both for you.';
+    if(s)s.textContent='Already have SitePlumb on your home screen? Copy the code, open SitePlumb there and paste it. If you do not have it yet, Add to home screen does both for you.';
     _invBarShowing=true;
     setTimeout(()=>{try{bar.classList.add('show');}catch(e){}},700);
     logEvent('inviteBarShown','');
@@ -9824,7 +9826,7 @@ function openSubDetail(id){const p=P();const s=p&&(p.subs||[]).find(x=>x.id===id
   document.getElementById('sdName').textContent=s.name;
   const row=(label,val,href)=>val?`<div class="sd-row"><div class="sd-l">${label}</div><div class="sd-v">${href?`<a href="${href}" style="color:var(--oak);text-decoration:none">${esc(val)}</a>`:esc(val)}</div></div>`:'';
   const inv=appMode()==='real'?((P().invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked')):null;
-  const access=appMode()!=='real'?'':(inv?(inv.status==='joined'?'In Plumb — has live access':'Invited · code '+esc(inv.code)+' (waiting to join)'):'Not invited to Plumb yet');
+  const access=appMode()!=='real'?'':(inv?(inv.status==='joined'?'In SitePlumb — has live access':'Invited · code '+esc(inv.code)+' (waiting to join)'):'Not invited to SitePlumb yet');
   let h=`<div class="sd-card">`
     +row('Trade',specLabel(s.specialty))
     +row('Contact',s.contact)
@@ -9836,7 +9838,7 @@ function openSubDetail(id){const p=P();const s=p&&(p.subs||[]).find(x=>x.id===id
     +(access?row('Live access',access):'')
     +`</div>`;
   if(s.notes)h+=`<div class="lbl" style="margin-top:12px">Notes</div><div class="sd-notes">${esc(s.notes)}</div>`;
-  if(appMode()==='real'&&!inv)h+=`<button class="add-sub-btn" style="margin-top:12px" onclick="closeSubDetail();createInvite('sub','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite ${esc(s.name)} to Plumb…</button>`;
+  if(appMode()==='real'&&!inv)h+=`<button class="add-sub-btn" style="margin-top:12px" onclick="closeSubDetail();createInvite('sub','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite ${esc(s.name)} to SitePlumb…</button>`;
   document.getElementById('sdBody').innerHTML=h;
   document.getElementById('subDetailScrim').classList.add('show');}
 function closeSubDetail(){document.getElementById('subDetailScrim').classList.remove('show');}
@@ -9998,7 +10000,7 @@ function icsDate(ts){const d=new Date(ts);return d.getFullYear()+String(d.getMon
 function icsForBookings(list,title){
   const stamp=(function(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,'0');
     return d.getUTCFullYear()+p(d.getUTCMonth()+1)+p(d.getUTCDate())+'T'+p(d.getUTCHours())+p(d.getUTCMinutes())+p(d.getUTCSeconds())+'Z';})(Date.now());
-  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Plumb//Schedule//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:'+icsEsc(title||'Plumb schedule')];
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//SitePlumb//Schedule//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:'+icsEsc(title||'SitePlumb schedule')];
   list.forEach(b=>{
     L.push('BEGIN:VEVENT','UID:'+b.id+'@plumb',
       'DTSTAMP:'+stamp,                                            // RFC 5545 requires this; iOS rejects events without it
@@ -10029,7 +10031,7 @@ function emitICS(txt,filename,countMsg){
 function calExport(){
   const list=calVisibleBookings();
   if(!list.length){toast('Nothing on the calendar to export');return;}
-  const who=calIsSub()?((state.session||{}).name||'My'):'Plumb';
+  const who=calIsSub()?((state.session||{}).name||'My'):'SitePlumb';
   if(emitICS(icsForBookings(list,who+' schedule'),'plumb-schedule.ics','Calendar ready — open it to add '+list.length+' booking'+(list.length===1?'':'s')))
     logEvent('icsExport',list.length+' bookings');}
 /* Add a single booking to the phone's calendar — the action a sub actually
@@ -10037,7 +10039,7 @@ function calExport(){
 function bkToCalendar(pid,id){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const b=(p.bookings||[]).find(x=>String(x.id)===String(id));if(!b)return;
-  if(emitICS(icsForBookings([{...b,p}],'Plumb booking'),'plumb-booking.ics','Opening your calendar to add this booking\u2026'))
+  if(emitICS(icsForBookings([{...b,p}],'SitePlumb booking'),'plumb-booking.ics','Opening your calendar to add this booking\u2026'))
     logEvent('icsExport','single booking');}
 /* weather: Open-Meteo, keyless, cached 6h per city. Quiet failure offline. */
 const EXTERIOR_TRADES=['excav','foundation','concrete','framing','roofing','siding','exterior','gutters','garage','landscape','masonry'];
@@ -10094,7 +10096,7 @@ function bkInviteLine(b){
   const inv=(p.invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,sub)&&i.status!=='revoked');
   if(inv&&inv.status==='joined')return '';
   if(inv)return `<div class="bk-invite" onclick="event.stopPropagation();shareInvite('${esc(inv.code)}')">Not joined yet \u00b7 code <b>${esc(inv.code)}</b> \u2014 tap to share again</div>`;
-  return `<div class="bk-invite warn" onclick="event.stopPropagation();bkInviteSub('${p.id}','${sub.id}')">Not in Plumb \u2014 tap to invite so they get this booking</div>`;}
+  return `<div class="bk-invite warn" onclick="event.stopPropagation();bkInviteSub('${p.id}','${sub.id}')">Not in SitePlumb \u2014 tap to invite so they get this booking</div>`;}
 function bkInviteSub(pid,subId){if(String(P().id)!==String(pid))Data.setActive(pid);createInvite('sub',subId);}
 const BK_STATUS={pending:{label:'Awaiting reply',cls:'pd'},confirmed:{label:'Confirmed',cls:''},declined:{label:'Can\u2019t make it',cls:'dc'},modified:{label:'New dates proposed',cls:'md'}};
 function bkSetStatus(p,id,st){const b=(p.bookings||[]).find(x=>x.id===id);if(!b)return;b.status=st;persist();
@@ -10440,7 +10442,7 @@ function bkOfferInvite(p,name,wasAdded){
   if(!wasAdded||appMode()!=='real')return;
   const s=(p.subs||[]).find(x=>x.name===name);if(!s)return;
   openConfirm({title:'Invite '+name+' to connect?',
-    body:esc(name)+' is scheduled. Send an invite so they can see '+esc(p.street||p.name)+' in Plumb — they get a code and a one-tap link. You can also do this anytime from the site’s Subs tab.',
+    body:esc(name)+' is scheduled. Send an invite so they can see '+esc(p.street||p.name)+' in SitePlumb — they get a code and a one-tap link. You can also do this anytime from the site’s Subs tab.',
     okLabel:'Send invite',cancelLabel:'Not now',
     onConfirm:()=>{try{Data.setActive(p.id);createInvite('sub',s.id);}catch(e){}}});}
 function closeBk(){document.getElementById('bkScrim').classList.remove('show');_bkSubMod=null;}
@@ -10750,13 +10752,13 @@ function packetHTML(p,tradeId){
       </div></div>`;
     h+=`<button class="add-sub-btn" style="margin-top:8px" onclick="openIdea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Add a note for your builder…</button>`;
   }
-  // builder: invite the matched sub to Plumb straight from their packet (#2)
+  // builder: invite the matched sub to SitePlumb straight from their packet (#2)
   if(isBuilder&&sb){
     const inv=(p.invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked');
     h+='<div class="eyebrow" style="margin-top:14px">Live access</div>';
-    if(inv&&inv.status==='joined')h+=`<div class="pkt-foot"><b>${esc(sb.name)} is in Plumb.</b> They see this packet live and get a buzz when you schedule them.</div>`;
+    if(inv&&inv.status==='joined')h+=`<div class="pkt-foot"><b>${esc(sb.name)} is in SitePlumb.</b> They see this packet live and get a buzz when you schedule them.</div>`;
     else if(inv)h+=`<div class="pkt-foot">Invite code <b>${esc(inv.code)}</b> sent to ${esc(sb.name)} — waiting for them to join. <span class="pkt-vis" style="margin-left:4px" onclick="event.stopPropagation();shareInvite('${esc(inv.code)}')">Share again</span></div>`;
-    else h+=`<button class="add-sub-btn" onclick="invitePacketSub('${p.id}','${sb.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite ${esc(sb.name)} to Plumb…</button>`;
+    else h+=`<button class="add-sub-btn" onclick="invitePacketSub('${p.id}','${sb.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite ${esc(sb.name)} to SitePlumb…</button>`;
   }
   h+='<div class="eyebrow" style="margin-top:14px">Questions?</div>';
   h+=`<div class="pkt-foot">${team.length?'Reach '+team.map(uid=>esc(p.memberInfo[uid].name)+(RP_ROLES[p.memberInfo[uid].rpRole]?' ('+esc(RP_ROLES[p.memberInfo[uid].rpRole])+')':'')).join(' or ')+', or flag':'Flag'} anything from your to-do list — it lands in the builder\u2019s feed instantly.</div>`;
@@ -10984,7 +10986,7 @@ function pickChip(el){
    iPhone/Safari has no install API, so we show the manual steps. */
 let deferredPrompt=null;
 function isStandalone(){try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(e){return false;}}
-/* ── Plumb server (Cloud Functions): callable-lite protocol ── */
+/* ── SitePlumb server (Cloud Functions): callable-lite protocol ── */
 const FN_BASE='https://us-central1-plumb-467a0.cloudfunctions.net/';
 async function fnCall(name,data){
   const u=(typeof firebase!=='undefined'&&firebase.auth&&firebase.auth().currentUser);
@@ -11012,7 +11014,7 @@ const _chevSVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 function openInstall(){
   try{const b=document.getElementById('invBar');if(b)b.classList.remove('show');}catch(e){}
   const body=document.getElementById('installBody');if(!body)return;
-  if(isStandalone()){body.innerHTML='<div class="inst-done">✓ You’re all set — Plumb is already on this device’s Home Screen.</div>';}
+  if(isStandalone()){body.innerHTML='<div class="inst-done">✓ You’re all set — SitePlumb is already on this device’s Home Screen.</div>';}
   else if(isIOSdevice()){
     const inSafari=isSafariBrowser()&&!isInAppBrowser();
     const v=iosMajor();
@@ -11022,21 +11024,21 @@ function openInstall(){
     if(iosThirdPartyBrowser()&&!isInAppBrowser()){
       steps=li(_shareSVG,'Tap the <b>Share</b> button','In this browser\u2019s toolbar, by the address bar.')
         +li(_plusSVG,'Tap <b>Add to Home Screen</b>','Scroll down the actions list to find it.')
-        +li(_checkSVG,'Tap <b>Add</b>.','Plumb lands on your Home Screen. Needs iOS 16.4 or later \u2014 otherwise use Safari.');
+        +li(_checkSVG,'Tap <b>Add</b>.','SitePlumb lands on your Home Screen. Needs iOS 16.4 or later \u2014 otherwise use Safari.');
     } else if(v>0&&v<26){
       steps=li(_shareSVG,'Tap the <b>Share</b> button','The square-with-an-arrow icon at the bottom of Safari.')
         +li(_plusSVG,'Tap <b>Add to Home Screen</b>','Scroll down the actions list to find it.')
-        +li(_checkSVG,'Tap <b>Add</b>, top-right.','Plumb lands on your Home Screen.');
+        +li(_checkSVG,'Tap <b>Add</b>, top-right.','SitePlumb lands on your Home Screen.');
     } else {
       steps=li(_moreSVG,'Tap <b>\u2022\u2022\u2022</b>','To the right of the address bar.')
         +li(_shareSVG,'Tap <b>Share</b>','It\u2019s in the menu that opens.')
         +li(_chevSVG,'Tap <b>View More</b>','At the end of the actions row.')
         +li(_plusSVG,'Tap <b>Add to Home Screen</b>','Scroll down the list to find it.')
-        +li(_checkSVG,'Tap <b>Add</b>, top-right.','Plumb lands on your Home Screen.');
+        +li(_checkSVG,'Tap <b>Add</b>, top-right.','SitePlumb lands on your Home Screen.');
     }
     body.innerHTML='<ol class="inst-steps">'+safariStep+steps+'</ol>';
   } else if(isAndroid()){
-    const oneTap=deferredPrompt?'<button class="b1 b-go inst-btn" onclick="doInstall()">Install Plumb</button><div class="inst-note" style="margin:8px 0 4px">One tap — installs like a regular app. Or do it manually:</div>':'';
+    const oneTap=deferredPrompt?'<button class="b1 b-go inst-btn" onclick="doInstall()">Install SitePlumb</button><div class="inst-note" style="margin:8px 0 4px">One tap — installs like a regular app. Or do it manually:</div>':'';
     let asteps;
     if(isSamsungBrowser()){
       asteps='<li><span class="inst-ic">'+_moreSVG+'</span>Tap the <b>≡</b> menu at the bottom-right.</li>'+
@@ -11045,23 +11047,23 @@ function openInstall(){
     } else if(/firefox/i.test(navigator.userAgent||'')){
       asteps='<li><span class="inst-ic">'+_moreSVG+'</span>Tap the <b>⋮</b> menu next to the address bar.</li>'+
         '<li><span class="inst-ic">'+_plusSVG+'</span>Tap <b>Add to Home screen</b>.</li>'+
-        '<li><span class="inst-ic">'+_checkSVG+'</span>Tap <b>Add</b> — Plumb lands on your Home Screen.</li>';
+        '<li><span class="inst-ic">'+_checkSVG+'</span>Tap <b>Add</b> — SitePlumb lands on your Home Screen.</li>';
     } else {
       asteps='<li><span class="inst-ic">'+_moreSVG+'</span>Tap the <b>⋮</b> menu at the top-right of Chrome.</li>'+
         '<li><span class="inst-ic">'+_plusSVG+'</span>Tap <b>Add to Home screen</b> (or <b>Install app</b>).</li>'+
-        '<li><span class="inst-ic">'+_checkSVG+'</span>Tap <b>Install</b> to confirm — Plumb lands on your Home Screen.</li>';
+        '<li><span class="inst-ic">'+_checkSVG+'</span>Tap <b>Install</b> to confirm — SitePlumb lands on your Home Screen.</li>';
     }
     body.innerHTML=oneTap+'<ol class="inst-steps">'+asteps+'</ol>';
   } else if(isMacSafari()){
     body.innerHTML='<ol class="inst-steps">'+
       '<li><span class="inst-ic">'+_moreSVG+'</span>In the menu bar at the top of your screen, click <b>File</b>.</li>'+
       '<li><span class="inst-ic">'+_plusSVG+'</span>Click <b>Add to Dock</b>.</li>'+
-      '<li><span class="inst-ic">'+_checkSVG+'</span>Click <b>Add</b> — Plumb lands in your Dock as its own app.</li>'+
+      '<li><span class="inst-ic">'+_checkSVG+'</span>Click <b>Add</b> — SitePlumb lands in your Dock as its own app.</li>'+
       '</ol>'+'<div class="inst-note">Needs Safari 17 (macOS Sonoma) or later. On older Macs, install with <b>Chrome</b> or <b>Edge</b> instead.</div>';
   } else if(isDesktopFirefox()){
-    body.innerHTML='<div class="inst-note">Firefox on the desktop doesn’t support installing web apps — but Plumb works fully right here in the tab. To pin it as an app in your Dock or taskbar, open this page once in <b>Chrome</b>, <b>Edge</b>, or <b>Safari</b> and install from there.</div>';
+    body.innerHTML='<div class="inst-note">Firefox on the desktop doesn’t support installing web apps — but SitePlumb works fully right here in the tab. To pin it as an app in your Dock or taskbar, open this page once in <b>Chrome</b>, <b>Edge</b>, or <b>Safari</b> and install from there.</div>';
   } else if(deferredPrompt){
-    body.innerHTML='<button class="b1 b-go inst-btn" onclick="doInstall()">Install Plumb</button><div class="inst-note">One tap — installs like a regular app in your Dock or taskbar. You can also click the install icon at the right end of the address bar.</div>';
+    body.innerHTML='<button class="b1 b-go inst-btn" onclick="doInstall()">Install SitePlumb</button><div class="inst-note">One tap — installs like a regular app in your Dock or taskbar. You can also click the install icon at the right end of the address bar.</div>';
   } else {
     body.innerHTML='<div class="inst-note">Open your browser menu (<b>⋮</b>) and choose <b>Install app</b> or <b>Add to Home screen</b>.</div>';
   }
@@ -11076,7 +11078,7 @@ function installRequestedByUrl(){try{const p=new URLSearchParams(location.search
 function maybeNudgeInstall(){try{if(_authActionPending())return;if(_DEMO_ON_ARRIVAL)return;if(isStandalone())return;if(installRequestedByUrl()){openInstall();return;}if(localStorage.getItem('plumb.installNudged'))return;setTimeout(()=>{if(!isStandalone()&&!document.body.classList.contains('on-excursion')){openInstall();try{localStorage.setItem('plumb.installNudged','1');}catch(e){}}},2600);}catch(e){}}
 if(typeof window!=='undefined'){
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;refreshInstallEntry();});
-  window.addEventListener('appinstalled',()=>{deferredPrompt=null;const b=document.getElementById('loginInstall');if(b)b.style.display='none';try{toast('Plumb installed');}catch(e){}});
+  window.addEventListener('appinstalled',()=>{deferredPrompt=null;const b=document.getElementById('loginInstall');if(b)b.style.display='none';try{toast('SitePlumb installed');}catch(e){}});
 }
 
 function growNote(ta){if(!ta)return;ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,260)+'px';}
@@ -11426,7 +11428,7 @@ function renderFeedbackList(){
 function toggleFeedback(id){const f=state.feedback.find(x=>x.id===id);Data.updateFeedback(id,{done:!f.done,completedT:!f.done?Date.now():null});renderFeedbackList();}
 function deleteFeedback(id){confirmDelete({title:'Delete this entry?',body:'This removes the report from your list. This cannot be undone.',onConfirm:()=>{Data.removeFeedback(id);renderFeedbackList();toast('Entry deleted');}});}
 
-function devExport(){const data={app:'Plumb',version:PLUMB_VERSION,build:APP_VERSION,exported:new Date().toISOString(),projects:state.projects,activeId:state.activeId,feedback:state.feedback,note:'Photo binaries live in IndexedDB and are not included in this JSON.'};
+function devExport(){const data={app:'SitePlumb',version:PLUMB_VERSION,build:APP_VERSION,exported:new Date().toISOString(),projects:state.projects,activeId:state.activeId,feedback:state.feedback,note:'Photo binaries live in IndexedDB and are not included in this JSON.'};
   try{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='plumb-export-'+PLUMB_BUILD+'.json';a.click();logEvent('dataExport',P().items.length+' records');toast('Exported JSON');}catch(e){toast('Export failed on this device');}}
 function devImport(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);
   if(d.projects){state.projects=d.projects;if(d.activeId)state.activeId=d.activeId;}

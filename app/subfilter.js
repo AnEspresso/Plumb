@@ -1,4 +1,4 @@
-/* subfilter.js — permanent sub-view filtering-integrity test for Plumb.
+/* subfilter.js — permanent sub-view filtering-integrity test for SitePlumb.
  *
  * WHY: information isolation between subcontractors is a core promise of the app.
  * A sub must never SEE another sub's bookings, specs, selections, or items in the

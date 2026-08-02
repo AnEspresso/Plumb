@@ -1,6 +1,6 @@
 {
-  "name": "Plumb — true to the build",
-  "short_name": "Plumb",
+  "name": "SitePlumb — true to the build",
+  "short_name": "SitePlumb",
   "description": "Field management for custom-home builders: daily logs, photos, open items, schedule, permits, and selections.",
   "start_url": ".",
   "scope": ".",

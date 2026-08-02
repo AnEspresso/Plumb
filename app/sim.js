@@ -1,4 +1,4 @@
-/* sim.js — Plumb full-app functional simulator (Phase 1).
+/* sim.js — SitePlumb full-app functional simulator (Phase 1).
  *
  * Boots the REAL deployed index.html headlessly (jsdom), then plays out real
  * user stories across all three roles, asserting after every step:
@@ -70,7 +70,7 @@ t('devErrors ages out 14d+ and caps at 20', (function(){const a=JSON.parse($("JS
 $("trapError('test','newest','sim')");
 t('trapError prunes on write too', (function(){const a=JSON.parse($("localStorage.getItem('plumb.errors')"));return a.length<=20&&a[0].m==='newest';})());
 $("localStorage.removeItem('plumb.errors')");
-t('desktop rail brand present in nav', $("document.querySelector('nav .rail-brand .wordmark').textContent").includes('Plumb'));
+t('desktop rail brand present in nav', $("document.querySelector('nav .rail-brand .wordmark').textContent").includes('SitePlumb'));
 t('rail foot carries the live sync pill', $("document.querySelector('nav .rail-foot .syncpill').textContent").includes('device'));
 
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
