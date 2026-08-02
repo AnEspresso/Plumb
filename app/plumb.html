@@ -14,7 +14,7 @@
 <title>Plumb</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9,400;0,9,500;0,9,600;1,9,400;1,9,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#F2EEE6; --surface:#FBF9F4; --surface-2:#F7F3EB;
@@ -2843,12 +2843,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.195.0 - The example build keeps its floor clear. No install prompt may appear while the demo is running - the nudge timer could arm at page load and fire an Add to Home Screen sheet over the demo seconds after someone stepped in, which read as a glitch and interrupted exactly the person we invited to look around. And arriving in the demo now offers the two minute walkthrough up front, recommended but declinable, instead of leaving people to find the tour by accident';
+const PLUMB_VERSION='2.196.0 - The demo link now works while signed in. Tapping the example build used to open your own account silently with no tour and no exit - the demo borrows the screen and the exit fork hands the account back. And the app pins its serif to the text optical size so the capital J in Job costing stops wearing the display hook';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1780876800000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785628800000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -11514,7 +11514,9 @@ async function devSelfTest(){
      The cards stayed painted from the demo render while state.projects was
      already the real, empty list - visible, and dead to every tap. Nothing is
      allowed to run after this. */
-  if(_DEMO_ON_ARRIVAL&&!state.session){
+  /* A signed-in visitor who taps the demo link gets the demo, not their own
+     builds - enterDemo suspends the session and the exit fork hands it back. */
+  if(_DEMO_ON_ARRIVAL){
     try{history.replaceState(null,'',location.pathname);}catch(e){}
     try{enterDemo();}catch(e){}
   }
