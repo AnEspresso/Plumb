@@ -214,6 +214,44 @@ async function tappable(page,sel){
   await shot(page,'09-glyph-specimen');
   await page.evaluate(()=>document.getElementById('qaSpecimen').remove());
 
+  /* ══ GUEST PACKET PAGE: arrives from a text, one tap to answer ══ */
+  const guest=await prepPage(browser);
+  await guest.evaluateOnNewDocument(()=>{
+    window.__packetFixture={v:1,t:Date.now(),expires:Date.now()+10*864e5,
+      site:'288 Calderwood Ln \u00b7 Ferndale',builder:'Demo Builder',sub:'Clearwater Plumbing',
+      trade:'plumb',tradeLabel:'Plumbing',start:Date.now()+3*864e5,end:Date.now()+5*864e5,
+      note:'Rough-in \u2014 gate code 4417',
+      specs:[{item:'Brushed brass / matte black',cat:'Plumbing Fixtures',room:'Whole House',
+        rows:[{k:'Finish',v:'Brushed brass / matte black'},{k:'Valve height',gap:'builder'}]}],
+      docs:['Mechanical / HVAC Layout.pdf'],siteId:'p2',bookingId:'bk_p2a',resp:null,
+      ctx:{ready:'Site marked ready for you',permit:'Plumbing Permit: Issued',insp:'rough plumb inspection: scheduled',
+        history:[{d:'Jul 30',text:'Roof dried-in, windows and exterior doors installed'},{d:'Jul 28',text:'Framing topped out, trusses set and braced'}]}};
+  });
+  await guest.goto('http://localhost:'+PORT+'/index.html?packet=qa',{waitUntil:'load'});
+  await new Promise(r=>setTimeout(r,1600));
+  t('guest page renders over everything', await guest.evaluate(()=>document.getElementById('guestScrim').classList.contains('show')));
+  t('guest page shows no install chrome and no login', await guest.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return e&&e.classList.contains('show');};return !vis('installGate')&&!vis('installScrim');}));
+  t('guest page shows readiness context and site history', await guest.evaluate(()=>{const h=document.getElementById('gpBody').innerHTML;return h.includes('Site marked ready for you')&&h.includes('Before you arrive')&&h.includes('Framing topped out');}));
+  for(const [sel,label] of [["#gpBody .gp-btn.go",'These dates work'],["#gpBody .gp-btn.ghost",'Suggest a change']]){
+    const r=await tappable(guest,sel);t('guest button tappable: '+label,r.ok,r.why);
+  }
+  await shot(guest,'11-guest-packet');
+  await guest.evaluate(()=>gpConfirm());
+  await new Promise(r=>setTimeout(r,200));
+  t('one tap confirms and offers the calendar', await guest.evaluate(()=>document.getElementById('gpBody').innerHTML.includes('Confirmed.')&&document.getElementById('gpBody').innerHTML.includes('Add to my calendar')));
+  const cal=await tappable(guest,"#gpBody .gp-btn.ghost");
+  t('calendar button tappable after confirm', cal.ok, cal.why);
+  await shot(guest,'12-guest-confirmed');
+  await guest.evaluate(()=>gpToggleAsk());
+  await guest.evaluate(()=>document.querySelector('#gpAsk .gp-btn.go').scrollIntoView({block:'center'}));
+  await new Promise(r=>setTimeout(r,250));
+  const ask=await tappable(guest,"#gpAsk .gp-btn.go");
+  t('guest ask-question send button tappable', ask.ok, ask.why);
+  await guest.evaluate(()=>{document.getElementById('gpQText').value='Gas or electric water heater?';gpSendQuestion();});
+  await new Promise(r=>setTimeout(r,150));
+  t('guest question renders in the thread', await guest.evaluate(()=>document.getElementById('gpBody').innerHTML.includes('Gas or electric water heater?')&&document.getElementById('gpBody').innerHTML.includes('will get back to you')));
+  await shot(guest,'13-guest-question');
+
   /* ══ ACCESSIBILITY (axe-core): no critical violations allowed ══ */
   await page.evaluate(()=>{try{demoRole('hillan');showOverview();}catch(e){}});
   await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});

@@ -847,6 +847,72 @@ $("localStorage.removeItem('plumbSuspend');localStorage.setItem('plumb.mode','de
 t('gear rows offer tour + example build', $("!!document.getElementById('welcomeScrim')")===true&&el('devpanel').innerHTML.includes('Replay the tour'));
 asBuilder();$("state.activeId='p2'");$("localStorage.removeItem('plumbWelcomed')");
 
+/* ════ 14k2 · GUEST SUB PACKET LINKS ════ */
+S('guest packets');
+asBuilder();
+$("state.activeId='p2'");
+// snapshot: composed from the booking, trade-filtered, and carries NO money
+const snap=JSON.parse($("JSON.stringify(packetSnapshot(state.projects[1],(state.projects[1].bookings||[]).find(b=>b.trade==='plumb')))"));
+t('snapshot carries site, dates, sub and trade', !!snap.site&&!!snap.start&&snap.sub==='Clearwater Plumbing'&&snap.trade==='plumb');
+t('snapshot specs are trade-filtered only', (snap.specs||[]).every(x=>['Plumbing Fixtures'].includes(x.cat)));
+t('snapshot carries no prices or budget data', JSON.stringify(snap).indexOf('price')<0&&JSON.stringify(snap).indexOf('budget')<0&&JSON.stringify(snap).indexOf('amount')<0);
+t('snapshot expiry outlives the booking', snap.expires>snap.end&&snap.expires>Date.now()+6*86400000);
+t('snapshot docs are sub-audience names only', Array.isArray(snap.docs)&&snap.docs.every(d=>typeof d==='string'));
+// guest render from a fixture (exactly the offline/QA path)
+$("window.__packetFixture="+JSON.stringify(snap));
+$("renderGuestPacket('fixture-test')");
+t('guest page renders with both decision buttons', el('gpBody').innerHTML.indexOf('These dates work')>=0&&el('gpBody').innerHTML.indexOf('Suggest a change')>=0);
+t('guest page shows the specs it was sent', el('gpBody').innerHTML.indexOf('install specs')>=0);
+t('guest overlay is showing', $("document.getElementById('guestScrim').classList.contains('show')")===true);
+// one-tap confirm flips to the confirmed state with a calendar button
+$("gpConfirm()");
+t('confirm renders the confirmed state', el('gpBody').innerHTML.indexOf('Confirmed.')>=0&&el('gpBody').innerHTML.indexOf('Add to my calendar')>=0);
+t('ics is well formed', (function(){const i=$("gpIcs(_gpSnap)");return i.indexOf('BEGIN:VCALENDAR')===0&&i.indexOf('DTSTART;VALUE=DATE:')>0&&i.indexOf('END:VEVENT')>0;})());
+// change-request path records only resp
+$("_gpSnap.resp=null;_gpRender()");
+$("gpToggleChange()");
+$("document.getElementById('gpStart').value='2030-05-06'");
+$("document.getElementById('gpEnd').value='2030-05-08'");
+$("document.getElementById('gpNote').value='Crew frees up Tuesday'");
+$("gpSendChange()");
+t('change request records status, dates and note', (function(){const r=JSON.parse($("JSON.stringify(_gpSnap.resp)"));return r.status==='change'&&r.start>0&&r.note==='Crew frees up Tuesday';})());
+// v2.207: self-assembled context + Q&A loop + scheduling arms the questions
+t('snapshot assembles permit, inspection and readiness context', (function(){const c=snap.ctx||{};return typeof c.ready==='string'&&(c.insp||'').indexOf('inspection')>0;})());
+t('snapshot carries recent site history for context', (function(){const h=(snap.ctx||{}).history||[];return h.length>=2&&h.every(x=>typeof x.text==='string'&&x.text.length>0);})());
+t('history is text only - no photo or file references escape', (function(){const j=JSON.stringify((snap.ctx||{}).history||[]);return j.indexOf('photoId')<0&&j.indexOf('fileUrl')<0&&j.indexOf('fileId')<0;})());
+$("window.__packetFixture="+JSON.stringify(snap));
+$("renderGuestPacket('fixture-test')");
+$("gpToggleAsk()");
+$("document.getElementById('gpQText').value='Is the water heater gas or electric?'");
+$("gpSendQuestion()");
+t('guest question appends to the thread and renders', (function(){const q=JSON.parse($("JSON.stringify(_gpSnap.q)"));return q.length===1&&q[0].text.indexOf('water heater')>=0&&el('gpBody').innerHTML.indexOf('will get back to you')>=0;})());
+t('builder thread offers Answer and Share for an open question', (function(){const h=$("_bkQHTML(state.projects[1],state.projects[1].bookings[0],_gpSnap)");return h.indexOf('Answer')>=0&&h.indexOf('Share with homeowner')>=0;})());
+$("_gpSnap.q[0].a='Gas - 3/4 line is stubbed'");
+t('an answered question renders the answer on both sides', $("_bkQHTML(state.projects[1],state.projects[1].bookings[0],_gpSnap)").indexOf('Gas - 3/4 line is stubbed')>=0&&(function(){$("_gpRender()");return el('gpBody').innerHTML.indexOf('Gas - 3/4 line is stubbed')>=0;})());
+$("closeGuestPreview()");
+// scheduling arms the questions: p2 elec has gaps in the seed
+const armed=(function(){
+  $("(function(){const p=state.projects[1];const sb=p.subs.find(x=>x.specialty==='elec');if(sb){sb.specsDue=null;}_bkArmSpecs(p,'elec',Date.now()+12*86400000);})()");
+  return JSON.parse($("JSON.stringify(state.projects[1].subs.find(x=>x.specialty==='elec'))"));
+})();
+t('scheduling with gaps snaps the specs deadline before the crew', armed.specsDue>Date.now()&&armed.specsDue<Date.now()+9*86400000&&armed.specsDueBy==='Scheduling');
+t('arming never loosens an earlier deadline', (function(){
+  $("(function(){const p=state.projects[1];const sb=p.subs.find(x=>x.specialty==='elec');sb.specsDue=Date.now()+86400000;_bkArmSpecs(p,'elec',Date.now()+30*86400000);})()");
+  const sb=JSON.parse($("JSON.stringify(state.projects[1].subs.find(x=>x.specialty==='elec'))"));
+  return sb.specsDue<=Date.now()+86400000+1000;})());
+
+$("closeGuestPreview()");
+t('preview closes clean', $("document.getElementById('guestScrim').classList.contains('show')")===false&&$("typeof window.__packetFixture")==='undefined');
+// booking editor row: send button present for an existing booking; demo mode says Preview
+$("(function(){const p=state.projects[1];const b=p.bookings[0];bkRenderGuestRow(p,b);})()");
+t('booking editor offers the packet link', el('bkGuest').innerHTML.indexOf('packet link')>=0);
+t('demo mode labels it a preview', el('bkGuest').innerHTML.indexOf('Preview the packet link')>=0);
+$("bkRenderGuestRow(null,null)");
+t('guest row clears for new bookings', el('bkGuest').innerHTML==='');
+// accept-change applies the sub dates to the booking
+$("(function(){const p=state.projects[1];const b=p.bookings[0];b.pkToken='pkTEST';bkAcceptChange(p.id,b.id,1900000000000,1900172800000);})()");
+t('accepting a change rewrites the booking to the suggested dates', (function(){const b=JSON.parse($("JSON.stringify(state.projects[1].bookings[0])"));const ds=t=>{return Number($('dayStart('+t+')'));};return b.start===ds(1900000000000)&&b.end===ds(1900172800000)&&b.status==='confirmed';})());
+
 /* ════ 14l · PRIVACY & LEGAL + ACCOUNT DELETION ════ */
 S('legal');
 asBuilder();

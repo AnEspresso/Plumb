@@ -424,6 +424,29 @@
     color:var(--oak);font-size:14px;font-weight:600;padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;}
   .sm-new:active{background:var(--surface-2);}.sm-new svg{width:17px;height:17px;}
 
+  /* ───── guest packet page: one screen a sub opens from a text. No login, no
+     chrome, one decision. Reuses the pkt-* spec styles inside. ───── */
+  #guestScrim{position:fixed;inset:0;z-index:240;background:var(--paper);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #guestScrim.show{display:block;}
+  .gp-wrap{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 22px) 18px calc(env(safe-area-inset-bottom) + 30px);}
+  .gp-brand{display:flex;align-items:center;gap:8px;font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:19px;color:var(--ink);margin-bottom:14px;}
+  .gp-brand .dot{width:7px;height:7px;border-radius:50%;background:var(--oak);box-shadow:0 0 0 4px rgba(176,137,90,.14);}
+  .gp-preview{background:#3E3427;color:#E7DCC6;font-size:12.5px;font-weight:600;border-radius:10px;padding:9px 12px;margin-bottom:12px;text-align:center;}
+  .gp-site{font-family:'Source Serif 4',Georgia,serif;font-size:24px;font-weight:600;letter-spacing:-.01em;line-height:1.15;}
+  .gp-sub{font-size:13.5px;color:var(--ink-3);margin-top:3px;}
+  .gp-dates{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:16px;margin:16px 0 12px;}
+  .gp-dates .d{font-family:'Source Serif 4',Georgia,serif;font-size:22px;font-weight:600;}
+  .gp-dates .n{font-size:14px;color:var(--ink-2);margin-top:5px;line-height:1.45;}
+  .gp-btn{display:block;width:100%;border:none;border-radius:14px;padding:16px;font-family:inherit;font-size:16.5px;font-weight:700;cursor:pointer;}
+  .gp-btn.go{background:#1B1916;color:#F6F1E7;}
+  .gp-btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink);margin-top:9px;font-weight:600;}
+  .gp-ok{background:rgba(111,123,88,.13);border:1.5px solid var(--sage);border-radius:14px;padding:14px;font-size:15px;margin:14px 0;}
+  .gp-chg{display:none;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:13px;margin-top:10px;}
+  .gp-chg.show{display:block;}
+  .gp-chg label{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:8px 0 4px;}
+  .gp-chg input,.gp-chg textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-family:inherit;font-size:15px;background:var(--paper);}
+  .gp-foot{font-size:12px;color:var(--ink-3);margin-top:22px;text-align:center;line-height:1.6;}
+  .gp-err{text-align:center;padding:60px 10px;font-size:16px;color:var(--ink-2);line-height:1.6;}
   /* ───── in-app legal viewer: policies open OVER the app, never navigating
      away. Leaving the SPA and coming back reloads it through the boot gates
      (the install interstitial Peter hit) and tangles history. ───── */
@@ -1843,6 +1866,7 @@ body.on-tour .tour-card{display:block;}
   </div>
 
   <div id="legalDocScrim"><div class="ld-bar"><button class="ov-logout" onclick="closeLegalDoc()">Done</button></div><iframe id="legalDocFrame" src="about:blank" title="Policy document"></iframe></div>
+  <div id="guestScrim"><div class="gp-wrap" id="gpBody"></div></div>
   <div class="pmodal-scrim" id="pktLogScrim" style="z-index:118">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="pktLogTitle">Daily log / photos</h4>
@@ -1863,6 +1887,7 @@ body.on-tour .tour-card{display:block;}
         <div class="setup-roster-row"><input id="bkStart" type="date"><input id="bkEnd" type="date"></div>
         <input id="bkNote" placeholder="Note for sub — gate code, scope…" style="font-size:13.5px">
         <div id="bkPacket"></div>
+        <div id="bkGuest"></div>
         <button class="b1 b-go" style="width:100%;margin-top:10px" id="bkSave" onclick="bkSave()">Save</button>
         <button class="add-sub-btn" style="margin-top:8px;display:none;color:var(--clay)" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
       </div>
@@ -2855,12 +2880,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.205.0 - Real-user errors now report home. A trapped error used to live only in the device buffer, surfacing only if someone thought to send a bug report - now it rides the existing telemetry pipe, deduped and capped at five per session, so failures in the field are heard unprompted';
+const PLUMB_VERSION='2.208.0 - The packet now tells the sub what happened before them: their trades feed entries, shared milestones and the latest daily-log lines ride along as recent site history. Text only, by design - the link expires, so the story travels while the photo and document files stay behind the builder';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785634200000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785636000000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -4802,6 +4827,10 @@ if(typeof document!=='undefined')document.addEventListener('visibilitychange',()
 const _DEMO_ON_ARRIVAL=(function(){
   try{return (new URLSearchParams(location.search||'').get('demo')||'')==='1';}catch(e){return false;}})();
 let _DEMO_RESUME=false;   /* set by the suspend recovery when this same tab reloaded mid-demo */
+/* ?packet=TOKEN is a guest sub packet link: a time-limited, single-page view
+   for someone with no account and no install. The token is the capability. */
+const _PACKET_ON_ARRIVAL=(function(){
+  try{return (new URLSearchParams(location.search||'').get('packet')||'').trim()||null;}catch(e){return null;}})();
 const _AUTH_ACTION_ON_ARRIVAL=(function(){
   try{const q=new URLSearchParams(location.search||'');
     const m=q.get('mode')||'';
@@ -7852,7 +7881,7 @@ function maybeInstallGate(){
   try{
     if(_authActionPending())return false;   // never over a one-shot credential
     if(_invBarShowing)return false;         // the slim invite bar already has this covered
-    if(_DEMO_ON_ARRIVAL||_DEMO_RESUME)return false;       // we promised nothing to install
+    if(_DEMO_ON_ARRIVAL||_DEMO_RESUME||_PACKET_ON_ARRIVAL)return false;       // we promised nothing to install
     if(document.body.classList.contains('on-excursion'))return false;
     if(!isCoarseMobile()||isStandalonePWA())return false;
     if(sessionStorage.getItem('plumbBrowserOK')==='1')return false;
@@ -10935,6 +10964,7 @@ function bkSubModify(pid,id){
 function delAvail(pid,id){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;deleteAvail(p,id);renderDay();renderCal();}
 function openBk(ref,defTs){
   _bkEdit=null;
+  try{bkRenderGuestRow(null,null);}catch(e){}
   const siteSel=document.getElementById('bkSite'),subSel=document.getElementById('bkSub');
   const del=document.getElementById('bkDelete');const title=document.getElementById('bkTitle');
   const sites=(state.projects||[]);
@@ -10944,6 +10974,8 @@ function openBk(ref,defTs){
     const p=state.projects.find(x=>String(x.id)===String(pid));
     const b=p&&(p.bookings||[]).find(x=>x.id===bid);if(!b)return;
     _bkEdit={pid:pid,bid:bid};title.textContent='Edit booking';
+    try{const gp=state.projects.find(x=>String(x.id)===String(pid));
+      bkRenderGuestRow(gp,(gp.bookings||[]).find(x=>String(x.id)===String(bid)));}catch(e){}
     siteSel.value=pid;siteSel.disabled=true;
     bkFillSubs(pid);subSel.value=b.subName;subSel.disabled=true;
     document.getElementById('bkStart').value=new Date(b.start).toISOString().slice(0,10);
@@ -11074,7 +11106,7 @@ function bkSave(){
   if(_bkEdit){
     const ep=state.projects.find(x=>String(x.id)===String(_bkEdit.pid));
     const etrade=bkSelTrade()||'';
-    const applyEdit=()=>{updateBooking(ep,_bkEdit.bid,{start:start,end:end,note:note,status:'pending'});toast('Booking updated — the sub will be asked to confirm');done();};
+    const applyEdit=()=>{updateBooking(ep,_bkEdit.bid,{start:start,end:end,note:note,status:'pending'});_bkArmSpecs(ep,bkSelTrade()||'',start);toast('Booking updated — the sub will be asked to confirm');done();};
     if(etrade&&!packetReady(ep,etrade)){
       const gaps=tradeSpecGaps(ep,etrade).length;
       const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'the packet isn’t signed off yet';
@@ -11091,7 +11123,7 @@ function bkSave(){
   const trade=(subSel.selectedOptions[0]&&subSel.selectedOptions[0].getAttribute('data-trade'))||'';
   const onRoster=(p.subs||[]).some(s=>s.name===subName);
   const clash=[...new Set((p.bookings||[]).filter(b=>b.trade===trade&&b.subName&&b.subName!==subName).map(b=>b.subName))];
-  const finalize=()=>{addBooking(p,{subName:subName,trade:trade,start:start,end:end,note:note});toast(subName+' scheduled');done();bkOfferInvite(p,subName,!onRoster);};
+  const finalize=()=>{addBooking(p,{subName:subName,trade:trade,start:start,end:end,note:note});_bkArmSpecs(p,trade,start);toast(subName+' scheduled');done();bkOfferInvite(p,subName,!onRoster);};
   const packetGate=(next)=>{
     if(trade&&!packetReady(p,trade)){
       const gaps=tradeSpecGaps(p,trade).length;
@@ -11378,6 +11410,325 @@ function openPacket(subId){const sb=P().subs.find(x=>x.id===subId);if(!sb)return
    (the packet may be open for a non-active project), then runs the normal sub
    invite, which swaps the modal to show the shareable code. */
 function invitePacketSub(pid,subId){if(String(P().id)!==String(pid))Data.setActive(pid);createInvite('sub',subId);}
+/* ════════ guest sub packet links ════════
+   The whole design answers one fact: subs live in texts. So the packet ARRIVES
+   as a text, opens as one page, and is answerable in one tap - confirm or
+   suggest new dates. No account, no install, and the link expires on its own.
+   The snapshot is composed from the SAME trade-filtered accessors the in-app
+   sub view uses, so isolation is inherited, and it deliberately carries no
+   prices or budget data of any kind. */
+/* Which inspection and permit matter to a given trade - so the packet can
+   answer "is the site actually ready for me" without the builder typing it. */
+const PK_INSP={plumb:'rough_plumb',elec:'rough_elec',hvac:'rough_mech',insul:'insulation',
+  framing:'roughin',roofing:'roughin',drywall:'insulation',concrete:'foundation',excav:'site'};
+const PK_PERMIT={elec:'Electrical Permit',plumb:'Plumbing Permit',hvac:'Mechanical / HVAC Permit',
+  lowvolt:'Low-Voltage / Alarm Permit',fireplace:'Fireplace / Chimney Permit'};
+function packetSnapshot(p,b){
+  const trade=b.trade||'';
+  const sels=tradeSelections(p,trade).map(sel=>{
+    const st=specStatus(sel);
+    const rows=st.fields.map(f=>{
+      const val=String(f.value||'').trim();
+      if(val)return {k:f.label,v:val};
+      if(f.required)return {k:f.label,gap:(f.who==='homeowner'?'homeowner':'builder')};
+      return null;}).filter(Boolean);
+    return {item:sel.item||'',cat:sel.cat||'',room:(sel.room&&sel.room!=='\u2014')?sel.room:'',rows:rows};
+  });
+  const docs=(p.docs||[]).filter(d=>(!d.trade||d.trade===trade)&&docAudSub(d)).map(d=>String(d.n||''));
+  const sess=state.session||{};
+  return {v:1,t:Date.now(),
+    expires:Math.max((b.end||Date.now())+3*864e5,Date.now()+7*864e5),
+    site:String(p.street||p.name||'')+((p.city)?(' \u00b7 '+p.city):''),
+    builder:String(sess.name||'Your builder'),
+    sub:String(b.subName||''),trade:trade,tradeLabel:specLabel(trade),
+    start:b.start,end:b.end,note:String(b.note||''),
+    specs:sels,docs:docs,siteId:String(p.id),bookingId:String(b.id),resp:null,q:[],
+    ctx:(function(){
+      const c={};
+      const permName=PK_PERMIT[trade];
+      const perm=permName&&(p.permits||[]).find(x=>x.name===permName);
+      if(perm)c.permit=permName+': '+String(perm.status||'');
+      const ik=PK_INSP[trade];
+      const iv=ik&&(p.inspections||{})[ik];
+      if(iv){const meta=((p.inspMeta||{})[ik])||{};
+        c.insp=String(ik).replace('rough_','rough ').replace('_',' ')+' inspection: '+iv+(meta.date?(' ('+meta.date+')'):'');}
+      const sb=(p.subs||[]).find(x=>x.name===b.subName&&x.specialty===trade)||(p.subs||[]).find(x=>x.specialty===trade);
+      c.ready=(sb&&sb.cleared)?'Site marked ready for you':'Site not yet marked ready \u2014 confirm before mobilizing';
+      const open=(p.items||[]).filter(it=>it.crew===specLabel(trade)&&it.issue&&it.status==='open').map(it=>String(it.cap||'')).slice(0,4);
+      if(open.length)c.openItems=open;
+      /* Recent site history for context: this trade's own feed entries plus
+         shared milestones, and the last daily-log lines. TEXT ONLY, by design:
+         the packet link expires, but storage download URLs never do - so the
+         story rides along, the files stay behind the builder. */
+      const tl=specLabel(trade);
+      const hist=[];
+      (p.items||[]).filter(it=>(it.crew===tl||it.share)&&!(it.issue&&it.status==='open'))
+        .sort((a,b2)=>(b2.t||0)-(a.t||0)).slice(0,4)
+        .forEach(it=>hist.push({t:it.t||0,text:String(it.cap||'')}));
+      (p.logs||[]).slice(0,2).forEach(lg=>hist.push({t:lg.t||0,text:String(lg.text||'')}));
+      hist.sort((a,b2)=>(b2.t||0)-(a.t||0));
+      if(hist.length)c.history=hist.slice(0,5).map(x=>({d:new Date(x.t).toLocaleDateString(undefined,{month:'short',day:'numeric'}),text:x.text.slice(0,180)}));
+      return c;})()};
+}
+function _pkToken(){const a=new Uint8Array(16);crypto.getRandomValues(a);
+  return 'pk'+Array.from(a,x=>x.toString(16).padStart(2,'0')).join('');}
+function sendGuestPacket(pid,bid){
+  const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
+  const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));if(!b){toast('Save the booking first \u2014 the link carries its dates');return;}
+  const snap=packetSnapshot(p,b);
+  if(appMode()!=='real'||!laFirebaseReady()){
+    /* demo / offline: show exactly what the sub would receive */
+    openGuestPreview(snap);return;
+  }
+  const token=_pkToken();
+  try{
+    firebase.firestore().collection('packets').doc(token).set(snap)
+      .then(()=>{updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});
+        try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(b.id)));}catch(e){}
+        _sharePacketLink(snap,token);logEvent('packetLinkSent',snap.tradeLabel+' \u00b7 '+snap.site);})
+      .catch(e=>{toast('Could not create the link \u2014 check your connection');});
+  }catch(e){toast('Could not create the link');}
+}
+function _sharePacketLink(snap,token){
+  const url='https://siteplumb.com/app/?packet='+token;
+  const msg='Hi \u2014 '+fmtWin({start:snap.start,end:snap.end})+' at '+snap.site+'. Dates, scope and specs \u2014 one tap to confirm: '+url;
+  if(navigator.share){navigator.share({text:msg}).catch(()=>{_smsOrCopy(msg);});}
+  else _smsOrCopy(msg);
+}
+function _smsOrCopy(msg){
+  try{location.href='sms:?&body='+encodeURIComponent(msg);}catch(e){}
+  try{navigator.clipboard&&navigator.clipboard.writeText(msg).then(()=>toast('Message copied \u2014 paste it into a text'));}catch(e){}
+}
+function openGuestPreview(snap){window.__packetFixture=snap;renderGuestPacket('preview');}
+let _gpSnap=null,_gpToken=null;
+function renderGuestPacket(token){
+  _gpToken=token;
+  const sc=document.getElementById('guestScrim');sc.classList.add('show');
+  const body=document.getElementById('gpBody');
+  body.innerHTML='<div class="gp-err">Opening your packet\u2026</div>';
+  const fail=msg=>{body.innerHTML='<div class="gp-brand"><span class="dot"></span>SitePlumb</div><div class="gp-err">'+msg+'</div>';};
+  if(window.__packetFixture){_gpSnap=window.__packetFixture;_gpRender();return;}
+  if(!laFirebaseReady()){fail('This link needs a connection to open. Get a bar of signal and tap it again.');return;}
+  try{
+    firebase.firestore().collection('packets').doc(String(token)).get()
+      .then(d=>{if(!d.exists){fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.');return;}
+        _gpSnap=d.data();
+        if((_gpSnap.expires||0)<Date.now()){fail('This link has expired. Reply to the text you got and your builder will send a fresh one.');return;}
+        _gpRender();})
+      .catch(()=>fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.'));
+  }catch(e){fail('This link could not open. Reply to the text you got.');}
+}
+function _gpRender(){
+  const g=_gpSnap;const body=document.getElementById('gpBody');
+  const preview=(_gpToken==='preview');
+  const dates=fmtWin({start:g.start,end:g.end});
+  let h='';
+  h+='<div class="gp-brand"><span class="dot"></span>SitePlumb</div>';
+  if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your sub receives by text. Nothing was sent.</div>';
+  h+='<div class="gp-site">'+esc(g.site)+'</div>';
+  h+='<div class="gp-sub">'+esc(g.tradeLabel)+' \u00b7 for '+esc(g.sub)+' \u00b7 from '+esc(g.builder)+'</div>';
+  h+='<div class="gp-dates"><div class="d">'+esc(dates)+'</div>'+(g.note?'<div class="n">'+esc(g.note)+'</div>':'')+'</div>';
+  if(g.resp&&g.resp.status==='confirmed'){
+    h+='<div class="gp-ok"><b>Confirmed.</b> You said these dates work'+(g.resp.t?(' \u00b7 '+new Date(g.resp.t).toLocaleDateString()):'')+'.</div>';
+    h+='<button class="gp-btn ghost" onclick="gpIcsDownload()">Add to my calendar</button>';
+  } else if(g.resp&&g.resp.status==='change'){
+    h+='<div class="gp-ok" style="border-color:var(--oak);background:rgba(176,137,90,.12)"><b>Change requested.</b> Your builder sees your suggested dates'+(g.resp.note?(': \u201c'+esc(g.resp.note)+'\u201d'):'')+'.</div>';
+  } else {
+    h+='<button class="gp-btn go" onclick="gpConfirm()">These dates work \u2713</button>';
+    h+='<button class="gp-btn ghost" onclick="gpToggleChange()">Suggest a change\u2026</button>';
+    h+='<div class="gp-chg" id="gpChg">'
+      +'<label>Works better starting</label><input type="date" id="gpStart">'
+      +'<label>Through</label><input type="date" id="gpEnd">'
+      +'<label>Anything else</label><textarea id="gpNote" rows="2" placeholder="Optional \u2014 e.g. crew is on another job until Thursday"></textarea>'
+      +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendChange()">Send to '+esc(g.builder)+'</button></div>';
+  }
+  const cx=g.ctx||{};
+  if(cx.ready||cx.permit||cx.insp){
+    h+='<div class="gp-dates" style="margin-top:0;padding:12px 14px">';
+    if(cx.ready)h+='<div class="n" style="margin-top:0"><b>'+esc(cx.ready)+'</b></div>';
+    if(cx.permit)h+='<div class="n">'+esc(cx.permit)+'</div>';
+    if(cx.insp)h+='<div class="n">'+esc(cx.insp)+'</div>';
+    h+='</div>';
+  }
+  if((cx.openItems||[]).length){
+    h+='<div class="eyebrow" style="margin-top:16px">Open items on your scope</div>';
+    h+=cx.openItems.map(x=>'<div class="pkt-doc" style="cursor:default"><span class="n">'+esc(x)+'</span></div>').join('');
+  }
+  if((cx.history||[]).length){
+    h+='<div class="eyebrow" style="margin-top:16px">Before you arrive \u2014 recent site history</div>';
+    h+=cx.history.map(x=>'<div class="pkt-doc" style="cursor:default"><span class="n">'+esc(x.text)+'</span><span class="t">'+esc(x.d)+'</span></div>').join('');
+  }
+  if((g.specs||[]).length){
+    h+='<div class="eyebrow" style="margin-top:20px">Your install specs</div>';
+    h+=g.specs.map(sel=>{
+      const rows=(sel.rows||[]).map(r=>r.gap
+        ?'<div class="sro"><span class="k">'+esc(r.k)+'</span><span class="v pkt-gap">awaiting '+esc(r.gap)+'</span></div>'
+        :'<div class="sro"><span class="k">'+esc(r.k)+'</span><span class="v">'+esc(r.v)+'</span></div>').join('');
+      return '<div class="pkt-sel"><div class="ps-h"><b>'+esc(sel.item||'(unspecified)')+'</b><span class="ps-c">'+esc(sel.cat||'')+(sel.room?' \u00b7 '+esc(sel.room):'')+'</span></div>'+(rows?'<div class="spec-ro">'+rows+'</div>':'')+'</div>';
+    }).join('');
+  }
+  if((g.docs||[]).length){
+    h+='<div class="eyebrow" style="margin-top:18px">Documents on file</div>';
+    h+=g.docs.map(n=>'<div class="pkt-doc" style="cursor:default"><span class="n">'+esc(n)+'</span></div>').join('');
+    h+='<div class="gp-sub" style="margin-top:6px">Need a file? Reply to the text and it comes right over.</div>';
+  }
+  /* Q&A: the sub asks from here; the builder answers or routes it onward.
+     Everything passes through the builder - that IS the approval gate. */
+  h+='<div class="eyebrow" style="margin-top:20px">Questions</div>';
+  const qs=g.q||[];
+  h+=qs.length?qs.map(function(x){
+    return '<div class="pkt-sel"><div class="ps-h"><b>'+esc(x.text)+'</b><span class="ps-c">'+new Date(x.t).toLocaleDateString()+'</span></div>'
+      +(x.a?'<div class="spec-ro"><div class="sro"><span class="k">'+esc(g.builder)+'</span><span class="v">'+esc(x.a)+'</span></div></div>'
+           :'<div class="gp-sub" style="margin-top:4px">Sent \u2014 '+esc(g.builder)+' will get back to you.</div>');
+  }).join(''):'';
+  h+='<button class="gp-btn ghost" style="margin-top:8px" onclick="gpToggleAsk()">Ask a question\u2026</button>';
+  h+='<div class="gp-chg" id="gpAsk"><label>Your question</label>'
+    +'<textarea id="gpQText" rows="2" placeholder="e.g. Is the water heater gas or electric?"></textarea>'
+    +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendQuestion()">Send to '+esc(g.builder)+'</button></div>';
+  h+='<div class="gp-foot">Sent with SitePlumb \u00b7 this link expires '+new Date(g.expires||Date.now()).toLocaleDateString()+'</div>';
+  if(preview)h+='<button class="gp-btn ghost" style="margin-top:14px" onclick="closeGuestPreview()">Close preview</button>';
+  body.innerHTML=h;
+}
+function closeGuestPreview(){try{delete window.__packetFixture;}catch(e){}
+  document.getElementById('guestScrim').classList.remove('show');}
+function gpToggleChange(){const e=document.getElementById('gpChg');if(e)e.classList.toggle('show');}
+function _gpWriteResp(resp){
+  _gpSnap.resp=resp;
+  if(_gpToken&&_gpToken!=='preview'&&laFirebaseReady()){
+    try{firebase.firestore().collection('packets').doc(String(_gpToken)).update({resp:resp}).catch(()=>{});}catch(e){}
+  }
+  _gpRender();
+}
+function gpConfirm(){_gpWriteResp({status:'confirmed',t:Date.now()});}
+function gpToggleAsk(){const e=document.getElementById('gpAsk');if(e)e.classList.toggle('show');}
+function gpSendQuestion(){
+  const txt=(document.getElementById('gpQText').value||'').trim().slice(0,300);
+  if(!txt){toast('Type the question');return;}
+  _gpSnap.q=(_gpSnap.q||[]).concat([{text:txt,t:Date.now()}]);
+  if(_gpToken&&_gpToken!=='preview'&&laFirebaseReady()){
+    try{firebase.firestore().collection('packets').doc(String(_gpToken)).update({q:_gpSnap.q}).catch(()=>{});}catch(e){}
+  }
+  _gpRender();
+}
+function gpSendChange(){
+  const sv=document.getElementById('gpStart').value,ev=document.getElementById('gpEnd').value;
+  const st=sv?Date.parse(sv+'T12:00:00'):null;
+  const en=ev?Date.parse(ev+'T12:00:00'):st;
+  const note=(document.getElementById('gpNote').value||'').slice(0,300);
+  if(!st&&!note){toast('Pick dates or add a note');return;}
+  _gpWriteResp({status:'change',start:st||null,end:en||null,note:note,t:Date.now()});
+}
+function gpIcs(g){
+  const d=ts=>{const x=new Date(ts);const p2=v=>String(v).padStart(2,'0');return x.getFullYear()+p2(x.getMonth()+1)+p2(x.getDate());};
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//SitePlumb//Packet//EN','BEGIN:VEVENT',
+    'UID:'+(g.bookingId||'pk')+'@siteplumb.com',
+    'DTSTART;VALUE=DATE:'+d(g.start),
+    'DTEND;VALUE=DATE:'+d((g.end||g.start)+864e5),
+    'SUMMARY:'+String(g.tradeLabel||'')+' \u2014 '+String(g.site||'').split(' \u00b7 ')[0],
+    'DESCRIPTION:'+String(g.note||'').replace(/\n/g,' '),
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+}
+function gpIcsDownload(){
+  try{const a=document.createElement('a');
+    a.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(gpIcs(_gpSnap));
+    a.download='siteplumb-'+(_gpSnap.tradeLabel||'booking').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.ics';
+    document.body.appendChild(a);a.click();a.remove();}catch(e){}
+}
+/* Builder side of the loop: the booking editor shows send + reply state. */
+function bkRenderGuestRow(p,b){
+  const el=document.getElementById('bkGuest');if(!el)return;
+  if(!b){el.innerHTML='';return;}
+  let h='<button class="add-sub-btn" style="margin-top:8px" onclick="sendGuestPacket(\''+String(p.id)+'\',\''+String(b.id)+'\')">'
+    +(appMode()==='real'?'Text the packet link\u2026':'Preview the packet link\u2026')+'</button>';
+  if(b.pkToken&&appMode()==='real'){
+    h+='<div class="gp-sub" id="bkGuestStatus" style="margin-top:6px">Link sent '+(b.pkSent?new Date(b.pkSent).toLocaleDateString():'')+' \u00b7 checking for a reply\u2026</div>';
+  }
+  el.innerHTML=h;
+  if(b.pkToken&&appMode()==='real'&&laFirebaseReady()){
+    try{firebase.firestore().collection('packets').doc(String(b.pkToken)).get().then(d=>{
+      const st=document.getElementById('bkGuestStatus');if(!st)return;
+      const g=d.exists?d.data():null;const r=g&&g.resp;
+      if(!g){st.textContent='Link sent \u00b7 expired or replaced';return;}
+      let h='';
+      if(!r)h='Link sent '+(b.pkSent?new Date(b.pkSent).toLocaleDateString():'')+' \u00b7 no reply yet';
+      else if(r.status==='confirmed')h='<b style="color:var(--sage)">Confirmed by '+esc(g.sub)+'</b> \u00b7 '+new Date(r.t).toLocaleDateString();
+      else h='<b style="color:var(--oak)">Change requested</b>'+(r.start?(' \u00b7 suggests '+fmtWin({start:r.start,end:r.end||r.start})):'')+(r.note?(' \u00b7 \u201c'+esc(r.note)+'\u201d'):'')
+        +(r.start?' <button class="la-link" style="padding:2px 6px" onclick="bkAcceptChange(\''+String(p.id)+'\',\''+String(b.id)+'\','+r.start+','+(r.end||r.start)+')">Use these dates</button>':'');
+      st.innerHTML=h+_bkQHTML(p,b,g);
+    }).catch(()=>{});}catch(e){}
+  }
+}
+/* Sub questions land here. The builder is the hub: type an answer (it appears
+   on the guest page) or share the question to the homeowner's portal - the
+   builder edits the wording first, which is the approval step. Anything with a
+   price implication goes through the normal change-order flow as usual. */
+function _bkQHTML(p,b,g){
+  const qs=(g&&g.q)||[];if(!qs.length)return '';
+  let h='<div style="margin-top:8px">';
+  qs.forEach(function(x,i){
+    h+='<div class="pkt-sel" style="margin-top:6px"><div class="ps-h"><b>'+esc(x.text)+'</b><span class="ps-c">'+esc(g.sub)+' \u00b7 '+new Date(x.t).toLocaleDateString()+'</span></div>';
+    if(x.a)h+='<div class="spec-ro"><div class="sro"><span class="k">You</span><span class="v">'+esc(x.a)+'</span></div></div>';
+    else h+='<div style="display:flex;gap:8px;margin-top:6px"><button class="add-sub-btn" style="margin:0" onclick="bkAnswerQ(\''+String(p.id)+'\',\''+String(b.id)+'\','+i+')">Answer\u2026</button>'
+      +'<button class="add-sub-btn" style="margin:0" onclick="bkShareQ(\''+String(p.id)+'\',\''+String(b.id)+'\','+i+')">Share with homeowner\u2026</button></div>';
+    h+='</div>';
+  });
+  return h+'</div>';
+}
+function _bkPacketDoc(b,cb){
+  try{firebase.firestore().collection('packets').doc(String(b.pkToken)).get().then(d=>cb(d.exists?d.data():null)).catch(()=>cb(null));}catch(e){cb(null);}
+}
+function bkAnswerQ(pid,bid,qi){
+  const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
+  const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));if(!b||!b.pkToken)return;
+  openPrompt({title:'Answer the question',placeholder:'Your answer \u2014 shows on their packet page',okLabel:'Send answer',onOk:function(v){
+    if(!v)return;
+    _bkPacketDoc(b,function(g){if(!g)return;
+      const q=(g.q||[]);if(!q[qi])return;
+      q[qi].a=v.slice(0,300);q[qi].at=Date.now();
+      try{firebase.firestore().collection('packets').doc(String(b.pkToken)).update({q:q}).then(function(){
+        toast('Answered \u2014 it appears when they reopen their link');
+        bkRenderGuestRow(p,b);});}catch(e){}
+    });}});
+}
+function bkShareQ(pid,bid,qi){
+  const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
+  const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));if(!b)return;
+  const seed='Question from '+(b.subName||'the crew')+': ';
+  const fill=function(text){
+    openPrompt({title:'Share with the homeowner',body:'You approve the wording \u2014 edit before it posts to their portal. If this changes price, log a change order in the budget as usual.',
+      value:text,okLabel:'Post to homeowner',onOk:function(v){
+        if(!v)return;
+        Data.addItem({id:p.nextId++,cap:v.slice(0,240),area:'Decisions',crew:'',issue:true,status:'open',share:true,t:Date.now()});
+        Data.commit();logEvent('subQuestionShared',(b.subName||'')+' \u2192 homeowner');
+        toast('Posted to the homeowner\u2019s portal \u2014 their answer comes back to you');}});
+  };
+  if(b.pkToken&&appMode()==='real'&&laFirebaseReady()){
+    _bkPacketDoc(b,function(g){const q=(g&&g.q||[])[qi];fill(seed+((q&&q.text)||''));});
+  } else fill(seed);
+}
+/* Scheduling a trade auto-arms its unanswered install questions: the specs
+   deadline snaps to land before the crew does, and the toast says who owes
+   what. The existing deadline machinery takes it from there. */
+function _bkArmSpecs(p,trade,startTs){
+  try{
+    if(!trade||!p)return;
+    const gaps=tradeSpecGaps(p,trade);if(!gaps.length)return;
+    const want=Math.max(dayStart(startTs)-4*864e5,dayStart(Date.now())+864e5);
+    const sb=(p.subs||[]).find(x=>x.specialty===trade);
+    if(sb&&(!sb.specsDue||sb.specsDue>want)){Data.updateSub(sb.id,{specsDue:want,specsDueBy:'Scheduling'});}
+    let ho=0,bl=0;
+    gaps.forEach(function(g2){const st=specStatus(g2);ho+=st.homeownerPending.length;bl+=st.requiredMissing.length;});
+    const bits=[];if(ho)bits.push(ho+' for the homeowner');if(bl)bits.push(bl+' for you');
+    if(bits.length)toast('Install questions armed \u2014 '+bits.join(', ')+', due before the crew arrives');
+  }catch(e){}
+}
+function bkAcceptChange(pid,bid,start,end){
+  const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
+  updateBooking(p,bid,{start:dayStart(start),end:dayStart(end||start),status:'confirmed'});
+  toast('Dates updated to the sub\u2019s suggestion');
+  try{renderCal();}catch(e){}
+  try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(bid)));}catch(e){}
+}
 function openSubPacket(projId,tradeId){const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   logEvent('packetViewed','sub · '+specLabel(tradeId));
   showInfo('Your install packet',packetHTML(p,tradeId));}
@@ -11683,7 +12034,7 @@ function openInSafari(){const url=location.href;let copied=false;try{if(navigato
 async function doInstall(){if(!deferredPrompt){toast('Use your browser menu → Install');return;}try{deferredPrompt.prompt();await deferredPrompt.userChoice;}catch(e){}deferredPrompt=null;closeInstall();}
 function refreshInstallEntry(){const b=document.getElementById('loginInstall');if(b)b.style.display=isStandalone()?'none':'';}
 function installRequestedByUrl(){try{const p=new URLSearchParams(location.search||'');return p.has('install')||p.has('a2hs');}catch(e){return false;}}
-function maybeNudgeInstall(){try{if(_authActionPending())return;if(_DEMO_ON_ARRIVAL||_DEMO_RESUME)return;if(isStandalone())return;if(installRequestedByUrl()){openInstall();return;}if(localStorage.getItem('plumb.installNudged'))return;setTimeout(()=>{if(!isStandalone()&&!document.body.classList.contains('on-excursion')){openInstall();try{localStorage.setItem('plumb.installNudged','1');}catch(e){}}},2600);}catch(e){}}
+function maybeNudgeInstall(){try{if(_authActionPending())return;if(_DEMO_ON_ARRIVAL||_DEMO_RESUME||_PACKET_ON_ARRIVAL)return;if(isStandalone())return;if(installRequestedByUrl()){openInstall();return;}if(localStorage.getItem('plumb.installNudged'))return;setTimeout(()=>{if(!isStandalone()&&!document.body.classList.contains('on-excursion')){openInstall();try{localStorage.setItem('plumb.installNudged','1');}catch(e){}}},2600);}catch(e){}}
 if(typeof window!=='undefined'){
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;refreshInstallEntry();});
   window.addEventListener('appinstalled',()=>{deferredPrompt=null;const b=document.getElementById('loginInstall');if(b)b.style.display='none';try{toast('SitePlumb installed');}catch(e){}});
@@ -12133,7 +12484,9 @@ async function devSelfTest(){
      allowed to run after this. */
   /* A signed-in visitor who taps the demo link gets the demo, not their own
      builds - enterDemo suspends the session and the exit fork hands it back. */
-  if(_DEMO_ON_ARRIVAL||_DEMO_RESUME){
+  if(_PACKET_ON_ARRIVAL){
+    try{renderGuestPacket(_PACKET_ON_ARRIVAL);}catch(e){}
+  } else if(_DEMO_ON_ARRIVAL||_DEMO_RESUME){
     if(_DEMO_ON_ARRIVAL){try{history.replaceState(null,'',location.pathname);}catch(e){}}
     try{enterDemo();}catch(e){}
   }
