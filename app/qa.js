@@ -1,0 +1,276 @@
+/* qa.js — SitePlumb real-browser QA v2 (Puppeteer + bundled Chrome).
+ *
+ * Layers on top of sim.js (headless logic) with everything jsdom cannot see:
+ * real CSS, stacking, layout, hit-targets, REAL FONTS, and pixel-level visual
+ * regression against blessed baselines.
+ *
+ * - Fonts: Fraunces / Source Serif 4 / Hanken Grotesk load from the fontsource
+ *   npm packages, so glyph-level review happens HERE, not on a phone.
+ * - Clock: Date.now is frozen inside the page, so the demo seed renders the
+ *   same dates every run and screenshots are byte-comparable.
+ * - Baselines: shots diff against qa-baseline/*.png (pixelmatch). More than
+ *   0.6% changed pixels fails the run. After INTENDED visual changes, re-bless
+ *   with `node qa.js --bless`. First run auto-blesses with a notice.
+ * - Site: the marketing page runs too - hero animation must finish, and a
+ *   spoofed-standalone launch must redirect to /app/.
+ * - Monkey: 12 seconds of random taps in the demo; any page error fails.
+ *
+ * Out of scope forever (on-device QA): true iOS standalone behavior,
+ * service-worker update cycles on a real device, live Firebase.
+ * `node qa.js` must exit 0 as part of the deploy ritual.
+ */
+const puppeteer=require('puppeteer');
+const http=require('http');
+const fs=require('fs');
+const path=require('path');
+const {PNG}=require('pngjs');
+const pixelmatch=require('pixelmatch').default||require('pixelmatch');
+
+const PORT=8123,SITE_PORT=8124;
+const SHOTS=path.join(__dirname,'qa-shots');
+const BASE=path.join(__dirname,'qa-baseline');
+const BLESS=process.argv.includes('--bless');
+const FROZEN_NOW=1785630000000;   /* fixed instant: every relative seed date derives from this */
+const failures=[],passes=[];let blessed=0;
+function t(name,cond,detail){
+  if(cond)passes.push(name);
+  else failures.push(name+(detail!==undefined?('  ['+String(detail).slice(0,160)+']'):''));
+}
+
+/* ── static servers: app dir (with /qa-fonts/) and site dir ── */
+const FONTS={
+  'fraunces-500.woff2':'node_modules/@fontsource/fraunces/files/fraunces-latin-500-normal.woff2',
+  'ss4-400.woff2':'node_modules/@fontsource/source-serif-4/files/source-serif-4-latin-400-normal.woff2',
+  'ss4-500.woff2':'node_modules/@fontsource/source-serif-4/files/source-serif-4-latin-500-normal.woff2',
+  'ss4-600.woff2':'node_modules/@fontsource/source-serif-4/files/source-serif-4-latin-600-normal.woff2',
+  'ss4-400i.woff2':'node_modules/@fontsource/source-serif-4/files/source-serif-4-latin-400-italic.woff2',
+  'ss4-700.woff2':'node_modules/@fontsource/source-serif-4/files/source-serif-4-latin-700-normal.woff2',
+  'hg-400.woff2':'node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-400-normal.woff2',
+  'hg-500.woff2':'node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-500-normal.woff2',
+  'hg-600.woff2':'node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-600-normal.woff2',
+  'hg-700.woff2':'node_modules/@fontsource/hanken-grotesk/files/hanken-grotesk-latin-700-normal.woff2'
+};
+const FONT_CSS=`
+@font-face{font-family:'Fraunces';font-weight:500;font-style:normal;src:url('http://localhost:${PORT}/qa-fonts/fraunces-500.woff2') format('woff2');}
+@font-face{font-family:'Source Serif 4';font-weight:400;font-style:normal;src:url('http://localhost:${PORT}/qa-fonts/ss4-400.woff2') format('woff2');}
+@font-face{font-family:'Source Serif 4';font-weight:500;font-style:normal;src:url('http://localhost:${PORT}/qa-fonts/ss4-500.woff2') format('woff2');}
+@font-face{font-family:'Source Serif 4';font-weight:600;font-style:normal;src:url('http://localhost:${PORT}/qa-fonts/ss4-600.woff2') format('woff2');}
+@font-face{font-family:'Source Serif 4';font-weight:700;font-style:normal;src:url('http://localhost:${PORT}/qa-fonts/ss4-700.woff2') format('woff2');}
+@font-face{font-family:'Source Serif 4';font-weight:400;font-style:italic;src:url('http://localhost:${PORT}/qa-fonts/ss4-400i.woff2') format('woff2');}
+@font-face{font-family:'Hanken Grotesk';font-weight:400;src:url('http://localhost:${PORT}/qa-fonts/hg-400.woff2') format('woff2');}
+@font-face{font-family:'Hanken Grotesk';font-weight:500;src:url('http://localhost:${PORT}/qa-fonts/hg-500.woff2') format('woff2');}
+@font-face{font-family:'Hanken Grotesk';font-weight:600;src:url('http://localhost:${PORT}/qa-fonts/hg-600.woff2') format('woff2');}
+@font-face{font-family:'Hanken Grotesk';font-weight:700;src:url('http://localhost:${PORT}/qa-fonts/hg-700.woff2') format('woff2');}
+`;
+function serve(root,port){
+  return new Promise(res=>{
+    const srv=http.createServer((req,resp)=>{
+      const clean=decodeURIComponent(req.url.split('?')[0]);
+      if(clean.startsWith('/qa-fonts/')){
+        const key=clean.slice('/qa-fonts/'.length);
+        const fp=FONTS[key]&&path.join(__dirname,FONTS[key]);
+        if(fp&&fs.existsSync(fp)){resp.writeHead(200,{'Content-Type':'font/woff2','Access-Control-Allow-Origin':'*'});resp.end(fs.readFileSync(fp));return;}
+        resp.writeHead(404);resp.end();return;
+      }
+      if(clean.startsWith('/app')){resp.writeHead(200,{'Content-Type':'text/html'});resp.end('<!doctype html><title>app stub</title>app stub');return;}
+      let f=path.join(root,clean.replace(/^\//,'')||'index.html');
+      if(!f.startsWith(root)||!fs.existsSync(f)||!fs.statSync(f).isFile())f=path.join(root,'index.html');
+      const ext=path.extname(f);
+      resp.writeHead(200,{'Content-Type':ext==='.js'?'text/javascript':ext==='.css'?'text/css':ext==='.json'?'application/json':'text/html'});
+      resp.end(fs.readFileSync(f));
+    });
+    srv.listen(port,()=>res(srv));
+  });
+}
+
+async function prepPage(browser,{mobile=true,standalone=false}={}){
+  const page=await browser.newPage();
+  if(mobile)await page.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
+  else await page.setViewport({width:1280,height:900});
+  page.on('pageerror',e=>failures.push('pageerror: '+String(e).slice(0,160)));
+  await page.evaluateOnNewDocument((now,fontCss,standalone)=>{
+    Date.now=()=>now;                       /* frozen clock: deterministic seed dates */
+    if(standalone){
+      const om=window.matchMedia.bind(window);
+      window.matchMedia=q=>q.indexOf('display-mode: standalone')>=0?{matches:true,addListener(){},addEventListener(){},removeEventListener(){}}:om(q);
+    }
+    document.addEventListener('DOMContentLoaded',()=>{const st=document.createElement('style');st.textContent=fontCss;document.head.appendChild(st);});
+  },FROZEN_NOW,FONT_CSS,standalone);
+  return page;
+}
+
+async function shot(page,name){
+  const cur=path.join(SHOTS,name+'.png');
+  try{await page.evaluate(()=>document.fonts.ready);}catch(e){}
+  await page.screenshot({path:cur});
+  const base=path.join(BASE,name+'.png');
+  if(BLESS||!fs.existsSync(base)){fs.copyFileSync(cur,base);blessed++;return;}
+  try{
+    const a=PNG.sync.read(fs.readFileSync(base)),b=PNG.sync.read(fs.readFileSync(cur));
+    if(a.width!==b.width||a.height!==b.height){t('pixel baseline: '+name,false,'size changed');return;}
+    const diff=new PNG({width:a.width,height:a.height});
+    const n=pixelmatch(a.data,b.data,diff.data,a.width,a.height,{threshold:.12});
+    const pct=n/(a.width*a.height)*100;
+    if(pct>0.6){fs.writeFileSync(path.join(SHOTS,name+'.DIFF.png'),PNG.sync.write(diff));}
+    t('pixel baseline: '+name, pct<=0.6, pct.toFixed(2)+'% pixels changed - see qa-shots/'+name+'.DIFF.png or re-bless');
+  }catch(e){t('pixel baseline: '+name,false,e.message);}
+}
+async function tappable(page,sel){
+  return page.evaluate(s=>{
+    const el=document.querySelector(s);
+    if(!el)return {ok:false,why:'missing'};
+    const r=el.getBoundingClientRect();
+    if(r.width===0||r.height===0)return {ok:false,why:'zero-size'};
+    const hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+    if(!hit)return {ok:false,why:'nothing at point'};
+    if(el===hit||el.contains(hit)||hit.contains(el))return {ok:true};
+    return {ok:false,why:'covered by '+(hit.id?('#'+hit.id):hit.className||hit.tagName)};
+  },sel);
+}
+
+(async()=>{
+  if(!fs.existsSync(SHOTS))fs.mkdirSync(SHOTS);
+  if(!fs.existsSync(BASE))fs.mkdirSync(BASE);
+  fs.readdirSync(SHOTS).filter(f=>f.endsWith('.DIFF.png')).forEach(f=>fs.unlinkSync(path.join(SHOTS,f)));
+  const appSrv=await serve(__dirname,PORT);
+  const siteRoot=path.resolve(__dirname,'../site');
+  const siteSrv=fs.existsSync(siteRoot)?await serve(siteRoot,SITE_PORT):null;
+  const browser=await puppeteer.launch({args:['--no-sandbox','--disable-dev-shm-usage']});
+
+  /* ══ APP · PHONE ══ */
+  const page=await prepPage(browser);
+  await page.goto('http://localhost:'+PORT+'/index.html?demo=1',{waitUntil:'load'});
+  await new Promise(r=>setTimeout(r,1600));
+
+  t('demo arrival shows the example-build banner', await page.evaluate(()=>document.body.classList.contains('on-excursion')&&getComputedStyle(document.getElementById('excBanner')).display!=='none'));
+  t('tour offer appears on a fresh arrival', await page.evaluate(()=>document.getElementById('demoIntroScrim').classList.contains('show')));
+  t('no install gate over the demo', await page.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return e&&e.classList.contains('show');};return !vis('installGate')&&!vis('installScrim');}));
+  t('serif faces really loaded', await page.evaluate(()=>document.fonts.check("16px 'Source Serif 4'")&&document.fonts.check("16px 'Fraunces'")));
+  await shot(page,'01-demo-arrival');
+  await page.evaluate(()=>demoIntroExplore());
+
+  await page.evaluate(()=>exitDemo());
+  await new Promise(r=>setTimeout(r,250));
+  for(const [sel,label] of [["#exitDemoScrim [onclick*='exitDemoToApp']",'Set up my own builds'],["#exitDemoScrim [onclick*='exitDemoToSite']",'Back to the website'],["#exitDemoScrim [onclick*='exitDemoStay']",'Keep exploring']]){
+    const r=await tappable(page,sel);t('exit fork tappable: '+label,r.ok,r.why);
+  }
+  await shot(page,'02-exit-fork');
+  await page.evaluate(()=>exitDemoStay());
+
+  await page.evaluate(()=>legalOpenTerms());
+  await new Promise(r=>setTimeout(r,300));
+  const done=await tappable(page,"#legalDocScrim .ld-bar button");
+  t('policy sheet Done tappable in the demo',done.ok,done.why);
+  await page.evaluate(()=>closeLegalDoc());
+  t('Done returns to the demo intact', await page.evaluate(()=>document.body.classList.contains('on-excursion')&&!document.getElementById('legalDocScrim').classList.contains('show')));
+
+  const cards=await page.evaluate(()=>{try{demoRole('hillan');}catch(e){}return document.querySelectorAll('#ovCards .ov-card').length;});
+  t('overview renders all ten site cards',cards===10,cards);
+  await shot(page,'04-overview');
+
+  await page.evaluate(()=>{state.activeId='p9';demoRole('subs');});
+  await new Promise(r=>setTimeout(r,200));
+  t('sub chip on Orchard Row is Ridgeline', await page.evaluate(()=>state.session.name)==='Ridgeline Plumbing');
+  await page.evaluate(()=>demoRole('client'));
+  t('homeowner chip stays on Orchard Row', await page.evaluate(()=>state.session.site)==='p9');
+  await shot(page,'05-homeowner-p9');
+  await page.evaluate(()=>{demoRole('hillan');state.activeId='p2';demoRole('subs');});
+  t('sub chip on Calderwood is still Clearwater', await page.evaluate(()=>state.session.name)==='Clearwater Plumbing');
+  await page.evaluate(()=>demoRole('hillan'));
+
+  await page.reload({waitUntil:'load'});
+  await new Promise(r=>setTimeout(r,1600));
+  t('reload mid-demo resumes the demo', await page.evaluate(()=>document.body.classList.contains('on-excursion')&&appMode()==='demo'));
+  t('resume does not re-ask the tour', await page.evaluate(()=>!document.getElementById('demoIntroScrim').classList.contains('show')));
+
+  await page.evaluate(()=>{demoRole('hillan');openSiteFromOverview('p8');});
+  await new Promise(r=>setTimeout(r,300));
+  await page.evaluate(()=>openBudget());
+  await new Promise(r=>setTimeout(r,300));
+  t('Beaumont Park budget shows the amber overrun', await page.evaluate(()=>document.getElementById('budgetBody').innerHTML.includes('5,200 over')));
+  await shot(page,'07-p8-budget');
+  await page.evaluate(()=>closeBudget());
+  await page.evaluate(()=>{demoRole('hillan');openSiteFromOverview('p8');openBudget();openJobCost();});
+  await new Promise(r=>setTimeout(r,300));
+  await shot(page,'08-job-cost-report');
+  await page.evaluate(()=>{closeJobCost();closeBudget();});
+
+  /* glyph specimen: the letters that caused the font saga, in every live face */
+  await page.evaluate(()=>{
+    const d=document.createElement('div');d.id='qaSpecimen';
+    d.style.cssText='position:fixed;inset:0;z-index:999;background:#F2EEE6;color:#1B1916;padding:40px 24px;display:block;';
+    const row=(txt,fam,size,weight,italic)=>{const e=document.createElement('div');
+      e.textContent=txt;e.style.fontFamily=fam;e.style.fontSize=size+'px';
+      e.style.fontWeight=weight||400;if(italic)e.style.fontStyle='italic';
+      e.style.marginTop='18px';d.appendChild(e);};
+    row('SitePlumb',"'Fraunces',serif",34,500);
+    row('Job cost report',"'Source Serif 4',serif",30,600);
+    row('fine \u00b7 four \u00b7 faucet \u00b7 for a handful of',"'Source Serif 4',serif",26,600);
+    row('Justify theify - italic J and f',"'Source Serif 4',serif",22,400,true);
+    row('Hanken body - Jf 0123456789',"'Hanken Grotesk',sans-serif",18,500);
+    document.body.appendChild(d);
+  });
+  await new Promise(r=>setTimeout(r,250));
+  await shot(page,'09-glyph-specimen');
+  await page.evaluate(()=>document.getElementById('qaSpecimen').remove());
+
+  /* ══ ACCESSIBILITY (axe-core): no critical violations allowed ══ */
+  await page.evaluate(()=>{try{demoRole('hillan');showOverview();}catch(e){}});
+  await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
+  const axeOut=await page.evaluate(async()=>{const r=await axe.run(document,{resultTypes:['violations']});
+    return r.violations.map(v=>({id:v.id,impact:v.impact,n:v.nodes.length}));});
+  const critical=axeOut.filter(v=>v.impact==='critical');
+  t('axe: zero critical accessibility violations', critical.length===0, JSON.stringify(critical));
+  const serious=axeOut.filter(v=>v.impact==='serious');
+  if(serious.length)console.log('  axe note (non-blocking serious): '+serious.map(v=>v.id+'x'+v.n).join(', '));
+
+  /* ══ APP · DESKTOP ══ */
+  const desk=await prepPage(browser,{mobile:false});
+  await desk.goto('http://localhost:'+PORT+'/index.html?demo=1',{waitUntil:'load'});
+  await new Promise(r=>setTimeout(r,1600));
+  await desk.evaluate(()=>{try{demoIntroExplore();}catch(e){}demoRole('hillan');state.activeId='p2';openSiteFromOverview('p2');openBudget();});
+  await new Promise(r=>setTimeout(r,300));
+  t('desktop budget renders the wide table', await desk.evaluate(()=>isWideBudget()===true&&document.getElementById('budgetBody').innerHTML.includes('bgt-table')));
+  await shot(desk,'10-desktop-budget');
+
+  /* ══ MONKEY: 12s of random taps in the demo must not throw ══ */
+  const monkey=await prepPage(browser);
+  const errsBefore=failures.length;
+  await monkey.goto('http://localhost:'+PORT+'/index.html?demo=1',{waitUntil:'load'});
+  await new Promise(r=>setTimeout(r,1500));
+  await monkey.evaluate(()=>{try{demoIntroExplore();}catch(e){}});
+  let seed=42;const rnd=()=>{seed=(seed*1103515245+12345)%2147483648;return seed/2147483648;};
+  const t0=Date.now();
+  while(Date.now()-t0<12000){
+    const x=20+rnd()*350,y=60+rnd()*760;
+    try{await monkey.mouse.click(x,y);}catch(e){}
+    if(rnd()<0.15){try{await monkey.evaluate(()=>{const b=document.querySelector('.exc-exit');});}catch(e){}}
+    await new Promise(r=>setTimeout(r,60));
+  }
+  t('monkey sweep: 12s of random taps, no page errors', failures.length===errsBefore);
+
+  /* ══ SITE ══ */
+  if(siteSrv){
+    const site=await prepPage(browser);
+    await site.goto('http://localhost:'+SITE_PORT+'/index.html',{waitUntil:'load'});
+    await new Promise(r=>setTimeout(r,5200));
+    t('hero house finishes drawing on its own', await site.evaluate(()=>{
+      const read=document.getElementById('stageRead');
+      const lns=[...document.querySelectorAll('#house .ln')];
+      return read&&read.textContent==='Finished'&&lns.every(p=>p.style.strokeDasharray==='none'||p.style.strokeDashoffset==='0'||p.style.strokeDashoffset===0);
+    }));
+    await shot(site,'20-site-hero-finished');
+    const sa=await prepPage(browser,{standalone:true});
+    await sa.goto('http://localhost:'+SITE_PORT+'/index.html',{waitUntil:'load'});
+    await new Promise(r=>setTimeout(r,400));
+    t('standalone launch of the site redirects to /app/', sa.url().indexOf('/app/')>=0, sa.url());
+  }
+
+  await browser.close();appSrv.close();if(siteSrv)siteSrv.close();
+  const v=fs.readFileSync(path.join(__dirname,'index.html'),'utf8').match(/PLUMB_VERSION='([\d.]+)/)[1];
+  const total=passes.length+failures.length;
+  console.log('qa [index.html '+v+']: '+total+' checks, '+fs.readdirSync(SHOTS).filter(f=>!f.includes('DIFF')).length+' screenshots'+(blessed?(', '+blessed+' baseline(s) blessed'):''));
+  if(failures.length){console.log('FAIL ('+failures.length+'):');failures.forEach(f=>console.log('  x '+f));process.exit(1);}
+  console.log('PASS: layout, stacking, fonts, pixels and flows hold in real Chrome.');
+  process.exit(0);
+})().catch(e=>{console.log('FAIL: harness error - '+e.message+'\n'+e.stack.split('\n').slice(0,3).join('\n'));process.exit(1);});

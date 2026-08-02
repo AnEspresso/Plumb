@@ -427,7 +427,7 @@
   /* ───── in-app legal viewer: policies open OVER the app, never navigating
      away. Leaving the SPA and coming back reloads it through the boot gates
      (the install interstitial Peter hit) and tangles history. ───── */
-  #legalDocScrim{position:fixed;inset:0;z-index:200;background:var(--paper);display:none;flex-direction:column;}
+  #legalDocScrim{position:fixed;inset:0;z-index:220;background:var(--paper);display:none;flex-direction:column;}   /* above the 210 example-build banner, or its Done button hides behind it */
   #legalDocScrim.show{display:flex;}
   #legalDocScrim .ld-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;
     padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;border-bottom:1px solid var(--line);background:var(--surface);}
@@ -2855,12 +2855,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.203.0 - Privacy and Terms now open in a sheet over the app with a Done button, never navigating away - leaving and returning rebooted the app through its install gate and tangled history until back died. And a demo tab now survives a reload: a service worker update seconds after entering used to trip the crash recovery and land the visitor in their own account';
+const PLUMB_VERSION='2.205.0 - Real-user errors now report home. A trapped error used to live only in the device buffer, surfacing only if someone thought to send a bug report - now it rides the existing telemetry pipe, deduped and capped at five per session, so failures in the field are heard unprompted';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785633000000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785634200000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -6993,6 +6993,21 @@ function trapError(kind,msg,where){try{
   a=pruneErrors(a);
   localStorage.setItem('plumb.errors',JSON.stringify(a));
   const b=document.getElementById('errBadge');if(b){b.textContent=a.length;b.style.display='';}
+  _forwardError(kind,msg,where);
+}catch(e){}}
+/* Real-user errors report home. Until now a trapped error lived only in the
+   device buffer and surfaced only if the person sent a bug report - reliability
+   at any scale means the builder-of-the-app hears about failures unprompted.
+   Rides the existing telemetryEvent pipe: nothing new server-side. Deduped per
+   session, capped at five, fire-and-forget, and silent when sync is off. */
+const _errSent={};let _errSentN=0;
+function _forwardError(kind,msg,where){try{
+  if(_errSentN>=5)return;
+  const sig=String(kind)+'|'+String(msg).slice(0,120);
+  if(_errSent[sig])return;
+  if(typeof Sync==='undefined'||!Sync.ready||!Sync.ready())return;
+  _errSent[sig]=true;_errSentN++;
+  Sync.event('clientError',(String(kind)+' | '+String(msg).slice(0,180)+' | '+String(where||'').slice(0,80)));
 }catch(e){}}
 if(typeof window!=='undefined'){
   window.addEventListener('error',e=>trapError('error',(e.error&&e.error.message)||e.message,(e.filename||'')+':'+(e.lineno||'')));
