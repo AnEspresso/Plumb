@@ -424,6 +424,14 @@
     color:var(--oak);font-size:14px;font-weight:600;padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;}
   .sm-new:active{background:var(--surface-2);}.sm-new svg{width:17px;height:17px;}
 
+  /* ───── in-app legal viewer: policies open OVER the app, never navigating
+     away. Leaving the SPA and coming back reloads it through the boot gates
+     (the install interstitial Peter hit) and tangles history. ───── */
+  #legalDocScrim{position:fixed;inset:0;z-index:200;background:var(--paper);display:none;flex-direction:column;}
+  #legalDocScrim.show{display:flex;}
+  #legalDocScrim .ld-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;
+    padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;border-bottom:1px solid var(--line);background:var(--surface);}
+  #legalDocScrim iframe{flex:1;border:0;width:100%;background:var(--paper);}
   /* ───── login / splash ───── */
   .login{position:absolute;inset:0;z-index:100;background:#15130F;display:flex;flex-direction:column;overflow-y:auto;}
   .login.hide{display:none;}
@@ -1719,7 +1727,7 @@ body.on-tour .tour-card{display:block;}
               <button class="la-link" onclick="liveForgot()">Forgot password</button>
               <button class="la-link" onclick="document.getElementById('laInviteRow').style.display='';this.style.display='none'">I have an invite code</button>
             </div>
-            <div class="la-hint" style="text-align:center;margin-top:9px">By signing in or creating an account you agree to the <a href="https://siteplumb.com/app/terms.html" target="_blank" rel="noopener" style="color:var(--oak)">Terms of Service</a> and <a href="https://siteplumb.com/app/privacy.html" target="_blank" rel="noopener" style="color:var(--oak)">Privacy Policy</a>.</div>
+            <div class="la-hint" style="text-align:center;margin-top:9px">By signing in or creating an account you agree to the <a href="https://siteplumb.com/app/terms.html" onclick="legalOpenTerms();return false" style="color:var(--oak)">Terms of Service</a> and <a href="https://siteplumb.com/app/privacy.html" onclick="legalOpenPrivacy();return false" style="color:var(--oak)">Privacy Policy</a>.</div>
             <button class="la-link la-skip" onclick="realEnter()">Continue without an account (this device only)</button>
           </div>
         </div>
@@ -1834,6 +1842,7 @@ body.on-tour .tour-card{display:block;}
     </div>
   </div>
 
+  <div id="legalDocScrim"><div class="ld-bar"><button class="ov-logout" onclick="closeLegalDoc()">Done</button></div><iframe id="legalDocFrame" src="about:blank" title="Policy document"></iframe></div>
   <div class="pmodal-scrim" id="pktLogScrim" style="z-index:118">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="pktLogTitle">Daily log / photos</h4>
@@ -2846,12 +2855,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.202.0 - The demo role chips now stay on the site you were viewing. Homeowner and Sub used to jump back to Calderwood and Clearwater Plumbing no matter where you stood - a leftover from the one-site demo. The sub hat picks the sites plumber when it has one, then any cleared sub';
+const PLUMB_VERSION='2.203.0 - Privacy and Terms now open in a sheet over the app with a Done button, never navigating away - leaving and returning rebooted the app through its install gate and tangled history until back died. And a demo tab now survives a reload: a service worker update seconds after entering used to trip the crash recovery and land the visitor in their own account';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785632400000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785633000000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -4792,6 +4801,7 @@ if(typeof document!=='undefined')document.addEventListener('visibilitychange',()
    a sign-in wall or an Add to Home Screen page is not "looking around". */
 const _DEMO_ON_ARRIVAL=(function(){
   try{return (new URLSearchParams(location.search||'').get('demo')||'')==='1';}catch(e){return false;}})();
+let _DEMO_RESUME=false;   /* set by the suspend recovery when this same tab reloaded mid-demo */
 const _AUTH_ACTION_ON_ARRIVAL=(function(){
   try{const q=new URLSearchParams(location.search||'');
     const m=q.get('mode')||'';
@@ -4864,8 +4874,13 @@ async function liveSignOut(){
    the person types DELETE, the server does the work, the device wipes last. */
 const LEGAL_URL={privacy:'https://siteplumb.com/app/privacy.html',terms:'https://siteplumb.com/app/terms.html'};
 function _isLiveAccount(){return !!(state.session&&state.session.auth&&state.session.auth.uid);}
-function legalOpenPrivacy(){try{window.open(LEGAL_URL.privacy,'_blank','noopener');}catch(e){}logEvent('legalOpened','privacy');}
-function legalOpenTerms(){try{window.open(LEGAL_URL.terms,'_blank','noopener');}catch(e){}logEvent('legalOpened','terms');}
+function openLegalDoc(u){
+  try{document.getElementById('legalDocFrame').src=u;document.getElementById('legalDocScrim').classList.add('show');}
+  catch(e){try{window.open(u,'_blank','noopener');}catch(e2){}}}
+function closeLegalDoc(){
+  try{document.getElementById('legalDocScrim').classList.remove('show');document.getElementById('legalDocFrame').src='about:blank';}catch(e){}}
+function legalOpenPrivacy(){openLegalDoc(LEGAL_URL.privacy);logEvent('legalOpened','privacy');}
+function legalOpenTerms(){openLegalDoc(LEGAL_URL.terms);logEvent('legalOpened','terms');}
 function openLegal(){
   const el=document.getElementById('legalBody');if(!el)return;
   const I={shield:'<path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12.5l2 2 3.5-4"/>',
@@ -7822,7 +7837,7 @@ function maybeInstallGate(){
   try{
     if(_authActionPending())return false;   // never over a one-shot credential
     if(_invBarShowing)return false;         // the slim invite bar already has this covered
-    if(_DEMO_ON_ARRIVAL)return false;       // we promised nothing to install
+    if(_DEMO_ON_ARRIVAL||_DEMO_RESUME)return false;       // we promised nothing to install
     if(document.body.classList.contains('on-excursion'))return false;
     if(!isCoarseMobile()||isStandalonePWA())return false;
     if(sessionStorage.getItem('plumbBrowserOK')==='1')return false;
@@ -7895,7 +7910,8 @@ try{window.addEventListener('message',ev=>{if(ev&&ev.data==='qb-connected'){toas
    suspend flag only drives the banner and crash recovery. ── */
 function onExcursion(){try{return !!localStorage.getItem('plumbSuspend');}catch(e){return false;}}
 function enterDemo(){
-  try{localStorage.setItem('plumbSuspend', state.session?'1':'splash');}catch(e){}
+  try{if(!localStorage.getItem('plumbSuspend'))localStorage.setItem('plumbSuspend', state.session?'1':'splash');}catch(e){}
+  try{sessionStorage.setItem('plumbDemoLive','1');}catch(e){}
   setMode('demo');
   /* The example build reseeds on every entry, so its dates always hang off
      today and the data is pristine for each visitor. Edits made inside one
@@ -7936,6 +7952,7 @@ function exitDemoToSite(){
   try{document.getElementById('exitDemoScrim').classList.remove('show');}catch(e){}
   try{localStorage.removeItem('plumbSuspend');}catch(e){}
   try{sessionStorage.removeItem('plumbTourOffered');}catch(e){}
+  try{sessionStorage.removeItem('plumbDemoLive');}catch(e){}
   location.href='/';}
 function exitDemoToApp(){
   try{document.getElementById('exitDemoScrim').classList.remove('show');}catch(e){}
@@ -7943,6 +7960,7 @@ function exitDemoToApp(){
   const cameFrom=(function(){try{return localStorage.getItem('plumbSuspend');}catch(e){return '1';}})();
   try{localStorage.removeItem('plumbSuspend');}catch(e){}
   try{sessionStorage.removeItem('plumbTourOffered');}catch(e){}
+  try{sessionStorage.removeItem('plumbDemoLive');}catch(e){}
   document.body.classList.remove('on-excursion');
   setMode('real');load();
   if(cameFrom==='splash'||!state.session){
@@ -11650,7 +11668,7 @@ function openInSafari(){const url=location.href;let copied=false;try{if(navigato
 async function doInstall(){if(!deferredPrompt){toast('Use your browser menu → Install');return;}try{deferredPrompt.prompt();await deferredPrompt.userChoice;}catch(e){}deferredPrompt=null;closeInstall();}
 function refreshInstallEntry(){const b=document.getElementById('loginInstall');if(b)b.style.display=isStandalone()?'none':'';}
 function installRequestedByUrl(){try{const p=new URLSearchParams(location.search||'');return p.has('install')||p.has('a2hs');}catch(e){return false;}}
-function maybeNudgeInstall(){try{if(_authActionPending())return;if(_DEMO_ON_ARRIVAL)return;if(isStandalone())return;if(installRequestedByUrl()){openInstall();return;}if(localStorage.getItem('plumb.installNudged'))return;setTimeout(()=>{if(!isStandalone()&&!document.body.classList.contains('on-excursion')){openInstall();try{localStorage.setItem('plumb.installNudged','1');}catch(e){}}},2600);}catch(e){}}
+function maybeNudgeInstall(){try{if(_authActionPending())return;if(_DEMO_ON_ARRIVAL||_DEMO_RESUME)return;if(isStandalone())return;if(installRequestedByUrl()){openInstall();return;}if(localStorage.getItem('plumb.installNudged'))return;setTimeout(()=>{if(!isStandalone()&&!document.body.classList.contains('on-excursion')){openInstall();try{localStorage.setItem('plumb.installNudged','1');}catch(e){}}},2600);}catch(e){}}
 if(typeof window!=='undefined'){
   window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;refreshInstallEntry();});
   window.addEventListener('appinstalled',()=>{deferredPrompt=null;const b=document.getElementById('loginInstall');if(b)b.style.display='none';try{toast('SitePlumb installed');}catch(e){}});
@@ -12079,10 +12097,14 @@ async function devSelfTest(){
   try{await consumeAuthAction();}catch(e){}   // returns instantly when no code is present
   setTimeout(()=>{try{_evRecheck();}catch(e){}},1500);
   try{
-    if(localStorage.getItem('plumbSuspend')){ /* killed mid-excursion: come home */
+    if(localStorage.getItem('plumbSuspend')){
+      let _dl=false;try{_dl=sessionStorage.getItem('plumbDemoLive')==='1';}catch(e){}
+      if(_dl){_DEMO_RESUME=true;}   /* same tab reloaded mid-demo (SW update, refresh): resume the demo at the boot tail */
+      else{ /* tab was killed mid-excursion: come home */
       localStorage.removeItem('plumbSuspend');
       if(appMode()!=='real'){setMode('real');load();updateHeader();renderAll();
         if(state.session){document.getElementById('login').classList.add('hide');setChrome(false);routeAfterLogin();}}
+      }
     }
   }catch(e){}
   try{maybeWelcome();}catch(e){}
@@ -12096,8 +12118,8 @@ async function devSelfTest(){
      allowed to run after this. */
   /* A signed-in visitor who taps the demo link gets the demo, not their own
      builds - enterDemo suspends the session and the exit fork hands it back. */
-  if(_DEMO_ON_ARRIVAL){
-    try{history.replaceState(null,'',location.pathname);}catch(e){}
+  if(_DEMO_ON_ARRIVAL||_DEMO_RESUME){
+    if(_DEMO_ON_ARRIVAL){try{history.replaceState(null,'',location.pathname);}catch(e){}}
     try{enterDemo();}catch(e){}
   }
   if(typeof window!=='undefined'){window.addEventListener('load',()=>{try{Sync.init();}catch(e){}});setTimeout(()=>{try{if(!Sync.on)Sync.init();}catch(e){}},1200);}
