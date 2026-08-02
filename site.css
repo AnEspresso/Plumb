@@ -18,16 +18,11 @@ body{
   font-family:'Hanken Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased;
 }
-/* Fraunces auto-switches to its display design at large sizes, and that is
-   where the swashed f, hooked j/y and looped d live - they are the OPTICAL
-   SIZE, not a glitch, and not the wonk axis. The app never shows them because
-   it sets Fraunces small. Pinning opsz to the text design makes the site's
-   headlines use the same letterforms the app already does. WONK 0 and SOFT 0
-   stay off so no quirky alternates sneak back in either style. */
-/* opsz is fixed at 9 in the font URL itself - see the request. No CSS pin
-   needed, and none could be trusted: Safari ignores low-level settings on
-   registered axes often enough to have kept the display glyphs alive. */
-h1,h2,h3,.fr{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em;}
+/* Headings set Source Serif 4. The opsz pin was tried and disproved: the
+   hooked J and descending f survived it because they are intrinsic to the
+   Fraunces roman glyphs at every axis setting. Fraunces now lives only in the
+   .brand wordmark, whose five letters carry none of those forms. */
+h1,h2,h3,.fr{font-family:'Source Serif 4',Georgia,serif;font-weight:600;letter-spacing:-.01em;}
 a{color:inherit;}
 img{max-width:100%;display:block;}
 .wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px;}
@@ -56,7 +51,7 @@ header.nav.stuck{border-bottom-color:var(--line);}
 .brand{display:flex;align-items:baseline;gap:9px;text-decoration:none;margin-right:auto;}
 .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--oak);align-self:center;}
 .brand .wm{font-family:'Fraunces',Georgia,serif;font-size:23px;font-weight:700;letter-spacing:-.015em;}
-.brand .tag{font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:13px;color:var(--oak);font-weight:400;}
+.brand .tag{font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:13px;color:var(--oak);font-weight:400;}
 .nav a.lnk{font-size:14.5px;font-weight:500;color:var(--ink-2);text-decoration:none;}
 .nav a.lnk:hover{color:var(--ink);}
 @media(max-width:720px){.nav a.lnk.hide-s{display:none;} .brand .tag{display:none;}}
@@ -122,7 +117,7 @@ section.s.ink .sub{color:rgba(246,241,231,.72);}
   padding:26px 24px 22px;box-shadow:var(--shadow);
 }
 .q p{
-  font-family:'Fraunces',Georgia,serif;font-size:19px;line-height:1.42;font-style:italic;
+  font-family:'Source Serif 4',Georgia,serif;font-size:19px;line-height:1.42;font-style:italic;
   margin:0 0 14px;color:var(--ink);
 }
 .q .who{font-size:12.5px;color:var(--ink-3);font-weight:600;letter-spacing:.02em;}
@@ -154,7 +149,7 @@ section.s.ink .sub{color:rgba(246,241,231,.72);}
 .step{display:grid;grid-template-columns:.9fr 1.1fr;gap:44px;align-items:center;}
 .step:nth-child(even) .shot{order:2;}
 .step .when{
-  font-family:'Fraunces',Georgia,serif;font-size:13px;font-weight:700;color:var(--oak);
+  font-family:'Source Serif 4',Georgia,serif;font-size:13px;font-weight:700;color:var(--oak);
   letter-spacing:.04em;margin:0 0 10px;
 }
 .step h3{font-size:26px;margin:0 0 12px;line-height:1.2;}
@@ -208,7 +203,7 @@ section.s.ink .card .fine{color:rgba(246,241,231,.5);}
 /* ── origin story ── */
 .origin{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;}
 .origin blockquote{
-  margin:0;font-family:'Fraunces',Georgia,serif;font-size:clamp(22px,2.7vw,30px);
+  margin:0;font-family:'Source Serif 4',Georgia,serif;font-size:clamp(22px,2.7vw,30px);
   line-height:1.32;font-weight:400;
 }
 .origin blockquote em{color:var(--oak);font-style:italic;}
@@ -261,9 +256,9 @@ footer a:hover{color:var(--ink);}
   .btn:hover{transform:none;}
 }
 
-/* NO FRAUNCES ITALICS. The calligraphic f, j, y and looped d live in the italic
-   design itself - at every size, on every axis setting - so pinning axes can
-   never remove them. Emphasis inside Fraunces is carried by the gold color
-   alone. Hanken (body text) may still italicise; it is a grotesk and stays
-   clean. */
+/* SERIF POLICY. Fraunces appears only in the Plumb wordmark - its hooked J and
+   descending f are intrinsic to the roman glyphs and no axis setting removes
+   them. Every other serif surface sets Source Serif 4, conventional at every
+   size. Emphasis stays carried by the gold color; the forced-normal rule below
+   simply keeps the established look. */
 h1 em,.origin blockquote,.origin blockquote em,.q p,.brand .tag{font-style:normal;}
