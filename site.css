@@ -87,11 +87,10 @@ h1 em{font-style:italic;font-weight:400;color:var(--oak);}
 /* No dash properties here on purpose: with no script, or in a browser that
    cannot measure a path, the house simply renders finished. The drawing
    animation is an enhancement and owns those properties from JS. */
-#house .ln{
-  fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
-}
-#house .ln.warm{stroke:var(--oak);}
-#house .ln.thin{stroke-width:1.1;}
+/* Stroke palette lives on the SVG itself as presentation attributes: ink
+   walls, oak ground, two trim golds. Do not set stroke or stroke-width here -
+   CSS outranks presentation attributes and would flatten every line. */
+#house .ln{fill:none;}
 .stage-read{
   position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
   font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;

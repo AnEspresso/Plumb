@@ -13,6 +13,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>
+/* An installed copy that still launches at the site root belongs in the app.
+   This runs before the stylesheet so the redirect happens before first paint -
+   a home-screen launch must never flash the sales page. */
+try{
+  if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true)
+    location.replace('/app/');
+}catch(e){}
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Plumb — construction management your homeowner actually likes</title>
 <meta name="description" content="Field management for custom home builders: daily logs, photos, selections, budgets and a homeowner portal that stops the what-is-happening texts. Works with no signal.">
@@ -75,39 +84,80 @@
 
     <div class="hero-art">
       <!-- SIGNATURE: the house draws itself in build order as you scroll. -->
-      <svg id="house" viewBox="0 0 400 330" role="img"
-           aria-label="A line drawing of a house assembling itself in build order.">
-        <!-- ground -->
-        <path class="ln warm" data-stage="0" d="M20 300 H380"/>
-        <!-- footings / foundation -->
-        <path class="ln thin" data-stage="1" d="M78 300 V268 H322 V300"/>
-        <path class="ln thin" data-stage="1" d="M78 268 H322"/>
-        <!-- framing: posts + plates -->
-        <path class="ln" data-stage="2" d="M78 268 V150"/>
-        <path class="ln" data-stage="2" d="M322 268 V150"/>
-        <path class="ln" data-stage="2" d="M78 150 H322"/>
-        <path class="ln" data-stage="2" d="M200 268 V150"/>
-        <path class="ln" data-stage="2" d="M78 210 H322"/>
-        <!-- roof -->
-        <path class="ln" data-stage="3" d="M62 150 L200 58 L338 150"/>
-        <path class="ln thin" data-stage="3" d="M200 58 V150"/>
-        <!-- chimney -->
-        <path class="ln thin" data-stage="3" d="M286 104 V64 H306 V119"/>
-        <!-- windows -->
-        <path class="ln" data-stage="4" d="M104 168 H150 V206 H104 Z"/>
-        <path class="ln" data-stage="4" d="M250 168 H296 V206 H250 Z"/>
-        <path class="ln thin" data-stage="4" d="M127 168 V206 M104 187 H150"/>
-        <path class="ln thin" data-stage="4" d="M273 168 V206 M250 187 H296"/>
-        <path class="ln" data-stage="4" d="M104 228 H150 V268 H104 Z"/>
-        <path class="ln" data-stage="4" d="M250 228 H296 V268 H250 Z"/>
-        <!-- door + dormer -->
-        <path class="ln" data-stage="4" d="M180 268 V222 H220 V268"/>
-        <path class="ln thin" data-stage="4" d="M212 246 h4"/>
-        <path class="ln thin" data-stage="4" d="M176 128 H224 V150 M176 128 L200 108 L224 128"/>
-        <!-- siding / trim -->
-        <path class="ln thin warm" data-stage="5" d="M78 150 H322 M78 236 H322"/>
-        <path class="ln thin warm" data-stage="5" d="M62 150 H78 M322 150 H338"/>
-        <path class="ln warm" data-stage="5" d="M20 300 H78 M322 300 H380"/>
+      <svg id="house" viewBox="0 0 300 250" role="img" fill="none"
+           stroke="#1B1916" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+           aria-label="A line drawing of a two-story house with a covered porch assembling itself in build order.">
+        <!-- architect guide lines: part of the paper, not the build -->
+        <line class="guide" x1="150" y1="12" x2="150" y2="234" stroke="#B0895A" stroke-width="1" opacity=".28" stroke-dasharray="3 4"/>
+        <line class="guide" x1="22" y1="228" x2="278" y2="228" stroke="#B0895A" stroke-width="1" opacity=".28" stroke-dasharray="3 4"/>
+        <!-- stage 0: ground -->
+        <line class="ln" data-stage="0" x1="28" y1="228" x2="272" y2="228" stroke="#B0895A" stroke-width="2"/>
+        <!-- stage 1: foundation slab -->
+        <line class="ln" data-stage="1" x1="64" y1="223" x2="236" y2="223" stroke="#B0895A" stroke-width="2.4"/>
+        <!-- stage 2: framing - corners and floor band -->
+        <line class="ln" data-stage="2" x1="72" y1="228" x2="72" y2="92"/>
+        <line class="ln" data-stage="2" x1="228" y1="228" x2="228" y2="92"/>
+        <line class="ln" data-stage="2" x1="72" y1="146" x2="228" y2="146"/>
+        <!-- stage 3: roofs - main gable, chimney, seams, then the porch structure -->
+        <polyline class="ln" data-stage="3" points="60,96 150,30 240,96" stroke-width="2.2"/>
+        <polyline class="ln" data-stage="3" points="66,93 150,36 234,93" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="3" x1="66" y1="92" x2="234" y2="92"/>
+        <line class="ln" data-stage="3" x1="60" y1="96" x2="72" y2="92" stroke-width="1.1"/>
+        <line class="ln" data-stage="3" x1="240" y1="96" x2="228" y2="92" stroke-width="1.1"/>
+        <polyline class="ln" data-stage="3" points="198,40 198,62 208,66 208,40" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="3" x1="196" y1="40" x2="210" y2="40" stroke="#9A7544" stroke-width="1.4"/>
+        <line class="ln" data-stage="3" x1="96" y1="69" x2="86" y2="92" stroke="#7C6A4A" stroke-width=".8"/>
+        <line class="ln" data-stage="3" x1="116" y1="54" x2="108" y2="92" stroke="#7C6A4A" stroke-width=".8"/>
+        <line class="ln" data-stage="3" x1="184" y1="54" x2="192" y2="92" stroke="#7C6A4A" stroke-width=".8"/>
+        <line class="ln" data-stage="3" x1="204" y1="69" x2="214" y2="92" stroke="#7C6A4A" stroke-width=".8"/>
+        <line class="ln" data-stage="3" x1="72" y1="146" x2="54" y2="158" stroke-width="1.3"/>
+        <line class="ln" data-stage="3" x1="228" y1="146" x2="246" y2="158" stroke-width="1.3"/>
+        <line class="ln" data-stage="3" x1="54" y1="158" x2="246" y2="158" stroke-width="1.8"/>
+        <line class="ln" data-stage="3" x1="66" y1="162" x2="66" y2="224" stroke-width="1.5"/>
+        <line class="ln" data-stage="3" x1="118" y1="162" x2="118" y2="224" stroke-width="1.5"/>
+        <line class="ln" data-stage="3" x1="182" y1="162" x2="182" y2="224" stroke-width="1.5"/>
+        <line class="ln" data-stage="3" x1="234" y1="162" x2="234" y2="224" stroke-width="1.5"/>
+        <line class="ln" data-stage="3" x1="58" y1="224" x2="242" y2="224" stroke-width="1.4"/>
+        <line class="ln" data-stage="3" x1="50" y1="228" x2="250" y2="228" stroke="#9A7544" stroke-width="1.1"/>
+        <!-- stage 4: windows and doors - gable, second floor, entry, first floor -->
+        <rect class="ln" data-stage="4" x="140" y="56" width="20" height="32"/>
+        <rect class="ln" data-stage="4" x="136" y="52" width="28" height="40" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="136" y1="90" x2="164" y2="90" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="150" y1="56" x2="150" y2="88" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="140" y1="72" x2="160" y2="72" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="90" y="106" width="28" height="30"/>
+        <rect class="ln" data-stage="4" x="86" y="102" width="36" height="38" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="86" y1="138" x2="122" y2="138" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="104" y1="106" x2="104" y2="136" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="90" y1="121" x2="118" y2="121" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="182" y="106" width="28" height="30"/>
+        <rect class="ln" data-stage="4" x="178" y="102" width="36" height="38" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="178" y1="138" x2="214" y2="138" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="196" y1="106" x2="196" y2="136" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="182" y1="121" x2="210" y2="121" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="130" y="164" width="40" height="60" stroke="#9A7544" stroke-width="1.3"/>
+        <rect class="ln" data-stage="4" x="135" y="170" width="30" height="54" stroke-width="1.5"/>
+        <rect class="ln" data-stage="4" x="140" y="177" width="20" height="18" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="140" y="199" width="20" height="21" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="80" y="172" width="26" height="42"/>
+        <rect class="ln" data-stage="4" x="76" y="168" width="34" height="50" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="76" y1="216" x2="110" y2="216" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="93" y1="172" x2="93" y2="214" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="80" y1="193" x2="106" y2="193" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="194" y="172" width="26" height="42"/>
+        <rect class="ln" data-stage="4" x="190" y="168" width="34" height="50" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="190" y1="216" x2="224" y2="216" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="207" y1="172" x2="207" y2="214" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="194" y1="193" x2="220" y2="193" stroke-width=".7"/>
+        <!-- stage 5: siding and trim - battens, corner boards, porch fascia -->
+        <line class="ln" data-stage="5" x1="134" y1="92" x2="134" y2="146" stroke="#7C6A4A" stroke-width=".7"/>
+        <line class="ln" data-stage="5" x1="142" y1="92" x2="142" y2="146" stroke="#7C6A4A" stroke-width=".7"/>
+        <line class="ln" data-stage="5" x1="158" y1="92" x2="158" y2="146" stroke="#7C6A4A" stroke-width=".7"/>
+        <line class="ln" data-stage="5" x1="166" y1="92" x2="166" y2="146" stroke="#7C6A4A" stroke-width=".7"/>
+        <line class="ln" data-stage="5" x1="76" y1="92" x2="76" y2="146" stroke="#9A7544" stroke-width="1"/>
+        <line class="ln" data-stage="5" x1="224" y1="92" x2="224" y2="146" stroke="#9A7544" stroke-width="1"/>
+        <line class="ln" data-stage="5" x1="56" y1="162" x2="244" y2="162" stroke="#9A7544" stroke-width="1"/>
+        <line class="ln" data-stage="5" x1="64" y1="162" x2="236" y2="162" stroke="#7C6A4A" stroke-width=".7"/>
       </svg>
       <div class="stage-read" id="stageRead">Ground line</div>
     </div>
@@ -413,14 +463,7 @@
 </footer>
 
 <script>
-/* An installed copy launches at the site root. Send it to the app rather than
-   showing a sales page to someone who already signed up. */
-(function(){
-  try{
-    var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
-    if(standalone)location.replace('/app/');
-  }catch(e){}
-})();
+/* The standalone redirect moved to the top of <head> so it fires before paint. */
 
 /* nav hairline once you leave the hero */
 (function(){
@@ -442,75 +485,76 @@
 })();
 
 /* ── SIGNATURE: the house draws itself in build order ──
-   Each path knows its stage. Scrolling through the hero advances the build,
-   so the drawing is the subject rather than an ornament beside it. */
+   One continuous movement on load, ground through trim in about four seconds,
+   with the stage caption reading along underneath. Scroll is not involved:
+   the old two-movement design handed off from the intro ease to a scroll
+   formula whose head start made the drawing freeze and then jump. A single
+   timeline cannot jump. Fails safe to fully drawn, exactly as before. */
 (function(){
   var svg=document.getElementById('house');if(!svg)return;
   var read=document.getElementById('stageRead');
   var NAMES=['Ground line','Foundation','Framing','Roof','Windows & doors','Siding & trim'];
+  var STAGES=6,TOTAL=4200;
   var paths=[].slice.call(svg.querySelectorAll('.ln'));
   function measure(p){
     try{ if(typeof p.getTotalLength==='function'){var L=p.getTotalLength();if(L>0)return L;} }catch(e){}
     return 0;
   }
   var lens=paths.map(measure);
+  var done=false;
   function finish(){                       /* the safe end state, always reachable */
+    done=true;
     paths.forEach(function(p){p.style.strokeDasharray='none';p.style.strokeDashoffset=0;});
     if(read)read.textContent='Finished';
   }
   var reduce=false;
   try{reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
-  if(reduce||lens.some(function(L){return !L;})){finish();return;}
-  paths.forEach(function(p,i){
-    p.style.setProperty('--len',lens[i]);
-    p.style.strokeDasharray=lens[i];p.style.strokeDashoffset=lens[i];
-  });
+  if(reduce||!paths.length||lens.some(function(L){return !L;})){finish();return;}
 
-  var STAGES=6;
-  function draw(prog){                     /* prog 0..1 across the whole build */
-    var span=1/STAGES;
-    for(var s=0;s<STAGES;s++){
-      var local=Math.max(0,Math.min(1,(prog-s*span)/span));
-      paths.forEach(function(p,i){
-        if(+p.dataset.stage!==s)return;
-        p.style.strokeDashoffset=lens[i]*(1-local);
-      });
+  /* Stage windows are weighted by how many strokes each stage holds (with a
+     floor so the ground line is not a blink), so the hand moves at one speed
+     whether it is laying a slab or glazing five windows. Inside a window the
+     strokes stagger and overlap; every stroke is scheduled to land by the end
+     of the timeline, so completion is exact and nothing snaps at the finish. */
+  var byStage=[];for(var s=0;s<STAGES;s++)byStage.push([]);
+  paths.forEach(function(p,i){
+    var st=Math.max(0,Math.min(STAGES-1,+(p.getAttribute('data-stage')||0)));
+    byStage[st].push(i);
+  });
+  var weights=byStage.map(function(l){return Math.max(4,l.length);});
+  var wsum=weights.reduce(function(a,b){return a+b;},0);
+  var bounds=[0];
+  weights.forEach(function(w,s){bounds.push(bounds[s]+w/wsum);});
+  var start=new Array(paths.length),dur=new Array(paths.length);
+  byStage.forEach(function(list,s){
+    var w0=bounds[s],span=bounds[s+1]-w0,step=span/Math.max(1,list.length);
+    list.forEach(function(idx,k){
+      start[idx]=w0+k*step;
+      dur[idx]=Math.min(Math.max(.05,step*2.2+.04),Math.max(.001,1-start[idx]));
+    });
+  });
+  paths.forEach(function(p,i){p.style.strokeDasharray=lens[i];p.style.strokeDashoffset=lens[i];});
+  function easeOut(x){return 1-Math.pow(1-x,2.2);}
+  var t0=null;
+  function frame(ts){
+    if(done)return;
+    if(!t0)t0=ts;
+    var T=Math.min(1,(ts-t0)/TOTAL);
+    for(var i=0;i<paths.length;i++){
+      var local=(T-start[i])/dur[i];
+      if(local<=0)continue;
+      if(local>1)local=1;
+      paths[i].style.strokeDashoffset=lens[i]*(1-easeOut(local));
     }
     if(read){
-      var idx=Math.min(STAGES-1,Math.floor(prog*STAGES));
-      read.textContent=prog>=.999?'Finished':NAMES[idx];
+      var idx=0;
+      for(var s2=0;s2<STAGES;s2++){if(T>=bounds[s2])idx=s2;}
+      read.textContent=T>=1?'Finished':NAMES[idx];
     }
+    if(T<1)requestAnimationFrame(frame);else finish();
   }
-
-  /* Two movements, per the brief. On LOAD the structure draws itself without
-     being asked - ground through roof, the outline of the house including its
-     openings - so a visitor who never scrolls still sees it build. The scroll
-     then only finishes the details (windows, doors, siding), and finishes them
-     EARLY: everything is complete well before the hero leaves the screen, so
-     the drawing is never caught half-done. Whichever has gotten further wins,
-     so scrolling during the intro can only ever speed the build up. */
-  var INTRO_TO=4/6;                        /* load animation: stages 0-3 */
-  var introProg=0,scrollProg=0;
-  function apply(){draw(Math.max(introProg,scrollProg));}
-  var hero=document.querySelector('.hero');
-  function onScroll(){
-    var r=hero.getBoundingClientRect();
-    var travelled=Math.min(1,Math.max(0,(-r.top+140)/(r.height*.30)));
-    scrollProg=INTRO_TO+travelled*(1-INTRO_TO);
-    apply();
-  }
-  addEventListener('scroll',onScroll,{passive:true});
-  var t0=null;
-  function intro(ts){
-    if(!t0)t0=ts;
-    var k=Math.min(1,(ts-t0)/2400);
-    /* ease-out so the roof settles gently */
-    introProg=INTRO_TO*(1-Math.pow(1-k,3));
-    apply();
-    if(k<1)requestAnimationFrame(intro);
-    else onScroll();
-  }
-  requestAnimationFrame(intro);
+  requestAnimationFrame(frame);
+  setTimeout(function(){if(!done)finish();},TOTAL+1200);
 })();
 </script>
 </body>
