@@ -153,8 +153,8 @@ t('client attaches only its four colls', $("__g.attached.join()")==='items,sel,l
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
-t('SEED_VERSION 11',$('SEED_VERSION')===11);
-t('4 seed sites',$('state.projects.length')===4);
+t('SEED_VERSION 12',$('SEED_VERSION')===12);
+t('10 seed sites',$('state.projects.length')===10);
 t('no boot errors',w.__thrown.length===0,w.__thrown[0]);
 
 /* ════ 2 · SCHEDULING LIFECYCLE (p1 Linden Ridge, Timberline Framing) ════ */
@@ -636,7 +636,7 @@ $('closeBudget()');
 S('budget templates');
 asBuilder();$("state.activeId='p4'");
 t('Maple Court starts empty', $("costLines(P()).length")===0);
-t('sources exclude self and empty sites', $("JSON.stringify(budgetSources().map(s=>s.id).sort())")===JSON.stringify(['p1','p2','p3']));
+t('sources exclude self and empty sites', $("JSON.stringify(budgetSources().map(s=>s.id).sort())")===JSON.stringify(['p1','p10','p2','p3','p5','p6','p7','p8','p9']));
 $('openBudget()');
 t('empty budget offers the copy link', el('budgetBody').innerHTML.includes('Copy budget lines from another site'));
 $('openBudgetCopy()');
@@ -1568,7 +1568,7 @@ const ACTIONS=[
   r=>{asBuilder();$("state.activeId='"+PIDS[Math.floor(r()*4)]+"'");$('invCompose()');setVal('invTitle2','Fuzz inv');setVal('invExLabel','Fuzz line');setVal('invExAmount',String(1+Math.floor(r()*900)));$('invSave('+(r()<0.5)+')');$("invMode='list'");},
   r=>{asBuilder();$("state.activeId='"+PIDS[Math.floor(r()*4)]+"'");$('openCostLine()');setVal('clLabel','Fz line '+Math.floor(r()*1e4));setVal('clBudget',String(1000+Math.floor(r()*90000)));$('saveCostLine()');$('closeCostLine()');},
   r=>{asBuilder();$("state.activeId='"+PIDS[Math.floor(r()*4)]+"'");$('openCostActual()');setVal('caAmount',String(Math.floor(r()*50000)));$("setCaKind('"+(0.5>0.4?'spent':'committed')+"')");const ls=JSON.parse($("JSON.stringify(costLines(P()).map(l=>l.id))"));if(ls.length&&r()<0.8)$("document.getElementById('caLine').value="+JSON.stringify(ls[Math.floor(r()*ls.length)]));$("document.getElementById('caPayeeSel').value='__other'");$('caPayeeChange()');setVal('caPayee','Fz Co');$('saveCostActual()');$('closeCostActual()');},
-  r=>{if($('state.projects.length')>=10)return;asBuilder();$('openNewSite()');setVal('nsName','Fz '+Math.floor(r()*1e5));setVal('nsStreet',Math.floor(r()*999)+' Fuzz Way');setVal('nsCity','Fuzzton');$('saveNewSite()');},
+  r=>{if($('state.projects.length')>=16)return;asBuilder();$('openNewSite()');setVal('nsName','Fz '+Math.floor(r()*1e5));setVal('nsStreet',Math.floor(r()*999)+' Fuzz Way');setVal('nsCity','Fuzzton');$('saveNewSite()');},
 ];
 const drainM=r=>{for(let g=0;g<4;g++){let acted=false;
   if(el('promptScrim').classList.contains('show')){if(r()<0.5)promptOK(new Date(Date.now()+864e5).toISOString().slice(0,10));else $('closePrompt()');acted=true;}

@@ -2846,12 +2846,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.200.0 - Privacy and Terms open again from inside the app. The legal pages moved to the app folder with the 2.195 relocation but the in-app links still pointed at the old root address and answered 404';
+const PLUMB_VERSION='2.201.0 - The example build grows from four sites to ten, one at every stage of a real year: permits in review, framing, insulation and drywall, interior finishes, a closed job in its warranty window, and a spec with finishes held for a buyer. Every site carries stage-true selections and a full money story, and the demo reseeds on every entry so its dates always hang off today';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785631200000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785631800000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -2978,7 +2978,7 @@ function permitStatusFor(i,n,r){const phase=n>1?i/(n-1):0;if(r>=phase+0.15)retur
 function normalizePermits(p){if(p.permits)p.permits=p.permits.filter(pm=>!LEGACY_INSP_PERMITS.has(pm.name));if(p._permitsSeeded)return;const SS=stagesFor(p);const done=SS.filter(s=>p.stageDone&&p.stageDone[s.id]).length;const r=done/SS.length;const ex={};(p.permits||[]).forEach(pm=>{ex[pm.name]=pm.status;});p.permits=DEFAULT_PERMITS.map((name,i)=>({name,status:ex[name]||(done===0?'Not started':permitStatusFor(i,DEFAULT_PERMITS.length,r))}));p._permitsSeeded=true;}
 const SW={oak:'#C7A878,#9A7544',slate:'#8C9AA6,#5E6B78',dove:'#E4DFD5,#C9C2B4',clay:'#C08068,#9A5A44',sage:'#9AA47E,#717C55',dark:'#54504A,#33302B'};
 
-const SEED_VERSION=11; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
+const SEED_VERSION=12; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
 function sampleState(){
   const D=864e5; // one day in ms
   const ds=n=>{const x=new Date(Date.now()-n*D);const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());};
@@ -3222,6 +3222,376 @@ function sampleState(){
         bookings:[],
         schedule:{site:{start:day(-30),end:day(-22)},foundation:{start:day(-21),end:day(-16)}},
         nextId:100
+      },
+      /* ───── 5 · PRE-CONSTRUCTION — permits in review, dirt untouched ───── */
+      {
+        id:'p5', sample:true, name:'Halstead Park Build', street:'1466 Halstead Park Dr', city:'Bloomfield Hills',
+        items:[
+          {id:1,cap:'Survey crew staked the lot, corner pins verified against plat',area:'Grading',crew:'Excavation',issue:false,sw:'sage',t:Date.now()-6*D,day:0,sample:true},
+          {id:2,cap:'Soil borings complete - bearing confirmed, no water table concerns',area:'Basement',crew:'Excavation',issue:false,sw:'dark',t:Date.now()-4*D,day:0,sample:true},
+          {id:3,cap:'Plan review comment letter received - stair headroom note to resolve with designer',area:'Whole House',crew:'',issue:true,status:'open',sw:'clay',t:Date.now()-1*D,day:0,sample:true}
+        ],
+        logs:[
+          {date:ds(0),t:Date.now()-4e6,text:'Designer responding to plan review comments. Stair headroom detail revised, resubmitting this week. No site work until permit in hand.'},
+          {date:ds(4),t:Date.now()-4*D,text:'Geotech on site for borings. Preliminary report clean. Clear, 55.'},
+          {date:ds(6),t:Date.now()-6*D,text:'Pre-construction meeting with homeowners. Reviewed allowances, selection deadlines, and draw schedule.'}
+        ],
+        docs:[
+          {aud:'all',n:'Construction Contract.pdf',m:'Signed - Jun 30',k:'pdf'},
+          {aud:'all',n:'Site Plan & Survey.pdf',m:'Stamped',k:'plan'},
+          {aud:'all',n:'Building Plans - Permit Set.pdf',m:'In plan review',k:'plan'},
+          {aud:'all',n:'Soil / Geotechnical Report.pdf',m:'Clean',k:'pdf'},
+          {aud:'all',n:'Selection Deadline Schedule.pdf',m:'Issued to homeowner',k:'pdf'}
+        ],
+        subs:[
+          {id:'p5a',name:'Ironhill Excavating',specialty:'excav',phone:'',cleared:Date.now()-5*D},
+          {id:'p5b',name:'Cornerstone Concrete',specialty:'concrete',phone:'',cleared:null},
+          {id:'p5c',name:'Timberline Framing',specialty:'framing',phone:'',cleared:null},
+          {id:'p5d',name:'Clearwater Plumbing',specialty:'plumb',phone:'',cleared:null},
+          {id:'p5e',name:'Brightpath Electric',specialty:'elec',phone:'',cleared:null}
+        ],
+        stageDone:{},
+        permits:[{name:'Zoning / Plan Review',status:'In review'},{name:'Building Permit',status:'Submitted'},{name:'Grading / Soil Erosion Permit',status:'Issued'},{name:'Water / Sewer Tap Permit',status:'Not started'}],
+        inspections:{},
+        inspMeta:{},
+        selections:[
+          {id:1,room:'Whole House',cat:'Windows',item:'Black-clad casement - sizes lock with permit set',status:'selected',approved:true,price:0,spec:{operation:'Casement + fixed',grille:'None',hardware:'Matte black'}},
+          {id:2,room:'Exterior',cat:'Siding',item:'Limewash brick + vertical siding concept',status:'selected',approved:false,note:'Concept boards with homeowner - decision due before permit issues',price:0,spec:{}},
+          {id:3,room:'Exterior',cat:'Roofing',item:'Standing-seam metal, matte black',status:'selected',approved:true,price:4200,spec:{profile:'1.5 in mechanical seam',underlayment:'High-temp ice and water full coverage'}},
+          {id:4,room:'Great Room',cat:'Mechanical (HVAC / Fireplace)',item:'Direct-vent linear fireplace - framing dims needed',status:'selected',approved:true,price:2600,note:'Locks the chase framing - confirmed before permit set finalizes',spec:{surround:'Full-height stone',zoning:'2-zone'}},
+          {id:5,room:'Exterior',cat:'Interior Doors',item:'Front entry - 42 in pivot door',status:'pending',approved:false,note:'Rough opening must lock before framing package orders',price:null,spec:{}},
+          {id:6,room:'Kitchen',cat:'Cabinets',item:'Kitchen concept - inset vs frameless',status:'pending',approved:false,price:null,spec:{}},
+          {id:7,room:'Kitchen',cat:'Countertops',item:'Countertop allowance - selections open',status:'pending',approved:false,price:0,spec:{}},
+          {id:8,room:'Whole House',cat:'Flooring',item:'Wide-plank white oak, character grade',status:'selected',approved:false,note:'Sample approved verbally - written sign-off pending',price:0,spec:{}},
+          {id:9,room:'Whole House',cat:'Plumbing Fixtures',item:'Fixture allowance - selections open',status:'pending',approved:false,price:0,spec:{}},
+          {id:10,room:'Whole House',cat:'Lighting & Electrical',item:'Lighting allowance - selections open',status:'pending',approved:false,price:0,spec:{}},
+          {id:11,room:'Garage',cat:'Garage Doors',item:'Flush-panel insulated - color TBD',status:'pending',approved:false,price:0,spec:{}}
+        ],
+        selNotes:'Structural selections first: windows, fireplace chase, and the pivot-door rough opening all lock before the permit set finalizes. Finish allowances open until framing.',
+        packetSignoff:{},
+        payments:[],
+        invoices:[],
+        jurisdiction:{city:'Bloomfield Twp, MI',system:'BS&A Online',portalUrl:'https://bsaonline.com',inbox:'1466-halstead-park-dr@inbox.plumb.app',feed:[
+          {id:'f1',t:Date.now()-1*D,kind:'permit',ref:'Building Permit',status:'In review',text:'Plan review comment letter posted - 1 item',applied:false}
+        ]},
+        bookings:[
+          {id:'bk_p5a',subName:'Ironhill Excavating',trade:'excav',start:day(9),end:day(12),note:'Clear, strip and cut - on permit issue',status:'pending',t:Date.now()-2*D,by:''}
+        ],
+        schedule:{site:{start:day(8),end:day(16)},foundation:{start:day(17),end:day(27)}},
+        nextId:100
+      },
+      /* ───── 6 · FRAMING — first floor up, trusses next week ───── */
+      {
+        id:'p6', sample:true, name:'Juniper Lane Build', street:'3117 Juniper Ln', city:'Rochester Hills',
+        items:[
+          {id:1,cap:'First-floor walls framed and plumbed, sheathing started',area:'Framing',crew:'Framing',issue:false,sw:'oak',t:Date.now()-5*D,day:24,sample:true,share:true},
+          {id:2,cap:'Second-floor deck set, stair opening framed to revised detail',area:'Framing',crew:'Framing',issue:false,sw:'dark',t:Date.now()-2*D,day:27,sample:true},
+          {id:3,cap:'Beam pocket at kitchen bearing wall cut 3 in shallow - reframing per engineer',area:'Kitchen',crew:'Framing',issue:true,status:'open',sw:'clay',t:Date.now()-1*D,day:28,sample:true},
+          {id:4,cap:'Window package confirmed for delivery Thursday',area:'Whole House',crew:'',issue:false,sw:'dove',t:Date.now()-8e6,day:29,sample:true},
+          {id:5,cap:'Crane scheduled - truss set Monday, weather window looks clean',area:'Framing',crew:'Framing',issue:false,sw:'sage',t:Date.now()-5e6,day:29,sample:true}
+        ],
+        logs:[
+          {date:ds(0),t:Date.now()-5e6,text:'Framing crew of five. Second-floor walls going up, truss crane confirmed for Monday. Beam pocket rework materials on site. Sunny, 72.'},
+          {date:ds(2),t:Date.now()-2*D,text:'Second-floor deck complete. Engineer detail received for beam pocket rework.'},
+          {date:ds(5),t:Date.now()-5*D,text:'First floor topped out. Homeowner walked the slab layout - kitchen island shifted 6 in per their request, logged as change order.'}
+        ],
+        docs:[
+          {aud:'all',n:'Construction Contract.pdf',m:'Signed - Mar 18',k:'pdf'},
+          {aud:'all',n:'Approved Building Plans.pdf',m:'City stamped',k:'plan'},
+          {aud:'all',n:'Truss Package - Released.pdf',m:'Crane Monday',k:'plan'},
+          {aud:'all',n:'Window & Door Schedule.pdf',m:'Ordered - Thu delivery',k:'pdf'},
+          {aud:'all',n:'Beam Pocket Detail - Engineer.pdf',m:'Rev 1',k:'plan'},
+          {aud:'all',n:'Lien Waiver - Foundation.pdf',m:'Received',k:'pdf'}
+        ],
+        subs:[
+          {id:'p6a',name:'Ironhill Excavating',specialty:'excav',phone:'',cleared:Date.now()-38*D},
+          {id:'p6b',name:'Bedrock Concrete',specialty:'concrete',phone:'',cleared:Date.now()-26*D},
+          {id:'p6c',name:'Timberline Framing',specialty:'framing',phone:'',cleared:Date.now()-12*D},
+          {id:'p6d',name:'Summit Roofing',specialty:'roofing',phone:'',cleared:null,specsDue:day(8)},
+          {id:'p6e',name:'Lakeshore Window Supply',specialty:'windows',phone:'',cleared:Date.now()-6*D},
+          {id:'p6f',name:'Northwind Mechanical',specialty:'hvac',phone:'',cleared:null},
+          {id:'p6g',name:'Ridgeline Plumbing',specialty:'plumb',phone:'',cleared:null}
+        ],
+        stageDone:{site:true,foundation:true},
+        permits:[{name:'Building Permit',status:'Issued'},{name:'Grading / Soil Erosion Permit',status:'Issued'},{name:'Electrical Permit',status:'Issued'},{name:'Plumbing Permit',status:'Issued'},{name:'Mechanical / HVAC Permit',status:'Issued'}],
+        inspections:{site:'passed',foundation:'passed',roughin:'pending'},
+        inspMeta:{site:{date:ds(34),docName:'Footing inspection card'},foundation:{date:ds(24),docName:'Foundation inspection report'}},
+        selections:[
+          {id:1,room:'Whole House',cat:'Windows',item:'Black-clad double-hung',status:'ordered',approved:true,price:2100,invoicedIn:'inv_p6_1',spec:{operation:'Double-hung, tilt-wash',grille:'2-over-2 front elevation',hardware:'Matte black'}},
+          {id:2,room:'Exterior',cat:'Siding',item:'Cedar-look lap, Pewter Green',status:'selected',approved:true,price:0,spec:{profile:'6 in lap',trimcolor:'Cream'}},
+          {id:3,room:'Exterior',cat:'Masonry / Brick',item:'Watertable brick veneer',status:'selected',approved:true,price:0,spec:{mortar:'Buff',pattern:'Running bond'}},
+          {id:4,room:'Exterior',cat:'Roofing',item:'Architectural shingle, Weathered Wood',status:'selected',approved:true,price:0,spec:{}},
+          {id:5,room:'Great Room',cat:'Mechanical (HVAC / Fireplace)',item:'Direct-vent fireplace with stone surround',status:'ordered',approved:true,price:1800,invoicedIn:'inv_p6_1',spec:{surround:'Fieldstone to ceiling',zoning:'2-zone'}},
+          {id:6,room:'Kitchen',cat:'Cabinets',item:'Frameless slab, rift oak',status:'selected',approved:false,note:'Door style approved - stain sample due before drywall',price:0,spec:{hardware:'Integrated pulls'}},
+          {id:7,room:'Kitchen',cat:'Countertops',item:'Quartz - slab visit to book',status:'pending',approved:false,price:null,spec:{}},
+          {id:8,room:'Whole House',cat:'Flooring',item:'Engineered white oak, 7 in plank',status:'selected',approved:true,price:0,spec:{direction:'Parallel to entry'}},
+          {id:9,room:'Whole House',cat:'Plumbing Fixtures',item:'Fixture allowance - selections open',status:'pending',approved:false,price:0,spec:{}},
+          {id:10,room:'Whole House',cat:'Lighting & Electrical',item:'Lighting allowance - selections open',status:'pending',approved:false,price:0,spec:{}},
+          {id:11,room:'Garage',cat:'Garage Doors',item:'Carriage-style insulated',status:'selected',approved:true,price:0,spec:{}}
+        ],
+        selNotes:'Windows and fireplace ordered - both long-lead. Cabinet stain sample is the next hard deadline: due before drywall so the floor finisher can match.',
+        packetSignoff:{windows:{builder:{by:'Builder',at:Date.now()-8*D},homeowner:{by:'Buyer',at:Date.now()-7*D}}},
+        payments:[],
+        invoices:[{id:'inv_p6_1',no:'INV-001',title:'Selections - windows and fireplace',due:ds(-8),items:[{label:'Window upgrade - black-clad',amount:2100,selId:1},{label:'Fireplace + stone surround',amount:1800,selId:5}],total:3900,status:'sent',t:Date.now()-7*D,sentBy:'You',payments:[{id:'ip1',amount:1500,date:ds(4),note:'Deposit'}]}],
+        jurisdiction:{city:'Rochester Hills, MI',system:'AccessMyGov',portalUrl:'https://www.accessmygov.com',inbox:'3117-juniper-ln@inbox.plumb.app',feed:[
+          {id:'f1',t:Date.now()-24*D,kind:'inspection',ref:'foundation',status:'passed',text:'Foundation inspection passed',applied:true}
+        ]},
+        bookings:[
+          {id:'bk_p6a',subName:'Timberline Framing',trade:'framing',start:day(-6),end:day(9),note:'Frame through dry-in',status:'confirmed',t:Date.now()-8*D,by:''},
+          {id:'bk_p6b',subName:'Summit Roofing',trade:'roofing',start:day(10),end:day(13),note:'Shingle on truss set + sheathing',status:'pending',t:Date.now()-2*D,by:''}
+        ],
+        schedule:{framing:{start:day(-8),end:day(9)},roughin:{start:day(12),end:day(26)}},
+        nextId:100
+      },
+      /* ───── 7 · INSULATION / DRYWALL — small cottage, finishes closing in ───── */
+      {
+        id:'p7', sample:true, name:'Elmhurst Cottage', street:'2209 Elmhurst Ave', city:'Berkley',
+        items:[
+          {id:1,cap:'All rough inspections passed - green tags on the panel',area:'Whole House',crew:'',issue:false,sw:'sage',t:Date.now()-7*D,day:62,sample:true,share:true},
+          {id:2,cap:'Wall insulation complete, attic blown to R-49',area:'Whole House',crew:'Insulation',issue:false,sw:'dove',t:Date.now()-3*D,day:66,sample:true},
+          {id:3,cap:'Drywall stacked, hanging starts first floor tomorrow',area:'Whole House',crew:'Drywall',issue:false,sw:'dark',t:Date.now()-1*D,day:68,sample:true},
+          {id:4,cap:'Attic baffle gaps at eaves - corrected before insulation inspection',area:'Whole House',crew:'Insulation',issue:true,status:'done',sw:'oak',t:Date.now()-4*D,day:65,sample:true},
+          {id:5,cap:'Hairline crack in garage slab - marked to monitor through drywall',area:'Garage',crew:'Concrete / Masonry',issue:true,status:'open',sw:'slate',t:Date.now()-2*D,day:67,sample:true}
+        ],
+        logs:[
+          {date:ds(0),t:Date.now()-6e6,text:'Drywall stocked, hanging starts tomorrow. Paint colors are now the critical path - reminded homeowner sign-off is due Friday. Overcast, 66.'},
+          {date:ds(3),t:Date.now()-3*D,text:'Insulation complete, attic blown. Insulation inspection booked.'},
+          {date:ds(7),t:Date.now()-7*D,text:'All rough inspections passed first visit. Clean day.'}
+        ],
+        docs:[
+          {aud:'all',n:'Construction Contract.pdf',m:'Signed - Jan 22',k:'pdf'},
+          {aud:'all',n:'Approved Building Plans.pdf',m:'City stamped',k:'plan'},
+          {aud:'all',n:'Rough Inspection Reports.pdf',m:'All passed',k:'pdf'},
+          {aud:'all',n:'Paint Schedule - DRAFT.pdf',m:'Awaiting homeowner colors',k:'pdf'},
+          {aud:'all',n:'Lien Waiver - Mechanical.pdf',m:'Received',k:'pdf'}
+        ],
+        subs:[
+          {id:'p7a',name:'Cornerstone Concrete',specialty:'concrete',phone:'',cleared:Date.now()-70*D},
+          {id:'p7b',name:'Timberline Framing',specialty:'framing',phone:'',cleared:Date.now()-45*D},
+          {id:'p7c',name:'Clearwater Plumbing',specialty:'plumb',phone:'',cleared:Date.now()-20*D},
+          {id:'p7d',name:'Copper Peak Electric',specialty:'elec',phone:'',cleared:Date.now()-20*D},
+          {id:'p7e',name:'ThermaSeal Insulation',specialty:'insul',phone:'',cleared:Date.now()-6*D},
+          {id:'p7f',name:'Smoothwall Drywall',specialty:'drywall',phone:'',cleared:Date.now()-2*D,specsDue:day(1)},
+          {id:'p7g',name:'TruePalette Painting',specialty:'paint',phone:'',cleared:null,specsDue:day(4)}
+        ],
+        stageDone:{site:true,foundation:true,framing:true,roughin:true,cladding:true},
+        permits:[{name:'Building Permit',status:'Issued'},{name:'Electrical Permit',status:'Issued'},{name:'Plumbing Permit',status:'Issued'},{name:'Mechanical / HVAC Permit',status:'Issued'}],
+        inspections:{site:'passed',foundation:'passed',roughin:'passed',rough_elec:'passed',rough_plumb:'passed',rough_mech:'passed',insulation:'scheduled',final_mep:'pending',final:'pending'},
+        inspMeta:{site:{date:ds(80)},foundation:{date:ds(72),docName:'Foundation inspection report'},roughin:{date:ds(7),docName:'Rough-in inspection report'},rough_elec:{date:ds(7)},rough_plumb:{date:ds(8)},rough_mech:{date:ds(7)},insulation:{date:ds(-2)}},
+        selections:[
+          {id:1,room:'Whole House',cat:'Windows',item:'White vinyl double-hung',status:'installed',approved:true,price:0,spec:{operation:'Double-hung',grille:'Colonial front only'}},
+          {id:2,room:'Whole House',cat:'Paint',item:'Interior colors - whole house',status:'pending',approved:false,note:'DUE FRIDAY - first coat follows drywall finish, colors hold the schedule',price:0,spec:{}},
+          {id:3,room:'Kitchen',cat:'Cabinets',item:'Shaker overlay, Naval island',status:'ordered',approved:true,price:850,invoicedIn:'inv_p7_1',spec:{finish:'White perimeter, Naval island',hardware:'Brushed nickel'}},
+          {id:4,room:'Kitchen',cat:'Countertops',item:'Quartz - Carrara look',status:'ordered',approved:true,note:'Template after cabinets set',price:0,spec:{edge:'Eased',sink:'Undermount single bowl'}},
+          {id:5,room:'Bath',cat:'Tile',item:'Subway + penny round floor',status:'delivered',approved:true,price:400,invoicedIn:'inv_p7_1',spec:{pattern:'Offset subway',grout:'Warm gray'}},
+          {id:6,room:'Whole House',cat:'Flooring',item:'LVP - oak look, whole house',status:'ordered',approved:true,price:0,spec:{direction:'Parallel to entry'}},
+          {id:7,room:'Whole House',cat:'Interior Doors',item:'2-panel Shaker, painted',status:'ordered',approved:true,price:0,spec:{style:'2-panel',hardware:'Matte black levers'}},
+          {id:8,room:'Whole House',cat:'Plumbing Fixtures',item:'Matte black package',status:'ordered',approved:true,price:1500,invoicedIn:'inv_p7_1',spec:{finish:'Matte black',height:'Standard'}},
+          {id:9,room:'Whole House',cat:'Lighting & Electrical',item:'Fixture schedule',status:'selected',approved:true,price:0,spec:{locations:'Per lighting plan'}},
+          {id:10,room:'Bath',cat:'Trim & Millwork',item:'Mirrors + bath accessories',status:'pending',approved:false,price:0,spec:{}}
+        ],
+        selNotes:'Everything ordered except paint colors and bath accessories. Paint is the critical path - homeowner sign-off due Friday or drywall finish waits.',
+        packetSignoff:{cabinets:{builder:{by:'Builder',at:Date.now()-16*D},homeowner:{by:'Buyer',at:Date.now()-15*D}},floor:{builder:{by:'Builder',at:Date.now()-12*D},homeowner:{by:'Buyer',at:Date.now()-12*D}}},
+        payments:[],
+        invoices:[{id:'inv_p7_1',no:'INV-001',title:'Selections - kitchen and bath upgrades',due:ds(20),items:[{label:'Naval island upgrade',amount:850,selId:3},{label:'Penny round bath floor',amount:400,selId:5},{label:'Matte black plumbing package',amount:1500,selId:8}],total:2750,status:'paid',paidAt:Date.now()-11*D,t:Date.now()-19*D,sentBy:'You',payments:[{id:'ip1',amount:2750,date:ds(11),note:'Paid in full'}]}],
+        jurisdiction:{city:'Berkley, MI',system:'BS&A Online',portalUrl:'https://bsaonline.com',inbox:'2209-elmhurst-ave@inbox.plumb.app',feed:[
+          {id:'f1',t:Date.now()-7*D,kind:'inspection',ref:'roughin',status:'passed',text:'All rough inspections passed',applied:true},
+          {id:'f2',t:Date.now()-6e6,kind:'inspection',ref:'insulation',status:'scheduled',text:'Insulation inspection scheduled',applied:false}
+        ]},
+        bookings:[
+          {id:'bk_p7a',subName:'Smoothwall Drywall',trade:'drywall',start:day(1),end:day(9),note:'Hang, tape, finish',status:'confirmed',t:Date.now()-3*D,by:''},
+          {id:'bk_p7b',subName:'TruePalette Painting',trade:'paint',start:day(11),end:day(16),note:'Prime + first coat - colors due Friday',status:'pending',t:Date.now()-1*D,by:''}
+        ],
+        schedule:{insulation:{start:day(-4),end:day(0)},drywall:{start:day(1),end:day(9)},interior:{start:day(11),end:day(30)}},
+        nextId:100
+      },
+      /* ───── 8 · INTERIOR FINISHES — cabinets in, tile running over ───── */
+      {
+        id:'p8', sample:true, name:'Beaumont Park Build', street:'509 Beaumont Park', city:'Grosse Pointe',
+        items:[
+          {id:1,cap:'Kitchen and butler pantry cabinets set, level and shimmed',area:'Kitchen',crew:'Finish Carpentry',issue:false,sw:'dove',t:Date.now()-8*D,day:118,sample:true,share:true},
+          {id:2,cap:'Herringbone tile labor running past estimate - homeowner notified, cost logged',area:'Primary Bath',crew:'Flooring / Tile',issue:true,status:'open',sw:'clay',t:Date.now()-3*D,day:123,sample:true},
+          {id:3,cap:'Site-finished oak acclimating - moisture readings on track',area:'Whole House',crew:'Flooring / Tile',issue:false,sw:'oak',t:Date.now()-5*D,day:121,sample:true},
+          {id:4,cap:'Pocket door at pantry rebuilt - frame was out of square',area:'Kitchen',crew:'Finish Carpentry',issue:true,status:'done',sw:'sage',t:Date.now()-6*D,day:120,sample:true},
+          {id:5,cap:'Trim carpenter starts crown and casing Monday - 9 working days quoted',area:'Whole House',crew:'Finish Carpentry',issue:false,sw:'dark',t:Date.now()-1*D,day:125,sample:true},
+          {id:6,cap:'Steel-frame study doors delivered, staged in garage',area:'Study',crew:'',issue:false,sw:'slate',t:Date.now()-9e6,day:126,sample:true}
+        ],
+        logs:[
+          {date:ds(0),t:Date.now()-8e6,text:'Tile crew in primary bath - herringbone labor over estimate, logged against budget and homeowner notified. Trim package delivered. Clear, 68.'},
+          {date:ds(5),t:Date.now()-5*D,text:'Hardwood delivered, stickered and acclimating. Moisture 8 percent.'},
+          {date:ds(8),t:Date.now()-8*D,text:'Cabinet install complete including butler pantry uppers. Countertop template booked.'}
+        ],
+        docs:[
+          {aud:'all',n:'Construction Contract.pdf',m:'Signed - Oct 3 (prior yr)',k:'pdf'},
+          {aud:'all',n:'Approved Building Plans.pdf',m:'City stamped',k:'plan'},
+          {aud:'all',n:'Cabinet Shop Drawings.pdf',m:'As installed',k:'plan'},
+          {aud:'all',n:'Tile Layouts - All Baths.pdf',m:'Approved',k:'plan'},
+          {aud:'all',n:'Trim Schedule.pdf',m:'Materials delivered',k:'pdf'},
+          {aud:'all',n:'Lien Waivers - Through Drywall.pdf',m:'Complete',k:'pdf'}
+        ],
+        subs:[
+          {id:'p8a',name:'Timberline Framing',specialty:'framing',phone:'',cleared:Date.now()-120*D},
+          {id:'p8b',name:'Level Five Drywall',specialty:'drywall',phone:'',cleared:Date.now()-40*D},
+          {id:'p8c',name:'Heritage Cabinet Co.',specialty:'cabinets',phone:'',cleared:Date.now()-14*D},
+          {id:'p8d',name:'Great Lakes Tile & Floor',specialty:'floor',phone:'',cleared:Date.now()-10*D,specsDue:day(2)},
+          {id:'p8e',name:'Fine Line Interiors',specialty:'finish',phone:'',cleared:Date.now()-4*D},
+          {id:'p8f',name:'TruePalette Painting',specialty:'paint',phone:'',cleared:Date.now()-30*D},
+          {id:'p8g',name:'Copper Peak Electric',specialty:'elec',phone:'',cleared:Date.now()-25*D},
+          {id:'p8h',name:'Metro Appliance',specialty:'general',phone:'',cleared:null}
+        ],
+        stageDone:{site:true,foundation:true,framing:true,roughin:true,cladding:true,insulation:true,drywall:true},
+        permits:[{name:'Building Permit',status:'Issued'},{name:'Electrical Permit',status:'Issued'},{name:'Plumbing Permit',status:'Issued'},{name:'Mechanical / HVAC Permit',status:'Issued'}],
+        inspections:{site:'passed',foundation:'passed',roughin:'passed',rough_elec:'passed',rough_plumb:'passed',rough_mech:'passed',insulation:'passed',final_mep:'pending',final:'pending'},
+        inspMeta:{site:{date:ds(150)},foundation:{date:ds(140),docName:'Foundation inspection report'},roughin:{date:ds(60),docName:'Rough-in inspection report'},rough_elec:{date:ds(60)},rough_plumb:{date:ds(61)},rough_mech:{date:ds(60)},insulation:{date:ds(45),docName:'Insulation inspection report'}},
+        selections:[
+          {id:1,room:'Kitchen',cat:'Cabinets',item:'Inset, painted + rift oak island',status:'installed',approved:true,price:0,spec:{finish:'Alabaster perimeter, natural rift oak island',hardware:'Unlacquered brass',softclose:'Yes'}},
+          {id:2,room:'Kitchen',cat:'Countertops',item:'Honed marble perimeter + oak butcher island end',status:'ordered',approved:true,note:'Templated - install after trim primer',price:0,spec:{edge:'Eased',thickness:'3cm',sink:'Undermount workstation'}},
+          {id:3,room:'Kitchen',cat:'Appliances',item:'48 in pro range + custom hood',status:'delivered',approved:true,price:1250,invoicedIn:'inv_p8_1',spec:{models:'48 in pro range, panel fridge',utils:'Gas + 240v'}},
+          {id:4,room:'Primary Bath',cat:'Tile',item:'Marble herringbone floor + slab shower walls',status:'installed',approved:true,price:1900,invoicedIn:'inv_p8_1',note:'Labor over estimate - overage logged in job costs, homeowner notified',spec:{pattern:'Herringbone',grout:'White'}},
+          {id:5,room:'Study',cat:'Interior Doors',item:'Steel-frame glass doors - pair',status:'delivered',approved:true,price:3400,invoicedIn:'inv_p8_2',spec:{style:'3-lite steel',swing:'Double, in-swing'}},
+          {id:6,room:'Whole House',cat:'Flooring',item:'White oak, site-finished, 5 in',status:'delivered',approved:true,note:'Acclimating - install follows trim',price:0,spec:{direction:'Parallel to entry',finish:'Matte 2-component'}},
+          {id:7,room:'Whole House',cat:'Trim & Millwork',item:'Full-height casing + 3-piece crown, main floor',status:'ordered',approved:true,price:1150,invoicedIn:'inv_p8_2',spec:{profile:'3-piece crown',finish:'Painted'}},
+          {id:8,room:'Whole House',cat:'Lighting & Electrical',item:'Fixture schedule',status:'ordered',approved:true,price:0,spec:{locations:'Per lighting plan rev C',switching:'Dimmers in living spaces'}},
+          {id:9,room:'Whole House',cat:'Paint',item:'Interior colors - whole house',status:'ordered',approved:true,price:0,spec:{colors:'Swiss Coffee walls, Iron Ore study'}},
+          {id:10,room:'Primary Suite',cat:'Trim & Millwork',item:'Closet built-ins',status:'pending',approved:false,note:'Last open decision - shop needs 3 weeks lead, decide this week',price:null,spec:{}},
+          {id:11,room:'Whole House',cat:'Plumbing Fixtures',item:'Polished nickel package',status:'installed',approved:true,price:0,spec:{finish:'Polished nickel'}},
+          {id:12,room:'Exterior',cat:'Landscaping / Hardscape',item:'Bluestone walk + foundation plantings',status:'selected',approved:true,price:0,spec:{}}
+        ],
+        selNotes:'One decision left: primary closet built-ins, three-week shop lead, needed this week. Everything else approved and moving.',
+        packetSignoff:{cabinets:{builder:{by:'Builder',at:Date.now()-40*D},homeowner:{by:'Buyer',at:Date.now()-39*D}},counter:{builder:{by:'Builder',at:Date.now()-30*D},homeowner:{by:'Buyer',at:Date.now()-30*D}},appliance:{builder:{by:'Builder',at:Date.now()-28*D},homeowner:{by:'Buyer',at:Date.now()-27*D}},floor:{builder:{by:'Builder',at:Date.now()-20*D},homeowner:{by:'Buyer',at:Date.now()-19*D}},paint:{builder:{by:'Builder',at:Date.now()-14*D},homeowner:{by:'Buyer',at:Date.now()-13*D}}},
+        payments:[],
+        invoices:[
+          {id:'inv_p8_1',no:'INV-001',title:'Selections - kitchen and bath',due:ds(30),items:[{label:'Range + custom hood upgrade',amount:1250,selId:3},{label:'Marble herringbone premium',amount:1900,selId:4}],total:3150,status:'paid',paidAt:Date.now()-22*D,t:Date.now()-35*D,sentBy:'You',payments:[{id:'ip1',amount:3150,date:ds(22),note:'Paid in full'}]},
+          {id:'inv_p8_2',no:'INV-002',title:'Selections - doors and trim',due:ds(-9),items:[{label:'Steel study doors - pair',amount:3400,selId:5},{label:'Crown + full-height casing upgrade',amount:1150,selId:7}],total:4550,status:'sent',t:Date.now()-6*D,sentBy:'You',payments:[{id:'ip2',amount:2000,date:ds(2),note:'Partial payment'}]}
+        ],
+        jurisdiction:{city:'Grosse Pointe, MI',system:'BS&A Online',portalUrl:'https://bsaonline.com',inbox:'509-beaumont-park@inbox.plumb.app',feed:[
+          {id:'f1',t:Date.now()-45*D,kind:'inspection',ref:'insulation',status:'passed',text:'Insulation inspection passed',applied:true}
+        ]},
+        bookings:[
+          {id:'bk_p8a',subName:'Fine Line Interiors',trade:'finish',start:day(3),end:day(13),note:'Crown, casing, doors - 9 working days',status:'confirmed',t:Date.now()-2*D,by:''},
+          {id:'bk_p8b',subName:'Great Lakes Tile & Floor',trade:'floor',start:day(-4),end:day(2),note:'Primary bath herringbone + shower slabs',status:'confirmed',t:Date.now()-6*D,by:''},
+          {id:'bk_p8c',subName:'Metro Appliance',trade:'general',start:day(24),end:day(24),note:'Appliance set after counters',status:'pending',t:Date.now()-1*D,by:''}
+        ],
+        schedule:{interior:{start:day(-10),end:day(28)},exterior:{start:day(20),end:day(34)}},
+        nextId:100
+      },
+      /* ───── 9 · CLOSED OUT — CO issued, family in, warranty window ───── */
+      {
+        id:'p9', sample:true, name:'Orchard Row Build', street:'884 Orchard Row', city:'Plymouth',
+        items:[
+          {id:1,cap:'Certificate of occupancy issued - keys handed over',area:'Whole House',crew:'',issue:false,sw:'sage',t:Date.now()-24*D,day:172,sample:true,share:true},
+          {id:2,cap:'Driveway sealed, final grade and sod complete',area:'Grading',crew:'Landscaping / Grading',issue:false,sw:'oak',t:Date.now()-28*D,day:168,sample:true,share:true},
+          {id:3,cap:'Warranty: nail pops in upstairs hallway - patch at 60-day visit',area:'Whole House',crew:'Drywall',issue:true,status:'open',sw:'slate',t:Date.now()-6*D,day:190,sample:true},
+          {id:4,cap:'Irrigation startup and walkthrough with homeowner complete',area:'Grading',crew:'Landscaping / Grading',issue:false,sw:'dove',t:Date.now()-10*D,day:186,sample:true}
+        ],
+        logs:[
+          {date:ds(6),t:Date.now()-6*D,text:'Homeowner reported hallway nail pops - normal first-season movement. Added to 60-day warranty visit list.'},
+          {date:ds(24),t:Date.now()-24*D,text:'CO issued. Final walkthrough complete, keys and manuals handed over. Congratulations to the family.',share:true},
+          {date:ds(30),t:Date.now()-30*D,text:'Final inspection passed. Cleaners through, punch list closed.'}
+        ],
+        docs:[
+          {aud:'all',n:'Certificate of Occupancy.pdf',m:'Issued',k:'pdf'},
+          {aud:'all',n:'Appliance Manuals & Warranties.pdf',m:'Handed over',k:'pdf'},
+          {aud:'all',n:'Lien Waivers - Final.pdf',m:'Complete',k:'pdf'},
+          {aud:'all',n:'As-Built Plans.pdf',m:'Archived',k:'plan'},
+          {aud:'all',n:'Warranty Terms - 1 Year.pdf',m:'Active',k:'pdf'},
+          {aud:'all',n:'60-Day Warranty List.pdf',m:'1 item',k:'pdf'}
+        ],
+        subs:[
+          {id:'p9a',name:'Timberline Framing',specialty:'framing',phone:'',cleared:Date.now()-160*D},
+          {id:'p9b',name:'Smoothwall Drywall',specialty:'drywall',phone:'',cleared:Date.now()-90*D},
+          {id:'p9c',name:'Ridgeline Plumbing',specialty:'plumb',phone:'',cleared:Date.now()-100*D},
+          {id:'p9d',name:'Brightpath Electric',specialty:'elec',phone:'',cleared:Date.now()-95*D},
+          {id:'p9e',name:'Greenfield Landscaping',specialty:'landscape',phone:'',cleared:Date.now()-30*D}
+        ],
+        stageDone:{site:true,foundation:true,framing:true,roughin:true,cladding:true,insulation:true,drywall:true,interior:true,exterior:true,final:true},
+        permits:[{name:'Building Permit',status:'Closed'},{name:'Electrical Permit',status:'Closed'},{name:'Plumbing Permit',status:'Closed'},{name:'Mechanical / HVAC Permit',status:'Closed'}],
+        inspections:{site:'passed',foundation:'passed',roughin:'passed',rough_elec:'passed',rough_plumb:'passed',rough_mech:'passed',insulation:'passed',final_mep:'passed',final:'passed'},
+        inspMeta:{final:{date:ds(30),docName:'Certificate of occupancy'},final_mep:{date:ds(34)},insulation:{date:ds(70)},roughin:{date:ds(95),docName:'Rough-in inspection report'},foundation:{date:ds(150)},site:{date:ds(160)}},
+        selections:[
+          {id:1,room:'Kitchen',cat:'Cabinets',item:'Shaker overlay, two-tone',status:'installed',approved:true,price:0,spec:{finish:'White perimeter, walnut island',hardware:'Matte black'}},
+          {id:2,room:'Kitchen',cat:'Countertops',item:'Quartz - concrete look',status:'installed',approved:true,price:0,spec:{edge:'Eased',sink:'Undermount single bowl'}},
+          {id:3,room:'Kitchen',cat:'Appliances',item:'36 in slide-in package',status:'installed',approved:true,price:0,spec:{models:'36 in slide-in, counter-depth fridge',utils:'Gas + 240v'}},
+          {id:4,room:'Whole House',cat:'Flooring',item:'Engineered oak, 6.5 in',status:'installed',approved:true,price:0,spec:{direction:'Parallel to entry'}},
+          {id:5,room:'Whole House',cat:'Windows',item:'Black-clad double-hung',status:'installed',approved:true,price:1400,invoicedIn:'inv_p9_1',spec:{operation:'Double-hung',hardware:'Matte black'}},
+          {id:6,room:'Bath',cat:'Tile',item:'Zellige-look shower + hex floors',status:'installed',approved:true,price:700,invoicedIn:'inv_p9_1',spec:{pattern:'Stacked',grout:'Bright white'}},
+          {id:7,room:'Whole House',cat:'Lighting & Electrical',item:'Fixture schedule',status:'installed',approved:true,price:0,spec:{locations:'Per as-built'}},
+          {id:8,room:'Whole House',cat:'Paint',item:'Interior + exterior colors',status:'installed',approved:true,price:0,spec:{colors:'Alabaster interior, Peppercorn exterior'}},
+          {id:9,room:'Exterior',cat:'Garage Doors',item:'Flush panel, insulated',status:'installed',approved:true,price:0,spec:{}},
+          {id:10,room:'Exterior',cat:'Landscaping / Hardscape',item:'Sod + irrigation + paver walk',status:'installed',approved:true,price:1100,invoicedIn:'inv_p9_1',spec:{}}
+        ],
+        selNotes:'Complete record - every selection installed and archived with its spec. This is what a closed job looks like.',
+        packetSignoff:{cabinets:{builder:{by:'Builder',at:Date.now()-120*D},homeowner:{by:'Buyer',at:Date.now()-119*D}},floor:{builder:{by:'Builder',at:Date.now()-100*D},homeowner:{by:'Buyer',at:Date.now()-99*D}},paint:{builder:{by:'Builder',at:Date.now()-80*D},homeowner:{by:'Buyer',at:Date.now()-79*D}}},
+        payments:[],
+        invoices:[
+          {id:'inv_p9_1',no:'INV-003',title:'Selections - final upgrades',due:ds(60),items:[{label:'Window upgrade',amount:1400,selId:5},{label:'Tile upgrades - baths',amount:700,selId:6},{label:'Landscape + paver walk',amount:1100,selId:10}],total:3200,status:'paid',paidAt:Date.now()-45*D,t:Date.now()-70*D,sentBy:'You',payments:[{id:'ip1',amount:3200,date:ds(45),note:'Paid in full'}]},
+          {id:'inv_p9_2',no:'INV-004',title:'Final draw - closing',due:ds(28),items:[{label:'Final construction draw',amount:4200}],total:4200,status:'paid',paidAt:Date.now()-22*D,t:Date.now()-26*D,sentBy:'You',payments:[{id:'ip2',amount:4200,date:ds(22),note:'Paid at closing'}]}
+        ],
+        jurisdiction:{city:'Plymouth, MI',system:'BS&A Online',portalUrl:'https://bsaonline.com',inbox:'884-orchard-row@inbox.plumb.app',feed:[
+          {id:'f1',t:Date.now()-24*D,kind:'permit',ref:'Building Permit',status:'Closed',text:'Certificate of occupancy issued',applied:true}
+        ]},
+        bookings:[
+          {id:'bk_p9a',subName:'Smoothwall Drywall',trade:'drywall',start:day(18),end:day(18),note:'60-day warranty visit - nail pops',status:'pending',t:Date.now()-5*D,by:''}
+        ],
+        schedule:{},
+        nextId:100
+      },
+      /* ───── 10 · SPEC HOME — cladding underway, finishes held for a buyer ───── */
+      {
+        id:'p10', sample:true, name:'Fieldstone Spec', street:'47205 Fieldstone Dr', city:'Novi',
+        items:[
+          {id:1,cap:'Brick veneer complete on front elevation, scaffold moving to north wall',area:'Whole House',crew:'Concrete / Masonry',issue:false,sw:'oak',t:Date.now()-3*D,day:74,sample:true},
+          {id:2,cap:'Siding crew started rear elevation - board and batten',area:'Whole House',crew:'Siding / Exterior',issue:false,sw:'dark',t:Date.now()-1*D,day:76,sample:true},
+          {id:3,cap:'Roof complete, gutters on',area:'Whole House',crew:'Roofing',issue:false,sw:'dove',t:Date.now()-9*D,day:68,sample:true},
+          {id:4,cap:'Buyer prospect walkthrough Thursday - flooring and counters still open for their pick',area:'Whole House',crew:'',issue:true,status:'open',sw:'sage',t:Date.now()-8e6,day:77,sample:true}
+        ],
+        logs:[
+          {date:ds(0),t:Date.now()-7e6,text:'Masons on north wall, siding crew on rear. Broker bringing a buyer prospect Thursday - flooring and counter selections still open for a buyer to personalize. Sunny, 70.'},
+          {date:ds(3),t:Date.now()-3*D,text:'Front elevation brick complete. Looks sharp from the street.'},
+          {date:ds(9),t:Date.now()-9*D,text:'Roofing complete, gutters and downspouts installed.'}
+        ],
+        docs:[
+          {aud:'all',n:'Approved Building Plans.pdf',m:'City stamped',k:'plan'},
+          {aud:'all',n:'Spec Finish Package.pdf',m:'Locked for pro-forma',k:'pdf'},
+          {aud:'all',n:'Broker Listing Sheet.pdf',m:'Active listing',k:'pdf'},
+          {aud:'all',n:'Lien Waivers - Through Rough.pdf',m:'Complete',k:'pdf'}
+        ],
+        subs:[
+          {id:'p10a',name:'Ironhill Excavating',specialty:'excav',phone:'',cleared:Date.now()-90*D},
+          {id:'p10b',name:'Bedrock Concrete',specialty:'concrete',phone:'',cleared:Date.now()-75*D},
+          {id:'p10c',name:'Timberline Framing',specialty:'framing',phone:'',cleared:Date.now()-45*D},
+          {id:'p10d',name:'Summit Roofing',specialty:'roofing',phone:'',cleared:Date.now()-12*D},
+          {id:'p10e',name:'Old World Masonry',specialty:'mason',phone:'',cleared:Date.now()-8*D},
+          {id:'p10f',name:'Evenline Exteriors',specialty:'siding',phone:'',cleared:Date.now()-4*D,specsDue:day(3)}
+        ],
+        stageDone:{site:true,foundation:true,framing:true,roughin:true},
+        permits:[{name:'Building Permit',status:'Issued'},{name:'Electrical Permit',status:'Issued'},{name:'Plumbing Permit',status:'Issued'},{name:'Mechanical / HVAC Permit',status:'Issued'}],
+        inspections:{site:'passed',foundation:'passed',roughin:'passed',rough_elec:'passed',rough_plumb:'passed',rough_mech:'passed',insulation:'pending',final:'pending'},
+        inspMeta:{site:{date:ds(95)},foundation:{date:ds(82),docName:'Foundation inspection report'},roughin:{date:ds(20),docName:'Rough-in inspection report'},rough_elec:{date:ds(20)},rough_plumb:{date:ds(21)},rough_mech:{date:ds(20)}},
+        selections:[
+          {id:1,room:'Exterior',cat:'Masonry / Brick',item:'Tumbled brick, front + watertable',status:'installed',approved:true,price:0,spec:{mortar:'Buff',pattern:'Running bond'}},
+          {id:2,room:'Exterior',cat:'Siding',item:'Board and batten, Alabaster',status:'ordered',approved:true,price:0,spec:{trimcolor:'Match body'}},
+          {id:3,room:'Exterior',cat:'Roofing',item:'Architectural shingle, Charcoal',status:'installed',approved:true,price:0,spec:{}},
+          {id:4,room:'Whole House',cat:'Windows',item:'Black-clad single-hung',status:'installed',approved:true,price:0,spec:{operation:'Single-hung',hardware:'Matte black'}},
+          {id:5,room:'Kitchen',cat:'Cabinets',item:'Shaker overlay, White - spec package',status:'ordered',approved:true,price:0,spec:{finish:'White, painted',hardware:'Matte black'}},
+          {id:6,room:'Kitchen',cat:'Countertops',item:'HELD FOR BUYER - quartz allowance',status:'pending',approved:false,note:'Held open so a buyer can personalize - decision window closes at drywall',price:0,spec:{}},
+          {id:7,room:'Whole House',cat:'Flooring',item:'HELD FOR BUYER - flooring allowance',status:'pending',approved:false,note:'Held open so a buyer can personalize - decision window closes at drywall',price:0,spec:{}},
+          {id:8,room:'Whole House',cat:'Plumbing Fixtures',item:'Matte black spec package',status:'selected',approved:true,price:0,spec:{finish:'Matte black'}},
+          {id:9,room:'Whole House',cat:'Lighting & Electrical',item:'Spec fixture package',status:'selected',approved:true,price:0,spec:{locations:'Per plan'}}
+        ],
+        selNotes:'Spec discipline: finish package locked to the pro-forma except flooring and counters, held open so a buyer can personalize. Window closes at drywall.',
+        packetSignoff:{},
+        payments:[],
+        invoices:[],
+        jurisdiction:{city:'Novi, MI',system:'AccessMyGov',portalUrl:'https://www.accessmygov.com',inbox:'47205-fieldstone-dr@inbox.plumb.app',feed:[
+          {id:'f1',t:Date.now()-20*D,kind:'inspection',ref:'roughin',status:'passed',text:'Rough inspections passed',applied:true}
+        ]},
+        bookings:[
+          {id:'bk_p10a',subName:'Old World Masonry',trade:'mason',start:day(-4),end:day(4),note:'Brick veneer - north and rear',status:'confirmed',t:Date.now()-6*D,by:''},
+          {id:'bk_p10b',subName:'Evenline Exteriors',trade:'siding',start:day(-1),end:day(6),note:'Board and batten - rear and sides',status:'confirmed',t:Date.now()-3*D,by:''}
+        ],
+        schedule:{cladding:{start:day(-6),end:day(7)},insulation:{start:day(9),end:day(13)}},
+        nextId:100
       }
     ]
   };
@@ -3348,6 +3718,198 @@ function sampleState(){
       {id:'ga21',rt:'actual',lineId:'g19',kind:'spent',amount:12700,payee:'Timberline Framing',note:'Complete',t:Date.now()-55*D,qbId:'PU-953'},
       {id:'ga22',rt:'actual',lineId:'g20',kind:'committed',amount:25200,payee:'Meadow & Stone',note:'Signed proposal - sod, plantings, irrigation',t:Date.now()-8*D},
       {id:'ga23',rt:'actual',lineId:'g20',kind:'spent',amount:8500,payee:'Meadow & Stone',note:'Deposit',toward:'ga22',t:Date.now()-6*D}
+    ],
+    /* ── p5 · Bloomfield Hills · pre-construction · ~4,100 sf · ~$1.45M ──
+       Budget drafted in full before dirt moves. Design money already spent,
+       one signed contract waiting on the permit. */
+    p5:[
+      {id:'e1',rt:'line',label:'Permits & municipal fees',trade:'general',stage:'site',budget:82000},
+      {id:'e2',rt:'line',label:'Architecture & engineering',trade:'general',stage:'site',budget:42000},
+      {id:'e3',rt:'line',label:'Excavation & earthwork',trade:'excav',stage:'site',budget:48000},
+      {id:'e4',rt:'line',label:'Foundation & flatwork concrete',trade:'concrete',stage:'foundation',budget:112000},
+      {id:'e5',rt:'line',label:'Framing package (lumber, trusses, labor)',trade:'framing',stage:'framing',budget:238000},
+      {id:'e6',rt:'line',label:'Exterior wall finish & masonry',trade:'siding',stage:'cladding',budget:96000},
+      {id:'e7',rt:'line',label:'Roofing - standing seam',trade:'roofing',stage:'framing',budget:74000},
+      {id:'e8',rt:'line',label:'Windows & exterior doors',trade:'framing',stage:'framing',budget:88000},
+      {id:'e9',rt:'line',label:'Plumbing rough & fixtures',trade:'plumb',stage:'roughin',budget:104000},
+      {id:'e10',rt:'line',label:'Electrical & lighting',trade:'elec',stage:'roughin',budget:98000},
+      {id:'e11',rt:'line',label:'HVAC',trade:'hvac',stage:'roughin',budget:86000},
+      {id:'e12',rt:'line',label:'Insulation & drywall',trade:'drywall',stage:'drywall',budget:74000},
+      {id:'e13',rt:'line',label:'Interior trim & doors',trade:'finish',stage:'interior',budget:64000},
+      {id:'e14',rt:'line',label:'Paint',trade:'paint',stage:'interior',budget:38000},
+      {id:'e15',rt:'line',label:'Cabinets & countertops',trade:'cabinets',stage:'interior',budget:118000},
+      {id:'e16',rt:'line',label:'Flooring & tile',trade:'floor',stage:'interior',budget:72000},
+      {id:'e17',rt:'line',label:'Appliances',trade:'general',stage:'interior',budget:34000},
+      {id:'e18',rt:'line',label:'Driveway & landscaping',trade:'landscape',stage:'exterior',budget:82000},
+      {id:'ea1',rt:'actual',lineId:'e2',kind:'spent',amount:38500,payee:'Meridian Design Group',note:'Plans + structural, paid through permit set',t:Date.now()-20*D},
+      {id:'ea2',rt:'actual',lineId:'e1',kind:'spent',amount:6400,payee:'Bloomfield Twp',note:'Plan review + grading permit fees',t:Date.now()-12*D},
+      {id:'ea3',rt:'actual',lineId:'e3',kind:'committed',amount:46800,payee:'Ironhill Excavating',note:'Signed contract - mobilizes on permit issue',t:Date.now()-5*D}
+    ],
+    /* ── p6 · Rochester Hills · framing · ~3,000 sf · ~$860K ──
+       Dirt closed and exported, framing is a live contract with draw 1 paid,
+       windows committed at the supplier. */
+    p6:[
+      {id:'f1',rt:'line',label:'Permits & site work',trade:'general',stage:'site',budget:46000},
+      {id:'f2',rt:'line',label:'Excavation & earthwork',trade:'excav',stage:'site',budget:29000},
+      {id:'f3',rt:'line',label:'Foundation & flatwork concrete',trade:'concrete',stage:'foundation',budget:68000},
+      {id:'f4',rt:'line',label:'Framing package (lumber, trusses, labor)',trade:'framing',stage:'framing',budget:132000},
+      {id:'f5',rt:'line',label:'Roofing',trade:'roofing',stage:'framing',budget:31000},
+      {id:'f6',rt:'line',label:'Windows & exterior doors',trade:'framing',stage:'framing',budget:41000},
+      {id:'f7',rt:'line',label:'Exterior wall finish',trade:'siding',stage:'cladding',budget:52000},
+      {id:'f8',rt:'line',label:'Plumbing rough-in',trade:'plumb',stage:'roughin',budget:49000},
+      {id:'f9',rt:'line',label:'Electrical rough-in',trade:'elec',stage:'roughin',budget:50000},
+      {id:'f10',rt:'line',label:'HVAC',trade:'hvac',stage:'roughin',budget:48000},
+      {id:'f11',rt:'line',label:'Insulation & drywall',trade:'drywall',stage:'drywall',budget:42000},
+      {id:'f12',rt:'line',label:'Interior trim & paint',trade:'finish',stage:'interior',budget:47000},
+      {id:'f13',rt:'line',label:'Cabinets & countertops',trade:'cabinets',stage:'interior',budget:44000},
+      {id:'f14',rt:'line',label:'Flooring & tile',trade:'floor',stage:'interior',budget:33000},
+      {id:'f15',rt:'line',label:'Fixtures, lighting & appliances',trade:'elec',stage:'interior',budget:38000},
+      {id:'f16',rt:'line',label:'Driveway & landscaping',trade:'landscape',stage:'exterior',budget:40000},
+      {id:'fa1',rt:'actual',lineId:'f1',kind:'spent',amount:18900,payee:'City of Rochester Hills',note:'Permits + tap fees, paid',t:Date.now()-48*D,qbId:'PU-2011'},
+      {id:'fa2',rt:'actual',lineId:'f2',kind:'spent',amount:27600,payee:'Ironhill Excavating',note:'Paid in full',t:Date.now()-36*D,qbId:'PU-2014'},
+      {id:'fa3',rt:'actual',lineId:'f3',kind:'committed',amount:66500,payee:'Bedrock Concrete',note:'Signed contract',t:Date.now()-33*D},
+      {id:'fa4',rt:'actual',lineId:'f3',kind:'spent',amount:66500,payee:'Bedrock Concrete',note:'Complete, paid in full',toward:'fa3',t:Date.now()-21*D,qbId:'PU-2019'},
+      {id:'fa5',rt:'actual',lineId:'f4',kind:'committed',amount:128000,payee:'Timberline Framing',note:'Signed contract - labor + lumber package',t:Date.now()-12*D},
+      {id:'fa6',rt:'actual',lineId:'f4',kind:'spent',amount:51200,payee:'Timberline Framing',note:'Draw 1 - deck and first-floor walls',toward:'fa5',t:Date.now()-3*D,qbId:'PU-2024'},
+      {id:'fa7',rt:'actual',lineId:'f6',kind:'committed',amount:38900,payee:'Lakeshore Window Supply',note:'Order confirmed - Thursday delivery',t:Date.now()-6*D}
+    ],
+    /* ── p7 · Berkley · insulation-drywall · ~2,200 sf · ~$540K ──
+       Rough-ins closed and exported. Insulation paid, drywall a live contract. */
+    p7:[
+      {id:'h1',rt:'line',label:'Permits & site work',trade:'general',stage:'site',budget:31000},
+      {id:'h2',rt:'line',label:'Excavation & earthwork',trade:'excav',stage:'site',budget:18500},
+      {id:'h3',rt:'line',label:'Foundation & flatwork concrete',trade:'concrete',stage:'foundation',budget:44000},
+      {id:'h4',rt:'line',label:'Framing package',trade:'framing',stage:'framing',budget:92000},
+      {id:'h5',rt:'line',label:'Roofing',trade:'roofing',stage:'framing',budget:21500},
+      {id:'h6',rt:'line',label:'Windows & exterior doors',trade:'framing',stage:'framing',budget:22000},
+      {id:'h7',rt:'line',label:'Exterior wall finish',trade:'siding',stage:'cladding',budget:33000},
+      {id:'h8',rt:'line',label:'Plumbing rough-in',trade:'plumb',stage:'roughin',budget:36000},
+      {id:'h9',rt:'line',label:'Electrical rough-in',trade:'elec',stage:'roughin',budget:35000},
+      {id:'h10',rt:'line',label:'HVAC',trade:'hvac',stage:'roughin',budget:34000},
+      {id:'h11',rt:'line',label:'Insulation',trade:'insul',stage:'insulation',budget:15500},
+      {id:'h12',rt:'line',label:'Drywall',trade:'drywall',stage:'drywall',budget:33000},
+      {id:'h13',rt:'line',label:'Interior trim & paint',trade:'finish',stage:'interior',budget:36000},
+      {id:'h14',rt:'line',label:'Cabinets, counters & flooring',trade:'cabinets',stage:'interior',budget:58000},
+      {id:'h15',rt:'line',label:'Driveway & landscaping',trade:'landscape',stage:'exterior',budget:26000},
+      {id:'ha1',rt:'actual',lineId:'h1',kind:'spent',amount:13200,payee:'City of Berkley',note:'Permits + fees, paid',t:Date.now()-100*D,qbId:'PU-1811'},
+      {id:'ha2',rt:'actual',lineId:'h2',kind:'spent',amount:17800,payee:'Cornerstone Concrete',note:'Excavation folded into concrete scope, paid',t:Date.now()-80*D,qbId:'PU-1814'},
+      {id:'ha3',rt:'actual',lineId:'h3',kind:'spent',amount:43100,payee:'Cornerstone Concrete',note:'Paid in full',t:Date.now()-72*D,qbId:'PU-1817'},
+      {id:'ha4',rt:'actual',lineId:'h4',kind:'spent',amount:90400,payee:'Timberline Framing',note:'Contract complete, all draws paid',t:Date.now()-45*D,qbId:'PU-1822'},
+      {id:'ha5',rt:'actual',lineId:'h5',kind:'spent',amount:20900,payee:'Summit Roofing',note:'Complete, paid',t:Date.now()-40*D,qbId:'PU-1825'},
+      {id:'ha6',rt:'actual',lineId:'h8',kind:'committed',amount:35200,payee:'Clearwater Plumbing',note:'Signed contract',t:Date.now()-30*D},
+      {id:'ha7',rt:'actual',lineId:'h8',kind:'spent',amount:24600,payee:'Clearwater Plumbing',note:'Rough-in draw',toward:'ha6',t:Date.now()-18*D,qbId:'PU-1831'},
+      {id:'ha8',rt:'actual',lineId:'h9',kind:'committed',amount:34400,payee:'Copper Peak Electric',note:'Signed contract',t:Date.now()-30*D},
+      {id:'ha9',rt:'actual',lineId:'h9',kind:'spent',amount:22800,payee:'Copper Peak Electric',note:'Rough draw',toward:'ha8',t:Date.now()-17*D},
+      {id:'ha10',rt:'actual',lineId:'h11',kind:'spent',amount:14700,payee:'ThermaSeal Insulation',note:'Complete incl. attic blow',t:Date.now()-3*D,qbId:'PU-1840'},
+      {id:'ha11',rt:'actual',lineId:'h12',kind:'committed',amount:31800,payee:'Smoothwall Drywall',note:'Signed contract - hang, tape, finish',t:Date.now()-4*D}
+    ],
+    /* ── p8 · Grosse Pointe · interior finishes · ~3,800 sf · ~$1.12M ──
+       Heavy history, mostly exported. Tile is over and says so in amber.
+       Cabinets carry a change order kept as its own record. */
+    p8:[
+      {id:'j1',rt:'line',label:'Permits & site work',trade:'general',stage:'site',budget:64000},
+      {id:'j2',rt:'line',label:'Excavation & earthwork',trade:'excav',stage:'site',budget:36000},
+      {id:'j3',rt:'line',label:'Foundation & flatwork concrete',trade:'concrete',stage:'foundation',budget:84000},
+      {id:'j4',rt:'line',label:'Framing package',trade:'framing',stage:'framing',budget:186000},
+      {id:'j5',rt:'line',label:'Exterior finish & masonry',trade:'siding',stage:'cladding',budget:72000},
+      {id:'j6',rt:'line',label:'Roofing',trade:'roofing',stage:'framing',budget:42000},
+      {id:'j7',rt:'line',label:'Windows & exterior doors',trade:'framing',stage:'framing',budget:52000},
+      {id:'j8',rt:'line',label:'Plumbing rough & fixtures',trade:'plumb',stage:'roughin',budget:88000},
+      {id:'j9',rt:'line',label:'Electrical & lighting',trade:'elec',stage:'roughin',budget:84000},
+      {id:'j10',rt:'line',label:'HVAC',trade:'hvac',stage:'roughin',budget:70000},
+      {id:'j11',rt:'line',label:'Insulation & drywall',trade:'drywall',stage:'drywall',budget:56000},
+      {id:'j12',rt:'line',label:'Interior trim & doors',trade:'finish',stage:'interior',budget:52000,revs:[{from:48000,to:52000,note:'CO 2 - steel study doors + full-height casing',t:Date.now()-10*D}]},
+      {id:'j13',rt:'line',label:'Paint',trade:'paint',stage:'interior',budget:32000},
+      {id:'j14',rt:'line',label:'Cabinets & countertops',trade:'cabinets',stage:'interior',budget:96000},
+      {id:'j15',rt:'line',label:'Flooring & tile',trade:'floor',stage:'interior',budget:41000},
+      {id:'j16',rt:'line',label:'Appliances',trade:'general',stage:'interior',budget:28000},
+      {id:'j17',rt:'line',label:'Fireplace & built-ins',trade:'mason',stage:'interior',budget:14000},
+      {id:'j18',rt:'line',label:'Driveway & landscaping',trade:'landscape',stage:'exterior',budget:52000},
+      {id:'ja1',rt:'actual',lineId:'j1',kind:'spent',amount:61800,payee:'City of Grosse Pointe',note:'All permits + fees',t:Date.now()-190*D,qbId:'PU-1502'},
+      {id:'ja2',rt:'actual',lineId:'j2',kind:'spent',amount:34900,payee:'Ironhill Excavating',note:'Paid in full',t:Date.now()-175*D,qbId:'PU-1505'},
+      {id:'ja3',rt:'actual',lineId:'j3',kind:'spent',amount:82600,payee:'Bedrock Concrete',note:'Paid in full',t:Date.now()-160*D,qbId:'PU-1509'},
+      {id:'ja4',rt:'actual',lineId:'j4',kind:'spent',amount:183400,payee:'Timberline Framing',note:'Contract complete, all draws paid',t:Date.now()-110*D,qbId:'PU-1516'},
+      {id:'ja5',rt:'actual',lineId:'j6',kind:'spent',amount:41200,payee:'Summit Roofing',note:'Complete, paid',t:Date.now()-100*D,qbId:'PU-1519'},
+      {id:'ja6',rt:'actual',lineId:'j7',kind:'spent',amount:50800,payee:'Lakeshore Window Supply',note:'Delivered & installed',t:Date.now()-95*D,qbId:'PU-1521'},
+      {id:'ja7',rt:'actual',lineId:'j5',kind:'spent',amount:70900,payee:'Old World Masonry',note:'Brick + siding complete',t:Date.now()-70*D,qbId:'PU-1528'},
+      {id:'ja8',rt:'actual',lineId:'j8',kind:'spent',amount:85700,payee:'Ridgeline Plumbing',note:'Rough + fixtures set',t:Date.now()-35*D,qbId:'PU-1540'},
+      {id:'ja9',rt:'actual',lineId:'j9',kind:'spent',amount:81200,payee:'Copper Peak Electric',note:'Rough + trim underway, paid to date',t:Date.now()-30*D,qbId:'PU-1542'},
+      {id:'ja10',rt:'actual',lineId:'j10',kind:'spent',amount:68300,payee:'Northwind Mechanical',note:'Complete, balanced',t:Date.now()-55*D,qbId:'PU-1534'},
+      {id:'ja11',rt:'actual',lineId:'j11',kind:'spent',amount:54800,payee:'Level Five Drywall',note:'Paid in full',t:Date.now()-42*D,qbId:'PU-1537'},
+      {id:'ja12',rt:'actual',lineId:'j14',kind:'committed',amount:88000,payee:'Heritage Cabinet Co.',note:'Signed contract',t:Date.now()-60*D},
+      {id:'ja13',rt:'actual',lineId:'j14',kind:'committed',amount:6200,payee:'Heritage Cabinet Co.',note:'Change order - butler pantry uppers, approved by homeowner',t:Date.now()-38*D},
+      {id:'ja14',rt:'actual',lineId:'j14',kind:'spent',amount:70400,payee:'Heritage Cabinet Co.',note:'Install draw - kitchen + pantry set',toward:'ja12',t:Date.now()-8*D,qbId:'PU-1551'},
+      {id:'ja15',rt:'actual',lineId:'j15',kind:'committed',amount:41000,payee:'Great Lakes Tile & Floor',note:'Signed contract',t:Date.now()-20*D},
+      {id:'ja16',rt:'actual',lineId:'j15',kind:'spent',amount:46200,payee:'Great Lakes Tile & Floor',note:'Herringbone labor ran over - homeowner notified, logged honestly',toward:'ja15',t:Date.now()-2*D},
+      {id:'ja17',rt:'actual',lineId:'j12',kind:'committed',amount:50600,payee:'Fine Line Interiors',note:'Signed contract incl. CO 2 scope',t:Date.now()-9*D}
+    ],
+    /* ── p9 · Plymouth · closed out · ~2,900 sf · ~$795K ──
+       Every line spent, everything exported, nothing open. Landscaping came in
+       under budget - the margin story a closed job should tell. */
+    p9:[
+      {id:'k1',rt:'line',label:'Permits & site work',trade:'general',stage:'site',budget:42000},
+      {id:'k2',rt:'line',label:'Excavation & earthwork',trade:'excav',stage:'site',budget:26000},
+      {id:'k3',rt:'line',label:'Foundation & flatwork concrete',trade:'concrete',stage:'foundation',budget:61000},
+      {id:'k4',rt:'line',label:'Framing package',trade:'framing',stage:'framing',budget:128000},
+      {id:'k5',rt:'line',label:'Roofing',trade:'roofing',stage:'framing',budget:29000},
+      {id:'k6',rt:'line',label:'Windows & exterior doors',trade:'framing',stage:'framing',budget:37000},
+      {id:'k7',rt:'line',label:'Exterior wall finish',trade:'siding',stage:'cladding',budget:47000},
+      {id:'k8',rt:'line',label:'Plumbing rough & fixtures',trade:'plumb',stage:'roughin',budget:58000},
+      {id:'k9',rt:'line',label:'Electrical & lighting',trade:'elec',stage:'roughin',budget:56000},
+      {id:'k10',rt:'line',label:'HVAC',trade:'hvac',stage:'roughin',budget:52000},
+      {id:'k11',rt:'line',label:'Insulation & drywall',trade:'drywall',stage:'drywall',budget:44000},
+      {id:'k12',rt:'line',label:'Interior trim & paint',trade:'finish',stage:'interior',budget:52000},
+      {id:'k13',rt:'line',label:'Cabinets & countertops',trade:'cabinets',stage:'interior',budget:61000},
+      {id:'k14',rt:'line',label:'Flooring & tile',trade:'floor',stage:'interior',budget:38000},
+      {id:'k15',rt:'line',label:'Fixtures, lighting & appliances',trade:'elec',stage:'interior',budget:34000},
+      {id:'k16',rt:'line',label:'Driveway & landscaping',trade:'landscape',stage:'exterior',budget:38000},
+      {id:'ka1',rt:'actual',lineId:'k1',kind:'spent',amount:40700,payee:'City of Plymouth',note:'All permits + fees',t:Date.now()-200*D,qbId:'PU-1201'},
+      {id:'ka2',rt:'actual',lineId:'k2',kind:'spent',amount:25300,payee:'Ironhill Excavating',note:'Paid in full',t:Date.now()-185*D,qbId:'PU-1204'},
+      {id:'ka3',rt:'actual',lineId:'k3',kind:'spent',amount:60200,payee:'Cornerstone Concrete',note:'Paid in full',t:Date.now()-170*D,qbId:'PU-1208'},
+      {id:'ka4',rt:'actual',lineId:'k4',kind:'spent',amount:126800,payee:'Timberline Framing',note:'Contract complete',t:Date.now()-140*D,qbId:'PU-1214'},
+      {id:'ka5',rt:'actual',lineId:'k5',kind:'spent',amount:28400,payee:'Summit Roofing',note:'Paid in full',t:Date.now()-130*D,qbId:'PU-1217'},
+      {id:'ka6',rt:'actual',lineId:'k6',kind:'spent',amount:36200,payee:'Lakeshore Window Supply',note:'Paid in full',t:Date.now()-125*D,qbId:'PU-1219'},
+      {id:'ka7',rt:'actual',lineId:'k7',kind:'spent',amount:46100,payee:'Evenline Exteriors',note:'Complete, paid',t:Date.now()-105*D,qbId:'PU-1224'},
+      {id:'ka8',rt:'actual',lineId:'k8',kind:'spent',amount:57300,payee:'Ridgeline Plumbing',note:'Rough + fixtures complete',t:Date.now()-70*D,qbId:'PU-1231'},
+      {id:'ka9',rt:'actual',lineId:'k9',kind:'spent',amount:55400,payee:'Brightpath Electric',note:'Complete incl. lighting',t:Date.now()-65*D,qbId:'PU-1233'},
+      {id:'ka10',rt:'actual',lineId:'k10',kind:'spent',amount:51200,payee:'Northwind Mechanical',note:'Complete, balanced & inspected',t:Date.now()-80*D,qbId:'PU-1228'},
+      {id:'ka11',rt:'actual',lineId:'k11',kind:'spent',amount:43600,payee:'Smoothwall Drywall',note:'Paid in full',t:Date.now()-60*D,qbId:'PU-1236'},
+      {id:'ka12',rt:'actual',lineId:'k12',kind:'spent',amount:51500,payee:'Fine Line Interiors',note:'Trim + paint complete',t:Date.now()-40*D,qbId:'PU-1241'},
+      {id:'ka13',rt:'actual',lineId:'k13',kind:'spent',amount:60800,payee:'Heritage Cabinet Co.',note:'Installed, paid',t:Date.now()-50*D,qbId:'PU-1239'},
+      {id:'ka14',rt:'actual',lineId:'k14',kind:'spent',amount:37400,payee:'Artisan Flooring & Tile',note:'Complete',t:Date.now()-45*D,qbId:'PU-1240'},
+      {id:'ka15',rt:'actual',lineId:'k15',kind:'spent',amount:33600,payee:'Metro Appliance',note:'Delivered & installed',t:Date.now()-35*D,qbId:'PU-1243'},
+      {id:'ka16',rt:'actual',lineId:'k16',kind:'spent',amount:34100,payee:'Greenfield Landscaping',note:'Final grade, sod, irrigation - under budget',t:Date.now()-28*D,qbId:'PU-1246'}
+    ],
+    /* ── p10 · Novi · spec, cladding · ~2,600 sf · ~$660K ──
+       Lean pro-forma discipline: every dollar either closed or under a signed
+       contract. Nothing floats on a spec. */
+    p10:[
+      {id:'m1',rt:'line',label:'Permits & site work',trade:'general',stage:'site',budget:36000},
+      {id:'m2',rt:'line',label:'Excavation & earthwork',trade:'excav',stage:'site',budget:22000},
+      {id:'m3',rt:'line',label:'Foundation & flatwork concrete',trade:'concrete',stage:'foundation',budget:54000},
+      {id:'m4',rt:'line',label:'Framing package',trade:'framing',stage:'framing',budget:108000},
+      {id:'m5',rt:'line',label:'Roofing',trade:'roofing',stage:'framing',budget:24000},
+      {id:'m6',rt:'line',label:'Windows & exterior doors',trade:'framing',stage:'framing',budget:30000},
+      {id:'m7',rt:'line',label:'Brick veneer & siding',trade:'siding',stage:'cladding',budget:58000},
+      {id:'m8',rt:'line',label:'Plumbing rough-in',trade:'plumb',stage:'roughin',budget:40000},
+      {id:'m9',rt:'line',label:'Electrical rough-in',trade:'elec',stage:'roughin',budget:41000},
+      {id:'m10',rt:'line',label:'HVAC',trade:'hvac',stage:'roughin',budget:39000},
+      {id:'m11',rt:'line',label:'Insulation & drywall',trade:'drywall',stage:'drywall',budget:37000},
+      {id:'m12',rt:'line',label:'Interior trim & paint',trade:'finish',stage:'interior',budget:41000},
+      {id:'m13',rt:'line',label:'Cabinets & countertops',trade:'cabinets',stage:'interior',budget:39000},
+      {id:'m14',rt:'line',label:'Flooring - buyer allowance',trade:'floor',stage:'interior',budget:26000},
+      {id:'m15',rt:'line',label:'Driveway & landscaping',trade:'landscape',stage:'exterior',budget:30000},
+      {id:'ma1',rt:'actual',lineId:'m1',kind:'spent',amount:15800,payee:'City of Novi',note:'Permits + fees, paid',t:Date.now()-100*D,qbId:'PU-1901'},
+      {id:'ma2',rt:'actual',lineId:'m2',kind:'spent',amount:21400,payee:'Ironhill Excavating',note:'Paid in full',t:Date.now()-90*D,qbId:'PU-1904'},
+      {id:'ma3',rt:'actual',lineId:'m3',kind:'spent',amount:53100,payee:'Bedrock Concrete',note:'Paid in full',t:Date.now()-78*D,qbId:'PU-1908'},
+      {id:'ma4',rt:'actual',lineId:'m4',kind:'spent',amount:106200,payee:'Timberline Framing',note:'Contract complete, all draws paid',t:Date.now()-46*D,qbId:'PU-1913'},
+      {id:'ma5',rt:'actual',lineId:'m5',kind:'spent',amount:23300,payee:'Summit Roofing',note:'Complete, paid',t:Date.now()-9*D,qbId:'PU-1918'},
+      {id:'ma6',rt:'actual',lineId:'m8',kind:'spent',amount:38700,payee:'Clearwater Plumbing',note:'Rough complete, paid',t:Date.now()-24*D,qbId:'PU-1915'},
+      {id:'ma7',rt:'actual',lineId:'m9',kind:'spent',amount:39800,payee:'Brightpath Electric',note:'Rough complete, paid',t:Date.now()-23*D,qbId:'PU-1916'},
+      {id:'ma8',rt:'actual',lineId:'m10',kind:'committed',amount:38200,payee:'Northwind Mechanical',note:'Signed contract - rough set, trim at finishes',t:Date.now()-28*D},
+      {id:'ma9',rt:'actual',lineId:'m10',kind:'spent',amount:26700,payee:'Northwind Mechanical',note:'Rough draw',toward:'ma8',t:Date.now()-20*D,qbId:'PU-1917'},
+      {id:'ma10',rt:'actual',lineId:'m7',kind:'committed',amount:56400,payee:'Old World Masonry',note:'Signed contract - brick + board and batten',t:Date.now()-10*D},
+      {id:'ma11',rt:'actual',lineId:'m7',kind:'spent',amount:22500,payee:'Old World Masonry',note:'Draw 1 - front elevation brick',toward:'ma10',t:Date.now()-2*D}
     ]
   };
   st.projects.forEach(p=>{p.costs=(SEED_COSTS[p.id]||[]).map(r=>Object.assign({},r));});
@@ -7334,7 +7896,11 @@ try{window.addEventListener('message',ev=>{if(ev&&ev.data==='qb-connected'){toas
 function onExcursion(){try{return !!localStorage.getItem('plumbSuspend');}catch(e){return false;}}
 function enterDemo(){
   try{localStorage.setItem('plumbSuspend', state.session?'1':'splash');}catch(e){}
-  setMode('demo');load();
+  setMode('demo');
+  /* The example build reseeds on every entry, so its dates always hang off
+     today and the data is pristine for each visitor. Edits made inside one
+     visit still persist for that visit; the next entry starts fresh. */
+  state=sampleState();try{persist();}catch(e){}
   Data.setSession({role:'hillan',name:'Demo Builder'});
   state.activeId=state.activeId||((state.projects[0]||{}).id)||null;
   try{const p2=(state.projects||[]).find(p=>String(p.id)==='p2');
