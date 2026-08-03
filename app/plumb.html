@@ -2880,12 +2880,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.208.0 - The packet now tells the sub what happened before them: their trades feed entries, shared milestones and the latest daily-log lines ride along as recent site history. Text only, by design - the link expires, so the story travels while the photo and document files stay behind the builder';
+const PLUMB_VERSION='2.209.0 - Packets tighten and open up in the right places. Documents are strictly trade-routed - an untagged lien waiver never rides along - and the builder now approves the exact guest page before anything sends. The context strip colors readiness green or red with labeled permit and inspection rows. Add to calendar really works: device or Google, remembered as a default, changeable in a new guest Preferences section. A subs suggested dates or open questions now surface in the NEEDS YOU feed on their own. And the packet link is offered right after scheduling and one tap from the calendar day sheet';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785636000000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785636600000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -6275,6 +6275,16 @@ function renderToday(){
   const el=document.getElementById('ovToday');if(!el)return;
   const projs=visibleProjects();const today=dayStart(Date.now());const horizon=today+14*864e5;
   const warns=[];const seen={};
+  try{pkSweep();}catch(e){}
+  // 0. packet replies — a sub suggested new dates or asked something, answer fast
+  projs.forEach(p=>(p.bookings||[]).forEach(b=>{
+    if(b.pkResp&&b.pkResp.status==='change'&&!(b.start===b.pkResp.start&&(b.end===b.pkResp.end||!b.pkResp.start))){
+      warns.push({lvl:'warn',html:`<b>${esc(b.subName)}</b> suggests new dates for ${esc(specLabel(tdTradeOf(p,b))||'their work')} at ${esc(p.street||p.name)}${b.pkResp.start?` \u2014 ${fmtWin({start:b.pkResp.start,end:b.pkResp.end||b.pkResp.start})}`:''}`,go:`openBk('${p.id}|${b.id}')`,ts:b.pkResp.t||b.start});
+    }
+    if((b.pkQOpen||0)>0){
+      warns.push({lvl:'warn',html:`<b>${esc(b.subName)}</b> asked ${b.pkQOpen===1?'a question':b.pkQOpen+' questions'} from their packet \u2014 ${esc(p.street||p.name)}`,go:`openBk('${p.id}|${b.id}')`,ts:b.start});
+    }
+  }));
   // 1. spec-gap guard — a crew lands within 2 weeks but its packet isn't ready
   projs.forEach(p=>(p.bookings||[]).forEach(b=>{
     if((b.status||'confirmed')==='declined')return;
@@ -10925,7 +10935,7 @@ function renderDay(){
   const cf=conflictIds();
   let h=bs.map(b=>calIsClient()
     ?`<div class="day-row avr"><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${esc(specLabel(b.trade)||'Crew')} crew on site</div><div class="d">${fmtWin(b)}</div></div></div>`
-    :`<div class="day-row" ${calIsSub()?'':`onclick="openBk('${b.p.id}|${b.id}')"`}><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${esc(b.subName)}${cf[b.id]?' <span style=\"color:var(--clay)\">\u26a0</span>':''}<span class="bk-st ${bkStatus(b)}">${BK_STATUS[bkStatus(b)].label}</span></div><div class="d">${esc(b.p.street||b.p.name)} \u00b7 ${esc(specLabel(b.trade)||'')} \u00b7 ${fmtWin(b)}</div>${b.note?`<div class="note">${esc(b.note)}</div>`:''}${calIsSub()?'':bkInviteLine(b)}${calIsSub()&&b.subName===(state.session||{}).name&&bkStatus(b)!=='confirmed'?`<div class="row2" style="margin-top:8px"><button class="lpay" onclick="event.stopPropagation();bkConfirm('${b.p.id}','${b.id}')">Confirm</button><button class="lpay" onclick="event.stopPropagation();bkSubModify('${b.p.id}','${b.id}')">Change dates</button><button class="lpay" style="color:var(--clay)" onclick="event.stopPropagation();bkDecline('${b.p.id}','${b.id}')">Can\u2019t make it</button></div>`:''}${calIsSub()&&b.subName===(state.session||{}).name?`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();bkToCalendar('${b.p.id}','${b.id}')">📅 Add to my calendar</button>`:''}</div></div>`).join('');
+    :`<div class="day-row" ${calIsSub()?'':`onclick="openBk('${b.p.id}|${b.id}')"`}><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${esc(b.subName)}${cf[b.id]?' <span style=\"color:var(--clay)\">\u26a0</span>':''}<span class="bk-st ${bkStatus(b)}">${BK_STATUS[bkStatus(b)].label}</span></div><div class="d">${esc(b.p.street||b.p.name)} \u00b7 ${esc(specLabel(b.trade)||'')} \u00b7 ${fmtWin(b)}</div>${b.note?`<div class="note">${esc(b.note)}</div>`:''}${calIsSub()?'':bkInviteLine(b)}${calIsSub()?'':`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();sendGuestPacket('${b.p.id}','${b.id}')">Packet link\u2026</button>`}${calIsSub()&&b.subName===(state.session||{}).name&&bkStatus(b)!=='confirmed'?`<div class="row2" style="margin-top:8px"><button class="lpay" onclick="event.stopPropagation();bkConfirm('${b.p.id}','${b.id}')">Confirm</button><button class="lpay" onclick="event.stopPropagation();bkSubModify('${b.p.id}','${b.id}')">Change dates</button><button class="lpay" style="color:var(--clay)" onclick="event.stopPropagation();bkDecline('${b.p.id}','${b.id}')">Can\u2019t make it</button></div>`:''}${calIsSub()&&b.subName===(state.session||{}).name?`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();bkToCalendar('${b.p.id}','${b.id}')">📅 Add to my calendar</button>`:''}</div></div>`).join('');
   h+=av.map(a=>`<div class="day-row avr"><span class="sw" style="background:repeating-linear-gradient(45deg,var(--ink-3) 0 3px,transparent 3px 6px)"></span><div style="flex:1"><div class="n">${esc(a.subName)} \u2014 unavailable</div><div class="d">${fmtWin(a)}${a.note?' \u00b7 '+esc(a.note):''}</div></div>${calIsSub()&&a.subName===(state.session||{}).name?`<button class="lpay" onclick="event.stopPropagation();delAvail('${a.p.id}','${a.id}')">Remove</button>`:''}</div>`).join('');
   if(!bs.length&&!av.length)h+='<div class="empty" style="padding:8px 0">Nothing scheduled this day.</div>';
   if(calIsClient()){ /* read-only: no add, no idle roster */ }
@@ -11123,7 +11133,9 @@ function bkSave(){
   const trade=(subSel.selectedOptions[0]&&subSel.selectedOptions[0].getAttribute('data-trade'))||'';
   const onRoster=(p.subs||[]).some(s=>s.name===subName);
   const clash=[...new Set((p.bookings||[]).filter(b=>b.trade===trade&&b.subName&&b.subName!==subName).map(b=>b.subName))];
-  const finalize=()=>{addBooking(p,{subName:subName,trade:trade,start:start,end:end,note:note});_bkArmSpecs(p,trade,start);toast(subName+' scheduled');done();bkOfferInvite(p,subName,!onRoster);};
+  const finalize=()=>{const nb=addBooking(p,{subName:subName,trade:trade,start:start,end:end,note:note});_bkArmSpecs(p,trade,start);toast(subName+' scheduled');done();
+      if(!onRoster){bkOfferInvite(p,subName,true);}
+      else{setTimeout(()=>{openConfirm({title:'Text '+subName+' the packet link?',body:'One page with their dates, scope and specs \u2014 one tap for them to confirm. You review it before it sends.',okLabel:appMode()==='real'?'Review \u0026 send':'Preview it',onOk:()=>sendGuestPacket(p.id,nb.id)});},450);}};
   const packetGate=(next)=>{
     if(trade&&!packetReady(p,trade)){
       const gaps=tradeSpecGaps(p,trade).length;
@@ -11434,7 +11446,9 @@ function packetSnapshot(p,b){
       return null;}).filter(Boolean);
     return {item:sel.item||'',cat:sel.cat||'',room:(sel.room&&sel.room!=='\u2014')?sel.room:'',rows:rows};
   });
-  const docs=(p.docs||[]).filter(d=>(!d.trade||d.trade===trade)&&docAudSub(d)).map(d=>String(d.n||''));
+  /* Default-deny: only documents the builder explicitly routed to this trade
+     travel. An untagged contract or lien waiver never rides along. */
+  const docs=(p.docs||[]).filter(d=>d.trade===trade&&docAudSub(d)).map(d=>String(d.n||''));
   const sess=state.session||{};
   return {v:1,t:Date.now(),
     expires:Math.max((b.end||Date.now())+3*864e5,Date.now()+7*864e5),
@@ -11453,7 +11467,8 @@ function packetSnapshot(p,b){
       if(iv){const meta=((p.inspMeta||{})[ik])||{};
         c.insp=String(ik).replace('rough_','rough ').replace('_',' ')+' inspection: '+iv+(meta.date?(' ('+meta.date+')'):'');}
       const sb=(p.subs||[]).find(x=>x.name===b.subName&&x.specialty===trade)||(p.subs||[]).find(x=>x.specialty===trade);
-      c.ready=(sb&&sb.cleared)?'Site marked ready for you':'Site not yet marked ready \u2014 confirm before mobilizing';
+      c.readyOk=!!(sb&&sb.cleared);
+      c.ready=c.readyOk?'Site marked ready for you':'Site not yet marked ready \u2014 confirm before mobilizing';
       const open=(p.items||[]).filter(it=>it.crew===specLabel(trade)&&it.issue&&it.status==='open').map(it=>String(it.cap||'')).slice(0,4);
       if(open.length)c.openItems=open;
       /* Recent site history for context: this trade's own feed entries plus
@@ -11476,14 +11491,23 @@ function sendGuestPacket(pid,bid){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));if(!b){toast('Save the booking first \u2014 the link carries its dates');return;}
   const snap=packetSnapshot(p,b);
-  if(appMode()!=='real'||!laFirebaseReady()){
-    /* demo / offline: show exactly what the sub would receive */
-    openGuestPreview(snap);return;
-  }
-  const token=_pkToken();
+  /* The builder approves the packet by seeing it: the preview IS the guest
+     page, byte for byte. Approve to write and text; anything else sends nothing. */
+  if(appMode()==='real'&&laFirebaseReady()){_gpPendingSend={pid:String(p.id),bid:String(b.id)};}
+  else{_gpPendingSend=null;}
+  openGuestPreview(snap);
+}
+let _gpPendingSend=null;
+function gpApproveSend(){
+  const ps=_gpPendingSend;if(!ps){toast('Nothing to send');return;}
+  const p=state.projects.find(x=>String(x.id)===ps.pid);
+  const b=p&&(p.bookings||[]).find(x=>String(x.id)===ps.bid);
+  if(!p||!b){toast('Booking not found');return;}
+  const snap=_gpSnap;const token=_pkToken();
   try{
     firebase.firestore().collection('packets').doc(token).set(snap)
       .then(()=>{updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});
+        _gpPendingSend=null;closeGuestPreview();
         try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(b.id)));}catch(e){}
         _sharePacketLink(snap,token);logEvent('packetLinkSent',snap.tradeLabel+' \u00b7 '+snap.site);})
       .catch(e=>{toast('Could not create the link \u2014 check your connection');});
@@ -11524,13 +11548,19 @@ function _gpRender(){
   const dates=fmtWin({start:g.start,end:g.end});
   let h='';
   h+='<div class="gp-brand"><span class="dot"></span>SitePlumb</div>';
-  if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your sub receives by text. Nothing was sent.</div>';
+  if(preview&&_gpPendingSend)h+='<div class="gp-preview">Review before it sends \u2014 this is exactly what '+esc(g.sub)+' will see.</div>'
+    +'<button class="gp-btn go" style="margin-bottom:10px" onclick="gpApproveSend()">Approve \u0026 text the link\u2026</button>';
+  else if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your sub receives by text. Nothing was sent.</div>';
   h+='<div class="gp-site">'+esc(g.site)+'</div>';
   h+='<div class="gp-sub">'+esc(g.tradeLabel)+' \u00b7 for '+esc(g.sub)+' \u00b7 from '+esc(g.builder)+'</div>';
   h+='<div class="gp-dates"><div class="d">'+esc(dates)+'</div>'+(g.note?'<div class="n">'+esc(g.note)+'</div>':'')+'</div>';
   if(g.resp&&g.resp.status==='confirmed'){
     h+='<div class="gp-ok"><b>Confirmed.</b> You said these dates work'+(g.resp.t?(' \u00b7 '+new Date(g.resp.t).toLocaleDateString()):'')+'.</div>';
-    h+='<button class="gp-btn ghost" onclick="gpIcsDownload()">Add to my calendar</button>';
+    h+='<button class="gp-btn ghost" onclick="gpAddToCal()">Add to my calendar</button>';
+    h+='<div class="gp-chg" id="gpCalPick"><label>Which calendar?</label>'
+      +'<button class="gp-btn ghost" onclick="gpCalDevice(document.getElementById(\'gpCalRem\').checked)">This device\u2019s calendar (Apple\u2026)</button>'
+      +'<button class="gp-btn ghost" onclick="gpCalGoogle(document.getElementById(\'gpCalRem\').checked)">Google Calendar</button>'
+      +'<label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13.5px;margin-top:10px"><input type="checkbox" id="gpCalRem" checked style="width:auto"> Remember my choice</label></div>';
   } else if(g.resp&&g.resp.status==='change'){
     h+='<div class="gp-ok" style="border-color:var(--oak);background:rgba(176,137,90,.12)"><b>Change requested.</b> Your builder sees your suggested dates'+(g.resp.note?(': \u201c'+esc(g.resp.note)+'\u201d'):'')+'.</div>';
   } else {
@@ -11545,9 +11575,10 @@ function _gpRender(){
   const cx=g.ctx||{};
   if(cx.ready||cx.permit||cx.insp){
     h+='<div class="gp-dates" style="margin-top:0;padding:12px 14px">';
-    if(cx.ready)h+='<div class="n" style="margin-top:0"><b>'+esc(cx.ready)+'</b></div>';
-    if(cx.permit)h+='<div class="n">'+esc(cx.permit)+'</div>';
-    if(cx.insp)h+='<div class="n">'+esc(cx.insp)+'</div>';
+    if(cx.ready)h+='<div class="n" style="margin-top:0;font-weight:700;color:'+(cx.readyOk?'var(--sage)':'var(--clay)')+'">'+(cx.readyOk?'\u2713 ':'\u26a0 ')+esc(cx.ready)+'</div>';
+    const kv=(k,v)=>'<div class="n" style="display:flex;justify-content:space-between;gap:12px"><span style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding-top:2px">'+k+'</span><span style="text-align:right">'+esc(v)+'</span></div>';
+    if(cx.permit){const i=cx.permit.indexOf(': ');h+=kv('Permit',i>0?cx.permit.slice(0,i)+' \u2014 '+cx.permit.slice(i+2):cx.permit);}
+    if(cx.insp){const i=cx.insp.indexOf(': ');h+=kv('Inspection',i>0?cx.insp.slice(0,i).replace(' inspection','')+' \u2014 '+cx.insp.slice(i+2):cx.insp);}
     h+='</div>';
   }
   if((cx.openItems||[]).length){
@@ -11585,6 +11616,18 @@ function _gpRender(){
   h+='<div class="gp-chg" id="gpAsk"><label>Your question</label>'
     +'<textarea id="gpQText" rows="2" placeholder="e.g. Is the water heater gas or electric?"></textarea>'
     +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendQuestion()">Send to '+esc(g.builder)+'</button></div>';
+  /* Guest preferences: small, grows over time. */
+  if(!preview){
+    h+='<button class="gp-btn ghost" style="margin-top:16px;font-size:14px" onclick="gpTogglePrefs()">\u2699 Preferences</button>';
+    const cp=_gpCalPref();
+    h+='<div class="gp-chg" id="gpPrefs"><label>Default calendar</label>'
+      +'<select id="gpPrefCal" onchange="_gpSetCalPref(this.value)" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-family:inherit;font-size:15px;background:var(--paper)">'
+      +'<option value=""'+(cp===''?' selected':'')+'>Ask each time</option>'
+      +'<option value="device"'+(cp==='device'?' selected':'')+'>This device\u2019s calendar</option>'
+      +'<option value="google"'+(cp==='google'?' selected':'')+'>Google Calendar</option>'
+      +'</select>'
+      +'<div class="gp-sub" style="margin-top:8px">Saved on this phone. More preferences will appear here.</div></div>';
+  }
   h+='<div class="gp-foot">Sent with SitePlumb \u00b7 this link expires '+new Date(g.expires||Date.now()).toLocaleDateString()+'</div>';
   if(preview)h+='<button class="gp-btn ghost" style="margin-top:14px" onclick="closeGuestPreview()">Close preview</button>';
   body.innerHTML=h;
@@ -11601,6 +11644,7 @@ function _gpWriteResp(resp){
 }
 function gpConfirm(){_gpWriteResp({status:'confirmed',t:Date.now()});}
 function gpToggleAsk(){const e=document.getElementById('gpAsk');if(e)e.classList.toggle('show');}
+function gpTogglePrefs(){const e=document.getElementById('gpPrefs');if(e)e.classList.toggle('show');}
 function gpSendQuestion(){
   const txt=(document.getElementById('gpQText').value||'').trim().slice(0,300);
   if(!txt){toast('Type the question');return;}
@@ -11628,11 +11672,34 @@ function gpIcs(g){
     'DESCRIPTION:'+String(g.note||'').replace(/\n/g,' '),
     'END:VEVENT','END:VCALENDAR'].join('\r\n');
 }
-function gpIcsDownload(){
-  try{const a=document.createElement('a');
-    a.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(gpIcs(_gpSnap));
-    a.download='siteplumb-'+(_gpSnap.tradeLabel||'booking').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.ics';
-    document.body.appendChild(a);a.click();a.remove();}catch(e){}
+/* Two real paths onto a phone calendar. A data: URI dies silently on iOS, so
+   the device path uses a Blob the browser can actually open, and Google gets
+   its template link. First use asks and remembers; Preferences can change it. */
+function _gpCalPref(){try{return localStorage.getItem('plumbGuestCal')||'';}catch(e){return '';}}
+function _gpSetCalPref(v){try{if(v)localStorage.setItem('plumbGuestCal',v);else localStorage.removeItem('plumbGuestCal');}catch(e){}}
+function gpAddToCal(){
+  const pref=_gpCalPref();
+  if(pref==='device')return gpCalDevice();
+  if(pref==='google')return gpCalGoogle();
+  const e=document.getElementById('gpCalPick');if(e)e.classList.toggle('show');
+}
+function gpCalDevice(remember){
+  if(remember)_gpSetCalPref('device');
+  try{const blob=new Blob([gpIcs(_gpSnap)],{type:'text/calendar;charset=utf-8'});
+    const u=URL.createObjectURL(blob);
+    const w=window.open(u,'_blank');
+    if(!w){const a=document.createElement('a');a.href=u;a.download='siteplumb.ics';document.body.appendChild(a);a.click();a.remove();}
+    setTimeout(()=>{try{URL.revokeObjectURL(u);}catch(e){}},60000);
+  }catch(e){toast('Could not open the calendar file');}
+}
+function gpCalGoogle(remember){
+  if(remember)_gpSetCalPref('google');
+  const g=_gpSnap;const d=ts=>{const x=new Date(ts);const p2=v=>String(v).padStart(2,'0');return x.getFullYear()+p2(x.getMonth()+1)+p2(x.getDate());};
+  const u='https://calendar.google.com/calendar/render?action=TEMPLATE'
+    +'&text='+encodeURIComponent((g.tradeLabel||'')+' \u2014 '+String(g.site||'').split(' \u00b7 ')[0])
+    +'&dates='+d(g.start)+'/'+d((g.end||g.start)+864e5)
+    +'&details='+encodeURIComponent(String(g.note||''));
+  try{window.open(u,'_blank');}catch(e){}
 }
 /* Builder side of the loop: the booking editor shows send + reply state. */
 function bkRenderGuestRow(p,b){
@@ -11655,6 +11722,7 @@ function bkRenderGuestRow(p,b){
       else h='<b style="color:var(--oak)">Change requested</b>'+(r.start?(' \u00b7 suggests '+fmtWin({start:r.start,end:r.end||r.start})):'')+(r.note?(' \u00b7 \u201c'+esc(r.note)+'\u201d'):'')
         +(r.start?' <button class="la-link" style="padding:2px 6px" onclick="bkAcceptChange(\''+String(p.id)+'\',\''+String(b.id)+'\','+r.start+','+(r.end||r.start)+')">Use these dates</button>':'');
       st.innerHTML=h+_bkQHTML(p,b,g);
+      _pkStamp(p,b,g);
     }).catch(()=>{});}catch(e){}
   }
 }
@@ -11720,6 +11788,41 @@ function _bkArmSpecs(p,trade,startTs){
     gaps.forEach(function(g2){const st=specStatus(g2);ho+=st.homeownerPending.length;bl+=st.requiredMissing.length;});
     const bits=[];if(ho)bits.push(ho+' for the homeowner');if(bl)bits.push(bl+' for you');
     if(bits.length)toast('Install questions armed \u2014 '+bits.join(', ')+', due before the crew arrives');
+  }catch(e){}
+}
+/* Stamp what the packet doc says onto the synced booking record, so every
+   surface (overview, calendar, other devices) can see replies and questions
+   without its own fetch. */
+function _pkStamp(p,b,g){
+  try{
+    const r=(g&&g.resp)||null;
+    const qOpen=((g&&g.q)||[]).filter(x=>!x.a).length;
+    const cur=JSON.stringify(b.pkResp||null)+'|'+(b.pkQOpen||0);
+    const next=JSON.stringify(r?{status:r.status,start:r.start||null,end:r.end||null,note:r.note||'',t:r.t||0}:null)+'|'+qOpen;
+    if(cur!==next)updateBooking(p,b.id,{pkResp:r?{status:r.status,start:r.start||null,end:r.end||null,note:r.note||'',t:r.t||0}:null,pkQOpen:qOpen,pkStamp:Date.now()});
+    else if(!b.pkStamp||Date.now()-b.pkStamp>6e5)updateBooking(p,b.id,{pkStamp:Date.now()});
+  }catch(e){}
+}
+/* Background sweep: a handful of stale packet-carrying bookings get refreshed
+   whenever the overview renders, so replies surface within a visit. */
+let _pkSweepAt=0;
+function pkSweep(){
+  try{
+    if(appMode()!=='real'||!laFirebaseReady())return;
+    if(Date.now()-_pkSweepAt<120000)return;
+    _pkSweepAt=Date.now();
+    const today=dayStart(Date.now());
+    let n=0;
+    visibleProjects().forEach(p=>(p.bookings||[]).forEach(b=>{
+      if(n>=6)return;
+      if(!b.pkToken)return;
+      if((b.end||0)<today-7*864e5)return;
+      if(b.pkStamp&&Date.now()-b.pkStamp<1800000)return;
+      n++;
+      firebase.firestore().collection('packets').doc(String(b.pkToken)).get()
+        .then(d=>{if(d.exists){_pkStamp(p,b,d.data());try{renderToday();}catch(e){}}})
+        .catch(()=>{});
+    }));
   }catch(e){}
 }
 function bkAcceptChange(pid,bid,start,end){

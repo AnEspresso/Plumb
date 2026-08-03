@@ -880,6 +880,41 @@ t('change request records status, dates and note', (function(){const r=JSON.pars
 t('snapshot assembles permit, inspection and readiness context', (function(){const c=snap.ctx||{};return typeof c.ready==='string'&&(c.insp||'').indexOf('inspection')>0;})());
 t('snapshot carries recent site history for context', (function(){const h=(snap.ctx||{}).history||[];return h.length>=2&&h.every(x=>typeof x.text==='string'&&x.text.length>0);})());
 t('history is text only - no photo or file references escape', (function(){const j=JSON.stringify((snap.ctx||{}).history||[]);return j.indexOf('photoId')<0&&j.indexOf('fileUrl')<0&&j.indexOf('fileId')<0;})());
+// v2.209: strict docs, colored readiness, approval, calendar, stamping, alerts
+t('untagged docs never ride along - strict trade routing', (function(){return Array.isArray(snap.docs)&&snap.docs.length===0;})());
+t('a trade-routed doc DOES travel', (function(){
+  $("(function(){var p=state.projects[1];p.docs.push({aud:'all',n:'Rough-In Layout - PLUMB.pdf',trade:'plumb',k:'plan'});})()");
+  const s2=JSON.parse($("JSON.stringify(packetSnapshot(state.projects[1],(state.projects[1].bookings||[]).find(b=>b.trade==='plumb')))"));
+  $("(function(){var p=state.projects[1];p.docs=p.docs.filter(d=>d.n!=='Rough-In Layout - PLUMB.pdf');})()");
+  return s2.docs.length===1&&s2.docs[0].indexOf('PLUMB')>=0;})());
+t('readiness carries a machine flag', typeof (snap.ctx||{}).readyOk==='boolean');
+$("window.__packetFixture="+JSON.stringify(snap));
+$("_gpPendingSend={pid:'p2',bid:'x'}");
+$("renderGuestPacket('preview')");
+t('approval bar renders on a sendable preview', el('gpBody').innerHTML.indexOf('Approve')>=0&&el('gpBody').innerHTML.indexOf('exactly what')>=0);
+$("_gpPendingSend=null");$("_gpRender()");
+t('plain preview has no approval bar', el('gpBody').innerHTML.indexOf('Approve')<0);
+t('colored readiness renders', el('gpBody').innerHTML.indexOf('var(--sage)')>=0||el('gpBody').innerHTML.indexOf('var(--clay)')>=0);
+t('permit and inspection rows are labeled', el('gpBody').innerHTML.indexOf('Permit')>=0&&el('gpBody').innerHTML.indexOf('Inspection')>=0);
+// calendar: confirm then chooser + google url + preference memory
+$("_gpSnap.resp={status:'confirmed',t:Date.now()};_gpToken='fixture-x';_gpRender()");
+t('confirmed state offers the calendar with a chooser', el('gpBody').innerHTML.indexOf('Add to my calendar')>=0&&el('gpBody').innerHTML.indexOf('Google Calendar')>=0);
+t('google calendar url is well formed', (function(){const g=JSON.parse($("JSON.stringify(_gpSnap)"));const d=$("(function(){const d=ts=>{const x=new Date(ts);const p2=v=>String(v).padStart(2,'0');return x.getFullYear()+p2(x.getMonth()+1)+p2(x.getDate());};return d(_gpSnap.start);})()");return /^\d{8}$/.test(d);})());
+$("_gpSetCalPref('google')");
+t('calendar preference persists', $("_gpCalPref()")==='google');
+$("_gpSetCalPref('')");
+t('guest page carries a Preferences section', (function(){$("_gpSnap.resp=null;_gpRender()");return el('gpBody').innerHTML.indexOf('Preferences')>=0&&el('gpBody').innerHTML.indexOf('Default calendar')>=0;})());
+$("closeGuestPreview()");
+// stamping writes reply + question state onto the synced booking
+t('packet stamping records reply and open questions on the booking', (function(){
+  $("(function(){var p=state.projects[1];var b=p.bookings[0];_pkStamp(p,b,{resp:{status:'change',start:1900000000000,end:1900100000000,note:'wk later',t:5},q:[{text:'a'},{text:'b',a:'ans'}]});})()");
+  const b=JSON.parse($("JSON.stringify(state.projects[1].bookings[0])"));
+  return b.pkResp&&b.pkResp.status==='change'&&b.pkQOpen===1&&b.pkStamp>0;})());
+t('NEEDS YOU surfaces the suggested dates and the question', (function(){
+  $("renderToday()");
+  const h=$("document.getElementById('ovToday').innerHTML");
+  return h.indexOf('suggests new dates')>=0&&h.indexOf('asked a question')>=0;})());
+$("(function(){var b=state.projects[1].bookings[0];delete b.pkResp;delete b.pkQOpen;delete b.pkStamp;renderToday();})()");
 $("window.__packetFixture="+JSON.stringify(snap));
 $("renderGuestPacket('fixture-test')");
 $("gpToggleAsk()");

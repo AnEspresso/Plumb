@@ -224,7 +224,7 @@ async function tappable(page,sel){
       specs:[{item:'Brushed brass / matte black',cat:'Plumbing Fixtures',room:'Whole House',
         rows:[{k:'Finish',v:'Brushed brass / matte black'},{k:'Valve height',gap:'builder'}]}],
       docs:['Mechanical / HVAC Layout.pdf'],siteId:'p2',bookingId:'bk_p2a',resp:null,
-      ctx:{ready:'Site marked ready for you',permit:'Plumbing Permit: Issued',insp:'rough plumb inspection: scheduled',
+      ctx:{ready:'Site marked ready for you',readyOk:true,permit:'Plumbing Permit: Issued',insp:'rough plumb inspection: scheduled',
         history:[{d:'Jul 30',text:'Roof dried-in, windows and exterior doors installed'},{d:'Jul 28',text:'Framing topped out, trusses set and braced'}]}};
   });
   await guest.goto('http://localhost:'+PORT+'/index.html?packet=qa',{waitUntil:'load'});
@@ -241,6 +241,9 @@ async function tappable(page,sel){
   t('one tap confirms and offers the calendar', await guest.evaluate(()=>document.getElementById('gpBody').innerHTML.includes('Confirmed.')&&document.getElementById('gpBody').innerHTML.includes('Add to my calendar')));
   const cal=await tappable(guest,"#gpBody .gp-btn.ghost");
   t('calendar button tappable after confirm', cal.ok, cal.why);
+  await guest.evaluate(()=>gpAddToCal());
+  await new Promise(r=>setTimeout(r,150));
+  t('calendar chooser offers device and Google', await guest.evaluate(()=>{const h=document.getElementById('gpCalPick');return h&&h.classList.contains('show')&&h.innerHTML.includes('Google Calendar');}));
   await shot(guest,'12-guest-confirmed');
   await guest.evaluate(()=>gpToggleAsk());
   await guest.evaluate(()=>document.querySelector('#gpAsk .gp-btn.go').scrollIntoView({block:'center'}));
