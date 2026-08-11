@@ -877,7 +877,7 @@ $("document.getElementById('gpNote').value='Crew frees up Tuesday'");
 $("gpSendChange()");
 t('change request records status, dates and note', (function(){const r=JSON.parse($("JSON.stringify(_gpSnap.resp)"));return r.status==='change'&&r.start>0&&r.note==='Crew frees up Tuesday';})());
 // v2.207: self-assembled context + Q&A loop + scheduling arms the questions
-t('snapshot assembles permit, inspection and readiness context', (function(){const c=snap.ctx||{};return typeof c.ready==='string'&&(c.insp||'').indexOf('inspection')>0;})());
+t('snapshot assembles permit, inspection and readiness context', (function(){const c=snap.ctx||{};return typeof c.ready==='string'&&(c.insp||'').indexOf(': ')>0;})());
 t('snapshot carries recent site history for context', (function(){const h=(snap.ctx||{}).history||[];return h.length>=2&&h.every(x=>typeof x.text==='string'&&x.text.length>0);})());
 t('history is text only - no photo or file references escape', (function(){const j=JSON.stringify((snap.ctx||{}).history||[]);return j.indexOf('photoId')<0&&j.indexOf('fileUrl')<0&&j.indexOf('fileId')<0;})());
 // v2.209: strict docs, colored readiness, approval, calendar, stamping, alerts
@@ -915,6 +915,28 @@ t('NEEDS YOU surfaces the suggested dates and the question', (function(){
   const h=$("document.getElementById('ovToday').innerHTML");
   return h.indexOf('suggests new dates')>=0&&h.indexOf('asked a question')>=0;})());
 $("(function(){var b=state.projects[1].bookings[0];delete b.pkResp;delete b.pkQOpen;delete b.pkStamp;renderToday();})()");
+// v2.210: the regressions Peter caught become permanent checks
+t('openConfirm fires its onConfirm callback', (function(){
+  $("window.__ocTest=0;openConfirm({title:'t',onConfirm:function(){window.__ocTest=1;}});ocConfirm()");
+  return $("window.__ocTest")===1;})());
+t('guest load without firebase fails soft after the wait, not instantly', (function(){
+  $("window.__pkWaitMs=60");
+  $("renderGuestPacket('pk_no_such')");
+  const early=el('gpBody').innerHTML.indexOf('Opening your packet')>=0;
+  return early;})());
+t('excavation falls back to the grading or building permit', (function(){
+  const c=JSON.parse($("JSON.stringify((packetSnapshot(state.projects[0],{trade:'excav',subName:'Ironhill Excavating',start:Date.now(),end:Date.now()+86400000,note:'',id:'x'})).ctx)"));
+  return typeof c.permit==='string'&&(c.permit.indexOf('Grading')>=0||c.permit.indexOf('Building')>=0);})());
+t('inspection lines carry readable labels and casing', (function(){
+  const c=JSON.parse($("JSON.stringify((packetSnapshot(state.projects[0],{trade:'excav',subName:'Ironhill Excavating',start:Date.now(),end:Date.now()+86400000,note:'',id:'x'})).ctx)"));
+  return typeof c.insp==='string'&&c.insp.indexOf('Site / pre-construction')===0&&/: [A-Z]/.test(c.insp);})());
+t('preview explains an empty documents section', (function(){
+  $("window.__packetFixture=Object.assign(JSON.parse(JSON.stringify(_gpSnap||{}))||{},{docs:[],resp:null,q:[],specs:[],ctx:{},site:'X',builder:'B',sub:'S',tradeLabel:'T',start:Date.now(),end:Date.now(),expires:Date.now()+86400000})");
+  $("renderGuestPacket('preview')");
+  const ok=el('gpBody').innerHTML.indexOf('None routed to this trade yet')>=0;
+  $("closeGuestPreview()");
+  return ok;})());
+setTimeout(function(){},0);
 $("window.__packetFixture="+JSON.stringify(snap));
 $("renderGuestPacket('fixture-test')");
 $("gpToggleAsk()");

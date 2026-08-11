@@ -2880,12 +2880,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.209.0 - Packets tighten and open up in the right places. Documents are strictly trade-routed - an untagged lien waiver never rides along - and the builder now approves the exact guest page before anything sends. The context strip colors readiness green or red with labeled permit and inspection rows. Add to calendar really works: device or Google, remembered as a default, changeable in a new guest Preferences section. A subs suggested dates or open questions now surface in the NEEDS YOU feed on their own. And the packet link is offered right after scheduling and one tap from the calendar day sheet';
+const PLUMB_VERSION='2.210.0 - The guest link opens reliably: cold arrivals now initialize Firebase themselves and wait for the deferred SDK instead of failing instantly - the could-not-open error is gone. The post-schedule Review and send dialog was wired to the wrong callback and did nothing - fixed. Excavation and friends now show their grading or building permit with readable inspection labels and tidy casing. The preview explains an empty documents section. And booking deletions log to telemetry so a vanished booking leaves a trail';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785636600000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785637200000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -11135,7 +11135,7 @@ function bkSave(){
   const clash=[...new Set((p.bookings||[]).filter(b=>b.trade===trade&&b.subName&&b.subName!==subName).map(b=>b.subName))];
   const finalize=()=>{const nb=addBooking(p,{subName:subName,trade:trade,start:start,end:end,note:note});_bkArmSpecs(p,trade,start);toast(subName+' scheduled');done();
       if(!onRoster){bkOfferInvite(p,subName,true);}
-      else{setTimeout(()=>{openConfirm({title:'Text '+subName+' the packet link?',body:'One page with their dates, scope and specs \u2014 one tap for them to confirm. You review it before it sends.',okLabel:appMode()==='real'?'Review \u0026 send':'Preview it',onOk:()=>sendGuestPacket(p.id,nb.id)});},450);}};
+      else{setTimeout(()=>{openConfirm({title:'Text '+subName+' the packet link?',body:'One page with their dates, scope and specs \u2014 one tap for them to confirm. You review it before it sends.',okLabel:appMode()==='real'?'Review \u0026 send':'Preview it',onConfirm:()=>sendGuestPacket(p.id,nb.id)});},450);}};
   const packetGate=(next)=>{
     if(trade&&!packetReady(p,trade)){
       const gaps=tradeSpecGaps(p,trade).length;
@@ -11166,6 +11166,9 @@ function bkSave(){
   packetGate(finalize);
 }
 function bkDelete(){
+  try{const _p=state.projects.find(x=>String(x.id)===String((_bkEdit||{}).pid));
+    const _b=_p&&(_p.bookings||[]).find(x=>String(x.id)===String((_bkEdit||{}).bid));
+    if(_b)logEvent('bookingRemoved',_b.subName+' \u00b7 '+(_p.street||_p.name));}catch(e){}
   if(!_bkEdit)return;
   const p=state.projects.find(x=>String(x.id)===String(_bkEdit.pid));if(!p)return;
   const bid=_bkEdit.bid;const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));
@@ -11434,7 +11437,10 @@ function invitePacketSub(pid,subId){if(String(P().id)!==String(pid))Data.setActi
 const PK_INSP={plumb:'rough_plumb',elec:'rough_elec',hvac:'rough_mech',insul:'insulation',
   framing:'roughin',roofing:'roughin',drywall:'insulation',concrete:'foundation',excav:'site'};
 const PK_PERMIT={elec:'Electrical Permit',plumb:'Plumbing Permit',hvac:'Mechanical / HVAC Permit',
-  lowvolt:'Low-Voltage / Alarm Permit',fireplace:'Fireplace / Chimney Permit'};
+  excav:'Grading / Soil Erosion Permit',lowvolt:'Low-Voltage / Alarm Permit',fireplace:'Fireplace / Chimney Permit'};
+const PK_INSP_LBL={site:'Site / pre-construction',foundation:'Foundation',roughin:'Rough-in',
+  rough_plumb:'Rough plumbing',rough_elec:'Rough electrical',rough_mech:'Rough mechanical',
+  insulation:'Insulation',final_mep:'Final mechanical',final:'Final'};
 function packetSnapshot(p,b){
   const trade=b.trade||'';
   const sels=tradeSelections(p,trade).map(sel=>{
@@ -11459,13 +11465,16 @@ function packetSnapshot(p,b){
     specs:sels,docs:docs,siteId:String(p.id),bookingId:String(b.id),resp:null,q:[],
     ctx:(function(){
       const c={};
+      const cap1=x=>String(x||'').charAt(0).toUpperCase()+String(x||'').slice(1);
       const permName=PK_PERMIT[trade];
-      const perm=permName&&(p.permits||[]).find(x=>x.name===permName);
-      if(perm)c.permit=permName+': '+String(perm.status||'');
+      let perm=permName&&(p.permits||[]).find(x=>x.name===permName);
+      let permLbl=permName;
+      if(!perm){perm=(p.permits||[]).find(x=>x.name==='Building Permit');permLbl='Building Permit';}
+      if(perm)c.permit=permLbl+': '+cap1(perm.status);
       const ik=PK_INSP[trade];
       const iv=ik&&(p.inspections||{})[ik];
       if(iv){const meta=((p.inspMeta||{})[ik])||{};
-        c.insp=String(ik).replace('rough_','rough ').replace('_',' ')+' inspection: '+iv+(meta.date?(' ('+meta.date+')'):'');}
+        c.insp=(PK_INSP_LBL[ik]||cap1(ik))+': '+cap1(iv)+(meta.date?(' \u00b7 '+meta.date):'');}
       const sb=(p.subs||[]).find(x=>x.name===b.subName&&x.specialty===trade)||(p.subs||[]).find(x=>x.specialty===trade);
       c.readyOk=!!(sb&&sb.cleared);
       c.ready=c.readyOk?'Site marked ready for you':'Site not yet marked ready \u2014 confirm before mobilizing';
@@ -11487,13 +11496,23 @@ function packetSnapshot(p,b){
 }
 function _pkToken(){const a=new Uint8Array(16);crypto.getRandomValues(a);
   return 'pk'+Array.from(a,x=>x.toString(16).padStart(2,'0')).join('');}
+/* Firestore for packet paths. Guests arrive signed out, so nothing else has
+   initialized the Firebase app yet - this helper does, and returns null while
+   the deferred SDK scripts are still loading so callers can retry. */
+function _pkDb(){
+  try{
+    if(!fbConfig()||typeof firebase==='undefined'||!firebase.firestore)return null;
+    if(!firebase.apps.length)firebase.initializeApp(fbConfig());
+    return firebase.firestore();
+  }catch(e){return null;}
+}
 function sendGuestPacket(pid,bid){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));if(!b){toast('Save the booking first \u2014 the link carries its dates');return;}
   const snap=packetSnapshot(p,b);
   /* The builder approves the packet by seeing it: the preview IS the guest
      page, byte for byte. Approve to write and text; anything else sends nothing. */
-  if(appMode()==='real'&&laFirebaseReady()){_gpPendingSend={pid:String(p.id),bid:String(b.id)};}
+  if(appMode()==='real'&&_pkDb()){_gpPendingSend={pid:String(p.id),bid:String(b.id)};}
   else{_gpPendingSend=null;}
   openGuestPreview(snap);
 }
@@ -11504,8 +11523,9 @@ function gpApproveSend(){
   const b=p&&(p.bookings||[]).find(x=>String(x.id)===ps.bid);
   if(!p||!b){toast('Booking not found');return;}
   const snap=_gpSnap;const token=_pkToken();
+  const db=_pkDb();if(!db){toast('Connecting \u2014 try again in a moment');return;}
   try{
-    firebase.firestore().collection('packets').doc(token).set(snap)
+    db.collection('packets').doc(token).set(snap)
       .then(()=>{updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});
         _gpPendingSend=null;closeGuestPreview();
         try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(b.id)));}catch(e){}
@@ -11532,15 +11552,22 @@ function renderGuestPacket(token){
   body.innerHTML='<div class="gp-err">Opening your packet\u2026</div>';
   const fail=msg=>{body.innerHTML='<div class="gp-brand"><span class="dot"></span>SitePlumb</div><div class="gp-err">'+msg+'</div>';};
   if(window.__packetFixture){_gpSnap=window.__packetFixture;_gpRender();return;}
-  if(!laFirebaseReady()){fail('This link needs a connection to open. Get a bar of signal and tap it again.');return;}
-  try{
-    firebase.firestore().collection('packets').doc(String(token)).get()
+  /* The SDK scripts are deferred and the Firebase app may not be initialized
+     yet on a cold guest arrival - poll briefly instead of failing instantly. */
+  const t0=Date.now();const waitMs=(window.__pkWaitMs||8000);
+  (function attempt(){
+    const db=_pkDb();
+    if(!db){
+      if(Date.now()-t0<waitMs){setTimeout(attempt,350);return;}
+      fail('This link needs a connection to open. Get a bar of signal and tap it again.');return;
+    }
+    db.collection('packets').doc(String(token)).get()
       .then(d=>{if(!d.exists){fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.');return;}
         _gpSnap=d.data();
         if((_gpSnap.expires||0)<Date.now()){fail('This link has expired. Reply to the text you got and your builder will send a fresh one.');return;}
         _gpRender();})
       .catch(()=>fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.'));
-  }catch(e){fail('This link could not open. Reply to the text you got.');}
+  })();
 }
 function _gpRender(){
   const g=_gpSnap;const body=document.getElementById('gpBody');
@@ -11578,7 +11605,7 @@ function _gpRender(){
     if(cx.ready)h+='<div class="n" style="margin-top:0;font-weight:700;color:'+(cx.readyOk?'var(--sage)':'var(--clay)')+'">'+(cx.readyOk?'\u2713 ':'\u26a0 ')+esc(cx.ready)+'</div>';
     const kv=(k,v)=>'<div class="n" style="display:flex;justify-content:space-between;gap:12px"><span style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding-top:2px">'+k+'</span><span style="text-align:right">'+esc(v)+'</span></div>';
     if(cx.permit){const i=cx.permit.indexOf(': ');h+=kv('Permit',i>0?cx.permit.slice(0,i)+' \u2014 '+cx.permit.slice(i+2):cx.permit);}
-    if(cx.insp){const i=cx.insp.indexOf(': ');h+=kv('Inspection',i>0?cx.insp.slice(0,i).replace(' inspection','')+' \u2014 '+cx.insp.slice(i+2):cx.insp);}
+    if(cx.insp){const i=cx.insp.indexOf(': ');h+=kv('Inspection',i>0?cx.insp.slice(0,i)+' \u2014 '+cx.insp.slice(i+2):cx.insp);}
     h+='</div>';
   }
   if((cx.openItems||[]).length){
@@ -11597,6 +11624,10 @@ function _gpRender(){
         :'<div class="sro"><span class="k">'+esc(r.k)+'</span><span class="v">'+esc(r.v)+'</span></div>').join('');
       return '<div class="pkt-sel"><div class="ps-h"><b>'+esc(sel.item||'(unspecified)')+'</b><span class="ps-c">'+esc(sel.cat||'')+(sel.room?' \u00b7 '+esc(sel.room):'')+'</span></div>'+(rows?'<div class="spec-ro">'+rows+'</div>':'')+'</div>';
     }).join('');
+  }
+  if(preview&&!(g.docs||[]).length){
+    h+='<div class="eyebrow" style="margin-top:18px">Documents</div>';
+    h+='<div class="gp-sub">None routed to this trade yet \u2014 add them from the install packet and the next send carries them.</div>';
   }
   if((g.docs||[]).length){
     h+='<div class="eyebrow" style="margin-top:18px">Documents on file</div>';
@@ -11637,8 +11668,9 @@ function closeGuestPreview(){try{delete window.__packetFixture;}catch(e){}
 function gpToggleChange(){const e=document.getElementById('gpChg');if(e)e.classList.toggle('show');}
 function _gpWriteResp(resp){
   _gpSnap.resp=resp;
-  if(_gpToken&&_gpToken!=='preview'&&laFirebaseReady()){
-    try{firebase.firestore().collection('packets').doc(String(_gpToken)).update({resp:resp}).catch(()=>{});}catch(e){}
+  if(_gpToken&&_gpToken!=='preview'){
+    const db=_pkDb();
+    if(db){try{db.collection('packets').doc(String(_gpToken)).update({resp:resp}).catch(()=>{});}catch(e){}}
   }
   _gpRender();
 }
@@ -11649,8 +11681,9 @@ function gpSendQuestion(){
   const txt=(document.getElementById('gpQText').value||'').trim().slice(0,300);
   if(!txt){toast('Type the question');return;}
   _gpSnap.q=(_gpSnap.q||[]).concat([{text:txt,t:Date.now()}]);
-  if(_gpToken&&_gpToken!=='preview'&&laFirebaseReady()){
-    try{firebase.firestore().collection('packets').doc(String(_gpToken)).update({q:_gpSnap.q}).catch(()=>{});}catch(e){}
+  if(_gpToken&&_gpToken!=='preview'){
+    const db=_pkDb();
+    if(db){try{db.collection('packets').doc(String(_gpToken)).update({q:_gpSnap.q}).catch(()=>{});}catch(e){}}
   }
   _gpRender();
 }
@@ -11711,8 +11744,8 @@ function bkRenderGuestRow(p,b){
     h+='<div class="gp-sub" id="bkGuestStatus" style="margin-top:6px">Link sent '+(b.pkSent?new Date(b.pkSent).toLocaleDateString():'')+' \u00b7 checking for a reply\u2026</div>';
   }
   el.innerHTML=h;
-  if(b.pkToken&&appMode()==='real'&&laFirebaseReady()){
-    try{firebase.firestore().collection('packets').doc(String(b.pkToken)).get().then(d=>{
+  if(b.pkToken&&appMode()==='real'&&_pkDb()){
+    try{_pkDb().collection('packets').doc(String(b.pkToken)).get().then(d=>{
       const st=document.getElementById('bkGuestStatus');if(!st)return;
       const g=d.exists?d.data():null;const r=g&&g.resp;
       if(!g){st.textContent='Link sent \u00b7 expired or replaced';return;}
@@ -11743,7 +11776,8 @@ function _bkQHTML(p,b,g){
   return h+'</div>';
 }
 function _bkPacketDoc(b,cb){
-  try{firebase.firestore().collection('packets').doc(String(b.pkToken)).get().then(d=>cb(d.exists?d.data():null)).catch(()=>cb(null));}catch(e){cb(null);}
+  const db=_pkDb();if(!db){cb(null);return;}
+  try{db.collection('packets').doc(String(b.pkToken)).get().then(d=>cb(d.exists?d.data():null)).catch(()=>cb(null));}catch(e){cb(null);}
 }
 function bkAnswerQ(pid,bid,qi){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
@@ -11753,7 +11787,8 @@ function bkAnswerQ(pid,bid,qi){
     _bkPacketDoc(b,function(g){if(!g)return;
       const q=(g.q||[]);if(!q[qi])return;
       q[qi].a=v.slice(0,300);q[qi].at=Date.now();
-      try{firebase.firestore().collection('packets').doc(String(b.pkToken)).update({q:q}).then(function(){
+      const db=_pkDb();if(!db)return;
+      try{db.collection('packets').doc(String(b.pkToken)).update({q:q}).then(function(){
         toast('Answered \u2014 it appears when they reopen their link');
         bkRenderGuestRow(p,b);});}catch(e){}
     });}});
@@ -11770,7 +11805,7 @@ function bkShareQ(pid,bid,qi){
         Data.commit();logEvent('subQuestionShared',(b.subName||'')+' \u2192 homeowner');
         toast('Posted to the homeowner\u2019s portal \u2014 their answer comes back to you');}});
   };
-  if(b.pkToken&&appMode()==='real'&&laFirebaseReady()){
+  if(b.pkToken&&appMode()==='real'&&_pkDb()){
     _bkPacketDoc(b,function(g){const q=(g&&g.q||[])[qi];fill(seed+((q&&q.text)||''));});
   } else fill(seed);
 }
@@ -11808,7 +11843,8 @@ function _pkStamp(p,b,g){
 let _pkSweepAt=0;
 function pkSweep(){
   try{
-    if(appMode()!=='real'||!laFirebaseReady())return;
+    if(appMode()!=='real')return;
+    const db=_pkDb();if(!db)return;
     if(Date.now()-_pkSweepAt<120000)return;
     _pkSweepAt=Date.now();
     const today=dayStart(Date.now());
@@ -11819,7 +11855,7 @@ function pkSweep(){
       if((b.end||0)<today-7*864e5)return;
       if(b.pkStamp&&Date.now()-b.pkStamp<1800000)return;
       n++;
-      firebase.firestore().collection('packets').doc(String(b.pkToken)).get()
+      db.collection('packets').doc(String(b.pkToken)).get()
         .then(d=>{if(d.exists){_pkStamp(p,b,d.data());try{renderToday();}catch(e){}}})
         .catch(()=>{});
     }));
