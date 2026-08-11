@@ -2880,12 +2880,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.210.0 - The guest link opens reliably: cold arrivals now initialize Firebase themselves and wait for the deferred SDK instead of failing instantly - the could-not-open error is gone. The post-schedule Review and send dialog was wired to the wrong callback and did nothing - fixed. Excavation and friends now show their grading or building permit with readable inspection labels and tidy casing. The preview explains an empty documents section. And booking deletions log to telemetry so a vanished booking leaves a trail';
+const PLUMB_VERSION='2.211.0 - Bookings now sync as individual records instead of riding inside the site blob. That blob was last writer wins, so two devices holding different copies could silently wipe each others bookings - the vanishing booking is fixed at the root. The guest link also starts loading the moment it opens rather than waiting for the app to wake, a confirmed sub can still suggest new dates when plans change, the calendar step names the Add To Calendar button iPhone shows, and Preferences displays the choice actually saved';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785637200000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785637800000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -4831,6 +4831,24 @@ let _DEMO_RESUME=false;   /* set by the suspend recovery when this same tab relo
    for someone with no account and no install. The token is the capability. */
 const _PACKET_ON_ARRIVAL=(function(){
   try{return (new URLSearchParams(location.search||'').get('packet')||'').trim()||null;}catch(e){return null;}})();
+/* Head start: the fetch begins as soon as the token is known and races the
+   rest of boot, so the sub is not watching a spinner while the app wakes up. */
+let _pkPrefetch=null;
+if(_PACKET_ON_ARRIVAL){
+  _pkPrefetch=new Promise(function(resolve,reject){
+    const t0=Date.now();
+    (function attempt(){
+      let db=null;
+      try{if(typeof fbConfig==='function'&&fbConfig()&&typeof firebase!=='undefined'&&firebase.firestore){
+        if(!firebase.apps.length)firebase.initializeApp(fbConfig());
+        db=firebase.firestore();}}catch(e){db=null;}
+      if(db){db.collection('packets').doc(String(_PACKET_ON_ARRIVAL)).get().then(resolve,reject);return;}
+      if(Date.now()-t0>(window.__pkWaitMs||8000)){reject(new Error('sdk-timeout'));return;}
+      setTimeout(attempt,120);
+    })();
+  });
+  _pkPrefetch.catch(function(){});
+}
 const _AUTH_ACTION_ON_ARRIVAL=(function(){
   try{const q=new URLSearchParams(location.search||'');
     const m=q.get('mode')||'';
@@ -6546,7 +6564,10 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(meta&&d.updatedBy!==this.deviceId){
           const sh=this._shadow[id]||(this._shadow[id]={meta:'',colls:{}});
           let p=state.projects.find(x=>String(x.id)===String(id));
-          if(!p){p=Object.assign({},meta);SYNC_COLLS.forEach(c=>{if(!Array.isArray(p[c.f]))p[c.f]=[];});state.projects.push(p);}
+          if(!p){p=Object.assign({},meta);SYNC_COLLS.forEach(c=>{if(!Array.isArray(p[c.f]))p[c.f]=[];});
+            /* a brand-new site doc may still carry legacy meta.bookings - keep them */
+            if(Array.isArray(meta.bookings)&&!p.bookings.length)p.bookings=meta.bookings.slice();
+            state.projects.push(p);}
           else if(d.meta){const _nv=Notify.snap(p);Object.keys(meta).forEach(k=>{if(!SYNC_COLLS.some(c=>c.f===k))p[k]=meta[k];});try{Notify.scanMeta(_nv,p);}catch(e){}}
           else {const _nv=Notify.snap(p);Object.assign(p,meta);try{Notify.scanMeta(_nv,p);}catch(e){}}  // legacy whole-blob fallback
           sh.meta=JSON.stringify(metaOf(p));changed=true;
@@ -6983,6 +7004,7 @@ function stripForSync(p){try{const c=JSON.parse(JSON.stringify(p));return c;}cat
    Concurrent edits to different records write to different docs → no overwrite. ── */
 const SYNC_COLLS=[
   {f:'items',sub:'items',key:r=>String(r.id)},
+  {f:'bookings',sub:'bk',key:r=>String(r.id)},
   {f:'selections',sub:'sel',key:r=>String(r.id)},
   {f:'logs',sub:'logs',key:r=>'d'+String(r.date||r.t||'').replace(/[^\w]/g,'')},
   {f:'payments',sub:'pmts',key:r=>String(r.id)},
@@ -11554,19 +11576,21 @@ function renderGuestPacket(token){
   if(window.__packetFixture){_gpSnap=window.__packetFixture;_gpRender();return;}
   /* The SDK scripts are deferred and the Firebase app may not be initialized
      yet on a cold guest arrival - poll briefly instead of failing instantly. */
+  const take=d=>{
+    if(!d||!d.exists){fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.');return;}
+    _gpSnap=d.data();
+    if((_gpSnap.expires||0)<Date.now()){fail('This link has expired. Reply to the text you got and your builder will send a fresh one.');return;}
+    _gpRender();};
+  const miss=()=>fail('This link needs a connection to open. Get a bar of signal and tap it again.');
+  if(_pkPrefetch&&String(token)===String(_PACKET_ON_ARRIVAL)){_pkPrefetch.then(take,miss);return;}
   const t0=Date.now();const waitMs=(window.__pkWaitMs||8000);
   (function attempt(){
     const db=_pkDb();
     if(!db){
-      if(Date.now()-t0<waitMs){setTimeout(attempt,350);return;}
-      fail('This link needs a connection to open. Get a bar of signal and tap it again.');return;
+      if(Date.now()-t0<waitMs){setTimeout(attempt,150);return;}
+      miss();return;
     }
-    db.collection('packets').doc(String(token)).get()
-      .then(d=>{if(!d.exists){fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.');return;}
-        _gpSnap=d.data();
-        if((_gpSnap.expires||0)<Date.now()){fail('This link has expired. Reply to the text you got and your builder will send a fresh one.');return;}
-        _gpRender();})
-      .catch(()=>fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.'));
+    db.collection('packets').doc(String(token)).get().then(take).catch(miss);
   })();
 }
 function _gpRender(){
@@ -11584,10 +11608,18 @@ function _gpRender(){
   if(g.resp&&g.resp.status==='confirmed'){
     h+='<div class="gp-ok"><b>Confirmed.</b> You said these dates work'+(g.resp.t?(' \u00b7 '+new Date(g.resp.t).toLocaleDateString()):'')+'.</div>';
     h+='<button class="gp-btn ghost" onclick="gpAddToCal()">Add to my calendar</button>';
+    /* Plans change after a yes - the door stays open. */
+    h+='<button class="gp-btn ghost" style="font-size:14px" onclick="gpToggleChange()">Something came up \u2014 suggest new dates\u2026</button>';
+    h+='<div class="gp-chg" id="gpChg">'
+      +'<label>Works better starting</label><input type="date" id="gpStart">'
+      +'<label>Through</label><input type="date" id="gpEnd">'
+      +'<label>Anything else</label><textarea id="gpNote" rows="2" placeholder="Optional \u2014 e.g. crew is on another job until Thursday"></textarea>'
+      +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendChange()">Send to '+esc(g.builder)+'</button></div>';
     h+='<div class="gp-chg" id="gpCalPick"><label>Which calendar?</label>'
       +'<button class="gp-btn ghost" onclick="gpCalDevice(document.getElementById(\'gpCalRem\').checked)">This device\u2019s calendar (Apple\u2026)</button>'
       +'<button class="gp-btn ghost" onclick="gpCalGoogle(document.getElementById(\'gpCalRem\').checked)">Google Calendar</button>'
-      +'<label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13.5px;margin-top:10px"><input type="checkbox" id="gpCalRem" checked style="width:auto"> Remember my choice</label></div>';
+      +'<label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13.5px;margin-top:10px"><input type="checkbox" id="gpCalRem" checked style="width:auto"> Remember my choice</label>'
+      +'<div class="gp-sub" style="margin-top:8px">On iPhone the calendar opens its own screen \u2014 tap <b>Add To Calendar</b> at the bottom of it.</div></div>';
   } else if(g.resp&&g.resp.status==='change'){
     h+='<div class="gp-ok" style="border-color:var(--oak);background:rgba(176,137,90,.12)"><b>Change requested.</b> Your builder sees your suggested dates'+(g.resp.note?(': \u201c'+esc(g.resp.note)+'\u201d'):'')+'.</div>';
   } else {
@@ -11676,7 +11708,10 @@ function _gpWriteResp(resp){
 }
 function gpConfirm(){_gpWriteResp({status:'confirmed',t:Date.now()});}
 function gpToggleAsk(){const e=document.getElementById('gpAsk');if(e)e.classList.toggle('show');}
-function gpTogglePrefs(){const e=document.getElementById('gpPrefs');if(e)e.classList.toggle('show');}
+function gpTogglePrefs(){const e=document.getElementById('gpPrefs');if(!e)return;
+  /* reflect the live saved value - the section renders before a choice is made */
+  try{const sel=document.getElementById('gpPrefCal');if(sel)sel.value=_gpCalPref();}catch(err){}
+  e.classList.toggle('show');}
 function gpSendQuestion(){
   const txt=(document.getElementById('gpQText').value||'').trim().slice(0,300);
   if(!txt){toast('Type the question');return;}

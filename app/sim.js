@@ -75,10 +75,33 @@ t('rail foot carries the live sync pill', $("document.querySelector('nav .rail-f
 
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
 S('sync-scope');
-t('builder gets all six colls', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,sel,logs,pmts,mail,costs');
-t('sub skips pmts+mail+costs', $("syncCollsFor('sub').map(c=>c.sub).join()") === 'items,sel,logs');
-t('client skips mail+costs', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,sel,logs,pmts');
-t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,sel,logs,pmts,mail,costs');
+t('builder gets all seven colls', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs');
+t('sub skips pmts+mail+costs', $("syncCollsFor('sub').map(c=>c.sub).join()") === 'items,bk,sel,logs');
+t('client skips mail+costs', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts');
+t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs');
+/* v2.211: bookings must merge per record, never ride the whole-site meta blob.
+   The old behavior let a second device silently wipe bookings it had not seen. */
+t('bookings are a synced record collection', $("SYNC_COLLS.some(c=>c.f==='bookings'&&c.sub==='bk')")===true);
+t('meta no longer carries bookings', (function(){
+  const m=JSON.parse($("JSON.stringify(metaOf(state.projects[1]))"));
+  return !('bookings' in m);})());
+t('a new booking becomes its own sync op', (function(){
+  const ops=JSON.parse($(`(function(){
+    const p=state.projects[1];
+    const sh={meta:JSON.stringify(metaOf(p)),colls:{}};
+    const before=diffSiteOps(sh,p).filter(o=>o.sub==='bk').length;
+    addBooking(p,{subName:'Sim Crew',trade:'plumb',start:Date.now(),end:Date.now()+86400000,note:''});
+    const after=diffSiteOps(sh,p).filter(o=>o.sub==='bk').length;
+    p.bookings.pop();
+    return JSON.stringify({before:before,after:after});})()`));
+  return ops.after===ops.before+1;})());
+t('stale meta from an old device cannot wipe bookings', (function(){
+  return $(`(function(){
+    const p=state.projects[1];
+    const n=p.bookings.length;
+    const meta={id:p.id,name:p.name,bookings:[]};
+    Object.keys(meta).forEach(k=>{if(!SYNC_COLLS.some(c=>c.f===k))p[k]=meta[k];});
+    return p.bookings.length;})()`)===$("state.projects[1].bookings.length");})());
 t('siteRoleFor: members map wins over session role',
   $("state.session={role:'client',auth:{uid:'uX'}};siteRoleFor({members:{uX:'sub'}})") === 'sub');
 t('siteRoleFor: falls back to session subs->sub',
@@ -117,7 +140,7 @@ $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(2);Sync._subSite('gateA');true");
 t('no listeners attach synchronously', $("__g.attached.length")===0);
 await new Promise(r=>setTimeout(r,250));
 t('gate retried through the ladder', $("__g.gets")===3);
-t('all six colls attach once doc lands', $("__g.attached.join()")==='items,sel,logs,pmts,mail,costs');
+t('all seven colls attach once doc lands', $("__g.attached.join()")==='items,bk,sel,logs,pmts,mail,costs');
 t('site marked listening after attach', $("!!Sync._listening['gateA']")===true);
 // (2) doc never lands: give up quietly, _listening cleared so a later docChange re-gates
 $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(99);Sync._subSite('gateB');true");
@@ -128,20 +151,20 @@ t('give-up clears _listening (re-gate possible)', $("!Sync._listening['gateB']")
 // (3) offline: unavailable attaches immediately on cache
 $("__g.gets=0;__g.attached=[];Sync.db={collection:()=>({doc:()=>({get:()=>{__g.gets++;return Promise.reject({code:'unavailable'});},collection:sub=>({onSnapshot:(h,e)=>{__g.attached.push(sub);__g.errCbs[sub]=e;return ()=>{};}})})})};Sync._subSite('gateC');true");
 await new Promise(r=>setTimeout(r,80));
-t('offline attaches without retry ladder', $("__g.gets")===1&&$("__g.attached.length")===6);
+t('offline attaches without retry ladder', $("__g.gets")===1&&$("__g.attached.length")===7);
 // (4) demo mode: gate is a no-op passthrough
 $("__g.gets=0;__g.attached=[];Sync.mode='demo';Sync.db=__mkdb(99);Sync._subSite('gateD');true");
 await new Promise(r=>setTimeout(r,60));
-t('demo attaches without any server get', $("__g.attached.length")===6&&$("__g.gets")===0);
+t('demo attaches without any server get', $("__g.attached.length")===7&&$("__g.gets")===0);
 $("Sync.mode='live';true");
 // (5) belt: first-generation denial is forgiven silently and re-attaches once
 $("localStorage.removeItem('plumb.errors');__g.gets=99;__g.attached=[];Sync.db=__mkdb(0);Sync._subSite('gateE');true");
 await new Promise(r=>setTimeout(r,80));
-t('gateE attached gen-1', $("__g.attached.length")===6);
+t('gateE attached gen-1', $("__g.attached.length")===7);
 $("__g.attached=[];__g.errCbs['items']({code:'permission-denied'});true");
 t('gen-1 denial logs no rules alarm', $("devErrors().length")===0);
 await new Promise(r=>setTimeout(r,200));
-t('belt re-attached a second generation', $("__g.attached.length")===6);
+t('belt re-attached a second generation', $("__g.attached.length")===7);
 t('re-arm consumed', $("Sync._reArmed['gateE']")===true);
 // (6) second-generation denial raises the real alarm
 $("__g.errCbs['items']({code:'permission-denied'});true");
@@ -149,7 +172,7 @@ t('gen-2 denial trips trapError', $("devErrors().length")>0&&$("devErrors()[0].m
 // (7) role scoping preserved through the gate path
 $("localStorage.removeItem('plumb.errors');Sync._permToasted=false;__g.attached=[];state.session={role:'client',auth:{uid:'uC'}};state.projects.push({id:'gateF',members:{uC:'client'},items:[],selections:[],logs:[],payments:[]});Sync.db=__mkdb(0);Sync._subSite('gateF');true");
 await new Promise(r=>setTimeout(r,60));
-t('client attaches only its four colls', $("__g.attached.join()")==='items,sel,logs,pmts');
+t('client attaches only its five colls', $("__g.attached.join()")==='items,bk,sel,logs,pmts');
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
