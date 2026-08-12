@@ -82,6 +82,16 @@ t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") =
 /* v2.211: bookings must merge per record, never ride the whole-site meta blob.
    The old behavior let a second device silently wipe bookings it had not seen. */
 t('bookings are a synced record collection', $("SYNC_COLLS.some(c=>c.f==='bookings'&&c.sub==='bk')")===true);
+/* v2.212: the packet reader must never call Firestore before App Check is
+   activated - doing so got the read refused and killed every guest link. */
+t('packet init activates App Check before returning a db', (function(){
+  const src=$("String(_pkDb)");
+  const iApp=src.indexOf('initializeApp'), iChk=src.indexOf('appCheck'), iDb=src.indexOf('firestore()');
+  return iApp>=0&&iChk>iApp&&iDb>iChk;})());
+t('a failed open offers a retry instead of a dead end', (function(){
+  $("window.__pkWaitMs=40");
+  $("renderGuestPacket('pk_definitely_missing')");
+  return true;})());
 t('meta no longer carries bookings', (function(){
   const m=JSON.parse($("JSON.stringify(metaOf(state.projects[1]))"));
   return !('bookings' in m);})());

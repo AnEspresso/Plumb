@@ -2880,12 +2880,12 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.211.0 - Bookings now sync as individual records instead of riding inside the site blob. That blob was last writer wins, so two devices holding different copies could silently wipe each others bookings - the vanishing booking is fixed at the root. The guest link also starts loading the moment it opens rather than waiting for the app to wake, a confirmed sub can still suggest new dates when plans change, the calendar step names the Add To Calendar button iPhone shows, and Preferences displays the choice actually saved';
+const PLUMB_VERSION='2.212.0 - The guest link opens again. The head start added in the last build fired its first read before App Check was activated, so the request went out unattested and was refused - every packet path now initializes exactly the way the rest of the app does. A link that still cannot open says which failure it was and offers a Try again button instead of leaving a dead end';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785637800000;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1785638400000;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
@@ -4838,10 +4838,7 @@ if(_PACKET_ON_ARRIVAL){
   _pkPrefetch=new Promise(function(resolve,reject){
     const t0=Date.now();
     (function attempt(){
-      let db=null;
-      try{if(typeof fbConfig==='function'&&fbConfig()&&typeof firebase!=='undefined'&&firebase.firestore){
-        if(!firebase.apps.length)firebase.initializeApp(fbConfig());
-        db=firebase.firestore();}}catch(e){db=null;}
+      const db=(typeof _pkDb==='function')?_pkDb():null;   /* same init path, App Check and all */
       if(db){db.collection('packets').doc(String(_PACKET_ON_ARRIVAL)).get().then(resolve,reject);return;}
       if(Date.now()-t0>(window.__pkWaitMs||8000)){reject(new Error('sdk-timeout'));return;}
       setTimeout(attempt,120);
@@ -11521,10 +11518,19 @@ function _pkToken(){const a=new Uint8Array(16);crypto.getRandomValues(a);
 /* Firestore for packet paths. Guests arrive signed out, so nothing else has
    initialized the Firebase app yet - this helper does, and returns null while
    the deferred SDK scripts are still loading so callers can retry. */
+let _pkAppCheckOn=false;
 function _pkDb(){
   try{
-    if(!fbConfig()||typeof firebase==='undefined'||!firebase.firestore)return null;
+    if(typeof fbConfig!=='function'||!fbConfig())return null;
+    if(typeof firebase==='undefined'||!firebase.firestore)return null;
     if(!firebase.apps.length)firebase.initializeApp(fbConfig());
+    /* App Check must be activated BEFORE the first Firestore call or the
+       request goes out unattested and is denied - the exact order connect uses. */
+    if(!_pkAppCheckOn){
+      try{const ak=(typeof appCheckKey==='function')&&appCheckKey();
+        if(ak&&firebase.appCheck)firebase.appCheck().activate(ak,true);
+        _pkAppCheckOn=true;}catch(e){_pkAppCheckOn=true;}
+    }
     return firebase.firestore();
   }catch(e){return null;}
 }
@@ -11572,7 +11578,8 @@ function renderGuestPacket(token){
   const sc=document.getElementById('guestScrim');sc.classList.add('show');
   const body=document.getElementById('gpBody');
   body.innerHTML='<div class="gp-err">Opening your packet\u2026</div>';
-  const fail=msg=>{body.innerHTML='<div class="gp-brand"><span class="dot"></span>SitePlumb</div><div class="gp-err">'+msg+'</div>';};
+  const fail=(msg,retry)=>{body.innerHTML='<div class="gp-brand"><span class="dot"></span>SitePlumb</div><div class="gp-err">'+msg+'</div>'
+    +(retry?'<button class="gp-btn go" style="max-width:320px;margin:0 auto" onclick="renderGuestPacket(\''+String(token).replace(/[^\w-]/g,'')+'\')">Try again</button>':'');};
   if(window.__packetFixture){_gpSnap=window.__packetFixture;_gpRender();return;}
   /* The SDK scripts are deferred and the Firebase app may not be initialized
      yet on a cold guest arrival - poll briefly instead of failing instantly. */
@@ -11581,8 +11588,16 @@ function renderGuestPacket(token){
     _gpSnap=d.data();
     if((_gpSnap.expires||0)<Date.now()){fail('This link has expired. Reply to the text you got and your builder will send a fresh one.');return;}
     _gpRender();};
-  const miss=()=>fail('This link needs a connection to open. Get a bar of signal and tap it again.');
-  if(_pkPrefetch&&String(token)===String(_PACKET_ON_ARRIVAL)){_pkPrefetch.then(take,miss);return;}
+  const miss=e=>{
+    const code=String((e&&(e.code||e.message))||'');
+    if(code.indexOf('permission')>=0||code.indexOf('denied')>=0)
+      fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.');
+    else fail('This link needs a connection to open. Get a bar of signal and tap Try again.',true);};
+  /* the prefetch is a head start, not the only chance - fall back to a live
+     attempt if it lost its race or came back denied */
+  if(_pkPrefetch&&String(token)===String(_PACKET_ON_ARRIVAL)){
+    const pf=_pkPrefetch;_pkPrefetch=null;
+    pf.then(take,function(){renderGuestPacket(token);});return;}
   const t0=Date.now();const waitMs=(window.__pkWaitMs||8000);
   (function attempt(){
     const db=_pkDb();
