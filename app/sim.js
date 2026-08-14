@@ -953,7 +953,7 @@ t('packet stamping records reply and open questions on the booking', (function()
 t('NEEDS YOU surfaces the suggested dates and the question', (function(){
   $("renderToday()");
   const h=$("document.getElementById('ovToday').innerHTML");
-  return h.indexOf('suggests new dates')>=0&&h.indexOf('asked a question')>=0;})());
+  return h.indexOf('suggests new dates')>=0&&h.indexOf('asked from their packet')>=0;})());
 $("(function(){var b=state.projects[1].bookings[0];delete b.pkResp;delete b.pkQOpen;delete b.pkStamp;renderToday();})()");
 // v2.210: the regressions Peter caught become permanent checks
 t('openConfirm fires its onConfirm callback', (function(){
@@ -1051,6 +1051,19 @@ t('removing a booking clears its Needs You card', (function(){
   return before&&after;
 })());
 t('leaving the calendar redraws Needs You', $("String(closeCal)").indexOf('renderToday')>=0);
+t('Needs You can confirm dates on the card', $("String(renderToday)").indexOf('nyConfirm')>=0&&$("typeof nyConfirm")==='function');
+t('Needs You can answer a question on the card', $("String(renderToday)").indexOf('nySendAnswer')>=0&&$("typeof nySendAnswer")==='function');
+t('house cards whisper a waiting sub', $("String(renderOvCards)").indexOf('ov-whisper')>=0&&$("typeof _siteWhisper")==='function');
+t('a date change whispers on the house card', (function(){
+  $("(function(){var p=state.projects[1];p._whBk={id:'bkWhis',subName:'Whisper Crew',trade:'plumb',start:Date.now()+864e5,end:Date.now()+2*864e5,pkToken:'pkWH',pkResp:{status:'change',start:Date.now()+3*864e5,end:Date.now()+4*864e5,t:1},pkQOpen:0};p.bookings.push(p._whBk);renderOvCards();})()");
+  const html=$("document.getElementById('ovCards').innerHTML");
+  $("(function(){var p=state.projects[1];p.bookings=p.bookings.filter(function(b){return b.id!=='bkWhis';});delete p._whBk;renderOvCards();})()");
+  return html.indexOf('ov-whisper')>=0&&html.indexOf('Whisper Crew asked for')>=0;
+})());
+t('the packet page keeps listening after it opens', $("String(renderGuestPacket)").indexOf('_gpListen')>=0&&$("String(_gpListen)").indexOf('onSnapshot')>=0);
+t('a painted packet is not wiped on a slow retry', $("String(renderGuestPacket)").indexOf('painted')>=0&&$("String(renderGuestPacket)").indexOf('20000')>=0);
+t('answers are stamped onto the booking so Needs You can show them', $("String(_pkStamp)").indexOf('pkQs')>=0);
+t('the live packet is refreshed with new docs and specs', $("typeof _pkPushLive")==='function'&&$("String(_pkPushLive)").indexOf('docs')>=0);
 
 
 /* ════ 14l · PRIVACY & LEGAL + ACCOUNT DELETION ════ */
