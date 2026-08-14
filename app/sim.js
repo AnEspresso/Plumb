@@ -1030,9 +1030,11 @@ t('waiting packets refresh after 3s, not half an hour', (function(){
   return $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-20000)+"},"+now+")")===true
     && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-1000)+",pkResp:null},"+now+")")===false
     && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-4000)+",pkResp:null},"+now+")")===true
-    && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-20000)+",pkResp:{status:'confirmed'}},"+now+")")===false
-    && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-60000)+",pkResp:{status:'confirmed'}},"+now+")")===true;
+    && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-4000)+",pkResp:{status:'confirmed'}},"+now+")")===false
+    && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-20000)+",pkResp:{status:'confirmed'}},"+now+")")===true;
 })());
+t('Needs You listens to packet docs instead of waiting for a reopen', $("typeof _pkListenAll")==='function'&&$("String(_pkListenAll)").indexOf('onSnapshot')>=0);
+t('coming back to the app wakes Needs You', $("typeof _pkWake")==='function'&&$("String(_pkWake)").indexOf('pkSweep')>=0);
 t('a refused first read is not called expired', (function(){
   const src=$("String(renderGuestPacket)");
   return src.indexOf('needs a connection')>=0&&src.indexOf('tries')>=0&&src.indexOf('permission')<0;

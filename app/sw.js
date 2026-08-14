@@ -1,6 +1,6 @@
 /* Plumb service worker — caches the app shell for offline use.
    Bump CACHE when you ship a new build so clients update. */
-const CACHE = 'plumb-v2.218.0';
+const CACHE = 'plumb-v2.219.0';
 const SHELL = [
   './',
   'index.html',

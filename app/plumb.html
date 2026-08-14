@@ -2912,13 +2912,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.218.0 - Needs You lets you confirm and answer on the card. The house card whispers the same line. The packet page stays live';
+const PLUMB_VERSION='2.219.0 - Needs You hears a packet reply the moment it lands, even after you already confirmed';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786674046232;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.218.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786675295212;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.219.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -11652,7 +11652,7 @@ function gpApproveSend(){
   const db=_pkDb();if(!db){toast('Connecting \u2014 try again in a moment');return;}
   try{
     db.collection('packets').doc(token).set(snap)
-      .then(()=>{updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});
+      .then(()=>{updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});try{_pkListenAll();}catch(e){}
         _gpPendingSend=null;closeGuestPreview();
         try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(b.id)));}catch(e){}
         _sharePacketLink(snap,token);logEvent('packetLinkSent',snap.tradeLabel+' \u00b7 '+snap.site);})
@@ -12160,13 +12160,49 @@ function _pkNeedsRefresh(b,now){
   now=now||Date.now();
   const waiting=!b.pkResp||b.pkResp.status==='change'||(b.pkQOpen||0)>0;
   const age=b.pkStamp?(now-b.pkStamp):1e15;
-  return waiting?age>=3000:age>=45000;
+  return waiting?age>=2000:age>=8000;
 }
-let _pkSweepAt=0,_pkTick=null;
+let _pkSweepAt=0,_pkTick=null,_pkSubs={};
+function _pkListenAll(){
+  try{
+    if(appMode()!=='real')return;
+    const db=_pkDb();if(!db)return;
+    const today=dayStart(Date.now());
+    const want=[];
+    visibleProjects().forEach(function(p){(p.bookings||[]).forEach(function(b){
+      if(!b.pkToken)return;
+      if((b.end||0)<today-14*864e5)return;
+      want.push({key:String(p.id)+'|'+String(b.id)+'|'+String(b.pkToken),pid:String(p.id),bid:String(b.id),tok:String(b.pkToken),hot:!b.pkResp||b.pkResp.status==='change'||(b.pkQOpen||0)>0});
+    });});
+    want.sort(function(a,c){return (a.hot===c.hot)?0:(a.hot?-1:1);});
+    const keep={};
+    want.slice(0,12).forEach(function(w){
+      keep[w.key]=1;
+      if(_pkSubs[w.key])return;
+      try{
+        _pkSubs[w.key]=db.collection('packets').doc(w.tok).onSnapshot(function(d){
+          if(!d||!d.exists)return;
+          const p=state.projects.find(function(x){return String(x.id)===w.pid;});
+          const b=p&&(p.bookings||[]).find(function(x){return String(x.id)===w.bid;});
+          if(!p||!b)return;
+          _pkStamp(p,b,d.data());
+          try{renderToday();}catch(e){}
+          try{renderOvCards();}catch(e){}
+        },function(){});
+      }catch(e){}
+    });
+    Object.keys(_pkSubs).forEach(function(k){
+      if(keep[k])return;
+      try{_pkSubs[k]();}catch(e){}
+      delete _pkSubs[k];
+    });
+  }catch(e){}
+}
 function pkSweep(force){
   try{
     if(appMode()!=='real')return;
     const db=_pkDb();if(!db)return;
+    try{_pkListenAll();}catch(e){}
     if(!force&&Date.now()-_pkSweepAt<3000)return;
     _pkSweepAt=Date.now();
     const today=dayStart(Date.now());
@@ -12175,26 +12211,33 @@ function pkSweep(force){
       if(n>=8)return;
       if(!b.pkToken)return;
       if((b.end||0)<today-7*864e5)return;
-      const waiting=!b.pkResp||b.pkResp.status==='change'||(b.pkQOpen||0)>0;
-      if(force){if(!waiting&&!_pkNeedsRefresh(b))return;}
-      else if(!_pkNeedsRefresh(b))return;
+      if(!force&&!_pkNeedsRefresh(b))return;
       n++;
-      db.collection('packets').doc(String(b.pkToken)).get()
-        .then(d=>{if(d.exists){const g=d.data();_pkStamp(p,b,g);_pkPushLive(p,b,g);try{renderToday();}catch(e){}}})
-        .catch(()=>{});
+      const ref=db.collection('packets').doc(String(b.pkToken));
+      const take=function(d){if(d&&d.exists){const g=d.data();_pkStamp(p,b,g);_pkPushLive(p,b,g);try{renderToday();}catch(e){}}};
+      ref.get({source:'server'}).then(take).catch(function(){ref.get().then(take).catch(function(){});});
     }));
   }catch(e){}
+}
+function _pkWake(){
+  _pkSweepAt=0;
+  try{_pkListenAll();}catch(e){}
+  try{pkSweep(true);}catch(e){}
+  try{renderToday();}catch(e){}
 }
 function _pkWatch(){
   if(_pkTick)return;
   _pkTick=setInterval(function(){
+    try{_pkListenAll();}catch(e){}
     if(typeof document!=='undefined'&&document.visibilityState!=='visible')return;
     try{pkSweep();}catch(e){}
   },4000);
 }
 try{if(typeof window!=='undefined'){
-  window.addEventListener('online',function(){_pkSweepAt=0;try{pkSweep(true);}catch(e){}});
-  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){_pkSweepAt=0;try{pkSweep(true);renderToday();}catch(e){}}});
+  window.addEventListener('online',function(){_pkWake();});
+  window.addEventListener('focus',function(){_pkWake();});
+  window.addEventListener('pageshow',function(){_pkWake();});
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')_pkWake();});
   _pkWatch();
 }}catch(e){}
 function nyConfirm(pid,bid,start,end){
