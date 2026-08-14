@@ -186,7 +186,7 @@ t('client attaches only its five colls', $("__g.attached.join()")==='items,bk,se
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
-t('SEED_VERSION 12',$('SEED_VERSION')===12);
+t('SEED_VERSION 15',$('SEED_VERSION')===15);
 t('10 seed sites',$('state.projects.length')===10);
 t('no boot errors',w.__thrown.length===0,w.__thrown[0]);
 
@@ -953,7 +953,7 @@ t('packet stamping records reply and open questions on the booking', (function()
 t('NEEDS YOU surfaces the suggested dates and the question', (function(){
   $("renderToday()");
   const h=$("document.getElementById('ovToday').innerHTML");
-  return h.indexOf('nyConfirm')>=0&&(h.indexOf('asked a question')>=0||h.indexOf('nyOpenQ')>=0||h.indexOf('\u201c')>=0);})());
+  return h.indexOf('Date change')>=0&&h.indexOf('Question')>=0&&h.indexOf('nyOpenAsk')>=0;})());
 $("(function(){var b=state.projects[1].bookings[0];delete b.pkResp;delete b.pkQOpen;delete b.pkStamp;renderToday();})()");
 // v2.210: the regressions Peter caught become permanent checks
 t('openConfirm fires its onConfirm callback', (function(){
@@ -1053,16 +1053,34 @@ t('removing a booking clears its Needs You card', (function(){
   return before&&after;
 })());
 t('leaving the calendar redraws Needs You', $("String(closeCal)").indexOf('renderToday')>=0);
-t('Needs You can confirm dates on the card', $("String(renderToday)").indexOf('nyConfirm')>=0&&$("typeof nyConfirm")==='function');
-t('Needs You can answer a question on the card', $("String(renderToday)").indexOf('nyOpenQ')>=0&&$("typeof nySendAnswer")==='function');
+t('Needs You names the kind of work', $("String(renderToday)").indexOf('Date change')>=0&&$("String(renderToday)").indexOf('Question')>=0);
+t('Needs You covers the six new kinds', $("String(renderToday)").indexOf('They declined')>=0&&$("String(renderToday)").indexOf('Waiting on them')>=0&&$("String(renderToday)").indexOf('Site not ready')>=0&&$("String(renderToday)").indexOf('Homeowner wrote you')>=0&&$("String(renderToday)").indexOf('On deck, not booked')>=0&&$("String(_nyOnDeck)").indexOf('prevDone')>=0);
+t('a waiting packet is gated to two days', $("String(_nyWaiting)").indexOf('48*3600*1000')>=0);
+t('site-not-ready is only today or tomorrow', $("String(_nySiteNotReady)").indexOf('864e5')>=0);
+t('a date change opens the booking, not a one-tap confirm', $("String(renderToday)").indexOf("go:`openBk(")>=0&&$("String(renderToday)").indexOf('nyConfirm')<0);
+t('a date change opens the booking, not a one-tap confirm', $("String(renderToday)").indexOf("go:`openBk(")>=0&&$("String(renderToday)").indexOf('nyConfirm')<0);
+t('a question opens its own sheet', $("String(renderToday)").indexOf('nyOpenAsk')>=0&&$("typeof nyOpenAsk")==='function');
 t('packet cards do not use the guest-page black button', $("String(renderToday)").indexOf('gp-btn go')<0);
 t('the red mark is reserved for blockers', $("String(renderToday)").indexOf("lvl:'msg'")>=0);
+t('confirming dates writes a decision receipt', $("String(bkAcceptChange)").indexOf('pkLogAdd')>=0&&$("typeof openPkLog")==='function');
+t('the example build includes a packet date change', (function(){
+  const b=JSON.parse($("JSON.stringify((state.projects.find(function(p){return p.id==='p2';})||{}).bookings||[])"));
+  return b.some(function(x){return x.id==='bk_p2d'&&x.pkResp&&x.pkResp.status==='change'&&x.pkQOpen===1;});
+})());
+t('the example build includes declined, waiting, and a homeowner note', (function(){
+  const p=JSON.parse($("JSON.stringify(state.projects.find(function(x){return x.id==='p2';})||{})"));
+  const declined=(p.bookings||[]).some(function(b){return b.status==='declined';});
+  const waiting=(p.bookings||[]).some(function(b){return b.pkSent&&!b.pkResp;});
+  const ho=(p.items||[]).some(function(i){return i.client;});
+  const blocked=(p.avail||[]).some(function(a){return a.subName==='Clearwater Plumbing';});
+  return declined&&waiting&&ho&&blocked;
+})());
 t('house cards whisper a waiting sub', $("String(renderOvCards)").indexOf('ov-whisper')>=0&&$("typeof _siteWhisper")==='function');
 t('a date change whispers on the house card', (function(){
   $("(function(){var p=state.projects[1];p._whBk={id:'bkWhis',subName:'Whisper Crew',trade:'plumb',start:Date.now()+864e5,end:Date.now()+2*864e5,pkToken:'pkWH',pkResp:{status:'change',start:Date.now()+3*864e5,end:Date.now()+4*864e5,t:1},pkQOpen:0};p.bookings.push(p._whBk);renderOvCards();})()");
   const html=$("document.getElementById('ovCards').innerHTML");
   $("(function(){var p=state.projects[1];p.bookings=p.bookings.filter(function(b){return b.id!=='bkWhis';});delete p._whBk;renderOvCards();})()");
-  return html.indexOf('ov-whisper')>=0&&html.indexOf('Whisper Crew asked for')>=0;
+  return html.indexOf('ov-whisper')>=0&&html.indexOf('asked for')>=0;
 })());
 t('the packet page keeps listening after it opens', $("String(renderGuestPacket)").indexOf('_gpListen')>=0&&$("String(_gpListen)").indexOf('onSnapshot')>=0);
 t('a painted packet is not wiped on a slow retry', $("String(renderGuestPacket)").indexOf('painted')>=0&&$("String(renderGuestPacket)").indexOf('20000')>=0);
