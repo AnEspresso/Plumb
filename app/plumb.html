@@ -462,6 +462,8 @@
   .gp-cal-acts{display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
   .gp-cal-reset{border:0;background:#1B1916;color:#F6F1E7;border-radius:999px;padding:9px 16px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;}
   .gp-cal-ok{width:42px;height:42px;border-radius:50%;border:0;background:var(--oak);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .gp-chosen{display:block;width:100%;border:0;background:transparent;font-family:'Source Serif 4',Georgia,serif;font-size:22px;font-weight:600;letter-spacing:-.01em;color:var(--ink);text-align:center;padding:2px 4px 12px;cursor:pointer;}
+  .bk-cal{display:none;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px;margin:0 0 10px;}
   .gp-foot{font-size:12px;color:var(--ink-3);margin-top:22px;text-align:center;line-height:1.6;}
   .gp-err{text-align:center;padding:60px 10px;font-size:16px;color:var(--ink-2);line-height:1.6;}
   /* ───── in-app legal viewer: policies open OVER the app, never navigating
@@ -1903,7 +1905,11 @@ body.on-tour .tour-card{display:block;}
         <select id="bkSub" style="display:none"></select>
         <button class="pick-btn" id="bkSiteBtn" onclick="bkPickSite()"><span id="bkSiteBtnT">Site</span><span class="chev">›</span></button>
         <button class="pick-btn" id="bkSubBtn" onclick="bkPickSub()"><span id="bkSubBtnT">Subcontractor</span><span class="chev">›</span></button>
-        <div class="setup-roster-row"><input id="bkStart" type="date"><input id="bkEnd" type="date"></div>
+        <button type="button" class="pick-btn" id="bkRangeBtn" onclick="bkCalToggle()"><span id="bkRangeLabel">Choose dates</span><span class="chev">›</span></button>
+        <input type="hidden" id="bkStart"><input type="hidden" id="bkEnd">
+        <div class="bk-cal" id="bkCal"><div id="bkCalMount"></div>
+          <div class="gp-cal-acts"><button type="button" class="gp-cal-reset" onclick="bkCalReset()">Reset</button>
+          <button type="button" class="gp-cal-ok" onclick="bkCalDone()" aria-label="Use these dates">✓</button></div></div>
         <input id="bkNote" placeholder="Note for sub — gate code, scope…" style="font-size:13.5px">
         <div id="bkPacket"></div>
         <div id="bkGuest"></div>
@@ -2899,13 +2905,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.215.0 - Suggesting new dates opens one calendar. Tap a start, tap an end, check, then send a note. No continue step';
+const PLUMB_VERSION='2.216.0 - The dates you picked stay above the note. Scheduling a sub uses the same calendar, not the phone\u2019s';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786669077923;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.215.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786670968090;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.216.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -11005,11 +11011,11 @@ function bkSubModify(pid,id){
   const siteSel=document.getElementById('bkSite');siteSel.innerHTML='<option>'+esc(p.street||p.name)+'</option>';siteSel.disabled=true;
   document.getElementById('bkSub').style.display='none';
   document.getElementById('bkSiteLbl').textContent='Site';
-  document.getElementById('bkStart').value=new Date(b.start).toISOString().slice(0,10);
-  document.getElementById('bkEnd').value=new Date(b.end).toISOString().slice(0,10);
+  document.getElementById('bkStart').value=_gpISO(b.start);
+  document.getElementById('bkEnd').value=_gpISO(b.end||b.start);
   document.getElementById('bkNote').value=b.note||'';document.getElementById('bkNote').placeholder='Why the change? (optional)';
   document.getElementById('bkDelete').style.display='none';
-  bkSyncBtns();
+  bkSyncBtns();_bkCalHide();
   document.getElementById('bkScrim').classList.add('show');}
 function delAvail(pid,id){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;deleteAvail(p,id);renderDay();renderCal();}
 function openBk(ref,defTs){
@@ -11028,8 +11034,8 @@ function openBk(ref,defTs){
       bkRenderGuestRow(gp,(gp.bookings||[]).find(x=>String(x.id)===String(bid)));}catch(e){}
     siteSel.value=pid;siteSel.disabled=true;
     bkFillSubs(pid);subSel.value=b.subName;subSel.disabled=true;
-    document.getElementById('bkStart').value=new Date(b.start).toISOString().slice(0,10);
-    document.getElementById('bkEnd').value=new Date(b.end).toISOString().slice(0,10);
+    document.getElementById('bkStart').value=_gpISO(b.start);
+    document.getElementById('bkEnd').value=_gpISO(b.end||b.start);
     document.getElementById('bkNote').value=b.note||'';
     del.style.display='';
   }else{
@@ -11041,14 +11047,14 @@ function openBk(ref,defTs){
       siteSel.innerHTML=mine.map(p=>`<option value="${p.id}">${esc(p.street||p.name)}</option>`).join('');
     }
     bkFillSubs(siteSel.value);
-    const d=new Date(defTs||Date.now()).toISOString().slice(0,10);
+    const d=_gpISO(defTs||Date.now());
     document.getElementById('bkStart').value=d;document.getElementById('bkEnd').value=d;
     const _bn=document.getElementById('bkNote');_bn.value='';_bn.placeholder=calIsSub()?'Note for your builder (optional)…':'Note for sub — gate code, scope…';del.style.display='none';
   }
   document.getElementById('bkSiteLbl').textContent=calIsSub()?'Saved under site':'Site';
   subSel.style.display='none';   // native select is the hidden source of truth; bkSubBtn is the visible picker
   siteSel.onchange=()=>{bkFillSubs(siteSel.value);bkRenderPacket();};
-  bkSyncBtns();bkRenderPacket();
+  bkSyncBtns();bkRenderPacket();_bkCalHide();
   document.getElementById('bkScrim').classList.add('show');}
 function bkFillSubs(pid){
   const p=state.projects.find(x=>String(x.id)===String(pid));
@@ -11136,6 +11142,42 @@ function bkOfferInvite(p,name,wasAdded){
     okLabel:'Send invite',cancelLabel:'Not now',
     onConfirm:()=>{try{Data.setActive(p.id);createInvite('sub',s.id);}catch(e){}}});}
 function closeBk(){document.getElementById('bkScrim').classList.remove('show');_bkSubMod=null;}
+function bkSyncRangeLabel(){const el=document.getElementById('bkRangeLabel');if(!el)return;el.textContent=_rangeLabel((document.getElementById('bkStart')||{}).value||'',(document.getElementById('bkEnd')||{}).value||'');}
+function _bkCalHide(){const cal=document.getElementById('bkCal');if(cal)cal.style.display='none';bkSyncRangeLabel();}
+function bkCalToggle(){
+  const cal=document.getElementById('bkCal');if(!cal)return;
+  if(cal.style.display==='block'){cal.style.display='none';return;}
+  cal.style.display='block';
+  const sv=(document.getElementById('bkStart')||{}).value;
+  _bkCalCursor=sv?new Date(sv+'T12:00:00'):new Date();
+  _bkCalCursor=new Date(_bkCalCursor.getFullYear(),_bkCalCursor.getMonth(),1);
+  bkRenderCal();
+}
+function bkChgMonth(d){
+  if(!_bkCalCursor){const n=new Date();_bkCalCursor=new Date(n.getFullYear(),n.getMonth(),1);}
+  _bkCalCursor=new Date(_bkCalCursor.getFullYear(),_bkCalCursor.getMonth()+d,1);
+  bkRenderCal();
+}
+function bkPickDay(iso){
+  const st=document.getElementById('bkStart'),en=document.getElementById('bkEnd');if(!st||!en)return;
+  if(!st.value||(st.value&&en.value)){st.value=iso;en.value='';}
+  else if(iso<st.value){en.value=st.value;st.value=iso;}
+  else en.value=iso;
+  bkRenderCal();
+}
+function bkRenderCal(){
+  const mount=document.getElementById('bkCalMount');if(!mount)return;
+  if(!_bkCalCursor){const n=new Date();_bkCalCursor=new Date(n.getFullYear(),n.getMonth(),1);}
+  mount.innerHTML=_rangeCalHTML(_bkCalCursor,(document.getElementById('bkStart')||{}).value||'',(document.getElementById('bkEnd')||{}).value||'','bkPickDay','bkChgMonth');
+  bkSyncRangeLabel();
+}
+function bkCalReset(){const st=document.getElementById('bkStart'),en=document.getElementById('bkEnd');if(st)st.value='';if(en)en.value='';bkRenderCal();}
+function bkCalDone(){
+  const st=document.getElementById('bkStart');
+  if(!st||!st.value){toast('Pick a start date');return;}
+  const en=document.getElementById('bkEnd');if(en&&!en.value)en.value=st.value;
+  _bkCalHide();
+}
 function bkSave(){
   const start=Date.parse(document.getElementById('bkStart').value+'T12:00:00');
   const end=Date.parse((document.getElementById('bkEnd').value||document.getElementById('bkStart').value)+'T12:00:00');
@@ -11593,7 +11635,7 @@ function _smsOrCopy(msg){
   try{navigator.clipboard&&navigator.clipboard.writeText(msg).then(()=>toast('Message copied \u2014 paste it into a text'));}catch(e){}
 }
 function openGuestPreview(snap){window.__packetFixture=snap;renderGuestPacket('preview');}
-let _gpSnap=null,_gpToken=null,_gpCalCursor=null;
+let _gpSnap=null,_gpToken=null,_gpCalCursor=null,_bkCalCursor=null;
 function renderGuestPacket(token){
   _gpToken=token;
   const sc=document.getElementById('guestScrim');sc.classList.add('show');
@@ -11728,13 +11770,41 @@ function _gpRender(){
 function closeGuestPreview(){try{delete window.__packetFixture;}catch(e){}
   document.getElementById('guestScrim').classList.remove('show');}
 function _gpISO(ts){const d=new Date(Number(ts));const p2=v=>String(v).padStart(2,'0');return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());}
+function _rangeLabel(sv,ev){if(!sv)return 'Choose dates';const a=new Date(sv+'T12:00:00'),b=new Date((ev||sv)+'T12:00:00');const f=d=>d.toLocaleDateString(undefined,{month:'short',day:'numeric'});return sv===(ev||sv)?f(a):(f(a)+' \u2013 '+f(b));}
+function _rangeCalHTML(cursor,sv,ev,pickFn,monthFn){
+  if(!cursor){const n=new Date();cursor=new Date(n.getFullYear(),n.getMonth(),1);}
+  const y=cursor.getFullYear(),m=cursor.getMonth();
+  const first=new Date(y,m,1);
+  const grid0=new Date(y,m,1-first.getDay());
+  const today=_gpISO(Date.now());
+  let h='<div class="gp-cal-nav"><button type="button" onclick="'+monthFn+'(-1)" aria-label="Previous month">\u2039</button>'
+    +'<div class="m">'+first.toLocaleDateString(undefined,{month:'long',year:'numeric'})+'</div>'
+    +'<button type="button" onclick="'+monthFn+'(1)" aria-label="Next month">\u203a</button></div>'
+    +'<div class="gp-cal-dow">'+['S','M','T','W','T','F','S'].map(d=>'<span>'+d+'</span>').join('')+'</div><div class="gp-cal-grid">';
+  for(let i=0;i<42;i++){
+    const d=new Date(grid0.getFullYear(),grid0.getMonth(),grid0.getDate()+i);
+    const iso=_gpISO(d.getTime());
+    const cls=['gp-d'];
+    if(d.getMonth()!==m)cls.push('out');
+    if(iso===today)cls.push('today');
+    if(sv&&iso===sv)cls.push('start');
+    if(ev&&iso===ev)cls.push('end');
+    if(sv&&ev&&iso>sv&&iso<ev)cls.push('mid');
+    if(sv&&ev&&iso===sv&&sv!==ev)cls.push('mid-r');
+    if(sv&&ev&&iso===ev&&sv!==ev)cls.push('mid-l');
+    if(sv&&!ev&&iso===sv)cls.push('end');
+    h+='<button type="button" class="'+cls.join(' ')+'" onclick="'+pickFn+'(\''+iso+'\')"><span>'+d.getDate()+'</span></button>';
+  }
+  return h+'</div>';
+}
 function _gpChgHTML(g){
   return '<div class="gp-chg" id="gpChg">'
     +'<input type="hidden" id="gpStart"><input type="hidden" id="gpEnd">'
     +'<div id="gpChgCal"><div id="gpCalMount"></div>'
     +'<div class="gp-cal-acts"><button type="button" class="gp-cal-reset" onclick="gpCalReset()">Reset</button>'
     +'<button type="button" class="gp-cal-ok" onclick="gpCalDone()" aria-label="Use these dates">\u2713</button></div></div>'
-    +'<div id="gpChgNote" style="display:none"><label>Note <span style="font-weight:400;letter-spacing:0;text-transform:none">(optional)</span></label>'
+    +'<div id="gpChgNote" style="display:none"><button type="button" class="gp-chosen" id="gpChosen" onclick="gpCalBack()"></button>'
+    +'<label>Note <span style="font-weight:400;letter-spacing:0;text-transform:none">(optional)</span></label>'
     +'<textarea id="gpNote" rows="2" placeholder="Crew is on another job until Thursday"></textarea>'
     +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendChange()">Send to '+esc(g.builder)+'</button></div></div>';
 }
@@ -11758,31 +11828,9 @@ function gpPickDay(iso){
 function gpRenderCal(){
   const mount=document.getElementById('gpCalMount');if(!mount)return;
   if(!_gpCalCursor){const n=new Date();_gpCalCursor=new Date(n.getFullYear(),n.getMonth(),1);}
-  const y=_gpCalCursor.getFullYear(),m=_gpCalCursor.getMonth();
-  const first=new Date(y,m,1);
-  const grid0=new Date(y,m,1-first.getDay());
   const sv=(document.getElementById('gpStart')||{}).value||'';
   const ev=(document.getElementById('gpEnd')||{}).value||'';
-  const today=_gpISO(Date.now());
-  let h='<div class="gp-cal-nav"><button type="button" onclick="gpChgMonth(-1)" aria-label="Previous month">\u2039</button>'
-    +'<div class="m">'+first.toLocaleDateString(undefined,{month:'long',year:'numeric'})+'</div>'
-    +'<button type="button" onclick="gpChgMonth(1)" aria-label="Next month">\u203a</button></div>'
-    +'<div class="gp-cal-dow">'+['S','M','T','W','T','F','S'].map(d=>'<span>'+d+'</span>').join('')+'</div><div class="gp-cal-grid">';
-  for(let i=0;i<42;i++){
-    const d=new Date(grid0.getFullYear(),grid0.getMonth(),grid0.getDate()+i);
-    const iso=_gpISO(d.getTime());
-    const cls=['gp-d'];
-    if(d.getMonth()!==m)cls.push('out');
-    if(iso===today)cls.push('today');
-    if(sv&&iso===sv)cls.push('start');
-    if(ev&&iso===ev)cls.push('end');
-    if(sv&&ev&&iso>sv&&iso<ev)cls.push('mid');
-    if(sv&&ev&&iso===sv&&sv!==ev)cls.push('mid-r');
-    if(sv&&ev&&iso===ev&&sv!==ev)cls.push('mid-l');
-    if(sv&&!ev&&iso===sv)cls.push('end');
-    h+='<button type="button" class="'+cls.join(' ')+'" onclick="gpPickDay(\''+iso+'\')"><span>'+d.getDate()+'</span></button>';
-  }
-  mount.innerHTML=h+'</div>';
+  mount.innerHTML=_rangeCalHTML(_gpCalCursor,sv,ev,'gpPickDay','gpChgMonth');
 }
 function gpCalReset(){
   const s=document.getElementById('gpStart'),e=document.getElementById('gpEnd');
@@ -11795,7 +11843,14 @@ function gpCalDone(){
   gpChgAlign();
   const cal=document.getElementById('gpChgCal'),note=document.getElementById('gpChgNote');
   if(cal)cal.style.display='none';if(note)note.style.display='';
+  const ch=document.getElementById('gpChosen');
+  if(ch)ch.textContent=_rangeLabel(s.value,(document.getElementById('gpEnd')||{}).value);
   const n=document.getElementById('gpNote');if(n){try{n.focus();}catch(err){}}
+}
+function gpCalBack(){
+  const cal=document.getElementById('gpChgCal'),note=document.getElementById('gpChgNote');
+  if(cal)cal.style.display='';if(note)note.style.display='none';
+  gpRenderCal();
 }
 function gpChgNext(){gpCalDone();}
 function gpToggleChange(){
@@ -12034,6 +12089,7 @@ function bkAcceptChange(pid,bid,start,end){
     const sEl=document.getElementById('bkStart'),eEl=document.getElementById('bkEnd');
     const iso=ts=>{const d=new Date(ts);const p2=v=>String(v).padStart(2,'0');return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());};
     if(sEl)sEl.value=iso(ns);if(eEl)eEl.value=iso(ne);
+    try{bkSyncRangeLabel();}catch(err){}
   }catch(e){}
   const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));
   if(b&&b.pkToken&&appMode()==='real'&&_pkDb()){

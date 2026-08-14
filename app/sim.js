@@ -912,7 +912,7 @@ $("gpPickDay('2030-05-08')");
 t('second tap is the end', el('gpStart').value==='2030-05-06'&&el('gpEnd').value==='2030-05-08');
 t('range paints the days between', el('gpCalMount').innerHTML.indexOf('mid')>=0);
 $("gpCalDone()");
-t('check reveals the note, no continue', el('gpChgNote')&&el('gpChgNote').style.display!=='none'&&el('gpChgCal').style.display==='none'&&el('gpNote'));
+t('check reveals the note and the dates', el('gpChgNote')&&el('gpChgNote').style.display!=='none'&&el('gpChgCal').style.display==='none'&&el('gpNote')&&el('gpChosen')&&el('gpChosen').textContent.indexOf('May')>=0);
 $("document.getElementById('gpNote').value='Crew frees up Tuesday'");
 $("gpSendChange()");
 t('change request records status, dates and note', (function(){const r=JSON.parse($("JSON.stringify(_gpSnap.resp)"));return r.status==='change'&&r.start>0&&r.note==='Crew frees up Tuesday';})());
@@ -1016,6 +1016,15 @@ t('accepting a change writes the new dates into the open booking fields', (funct
   return el('bkStart').value===iso(1900000000000)&&el('bkEnd').value===iso(1900172800000);
 })());
 t('Confirm these dates is the accept control', $("String(_bkGuestStatusHTML)").indexOf('Confirm these dates')>=0);
+$("openBk()");
+t('schedule sheet uses the SitePlumb calendar, not the phone picker', el('bkStart').type==='hidden'&&el('bkRangeLabel')&&el('bkCalMount'));
+$("bkCalToggle()");
+t('tapping the dates opens the range calendar', el('bkCal')&&el('bkCal').style.display==='block');
+$("bkPickDay('2026-08-17')");
+$("bkPickDay('2026-08-20')");
+$("bkCalDone()");
+t('check writes the range onto the schedule sheet', el('bkStart').value==='2026-08-17'&&el('bkEnd').value==='2026-08-20'&&el('bkCal').style.display==='none'&&el('bkRangeLabel').textContent.indexOf('17')>=0);
+$("closeBk()");
 t('waiting packets refresh after 12s, not half an hour', (function(){
   const now=2000000000000;
   return $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-20000)+"},"+now+")")===true
