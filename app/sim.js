@@ -894,7 +894,7 @@ t('snapshot docs are sub-audience names only', Array.isArray(snap.docs)&&snap.do
 // guest render from a fixture (exactly the offline/QA path)
 $("window.__packetFixture="+JSON.stringify(snap));
 $("renderGuestPacket('fixture-test')");
-t('guest page renders with both decision buttons', el('gpBody').innerHTML.indexOf('These dates work')>=0&&el('gpBody').innerHTML.indexOf('Suggest a change')>=0);
+t('guest page renders with both decision buttons', el('gpBody').innerHTML.indexOf('These dates work')>=0&&el('gpBody').innerHTML.indexOf('Suggest different dates')>=0);
 t('guest page shows the specs it was sent', el('gpBody').innerHTML.indexOf('install specs')>=0);
 t('guest overlay is showing', $("document.getElementById('guestScrim').classList.contains('show')")===true);
 // one-tap confirm flips to the confirmed state with a calendar button
@@ -904,7 +904,10 @@ t('ics is well formed', (function(){const i=$("gpIcs(_gpSnap)");return i.indexOf
 // change-request path records only resp
 $("_gpSnap.resp=null;_gpRender()");
 $("gpToggleChange()");
+t('change form starts on the start date only', el('gpChgStep1')&&el('gpChgStep1').style.display!=='none'&&el('gpChgStep2')&&el('gpChgStep2').style.display==='none');
 $("document.getElementById('gpStart').value='2030-05-06'");
+$("gpChgNext()");
+t('continue reveals the end date', el('gpChgStep2')&&el('gpChgStep2').style.display!=='none');
 $("document.getElementById('gpEnd').value='2030-05-08'");
 $("document.getElementById('gpNote').value='Crew frees up Tuesday'");
 $("gpSendChange()");
@@ -1000,8 +1003,26 @@ t('demo mode labels it a preview', el('bkGuest').innerHTML.indexOf('Preview the 
 $("bkRenderGuestRow(null,null)");
 t('guest row clears for new bookings', el('bkGuest').innerHTML==='');
 // accept-change applies the sub dates to the booking
+$("document.getElementById('bkStart').value='2026-08-14'");
+$("document.getElementById('bkEnd').value='2026-08-20'");
 $("(function(){const p=state.projects[1];const b=p.bookings[0];b.pkToken='pkTEST';bkAcceptChange(p.id,b.id,1900000000000,1900172800000);})()");
-t('accepting a change rewrites the booking to the suggested dates', (function(){const b=JSON.parse($("JSON.stringify(state.projects[1].bookings[0])"));const ds=t=>{return Number($('dayStart('+t+')'));};return b.start===ds(1900000000000)&&b.end===ds(1900172800000)&&b.status==='confirmed';})());
+t('accepting a change rewrites the booking to the suggested dates', (function(){const b=JSON.parse($("JSON.stringify(state.projects[1].bookings[0])"));const ds=t=>{return Number($('dayStart('+t+')'));};return b.start===ds(1900000000000)&&b.end===ds(1900172800000)&&b.status==='confirmed'&&b.pkResp&&b.pkResp.status==='confirmed';})());
+t('accepting a change writes the new dates into the open booking fields', (function(){
+  const iso=ts=>{const d=new Date(Number($('dayStart('+ts+')')));const p2=v=>String(v).padStart(2,'0');return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());};
+  return el('bkStart').value===iso(1900000000000)&&el('bkEnd').value===iso(1900172800000);
+})());
+t('Confirm these dates is the accept control', $("String(_bkGuestStatusHTML)").indexOf('Confirm these dates')>=0);
+t('waiting packets refresh after 12s, not half an hour', (function(){
+  const now=2000000000000;
+  return $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-20000)+"},"+now+")")===true
+    && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-1000)+",pkResp:null},"+now+")")===false
+    && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-20000)+",pkResp:{status:'confirmed'}},"+now+")")===false
+    && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-60000)+",pkResp:{status:'confirmed'}},"+now+")")===true;
+})());
+t('a refused first read is not called expired', (function(){
+  const src=$("String(renderGuestPacket)");
+  return src.indexOf('needs a connection')>=0&&src.indexOf('tries')>=0&&src.indexOf('permission')<0;
+})());
 
 /* ════ 14l · PRIVACY & LEGAL + ACCOUNT DELETION ════ */
 S('legal');

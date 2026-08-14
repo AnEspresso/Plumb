@@ -1569,13 +1569,15 @@ body.on-tour .tour-card{display:block;}
 .jc-ov{color:var(--clay)}
 .jc-un{color:var(--sage)}
 </style>
-  <!-- Backend sync (optional): Firebase Firestore. Loads only when online; app is fully usable without it. -->
-  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js"></script>
+  <!-- Backend sync. Packet links load the SDK immediately so the first read is attested. Everyone else keeps defer. -->
+  <script>
+  (function(){
+    var pk=false;try{pk=/[?&]packet=/.test(location.search);}catch(e){}
+    var b='https://www.gstatic.com/firebasejs/10.12.5/';
+    var f=['firebase-app-compat.js','firebase-auth-compat.js','firebase-firestore-compat.js','firebase-storage-compat.js','firebase-messaging-compat.js','firebase-app-check-compat.js'];
+    for(var i=0;i<f.length;i++) document.write('<script'+(pk?'':' defer')+' src="'+b+f[i]+'"><\/script>');
+  })();
+  </script>
 </head>
 <body>
 <div class="device">
@@ -2880,13 +2882,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.212.0 - The guest link opens again. The head start added in the last build fired its first read before App Check was activated, so the request went out unattested and was refused - every packet path now initializes exactly the way the rest of the app does. A link that still cannot open says which failure it was and offers a Try again button instead of leaving a dead end';
+const PLUMB_VERSION='2.213.0 - Guest links retry a refused first read instead of calling the link expired. Suggesting new dates asks for a start, then an end. Confirming those dates is a real button that updates the booking fields. Packet replies refresh within seconds so Needs You is not half an hour late';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1785638400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.25.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786664247126;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.213.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -6293,7 +6295,7 @@ function renderToday(){
   try{pkSweep();}catch(e){}
   // 0. packet replies — a sub suggested new dates or asked something, answer fast
   projs.forEach(p=>(p.bookings||[]).forEach(b=>{
-    if(b.pkResp&&b.pkResp.status==='change'&&!(b.start===b.pkResp.start&&(b.end===b.pkResp.end||!b.pkResp.start))){
+    if(b.pkResp&&b.pkResp.status==='change'&&!(dayStart(b.start)===dayStart(b.pkResp.start||b.start)&&(dayStart(b.end)===dayStart(b.pkResp.end||b.end)||!b.pkResp.start))){
       warns.push({lvl:'warn',html:`<b>${esc(b.subName)}</b> suggests new dates for ${esc(specLabel(tdTradeOf(p,b))||'their work')} at ${esc(p.street||p.name)}${b.pkResp.start?` \u2014 ${fmtWin({start:b.pkResp.start,end:b.pkResp.end||b.pkResp.start})}`:''}`,go:`openBk('${p.id}|${b.id}')`,ts:b.pkResp.t||b.start});
     }
     if((b.pkQOpen||0)>0){
@@ -11053,9 +11055,9 @@ function bkRenderPacket(){
   box.innerHTML=`<div class="bk-pkt ${ready?'ok':'warn'}">
       <div class="bk-pkt-row">
         <span class="bk-pkt-i">${ready?'\u2713':'\u26a0'}</span>
-        <span class="bk-pkt-t">${ready?'Install packet is ready':'Packet not verified'}</span>
+        <span class="bk-pkt-t">${ready?'Install specs signed off':'Install specs not signed off'}</span>
       </div>
-      ${ready?'<div class="bk-pkt-d">Specs complete and signed off \u2014 good to schedule.</div>':`<div class="bk-pkt-d">${esc(why||'Review before scheduling')}</div>`}
+      ${ready?'<div class="bk-pkt-d">Specs complete and signed off \u2014 good to schedule.</div>':`<div class="bk-pkt-d">${esc(why||'Review the specs before scheduling')}</div>`}
       <button class="bk-pkt-btn" onclick="bkOpenPacket()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9zM9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 11h6M9 15h6"/></svg>${ready?'View install packet':'Review the packet'}</button>
     </div>`;}
 function bkOpenPacket(){
@@ -11135,11 +11137,11 @@ function bkSave(){
   if(_bkEdit){
     const ep=state.projects.find(x=>String(x.id)===String(_bkEdit.pid));
     const etrade=bkSelTrade()||'';
-    const applyEdit=()=>{updateBooking(ep,_bkEdit.bid,{start:start,end:end,note:note,status:'pending'});_bkArmSpecs(ep,bkSelTrade()||'',start);toast('Booking updated — the sub will be asked to confirm');done();};
+    const applyEdit=()=>{const cur=(ep.bookings||[]).find(x=>String(x.id)===String(_bkEdit.bid));const kept=cur&&cur.pkResp&&cur.pkResp.status==='confirmed'&&dayStart(cur.pkResp.start||start)===dayStart(start)&&dayStart(cur.pkResp.end||end)===dayStart(end);updateBooking(ep,_bkEdit.bid,{start:start,end:end,note:note,status:kept?'confirmed':'pending'});_bkArmSpecs(ep,bkSelTrade()||'',start);toast(kept?'Booking saved':'Booking updated — the sub will be asked to confirm');done();};
     if(etrade&&!packetReady(ep,etrade)){
       const gaps=tradeSpecGaps(ep,etrade).length;
-      const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'the packet isn’t signed off yet';
-      openConfirm({title:specLabel(etrade)+'’s packet isn’t verified',
+      const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'install specs are not signed off yet';
+      openConfirm({title:specLabel(etrade)+' specs are not signed off',
         body:'Heads up — '+why+'. The sub may show up before the specs are final.',
         okLabel:'Save anyway',cancelLabel:'Review packet',
         onConfirm:applyEdit,onCancel:()=>{try{bkOpenPacket();}catch(e){}}});
@@ -11578,40 +11580,41 @@ function renderGuestPacket(token){
   const sc=document.getElementById('guestScrim');sc.classList.add('show');
   const body=document.getElementById('gpBody');
   body.innerHTML='<div class="gp-err">Opening your packet\u2026</div>';
-  const fail=(msg,retry)=>{body.innerHTML='<div class="gp-brand"><span class="dot"></span>SitePlumb</div><div class="gp-err">'+msg+'</div>'
-    +(retry?'<button class="gp-btn go" style="max-width:320px;margin:0 auto" onclick="renderGuestPacket(\''+String(token).replace(/[^\w-]/g,'')+'\')">Try again</button>':'');};
+  const tok=String(token).replace(/[^\w-]/g,'');
+  const fail=(msg)=>{body.innerHTML='<div class="gp-brand"><span class="dot"></span>SitePlumb</div><div class="gp-err">'+msg+'</div>'
+    +'<button class="gp-btn go" style="max-width:320px;margin:0 auto" onclick="renderGuestPacket(\''+tok+'\')">Try again</button>';};
   if(window.__packetFixture){_gpSnap=window.__packetFixture;_gpRender();return;}
-  /* The SDK scripts are deferred and the Firebase app may not be initialized
-     yet on a cold guest arrival - poll briefly instead of failing instantly. */
   const take=d=>{
-    if(!d||!d.exists){fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.');return;}
-    _gpSnap=d.data();
-    if((_gpSnap.expires||0)<Date.now()){fail('This link has expired. Reply to the text you got and your builder will send a fresh one.');return;}
-    _gpRender();};
-  const miss=e=>{
-    const code=String((e&&(e.code||e.message))||'');
-    if(code.indexOf('permission')>=0||code.indexOf('denied')>=0)
-      fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.');
-    else fail('This link needs a connection to open. Get a bar of signal and tap Try again.',true);};
-  /* the prefetch is a head start, not the only chance - fall back to a live
-     attempt if it lost its race or came back denied */
-  if(_pkPrefetch&&String(token)===String(_PACKET_ON_ARRIVAL)){
-    const pf=_pkPrefetch;_pkPrefetch=null;
-    pf.then(take,function(){renderGuestPacket(token);});return;}
+    if(d&&d.exists){
+      _gpSnap=d.data();
+      if((_gpSnap.expires||0)<Date.now()){fail('This link has expired. Reply to the text you got and your builder will send a fresh one.');return;}
+      _gpRender();return false;}
+    return true; /* not ready - caller may retry */};
   const t0=Date.now();const waitMs=(window.__pkWaitMs||8000);
-  (function attempt(){
+  let tries=0;
+  const look=function(){
     const db=_pkDb();
     if(!db){
-      if(Date.now()-t0<waitMs){setTimeout(attempt,150);return;}
-      miss();return;
-    }
-    db.collection('packets').doc(String(token)).get().then(take).catch(miss);
-  })();
+      if(Date.now()-t0<waitMs){setTimeout(look,150);return;}
+      fail('This link needs a connection to open. Get a bar of signal and tap Try again.');return;}
+    db.collection('packets').doc(String(token)).get().then(function(d){
+      if(take(d)===false)return;
+      if(++tries<5&&Date.now()-t0<waitMs){setTimeout(look,350);return;}
+      fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.');
+    }).catch(function(){
+      if(++tries<6&&Date.now()-t0<waitMs){setTimeout(look,400);return;}
+      fail('This link needs a connection to open. Get a bar of signal and tap Try again.');
+    });
+  };
+  if(_pkPrefetch&&String(token)===String(_PACKET_ON_ARRIVAL)){
+    const pf=_pkPrefetch;_pkPrefetch=null;
+    pf.then(function(d){if(take(d)!==false)look();},function(){look();});return;}
+  look();
 }
 function _gpRender(){
   const g=_gpSnap;const body=document.getElementById('gpBody');
   const preview=(_gpToken==='preview');
-  const dates=fmtWin({start:g.start,end:g.end});
+  const dates=fmtWin({start:(g.resp&&g.resp.start)||g.start,end:(g.resp&&g.resp.end)||g.end});
   let h='';
   h+='<div class="gp-brand"><span class="dot"></span>SitePlumb</div>';
   if(preview&&_gpPendingSend)h+='<div class="gp-preview">Review before it sends \u2014 this is exactly what '+esc(g.sub)+' will see.</div>'
@@ -11624,27 +11627,20 @@ function _gpRender(){
     h+='<div class="gp-ok"><b>Confirmed.</b> You said these dates work'+(g.resp.t?(' \u00b7 '+new Date(g.resp.t).toLocaleDateString()):'')+'.</div>';
     h+='<button class="gp-btn ghost" onclick="gpAddToCal()">Add to my calendar</button>';
     /* Plans change after a yes - the door stays open. */
-    h+='<button class="gp-btn ghost" style="font-size:14px" onclick="gpToggleChange()">Something came up \u2014 suggest new dates\u2026</button>';
-    h+='<div class="gp-chg" id="gpChg">'
-      +'<label>Works better starting</label><input type="date" id="gpStart">'
-      +'<label>Through</label><input type="date" id="gpEnd">'
-      +'<label>Anything else</label><textarea id="gpNote" rows="2" placeholder="Optional \u2014 e.g. crew is on another job until Thursday"></textarea>'
-      +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendChange()">Send to '+esc(g.builder)+'</button></div>';
+    h+='<button class="gp-btn ghost" style="font-size:14px" onclick="gpToggleChange()">Suggest different dates</button>';
+    h+=_gpChgHTML(g);
     h+='<div class="gp-chg" id="gpCalPick"><label>Which calendar?</label>'
       +'<button class="gp-btn ghost" onclick="gpCalDevice(document.getElementById(\'gpCalRem\').checked)">This device\u2019s calendar (Apple\u2026)</button>'
       +'<button class="gp-btn ghost" onclick="gpCalGoogle(document.getElementById(\'gpCalRem\').checked)">Google Calendar</button>'
       +'<label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13.5px;margin-top:10px"><input type="checkbox" id="gpCalRem" checked style="width:auto"> Remember my choice</label>'
       +'<div class="gp-sub" style="margin-top:8px">On iPhone the calendar opens its own screen \u2014 tap <b>Add To Calendar</b> at the bottom of it.</div></div>';
   } else if(g.resp&&g.resp.status==='change'){
-    h+='<div class="gp-ok" style="border-color:var(--oak);background:rgba(176,137,90,.12)"><b>Change requested.</b> Your builder sees your suggested dates'+(g.resp.note?(': \u201c'+esc(g.resp.note)+'\u201d'):'')+'.</div>';
+    const asked=g.resp.start?fmtWin({start:g.resp.start,end:g.resp.end||g.resp.start}):'';
+    h+='<div class="gp-ok" style="border-color:var(--oak);background:rgba(176,137,90,.12)"><b>Change requested.</b> '+(asked?('You asked for '+esc(asked)+'. '):'')+'Your builder has this'+(g.resp.note?(' \u2014 \u201c'+esc(g.resp.note)+'\u201d'):'')+'.</div>';
   } else {
     h+='<button class="gp-btn go" onclick="gpConfirm()">These dates work \u2713</button>';
-    h+='<button class="gp-btn ghost" onclick="gpToggleChange()">Suggest a change\u2026</button>';
-    h+='<div class="gp-chg" id="gpChg">'
-      +'<label>Works better starting</label><input type="date" id="gpStart">'
-      +'<label>Through</label><input type="date" id="gpEnd">'
-      +'<label>Anything else</label><textarea id="gpNote" rows="2" placeholder="Optional \u2014 e.g. crew is on another job until Thursday"></textarea>'
-      +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendChange()">Send to '+esc(g.builder)+'</button></div>';
+    h+='<button class="gp-btn ghost" onclick="gpToggleChange()">Suggest different dates</button>';
+    h+=_gpChgHTML(g);
   }
   const cx=g.ctx||{};
   if(cx.ready||cx.permit||cx.insp){
@@ -11712,7 +11708,24 @@ function _gpRender(){
 }
 function closeGuestPreview(){try{delete window.__packetFixture;}catch(e){}
   document.getElementById('guestScrim').classList.remove('show');}
-function gpToggleChange(){const e=document.getElementById('gpChg');if(e)e.classList.toggle('show');}
+function _gpChgHTML(g){
+  return '<div class="gp-chg" id="gpChg">'
+    +'<div id="gpChgStep1"><label>Start</label><input type="date" id="gpStart">'
+    +'<button class="gp-btn go" style="margin-top:10px" onclick="gpChgNext()">Continue</button></div>'
+    +'<div id="gpChgStep2" style="display:none"><label>End</label><input type="date" id="gpEnd">'
+    +'<label>Note <span style="font-weight:400;letter-spacing:0;text-transform:none">(optional)</span></label>'
+    +'<textarea id="gpNote" rows="2" placeholder="Crew is on another job until Thursday"></textarea>'
+    +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendChange()">Send to '+esc(g.builder)+'</button></div></div>';
+}
+function gpChgNext(){
+  const s=document.getElementById('gpStart');
+  if(!s||!s.value){toast('Pick a start date');return;}
+  const e=document.getElementById('gpEnd');if(e&&!e.value)e.value=s.value;
+  const a=document.getElementById('gpChgStep1'),b=document.getElementById('gpChgStep2');
+  if(a)a.style.display='none';if(b)b.style.display='';
+  if(e){try{e.focus();if(e.showPicker)e.showPicker();}catch(err){}}
+}
+function gpToggleChange(){const e=document.getElementById('gpChg');if(!e)return;e.classList.toggle('show');if(e.classList.contains('show')){const a=document.getElementById('gpChgStep1'),b=document.getElementById('gpChgStep2');if(a)a.style.display='';if(b)b.style.display='none';const s=document.getElementById('gpStart');if(s){try{s.focus();if(s.showPicker)s.showPicker();}catch(err){}}}}
 function _gpWriteResp(resp){
   _gpSnap.resp=resp;
   if(_gpToken&&_gpToken!=='preview'){
@@ -11738,12 +11751,12 @@ function gpSendQuestion(){
   _gpRender();
 }
 function gpSendChange(){
-  const sv=document.getElementById('gpStart').value,ev=document.getElementById('gpEnd').value;
+  const sv=(document.getElementById('gpStart')||{}).value,ev=(document.getElementById('gpEnd')||{}).value;
   const st=sv?Date.parse(sv+'T12:00:00'):null;
   const en=ev?Date.parse(ev+'T12:00:00'):st;
-  const note=(document.getElementById('gpNote').value||'').slice(0,300);
-  if(!st&&!note){toast('Pick dates or add a note');return;}
-  _gpWriteResp({status:'change',start:st||null,end:en||null,note:note,t:Date.now()});
+  const note=((document.getElementById('gpNote')||{}).value||'').slice(0,300);
+  if(!st){toast('Pick a start date');return;}
+  _gpWriteResp({status:'change',start:st,end:en||st,note:note,t:Date.now()});
 }
 function gpIcs(g){
   const d=ts=>{const x=new Date(ts);const p2=v=>String(v).padStart(2,'0');return x.getFullYear()+p2(x.getMonth()+1)+p2(x.getDate());};
@@ -11785,27 +11798,36 @@ function gpCalGoogle(remember){
   try{window.open(u,'_blank');}catch(e){}
 }
 /* Builder side of the loop: the booking editor shows send + reply state. */
+function _bkGuestStatusHTML(p,b,g){
+  const r=(g&&g.resp)||(b&&b.pkResp)||null;
+  const sent=b&&b.pkSent;
+  if(g===false)return 'Link sent \u00b7 expired or replaced';
+  if(!r)return 'Link sent '+(sent?new Date(sent).toLocaleDateString():'')+' \u00b7 waiting for a reply';
+  if(r.status==='confirmed')
+    return '<b style="color:var(--sage)">Confirmed'+(g&&g.sub?(' by '+esc(g.sub)):'')+'</b>'+(r.t?(' \u00b7 '+new Date(r.t).toLocaleDateString()):'');
+  if(r.status==='change')
+    return '<div style="margin-top:10px;padding:14px 14px 12px;border:1px solid rgba(176,137,90,.32);border-radius:14px;background:rgba(176,137,90,.08)">'
+      +'<div style="font-weight:700;letter-spacing:-.01em">They suggested '+(r.start?esc(fmtWin({start:r.start,end:r.end||r.start})):'new dates')+'</div>'
+      +(r.note?'<div class="gp-sub" style="margin:4px 0 0">\u201c'+esc(r.note)+'\u201d</div>':'')
+      +(r.start?'<button class="gp-btn go" style="margin:12px 0 0" onclick="bkAcceptChange(\''+String(p.id)+'\',\''+String(b.id)+'\','+r.start+','+(r.end||r.start)+')">Confirm these dates</button>':'')
+      +'</div>';
+  return 'Link sent '+(sent?new Date(sent).toLocaleDateString():'')+' \u00b7 waiting for a reply';
+}
 function bkRenderGuestRow(p,b){
   const el=document.getElementById('bkGuest');if(!el)return;
   if(!b){el.innerHTML='';return;}
   let h='<button class="add-sub-btn" style="margin-top:8px" onclick="sendGuestPacket(\''+String(p.id)+'\',\''+String(b.id)+'\')">'
     +(appMode()==='real'?'Text the packet link\u2026':'Preview the packet link\u2026')+'</button>';
   if(b.pkToken&&appMode()==='real'){
-    h+='<div class="gp-sub" id="bkGuestStatus" style="margin-top:6px">Link sent '+(b.pkSent?new Date(b.pkSent).toLocaleDateString():'')+' \u00b7 checking for a reply\u2026</div>';
+    h+='<div class="gp-sub" id="bkGuestStatus" style="margin-top:6px">'+_bkGuestStatusHTML(p,b,null)+'</div>';
   }
   el.innerHTML=h;
   if(b.pkToken&&appMode()==='real'&&_pkDb()){
     try{_pkDb().collection('packets').doc(String(b.pkToken)).get().then(d=>{
       const st=document.getElementById('bkGuestStatus');if(!st)return;
-      const g=d.exists?d.data():null;const r=g&&g.resp;
-      if(!g){st.textContent='Link sent \u00b7 expired or replaced';return;}
-      let h='';
-      if(!r)h='Link sent '+(b.pkSent?new Date(b.pkSent).toLocaleDateString():'')+' \u00b7 no reply yet';
-      else if(r.status==='confirmed')h='<b style="color:var(--sage)">Confirmed by '+esc(g.sub)+'</b> \u00b7 '+new Date(r.t).toLocaleDateString();
-      else h='<b style="color:var(--oak)">Change requested</b>'+(r.start?(' \u00b7 suggests '+fmtWin({start:r.start,end:r.end||r.start})):'')+(r.note?(' \u00b7 \u201c'+esc(r.note)+'\u201d'):'')
-        +(r.start?' <button class="la-link" style="padding:2px 6px" onclick="bkAcceptChange(\''+String(p.id)+'\',\''+String(b.id)+'\','+r.start+','+(r.end||r.start)+')">Use these dates</button>':'');
-      st.innerHTML=h+_bkQHTML(p,b,g);
-      _pkStamp(p,b,g);
+      const g=d.exists?d.data():false;
+      st.innerHTML=_bkGuestStatusHTML(p,b,g)+(g?_bkQHTML(p,b,g):'');
+      if(g)_pkStamp(p,b,g);
     }).catch(()=>{});}catch(e){}
   }
 }
@@ -11890,20 +11912,27 @@ function _pkStamp(p,b,g){
 }
 /* Background sweep: a handful of stale packet-carrying bookings get refreshed
    whenever the overview renders, so replies surface within a visit. */
+function _pkNeedsRefresh(b,now){
+  if(!b||!b.pkToken)return false;
+  now=now||Date.now();
+  const waiting=!b.pkResp||b.pkResp.status==='change'||(b.pkQOpen||0)>0;
+  const age=b.pkStamp?(now-b.pkStamp):1e15;
+  return waiting?age>=12000:age>=45000;
+}
 let _pkSweepAt=0;
 function pkSweep(){
   try{
     if(appMode()!=='real')return;
     const db=_pkDb();if(!db)return;
-    if(Date.now()-_pkSweepAt<120000)return;
+    if(Date.now()-_pkSweepAt<8000)return;
     _pkSweepAt=Date.now();
     const today=dayStart(Date.now());
     let n=0;
     visibleProjects().forEach(p=>(p.bookings||[]).forEach(b=>{
-      if(n>=6)return;
+      if(n>=8)return;
       if(!b.pkToken)return;
       if((b.end||0)<today-7*864e5)return;
-      if(b.pkStamp&&Date.now()-b.pkStamp<1800000)return;
+      if(!_pkNeedsRefresh(b))return;
       n++;
       db.collection('packets').doc(String(b.pkToken)).get()
         .then(d=>{if(d.exists){_pkStamp(p,b,d.data());try{renderToday();}catch(e){}}})
@@ -11911,12 +11940,24 @@ function pkSweep(){
     }));
   }catch(e){}
 }
+try{if(typeof window!=='undefined')window.addEventListener('online',function(){_pkSweepAt=0;try{pkSweep();}catch(e){}});}catch(e){}
 function bkAcceptChange(pid,bid,start,end){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
-  updateBooking(p,bid,{start:dayStart(start),end:dayStart(end||start),status:'confirmed'});
-  toast('Dates updated to the sub\u2019s suggestion');
+  const ns=dayStart(start),ne=dayStart(end||start);
+  updateBooking(p,bid,{start:ns,end:ne,status:'confirmed',pkResp:{status:'confirmed',start:ns,end:ne,t:Date.now()}});
+  try{
+    const sEl=document.getElementById('bkStart'),eEl=document.getElementById('bkEnd');
+    const iso=ts=>{const d=new Date(ts);const p2=v=>String(v).padStart(2,'0');return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());};
+    if(sEl)sEl.value=iso(ns);if(eEl)eEl.value=iso(ne);
+  }catch(e){}
+  const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));
+  if(b&&b.pkToken&&appMode()==='real'&&_pkDb()){
+    try{_pkDb().collection('packets').doc(String(b.pkToken)).update({resp:{status:'confirmed',start:ns,end:ne,t:Date.now()}}).catch(function(){});}catch(e){}
+  }
+  toast('Dates confirmed');
   try{renderCal();}catch(e){}
-  try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(bid)));}catch(e){}
+  try{renderToday();}catch(e){}
+  try{bkRenderGuestRow(p,b);}catch(e){}
 }
 function openSubPacket(projId,tradeId){const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   logEvent('packetViewed','sub · '+specLabel(tradeId));

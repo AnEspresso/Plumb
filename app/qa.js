@@ -232,7 +232,7 @@ async function tappable(page,sel){
   t('guest page renders over everything', await guest.evaluate(()=>document.getElementById('guestScrim').classList.contains('show')));
   t('guest page shows no install chrome and no login', await guest.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return e&&e.classList.contains('show');};return !vis('installGate')&&!vis('installScrim');}));
   t('guest page shows readiness context and site history', await guest.evaluate(()=>{const h=document.getElementById('gpBody').innerHTML;return h.includes('Site marked ready for you')&&h.includes('Before you arrive')&&h.includes('Framing topped out');}));
-  for(const [sel,label] of [["#gpBody .gp-btn.go",'These dates work'],["#gpBody .gp-btn.ghost",'Suggest a change']]){
+  for(const [sel,label] of [["#gpBody .gp-btn.go",'These dates work'],["#gpBody .gp-btn.ghost",'Suggest different dates']]){
     const r=await tappable(guest,sel);t('guest button tappable: '+label,r.ok,r.why);
   }
   await shot(guest,'11-guest-packet');
