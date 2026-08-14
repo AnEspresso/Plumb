@@ -904,11 +904,13 @@ t('ics is well formed', (function(){const i=$("gpIcs(_gpSnap)");return i.indexOf
 // change-request path records only resp
 $("_gpSnap.resp=null;_gpRender()");
 $("gpToggleChange()");
-t('change form starts on the start date only', el('gpChgStep1')&&el('gpChgStep1').style.display!=='none'&&el('gpChgStep2')&&el('gpChgStep2').style.display==='none');
+t('change form starts with start and end', el('gpChgStep1')&&el('gpChgStep1').style.display!=='none'&&el('gpStart')&&el('gpEnd')&&el('gpChgStep2')&&el('gpChgStep2').style.display==='none');
 $("document.getElementById('gpStart').value='2030-05-06'");
-$("gpChgNext()");
-t('continue reveals the end date', el('gpChgStep2')&&el('gpChgStep2').style.display!=='none');
+$("gpChgAlign()");
+t('picking start fills a blank end', el('gpEnd').value==='2030-05-06');
 $("document.getElementById('gpEnd').value='2030-05-08'");
+$("gpChgNext()");
+t('continue reveals the note, not another date', el('gpChgStep2')&&el('gpChgStep2').style.display!=='none'&&el('gpNote')&&el('gpChgStep1').style.display==='none');
 $("document.getElementById('gpNote').value='Crew frees up Tuesday'");
 $("gpSendChange()");
 t('change request records status, dates and note', (function(){const r=JSON.parse($("JSON.stringify(_gpSnap.resp)"));return r.status==='change'&&r.start>0&&r.note==='Crew frees up Tuesday';})());
@@ -1023,6 +1025,21 @@ t('a refused first read is not called expired', (function(){
   const src=$("String(renderGuestPacket)");
   return src.indexOf('needs a connection')>=0&&src.indexOf('tries')>=0&&src.indexOf('permission')<0;
 })());
+t('a one-day window formats as a single date', (function(){
+  const same=$("fmtWin({start:1900000000000,end:1900000000000})");
+  const span=$("fmtWin({start:1900000000000,end:1900172800000})");
+  return same.indexOf('\u2013')<0&&span.indexOf('\u2013')>=0;
+})());
+t('removing a booking clears its Needs You card', (function(){
+  $("(function(){var p=state.projects[1];var b={id:'bkDrop',subName:'Drop Crew',trade:'plumb',start:Date.now()+864e5,end:Date.now()+2*864e5,pkToken:'pkDROP',pkResp:{status:'change',start:Date.now()+3*864e5,end:Date.now()+4*864e5,t:1}};p.bookings.push(b);_needsExpanded=true;renderToday();})()");
+  const before=$("document.getElementById('ovToday').innerHTML").indexOf('Drop Crew')>=0;
+  $("(function(){var p=state.projects[1];deleteBooking(p,'bkDrop');})()");
+  const after=$("document.getElementById('ovToday').innerHTML").indexOf('Drop Crew')<0;
+  $("_needsExpanded=false");
+  return before&&after;
+})());
+t('leaving the calendar redraws Needs You', $("String(closeCal)").indexOf('renderToday')>=0);
+
 
 /* ════ 14l · PRIVACY & LEGAL + ACCOUNT DELETION ════ */
 S('legal');

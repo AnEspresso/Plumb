@@ -2882,13 +2882,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.213.0 - Guest links retry a refused first read instead of calling the link expired. Suggesting new dates asks for a start, then an end. Confirming those dates is a real button that updates the booking fields. Packet replies refresh within seconds so Needs You is not half an hour late';
+const PLUMB_VERSION='2.214.0 - Suggesting new dates asks for both dates, then a note. Leaving the calendar refreshes Needs You so deleted bookings do not linger. A one-day window reads as a single date';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786664247126;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.213.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786667336946;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.214.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -10555,7 +10555,7 @@ function updateBooking(p,id,patch){const b=(p.bookings||[]).find(x=>x.id===id);i
   if(b.end<b.start){const x=b.start;b.start=b.end;b.end=x;}
   persist();logEvent('bookingEdited',b.subName);return b;}
 function deleteBooking(p,id){const i=(p.bookings||[]).findIndex(x=>x.id===id);if(i<0)return;
-  const b=p.bookings.splice(i,1)[0];persist();logEvent('bookingRemoved',b.subName);}
+  const b=p.bookings.splice(i,1)[0];persist();logEvent('bookingRemoved',b.subName);try{renderToday();}catch(e){}}
 function addAvail(p,o){
   p.avail=p.avail||[];
   const a={id:'av_'+Math.random().toString(36).slice(2,9),subName:o.subName,trade:o.trade||'',
@@ -10579,7 +10579,9 @@ function idleSubs(ts){
    planned on two sites in overlapping windows. ── */
 function stageWindow(p,stageId){return (p.schedule||{})[stageId]||null;}
 function fmtWin(w){if(!w)return '';const o={month:'short',day:'numeric'};
-  return new Date(w.start).toLocaleDateString(undefined,o)+' \u2013 '+new Date(w.end).toLocaleDateString(undefined,o);}
+  const a=new Date(w.start).toLocaleDateString(undefined,o);
+  const b=new Date(w.end!=null?w.end:w.start).toLocaleDateString(undefined,o);
+  return a===b?a:a+' \u2013 '+b;}
 function setStageWindow(projId,stageId){
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const st=STAGES.find(x=>x.id===stageId);if(!st)return;
@@ -10872,7 +10874,7 @@ function openCal(){
   document.getElementById('calview').classList.add('show');renderCal();}
 function openPacketFor(pid,trade){openSiteFromOverview(pid);setTimeout(()=>{try{const p=P();const sb=(p.subs||[]).find(x=>x.specialty===trade);if(sb)openPacket(sb.id);else go('selections');}catch(e){}},120);}
 function openCalOn(ts,siteId){try{const d=new Date(Number(ts));calMonth=new Date(d.getFullYear(),d.getMonth(),1);}catch(e){}calSiteFilter=(siteId===undefined||siteId===null||siteId==='')?'all':String(siteId);openCal();}
-function closeCal(){document.getElementById('calview').classList.remove('show');}
+function closeCal(){document.getElementById('calview').classList.remove('show');try{renderToday();}catch(e){}}
 function calNav(d){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+d,1);renderCal();}
 function calToday(){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);renderCal();}
 function calPick(siteId){calSiteFilter=siteId;renderCal();}
@@ -11160,8 +11162,8 @@ function bkSave(){
   const packetGate=(next)=>{
     if(trade&&!packetReady(p,trade)){
       const gaps=tradeSpecGaps(p,trade).length;
-      const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'the packet isn’t signed off yet';
-      openConfirm({title:specLabel(trade)+'’s packet isn’t verified',
+      const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'install specs are not signed off yet';
+      openConfirm({title:specLabel(trade)+' specs are not signed off',
         body:'Heads up — '+why+'. Scheduling now means the sub may show up before the specs are final.',
         okLabel:'Schedule anyway',cancelLabel:'Review packet',
         onConfirm:next,onCancel:()=>{try{bkOpenPacket();}catch(e){}}});
@@ -11710,20 +11712,25 @@ function closeGuestPreview(){try{delete window.__packetFixture;}catch(e){}
   document.getElementById('guestScrim').classList.remove('show');}
 function _gpChgHTML(g){
   return '<div class="gp-chg" id="gpChg">'
-    +'<div id="gpChgStep1"><label>Start</label><input type="date" id="gpStart">'
+    +'<div id="gpChgStep1"><label>Start</label><input type="date" id="gpStart" onchange="gpChgAlign()">'
+    +'<label>End</label><input type="date" id="gpEnd">'
     +'<button class="gp-btn go" style="margin-top:10px" onclick="gpChgNext()">Continue</button></div>'
-    +'<div id="gpChgStep2" style="display:none"><label>End</label><input type="date" id="gpEnd">'
-    +'<label>Note <span style="font-weight:400;letter-spacing:0;text-transform:none">(optional)</span></label>'
+    +'<div id="gpChgStep2" style="display:none"><label>Note <span style="font-weight:400;letter-spacing:0;text-transform:none">(optional)</span></label>'
     +'<textarea id="gpNote" rows="2" placeholder="Crew is on another job until Thursday"></textarea>'
     +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendChange()">Send to '+esc(g.builder)+'</button></div></div>';
+}
+function gpChgAlign(){
+  const s=document.getElementById('gpStart'),e=document.getElementById('gpEnd');
+  if(!s||!e||!s.value)return;
+  if(!e.value||e.value<s.value)e.value=s.value;
 }
 function gpChgNext(){
   const s=document.getElementById('gpStart');
   if(!s||!s.value){toast('Pick a start date');return;}
-  const e=document.getElementById('gpEnd');if(e&&!e.value)e.value=s.value;
+  gpChgAlign();
   const a=document.getElementById('gpChgStep1'),b=document.getElementById('gpChgStep2');
   if(a)a.style.display='none';if(b)b.style.display='';
-  if(e){try{e.focus();if(e.showPicker)e.showPicker();}catch(err){}}
+  const n=document.getElementById('gpNote');if(n){try{n.focus();}catch(err){}}
 }
 function gpToggleChange(){const e=document.getElementById('gpChg');if(!e)return;e.classList.toggle('show');if(e.classList.contains('show')){const a=document.getElementById('gpChgStep1'),b=document.getElementById('gpChgStep2');if(a)a.style.display='';if(b)b.style.display='none';const s=document.getElementById('gpStart');if(s){try{s.focus();if(s.showPicker)s.showPicker();}catch(err){}}}}
 function _gpWriteResp(resp){
@@ -11940,7 +11947,7 @@ function pkSweep(){
     }));
   }catch(e){}
 }
-try{if(typeof window!=='undefined')window.addEventListener('online',function(){_pkSweepAt=0;try{pkSweep();}catch(e){}});}catch(e){}
+try{if(typeof window!=='undefined'){window.addEventListener('online',function(){_pkSweepAt=0;try{pkSweep();}catch(e){}});document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){_pkSweepAt=0;try{renderToday();}catch(e){}}});}}catch(e){}
 function bkAcceptChange(pid,bid,start,end){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const ns=dayStart(start),ne=dayStart(end||start);
