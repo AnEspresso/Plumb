@@ -876,15 +876,21 @@
   .td-clear{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px;color:var(--ink-2);font-size:13.5px;font-weight:500;}
   .td-alert{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 13px;margin-bottom:var(--sp-2);cursor:pointer;transition:transform .12s ease;}
   .td-alert:active{transform:scale(.985);}
-  .td-bar{flex:0 0 auto;width:4px;align-self:stretch;border-radius:4px;background:var(--clay);}
+  .td-bar{flex:0 0 auto;width:3px;align-self:stretch;border-radius:3px;background:transparent;}
+  .td-alert.warn .td-bar{background:var(--clay);}
   .td-alert.idle .td-bar{background:var(--oak);}
-  .td-tx{flex:1;font-size:13px;color:var(--ink-2);line-height:1.35;}
+  .td-alert.msg .td-bar{display:none;}
+  .td-tx{flex:1;min-width:0;font-size:13px;color:var(--ink-2);line-height:1.35;}
   .td-tx b{color:var(--ink);font-weight:650;}
+  .td-meta{margin-top:2px;font-size:12.5px;color:var(--ink-3);letter-spacing:-.01em;}
+  .td-quote{margin-top:3px;color:var(--ink);font-weight:560;}
   .td-chev{flex:0 0 auto;color:var(--ink-3);font-size:18px;}
-  .td-alert.do{align-items:flex-start;}
-  .td-act{margin-top:10px;}
-  .td-act .gp-btn{margin:0;}
-  .td-q{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-family:inherit;font-size:15px;line-height:1.35;background:var(--paper);color:var(--ink);resize:none;min-height:44px;}
+  .td-alert.do{align-items:center;}
+  .td-go{flex:0 0 auto;align-self:center;min-height:44px;padding:0 2px 0 10px;border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:700;letter-spacing:-.01em;color:var(--oak);cursor:pointer;}
+  .td-go:active{opacity:.55;}
+  .td-act{margin-top:8px;display:flex;gap:8px;align-items:flex-end;}
+  .td-act .td-go{padding:0 4px;align-self:flex-end;}
+  .td-q{flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-family:inherit;font-size:14px;line-height:1.35;background:var(--paper);color:var(--ink);resize:none;min-height:40px;}
   .td-q:focus{outline:none;border-color:var(--oak);}
   .ov-whisper{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink);font-weight:560;letter-spacing:-.01em;line-height:1.35;}
   .ov-whisper b{font-weight:650;}
@@ -2912,13 +2918,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.219.0 - Needs You hears a packet reply the moment it lands, even after you already confirmed';
+const PLUMB_VERSION='2.220.0 - Needs You stays a briefing. Confirm and Answer are quiet. The red mark is only for a real blocker';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786675295212;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.219.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786706513519;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.220.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -6316,8 +6322,16 @@ function renderOverview(){
 function tdDayLabel(ts){const d=dayStart(Date.now());if(ts<=d)return 'today';if((ts-d)/864e5<=1)return 'tomorrow';
   return new Date(ts).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
 function tdTradeOf(p,b){return b.trade||((p.subs||[]).find(s=>s.name===b.subName)||{}).specialty||'';}
-let _needsExpanded=false;
+let _needsExpanded=false,_nyQKey='';
 function toggleNeeds(){_needsExpanded=!_needsExpanded;renderToday();}
+function nyOpenQ(pid,bid,qi){
+  try{if(typeof event!=='undefined'&&event&&event.stopPropagation)event.stopPropagation();}catch(e){}
+  const k=String(pid)+'|'+String(bid)+'|'+String(qi);
+  _nyQKey=(_nyQKey===k)?'':k;
+  renderToday();
+  if(_nyQKey){const n=document.getElementById('nyQText');if(n)try{n.focus();}catch(e){}}
+}
+function _tdClip(s,n){s=String(s||'');return s.length>n?s.slice(0,n-1)+'\u2026':s;}
 function _pkChangeOpen(b){
   return !!(b&&b.pkResp&&b.pkResp.status==='change'&&!(dayStart(b.start)===dayStart(b.pkResp.start||b.start)&&(dayStart(b.end)===dayStart(b.pkResp.end||b.end)||!b.pkResp.start)));
 }
@@ -6343,18 +6357,22 @@ function renderToday(){
   // 0. packet replies — a sub suggested new dates or asked something, answer fast
   projs.forEach(p=>(p.bookings||[]).forEach(b=>{
     if(_pkChangeOpen(b)){
-      const win=b.pkResp.start?fmtWin({start:b.pkResp.start,end:b.pkResp.end||b.pkResp.start}):'';
-      warns.push({lvl:'warn',act:1,html:`<b>${esc(b.subName)}</b> suggests new dates for ${esc(specLabel(tdTradeOf(p,b))||'their work')} at ${esc(p.street||p.name)}`
-        +(win?`<div style="margin-top:5px;font-weight:650;color:var(--ink)">${esc(win)}</div>`:'')
-        +(b.pkResp.note?`<div style="margin-top:4px;color:var(--ink-3)">\u201c${esc(b.pkResp.note)}\u201d</div>`:'')
-        +(b.pkResp.start?`<div class="td-act" onclick="event.stopPropagation()"><button class="gp-btn go" onclick="nyConfirm('${p.id}','${b.id}',${b.pkResp.start},${b.pkResp.end||b.pkResp.start})">Confirm these dates</button></div>`:''),
+      const win=b.pkResp.start?fmtWin({start:b.pkResp.start,end:b.pkResp.end||b.pkResp.start}):'new dates';
+      const bits=[win,specLabel(tdTradeOf(p,b))||'',p.street||p.name||''].filter(Boolean);
+      warns.push({lvl:'msg',act:1,goBtn:b.pkResp.start?`<button class="td-go" onclick="event.stopPropagation();nyConfirm('${p.id}','${b.id}',${b.pkResp.start},${b.pkResp.end||b.pkResp.start})">Confirm</button>`:'',
+        html:`<b>${esc(b.subName)}</b><div class="td-meta">${esc(bits.join(' \u00b7 '))}</div>`
+        +(b.pkResp.note?`<div class="td-quote">\u201c${esc(_tdClip(b.pkResp.note,72))}\u201d</div>`:''),
         go:`openBk('${p.id}|${b.id}')`,ts:b.pkResp.t||b.start});
     }
     if((b.pkQOpen||0)>0){
       const qs=b.pkQs||[];const qi=qs.findIndex(x=>!x.a);const q=qi>=0?qs[qi]:null;
-      warns.push({lvl:'warn',act:1,html:`<b>${esc(b.subName)}</b> asked from their packet \u2014 ${esc(p.street||p.name)}`
-        +(q&&q.text?`<div style="margin-top:6px;color:var(--ink);font-weight:560">\u201c${esc(q.text)}\u201d</div>`:'')
-        +`<div class="td-act" onclick="event.stopPropagation()"><textarea class="td-q" id="nyQText" rows="2" placeholder="Your answer"></textarea><button class="gp-btn go" style="margin-top:8px" onclick="nySendAnswer('${p.id}','${b.id}',${qi<0?0:qi})">Send answer</button></div>`,
+      const qk=String(p.id)+'|'+String(b.id)+'|'+String(qi<0?0:qi);
+      const open=_nyQKey===qk;
+      warns.push({lvl:'msg',act:1,goBtn:open?'':`<button class="td-go" onclick="event.stopPropagation();nyOpenQ('${p.id}','${b.id}',${qi<0?0:qi})">Answer</button>`,
+        html:`<b>${esc(b.subName)}</b>`
+        +(q&&q.text?`<div class="td-quote">\u201c${esc(_tdClip(q.text,88))}\u201d</div>`:'<div class="td-meta">asked a question</div>')
+        +`<div class="td-meta">${esc(p.street||p.name||'')}</div>`
+        +(open?`<div class="td-act" onclick="event.stopPropagation()"><textarea class="td-q" id="nyQText" rows="2" placeholder="Your answer"></textarea><button class="td-go" onclick="nySendAnswer('${p.id}','${b.id}',${qi<0?0:qi})">Send</button></div>`:''),
         go:`openBk('${p.id}|${b.id}')`,ts:b.start});
     }
   }));
@@ -6393,7 +6411,7 @@ function renderToday(){
     h+='<div class="td-clear">All clear \u2014 nothing needs you today.</div>';el.innerHTML=h;return;}
   warns.sort((a,b)=>(a.ts||0)-(b.ts||0));
   const _CAP=3;const _truncated=!_needsExpanded&&warns.length>_CAP;const _shown=_truncated?warns.slice(0,_CAP):warns;
-  _shown.forEach(w=>{h+=`<div class="td-alert ${w.lvl}${w.act?' do':''}" onclick="${w.go}"><span class="td-bar"></span><div class="td-tx">${w.html}</div>${w.act?'':'<span class="td-chev">\u203a</span>'}</div>`;});
+  _shown.forEach(w=>{h+=`<div class="td-alert ${w.lvl}${w.act?' do':''}" onclick="${w.go}"><span class="td-bar"></span><div class="td-tx">${w.html}</div>${w.goBtn||(w.act?'':'<span class="td-chev">\u203a</span>')}</div>`;});
   if(warns.length>_CAP){h+=`<button class="td-morebtn" onclick="event.stopPropagation();toggleNeeds()">`+(_needsExpanded?'Show less':('Show all '+warns.length))+`</button>`;}
   if(soon.length){
     h+='<div class="eyebrow" style="margin-top:16px">Coming up</div>';
@@ -12256,6 +12274,7 @@ function nySendAnswer(pid,bid,qi){
     const db=_pkDb();if(!db)return;
     try{db.collection('packets').doc(String(b.pkToken)).update({q:q}).then(function(){
       _pkStamp(p,b,Object.assign({},g,{q:q}));
+      _nyQKey='';
       toast('Answered \u2014 it appears on their packet now');
       try{bkRenderGuestRow(p,b);}catch(e){}
       try{renderToday();}catch(e){}
