@@ -21,8 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: app } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: '22' }
 
       - name: Parity (index.html == plumb.html)
@@ -59,7 +59,7 @@ jobs:
 
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: qa-shots
           path: app/qa-shots/
@@ -69,8 +69,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: app } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: '22' }
       - name: Playwright WebKit + Firefox smoke
         run: |
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: ritual
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Wait for Pages, then verify the live site
         run: |
           set -u
