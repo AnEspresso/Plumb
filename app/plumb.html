@@ -2905,13 +2905,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.216.0 - The dates you picked stay above the note. Scheduling a sub uses the same calendar, not the phone\u2019s';
+const PLUMB_VERSION='2.217.0 - Needs You picks up a new date suggestion within a few seconds while you stay on home';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786670968090;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.216.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786672192008;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.217.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -12057,14 +12057,14 @@ function _pkNeedsRefresh(b,now){
   now=now||Date.now();
   const waiting=!b.pkResp||b.pkResp.status==='change'||(b.pkQOpen||0)>0;
   const age=b.pkStamp?(now-b.pkStamp):1e15;
-  return waiting?age>=12000:age>=45000;
+  return waiting?age>=3000:age>=45000;
 }
-let _pkSweepAt=0;
-function pkSweep(){
+let _pkSweepAt=0,_pkTick=null;
+function pkSweep(force){
   try{
     if(appMode()!=='real')return;
     const db=_pkDb();if(!db)return;
-    if(Date.now()-_pkSweepAt<8000)return;
+    if(!force&&Date.now()-_pkSweepAt<3000)return;
     _pkSweepAt=Date.now();
     const today=dayStart(Date.now());
     let n=0;
@@ -12072,7 +12072,9 @@ function pkSweep(){
       if(n>=8)return;
       if(!b.pkToken)return;
       if((b.end||0)<today-7*864e5)return;
-      if(!_pkNeedsRefresh(b))return;
+      const waiting=!b.pkResp||b.pkResp.status==='change'||(b.pkQOpen||0)>0;
+      if(force){if(!waiting&&!_pkNeedsRefresh(b))return;}
+      else if(!_pkNeedsRefresh(b))return;
       n++;
       db.collection('packets').doc(String(b.pkToken)).get()
         .then(d=>{if(d.exists){_pkStamp(p,b,d.data());try{renderToday();}catch(e){}}})
@@ -12080,7 +12082,18 @@ function pkSweep(){
     }));
   }catch(e){}
 }
-try{if(typeof window!=='undefined'){window.addEventListener('online',function(){_pkSweepAt=0;try{pkSweep();}catch(e){}});document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){_pkSweepAt=0;try{renderToday();}catch(e){}}});}}catch(e){}
+function _pkWatch(){
+  if(_pkTick)return;
+  _pkTick=setInterval(function(){
+    if(typeof document!=='undefined'&&document.visibilityState!=='visible')return;
+    try{pkSweep();}catch(e){}
+  },4000);
+}
+try{if(typeof window!=='undefined'){
+  window.addEventListener('online',function(){_pkSweepAt=0;try{pkSweep(true);}catch(e){}});
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){_pkSweepAt=0;try{pkSweep(true);renderToday();}catch(e){}}});
+  _pkWatch();
+}}catch(e){}
 function bkAcceptChange(pid,bid,start,end){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const ns=dayStart(start),ne=dayStart(end||start);

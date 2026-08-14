@@ -1025,10 +1025,11 @@ $("bkPickDay('2026-08-20')");
 $("bkCalDone()");
 t('check writes the range onto the schedule sheet', el('bkStart').value==='2026-08-17'&&el('bkEnd').value==='2026-08-20'&&el('bkCal').style.display==='none'&&el('bkRangeLabel').textContent.indexOf('17')>=0);
 $("closeBk()");
-t('waiting packets refresh after 12s, not half an hour', (function(){
+t('waiting packets refresh after 3s, not half an hour', (function(){
   const now=2000000000000;
   return $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-20000)+"},"+now+")")===true
     && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-1000)+",pkResp:null},"+now+")")===false
+    && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-4000)+",pkResp:null},"+now+")")===true
     && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-20000)+",pkResp:{status:'confirmed'}},"+now+")")===false
     && $("_pkNeedsRefresh({pkToken:'x',pkStamp:"+(now-60000)+",pkResp:{status:'confirmed'}},"+now+")")===true;
 })());
