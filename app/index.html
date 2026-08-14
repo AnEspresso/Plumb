@@ -445,6 +445,23 @@
   .gp-chg.show{display:block;}
   .gp-chg label{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:8px 0 4px;}
   .gp-chg input,.gp-chg textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-family:inherit;font-size:15px;background:var(--paper);}
+  .gp-cal-nav{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 10px;}
+  .gp-cal-nav .m{font-family:'Source Serif 4',Georgia,serif;font-size:18px;font-weight:600;letter-spacing:-.02em;}
+  .gp-cal-nav button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--ink-2);font-size:18px;line-height:1;cursor:pointer;}
+  .gp-cal-dow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:2px;}
+  .gp-cal-dow span{text-align:center;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:4px 0;}
+  .gp-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;}
+  .gp-d{aspect-ratio:1;border:0;background:transparent;font:inherit;font-size:14px;font-weight:560;color:var(--ink);position:relative;cursor:pointer;padding:0;}
+  .gp-d.out{color:var(--ink-3);opacity:.42;}
+  .gp-d.today span{box-shadow:0 0 0 1.5px var(--oak);border-radius:50%;}
+  .gp-d.mid{background:rgba(176,137,90,.16);}
+  .gp-d.start.mid-r{background:linear-gradient(90deg,transparent 50%,rgba(176,137,90,.16) 50%);}
+  .gp-d.end.mid-l{background:linear-gradient(90deg,rgba(176,137,90,.16) 50%,transparent 50%);}
+  .gp-d.start span,.gp-d.end span{background:var(--ink);color:#F6F1E7;box-shadow:none;}
+  .gp-d span{display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin:0 auto;border-radius:50%;position:relative;z-index:1;}
+  .gp-cal-acts{display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
+  .gp-cal-reset{border:0;background:#1B1916;color:#F6F1E7;border-radius:999px;padding:9px 16px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+  .gp-cal-ok{width:42px;height:42px;border-radius:50%;border:0;background:var(--oak);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .gp-foot{font-size:12px;color:var(--ink-3);margin-top:22px;text-align:center;line-height:1.6;}
   .gp-err{text-align:center;padding:60px 10px;font-size:16px;color:var(--ink-2);line-height:1.6;}
   /* ───── in-app legal viewer: policies open OVER the app, never navigating
@@ -2882,13 +2899,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.214.0 - Suggesting new dates asks for both dates, then a note. Leaving the calendar refreshes Needs You so deleted bookings do not linger. A one-day window reads as a single date';
+const PLUMB_VERSION='2.215.0 - Suggesting new dates opens one calendar. Tap a start, tap an end, check, then send a note. No continue step';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786667336946;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.214.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786669077923;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.215.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -11576,7 +11593,7 @@ function _smsOrCopy(msg){
   try{navigator.clipboard&&navigator.clipboard.writeText(msg).then(()=>toast('Message copied \u2014 paste it into a text'));}catch(e){}
 }
 function openGuestPreview(snap){window.__packetFixture=snap;renderGuestPacket('preview');}
-let _gpSnap=null,_gpToken=null;
+let _gpSnap=null,_gpToken=null,_gpCalCursor=null;
 function renderGuestPacket(token){
   _gpToken=token;
   const sc=document.getElementById('guestScrim');sc.classList.add('show');
@@ -11710,12 +11727,14 @@ function _gpRender(){
 }
 function closeGuestPreview(){try{delete window.__packetFixture;}catch(e){}
   document.getElementById('guestScrim').classList.remove('show');}
+function _gpISO(ts){const d=new Date(Number(ts));const p2=v=>String(v).padStart(2,'0');return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());}
 function _gpChgHTML(g){
   return '<div class="gp-chg" id="gpChg">'
-    +'<div id="gpChgStep1"><label>Start</label><input type="date" id="gpStart" onchange="gpChgAlign()">'
-    +'<label>End</label><input type="date" id="gpEnd">'
-    +'<button class="gp-btn go" style="margin-top:10px" onclick="gpChgNext()">Continue</button></div>'
-    +'<div id="gpChgStep2" style="display:none"><label>Note <span style="font-weight:400;letter-spacing:0;text-transform:none">(optional)</span></label>'
+    +'<input type="hidden" id="gpStart"><input type="hidden" id="gpEnd">'
+    +'<div id="gpChgCal"><div id="gpCalMount"></div>'
+    +'<div class="gp-cal-acts"><button type="button" class="gp-cal-reset" onclick="gpCalReset()">Reset</button>'
+    +'<button type="button" class="gp-cal-ok" onclick="gpCalDone()" aria-label="Use these dates">\u2713</button></div></div>'
+    +'<div id="gpChgNote" style="display:none"><label>Note <span style="font-weight:400;letter-spacing:0;text-transform:none">(optional)</span></label>'
     +'<textarea id="gpNote" rows="2" placeholder="Crew is on another job until Thursday"></textarea>'
     +'<button class="gp-btn go" style="margin-top:10px" onclick="gpSendChange()">Send to '+esc(g.builder)+'</button></div></div>';
 }
@@ -11724,15 +11743,74 @@ function gpChgAlign(){
   if(!s||!e||!s.value)return;
   if(!e.value||e.value<s.value)e.value=s.value;
 }
-function gpChgNext(){
+function gpChgMonth(d){
+  if(!_gpCalCursor){const n=new Date();_gpCalCursor=new Date(n.getFullYear(),n.getMonth(),1);}
+  _gpCalCursor=new Date(_gpCalCursor.getFullYear(),_gpCalCursor.getMonth()+d,1);
+  gpRenderCal();
+}
+function gpPickDay(iso){
+  const s=document.getElementById('gpStart'),e=document.getElementById('gpEnd');if(!s||!e)return;
+  if(!s.value||(s.value&&e.value)){s.value=iso;e.value='';}
+  else if(iso<s.value){e.value=s.value;s.value=iso;}
+  else e.value=iso;
+  gpRenderCal();
+}
+function gpRenderCal(){
+  const mount=document.getElementById('gpCalMount');if(!mount)return;
+  if(!_gpCalCursor){const n=new Date();_gpCalCursor=new Date(n.getFullYear(),n.getMonth(),1);}
+  const y=_gpCalCursor.getFullYear(),m=_gpCalCursor.getMonth();
+  const first=new Date(y,m,1);
+  const grid0=new Date(y,m,1-first.getDay());
+  const sv=(document.getElementById('gpStart')||{}).value||'';
+  const ev=(document.getElementById('gpEnd')||{}).value||'';
+  const today=_gpISO(Date.now());
+  let h='<div class="gp-cal-nav"><button type="button" onclick="gpChgMonth(-1)" aria-label="Previous month">\u2039</button>'
+    +'<div class="m">'+first.toLocaleDateString(undefined,{month:'long',year:'numeric'})+'</div>'
+    +'<button type="button" onclick="gpChgMonth(1)" aria-label="Next month">\u203a</button></div>'
+    +'<div class="gp-cal-dow">'+['S','M','T','W','T','F','S'].map(d=>'<span>'+d+'</span>').join('')+'</div><div class="gp-cal-grid">';
+  for(let i=0;i<42;i++){
+    const d=new Date(grid0.getFullYear(),grid0.getMonth(),grid0.getDate()+i);
+    const iso=_gpISO(d.getTime());
+    const cls=['gp-d'];
+    if(d.getMonth()!==m)cls.push('out');
+    if(iso===today)cls.push('today');
+    if(sv&&iso===sv)cls.push('start');
+    if(ev&&iso===ev)cls.push('end');
+    if(sv&&ev&&iso>sv&&iso<ev)cls.push('mid');
+    if(sv&&ev&&iso===sv&&sv!==ev)cls.push('mid-r');
+    if(sv&&ev&&iso===ev&&sv!==ev)cls.push('mid-l');
+    if(sv&&!ev&&iso===sv)cls.push('end');
+    h+='<button type="button" class="'+cls.join(' ')+'" onclick="gpPickDay(\''+iso+'\')"><span>'+d.getDate()+'</span></button>';
+  }
+  mount.innerHTML=h+'</div>';
+}
+function gpCalReset(){
+  const s=document.getElementById('gpStart'),e=document.getElementById('gpEnd');
+  if(s)s.value='';if(e)e.value='';
+  gpRenderCal();
+}
+function gpCalDone(){
   const s=document.getElementById('gpStart');
   if(!s||!s.value){toast('Pick a start date');return;}
   gpChgAlign();
-  const a=document.getElementById('gpChgStep1'),b=document.getElementById('gpChgStep2');
-  if(a)a.style.display='none';if(b)b.style.display='';
+  const cal=document.getElementById('gpChgCal'),note=document.getElementById('gpChgNote');
+  if(cal)cal.style.display='none';if(note)note.style.display='';
   const n=document.getElementById('gpNote');if(n){try{n.focus();}catch(err){}}
 }
-function gpToggleChange(){const e=document.getElementById('gpChg');if(!e)return;e.classList.toggle('show');if(e.classList.contains('show')){const a=document.getElementById('gpChgStep1'),b=document.getElementById('gpChgStep2');if(a)a.style.display='';if(b)b.style.display='none';const s=document.getElementById('gpStart');if(s){try{s.focus();if(s.showPicker)s.showPicker();}catch(err){}}}}
+function gpChgNext(){gpCalDone();}
+function gpToggleChange(){
+  const e=document.getElementById('gpChg');if(!e)return;
+  e.classList.toggle('show');
+  if(!e.classList.contains('show'))return;
+  const cal=document.getElementById('gpChgCal'),note=document.getElementById('gpChgNote');
+  if(cal)cal.style.display='';if(note)note.style.display='none';
+  const g=_gpSnap||{};
+  const s=document.getElementById('gpStart'),en=document.getElementById('gpEnd');
+  if(s)s.value=g.start?_gpISO(g.start):'';
+  if(en)en.value=(g.end||g.start)?_gpISO(g.end||g.start):'';
+  _gpCalCursor=g.start?new Date(new Date(g.start).getFullYear(),new Date(g.start).getMonth(),1):null;
+  gpRenderCal();
+}
 function _gpWriteResp(resp){
   _gpSnap.resp=resp;
   if(_gpToken&&_gpToken!=='preview'){
