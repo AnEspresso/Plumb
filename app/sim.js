@@ -1102,6 +1102,13 @@ t('the house briefing lists every still-open fact', (function(){
   $('closeHouse()');
   return lines.length>=2&&lines.every(function(line){return html.indexOf(line)>=0;});
 })());
+t('a house from the list opens the briefing', $("String(renderOvCards)").indexOf('nyOpenHouse')>=0&&$("String(renderOvCards)").indexOf("onclick=\"openSiteFromOverview")<0);
+t('home has a field door to log a photo', $("String(renderToday)").indexOf('openLogPick')>=0&&$("typeof openLogPick")==='function'&&$("String(openLogPick)").indexOf('logPickHouse')>=0);
+t('the briefing keeps log schedule selections money and the full site', (function(){
+  const s=$("String(houseHTML)");
+  return s.indexOf('logFromHouse')>=0&&s.indexOf('houseGoCal')>=0&&s.indexOf('houseGoMoney')>=0&&s.indexOf('houseGoSite')>=0&&s.indexOf('Full site')>=0;
+})());
+t('a room from the briefing comes back to the house', $("String(houseGoSite)").indexOf('navPush')>=0&&$("String(houseGoSite)").indexOf('nyOpenHouse')>=0);
 t('a packet from the house stays on the briefing', (function(){
   asBuilder();
   $('enterDemo()');

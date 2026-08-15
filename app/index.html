@@ -2451,6 +2451,15 @@ body.on-tour .tour-card{display:block;}
     </div>
   </div>
 
+  <div class="pmodal-scrim" id="logPickScrim" style="z-index:89">
+    <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
+      <h4>Log a photo</h4>
+      <div class="la-hint" style="margin:0 0 10px;text-align:left">Which house are you at?</div>
+      <div class="pick-list" id="logPickBody"></div>
+      <div class="row2" style="margin-top:12px"><button class="b1 b-cancel" style="flex:1" onclick="closeLogPick()">Cancel</button></div>
+    </div>
+  </div>
+
   <div class="pmodal-scrim" id="infoScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="infoTitle">Heads up</h4>
@@ -2973,13 +2982,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.239.0 - A sub reply can reach the lock screen.';
+const PLUMB_VERSION='2.240.0 - A house opens as a briefing. Log a photo from home.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786812042924;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.239.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786819258459;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.240.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6573,10 +6582,56 @@ function nyOpenHouse(pid){
   renderHouse();
   document.getElementById('houseScrim').classList.add('show');
 }
-let _housePid=null;
+let _housePid=null,_houseCalPeek=false;
 function houseStillOpen(){const el=document.getElementById('houseScrim');return !!(el&&el.classList.contains('show')&&_housePid);}
 function refreshHouse(){if(!houseStillOpen())return;renderHouse();}
 function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');_housePid=null;try{renderToday();}catch(e){}}
+function houseMoneyLine(p){
+  try{
+    const b=billingSummary(p);
+    if((Number(b.billed)||0)>0.005||(Number(b.out)||0)>0.005)
+      return 'Billed '+invUsd(b.billed)+' · left '+invUsd(Math.max(0,b.out));
+    const cs=costSummary(p);
+    if((Number(cs.budget)||0)>0.005)
+      return (cs.over?'Over budget · ':'On budget · ')+invUsd(Math.abs(cs.remaining))+(cs.over?' over':' left');
+  }catch(e){}
+  return 'No money on this job yet';
+}
+function logFromHouse(){try{Data.setActive(_housePid);}catch(e){}openSheet();}
+function houseGoSite(view){
+  const pid=_housePid;if(!pid)return;
+  const hs=document.getElementById('houseScrim');if(hs)hs.classList.remove('show');
+  navPush(function(){showOverview();nyOpenHouse(pid);});
+  openSiteFromOverview(pid);
+  if(view&&view!=='log')setTimeout(function(){try{go(view);}catch(e){}},70);
+}
+function houseGoCal(){
+  const pid=_housePid;if(!pid)return;
+  const hs=document.getElementById('houseScrim');if(hs)hs.classList.remove('show');
+  navPush(function(){showOverview();nyOpenHouse(pid);});
+  try{Data.setActive(pid);}catch(e){}
+  calSiteFilter=String(pid);
+  _houseCalPeek=true;
+  openCal();
+}
+function houseGoMoney(){try{Data.setActive(_housePid);}catch(e){}openBudget();}
+function openLogPick(){
+  const ps=(visibleProjects()||[]).slice().sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
+  if(!ps.length){toast('Add a house first');return;}
+  if(ps.length===1){logPickHouse(ps[0].id);return;}
+  const el=document.getElementById('logPickBody');if(!el)return;
+  el.innerHTML=ps.map(function(p){
+    return '<div class="day-row avr" style="cursor:pointer" onclick="logPickHouse(\''+String(p.id).replace(/'/g,'')+'\')"><div style="flex:1"><div class="n">'+esc(p.street||p.name||'House')+'</div>'+(p.city?('<div class="d">'+esc(p.city)+'</div>'):'')+'</div></div>';
+  }).join('');
+  document.getElementById('logPickScrim').classList.add('show');
+}
+function logPickHouse(pid){
+  closeLogPick();
+  if(!(state.projects||[]).some(function(x){return String(x.id)===String(pid);}))return;
+  try{Data.setActive(pid);}catch(e){}
+  openSheet();
+}
+function closeLogPick(){const el=document.getElementById('logPickScrim');if(el)el.classList.remove('show');}
 function renderHouse(){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(_housePid);});
   const ttl=document.getElementById('houseTitle');const body=document.getElementById('houseBody');
@@ -6604,6 +6659,15 @@ function houseHTML(p){
     const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
     h+='<div class="pkt-ask" onclick="openNextSite(\''+String(p.id).replace(/'/g,'')+'\')"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
+  const money=houseMoneyLine(p);
+  h+='<div class="pkt-open"><div class="h">This house</div>';
+  h+='<div class="pkt-or" onclick="logFromHouse()"><div><div class="k">Log a photo</div><div class="m">Picture, then what happened</div></div><span class="td-chev">\u203a</span></div>';
+  h+='<div class="pkt-or" onclick="houseGoSite(\'log\')"><div><div class="k">Log</div><div class="m">Read and close old lines</div></div><span class="td-chev">\u203a</span></div>';
+  h+='<div class="pkt-or" onclick="houseGoCal()"><div><div class="k">Schedule</div><div class="m">This house on the calendar</div></div><span class="td-chev">\u203a</span></div>';
+  h+='<div class="pkt-or" onclick="houseGoSite(\'selections\')"><div><div class="k">Selections</div><div class="m">Finishes for this house</div></div><span class="td-chev">\u203a</span></div>';
+  h+='<div class="pkt-or" onclick="houseGoMoney()"><div><div class="k">Money</div><div class="m">'+esc(money)+'</div></div><span class="td-chev">\u203a</span></div>';
+  h+='<div class="pkt-or" onclick="houseGoSite(\'log\')"><div><div class="k">Full site</div><div class="m">Log, build, decisions, files</div></div><span class="td-chev">\u203a</span></div>';
+  h+='</div>';
   return h;
 }
 function renderToday(){
@@ -6635,7 +6699,8 @@ function renderToday(){
     if(b.start<today||b.start>today+7*864e5)return;
     soon.push({p:p,b:b,trade:tdTradeOf(p,b)});});});
   soon.sort(function(a,b){return a.b.start-b.b.start;});
-  let h='<div class="eyebrow">Needs you</div>';
+  let h='<button class="td-histbtn" style="margin:0 0 14px" onclick="event.stopPropagation();openLogPick()">Log a photo</button>';
+  h+='<div class="eyebrow">Needs you</div>';
   if(!houses.length&&!soon.length){
     h+='<div class="td-clear">All clear \u2014 nothing needs you today.</div>';
     h+=`<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
@@ -6694,7 +6759,7 @@ function renderOvCards(){
     const whis=_siteWhisper(p);
     const _ttl=p.street||p.name||'Untitled site';const _loc=[p.city,p.state].filter(Boolean).join(', ');
     const _sub=[p.name&&p.name!==_ttl?p.name:'',_loc].filter(Boolean).join(' \u00b7 ');
-    return `<div class="ov-card ${open||whis?'attn':''}${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="openSiteFromOverview('${p.id}')">
+    return `<div class="ov-card ${open||whis?'attn':''}${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
       <div class="ct"><div><div class="st">${esc(_ttl)}</div>${_sub?`<div class="nm">${esc(_sub)}</div>`:''}</div>
         <div class="ov-hero ${open?'attn':'clean'}"><div class="hn">${open||'\u2713'}</div><div class="hl">${open?'open':'clear'}</div></div></div>
       <div class="pbar"><i style="width:${pct}%"></i></div>
@@ -7818,7 +7883,7 @@ function budgetCardHTML(p){
 
 
 function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');}
-function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}}
+function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{refreshHouse();}catch(e){}}
 function renderBudget(){
   const p=P();const cs=costSummary(p);const lines=costLines(p);
   let h=`<div class="bgt-tot">
@@ -11253,6 +11318,7 @@ function closeCal(){
   document.getElementById('calview').classList.remove('show');
   try{renderToday();}catch(e){}
   if(_bkCalPeek){_bkCalPeek=false;const bk=document.getElementById('bkScrim');if(bk)bk.classList.add('show');}
+  else if(_houseCalPeek){_houseCalPeek=false;navPop();}
   else if(houseStillOpen()){try{refreshHouse();}catch(e){}}
 }
 function calNav(d){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+d,1);renderCal();}
@@ -13031,7 +13097,7 @@ function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;con
   if(closing&&row){row.classList.add('closing');setTimeout(apply,260);}else apply();}
 
 /* ── universal modal dismissal: tap grip, or swipe the modal down ── */
-const MODAL_CLOSERS={houseScrim:'closeHouse',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
+const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
 function dismissScrim(scrim){if(!scrim)return;const fn=MODAL_CLOSERS[scrim.id];if(fn&&typeof window[fn]==='function'){try{window[fn]();return;}catch(e){}}scrim.classList.remove('show');}
 function dismissParent(elm){let n=elm;while(n&&!(n.classList&&n.classList.contains('pmodal-scrim')))n=n.parentElement;dismissScrim(n);}
 if(typeof window!=='undefined'){window.addEventListener('load',function(){
