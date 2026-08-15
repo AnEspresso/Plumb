@@ -1097,10 +1097,15 @@ t('the house briefing lists every still-open fact', (function(){
   asBuilder();
   $('enterDemo()');
   $('nyOpenHouse("p2")');
-  const lines=JSON.parse($("JSON.stringify(_nyIssues([state.projects.find(function(x){return x.id==='p2';})]).filter(function(i){return !i.cross;}).map(function(i){return i.line;}))"));
+  const n=Number($("_nyIssues([state.projects.find(function(x){return x.id==='p2';})]).filter(function(i){return !i.cross&&String(i.pid)==='p2';}).length"));
+  const rows=Number($("document.querySelectorAll('#houseBody .pkt-or').length"));
   const html=$("document.getElementById('houseBody').innerHTML");
+  const capped=n<=3?rows===n:(rows===3&&/Show all/.test(html));
+  $('toggleHouseOpen()');
+  const rows2=Number($("document.querySelectorAll('#houseBody .pkt-or').length"));
+  const html2=$("document.getElementById('houseBody').innerHTML");
   $('closeHouse()');
-  return lines.length>=2&&lines.every(function(line){return html.indexOf(line)>=0;});
+  return n>=2&&capped&&rows2===n&&/Show less/.test(html2);
 })());
 t('a house from the list opens the briefing', $("String(renderOvCards)").indexOf('nyOpenHouse')>=0&&$("String(renderOvCards)").indexOf("onclick=\"openSiteFromOverview")<0);
 t('home has a field door to log a photo', $("String(renderToday)").indexOf('openLogPick')>=0&&$("String(renderToday)").indexOf('Field Notes')>=0&&$("typeof openLogPick")==='function'&&$("String(openLogPick)").indexOf('logPickHouse')>=0);
@@ -1114,18 +1119,20 @@ t('money is one sentence', $("String(houseMoneyLine)").indexOf('Contracted')>=0&
 t('settings leads with company', $("String(renderSettings)").indexOf("set-hd\">Company")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
 t('a room from the briefing comes back to the house', $("String(houseGoSite)").indexOf('navPush')>=0&&$("String(houseGoSite)").indexOf('nyOpenHouse')>=0);
-t('a packet from the house stays on the briefing', (function(){
+t('a packet from the house hides the briefing then comes back', (function(){
   asBuilder();
   $('enterDemo()');
   $('showOverview()');
   $('nyOpenHouse("p2")');
-  $('openPacketFor("p2","plumb")');
-  const stacked=$("!!(document.getElementById('houseScrim').classList.contains('show')&&document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('overview').classList.contains('show'))");
+  $('houseLeave(function(){openPacketFor("p2","plumb")})');
+  const hidden=$("!!(!document.getElementById('houseScrim').classList.contains('show')&&document.getElementById('infoScrim').classList.contains('show'))");
   $('closeInfo()');
-  const back=$("!!(document.getElementById('houseScrim').classList.contains('show')&&!document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('overview').classList.contains('show'))");
+  const back=$("!!(document.getElementById('houseScrim').classList.contains('show')&&!document.getElementById('infoScrim').classList.contains('show'))");
   $('closeHouse()');
-  return stacked===true&&back===true;
+  return hidden===true&&back===true;
 })());
+t('still-open on the house shows three then all', $("String(houseHTML)").indexOf('toggleHouseOpen')>=0&&$("String(houseHTML)").indexOf('houseGoFact')>=0&&$("String(houseHTML)").indexOf('Show all')>=0);
+t('selections from the house opens finishes', $("String(houseGoSite)").indexOf("decSeg('selections')")>=0&&$("String(houseGoSite)").indexOf("go('selections')")>=0);
 t('closing the house does not pop the page stack', $("String(closeHouse)").indexOf('navPop')<0);
 t('Needs You does not open the calendar', $("String(_nyIssues)").indexOf('openCalOn')<0);
 t('a blocked crew opens the booking', $("String(_nyIssues)").indexOf("is blocked")>=0&&$("String(_nyIssues)").indexOf('openBk')>=0&&$("String(_bkBriefHTML)").indexOf('They are blocked')>=0);

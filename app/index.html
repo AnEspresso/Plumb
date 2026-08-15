@@ -3008,13 +3008,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.249.0 - One address. Quiet doors. Same power.';
+const PLUMB_VERSION='2.250.0 - One sheet. Three facts. Selections is selections.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786832703342;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.249.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786837151445;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.250.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4280,7 +4280,7 @@ function toastAction(msg,label,fn,ms){const t=document.getElementById('toast');t
   t.querySelector('.ua').onclick=()=>{clearTimeout(t._t);t.classList.remove('show');fn();};
   t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>{t.classList.remove('show');},ms||4500);}
 function showInfo(title,bodyHTML){document.getElementById('infoTitle').textContent=title;document.getElementById('infoBody').innerHTML=bodyHTML;document.getElementById('infoScrim').classList.add('show');}
-function closeInfo(){document.getElementById('infoScrim').classList.remove('show');if(houseStillOpen()){try{refreshHouse();}catch(e){}}}
+function closeInfo(){document.getElementById('infoScrim').classList.remove('show');try{houseMaybeResume();}catch(e){}}
 
 /* Sheets stack. Opening a child never tears the parent down. Closing one hides only itself.
    Page changes (a site, permits) remember how to come back via Back. */
@@ -4489,7 +4489,7 @@ function renderSiteSummary(){
 let _nextExpanded=false,_nextCands=[],_nextPid=null,_nextSort='soonest',_nextForce=false;
 function openNextSite(pid){_nextExpanded=false;_nextForce=false;_nextPid=(pid!=null?pid:(P()&&P().id));renderNext();document.getElementById('nextScrim').classList.add('show');}
 function setNextSort(s){_nextSort=s;_nextExpanded=false;renderNext();}
-function closeNextSite(){document.getElementById('nextScrim').classList.remove('show');}
+function closeNextSite(){document.getElementById('nextScrim').classList.remove('show');try{houseMaybeResume();}catch(e){}}
 /* soonest weekday in the next 3 weeks this sub is free across ALL sites
    (capacity-aware: counts same-day bookings against their crew count). */
 function nextFreeDay(name){
@@ -6607,15 +6607,36 @@ function _nyIssues(projs){
 }
 function nyOpenHouse(pid){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  if(String(_housePid)!==String(p.id))_houseOpenAll=false;
   _housePid=String(p.id);
   try{Data.setActive(p.id);}catch(e){}
   renderHouse();
   document.getElementById('houseScrim').classList.add('show');
 }
-let _housePid=null,_houseCalPeek=false;
+let _housePid=null,_houseCalPeek=false,_houseResume=null,_houseOpenAll=false,_houseFacts=[];
 function houseStillOpen(){const el=document.getElementById('houseScrim');return !!(el&&el.classList.contains('show')&&_housePid);}
 function refreshHouse(){if(!houseStillOpen())return;renderHouse();}
-function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');_housePid=null;try{renderToday();}catch(e){}}
+function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');_housePid=null;_houseResume=null;try{renderToday();}catch(e){}}
+function houseLeave(then){
+  const pid=_housePid;
+  const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');
+  _houseResume=pid||null;
+  if(typeof then==='function')then();
+}
+function houseMaybeResume(){
+  const pid=_houseResume;_houseResume=null;
+  if(!pid)return;
+  nyOpenHouse(pid);
+}
+function toggleHouseOpen(){_houseOpenAll=!_houseOpenAll;renderHouse();}
+function houseGoFact(i){
+  const it=_houseFacts[i];if(!it||!it.go)return;
+  houseLeave(function(){try{(new Function(it.go))();}catch(e){}});
+}
+function houseGoNext(){
+  const pid=_housePid;
+  houseLeave(function(){try{openNextSite(pid);}catch(e){}});
+}
 function houseMoneyLine(p){
   try{
     const b=billingSummary(p);
@@ -6630,24 +6651,32 @@ function houseMoneyLine(p){
   }catch(e){}
   return 'No money on this job yet';
 }
-function logFromHouse(){try{Data.setActive(_housePid);}catch(e){}openSheet();}
+function logFromHouse(){
+  houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openSheet();});
+}
 function houseGoSite(view){
   const pid=_housePid;if(!pid)return;
   const hs=document.getElementById('houseScrim');if(hs)hs.classList.remove('show');
+  _houseResume=null;
   navPush(function(){showOverview();nyOpenHouse(pid);});
   openSiteFromOverview(pid);
-  if(view&&view!=='log')setTimeout(function(){try{go(view);}catch(e){}},70);
+  if(view==='selections'){
+    try{go('selections');decSeg('selections');}catch(e){}
+    setTimeout(function(){try{go('selections');decSeg('selections');}catch(e){}},200);
+  }else if(view&&view!=='log'){
+    setTimeout(function(){try{go(view);}catch(e){}},180);
+  }
 }
 function houseGoCal(){
-  const pid=_housePid;if(!pid)return;
-  const hs=document.getElementById('houseScrim');if(hs)hs.classList.remove('show');
-  navPush(function(){showOverview();nyOpenHouse(pid);});
-  try{Data.setActive(pid);}catch(e){}
-  calSiteFilter=String(pid);
-  _houseCalPeek=true;
-  openCal();
+  houseLeave(function(){
+    try{Data.setActive(_housePid);}catch(e){}
+    calSiteFilter=String(_housePid);
+    openCal();
+  });
 }
-function houseGoMoney(){try{Data.setActive(_housePid);}catch(e){}openBudget();}
+function houseGoMoney(){
+  houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openBudget();});
+}
 function openLogPick(){
   const ps=(visibleProjects()||[]).slice().sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
   if(!ps.length){toast('Add a house first');return;}
@@ -6692,16 +6721,20 @@ function houseHTML(p){
   }
   let h='<div class="pkt-strip '+(n?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   if(issues.length){
+    _houseFacts=issues;
+    const cap=3;const truncated=!_houseOpenAll&&issues.length>cap;
+    const shown=truncated?issues.slice(0,cap):issues;
     h+='<div class="pkt-open"><div class="h">Still open</div>';
-    issues.forEach(function(it){
+    shown.forEach(function(it,i){
       const who=it.trade?specLabel(it.trade):'';
-      h+='<div class="pkt-or" onclick="'+it.go+'"><div><div class="k">'+esc(it.line)+'</div>'+(who?('<div class="m">'+esc(who)+'</div>'):'')+'</div><span class="td-chev">\u203a</span></div>';
+      h+='<div class="pkt-or" onclick="houseGoFact('+i+')"><div><div class="k">'+esc(it.line)+'</div>'+(who?('<div class="m">'+esc(who)+'</div>'):'')+'</div><span class="td-chev">\u203a</span></div>';
     });
+    if(issues.length>cap)h+='<button class="td-morebtn" onclick="event.stopPropagation();toggleHouseOpen()">'+(_houseOpenAll?'Show less':('Show all '+issues.length))+'</button>';
     h+='</div>';
-  }
+  }else _houseFacts=[];
   if(isIdleSite(p)&&isBuilder){
     const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
-    h+='<div class="pkt-ask" onclick="openNextSite(\''+String(p.id).replace(/'/g,'')+'\')"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
+    h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
   h+='<div class="hs-doors">';
   if(!isClient)h+='<button class="hs-door" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">Photo or a note</div></button>';
@@ -7925,7 +7958,7 @@ function budgetCardHTML(p){
 
 
 function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');}
-function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{refreshHouse();}catch(e){}}
+function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{houseMaybeResume();}catch(e){}}
 function renderBudget(){
   const p=P();const cs=costSummary(p);const lines=costLines(p);
   let h=`<div class="bgt-tot">
@@ -9527,7 +9560,8 @@ function openSpec(id){const s=(P().selections||[]).find(x=>x.id===id);if(!s)retu
   document.getElementById('specSub').textContent=(s.item||'(unspecified)')+' · '+(s.cat||'');
   renderSpecEditor(s);document.getElementById('specScrim').classList.add('show');}
 function closeSpec(){document.getElementById('specScrim').classList.remove('show');_specId=null;_specCustomDraft=[];
-  if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}}
+  if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
+  try{houseMaybeResume();}catch(e){}}
 function renderSpecEditor(s){
   const f=specFields(s).filter(x=>!x.custom);
   const grp=who=>{const items=f.filter(x=>x.who===who);if(!items.length)return '';
@@ -10978,7 +11012,7 @@ function openReady(stageId){readyStageId=stageId;const st=STAGES.find(s=>s.id===
       <span class="go">${s.cleared?'✓ Notified':'Notify →'}</span>
     </div>`).join(''):`<div class="empty">No ${tradeLabelOf(st)} sub yet — add one so you can schedule this stage.<br>Add one from the Subcontractors list.</div>`;
   document.getElementById('readyScrim').classList.add('show');}
-function closeReady(){document.getElementById('readyScrim').classList.remove('show');if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}}
+function closeReady(){document.getElementById('readyScrim').classList.remove('show');if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}try{houseMaybeResume();}catch(e){}}
 /* ── Calendar v2 (sub-level scheduling). Bookings are per-subcontractor date
    spans on a site, with notes the sub can read. Availability blocks are the
    sub's own "I'm elsewhere" spans, written from their device and aggregated
@@ -11360,7 +11394,7 @@ function closeCal(){
   try{renderToday();}catch(e){}
   if(_bkCalPeek){_bkCalPeek=false;const bk=document.getElementById('bkScrim');if(bk)bk.classList.add('show');}
   else if(_houseCalPeek){_houseCalPeek=false;navPop();}
-  else if(houseStillOpen()){try{refreshHouse();}catch(e){}}
+  else {try{houseMaybeResume();}catch(e){}}
 }
 function calNav(d){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+d,1);renderCal();}
 function calToday(){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);renderCal();}
@@ -11617,7 +11651,7 @@ function bkOfferInvite(p,name,wasAdded){
     onConfirm:()=>{try{Data.setActive(p.id);createInvite('sub',s.id);}catch(e){}}});}
 function closeBk(){document.getElementById('bkScrim').classList.remove('show');_bkSubMod=null;_bkLead='';
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
-  if(houseStillOpen()){try{refreshHouse();}catch(e){}}
+  try{houseMaybeResume();}catch(e){}
   try{if(document.getElementById('dayScrim').classList.contains('show'))renderDay();}catch(e){}}
 function bkSyncRangeLabel(){const el=document.getElementById('bkRangeLabel');if(!el)return;el.textContent=_rangeLabel((document.getElementById('bkStart')||{}).value||'',(document.getElementById('bkEnd')||{}).value||'');}
 function _bkCalHide(){const cal=document.getElementById('bkCal');if(cal)cal.style.display='none';bkSyncRangeLabel();}
@@ -12991,7 +13025,7 @@ function nyOpenAsk(pid,bid,qi){
   document.getElementById('nyAskScrim').classList.add('show');
   setTimeout(function(){try{document.getElementById('nyAskText').focus();}catch(e){}},80);
 }
-function nyAskClose(){_nyAsk=null;_nyHo=null;const el=document.getElementById('nyAskScrim');if(el)el.classList.remove('show');if(houseStillOpen()){try{refreshHouse();}catch(e){}}}
+function nyAskClose(){_nyAsk=null;_nyHo=null;const el=document.getElementById('nyAskScrim');if(el)el.classList.remove('show');try{houseMaybeResume();}catch(e){}}
 function nyAskSend(){
   if(_nyHo){nyHoSend();return;}
   if(!_nyAsk)return;
@@ -13395,7 +13429,7 @@ function _impAfterSave(){
 }
 function closeSheet(){
   if(window._impSaving){setTimeout(_impAfterSave,80);}
-  else if((window._impQueue||[]).length){const n=window._impQueue.length;window._impQueue.length=0;window._impTotal=0;toast(n+' photo'+(n>1?'s':'')+' left unfiled');}const _sc2=document.getElementById('scrim'),_sh2=document.getElementById('sheet');if(_sc2){_sc2.classList.remove('show');_sc2.style.zIndex='';}if(_sh2){_sh2.classList.remove('show');_sh2.style.zIndex='';}setTimeout(resetSheet,350);}
+  else if((window._impQueue||[]).length){const n=window._impQueue.length;window._impQueue.length=0;window._impTotal=0;toast(n+' photo'+(n>1?'s':'')+' left unfiled');}const _sc2=document.getElementById('scrim'),_sh2=document.getElementById('sheet');if(_sc2){_sc2.classList.remove('show');_sc2.style.zIndex='';}if(_sh2){_sh2.classList.remove('show');_sh2.style.zIndex='';}setTimeout(resetSheet,350);try{houseMaybeResume();}catch(e){}}
 /* ── Photo-drop rebuild. Adding a photo replaces the drop's innerHTML, which destroys
    the placeholder AND the hidden file input inside it. Rebuilding from these canonical
    templates (instead of re-attaching surviving nodes) is the only safe reset. ── */
@@ -13540,7 +13574,7 @@ function openRecord(id){const it=P().items.find(x=>x.id===id);if(!it)return;edit
   document.getElementById('recScrim').classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('recNote')));}
 function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
-  if(houseStillOpen()){try{refreshHouse();}catch(e){}}
+  try{houseMaybeResume();}catch(e){}
   try{if(_pktLogCtx&&document.getElementById('pktLogScrim').classList.contains('show'))renderPacketLog();}catch(e){}}
 function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);if(!it)return;
   const cap=document.getElementById('recNote').value.trim()||'(no note)';
