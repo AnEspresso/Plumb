@@ -2971,13 +2971,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.236.0 - Double-booked names the dates. Their calendar shows the overlap.';
+const PLUMB_VERSION='2.237.0 - A builder who can see the jobs can open the company record.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786804773839;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.236.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786807209511;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.237.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -7294,7 +7294,15 @@ const Org={
       const verdict=this._absorb(d);
       this._listen(id);
       if(!d||verdict==='local'){if(this._isBuilder())this.schedule();}
-    }catch(e){this._listen(id);}},
+    }catch(e){
+      /* A missing org is refused as permission-denied (rules read members on
+         a doc that is not there yet). A builder who already holds the jobs
+         creates the company record. Then listen. */
+      if(this._isBuilder()){
+        try{await this.push();}catch(err){console.warn('[SitePlumb] org create',err);return;}
+        this._listen(id);
+      }
+    }},
   _listen(id){
     if(this._unsub)return;
     try{
@@ -7302,7 +7310,7 @@ const Org={
         const d=(snap&&snap.exists!==false&&snap.data&&snap.data())||null;if(!d)return;
         if(d.updatedBy===Sync.deviceId)return;
         if(this._absorb(d)==='local')this.schedule();
-      },err=>console.warn('[SitePlumb] org',err));
+      },err=>{console.warn('[SitePlumb] org',err);this._unsub=null;});
       Sync.unsub.push(this._unsub);
     }catch(e){}},
   schedule(){if(this._timer)return;this._timer=setTimeout(()=>{this._timer=null;this.push();},700);},

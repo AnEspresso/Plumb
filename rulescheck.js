@@ -227,7 +227,8 @@ async function main() {
 
   /* ══════════ ORGS ══════════ */
   await INV('orgs: member reads', getDoc(doc(db.builder, 'orgs/org1')), true);
-  await INV('orgs: non-member DENIED read', getDoc(doc(db.stranger, 'orgs/org1')), false);
+  await INV('orgs: non-member DENIED read of existing', getDoc(doc(db.stranger, 'orgs/org1')), false);
+  await INV('orgs: signed-in get of missing org allowed', getDoc(doc(db.stranger, 'orgs/orgDoesNotExist')), true);
   await INV('orgs: create stamping self builder allowed',
     setDoc(doc(db.stranger, 'orgs/orgNew'), { members: { [U.stranger]: 'builder' } }), true);
   await INV('orgs: create without self-as-builder denied',
