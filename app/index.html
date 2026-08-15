@@ -2971,24 +2971,27 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.237.0 - A builder who can see the jobs can open the company record.';
+const PLUMB_VERSION='2.238.0 - QA logins can open the workbench.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786807209511;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.237.0';     /* keep in sync with sw.js CACHE on each deploy */
-/* Workbench access: owner account only, matched by hash — the address itself
-   never appears in this file. */
+const APP_VERSION=1786811407619;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.238.0';     /* keep in sync with sw.js CACHE on each deploy */
+/* Workbench access: owner account (hash, so the address is not in this file)
+   plus the QA logins Peter uses for live testing (and +aliases). Grants still
+   let the owner add anyone else. */
 const DEV_OWNER_HASH='hkjm3d9';
 function _devEmail(){try{return ((laProfile()||{}).email||(state.session&&state.session.auth&&state.session.auth.email)||'').trim().toLowerCase();}catch(e){return '';}}
 function devOwner(){const em=_devEmail();return !!em&&laHash(em)===DEV_OWNER_HASH;}
+function devQa(){return /^pmgottschalkqa(\+[^@]+)?@gmail\.com$/.test(_devEmail());}
+function devCanGrant(){return devOwner()||devQa();}
 function devAllowed(){
-  if(devOwner())return true;
+  if(devOwner()||devQa())return true;
   try{const em=_devEmail();if(!em)return false;const h=laHash(em);
     return (orgPrefs().devGrants||[]).some(g=>g.h===h);}catch(e){return false;}}
 function devGrantAdd(){
-  if(!devOwner()){toast('Only the owner account can grant access');return;}
+  if(!devCanGrant()){toast('Only the owner or QA account can grant access');return;}
   const em=((document.getElementById('grantEmail')||{value:''}).value||'').trim().toLowerCase();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){toast('Enter the tester\u2019s account email');return;}
   const op=orgPrefs();op.devGrants=op.devGrants||[];
@@ -2997,15 +3000,15 @@ function devGrantAdd(){
   saveOrgPrefs(op);logEvent('devGrant',em);toast('Workbench access granted to '+em);
   try{document.getElementById('grantEmail').value='';}catch(e){}renderDevGrants();}
 function devGrantRevoke(h){
-  if(!devOwner()){toast('Only the owner account can revoke access');return;}
+  if(!devCanGrant()){toast('Only the owner or QA account can revoke access');return;}
   const op=orgPrefs();const i=(op.devGrants||[]).findIndex(g=>g.h===h);if(i<0)return;
   const em=op.devGrants[i].email;op.devGrants.splice(i,1);
   saveOrgPrefs(op);logEvent('devRevoke',em);toast('Access revoked for '+em);renderDevGrants();}
 function renderDevGrants(){
   const el=document.getElementById('grantList');if(!el)return;
   const card=document.getElementById('grantCard');
-  if(card)card.style.display=devOwner()?'':'none';
-  if(!devOwner())return;
+  if(card)card.style.display=devCanGrant()?'':'none';
+  if(!devCanGrant())return;
   const a=orgPrefs().devGrants||[];
   el.innerHTML=a.length?a.map(g=>`<div class="subrow"><div class="si"><div class="n">${esc(g.email)}</div><div class="d">granted ${timeAgo(g.t)}</div></div><button class="lpay" onclick="devGrantRevoke('${g.h}')">Revoke</button></div>`).join('')
     :'<div class="empty" style="padding:6px 0">No testers right now. Grants sync to their phone in seconds; revoking removes access just as fast.</div>';}
@@ -13420,7 +13423,7 @@ function deleteRecord(){if(editingRecId==null)return;const it=P().items.find(x=>
   Data.removeItem(P().id,rid);logEvent('recordDelete','#'+rid);
   closeRecord();renderFeed();renderIssues();renderPhotos();renderBuild();toast('Entry deleted');}});}
 
-/* developer access: Settings → Workbench, owner account only (see devAllowed) */
+/* developer access: Settings → Workbench (owner, QA logins, or a grant) */
 function devSaveVapid(){const v=(document.getElementById('vapidInput')||{value:''}).value.trim();
   try{if(v)localStorage.setItem('plumb.fcm.vapid',v);else localStorage.removeItem('plumb.fcm.vapid');}catch(e){}
   toast(v?'Push key saved — registering device':'Push key cleared');
