@@ -2960,13 +2960,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.226.0 - Closing a sheet returns you to the one underneath. Spec cards open the packet, not the site.';
+const PLUMB_VERSION='2.227.0 - Confirm and reset emails open the app, not the marketing site.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786760336360;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.226.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786785530639;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.227.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -4790,13 +4790,24 @@ async function liveAuthSubmit(){
 }
 function laOk(msg){const e=document.getElementById('laErr');if(!e)return;
   e.textContent=msg;e.style.display='';e.classList.add('ok');}
+function authContinueUrl(){
+  try{
+    if(location.hostname==='siteplumb.com'||location.hostname==='www.siteplumb.com')
+      return 'https://siteplumb.com/app/';
+    const p=location.pathname||'/';
+    if(/\/app(\/|\/index\.html|\/plumb\.html)?$/.test(p))
+      return location.origin+(p.replace(/index\.html$|plumb\.html$/,'')||'/app/');
+    return location.origin+'/app/';
+  }catch(e){return 'https://siteplumb.com/app/';}
+}
+function authActionSettings(){return {url:authContinueUrl(),handleCodeInApp:true};}
 async function liveForgot(){
   const e=document.getElementById('laErr');if(e)e.classList.remove('ok');
   const email=(document.getElementById('laEmail').value||'').trim().toLowerCase();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){laErr('Enter your email above first, then tap Forgot password.');return;}
   if(laFirebaseReady()){
     try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());
-      await firebase.auth().sendPasswordResetEmail(email,{url:location.origin+location.pathname});
+      await firebase.auth().sendPasswordResetEmail(email,authActionSettings());
       const sender='noreply@siteplumb.com';
       laOk('If an account exists for '+email+', a reset link is on its way. It comes from '+sender+' — check spam or junk if it doesn\u2019t arrive in a minute or two. No email means no account exists under exactly this address.');
       logEvent('pwResetRequested',email.replace(/^(.).*(@.*)$/,'$1\u2026$2'));}
@@ -4856,7 +4867,7 @@ async function _evSend(user){
   if(!user)return false;
   const now=Date.now();
   if(now-_evLastSend<45000)return false;            // Firebase throttles hard - do not spend the quota
-  try{await user.sendEmailVerification({url:location.origin+location.pathname});
+  try{await user.sendEmailVerification(authActionSettings());
     _evLastSend=now;logEvent('verifySent','');return true;}
   catch(e){logEvent('verifySendFailed',String((e&&e.code)||'').slice(0,40));return false;}}
 function _evAfterSignup(email){
@@ -5009,7 +5020,7 @@ async function pwResetResend(){
   const email=(document.getElementById('prEmail').value||'').trim().toLowerCase();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){_prError('Enter a valid email address.');return;}
   const btn=document.getElementById('prResend');btn.disabled=true;
-  try{await firebase.auth().sendPasswordResetEmail(email,{url:location.origin+location.pathname});
+  try{await firebase.auth().sendPasswordResetEmail(email,authActionSettings());
     pwResetClose();toast('New link sent \u2014 check your email (and spam)');logEvent('pwResetRequested',email.replace(/^(.).*(@.*)$/,'$1\u2026$2'));}
   catch(err){_prError((err&&err.code)==='auth/too-many-requests'?'Too many attempts \u2014 wait a few minutes.':((err&&err.message)||'Couldn\u2019t send.'));}
   finally{btn.disabled=false;}}
