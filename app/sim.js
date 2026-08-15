@@ -954,8 +954,8 @@ t('packet stamping records reply and open questions on the booking', (function()
   return b.pkResp&&b.pkResp.status==='change'&&b.pkQOpen===1&&b.pkStamp>0;})());
 t('NEEDS YOU surfaces the suggested dates and the question', (function(){
   $("renderToday()");
-  const h=$("document.getElementById('ovToday').innerHTML");
-  return h.indexOf('Date change')>=0&&h.indexOf('Question')>=0&&h.indexOf('nyOpenAsk')>=0;})());
+  const kinds=$("JSON.stringify(_nyIssues(visibleProjects()).map(function(i){return i.kind;}))");
+  return kinds.indexOf('Date change')>=0&&kinds.indexOf('Question')>=0;})());
 $("(function(){var b=state.projects[1].bookings[0];delete b.pkResp;delete b.pkQOpen;delete b.pkStamp;renderToday();})()");
 // v2.210: the regressions Peter caught become permanent checks
 t('openConfirm fires its onConfirm callback', (function(){
@@ -1047,16 +1047,15 @@ t('a one-day window formats as a single date', (function(){
   return same.indexOf('\u2013')<0&&span.indexOf('\u2013')>=0;
 })());
 t('removing a booking clears its Needs You card', (function(){
-  $("(function(){var p=state.projects[1];var b={id:'bkDrop',subName:'Drop Crew',trade:'plumb',start:Date.now()+864e5,end:Date.now()+2*864e5,pkToken:'pkDROP',pkResp:{status:'change',start:Date.now()+3*864e5,end:Date.now()+4*864e5,t:1}};p.bookings.push(b);_needsExpanded=true;renderToday();})()");
-  const before=$("document.getElementById('ovToday').innerHTML").indexOf('Drop Crew')>=0;
+  $("(function(){var p=state.projects[1];var b={id:'bkDrop',subName:'Drop Crew',trade:'plumb',start:Date.now()+864e5,end:Date.now()+2*864e5,pkToken:'pkDROP',pkResp:{status:'change',start:Date.now()+3*864e5,end:Date.now()+4*864e5,t:1}};p.bookings.push(b);})()");
+  const before=$("JSON.stringify(_nyIssues(visibleProjects()).map(function(i){return i.line;}))").indexOf('Drop Crew')>=0;
   $("(function(){var p=state.projects[1];deleteBooking(p,'bkDrop');})()");
-  const after=$("document.getElementById('ovToday').innerHTML").indexOf('Drop Crew')<0;
-  $("_needsExpanded=false");
+  const after=$("JSON.stringify(_nyIssues(visibleProjects()).map(function(i){return i.line;}))").indexOf('Drop Crew')<0;
   return before&&after;
 })());
 t('leaving the calendar redraws Needs You', $("String(closeCal)").indexOf('renderToday')>=0);
-t('Needs You names the kind of work', $("String(renderToday)").indexOf('Date change')>=0&&$("String(renderToday)").indexOf('Question')>=0);
-t('Needs You covers the six new kinds', $("String(renderToday)").indexOf('They declined')>=0&&$("String(renderToday)").indexOf('Waiting on them')>=0&&$("String(renderToday)").indexOf('Site not ready')>=0&&$("String(renderToday)").indexOf('Homeowner wrote you')>=0&&$("String(renderToday)").indexOf('On deck, not booked')>=0&&$("String(_nyOnDeck)").indexOf('prevDone')>=0);
+t('Needs You names the kind of work', $("String(_nyIssues)").indexOf('Date change')>=0&&$("String(_nyIssues)").indexOf('Question')>=0);
+t('Needs You covers the six new kinds', $("String(_nyIssues)").indexOf('They declined')>=0&&$("String(_nyIssues)").indexOf('Waiting on them')>=0&&$("String(_nyIssues)").indexOf('Site not ready')>=0&&$("String(_nyIssues)").indexOf('Homeowner wrote you')>=0&&$("String(_nyIssues)").indexOf('On deck, not booked')>=0&&$("String(_nyOnDeck)").indexOf('prevDone')>=0);
 t('Show all and Recent decisions are separate actions', $("String(renderToday)").indexOf('td-histbtn')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
 t('untagged site files stay out of a trade packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Construction Contract.pdf'})")===false);
 t('a trade-tagged plan is in that packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Plumbing Rough-In Plan.pdf',trade:'plumb'})")===true);
@@ -1064,13 +1063,60 @@ t('the packet is a briefing with still-open first', $("String(packetHTML)").inde
 t('answering a spec from the packet does not tear the packet down', $("String(pktFillSpec)").indexOf('closeInfo')<0&&$("String(pktFillSpec)").indexOf('openSpec')>=0);
 t('Needs You opens a packet without leaving home', $("String(openPacketFor)").indexOf('openSiteFromOverview')<0);
 t('Back returns through the sheet stack', $("String(backToOverview)").indexOf('navPop')>=0&&$("String(navPush)").indexOf('restore')>=0);
-t('a spec card opens the packet, not the site', (function(){
-  const src=$("String(renderToday)");
-  const i=src.indexOf('Spec still open');
-  if(i<0)return false;
-  const slice=src.slice(i,i+420);
-  return slice.indexOf('openPacketFor')>=0&&slice.indexOf('todayGo')<0;
+t('Gone quiet whispers on the house, not Needs You', $("String(_nyIssues)").indexOf('Gone quiet')<0&&$("String(_siteWhisper)").indexOf('Quiet')>=0&&$("String(renderOvCards)").indexOf("kind==='idle'")>=0&&$("String(renderOvCards)").indexOf('openNextSite')>=0);
+t('Gone quiet keeps home under the sheet', (function(){
+  asBuilder();
+  $('enterDemo()');
+  $('showOverview()');
+  $('openNextSite("p4")');
+  const stacked=$("!!(document.getElementById('nextScrim')&&document.getElementById('nextScrim').classList.contains('show')&&document.getElementById('overview')&&document.getElementById('overview').classList.contains('show'))");
+  $('closeNextSite()');
+  const home=$("!!(!document.getElementById('nextScrim').classList.contains('show')&&document.getElementById('overview').classList.contains('show'))");
+  return stacked===true&&home===true;
 })());
+t('a house card opens the briefing, not the site', $("String(nyOpenHouse)").indexOf('houseScrim')>=0&&$("String(nyOpenHouse)").indexOf('openSiteFromOverview')<0&&$("String(houseHTML)").indexOf('_nyIssues')>=0);
+t('Needs You is one card per house', (function(){
+  asBuilder();
+  $('enterDemo()');
+  $('showOverview()');
+  $('_needsExpanded=true;renderToday()');
+  const n=$("(function(){var hs=[].slice.call(document.querySelectorAll('#ovToday .td-alert b')).map(function(el){return el.textContent;});return hs.filter(function(x){return x.indexOf('Calderwood')>=0;}).length;})()");
+  return n===1;
+})());
+t('tapping a house card opens the briefing on home', (function(){
+  asBuilder();
+  $('enterDemo()');
+  $('showOverview()');
+  $('nyOpenHouse("p2")');
+  const ok=$("!!(document.getElementById('houseScrim')&&document.getElementById('houseScrim').classList.contains('show')&&document.getElementById('overview')&&document.getElementById('overview').classList.contains('show'))");
+  $('closeHouse()');
+  const home=$("!!(!document.getElementById('houseScrim').classList.contains('show')&&document.getElementById('overview').classList.contains('show'))");
+  return ok===true&&home===true;
+})());
+t('the house briefing lists every still-open fact', (function(){
+  asBuilder();
+  $('enterDemo()');
+  $('nyOpenHouse("p2")');
+  const lines=JSON.parse($("JSON.stringify(_nyIssues([state.projects.find(function(x){return x.id==='p2';})]).filter(function(i){return !i.cross;}).map(function(i){return i.line;}))"));
+  const html=$("document.getElementById('houseBody').innerHTML");
+  $('closeHouse()');
+  return lines.length>=2&&lines.every(function(line){return html.indexOf(line)>=0;});
+})());
+t('a packet from the house stays on the briefing', (function(){
+  asBuilder();
+  $('enterDemo()');
+  $('showOverview()');
+  $('nyOpenHouse("p2")');
+  $('openPacketFor("p2","plumb")');
+  const stacked=$("!!(document.getElementById('houseScrim').classList.contains('show')&&document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('overview').classList.contains('show'))");
+  $('closeInfo()');
+  const back=$("!!(document.getElementById('houseScrim').classList.contains('show')&&!document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('overview').classList.contains('show'))");
+  $('closeHouse()');
+  return stacked===true&&back===true;
+})());
+t('closing the house does not pop the page stack', $("String(closeHouse)").indexOf('navPop')<0);
+t('Open items is not a second inbox', $("String(renderOvSortRow)").indexOf('openOpenItems')<0);
+t('the packet lists the other house facts', $("String(pktAsk)").indexOf('_nyIssues')>=0);
 t('closing a spec does not pop the page stack', $("String(closeSpec)").indexOf('navPop')<0&&$("String(closeRecord)").indexOf('navPop')<0&&$("String(closeBk)").indexOf('navPop')<0);
 t('a homeowner note opens on home', $("String(todayGoRecord)").indexOf('openSiteFromOverview')<0&&$("String(todayGoRecord)").indexOf('openRecord')>=0);
 t('the packet log keeps the packet under a record', $("String(renderPacketLog)").indexOf('closePktLog();openRecord')<0);
@@ -1095,11 +1141,11 @@ t('Needs You spec path stays on the packet', (function(){
 })());
 t('a waiting packet is gated to two days', $("String(_nyWaiting)").indexOf('48*3600*1000')>=0);
 t('site-not-ready is only today or tomorrow', $("String(_nySiteNotReady)").indexOf('864e5')>=0);
-t('a date change opens the booking, not a one-tap confirm', $("String(renderToday)").indexOf("go:`openBk(")>=0&&$("String(renderToday)").indexOf('nyConfirm')<0);
-t('a date change opens the booking, not a one-tap confirm', $("String(renderToday)").indexOf("go:`openBk(")>=0&&$("String(renderToday)").indexOf('nyConfirm')<0);
-t('a question opens its own sheet', $("String(renderToday)").indexOf('nyOpenAsk')>=0&&$("typeof nyOpenAsk")==='function');
+t('a date change opens the booking, not a one-tap confirm', $("String(_nyIssues)").indexOf("go:`openBk(")>=0&&$("String(renderToday)").indexOf('nyConfirm')<0);
+t('a date change opens the booking, not a one-tap confirm', $("String(_nyIssues)").indexOf("go:`openBk(")>=0&&$("String(renderToday)").indexOf('nyConfirm')<0);
+t('a question opens its own sheet', $("String(_nyIssues)").indexOf('nyOpenAsk')>=0&&$("typeof nyOpenAsk")==='function');
 t('packet cards do not use the guest-page black button', $("String(renderToday)").indexOf('gp-btn go')<0);
-t('the red mark is reserved for blockers', $("String(renderToday)").indexOf("lvl:'msg'")>=0);
+t('the red mark is reserved for blockers', $("String(_nyIssues)").indexOf("lvl:'msg'")>=0);
 t('confirming dates writes a decision receipt', $("String(bkAcceptChange)").indexOf('pkLogAdd')>=0&&$("typeof openPkLog")==='function');
 t('the example build includes a packet date change', (function(){
   const b=JSON.parse($("JSON.stringify((state.projects.find(function(p){return p.id==='p2';})||{}).bookings||[])"));

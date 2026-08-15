@@ -2440,6 +2440,14 @@ body.on-tour .tour-card{display:block;}
     </div>
   </div>
 
+  <div class="pmodal-scrim" id="houseScrim" style="z-index:88">
+    <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
+      <h4 id="houseTitle">This job</h4>
+      <div class="info-body" id="houseBody"></div>
+      <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeHouse()">Done</button></div>
+    </div>
+  </div>
+
   <div class="pmodal-scrim" id="infoScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="infoTitle">Heads up</h4>
@@ -2960,13 +2968,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.227.0 - Confirm and reset emails open the app, not the marketing site.';
+const PLUMB_VERSION='2.230.0 - The house card opens every still-open fact on that job.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786785530639;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.227.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786792898492;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.230.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -4229,7 +4237,7 @@ function toastAction(msg,label,fn,ms){const t=document.getElementById('toast');t
   t.querySelector('.ua').onclick=()=>{clearTimeout(t._t);t.classList.remove('show');fn();};
   t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>{t.classList.remove('show');},ms||4500);}
 function showInfo(title,bodyHTML){document.getElementById('infoTitle').textContent=title;document.getElementById('infoBody').innerHTML=bodyHTML;document.getElementById('infoScrim').classList.add('show');}
-function closeInfo(){document.getElementById('infoScrim').classList.remove('show');}
+function closeInfo(){document.getElementById('infoScrim').classList.remove('show');if(houseStillOpen()){try{refreshHouse();}catch(e){}}}
 
 /* Sheets stack. Opening a child never tears the parent down. Closing one hides only itself.
    Page changes (a site, permits) remember how to come back via Back. */
@@ -6468,107 +6476,168 @@ function _siteWhisper(p){
       if(!best)best={kind:'q',bid:b.id,text:(b.subName||'The crew')+' asked a question'};
     }
   });
+  if(!best&&isIdleSite(p)){
+    const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
+    best={kind:'idle',text:'Quiet '+days+' day'+(days===1?'':'s')};
+  }
   return best;
+}
+function _nyIssues(projs){
+  const today=dayStart(Date.now());const horizon=today+14*864e5;
+  const issues=[];const seen={};
+  (projs||[]).forEach(function(p){
+    (p.bookings||[]).forEach(function(b){
+      const trade=tdTradeOf(p,b);const site=p.street||p.name||'';
+      if(_pkChangeOpen(b)){
+        const ask=b.pkResp.start?fmtWin({start:b.pkResp.start,end:b.pkResp.end||b.pkResp.start}):'new dates';
+        issues.push({kind:'Date change',pid:p.id,site:site,trade:trade,bid:b.id,pri:0,lvl:'msg',ts:b.pkResp.t||b.start,
+          line:(b.subName||'The crew')+' asked for '+ask,go:`openBk('${p.id}|${b.id}')`});
+      }
+      if((b.pkQOpen||0)>0){
+        const qs=b.pkQs||[];const qi=qs.findIndex(function(x){return !x.a;});
+        issues.push({kind:'Question',pid:p.id,site:site,trade:trade,bid:b.id,pri:0,lvl:'msg',ts:b.start,
+          line:(b.subName||'The crew')+' asked a question',go:`nyOpenAsk('${p.id}','${b.id}',${qi<0?0:qi})`});
+      }
+      if(_nyDeclined(b,today)){
+        issues.push({kind:'They declined',pid:p.id,site:site,trade:trade,bid:b.id,pri:0,lvl:'warn',ts:b.t||b.start,
+          line:(b.subName||'The crew')+' declined',go:`openBk('${p.id}|${b.id}')`});
+      }
+      if(_nyWaiting(b)&&(b.end||b.start)>=today){
+        issues.push({kind:'Waiting on them',pid:p.id,site:site,trade:trade,bid:b.id,pri:2,lvl:'msg',ts:b.pkSent||b.start,
+          line:'Waiting on '+(b.subName||'the crew'),go:`openBk('${p.id}|${b.id}')`});
+      }
+      if(_nySiteNotReady(p,b,today)){
+        const key='nr|'+p.id+'|'+trade;if(!seen[key]){seen[key]=1;
+          issues.push({kind:'Site not ready',pid:p.id,site:site,trade:trade,pri:0,lvl:'warn',ts:b.start,
+            line:'Not ready for '+(specLabel(trade)||'the crew'),go:`openPacketFor('${p.id}','${trade}')`});}
+      }
+    });
+  });
+  bookingConflicts().filter(function(c){return c.kind==='blocked';}).forEach(function(c){
+    const bid=c.a&&c.a.id;const k='bl|'+c.name+'|'+(bid||'');if(seen[k])return;seen[k]=1;
+    const pid=c.a&&c.a.p&&c.a.p.id;const site=c.a&&c.a.p?(c.a.p.street||c.a.p.name):'';
+    const trade=(c.a&&c.a.p)?tdTradeOf(c.a.p,c.a):'';
+    issues.push({kind:'They\u2019re blocked',pid:pid,site:site,trade:trade,pri:0,lvl:'warn',ts:(c.a&&c.a.start)||today,
+      line:(c.name||'A crew')+' is blocked',go:`openCalOn(${(c.a&&c.a.start)||today}${pid?(",'"+pid+"'"):''})`});
+  });
+  (projs||[]).forEach(function(p){
+    (p.bookings||[]).forEach(function(b){
+      if((b.status||'confirmed')==='declined')return;
+      if(b.end<today||b.start>horizon)return;
+      const trade=tdTradeOf(p,b);if(!trade)return;
+      const key='sp|'+p.id+'|'+trade;if(seen[key]||seen['nr|'+p.id+'|'+trade])return;
+      if(!tradeSelections(p,trade).length)return;
+      if(!packetReady(p,trade)){seen[key]=1;
+        const gaps=tradeSpecGaps(p,trade).length;
+        const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'packet not signed off';
+        issues.push({kind:'Spec still open',pid:p.id,site:p.street||p.name,trade:trade,pri:1,lvl:'warn',ts:b.start,
+          line:why,go:`openPacketFor('${p.id}','${trade}')`});
+      }
+    });
+  });
+  bookingConflicts().filter(function(c){return c.kind==='double';}).forEach(function(c){
+    const where=[];(c.sites||[]).forEach(function(s){if(where.indexOf(s)<0)where.push(s);});
+    const k='c|'+c.name+'|'+where.slice().sort().join('|');if(seen[k])return;seen[k]=1;
+    issues.push({kind:'Double-booked',pid:null,site:where.join(' \u00b7 '),trade:'',pri:1,lvl:'warn',ts:today-1,
+      line:(c.name||'A crew')+' is double-booked',go:`openCalOn(${c.day})`,cross:1});
+  });
+  (projs||[]).forEach(function(p){
+    _nyHomeownerItems(p).forEach(function(it){
+      const kind=it.kind==='idea'?'Idea':'Concern';
+      issues.push({kind:'Homeowner wrote you',pid:p.id,site:p.street||p.name||'',trade:'',pri:2,lvl:'msg',ts:it.t||today,
+        line:'Homeowner \u00b7 '+kind+(it.cap?(' \u00b7 '+_tdClip(it.cap,48)):''),
+        go:`todayGoRecord('${p.id}',${it.id})`});
+    });
+  });
+  _nyOnDeck(projs).slice(0,3).forEach(function(o){
+    issues.push({kind:'On deck, not booked',pid:o.pid,site:o.site,trade:o.trade,pri:3,lvl:'msg',ts:today,
+      line:'On deck \u00b7 '+(specLabel(o.trade)||o.stage)+' not booked',
+      go:`nyBookSub('${o.pid}','${String(o.sub).replace(/'/g,'')}')`});
+  });
+  return issues;
+}
+function nyOpenHouse(pid){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  _housePid=String(p.id);
+  try{Data.setActive(p.id);}catch(e){}
+  renderHouse();
+  document.getElementById('houseScrim').classList.add('show');
+}
+let _housePid=null;
+function houseStillOpen(){const el=document.getElementById('houseScrim');return !!(el&&el.classList.contains('show')&&_housePid);}
+function refreshHouse(){if(!houseStillOpen())return;renderHouse();}
+function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');_housePid=null;try{renderToday();}catch(e){}}
+function renderHouse(){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(_housePid);});
+  const ttl=document.getElementById('houseTitle');const body=document.getElementById('houseBody');
+  if(!p||!body)return;
+  if(ttl)ttl.textContent=p.street||p.name||'This job';
+  body.innerHTML=houseHTML(p);
+}
+function houseHTML(p){
+  const issues=_nyIssues([p]).filter(function(x){return String(x.pid)===String(p.id)&&!x.cross;});
+  issues.sort(function(a,b){return (a.pri-b.pri)||((b.ts||0)-(a.ts||0));});
+  const deck=onDeckOf(p);const n=issues.length;
+  const stripSt=n?(n+' still '+(n===1?'needs':'need')+' you'):'All clear on this job';
+  const meta=[];if(p.city)meta.push(p.city);if(deck)meta.push('On deck \u00b7 '+(deck.name||specLabel(deck.trade)||''));
+  let h='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name||'')+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">This job</div></div>';
+  h+='<div class="pkt-strip '+(n?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
+  if(issues.length){
+    h+='<div class="pkt-open"><div class="h">Still open</div>';
+    issues.forEach(function(it){
+      const who=it.trade?specLabel(it.trade):'';
+      h+='<div class="pkt-or" onclick="'+it.go+'"><div><div class="k">'+esc(it.line)+'</div>'+(who?('<div class="m">'+esc(who)+'</div>'):'')+'</div><span class="td-chev">\u203a</span></div>';
+    });
+    h+='</div>';
+  }
+  if(isIdleSite(p)){
+    const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
+    h+='<div class="pkt-ask" onclick="openNextSite(\''+String(p.id).replace(/'/g,'')+'\')"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
+  }
+  return h;
 }
 function renderToday(){
   const el=document.getElementById('ovToday');if(!el)return;
   const typing=document.getElementById('nyQText');
   const keep=typing&&document.activeElement===typing?{v:typing.value,s:typing.selectionStart}:null;
-  const projs=visibleProjects();const today=dayStart(Date.now());const horizon=today+14*864e5;
-  const warns=[];const seen={};
+  const projs=visibleProjects();const today=dayStart(Date.now());
   try{pkSweep();}catch(e){}
-  projs.forEach(p=>(p.bookings||[]).forEach(b=>{
-    if(_pkChangeOpen(b)){
-      const was=fmtWin({start:b.start,end:b.end||b.start});
-      const ask=b.pkResp.start?fmtWin({start:b.pkResp.start,end:b.pkResp.end||b.pkResp.start}):'new dates';
-      warns.push({lvl:'msg',pri:0,html:`<b>Date change</b><div class="td-meta">${esc(b.subName||'Crew')} \u00b7 ${esc(p.street||p.name||'')}</div>`
-        +`<div class="td-quote">${esc(was)} \u2192 ${esc(ask)}</div>`
-        +(b.pkResp.note?`<div class="td-meta">\u201c${esc(_tdClip(b.pkResp.note,64))}\u201d</div>`:''),
-        go:`openBk('${p.id}|${b.id}')`,ts:b.pkResp.t||b.start});
+  const issues=_nyIssues(projs);
+  const houses=[];const ix={};
+  issues.forEach(function(it){
+    if(it.cross||it.pid==null||it.pid===''){
+      houses.push({cross:1,lvl:it.lvl,pri:it.pri,ts:it.ts,html:'<b>'+esc(it.kind)+'</b><div class="td-meta">'+esc(it.line)+(it.site?(' \u00b7 '+it.site):'')+'</div>',go:it.go});
+      return;
     }
-    if((b.pkQOpen||0)>0){
-      const qs=b.pkQs||[];const qi=qs.findIndex(x=>!x.a);const q=qi>=0?qs[qi]:null;
-      warns.push({lvl:'msg',pri:0,html:`<b>Question</b><div class="td-meta">${esc(b.subName||'Crew')} \u00b7 ${esc(p.street||p.name||'')}</div>`
-        +(q&&q.text?`<div class="td-quote">\u201c${esc(_tdClip(q.text,88))}\u201d</div>`:''),
-        go:`nyOpenAsk('${p.id}','${b.id}',${qi<0?0:qi})`,ts:b.start});
-    }
-    if(_nyDeclined(b,today)){
-      warns.push({lvl:'warn',pri:0,html:`<b>They declined</b><div class="td-meta">${esc(b.subName||'Crew')} \u00b7 ${esc(p.street||p.name||'')}</div>`
-        +`<div class="td-quote">${esc(fmtWin({start:b.start,end:b.end||b.start}))}</div>`,
-        go:`openBk('${p.id}|${b.id}')`,ts:b.t||b.start});
-    }
-    if(_nyWaiting(b)&&(b.end||b.start)>=today){
-      warns.push({lvl:'msg',pri:2,html:`<b>Waiting on them</b><div class="td-meta">${esc(b.subName||'Crew')} \u00b7 ${esc(p.street||p.name||'')}</div>`
-        +`<div class="td-quote">${esc(fmtWin({start:b.start,end:b.end||b.start}))}</div>`,
-        go:`openBk('${p.id}|${b.id}')`,ts:b.pkSent||b.start});
-    }
-    if(_nySiteNotReady(p,b,today)){
-      const trade=tdTradeOf(p,b);const key='nr|'+p.id+'|'+trade;if(!seen[key]){seen[key]=1;
-        warns.push({lvl:'warn',pri:0,html:`<b>Site not ready</b><div class="td-meta">${esc(specLabel(trade)||'Crew')} \u00b7 ${esc(p.street||p.name)} \u00b7 ${tdDayLabel(b.start)}</div>`
-          +`<div class="td-quote">Crew arrives ${tdDayLabel(b.start)}</div>`,
-          go:`openPacketFor('${p.id}','${trade}')`,ts:b.start});}
-    }
-  }));
-  bookingConflicts().filter(c=>c.kind==='blocked').forEach(c=>{
-    const bid=c.a&&c.a.id;const k='bl|'+c.name+'|'+(bid||'');if(seen[k])return;seen[k]=1;
-    const when=c.a?fmtWin({start:c.a.start,end:c.a.end||c.a.start}):'';
-    const site=c.a&&c.a.p?(c.a.p.street||c.a.p.name):'';
-    warns.push({lvl:'warn',pri:0,html:`<b>They\u2019re blocked</b><div class="td-meta">${esc(c.name)}${site?(' \u00b7 '+esc(site)):''}</div>`
-      +(when?`<div class="td-quote">${esc(when)}</div>`:''),
-      go:`openCalOn(${(c.a&&c.a.start)||today}${c.a&&c.a.p?(",'"+c.a.p.id+"'"):''})`,ts:(c.a&&c.a.start)||today});
+    const k=String(it.pid);
+    if(!ix[k]){ix[k]={pid:it.pid,site:it.site,lvl:it.lvl,pri:it.pri,ts:it.ts,line:it.line,n:0};houses.push(ix[k]);}
+    const c=ix[k];c.n++;
+    if(it.pri<c.pri||(it.pri===c.pri&&(it.ts||0)>(c.ts||0))){c.pri=it.pri;c.ts=it.ts;c.line=it.line;}
+    if(it.lvl==='warn')c.lvl='warn';
   });
-  projs.forEach(p=>(p.bookings||[]).forEach(b=>{
-    if((b.status||'confirmed')==='declined')return;
-    if(b.end<today||b.start>horizon)return;
-    const trade=tdTradeOf(p,b);if(!trade)return;
-    const key='sp|'+p.id+'|'+trade;if(seen[key]||seen['nr|'+p.id+'|'+trade])return;
-    if(!tradeSelections(p,trade).length)return;
-    if(!packetReady(p,trade)){seen[key]=1;
-      const gapList=tradeSpecGaps(p,trade);const gaps=gapList.length;
-      const tgt=gaps?gapList[0]:tradeSelections(p,trade).filter(x=>!x.approved)[0];
-      const why=gaps?`${gaps} spec${gaps===1?'':'s'} still open`:'packet not signed off';
-      warns.push({lvl:'warn',pri:1,html:`<b>Spec still open</b><div class="td-meta">${esc(specLabel(trade))} \u00b7 ${esc(p.street||p.name)} \u00b7 ${tdDayLabel(b.start)}</div><div class="td-quote">${esc(why)}</div>`,go:`openPacketFor('${p.id}','${trade}')`,ts:b.start});
-    }}));
-  bookingConflicts().filter(c=>c.kind==='double').forEach(c=>{
-    const where=[...new Set(c.sites||[])];const k='c|'+c.name+'|'+where.slice().sort().join('|');if(seen[k])return;seen[k]=1;
-    warns.push({lvl:'warn',pri:1,html:`<b>Double-booked</b><div class="td-meta">${esc(c.name)}</div><div class="td-quote">${where.map(esc).join(' \u00b7 ')}</div>`,go:`openCalOn(${c.day})`,ts:today-1});
+  houses.forEach(function(c){
+    if(c.cross)return;
+    c.html='<b>'+esc(c.site||'This job')+'</b><div class="td-meta">'+esc(c.line)+'</div>';
+    c.go=`nyOpenHouse('${c.pid}')`;
   });
-  projs.forEach(function(p){
-    _nyHomeownerItems(p).forEach(function(it){
-      const kind=it.kind==='idea'?'Idea':'Concern';
-      warns.push({lvl:'msg',pri:2,html:`<b>Homeowner wrote you</b><div class="td-meta">${esc(p.street||p.name||'')} \u00b7 ${esc(kind)}</div>`
-        +(it.cap?`<div class="td-quote">${esc(_tdClip(it.cap,88))}</div>`:''),
-        go:`todayGoRecord('${p.id}',${it.id})`,ts:it.t||today});
-    });
-  });
-  _nyOnDeck(projs).slice(0,3).forEach(function(o){
-    warns.push({lvl:'msg',pri:3,html:`<b>On deck, not booked</b><div class="td-meta">${esc(o.sub)} \u00b7 ${esc(o.site)}</div>`
-      +`<div class="td-quote">${esc(specLabel(o.trade)||o.stage)}</div>`,
-      go:`nyBookSub('${o.pid}','${String(o.sub).replace(/'/g,'')}')`,ts:today});
-  });
-  idleWorksites(projs).forEach(p=>{
-    const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
-    warns.push({lvl:'idle',pri:4,html:`<b>Gone quiet</b><div class="td-meta">${esc(p.street||p.name)} \u00b7 ${days} day${days===1?'':'s'}</div>`,go:`todayGo('${p.id}','build')`,ts:today});
-  });
-  const soon=[];projs.forEach(p=>(p.bookings||[]).forEach(b=>{
+  const soon=[];projs.forEach(function(p){(p.bookings||[]).forEach(function(b){
     if((b.status||'confirmed')==='declined')return;
     if(b.start<today||b.start>today+7*864e5)return;
-    soon.push({p,b,trade:tdTradeOf(p,b)});}));
-  soon.sort((a,b)=>a.b.start-b.b.start);
-
+    soon.push({p:p,b:b,trade:tdTradeOf(p,b)});});});
+  soon.sort(function(a,b){return a.b.start-b.b.start;});
   let h='<div class="eyebrow">Needs you</div>';
-  if(!warns.length&&!soon.length){
+  if(!houses.length&&!soon.length){
     h+='<div class="td-clear">All clear \u2014 nothing needs you today.</div>';
     h+=`<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
     el.innerHTML=h;return;}
-  warns.sort((a,b)=>(a.pri-b.pri)||((b.ts||0)-(a.ts||0)));
-  const _CAP=3;const _truncated=!_needsExpanded&&warns.length>_CAP;const _shown=_truncated?warns.slice(0,_CAP):warns;
-  _shown.forEach(w=>{h+=`<div class="td-alert ${w.lvl}" onclick="${w.go}"><span class="td-bar"></span><div class="td-tx">${w.html}</div><span class="td-chev">\u203a</span></div>`;});
-  if(warns.length>_CAP){h+=`<button class="td-morebtn" onclick="event.stopPropagation();toggleNeeds()">`+(_needsExpanded?'Show less':('Show all '+warns.length))+`</button>`;}
+  houses.sort(function(a,b){return (a.pri-b.pri)||((b.ts||0)-(a.ts||0));});
+  const _CAP=3;const _truncated=!_needsExpanded&&houses.length>_CAP;const _shown=_truncated?houses.slice(0,_CAP):houses;
+  _shown.forEach(function(w){h+=`<div class="td-alert ${w.lvl}" onclick="${w.go}"><span class="td-bar"></span><div class="td-tx">${w.html}</div><span class="td-chev">\u203a</span></div>`;});
+  if(houses.length>_CAP){h+=`<button class="td-morebtn" onclick="event.stopPropagation();toggleNeeds()">`+(_needsExpanded?'Show less':('Show all '+houses.length))+`</button>`;}
   h+=`<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
   if(soon.length){
     h+='<div class="eyebrow" style="margin-top:16px">Coming up</div>';
-    soon.slice(0,3).forEach(s=>{h+=`<div class="td-soon" onclick="openCalOn(${s.b.start},'${s.p.id}')"><span class="td-when">${tdDayLabel(s.b.start)}</span><span class="td-soontx">${esc(s.trade?specLabel(s.trade):(s.b.subName||'Crew'))} \u00b7 ${esc(s.p.street||s.p.name)}</span></div>`;});
+    soon.slice(0,3).forEach(function(s){h+=`<div class="td-soon" onclick="openCalOn(${s.b.start},'${s.p.id}')"><span class="td-when">${tdDayLabel(s.b.start)}</span><span class="td-soontx">${esc(s.trade?specLabel(s.trade):(s.b.subName||'Crew'))} \u00b7 ${esc(s.p.street||s.p.name)}</span></div>`;});
     if(soon.length>3)h+=`<div class="td-more">+${soon.length-3} more this week</div>`;
   }
   el.innerHTML=h;if(keep){const n=document.getElementById('nyQText');if(n){n.value=keep.v;try{n.focus();n.selectionStart=n.selectionEnd=keep.s;}catch(e){}}}}
@@ -6593,12 +6662,11 @@ let _ovAnimateTs=0; // card entrance plays only for renders right after a fresh 
 const SORTLABELS={attn:'Attention',recent:'Recent',az:'A\u2013Z'};
 function renderOvSortRow(){
   const row=document.getElementById('ovSortRow');if(!row)return;
-  const projs=visibleProjects();const totalOpen=projs.reduce((a,p)=>a+openCountP(p),0);
+  const projs=visibleProjects();
   const pills=projs.length<2?'':['attn','recent','az'].map(m=>`<button class="ov-sortpill${_ovSort===m?' on':''}" onclick="setOvSort('${m}')">${SORTLABELS[m]}</button>`).join('');
-  const open=totalOpen?`<span class="ovt-open tap ov-openchip" onclick="openOpenItems()">${totalOpen} open ${totalOpen===1?'item':'items'} \u203a</span>`:'';
-  if(!pills&&!open){row.innerHTML='';row.style.display='none';return;}
+  if(!pills){row.innerHTML='';row.style.display='none';return;}
   row.style.display='flex';
-  row.innerHTML=`<div class="ov-sortpills">${pills}</div>${open}`;
+  row.innerHTML=`<div class="ov-sortpills">${pills}</div>`;
 }
 function setOvSort(m){_ovSort=m;try{localStorage.setItem('plumb.ovSort',m);}catch(e){}renderOvSortRow();renderOvCards();}
 function renderOvCards(){
@@ -6618,10 +6686,10 @@ function renderOvCards(){
     const _sub=[p.name&&p.name!==_ttl?p.name:'',_loc].filter(Boolean).join(' \u00b7 ');
     return `<div class="ov-card ${open||whis?'attn':''}${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="openSiteFromOverview('${p.id}')">
       <div class="ct"><div><div class="st">${esc(_ttl)}</div>${_sub?`<div class="nm">${esc(_sub)}</div>`:''}</div>
-        <div class="ov-hero ${open?'attn tap':'clean'}"${open?` onclick="event.stopPropagation();openItemsGo('${p.id}')"`:''}><div class="hn">${open||'\u2713'}</div><div class="hl">${open?'open':'clear'}</div></div></div>
+        <div class="ov-hero ${open?'attn':'clean'}"><div class="hn">${open||'\u2713'}</div><div class="hl">${open?'open':'clear'}</div></div></div>
       <div class="pbar"><i style="width:${pct}%"></i></div>
       <div class="foot"><span>${pct}% complete</span><span class="dotsep"></span><span>${deck?esc(deck.name):'Complete'}</span></div>
-      ${whis?`<div class="ov-whisper" onclick="event.stopPropagation();openBk('${p.id}|${whis.bid}')">${esc(whis.text)}</div>`:''}
+      ${whis?`<div class="ov-whisper" onclick="event.stopPropagation();${whis.kind==='idle'?("openNextSite('"+p.id+"')"):("openBk('"+p.id+"|"+whis.bid+"')")}">${esc(whis.text)}</div>`:''}
       ${deck?`<div class="foot-deck"><span class="od" onclick="event.stopPropagation();openNextSite('${p.id}')">On deck: ${esc(specLabel(deck.trade))} \u2192</span></div>`:''}
     </div>`;
   }).join('')||(`<div class="empty">${q?'No sites match \u201c'+esc(q)+'\u201d.':((state.session&&state.session.role==='hillan')?'No sites yet \u2014 add your first build to get started.':'No sites assigned to you yet.')}</div>`+((!q&&state.session&&state.session.role==='hillan')?`<button class="ov-newbtn" onclick="openNewSite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New site</button>`:''));
@@ -11116,7 +11184,7 @@ function openPacketFor(pid,trade){
   showInfo('Install packet', '<p style="margin:0">No '+esc(specLabel(trade)||'trade')+' sub on this site yet. Add them from the site and the packet fills itself.</p>');
 }
 function openCalOn(ts,siteId){try{const d=new Date(Number(ts));calMonth=new Date(d.getFullYear(),d.getMonth(),1);}catch(e){}calSiteFilter=(siteId===undefined||siteId===null||siteId==='')?'all':String(siteId);openCal();}
-function closeCal(){document.getElementById('calview').classList.remove('show');try{renderToday();}catch(e){}}
+function closeCal(){document.getElementById('calview').classList.remove('show');try{renderToday();}catch(e){}if(houseStillOpen()){try{refreshHouse();}catch(e){}}}
 function calNav(d){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+d,1);renderCal();}
 function calToday(){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);renderCal();}
 function calPick(siteId){calSiteFilter=siteId;renderCal();}
@@ -11362,6 +11430,7 @@ function bkOfferInvite(p,name,wasAdded){
     onConfirm:()=>{try{Data.setActive(p.id);createInvite('sub',s.id);}catch(e){}}});}
 function closeBk(){document.getElementById('bkScrim').classList.remove('show');_bkSubMod=null;
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
+  if(houseStillOpen()){try{refreshHouse();}catch(e){}}
   try{if(document.getElementById('dayScrim').classList.contains('show'))renderDay();}catch(e){}}
 function bkSyncRangeLabel(){const el=document.getElementById('bkRangeLabel');if(!el)return;el.textContent=_rangeLabel((document.getElementById('bkStart')||{}).value||'',(document.getElementById('bkEnd')||{}).value||'');}
 function _bkCalHide(){const cal=document.getElementById('bkCal');if(cal)cal.style.display='none';bkSyncRangeLabel();}
@@ -11655,6 +11724,12 @@ function pktGoDocs(pid){if(_pktCtx)try{Data.setActive(pid);}catch(e){}addPacketD
 function pktAsk(p,tradeId){
   const out=[];
   const tl=specLabel(tradeId);
+  _nyIssues([p]).forEach(function(it){
+    if(String(it.pid)!==String(p.id)||it.cross)return;
+    if(it.trade&&it.trade!==tradeId)return;
+    if(it.kind==='Spec still open'||it.kind==='Site not ready')return;
+    out.push({title:it.line,meta:'',go:it.go});
+  });
   const gaps=tradeSpecGaps(p,tradeId);
   const sb=(p.subs||[]).find(function(x){return x.specialty===tradeId;});
   const today=dayStart(Date.now());
@@ -12558,7 +12633,7 @@ function nyOpenAsk(pid,bid,qi){
   document.getElementById('nyAskScrim').classList.add('show');
   setTimeout(function(){try{document.getElementById('nyAskText').focus();}catch(e){}},80);
 }
-function nyAskClose(){_nyAsk=null;const el=document.getElementById('nyAskScrim');if(el)el.classList.remove('show');}
+function nyAskClose(){_nyAsk=null;const el=document.getElementById('nyAskScrim');if(el)el.classList.remove('show');if(houseStillOpen()){try{refreshHouse();}catch(e){}}}
 function nyAskSend(){
   if(!_nyAsk)return;
   const v=(document.getElementById('nyAskText').value||'').trim().slice(0,300);
@@ -12704,7 +12779,7 @@ function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;con
   if(closing&&row){row.classList.add('closing');setTimeout(apply,260);}else apply();}
 
 /* ── universal modal dismissal: tap grip, or swipe the modal down ── */
-const MODAL_CLOSERS={selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
+const MODAL_CLOSERS={houseScrim:'closeHouse',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
 function dismissScrim(scrim){if(!scrim)return;const fn=MODAL_CLOSERS[scrim.id];if(fn&&typeof window[fn]==='function'){try{window[fn]();return;}catch(e){}}scrim.classList.remove('show');}
 function dismissParent(elm){let n=elm;while(n&&!(n.classList&&n.classList.contains('pmodal-scrim')))n=n.parentElement;dismissScrim(n);}
 if(typeof window!=='undefined'){window.addEventListener('load',function(){
@@ -13106,6 +13181,7 @@ function openRecord(id){const it=P().items.find(x=>x.id===id);if(!it)return;edit
   document.getElementById('recScrim').classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('recNote')));}
 function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
+  if(houseStillOpen()){try{refreshHouse();}catch(e){}}
   try{if(_pktLogCtx&&document.getElementById('pktLogScrim').classList.contains('show'))renderPacketLog();}catch(e){}}
 function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);if(!it)return;
   const cap=document.getElementById('recNote').value.trim()||'(no note)';
