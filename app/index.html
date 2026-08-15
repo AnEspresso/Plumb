@@ -432,6 +432,9 @@
   .gp-brand{display:flex;align-items:center;gap:8px;font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:19px;color:var(--ink);margin-bottom:14px;}
   .gp-brand .dot{width:7px;height:7px;border-radius:50%;background:var(--oak);box-shadow:0 0 0 4px rgba(176,137,90,.14);}
   .gp-preview{background:#3E3427;color:#E7DCC6;font-size:12.5px;font-weight:600;border-radius:10px;padding:9px 12px;margin-bottom:12px;text-align:center;}
+  .gp-updated{background:rgba(122,140,110,.12);border:1px solid rgba(122,140,110,.28);color:var(--ink);border-radius:12px;padding:11px 13px;margin:0 0 14px;font-size:13.5px;line-height:1.45;}
+  .gp-updated .gp-u-what{font-weight:650;}
+  .gp-updated .gp-u-when{font-size:12px;color:var(--ink-3);margin-top:3px;}
   .gp-site{font-family:'Source Serif 4',Georgia,serif;font-size:24px;font-weight:600;letter-spacing:-.01em;line-height:1.15;}
   .gp-sub{font-size:13.5px;color:var(--ink-3);margin-top:3px;}
   .gp-dates{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:16px;margin:16px 0 12px;}
@@ -1947,7 +1950,7 @@ body.on-tour .tour-card{display:block;}
           <div class="gp-cal-acts"><button type="button" class="gp-cal-reset" onclick="bkCalReset()">Reset</button>
           <button type="button" class="gp-cal-ok" onclick="bkCalDone()" aria-label="Use these dates">✓</button></div></div>
         <input id="bkNote" placeholder="Note for sub — gate code, scope…" style="font-size:13.5px">
-        <div class="bk-alerts" id="bkAlerts"><div id="bkPacket"></div><div id="bkGuest"></div></div>
+        <div class="bk-alerts" id="bkAlerts"><div id="bkPacket"></div><div id="bkGuest"></div><div id="bkSendLink"></div></div>
         <button class="b1 b-go" style="width:100%;margin-top:10px" id="bkSave" onclick="bkSave()">Save</button>
         <button class="add-sub-btn" style="margin-top:8px;display:none;color:var(--clay)" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
       </div>
@@ -2968,13 +2971,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.232.0 - The reason you tapped leads the booking.';
+const PLUMB_VERSION='2.235.0 - Packet updates say what changed. You can tell them.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786797837262;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.232.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786803840353;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.235.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -4067,7 +4070,7 @@ function idbGetDoc(k){return new Promise((res,rej)=>{if(!db)return res(undefined
 function idbDelDoc(k){return new Promise((res)=>{if(!db)return res();const t=db.transaction('docs','readwrite');t.objectStore('docs').delete(k);t.oncomplete=res;t.onerror=res;});}
 
 /* ════════ persistence (metadata) ════════ */
-function persist(){try{localStorage.setItem(storeKey(),JSON.stringify(state));if(typeof queueSync==='function')queueSync();}catch(e){toast('Storage full — try fewer photos');}}
+function persist(){try{localStorage.setItem(storeKey(),JSON.stringify(state));if(typeof queueSync==='function')queueSync();}catch(e){toast('Storage full — try fewer photos');}try{pkPublishSoon();}catch(e){}}
 
 /* ════════════════════════════════════════════════════════════════════
    DATA ACCESS LAYER  (Phase 0 — the backend seam)
@@ -11317,9 +11320,11 @@ function delAvail(pid,id){const p=state.projects.find(x=>String(x.id)===String(p
 let _bkLead='';
 const BK_LEAD={wait:'Waiting on them',blocked:'They are blocked',declined:'They declined',double:'Double-booked',change:'Date change'};
 function bkLeadOrder(){
-  const a=document.getElementById('bkAlerts'),g=document.getElementById('bkGuest'),pk=document.getElementById('bkPacket');
+  const a=document.getElementById('bkAlerts'),g=document.getElementById('bkGuest'),pk=document.getElementById('bkPacket'),s=document.getElementById('bkSendLink');
   if(!a||!g||!pk)return;
-  if(_bkLead)a.insertBefore(g,pk);else a.insertBefore(pk,g);
+  if(_bkLead){a.appendChild(g);a.appendChild(pk);}
+  else {a.appendChild(pk);a.appendChild(g);}
+  if(s)a.appendChild(s);
 }
 function openBk(ref,defTs){
   _bkEdit=null;_bkLead=(ref&&BK_LEAD[defTs])?defTs:'';
@@ -12025,6 +12030,7 @@ function gpApproveSend(){
   try{
     db.collection('packets').doc(token).set(snap)
       .then(()=>{updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});try{_pkListenAll();}catch(e){}
+        try{_pkPubLast[String(p.id)+'|'+String(b.id)+'|'+token]=JSON.stringify({docs:snap.docs||[],specs:snap.specs||[],ctx:snap.ctx||{},note:snap.note||'',start:snap.start,end:snap.end,site:snap.site});}catch(e){}
         _gpPendingSend=null;closeGuestPreview();
         try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(b.id)));}catch(e){}
         _sharePacketLink(snap,token);logEvent('packetLinkSent',snap.tradeLabel+' \u00b7 '+snap.site);})
@@ -12060,7 +12066,7 @@ function _gpCacheRead(token){
 function _gpApplyRemote(g){
   if(!g)return;
   if((g.expires||0)<Date.now())return;
-  const sig=function(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||'',start:x.start,end:x.end,ctx:x.ctx||null});};
+  const sig=function(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||'',start:x.start,end:x.end,ctx:x.ctx||null,lastChange:x.lastChange||'',lastChangeT:x.lastChangeT||0});};
   if(sig(g)===sig(_gpSnap))return;
   if(_gpBusy()){_gpPendingRemote=g;return;}
   _gpSnap=g;_gpCacheWrite(_gpToken,g);_gpRender();
@@ -12136,6 +12142,12 @@ function _gpRender(){
   const dates=fmtWin({start:(g.resp&&g.resp.start)||g.start,end:(g.resp&&g.resp.end)||g.end});
   let h='';
   h+='<div class="gp-brand"><span class="dot"></span>SitePlumb</div>';
+  if(!preview&&(g.lastChange||(g.changes&&g.changes[0]))){
+    const ch=(g.changes&&g.changes[0])||{what:g.lastChange,t:g.lastChangeT||g.t};
+    const when=ch.t?new Date(ch.t).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+    h+='<div class="gp-updated"><div class="gp-u-what">'+esc(ch.what||'Packet updated')+'</div>'
+      +(when?('<div class="gp-u-when">'+esc(when)+'</div>'):'')+'</div>';
+  }
   if(preview&&_gpPendingSend)h+='<div class="gp-preview">Review before it sends \u2014 this is exactly what '+esc(g.sub)+' will see.</div>'
     +'<button class="gp-btn go" style="margin-bottom:10px" onclick="gpApproveSend()">Approve \u0026 text the link\u2026</button>';
   else if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your sub receives by text. Nothing was sent.</div>';
@@ -12441,16 +12453,22 @@ function _bkGuestStatusHTML(p,b,g){
       +'</div>';
   return 'Link sent '+(sent?new Date(sent).toLocaleDateString():'')+' \u00b7 waiting for a reply';
 }
+function bkRenderSendLink(p,b){
+  const el=document.getElementById('bkSendLink');if(!el)return;
+  if(!p||!b){el.innerHTML='';return;}
+  if(_bkLead==='wait'){el.innerHTML='';return;}
+  el.innerHTML='<button class="add-sub-btn" onclick="sendGuestPacket(\''+String(p.id)+'\',\''+String(b.id)+'\')">'
+    +(appMode()==='real'?'Text the packet link\u2026':'Preview the packet link\u2026')+'</button>';
+}
 function bkRenderGuestRow(p,b){
   const el=document.getElementById('bkGuest');if(!el)return;
-  if(!b){el.innerHTML='';return;}
+  if(!b){el.innerHTML='';try{bkRenderSendLink(null,null);}catch(e){}return;}
   let h=_bkBriefHTML(p,b);
   if(b.pkToken||b.pkResp||(b.pkQOpen||0)>0||(b.pkQs||[]).length){
     h+='<div class="gp-sub" id="bkGuestStatus" style="margin-top:8px">'+_bkGuestStatusHTML(p,b,null)+'</div>';
   }
-  h+='<button class="add-sub-btn" style="margin-top:8px" onclick="sendGuestPacket(\''+String(p.id)+'\',\''+String(b.id)+'\')">'
-    +(appMode()==='real'?'Text the packet link\u2026':'Preview the packet link\u2026')+'</button>';
   el.innerHTML=h;
+  try{bkRenderSendLink(p,b);}catch(e){}
   if(b.pkToken&&appMode()==='real'&&_pkDb()){
     try{_pkDb().collection('packets').doc(String(b.pkToken)).get().then(d=>{
       const st=document.getElementById('bkGuestStatus');if(!st)return;
@@ -12541,19 +12559,108 @@ function _pkStamp(p,b,g){
   }catch(e){}
 }
 function _pkPushLive(p,b,g){
+  try{pkPublishOne(p,b,g,false);}catch(e){}
+}
+let _pkPubTimer=null,_pkPubLast={},_pkPubNotify=null;
+function pkDiffWhat(prev,fresh){
+  if(!prev||!fresh)return '';
+  const bits=[];
   try{
-    if(!g||!b||!b.pkToken)return;
-    const fresh=packetSnapshot(p,b);
-    const same=function(a,c){return JSON.stringify(a||null)===JSON.stringify(c||null);};
-    const patch={};
-    if(!same(fresh.docs,g.docs))patch.docs=fresh.docs||[];
-    if(!same(fresh.specs,g.specs))patch.specs=fresh.specs||[];
-    if(!same(fresh.ctx,g.ctx))patch.ctx=fresh.ctx||{};
-    if(String(fresh.note||'')!==String(g.note||''))patch.note=fresh.note||'';
-    if(fresh.start!==g.start)patch.start=fresh.start;
-    if(fresh.end!==g.end)patch.end=fresh.end;
-    if(Object.keys(patch).length){const db=_pkDb();if(db)db.collection('packets').doc(String(b.pkToken)).update(patch).catch(function(){});}
+    const pd=prev.docs||[],fd=fresh.docs||[];
+    const added=fd.filter(function(d){return pd.indexOf(d)<0;});
+    const removed=pd.filter(function(d){return fd.indexOf(d)<0;});
+    if(added.length&&!removed.length)bits.push(added.length===1?('Added '+String(added[0])):(('Added '+added.length+' documents')));
+    else if(removed.length&&!added.length)bits.push(removed.length===1?('Removed '+String(removed[0])):(('Removed '+removed.length+' documents')));
+    else if(added.length||removed.length)bits.push('Documents updated');
+    if(JSON.stringify(prev.specs||[])!==JSON.stringify(fresh.specs||[]))bits.push('Specs updated');
+    if((prev.start||0)!==(fresh.start||0)||(prev.end||0)!==(fresh.end||0))bits.push('Dates changed');
+    if(String(prev.note||'')!==String(fresh.note||''))bits.push('Note updated');
+    const pr=prev.ctx&&prev.ctx.readyOk,fr=fresh.ctx&&fresh.ctx.readyOk;
+    if(!!pr!==!!fr)bits.push(fr?'Site marked ready':'Site readiness changed');
+    if(JSON.stringify((prev.ctx&&prev.ctx.openItems)||[])!==JSON.stringify((fresh.ctx&&fresh.ctx.openItems)||[]))bits.push('Open items updated');
   }catch(e){}
+  if(!bits.length)return '';
+  if(bits.length===1)return bits[0];
+  return bits.slice(0,-1).join(', ')+' and '+bits[bits.length-1];
+}
+function pkWhen(ts){
+  return new Date(ts||Date.now()).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function pkPublishSoon(){
+  if(typeof appMode==='function'&&appMode()!=='real')return;
+  if(_pkPubTimer)clearTimeout(_pkPubTimer);
+  _pkPubTimer=setTimeout(function(){try{pkPublishNow();}catch(e){}},350);
+}
+function pkPublishNow(){
+  if(appMode()!=='real')return;
+  (visibleProjects()||[]).forEach(function(p){
+    (p.bookings||[]).forEach(function(b){if(b.pkToken)pkPublishOne(p,b,null,true);});
+  });
+}
+function pkPublishOne(p,b,g,offer){
+  if(!p||!b||!b.pkToken)return;
+  if(appMode()!=='real')return;
+  const db=_pkDb();if(!db)return;
+  const fresh=packetSnapshot(p,b);
+  const patch={
+    docs:fresh.docs||[],specs:fresh.specs||[],ctx:fresh.ctx||{},
+    note:fresh.note||'',start:fresh.start,end:fresh.end,
+    site:fresh.site,tradeLabel:fresh.tradeLabel,
+    expires:fresh.expires,t:Date.now()
+  };
+  const key=String(p.id)+'|'+String(b.id)+'|'+String(b.pkToken);
+  const sig=JSON.stringify({docs:patch.docs,specs:patch.specs,ctx:patch.ctx,note:patch.note,start:patch.start,end:patch.end,site:patch.site});
+  if(_pkPubLast[key]===sig)return;
+  let prev=null;
+  try{if(_pkPubLast[key])prev=JSON.parse(_pkPubLast[key]);}catch(e){}
+  if(!prev&&g)prev={docs:g.docs||[],specs:g.specs||[],ctx:g.ctx||{},note:g.note||'',start:g.start,end:g.end,site:g.site};
+  if(g&&!prev){
+    const same=function(a,c){return JSON.stringify(a||null)===JSON.stringify(c||null);};
+    if(same(fresh.docs,g.docs)&&same(fresh.specs,g.specs)&&same(fresh.ctx,g.ctx)&&String(fresh.note||'')===String(g.note||'')&&fresh.start===g.start&&fresh.end===g.end&&String(fresh.site||'')===String(g.site||'')){
+      _pkPubLast[key]=sig;return;
+    }
+  }
+  const what=pkDiffWhat(prev,fresh);
+  _pkPubLast[key]=sig;
+  if(!what&&prev)return;
+  if(what){
+    const now=Date.now();
+    patch.lastChange=what;
+    patch.lastChangeT=now;
+    patch.changes=[{what:what,t:now}];
+  }
+  try{
+    db.collection('packets').doc(String(b.pkToken)).update(patch).then(function(){
+      if(offer&&what&&prev){
+        _pkPubNotify={pid:String(p.id),bid:String(b.id),what:what,t:patch.lastChangeT||Date.now(),site:fresh.site,sub:b.subName||'',token:String(b.pkToken)};
+        try{pkOfferTellThem();}catch(e){}
+      }
+    }).catch(function(){});
+  }catch(e){}
+}
+function pkOfferTellThem(){
+  const n=_pkPubNotify;if(!n)return;
+  try{
+    const sc=document.getElementById('confirmScrim');
+    if(sc&&sc.classList.contains('show'))return;
+  }catch(e){}
+  const when=pkWhen(n.t);
+  openConfirm({
+    title:'Tell '+(n.sub||'them')+'?',
+    body:esc(n.what)+' \u00b7 '+esc(when)+'. Same link. Optional text so they know to open it.',
+    okLabel:'Text them',
+    cancelLabel:'Not now',
+    onConfirm:function(){
+      const hold=_pkPubNotify;_pkPubNotify=null;
+      if(!hold)return;
+      const url='https://siteplumb.com/app/?packet='+hold.token;
+      const msg='Update on '+hold.site+': '+hold.what+' ('+pkWhen(hold.t)+'). Same link: '+url;
+      if(navigator.share){navigator.share({text:msg}).catch(function(){_smsOrCopy(msg);});}
+      else _smsOrCopy(msg);
+      logEvent('packetUpdateTold',hold.what);
+    },
+    onCancel:function(){_pkPubNotify=null;}
+  });
 }
 /* Background sweep: a handful of stale packet-carrying bookings get refreshed
    whenever the overview renders, so replies surface within a visit. */

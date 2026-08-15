@@ -1004,10 +1004,10 @@ $("closeGuestPreview()");
 t('preview closes clean', $("document.getElementById('guestScrim').classList.contains('show')")===false&&$("typeof window.__packetFixture")==='undefined');
 // booking editor row: send button present for an existing booking; demo mode says Preview
 $("(function(){const p=state.projects[1];const b=p.bookings[0];bkRenderGuestRow(p,b);})()");
-t('booking editor offers the packet link', el('bkGuest').innerHTML.indexOf('packet link')>=0);
-t('demo mode labels it a preview', el('bkGuest').innerHTML.indexOf('Preview the packet link')>=0);
+t('booking editor offers the packet link', el('bkSendLink').innerHTML.indexOf('packet link')>=0);
+t('demo mode labels it a preview', el('bkSendLink').innerHTML.indexOf('Preview the packet link')>=0);
 $("bkRenderGuestRow(null,null)");
-t('guest row clears for new bookings', el('bkGuest').innerHTML==='');
+t('guest row clears for new bookings', el('bkGuest').innerHTML===''&&el('bkSendLink').innerHTML==='');
 // accept-change applies the sub dates to the booking
 $("document.getElementById('bkStart').value='2026-08-14'");
 $("document.getElementById('bkEnd').value='2026-08-20'");
@@ -1119,8 +1119,11 @@ t('Needs You does not open the calendar', $("String(_nyIssues)").indexOf('openCa
 t('a blocked crew opens the booking', $("String(_nyIssues)").indexOf("is blocked")>=0&&$("String(_nyIssues)").indexOf('openBk')>=0&&$("String(_bkBriefHTML)").indexOf('They are blocked')>=0);
 t('a homeowner note opens a reply', $("String(_nyIssues)").indexOf('nyOpenHomeowner')>=0&&$("typeof nyOpenHomeowner")==='function'&&$("String(nyHoSend)").indexOf('reply')>=0);
 t('waiting shows ask them again', $("String(_bkBriefHTML)").indexOf('Ask them again')>=0&&$("String(bkRenderGuestRow)").indexOf('_bkBriefHTML')>=0);
-t('the tapped reason leads the booking', $("String(_nyIssues)").indexOf("openBk('${p.id}|${b.id}','wait')")>=0&&$("String(openBk)").indexOf('_bkLead')>=0&&$("String(bkLeadOrder)").indexOf('insertBefore')>=0);
+t('the tapped reason leads the booking', $("String(_nyIssues)").indexOf("openBk('${p.id}|${b.id}','wait')")>=0&&$("String(openBk)").indexOf('_bkLead')>=0&&$("String(bkLeadOrder)").indexOf('appendChild')>=0);
 t('booking alerts have a gap', $("!!document.getElementById('bkAlerts')")===true&&$("document.documentElement.innerHTML").indexOf('.bk-alerts{display:flex;flex-direction:column;gap:12px')>=0);
+t('the packet link sits after the review', $("!!document.getElementById('bkSendLink')")===true&&$("String(bkRenderGuestRow)").indexOf('sendGuestPacket')<0&&$("String(bkRenderSendLink)").indexOf('sendGuestPacket')>=0);
+t('a sent packet updates live', $("String(persist)").indexOf('pkPublishSoon')>=0&&$("String(pkPublishOne)").indexOf("update(")>=0&&$("String(pkPublishOne)").indexOf('resp')<0&&$("String(_gpListen)").indexOf('onSnapshot')>=0);
+t('packet updates say what changed', $("typeof pkDiffWhat")==='function'&&$("String(_gpRender)").indexOf('gp-updated')>=0&&$("String(pkPublishOne)").indexOf('lastChange')>=0&&$("typeof pkOfferTellThem")==='function');
 t('Open items is not a second inbox', $("String(renderOvSortRow)").indexOf('openOpenItems')<0);
 t('the packet lists the other house facts', $("String(pktAsk)").indexOf('_nyIssues')>=0);
 t('closing a spec does not pop the page stack', $("String(closeSpec)").indexOf('navPop')<0&&$("String(closeRecord)").indexOf('navPop')<0&&$("String(closeBk)").indexOf('navPop')<0);
@@ -1175,7 +1178,7 @@ t('a date change whispers on the house card', (function(){
 t('the packet page keeps listening after it opens', $("String(renderGuestPacket)").indexOf('_gpListen')>=0&&$("String(_gpListen)").indexOf('onSnapshot')>=0);
 t('a painted packet is not wiped on a slow retry', $("String(renderGuestPacket)").indexOf('painted')>=0&&$("String(renderGuestPacket)").indexOf('20000')>=0);
 t('answers are stamped onto the booking so Needs You can show them', $("String(_pkStamp)").indexOf('pkQs')>=0);
-t('the live packet is refreshed with new docs and specs', $("typeof _pkPushLive")==='function'&&$("String(_pkPushLive)").indexOf('docs')>=0);
+t('the live packet is refreshed with new docs and specs', $("typeof pkPublishOne")==='function'&&$("String(pkPublishOne)").indexOf('docs')>=0&&$("String(persist)").indexOf('pkPublishSoon')>=0&&$("String(pkPublishOne)").indexOf('.resp')<0);
 
 
 /* ════ 14l · PRIVACY & LEGAL + ACCOUNT DELETION ════ */
