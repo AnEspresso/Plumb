@@ -186,7 +186,7 @@ t('client attaches only its five colls', $("__g.attached.join()")==='items,bk,se
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
-t('SEED_VERSION 15',$('SEED_VERSION')===15);
+t('SEED_VERSION 16',$('SEED_VERSION')===16);
 t('10 seed sites',$('state.projects.length')===10);
 t('no boot errors',w.__thrown.length===0,w.__thrown[0]);
 
@@ -921,12 +921,14 @@ t('snapshot assembles permit, inspection and readiness context', (function(){con
 t('snapshot carries recent site history for context', (function(){const h=(snap.ctx||{}).history||[];return h.length>=2&&h.every(x=>typeof x.text==='string'&&x.text.length>0);})());
 t('history is text only - no photo or file references escape', (function(){const j=JSON.stringify((snap.ctx||{}).history||[]);return j.indexOf('photoId')<0&&j.indexOf('fileUrl')<0&&j.indexOf('fileId')<0;})());
 // v2.209: strict docs, colored readiness, approval, calendar, stamping, alerts
-t('untagged docs never ride along - strict trade routing', (function(){return Array.isArray(snap.docs)&&snap.docs.length===0;})());
+t('untagged docs never ride along - strict trade routing', (function(){
+  return Array.isArray(snap.docs)&&snap.docs.every(function(n){return !/Contract|Lien|Broker|Window/i.test(n);});
+})());
 t('a trade-routed doc DOES travel', (function(){
   $("(function(){var p=state.projects[1];p.docs.push({aud:'all',n:'Rough-In Layout - PLUMB.pdf',trade:'plumb',k:'plan'});})()");
   const s2=JSON.parse($("JSON.stringify(packetSnapshot(state.projects[1],(state.projects[1].bookings||[]).find(b=>b.trade==='plumb')))"));
   $("(function(){var p=state.projects[1];p.docs=p.docs.filter(d=>d.n!=='Rough-In Layout - PLUMB.pdf');})()");
-  return s2.docs.length===1&&s2.docs[0].indexOf('PLUMB')>=0;})());
+  return s2.docs.some(function(n){return String(n).indexOf('PLUMB')>=0;});})());
 t('readiness carries a machine flag', typeof (snap.ctx||{}).readyOk==='boolean');
 $("window.__packetFixture="+JSON.stringify(snap));
 $("_gpPendingSend={pid:'p2',bid:'x'}");
@@ -1055,6 +1057,42 @@ t('removing a booking clears its Needs You card', (function(){
 t('leaving the calendar redraws Needs You', $("String(closeCal)").indexOf('renderToday')>=0);
 t('Needs You names the kind of work', $("String(renderToday)").indexOf('Date change')>=0&&$("String(renderToday)").indexOf('Question')>=0);
 t('Needs You covers the six new kinds', $("String(renderToday)").indexOf('They declined')>=0&&$("String(renderToday)").indexOf('Waiting on them')>=0&&$("String(renderToday)").indexOf('Site not ready')>=0&&$("String(renderToday)").indexOf('Homeowner wrote you')>=0&&$("String(renderToday)").indexOf('On deck, not booked')>=0&&$("String(_nyOnDeck)").indexOf('prevDone')>=0);
+t('Show all and Recent decisions are separate actions', $("String(renderToday)").indexOf('td-histbtn')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
+t('untagged site files stay out of a trade packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Construction Contract.pdf'})")===false);
+t('a trade-tagged plan is in that packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Plumbing Rough-In Plan.pdf',trade:'plumb'})")===true);
+t('the packet is a briefing with still-open first', $("String(packetHTML)").indexOf('pkt-strip')>=0&&$("String(packetHTML)").indexOf('For the truck')>=0&&$("String(pktAsk)").indexOf('No dates on the calendar')>=0);
+t('answering a spec from the packet does not tear the packet down', $("String(pktFillSpec)").indexOf('closeInfo')<0&&$("String(pktFillSpec)").indexOf('openSpec')>=0);
+t('Needs You opens a packet without leaving home', $("String(openPacketFor)").indexOf('openSiteFromOverview')<0);
+t('Back returns through the sheet stack', $("String(backToOverview)").indexOf('navPop')>=0&&$("String(navPush)").indexOf('restore')>=0);
+t('a spec card opens the packet, not the site', (function(){
+  const src=$("String(renderToday)");
+  const i=src.indexOf('Spec still open');
+  if(i<0)return false;
+  const slice=src.slice(i,i+420);
+  return slice.indexOf('openPacketFor')>=0&&slice.indexOf('todayGo')<0;
+})());
+t('closing a spec does not pop the page stack', $("String(closeSpec)").indexOf('navPop')<0&&$("String(closeRecord)").indexOf('navPop')<0&&$("String(closeBk)").indexOf('navPop')<0);
+t('a homeowner note opens on home', $("String(todayGoRecord)").indexOf('openSiteFromOverview')<0&&$("String(todayGoRecord)").indexOf('openRecord')>=0);
+t('the packet log keeps the packet under a record', $("String(renderPacketLog)").indexOf('closePktLog();openRecord')<0);
+t('a missing-spec notify opens the packet', $("String(openSpecBlock)").indexOf('openPacket')>=0&&$("String(openSpecBlock)").indexOf('showInfo')<0);
+t('the day sheet stays under the booking', $("String(renderDay)").indexOf('closeDay();openBk')<0);
+t('Needs You spec path stays on the packet', (function(){
+  asBuilder();
+  $('enterDemo()');
+  const p=$("state.projects.find(function(x){return x.id==='p2';})");
+  if(!p)return false;
+  $('openPacketFor("p2","plumb")');
+  const afterOpen=$("!!(document.getElementById('infoScrim')&&document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('overview')&&document.getElementById('overview').classList.contains('show'))");
+  const selId=$("(function(){var p=state.projects.find(function(x){return x.id==='p2';});var g=tradeSpecGaps(p,'plumb');return g[0]&&g[0].id;})()");
+  if(!selId)return afterOpen===true;
+  $('pktFillSpec('+selId+')');
+  const stacked=$("!!(document.getElementById('specScrim').classList.contains('show')&&document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('overview').classList.contains('show'))");
+  $('closeSpec()');
+  const restored=$("!!(!document.getElementById('specScrim').classList.contains('show')&&document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('overview').classList.contains('show'))");
+  $('closeInfo()');
+  const home=$("!!(!document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('overview').classList.contains('show'))");
+  return afterOpen===true&&stacked===true&&restored===true&&home===true;
+})());
 t('a waiting packet is gated to two days', $("String(_nyWaiting)").indexOf('48*3600*1000')>=0);
 t('site-not-ready is only today or tomorrow', $("String(_nySiteNotReady)").indexOf('864e5')>=0);
 t('a date change opens the booking, not a one-tap confirm', $("String(renderToday)").indexOf("go:`openBk(")>=0&&$("String(renderToday)").indexOf('nyConfirm')<0);

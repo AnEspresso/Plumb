@@ -582,6 +582,25 @@
   .pkt-foot{font-size:12.5px;color:var(--ink-3);line-height:1.55;}
   .pkt-due{border-radius:11px;padding:9px 12px;font-size:12.5px;background:var(--surface-2);color:var(--ink);margin-bottom:8px;}
   .pkt-due.over{background:rgba(176,96,74,.14);color:var(--clay);}
+  .pkt-strip{border-radius:14px;padding:13px 14px;margin:0 0 14px;background:var(--surface-2);}
+  .pkt-strip.warn{background:rgba(176,96,74,.10);}
+  .pkt-strip.ok{background:rgba(106,127,94,.12);}
+  .pkt-strip .st{font-weight:700;font-size:15.5px;letter-spacing:-.02em;}
+  .pkt-strip.warn .st{color:var(--clay);}
+  .pkt-strip.ok .st{color:var(--sage);}
+  .pkt-strip .meta{font-size:12.5px;color:var(--ink-2);margin-top:5px;line-height:1.45;}
+  .pkt-open{background:rgba(176,96,74,.10);border-radius:14px;padding:12px 14px;margin:0 0 16px;}
+  .pkt-open .h{font-weight:700;color:var(--clay);font-size:14.5px;margin-bottom:6px;letter-spacing:-.015em;}
+  .pkt-or{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid rgba(176,96,74,.16);cursor:pointer;}
+  .pkt-or:first-of-type{border-top:none;padding-top:4px;}
+  .pkt-or .k{font-weight:650;font-size:14.5px;color:var(--ink);}
+  .pkt-or .m{font-size:12px;color:var(--ink-3);margin-top:2px;}
+  .pkt-or .who{margin-left:auto;flex:none;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--clay);}
+  .pkt-ask{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid rgba(176,96,74,.16);cursor:pointer;}
+  .pkt-ask .k{font-weight:600;font-size:13.5px;color:var(--ink);}
+  .pkt-ask .m{font-size:12px;color:var(--ink-3);margin-top:1px;}
+  .pkt-ask .td-chev{margin-left:auto;color:var(--ink-3);}
+  .pkt-doc.quiet{opacity:.78;background:transparent;}
   .ho-due{display:inline-block;font-size:10.5px;font-weight:700;color:var(--clay);border:1px solid rgba(176,96,74,.3);border-radius:6px;padding:1px 6px;margin-left:6px;}
   .inv-chip{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:7px;padding:3px 8px;}
   .inv-chip.sent{color:var(--clay);background:rgba(176,96,74,.12);}
@@ -842,8 +861,10 @@
   .ov-sortrow{display:flex;align-items:center;gap:8px;margin:0 0 12px;}
   .ov-sortpills{display:flex;gap:6px;flex-wrap:wrap;}
   .ov-openchip{margin-left:auto;white-space:nowrap;font-size:12px;}
-  .td-morebtn{display:inline-flex;align-items:center;margin:9px 0 2px;font-family:inherit;font-size:12px;font-weight:700;color:var(--oak);background:none;border:none;cursor:pointer;padding:4px 2px;letter-spacing:.01em;}
+  .td-morebtn{display:block;width:100%;text-align:left;margin:10px 0 2px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--oak);background:none;border:none;cursor:pointer;padding:4px 2px;letter-spacing:.01em;}
   .td-morebtn:active{opacity:.55;}
+  .td-histbtn{display:block;width:100%;text-align:left;margin:2px 0 10px;font-family:inherit;font-size:12px;font-weight:500;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:4px 2px;}
+  .td-histbtn:active{opacity:.55;}
   .ov-sortpill{font-size:11.5px;font-weight:650;letter-spacing:.01em;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:inherit;transition:all .12s ease;}
   .ov-sortpill.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
   .ov-sortpill:active{transform:scale(.96);}
@@ -1092,6 +1113,7 @@
     margin:34px 0 8px;padding:14px;cursor:pointer;-webkit-user-select:none;user-select:none;}
   /* password gate + feedback form (shared paper modal) */
   #promptScrim,#webPickScrim{z-index:96 !important;}
+  #specScrim,#docScrim,#recScrim,#pktLogScrim,#readyScrim,#bkScrim{z-index:96;}
 .pmodal-scrim{position:absolute;inset:0;z-index:90;background:rgba(20,18,14,.55);backdrop-filter:blur(6px);
     display:none;align-items:center;justify-content:center;padding:24px;}
   .pmodal-scrim.show{display:flex;}
@@ -1901,7 +1923,7 @@ body.on-tour .tour-card{display:block;}
 
   <div id="legalDocScrim"><div class="ld-bar"><button class="ov-logout" onclick="closeLegalDoc()">Done</button></div><iframe id="legalDocFrame" src="about:blank" title="Policy document"></iframe></div>
   <div id="guestScrim"><div class="gp-wrap" id="gpBody"></div></div>
-  <div class="pmodal-scrim" id="pktLogScrim" style="z-index:118">
+  <div class="pmodal-scrim" id="pktLogScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="pktLogTitle">Daily log / photos</h4>
       <div class="info-body"><div id="pktLogBody"></div></div>
@@ -2938,13 +2960,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.222.0 - Needs You covers a declined window, a blocked crew, a site not ready tomorrow, a quiet packet, a homeowner note, and a trade on deck';
+const PLUMB_VERSION='2.226.0 - Closing a sheet returns you to the one underneath. Spec cards open the packet, not the site.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786743842138;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.222.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786760336360;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.226.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -3070,7 +3092,7 @@ function permitStatusFor(i,n,r){const phase=n>1?i/(n-1):0;if(r>=phase+0.15)retur
 function normalizePermits(p){if(p.permits)p.permits=p.permits.filter(pm=>!LEGACY_INSP_PERMITS.has(pm.name));if(p._permitsSeeded)return;const SS=stagesFor(p);const done=SS.filter(s=>p.stageDone&&p.stageDone[s.id]).length;const r=done/SS.length;const ex={};(p.permits||[]).forEach(pm=>{ex[pm.name]=pm.status;});p.permits=DEFAULT_PERMITS.map((name,i)=>({name,status:ex[name]||(done===0?'Not started':permitStatusFor(i,DEFAULT_PERMITS.length,r))}));p._permitsSeeded=true;}
 const SW={oak:'#C7A878,#9A7544',slate:'#8C9AA6,#5E6B78',dove:'#E4DFD5,#C9C2B4',clay:'#C08068,#9A5A44',sage:'#9AA47E,#717C55',dark:'#54504A,#33302B'};
 
-const SEED_VERSION=15; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
+const SEED_VERSION=16; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
 function sampleState(){
   const D=864e5; // one day in ms
   const ds=n=>{const x=new Date(Date.now()-n*D);const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());};
@@ -3157,7 +3179,8 @@ function sampleState(){
           {aud:'all',n:'Construction Contract.pdf',m:'Signed · Feb 12',k:'pdf'},
           {aud:'all',n:'Approved Building Plans.pdf',m:'City stamped',k:'plan'},
           {aud:'all',n:'Window & Door Schedule.pdf',m:'Ordered · Delivered',k:'pdf'},
-          {aud:'all',n:'Mechanical / HVAC Layout.pdf',m:'Rev B',k:'plan'},
+          {aud:'subs',n:'Plumbing Rough-In Plan.pdf',m:'Issued',k:'plan',trade:'plumb'},
+          {aud:'all',n:'Mechanical / HVAC Layout.pdf',m:'Rev B',k:'plan',trade:'hvac'},
           {aud:'all',n:'Lien Waiver — Framing.pdf',m:'Received',k:'pdf'},
           {aud:'all',n:'Lien Waiver — Foundation.pdf',m:'Received',k:'pdf'},
           {aud:'all',n:'Selections — Kitchen & Baths.pdf',m:'In progress',k:'pdf'}
@@ -4208,6 +4231,21 @@ function toastAction(msg,label,fn,ms){const t=document.getElementById('toast');t
 function showInfo(title,bodyHTML){document.getElementById('infoTitle').textContent=title;document.getElementById('infoBody').innerHTML=bodyHTML;document.getElementById('infoScrim').classList.add('show');}
 function closeInfo(){document.getElementById('infoScrim').classList.remove('show');}
 
+/* Sheets stack. Opening a child never tears the parent down. Closing one hides only itself.
+   Page changes (a site, permits) remember how to come back via Back. */
+const _navStack=[];
+function navPush(restore){if(typeof restore==='function')_navStack.push(restore);}
+function navPop(){const fn=_navStack.pop();if(typeof fn==='function')setTimeout(function(){try{fn();}catch(e){}},0);}
+function navClear(){_navStack.length=0;}
+function navRestorePacket(){
+  if(!_pktCtx)return;
+  const p=state.projects.find(function(x){return String(x.id)===String(_pktCtx.pid);});if(!p)return;
+  const sb=(p.subs||[]).find(function(s){return s.specialty===_pktCtx.trade;});
+  if(sb)showInfo('Install packet \u2014 '+sb.name,packetHTML(p,_pktCtx.trade));
+  else{const el=document.getElementById('infoScrim');if(el)el.classList.add('show');try{refreshPacket();}catch(e){}}
+}
+function navPacketStillOpen(){const el=document.getElementById('infoScrim');return !!(el&&el.classList.contains('show')&&_pktCtx);}
+
 /* ════════ render ════════ */
 function renderFeed(){
   document.getElementById('feed').innerHTML=[...visibleItems()].sort((a,b)=>b.t-a.t).map((it,i)=>`
@@ -4331,7 +4369,7 @@ function onDocTypeChange(sel){const w=document.getElementById('docName');if(sel.
 function closeAddDoc(){document.getElementById('docScrim').classList.remove('show');}
 /* Add a document straight from a trade's install packet — opens the normal
    add-doc modal with that trade preselected, so the new doc routes to the packet. */
-function addPacketDoc(tradeId){closeInfo();openAddDoc();
+function addPacketDoc(tradeId){openAddDoc();
   setTimeout(()=>{const ts=document.getElementById('docTrade');if(ts){ts.value=tradeId;try{ssSync('docTrade');}catch(e){}}},60);}
 async function saveDoc(){
   const sel=document.getElementById('docType');let name=sel.value==='__other'?document.getElementById('docName').value.trim():sel.value;
@@ -4349,7 +4387,9 @@ async function saveDoc(){
     catch(e){toast('Couldn’t store the file');return;}
   }
   if(!P().docs)P().docs=[];P().docs.unshift(rec);Data.commit();
-  logEvent('docAdded',name+(file?' (file)':''));renderDocs();closeAddDoc();toast(file?'Document uploaded':'Document added');
+  logEvent('docAdded',name+(file?' (file)':''));renderDocs();closeAddDoc();
+  if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
+  toast(file?'Document uploaded':'Document added');
 }
 function todayStr(){const x=new Date();const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());}
 function dateStrFrom(t){const x=new Date(t);const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());}
@@ -6109,6 +6149,7 @@ async function createInvite(role,subId,opts){opts=opts||{};
   p.invites=p.invites||[];p.invites.push({code,role,siteId:String(p.id),subId:subId2,name,trade,t:Date.now(),status:'open'});persist();
   try{watchClaims();}catch(e){}
   logEvent('inviteCreated',role+' · '+(name||'homeowner'));
+  if(navPacketStillOpen()){try{refreshPacket();}catch(e){}try{shareInvite(code);}catch(e){}return;}
   showInfo('Invite code',`<p style="margin:0 0 10px;font-size:14px">Send this to <b>${esc(name||'your homeowner')}</b> — <b>Share</b> includes directions and a one-tap link:</p>
     <button class="b1 b-go" style="width:100%;margin-bottom:10px" onclick="shareInvite('${code}')">Share invite\u2026</button>
     <div class="fld-hint" style="margin:0 2px 4px">Or give them just the code:</div>
@@ -6195,7 +6236,7 @@ function logout(){Data.setSession(null);logEvent('logout','');setChrome(true);
   document.getElementById('overview').classList.remove('show');document.getElementById('subview').classList.remove('show');document.getElementById('clientview').classList.remove('show');
   document.getElementById('login').classList.remove('hide');setRole('hillan');document.getElementById('loginSelect').selectedIndex=0;}
 function showOverview(){_ovAnimateTs=Date.now();document.getElementById('overview').classList.add('show');document.getElementById('backBtn').classList.remove('show');renderOverview();const _b=document.querySelector('.ov-body');if(_b)_b.scrollTop=0;}
-function backToOverview(){showOverview();}
+function backToOverview(){if(_navStack.length){navPop();return;}showOverview();}
 function subsFromOverview(){openSubsRoster();}
 /* company-wide subcontractor roster — seeds every new site */
 function openSubsRoster(){
@@ -6475,7 +6516,7 @@ function renderToday(){
       const gapList=tradeSpecGaps(p,trade);const gaps=gapList.length;
       const tgt=gaps?gapList[0]:tradeSelections(p,trade).filter(x=>!x.approved)[0];
       const why=gaps?`${gaps} spec${gaps===1?'':'s'} still open`:'packet not signed off';
-      warns.push({lvl:'warn',pri:1,html:`<b>Spec still open</b><div class="td-meta">${esc(specLabel(trade))} \u00b7 ${esc(p.street||p.name)} \u00b7 ${tdDayLabel(b.start)}</div><div class="td-quote">${esc(why)}</div>`,go:(tgt?`todayGo('${p.id}','selections',${tgt.id})`:`openPacketFor('${p.id}','${trade}')`),ts:b.start});
+      warns.push({lvl:'warn',pri:1,html:`<b>Spec still open</b><div class="td-meta">${esc(specLabel(trade))} \u00b7 ${esc(p.street||p.name)} \u00b7 ${tdDayLabel(b.start)}</div><div class="td-quote">${esc(why)}</div>`,go:`openPacketFor('${p.id}','${trade}')`,ts:b.start});
     }}));
   bookingConflicts().filter(c=>c.kind==='double').forEach(c=>{
     const where=[...new Set(c.sites||[])];const k='c|'+c.name+'|'+where.slice().sort().join('|');if(seen[k])return;seen[k]=1;
@@ -6507,21 +6548,21 @@ function renderToday(){
   let h='<div class="eyebrow">Needs you</div>';
   if(!warns.length&&!soon.length){
     h+='<div class="td-clear">All clear \u2014 nothing needs you today.</div>';
-    h+=`<button class="td-morebtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
+    h+=`<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
     el.innerHTML=h;return;}
   warns.sort((a,b)=>(a.pri-b.pri)||((b.ts||0)-(a.ts||0)));
   const _CAP=3;const _truncated=!_needsExpanded&&warns.length>_CAP;const _shown=_truncated?warns.slice(0,_CAP):warns;
   _shown.forEach(w=>{h+=`<div class="td-alert ${w.lvl}" onclick="${w.go}"><span class="td-bar"></span><div class="td-tx">${w.html}</div><span class="td-chev">\u203a</span></div>`;});
   if(warns.length>_CAP){h+=`<button class="td-morebtn" onclick="event.stopPropagation();toggleNeeds()">`+(_needsExpanded?'Show less':('Show all '+warns.length))+`</button>`;}
-  h+=`<button class="td-morebtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
+  h+=`<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
   if(soon.length){
     h+='<div class="eyebrow" style="margin-top:16px">Coming up</div>';
     soon.slice(0,3).forEach(s=>{h+=`<div class="td-soon" onclick="openCalOn(${s.b.start},'${s.p.id}')"><span class="td-when">${tdDayLabel(s.b.start)}</span><span class="td-soontx">${esc(s.trade?specLabel(s.trade):(s.b.subName||'Crew'))} \u00b7 ${esc(s.p.street||s.p.name)}</span></div>`;});
     if(soon.length>3)h+=`<div class="td-more">+${soon.length-3} more this week</div>`;
   }
   el.innerHTML=h;if(keep){const n=document.getElementById('nyQText');if(n){n.value=keep.v;try{n.focus();n.selectionStart=n.selectionEnd=keep.s;}catch(e){}}}}
-function todayGo(pid,view,selId){openSiteFromOverview(pid);if(view)setTimeout(()=>{try{go(view);if(selId)setTimeout(()=>{try{highlightSel(selId);}catch(e){}},150);}catch(e){}},70);}
-function todayGoRecord(pid,recId){openSiteFromOverview(pid);setTimeout(function(){try{go('issues');}catch(e){}setTimeout(function(){try{openRecord(recId);}catch(e){}},180);},70);}
+function todayGo(pid,view,selId){navPush(function(){showOverview();});openSiteFromOverview(pid);if(view)setTimeout(()=>{try{go(view);if(selId)setTimeout(()=>{try{highlightSel(selId);}catch(e){}},150);}catch(e){}},70);}
+function todayGoRecord(pid,recId){try{Data.setActive(pid);}catch(e){}openRecord(recId);}
 function nyBookSub(pid,subName){
   try{if(String((P()||{}).id)!==String(pid))Data.setActive(pid);}catch(e){}
   calSiteFilter=String(pid);
@@ -9262,7 +9303,8 @@ function openSpec(id){const s=(P().selections||[]).find(x=>x.id===id);if(!s)retu
   _specCustomDraft=(s.specCustom||[]).map(c=>({label:c.label||'',who:c.who||'builder',required:!!c.required,value:c.value||''}));
   document.getElementById('specSub').textContent=(s.item||'(unspecified)')+' · '+(s.cat||'');
   renderSpecEditor(s);document.getElementById('specScrim').classList.add('show');}
-function closeSpec(){document.getElementById('specScrim').classList.remove('show');_specId=null;_specCustomDraft=[];}
+function closeSpec(){document.getElementById('specScrim').classList.remove('show');_specId=null;_specCustomDraft=[];
+  if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}}
 function renderSpecEditor(s){
   const f=specFields(s).filter(x=>!x.custom);
   const grp=who=>{const items=f.filter(x=>x.who===who);if(!items.length)return '';
@@ -9292,16 +9334,8 @@ function saveSpec(){const s=(P().selections||[]).find(x=>x.id===_specId);if(!s){
   const custom=_specCustomDraft.map(c=>({label:(c.label||'').trim(),who:c.who==='homeowner'?'homeowner':'builder',required:!!c.required,value:(c.value||'').trim()})).filter(c=>c.label);
   Data.updateSelection(_specId,{spec,specCustom:custom});
   logEvent('specSaved',(s.item||'')+' · '+(s.cat||''));
-  closeSpec();renderSelections();toast('Spec saved');}
-function openSpecBlock(sub,gaps){closeReady();
-  const rows=gaps.map(s=>{const miss=specStatus(s).requiredMissing;
-    return `<div class="lr" style="display:block;padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(s.item||'(unspecified)')}</b> <span style="color:var(--ink-3)">· ${esc(s.cat||'')}</span><br>`+
-      miss.map(m=>`<span class="spec-need ${m.who}">${esc(m.label)} · ${m.who==='homeowner'?'homeowner':'builder'}</span>`).join(' ')+`</div>`;}).join('');
-  const sess=(state&&state.session)||{};
-  const rp=sess.rpRole?`<p style="font-size:12.5px;margin:10px 0 0"><b>Responsible party:</b> ${esc(sess.name||'')} · ${esc(RP_ROLES[sess.rpRole]||sess.rpRole)}</p>`:'';
-  showInfo('Specs needed before '+specLabel(sub.specialty),
-    `<p style="margin:0 0 10px">You can't notify <b>${esc(sub.name)}</b> yet — these selections still need install details confirmed:</p>${rows}
-     <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0">Builder answers go in each selection's <b>spec sheet</b> (Specs tab). Homeowner answers show as prompts in their portal.</p>${rp}`);}
+  closeSpec();try{renderSelections();}catch(e){}toast('Spec saved');}
+function openSpecBlock(sub,gaps){closeReady();if(sub){openPacket(sub.id);return;}}
 const SEL_NEXT={pending:'selected',selected:'ordered',ordered:'delivered',delivered:'installed',installed:'pending'};
 function selMoney(n){if(n==null||n==='')return '';n=Number(n);if(isNaN(n))return '';if(n===0)return 'Std';return (n<0?'−$':'+$')+Math.abs(n).toLocaleString();}
 function selTimeline(s){
@@ -9887,7 +9921,7 @@ function openStage(i){const st=stagesFor(P())[i];if(!st)return;const status=stag
   const recs=stageRecords(st).slice().sort((a,b)=>b.t-a.t);
   const insp=(STAGE_INSPECTIONS[st.id]||[]).map(ins=>`<div class="lr"><span>${ins.label} inspection</span><b>${inspOf(ins.id)}</b></div>`).join('');
   const recsHTML=recs.length?`<div class="stage-recs">`+recs.map(it=>`
-      <div class="item tappable" onclick="closeInfo();openRecord(${it.id})">
+      <div class="item tappable" onclick="openRecord(${it.id})">
         <div class="thumb">${thumbHTML(it)}</div>
         <div class="body"><div class="cap">${esc(it.cap)}</div>
           <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag" style="color:var(--clay);border-color:rgba(176,96,74,.32)">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
@@ -10721,7 +10755,7 @@ function openReady(stageId){readyStageId=stageId;const st=STAGES.find(s=>s.id===
       <span class="go">${s.cleared?'✓ Notified':'Notify →'}</span>
     </div>`).join(''):`<div class="empty">No ${tradeLabelOf(st)} sub yet — add one so you can schedule this stage.<br>Add one from the Subcontractors list.</div>`;
   document.getElementById('readyScrim').classList.add('show');}
-function closeReady(){document.getElementById('readyScrim').classList.remove('show');}
+function closeReady(){document.getElementById('readyScrim').classList.remove('show');if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}}
 /* ── Calendar v2 (sub-level scheduling). Bookings are per-subcontractor date
    spans on a site, with notes the sub can read. Availability blocks are the
    sub's own "I'm elsewhere" spans, written from their device and aggregated
@@ -11063,7 +11097,13 @@ function calVisibleAvail(){if(calIsClient())return [];return allAvail().filter(a
 function openCal(){
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   document.getElementById('calview').classList.add('show');renderCal();}
-function openPacketFor(pid,trade){openSiteFromOverview(pid);setTimeout(()=>{try{const p=P();const sb=(p.subs||[]).find(x=>x.specialty===trade);if(sb)openPacket(sb.id);else go('selections');}catch(e){}},120);}
+function openPacketFor(pid,trade){
+  const p=state.projects.find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  try{Data.setActive(pid);}catch(e){}
+  const sb=(p.subs||[]).find(function(x){return x.specialty===trade;});
+  if(sb){openPacket(sb.id);return;}
+  showInfo('Install packet', '<p style="margin:0">No '+esc(specLabel(trade)||'trade')+' sub on this site yet. Add them from the site and the packet fills itself.</p>');
+}
 function openCalOn(ts,siteId){try{const d=new Date(Number(ts));calMonth=new Date(d.getFullYear(),d.getMonth(),1);}catch(e){}calSiteFilter=(siteId===undefined||siteId===null||siteId==='')?'all':String(siteId);openCal();}
 function closeCal(){document.getElementById('calview').classList.remove('show');try{renderToday();}catch(e){}}
 function calNav(d){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+d,1);renderCal();}
@@ -11156,9 +11196,9 @@ function renderDay(){
   else if(!calIsSub()){
     const idle=idleSubs(calDay);
     if(idle.length)h+='<div class="lbl" style="margin-top:12px">Free this day</div><div class="fday-list" style="font-size:12.5px;color:var(--ink-3);line-height:1.6">'+idle.map(x=>'<span class="fseg">'+esc(x.name)+'</span>').join('')+'</div>';
-    h+=`<button class="add-sub-btn" style="margin-top:12px" onclick="closeDay();openBk(null,${calDay})">Schedule someone this day\u2026</button>`;
+    h+=`<button class="add-sub-btn" style="margin-top:12px" onclick="openBk(null,${calDay})">Schedule someone this day\u2026</button>`;
   }else{
-    h+=`<button class="add-sub-btn" style="margin-top:12px" onclick="closeDay();openBk(null,${calDay})">Block this day (working elsewhere)\u2026</button>`;
+    h+=`<button class="add-sub-btn" style="margin-top:12px" onclick="openBk(null,${calDay})">Block this day (working elsewhere)\u2026</button>`;
   }
   el.innerHTML=h;}
 function bkConfirm(pid,id){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;bkSetStatus(p,id,'confirmed');toast('Confirmed \u2014 your builder can see it');}
@@ -11174,7 +11214,7 @@ function svBkModify(pid,id){bkSubModify(pid,id);}
 let _bkSubMod=null;
 function bkSubModify(pid,id){
   const p=state.projects.find(x=>String(x.id)===String(pid));const b=p&&(p.bookings||[]).find(x=>x.id===id);if(!b)return;
-  _bkSubMod={pid,id};closeDay();
+  _bkSubMod={pid,id};
   document.getElementById('bkTitle').textContent='Propose new dates';
   const siteSel=document.getElementById('bkSite');siteSel.innerHTML='<option>'+esc(p.street||p.name)+'</option>';siteSel.disabled=true;
   document.getElementById('bkSub').style.display='none';
@@ -11309,7 +11349,9 @@ function bkOfferInvite(p,name,wasAdded){
     body:esc(name)+' is scheduled. Send an invite so they can see '+esc(p.street||p.name)+' in SitePlumb — they get a code and a one-tap link. You can also do this anytime from the site’s Subs tab.',
     okLabel:'Send invite',cancelLabel:'Not now',
     onConfirm:()=>{try{Data.setActive(p.id);createInvite('sub',s.id);}catch(e){}}});}
-function closeBk(){document.getElementById('bkScrim').classList.remove('show');_bkSubMod=null;}
+function closeBk(){document.getElementById('bkScrim').classList.remove('show');_bkSubMod=null;
+  if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
+  try{if(document.getElementById('dayScrim').classList.contains('show'))renderDay();}catch(e){}}
 function bkSyncRangeLabel(){const el=document.getElementById('bkRangeLabel');if(!el)return;el.textContent=_rangeLabel((document.getElementById('bkStart')||{}).value||'',(document.getElementById('bkEnd')||{}).value||'');}
 function _bkCalHide(){const cal=document.getElementById('bkCal');if(cal)cal.style.display='none';bkSyncRangeLabel();}
 function bkCalToggle(){
@@ -11459,12 +11501,12 @@ function setPacketDeadline(subId){
   const sb=P().subs.find(x=>x.id===subId);if(!sb)return;
   const cur=sb.specsDue?new Date(sb.specsDue).toISOString().slice(0,10):'';
   openPrompt({title:'Install answers due by',body:'Every spec for '+specLabel(sb.specialty)+' must be confirmed by this date.'+(cur?' Leave the date empty to clear the deadline.':''),type:'date',value:cur,okLabel:'Save',onOk:(v)=>{
-    if(!v){if(cur){Data.updateSub(subId,{specsDue:null,specsDueBy:null});toast('Deadline cleared');try{closeInfo();openPacket(subId);}catch(e){}}return;}
+    if(!v){if(cur){Data.updateSub(subId,{specsDue:null,specsDueBy:null});toast('Deadline cleared');try{if(navPacketStillOpen())refreshPacket();else openPacket(subId);}catch(e){}}return;}
     const ts=Date.parse(v+'T17:00:00');if(isNaN(ts)){toast('Pick a date');return;}
     const sess=state.session||{};
     Data.updateSub(subId,{specsDue:ts,specsDueBy:sess.name||''});
     logEvent('packetDeadline',sb.name+' \u00b7 '+v);toast('Specs due '+fmtDue(ts));
-    try{closeInfo();openPacket(subId);}catch(e){}}});}
+    try{if(navPacketStillOpen())refreshPacket();else openPacket(subId);}catch(e){}}});}
 function selDeadline(p,sel){let best=null;(p.subs||[]).forEach(sb=>{
   if(!sb.specsDue)return;const cats=SUB_SEL_CATS[sb.specialty]||[];
   if(cats.includes(sel.cat)&&(!best||sb.specsDue<best))best=sb.specsDue;});return best;}
@@ -11482,6 +11524,7 @@ function setPacketSignoff(p,tradeId,who,on){
   else delete p.packetSignoff[tradeId][who];
   persist();try{Sync.pushAll();}catch(e){}}
 function docHiddenSet(p,tradeId){return ((p.docHidden||{})[tradeId])||[];}
+function docShownSet(p,tradeId){return ((p.docShown||{})[tradeId])||[];}
 function packetPins(p,tradeId){const x=((p.packetPins||{})[tradeId])||{};return {items:x.items||[],logs:x.logs||[]};}
 function itemPinned(p,tradeId,id){return packetPins(p,tradeId).items.map(String).includes(String(id));}
 function logPinned(p,tradeId,date){return packetPins(p,tradeId).logs.includes(date);}
@@ -11497,9 +11540,14 @@ function togglePacketLog(pid,tradeId,date){
   const arr=p.packetPins[tradeId].logs;const i=arr.indexOf(date);
   if(i>=0)arr.splice(i,1);else arr.push(date);
   persist();try{Sync.pushAll();}catch(e){}renderPacketLog();try{refreshPacket();}catch(e){}}
-function docInPacket(p,tradeId,d){return !docHiddenSet(p,tradeId).includes(d.n);}
-/* per-doc audience: who beyond the builder team can see it. Legacy docs (no aud)
-   keep their old sub-facing visibility but are NOT homeowner-visible. */
+/* Default-deny. A doc is in this trade's packet only if it is tagged for
+   this trade, or the builder turned it on. Untagged site PDFs never ride. */
+function docInPacket(p,tradeId,d){
+  if(!d||!d.n)return false;
+  if(docHiddenSet(p,tradeId).includes(d.n))return false;
+  if(d.trade===tradeId)return true;
+  return docShownSet(p,tradeId).includes(d.n);
+}
 function docAud(d){return d&&d.aud?d.aud:'subs';}
 function docAudSub(d){const a=docAud(d);return a==='subs'||a==='all';}
 function docAudClient(d){const a=docAud(d);return a==='homeowner'||a==='all';}
@@ -11512,18 +11560,26 @@ function cycleDocAud(i){const p=P();const d=(p.docs||[])[i];if(!d)return;
   else toast(DOC_AUD_LABEL[nx]);}
 
 function toggleDocInPacket(tradeId,name){
-  const p=P();p.docHidden=p.docHidden||{};const cur=p.docHidden[tradeId]||[];
-  const i=cur.indexOf(name);if(i>=0)cur.splice(i,1);else cur.push(name);
-  p.docHidden[tradeId]=cur;persist();try{Sync.pushAll();}catch(e){}
+  const p=P();if(!p)return;
+  const d=(p.docs||[]).find(x=>x.n===name);
+  const on=docInPacket(p,tradeId,d);
+  p.docHidden=p.docHidden||{};p.docShown=p.docShown||{};
+  const hid=(p.docHidden[tradeId]||[]).slice();
+  const sh=(p.docShown[tradeId]||[]).slice();
+  if(on){
+    if(!hid.includes(name))hid.push(name);
+    const i=sh.indexOf(name);if(i>=0)sh.splice(i,1);
+  }else{
+    if(!sh.includes(name))sh.push(name);
+    const i=hid.indexOf(name);if(i>=0)hid.splice(i,1);
+  }
+  p.docHidden[tradeId]=hid;p.docShown[tradeId]=sh;
+  persist();try{Sync.pushAll();}catch(e){}
   try{refreshPacket();}catch(e){}}
-/* packet readiness: specs confirmed AND both signed */
 function packetReady(p,tradeId){return tradeSpecGaps(p,tradeId).length===0&&packetSignedBoth(p,tradeId);}
-let _pktCtx=null; // {pid,trade} so toggles/sign-off can re-render the open packet
+let _pktCtx=null;
 function refreshPacket(){if(!_pktCtx)return;const p=state.projects.find(x=>String(x.id)===String(_pktCtx.pid));if(!p)return;
   const body=document.getElementById('infoBody');if(body)body.innerHTML=packetHTML(p,_pktCtx.trade);}
-/* Builder opens the daily-log + notes/photos history from a packet, with the
-   items for this sub's trade pinned to the top of the scrollable feed. Pulls
-   from the same item record + daily-log data shown elsewhere in the app. */
 let _pktLogCtx=null;
 function openPacketLog(pid,tradeId){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
@@ -11535,17 +11591,15 @@ function renderPacketLog(){
   const p=state.projects.find(x=>String(x.id)===String(_pktLogCtx.pid));if(!p)return;
   const tradeId=_pktLogCtx.trade,tl=specLabel(tradeId);
   document.getElementById('pktLogTitle').textContent='Daily log / photos \u2014 '+tl;
-  // Item records (notes + photos). crew holds the trade label.
   const items=(p.items||[]).slice();
   const mine=items.filter(it=>it.crew===tl).sort((a,b)=>b.t-a.t);
   const rest=items.filter(it=>it.crew!==tl).sort((a,b)=>b.t-a.t);
-  // Daily-log entries (date-based free text), newest first.
   const logs=(p.logs||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
   const pid=_pktLogCtx.pid;
   const pinSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 10.8V4h6v6.8c0 .5.2 1 .6 1.4l1.4 1.3V15H7v-1.5l1.4-1.3c.4-.4.6-.9.6-1.4z"/></svg>';
   const card=it=>{const on=itemPinned(p,tradeId,it.id);return `<div class="item tappable pkt-pinrow${on?' pinned':''}">
-      <div class="thumb" onclick="closePktLog();openRecord(${it.id})">${thumbHTML(it)}</div>
-      <div class="body" onclick="closePktLog();openRecord(${it.id})"><div class="cap">${esc(it.cap)}</div>
+      <div class="thumb" onclick="openRecord(${it.id})">${thumbHTML(it)}</div>
+      <div class="body" onclick="openRecord(${it.id})"><div class="cap">${esc(it.cap)}</div>
         <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag" style="color:var(--clay);border-color:rgba(176,96,74,.32)">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div>
       <button class="pkt-pin${on?' on':''}" title="${on?'In packet':'Add to packet'}" onclick="event.stopPropagation();togglePacketItem('${pid}','${esc(tradeId)}',${it.id})">${pinSvg}</button>
@@ -11557,7 +11611,7 @@ function renderPacketLog(){
   if(logs.length){
     h+='<div class="eyebrow" style="margin-top:14px">Daily log</div>';
     h+=logs.map(l=>{const on=logPinned(p,tradeId,l.date);return `<div class="loghist-item pkt-pinrow${on?' pinned':''}">
-      <div style="flex:1" onclick="closePktLog();openSheet(true,'${l.date}')"><div class="d">${fmtLogDate(l.date)}${l.share?' \u00b7 shared':''}</div><div class="x">${esc(l.text)}</div></div>
+      <div style="flex:1" onclick="openSheet(true,'${l.date}')"><div class="d">${fmtLogDate(l.date)}${l.share?' \u00b7 shared':''}</div><div class="x">${esc(l.text)}</div></div>
       <button class="pkt-pin${on?' on':''}" title="${on?'In packet':'Add to packet'}" onclick="event.stopPropagation();togglePacketLog('${pid}','${esc(tradeId)}','${l.date}')">${pinSvg}</button>
     </div>`;}).join('');
   }
@@ -11566,108 +11620,191 @@ function renderPacketLog(){
     h+=rest.map(card).join('');
   }
   document.getElementById('pktLogBody').innerHTML=h;}
-function closePktLog(){document.getElementById('pktLogScrim').classList.remove('show');_pktLogCtx=null;}
+function closePktLog(){document.getElementById('pktLogScrim').classList.remove('show');_pktLogCtx=null;if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}}
 function pktSignBuilder(pid,trade){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const cur=packetSignoff(p,trade).builder;setPacketSignoff(p,trade,'builder',!cur);refreshPacket();}
 function pktSignHomeowner(pid,trade){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const cur=packetSignoff(p,trade).homeowner;setPacketSignoff(p,trade,'homeowner',!cur);refreshPacket();}
+function pktFillSpec(selId){if(_pktCtx)try{Data.setActive(_pktCtx.pid);}catch(e){}openSpec(selId);}
+function pktGoBook(pid,subName){if(_pktCtx)try{Data.setActive(pid);}catch(e){}nyBookSub(pid,subName);}
+function pktGoReady(pid,tradeId){
+  try{if(String((P()||{}).id)!==String(pid))Data.setActive(pid);}catch(e){}
+  const st=(typeof STAGES!=='undefined'?STAGES:[]).find(function(s){return tradesOf(s).includes(tradeId);});
+  if(st)openReady(st.id);
+}
+function pktGoPermits(pid){
+  navPush(function(){showOverview();navRestorePacket();});
+  try{Data.setActive(pid);}catch(e){}
+  closeInfo();
+  document.getElementById('overview').classList.remove('show');
+  document.getElementById('backBtn').classList.add('show');
+  try{updateHeader();go('permits');}catch(e){}
+}
+function pktGoDocs(pid){if(_pktCtx)try{Data.setActive(pid);}catch(e){}addPacketDoc(_pktCtx?_pktCtx.trade:'');}
+function pktAsk(p,tradeId){
+  const out=[];
+  const tl=specLabel(tradeId);
+  const gaps=tradeSpecGaps(p,tradeId);
+  const sb=(p.subs||[]).find(function(x){return x.specialty===tradeId;});
+  const today=dayStart(Date.now());
+  const booked=(p.bookings||[]).some(function(b){return tdTradeOf(p,b)===tradeId&&(b.status||'confirmed')!=='declined'&&b.end>=today;});
+  if(!booked)out.push({title:'No dates on the calendar',meta:'Schedule '+tl,go:`pktGoBook('${p.id}','${esc((sb&&sb.name)||'')}')`});
+  if(gaps.length&&sb&&!sb.specsDue)out.push({title:'Set a specs deadline',meta:'So the answers land before the crew',go:`setPacketDeadline('${sb.id}')`});
+  if(sb&&!sb.cleared)out.push({title:'Site is not marked ready',meta:tl,go:`pktGoReady('${p.id}','${esc(tradeId)}')`});
+  const permName=PK_PERMIT[tradeId];
+  if(permName){
+    const perm=(p.permits||[]).find(function(x){return x.name===permName;});
+    const ok=perm&&(perm.status==='Issued'||perm.status==='Approved'||perm.status==='Closed');
+    if(!ok)out.push({title:permName+(perm?(' is '+perm.status):' is not on the board'),meta:'Permits',go:`pktGoPermits('${p.id}')`});
+  }
+  const inDocs=(p.docs||[]).filter(function(d){return docInPacket(p,tradeId,d);});
+  if(!inDocs.length)out.push({title:'Nothing in the packet for the truck',meta:'Show a plan or add one for this trade',go:''});
+  (p.docs||[]).filter(function(d){return d.trade===tradeId&&!(d.fileId||d.fileUrl);}).forEach(function(d){
+    out.push({title:d.n+' has no file yet',meta:'Attach the file',go:`pktGoDocs('${p.id}')`});
+  });
+  if(sb){
+    const inv=(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
+    if(!inv)out.push({title:'Invite '+sb.name,meta:'So they see this live',go:`invitePacketSub('${p.id}','${sb.id}')`});
+  }
+  return out;
+}
 function packetHTML(p,tradeId){
   const tl=specLabel(tradeId);
   const sels=tradeSelections(p,tradeId);
   const gaps=tradeSpecGaps(p,tradeId);
-  const docs=(p.docs||[]).filter(d=>(!d.trade||d.trade===tradeId)&&docAudSub(d));
-  const openItems=(p.items||[]).filter(it=>it.crew===tl&&it.issue&&it.status==='open');
-  const team=Object.keys(p.members||{}).filter(uid=>p.members[uid]==='builder'&&p.memberInfo&&p.memberInfo[uid]&&p.memberInfo[uid].name);
+  const allDocs=(p.docs||[]).filter(function(d){return docAudSub(d);});
+  const inDocs=allDocs.filter(function(d){return docInPacket(p,tradeId,d);});
+  const availDocs=allDocs.filter(function(d){return !docInPacket(p,tradeId,d);});
+  const openItems=(p.items||[]).filter(function(it){return it.crew===tl&&it.issue&&it.status==='open';});
+  const team=Object.keys(p.members||{}).filter(function(uid){return p.members[uid]==='builder'&&p.memberInfo&&p.memberInfo[uid]&&p.memberInfo[uid].name;});
   const sess=state.session||{};const isBuilder=sess.role==='hillan';const isClient=sess.role==='client';
-  const sb=(sess.role==='subs'&&sess.name&&(p.subs||[]).find(x=>x.name===sess.name))||(p.subs||[]).find(x=>x.specialty===tradeId);
+  const sb=(sess.role==='subs'&&sess.name&&(p.subs||[]).find(function(x){return x.name===sess.name;}))||(p.subs||[]).find(function(x){return x.specialty===tradeId;});
   const due=dueState(sb&&sb.specsDue);
   _pktCtx={pid:p.id,trade:tradeId};
+  const bkWin=(p.bookings||[]).filter(function(b){return b.trade===tradeId&&(!sb||b.subName===sb.name)&&(b.status||'confirmed')!=='declined'&&b.end>=dayStart(Date.now());}).sort(function(a,b){return a.start-b.start;})[0];
+  const siteOk=!(sb)||!!sb.cleared;
+  const warn=gaps.length>0||!siteOk;
+  const permName=PK_PERMIT[tradeId];
+  const perm=permName&&(p.permits||[]).find(function(x){return x.name===permName;});
+  const ik=PK_INSP[tradeId];const iv=ik&&(p.inspections||{})[ik];
+  let stripSt=gaps.length? (gaps.length+' still open') : (siteOk?'Ready for this trade':'Specs confirmed \u2014 site not marked ready');
+  const meta=[];
+  if(bkWin)meta.push((isClient?tl+' scheduled':'Scheduled')+' '+fmtWin(bkWin)+(bkWin.note?(' \u2014 '+bkWin.note):''));
+  else meta.push('No dates on the calendar');
+  if(due)meta.push(due.label+' \u00b7 answers due '+fmtDue(due.ts));
+  if(perm)meta.push(permName+': '+perm.status);
+  else if(permName&&isBuilder)meta.push(permName+' not on the board');
+  if(iv)meta.push((PK_INSP_LBL[ik]||ik)+': '+iv);
   let h='';
-  h+=`<div class="pkt-head"><div class="pk-site">${esc(p.street||p.name)}${p.city?' · '+esc(p.city):''}</div><div class="pk-trade">${esc(tl)} install packet</div></div>`;
-  const bkWin=(p.bookings||[]).filter(b=>b.trade===tradeId&&(!sb||b.subName===sb.name)&&b.end>=dayStart(Date.now())).sort((a,b)=>a.start-b.start)[0];
-  const stWin=(()=>{for(const st of STAGES){if(tradesOf(st).includes(tradeId)){const w=stageWindow(p,st.id);if(w&&!(p.stageDone&&p.stageDone[st.id]))return {st,w};}}return null;})();
-  if(bkWin)h+=`<div class="pkt-due"><b>${isClient?esc(tl)+' scheduled':'You\u2019re scheduled'} ${fmtWin(bkWin)}</b>${bkWin.note?' \u2014 '+esc(bkWin.note):''}</div>`;
-  else if(stWin)h+=`<div class="pkt-due"><b>Planned on site ${fmtWin(stWin.w)}</b> — ${esc(stWin.st.name)}</div>`;
-  if(due)h+=`<div class="pkt-due${due.overdue?' over':''}"><b>${due.label}</b> — install answers due ${fmtDue(due.ts)}${sb&&sb.specsDueBy?' · set by '+esc(sb.specsDueBy):''}</div>`;
-  if(isBuilder&&sb)h+=`<button class="add-sub-btn" style="margin:8px 0" onclick="setPacketDeadline('${sb.id}')">${due?'Change deadline…':'Set a specs deadline…'}</button>`;
-  h+=!sels.length?'':gaps.length
-    ?`<div class="pkt-banner warn"><b>${gaps.length} selection${gaps.length===1?'':'s'} still missing install answers${due?(due.overdue?' — and the deadline has passed.':' — '+due.label.toLowerCase()+'.'):'.'}</b> Don\u2019t install on a guess — the gaps below say who owes each answer.</div>`
-    :`<div class="pkt-banner ok"><b>All install specs confirmed${due?' — ahead of the '+fmtDue(due.ts)+' deadline':''}.</b> Every required answer below is final — build to this.</div>`;
-  h+='<div class="eyebrow" style="margin-top:14px">Selections &amp; install specs</div>';
-  h+=sels.length?sels.map(sel=>{
-    const st=specStatus(sel);
-    const rows=st.fields.map(f=>{
-      const val=String(f.value||'').trim();
-      if(val)return `<div class="sro"><span class="k">${esc(f.label)}${f.who==='homeowner'?'<span class="pkt-ho">Homeowner</span>':''}</span><span class="v">${esc(val)}</span></div>`;
-      if(f.required)return `<div class="sro"><span class="k">${esc(f.label)}</span><span class="v pkt-gap">awaiting ${f.who==='homeowner'?'homeowner':'builder'}</span></div>`;
-      return '';}).join('');
-    return `<div class="pkt-sel"><div class="ps-h"><b>${esc(sel.item||'(unspecified)')}</b><span class="ps-c">${esc(sel.cat||'')}${sel.room&&sel.room!=='—'?' · '+esc(sel.room):''}</span></div>${rows?'<div class="spec-ro">'+rows+'</div>':'<div class="empty" style="padding:4px 0">No spec fields for this selection.</div>'}</div>`;
-  }).join(''):'<div class="empty" style="padding:8px 0">No selections route to this trade on this site.</div>';
-  h+='<div class="eyebrow" style="margin-top:14px">Documents</div>';
-  if(isBuilder){
-    h+=docs.length?docs.map(d=>{const inc=docInPacket(p,tradeId,d);
-      return `<div class="pkt-doc" style="cursor:default"><span class="n">${esc(d.n)}</span><span class="t">${d.trade?esc(specLabel(d.trade)):'Shared'}${d.fileId||d.fileUrl?' · attached':' · no file yet'}</span>
-        <span class="pkt-vis${inc?' on':''}" onclick="event.stopPropagation();toggleDocInPacket('${esc(tradeId)}','${esc(d.n).replace(/'/g,"\\'")}')">${inc?'Visible to sub':'Hidden'}</span></div>`;}).join('')
-      :'<div class="empty" style="padding:8px 0">No documents routed to this trade yet.</div>';
-    h+=`<button class="add-sub-btn" style="margin-top:8px" onclick="addPacketDoc('${esc(tradeId)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a document for this trade…</button>`;
-  }else{
-    const shown=docs.filter(d=>docInPacket(p,tradeId,d));
-    h+=shown.length?shown.map(d=>`<div class="pkt-doc" onclick="openDocFile('${p.id}','${esc(d.fileId||'')}','${esc(d.fileUrl||'')}')"><span class="n">${esc(d.n)}</span><span class="t">${d.trade?esc(specLabel(d.trade)):'Shared'}${d.fileId||d.fileUrl?' · tap to open':' · no file yet'}</span></div>`).join('')
-      :'<div class="empty" style="padding:8px 0">No documents shared for this trade yet.</div>';
+  h+=`<div class="pkt-head"><div class="pk-site">${esc(p.street||p.name)}${p.city?' \u00b7 '+esc(p.city):''}</div><div class="pk-trade">${esc(tl)} install packet</div></div>`;
+  h+=`<div class="pkt-strip ${warn?'warn':'ok'}"><div class="st">${esc(stripSt)}</div>${meta.length?`<div class="meta">${meta.map(esc).join('<br>')}</div>`:''}</div>`;
+
+  const missRows=[];
+  gaps.forEach(function(sel){
+    specStatus(sel).requiredMissing.forEach(function(f){
+      missRows.push({sel:sel,f:f});
+    });
+  });
+  const asks=isBuilder?pktAsk(p,tradeId):[];
+  if(missRows.length||asks.length){
+    h+=`<div class="pkt-open"><div class="h">${missRows.length? (missRows.length+' still '+ (missRows.length===1?'needs':'need') +' an answer') :'Before you send this'}</div>`;
+    missRows.forEach(function(r){
+      const who=r.f.who==='homeowner'?'Homeowner':'You';
+      h+=`<div class="pkt-or" onclick="pktFillSpec(${r.sel.id})"><div><div class="k">${esc(r.f.label)}</div><div class="m">${esc(r.sel.item||r.sel.cat||'')} \u00b7 ${esc(r.sel.room&&r.sel.room!=='\u2014'?r.sel.room:'')}</div></div><span class="who">${esc(who)}</span></div>`;
+    });
+    asks.forEach(function(a){
+      h+=`<div class="pkt-ask" ${a.go?`onclick="${a.go}"`:''}><div><div class="k">${esc(a.title)}</div>${a.meta?`<div class="m">${esc(a.meta)}</div>`:''}</div><span class="td-chev">\u203a</span></div>`;
+    });
+    h+='</div>';
   }
+
+  const doneSels=sels.filter(function(s){return specComplete(s);});
   const pins=packetPins(p,tradeId);
-  const pinnedItems=(p.items||[]).filter(it=>pins.items.map(String).includes(String(it.id)));
-  const pinnedLogs=(p.logs||[]).filter(l=>pins.logs.includes(l.date)).sort((a,b)=>a.date<b.date?1:-1);
-  if(pinnedItems.length||pinnedLogs.length){
-    h+='<div class="eyebrow" style="margin-top:14px">Attached notes &amp; photos</div>';
-    h+=pinnedItems.map(it=>`<div class="pkt-doc" onclick="closeInfo();openRecord(${it.id})"><span class="n">${esc(it.cap)}</span><span class="t">${esc(areaText(it.area))}${it.client?' · raised by homeowner':''} · tap to open</span></div>`).join('');
-    h+=pinnedLogs.map(l=>`<div class="pkt-doc" style="cursor:default"><span class="n">${esc(fmtLogDate(l.date))} log</span><span class="t">${esc(l.text)}</span></div>`).join('');
+  const pinnedItems=(p.items||[]).filter(function(it){return pins.items.map(String).includes(String(it.id));});
+  const pinnedLogs=(p.logs||[]).filter(function(l){return pins.logs.includes(l.date);}).sort(function(a,b){return a.date<b.date?1:-1;});
+  const truckDocs=isBuilder?inDocs:inDocs.filter(function(d){return !!(d.fileId||d.fileUrl);});
+  const hasTruck=doneSels.length||openItems.length||pinnedItems.length||pinnedLogs.length||truckDocs.length;
+  if(hasTruck){
+    h+='<div class="eyebrow" style="margin-top:4px">For the truck</div>';
+    doneSels.forEach(function(sel){
+      const st=specStatus(sel);
+      const rows=st.fields.filter(function(f){return String(f.value||'').trim();}).map(function(f){
+        return `<div class="sro"><span class="k">${esc(f.label)}</span><span class="v">${esc(f.value)}</span></div>`;
+      }).join('');
+      h+=`<div class="pkt-sel">${rows?'<div class="ps-h"><b>'+esc(sel.item||'(unspecified)')+'</b><span class="ps-c">'+esc(sel.cat||'')+(sel.room&&sel.room!=='\u2014'?' \u00b7 '+esc(sel.room):'')+'</span></div><div class="spec-ro">'+rows+'</div>':'<div class="ps-h"><b>'+esc(sel.item||'(unspecified)')+'</b></div>'}</div>`;
+    });
+    if(openItems.length){
+      openItems.forEach(function(it){
+        h+=`<div class="pkt-doc" ${isBuilder?`onclick="openRecord(${it.id})"`:'style="cursor:default"'}><span class="n">${esc(it.cap)}</span><span class="t">${esc(areaText(it.area))}${it.client?' \u00b7 raised by homeowner':''} \u00b7 on their scope</span></div>`;
+      });
+    }
+    pinnedItems.forEach(function(it){
+      h+=`<div class="pkt-doc" onclick="openRecord(${it.id})"><span class="n">${esc(it.cap)}</span><span class="t">${esc(areaText(it.area))} \u00b7 pinned</span></div>`;
+    });
+    pinnedLogs.forEach(function(l){
+      h+=`<div class="pkt-doc" style="cursor:default"><span class="n">${esc(fmtLogDate(l.date))} log</span><span class="t">${esc(l.text)}</span></div>`;
+    });
+    truckDocs.forEach(function(d){
+      const attached=!!(d.fileId||d.fileUrl);
+      if(isBuilder){
+        h+=`<div class="pkt-doc${attached?'':' quiet'}" style="cursor:default"><span class="n">${esc(d.n)}</span><span class="t">${d.trade?esc(specLabel(d.trade)):'Added for this trade'}${attached?' \u00b7 attached':' \u00b7 no file yet'}</span>
+          <span class="pkt-vis on" onclick="event.stopPropagation();toggleDocInPacket('${esc(tradeId)}','${String(d.n).replace(/'/g,'\\\'')}')">In the packet</span></div>`;
+      }else{
+        h+=`<div class="pkt-doc" onclick="openDocFile('${p.id}','${esc(d.fileId||'')}','${esc(d.fileUrl||'')}')"><span class="n">${esc(d.n)}</span><span class="t">${attached?'Tap to open':'Listed \u2014 file not attached yet'}</span></div>`;
+      }
+    });
   }
-  if(openItems.length){
-    h+=`<div class="eyebrow" style="margin-top:14px">Open items ${isClient?'for this trade':'on your scope'}</div>`;
-    h+=openItems.map(it=>`<div class="pkt-doc" style="cursor:default"><span class="n">${esc(it.cap)}</span><span class="t">${esc(areaText(it.area))}${it.client?' · raised by homeowner':''}</span></div>`).join('');}
+
   if(isBuilder){
-    h+='<div class="eyebrow" style="margin-top:14px">Site history</div>';
-    h+=`<button class="add-sub-btn" onclick="openPacketLog('${p.id}','${esc(tradeId)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01"/></svg>Filter Daily log/photos for Sub\u2026</button>`;
+    if(availDocs.length){
+      h+=`<div class="eyebrow" style="margin-top:16px">Available \u2014 not in this packet</div>`;
+      h+=`<div class="pkt-foot" style="margin-bottom:8px">Untagged site files stay here until you add them. They do not go to the sub.</div>`;
+      availDocs.forEach(function(d){
+        h+=`<div class="pkt-doc quiet" style="cursor:default"><span class="n">${esc(d.n)}</span><span class="t">${d.trade?esc(specLabel(d.trade)):'Site file'}${d.fileId||d.fileUrl?'':' \u00b7 no file yet'}</span>
+          <span class="pkt-vis" onclick="event.stopPropagation();toggleDocInPacket('${esc(tradeId)}','${String(d.n).replace(/'/g,'\\\'')}')">Add to packet</span></div>`;
+      });
+    }
+    h+=`<button class="add-sub-btn" style="margin-top:10px" onclick="addPacketDoc('${esc(tradeId)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a document for this trade\u2026</button>`;
+    h+=`<button class="add-sub-btn" onclick="openPacketLog('${p.id}','${esc(tradeId)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Pin a note or log day\u2026</button>`;
+    if(sb)h+=`<button class="add-sub-btn" onclick="setPacketDeadline('${sb.id}')">${due?'Change the deadline\u2026':'Set a specs deadline\u2026'}</button>`;
   }
-  // ── dual sign-off: builder + homeowner finalize the packet ──
+
   const so=packetSignoff(p,tradeId);
   const bSigned=!!(so.builder&&so.builder.at), hSigned=!!(so.homeowner&&so.homeowner.at);
   if(!isClient){
-    h+='<div class="eyebrow" style="margin-top:14px">Sign-off</div>';
-    h+=!sels.length?'':gaps.length
-      ?'<div class="pkt-banner warn" style="margin-top:0"><b>Confirm the install specs above first.</b> Sign-off opens once every required answer is in.</div>'
-      :`<div class="pkt-sign">
+    h+='<div class="eyebrow" style="margin-top:16px">Sign-off</div>';
+    if(sels.length&&gaps.length){
+      h+='<div class="pkt-foot">Sign-off opens when every required answer is in.</div>';
+    }else{
+      h+=`<div class="pkt-sign">
           <div class="pkt-sign-row">
-            <div><div class="n">Builder / team</div><div class="d">${bSigned?'Signed by '+(so.builder.by===sess.name?'you':esc(so.builder.by))+' · '+fmtDue(so.builder.at):'Not signed yet'}</div></div>
-            ${isBuilder?`<button class="pkt-sign-btn${bSigned?' done':''}" onclick="pktSignBuilder('${p.id}','${esc(tradeId)}')">${bSigned?'✓ Signed':'Sign off'}</button>`:`<span class="cl-info">${bSigned?'✓ Signed':'Pending'}</span>`}
+            <div><div class="n">Builder / team</div><div class="d">${bSigned?'Signed by '+(so.builder.by===sess.name?'you':esc(so.builder.by))+' \u00b7 '+fmtDue(so.builder.at):'Not signed yet'}</div></div>
+            ${isBuilder?`<button class="pkt-sign-btn${bSigned?' done':''}" onclick="pktSignBuilder('${p.id}','${esc(tradeId)}')">${bSigned?'Signed':'Sign off'}</button>`:`<span class="cl-info">${bSigned?'Signed':'Pending'}</span>`}
           </div>
           <div class="pkt-sign-row">
-            <div><div class="n">Homeowner</div><div class="d">${hSigned?'Signed by '+esc(so.homeowner.by)+' · '+fmtDue(so.homeowner.at):'Not signed yet'}</div></div>
-            <span class="cl-info">${hSigned?'✓ Signed':'Pending'}</span>
+            <div><div class="n">Homeowner</div><div class="d">${hSigned?'Signed by '+esc(so.homeowner.by)+' \u00b7 '+fmtDue(so.homeowner.at):'Not signed yet'}</div></div>
+            <span class="cl-info">${hSigned?'Signed':'Pending'}</span>
           </div>
         </div>`;
-    if(!gaps.length&&bSigned&&hSigned)h+='<div class="pkt-banner ok" style="margin-top:8px"><b>Packet finalized.</b> Specs confirmed and both parties signed — '+(isBuilder?'clear to send to the sub.':'build to this.')+'</div>';
+      if(!gaps.length&&bSigned&&hSigned)h+='<div class="pkt-banner ok" style="margin-top:8px"><b>Packet finalized.</b> '+(isBuilder?'Clear to send.':'Build to this.')+'</div>';
+    }
   }else{
-    // homeowner viewing their own packet: they sign here, and can add a note
-    h+='<div class="eyebrow" style="margin-top:14px">Your sign-off</div>';
+    h+='<div class="eyebrow" style="margin-top:16px">Your sign-off</div>';
     h+=`<div class="pkt-sign"><div class="pkt-sign-row">
         <div><div class="n">Homeowner</div><div class="d">${hSigned?'Signed '+fmtDue(so.homeowner.at):'Review the specs above, then sign off'}</div></div>
-        <button class="pkt-sign-btn${hSigned?' done':''}" onclick="pktSignHomeowner('${p.id}','${esc(tradeId)}')">${hSigned?'✓ Signed':'Sign off'}</button>
+        <button class="pkt-sign-btn${hSigned?' done':''}" onclick="pktSignHomeowner('${p.id}','${esc(tradeId)}')">${hSigned?'Signed':'Sign off'}</button>
       </div></div>`;
-    h+=`<button class="add-sub-btn" style="margin-top:8px" onclick="openIdea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Add a note for your builder…</button>`;
+    h+=`<button class="add-sub-btn" style="margin-top:8px" onclick="openIdea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Add a note for your builder\u2026</button>`;
   }
-  // builder: invite the matched sub to SitePlumb straight from their packet (#2)
   if(isBuilder&&sb){
-    const inv=(p.invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked');
-    h+='<div class="eyebrow" style="margin-top:14px">Live access</div>';
-    if(inv&&inv.status==='joined')h+=`<div class="pkt-foot"><b>${esc(sb.name)} is in SitePlumb.</b> They see this packet live and get a buzz when you schedule them.</div>`;
-    else if(inv)h+=`<div class="pkt-foot">Invite code <b>${esc(inv.code)}</b> sent to ${esc(sb.name)} — waiting for them to join. <span class="pkt-vis" style="margin-left:4px" onclick="event.stopPropagation();shareInvite('${esc(inv.code)}')">Share again</span></div>`;
-    else h+=`<button class="add-sub-btn" onclick="invitePacketSub('${p.id}','${sb.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite ${esc(sb.name)} to SitePlumb…</button>`;
+    const inv=(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
+    h+='<div class="eyebrow" style="margin-top:16px">Live access</div>';
+    if(inv&&inv.status==='joined')h+=`<div class="pkt-foot"><b>${esc(sb.name)} is in SitePlumb.</b> They see this packet live.</div>`;
+    else if(inv)h+=`<div class="pkt-foot">Invite code <b>${esc(inv.code)}</b> \u2014 waiting for them to join. <span class="pkt-vis" style="margin-left:4px" onclick="event.stopPropagation();shareInvite('${esc(inv.code)}')">Share again</span></div>`;
+    else h+=`<button class="add-sub-btn" onclick="invitePacketSub('${p.id}','${sb.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite ${esc(sb.name)}\u2026</button>`;
   }
-  h+='<div class="eyebrow" style="margin-top:14px">Questions?</div>';
-  h+=`<div class="pkt-foot">${team.length?'Reach '+team.map(uid=>esc(p.memberInfo[uid].name)+(RP_ROLES[p.memberInfo[uid].rpRole]?' ('+esc(RP_ROLES[p.memberInfo[uid].rpRole])+')':'')).join(' or ')+', or flag':'Flag'} anything from your to-do list — it lands in the builder\u2019s feed instantly.</div>`;
   return h;}
+
 function openPacket(subId){const sb=P().subs.find(x=>x.id===subId);if(!sb)return;
   logEvent('packetViewed',sb.name+' ('+specLabel(sb.specialty)+')');
   showInfo('Install packet — '+sb.name,packetHTML(P(),sb.specialty));}
@@ -11704,7 +11841,7 @@ function packetSnapshot(p,b){
   });
   /* Default-deny: only documents the builder explicitly routed to this trade
      travel. An untagged contract or lien waiver never rides along. */
-  const docs=(p.docs||[]).filter(d=>d.trade===trade&&docAudSub(d)).map(d=>String(d.n||''));
+  const docs=(p.docs||[]).filter(d=>docAudSub(d)&&docInPacket(p,trade,d)).map(d=>String(d.n||''));
   const sess=state.session||{};
   return {v:1,t:Date.now(),
     expires:Math.max((b.end||Date.now())+3*864e5,Date.now()+7*864e5),
@@ -12804,14 +12941,16 @@ function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDa
   {const ac=document.getElementById('areaChips');if(ac)ac.style.display=asLog?'none':'';}   // a day is not a place, and saveLog never stored one
   if(asLog){const e=(P().logs||[]).find(l=>l.date===editingLogDate);document.getElementById('caption').value=e?e.text:'';document.getElementById('shareToggle').classList.toggle('on',!!(e&&e.share));}
   syncAreaExclusivity(document.getElementById('areaChips'));
-  document.getElementById('scrim').classList.add('show');document.getElementById('sheet').classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('caption')));}
+  const _sc=document.getElementById('scrim'),_sh=document.getElementById('sheet');
+  if(document.querySelector('.pmodal-scrim.show')){_sc.style.zIndex='130';_sh.style.zIndex='131';}else{_sc.style.zIndex='';_sh.style.zIndex='';}
+  _sc.classList.add('show');_sh.classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('caption')));}
 function _impAfterSave(){
   if((window._impQueue||[]).length){setTimeout(_impNext,260);}
   else if(window._impTotal){toast('All '+window._impTotal+' photos filed');window._impTotal=0;}
 }
 function closeSheet(){
   if(window._impSaving){setTimeout(_impAfterSave,80);}
-  else if((window._impQueue||[]).length){const n=window._impQueue.length;window._impQueue.length=0;window._impTotal=0;toast(n+' photo'+(n>1?'s':'')+' left unfiled');}document.getElementById('scrim').classList.remove('show');document.getElementById('sheet').classList.remove('show');setTimeout(resetSheet,350);}
+  else if((window._impQueue||[]).length){const n=window._impQueue.length;window._impQueue.length=0;window._impTotal=0;toast(n+' photo'+(n>1?'s':'')+' left unfiled');}const _sc2=document.getElementById('scrim'),_sh2=document.getElementById('sheet');if(_sc2){_sc2.classList.remove('show');_sc2.style.zIndex='';}if(_sh2){_sh2.classList.remove('show');_sh2.style.zIndex='';}setTimeout(resetSheet,350);}
 /* ── Photo-drop rebuild. Adding a photo replaces the drop's innerHTML, which destroys
    the placeholder AND the hidden file input inside it. Rebuilding from these canonical
    templates (instead of re-attaching surviving nodes) is the only safe reset. ── */
@@ -12954,7 +13093,9 @@ function openRecord(id){const it=P().items.find(x=>x.id===id);if(!it)return;edit
   document.querySelectorAll('#recStatusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.s===seg));
   document.getElementById('recShare').classList.toggle('on',!!it.share);
   document.getElementById('recScrim').classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('recNote')));}
-function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;}
+function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;
+  if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
+  try{if(_pktLogCtx&&document.getElementById('pktLogScrim').classList.contains('show'))renderPacketLog();}catch(e){}}
 function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);if(!it)return;
   const cap=document.getElementById('recNote').value.trim()||'(no note)';
   const area=[...document.querySelectorAll('#recAreaChips .chip.on')].map(c=>c.dataset.area).join(' \u00b7 ')||'Whole House';
