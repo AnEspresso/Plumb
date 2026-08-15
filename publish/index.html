@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SitePlumb 2.249.0 — publish</title>
+<style>
+  :root { --ink:#1c1916; --muted:#6b645c; --line:#e6e0d8; --paper:#f7f4ef; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 420px; margin: 0 auto; padding: 36px 22px 72px; }
+  .word { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: 28px; font-weight: 560; letter-spacing: -.03em; margin: 8px 0 10px; }
+  p { color: var(--muted); margin: 0 0 20px; }
+  button.primary, button.file {
+    display: block; width: 100%; border: 0; cursor: pointer; text-align: left;
+    font: inherit; color: inherit;
+  }
+  button.primary {
+    background: #1c1916; color: #f7f4ef; border-radius: 14px;
+    padding: 16px 18px; margin: 0 0 22px; text-align: center; font-weight: 600;
+  }
+  button.primary[disabled] { opacity: .55; }
+  .need { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 8px; }
+  button.file {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px 16px; margin: 0 0 10px;
+  }
+  button.file b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+  button.file span { display: block; margin-top: 2px; font-size: 13px; color: var(--muted); }
+  ol { padding-left: 1.15em; margin: 18px 0 0; }
+  li { margin: 0 0 8px; }
+  #status { min-height: 1.4em; font-size: 14px; color: var(--muted); margin: -8px 0 18px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="word">SitePlumb</div>
+  <h1>2.249.0</h1>
+  <p>One zip. Folders match GitHub. Unzip, then upload <b>app</b> files into <b>app</b>, and upload <b>index.html</b> and <b>404.html</b> into the repo root.</p>
+  <button class="primary" id="saveAll" type="button">Save the GitHub zip</button>
+  <div id="status"></div>
+  <div class="need">Or save one file into the app folder</div>
+  <button class="file" type="button" data-src="APP-index.bin" data-name="index.html"><b>index.html</b><span>Goes in app/</span></button>
+  <button class="file" type="button" data-src="APP-plumb.bin" data-name="plumb.html"><b>plumb.html</b><span>Goes in app/ · same bytes as index</span></button>
+  <button class="file" type="button" data-src="APP-sw.bin" data-name="sw.js"><b>sw.js</b><span>Goes in app/</span></button>
+  <button class="file" type="button" data-src="APP-sim.bin" data-name="sim.js"><b>sim.js</b><span>Goes in app/ · keeps CI green</span></button>
+  <button class="file" type="button" data-src="APP-qa.bin" data-name="qa.js"><b>qa.js</b><span>Goes in app/</span></button>
+  <div class="need">These two go in the repo root, not app</div>
+  <button class="file" type="button" data-src="../index.html" data-name="index.html"><b>index.html</b><span>Repo root · sends confirm and reset into the app</span></button>
+  <button class="file" type="button" data-src="../404.html" data-name="404.html"><b>404.html</b><span>Repo root</span></button>
+  <ol>
+    <li>Share sheet → <b>Save to Files</b>. Unzip. You will see an <b>app</b> folder plus two files at the top.</li>
+    <li>github.com/AnEspresso/Plumb → open <b>app</b> → Add file → Upload files.</li>
+    <li>Pick the files from the unzipped <b>app</b> folder. Do not rename.</li>
+    <li>Then open the repo root (the folder above <b>app</b>). Upload <b>index.html</b> and <b>404.html</b> there.</li>
+    <li>Commit. Wait about a minute. Gear should say 2.249.0.</li>
+  </ol>
+</main>
+<script>
+const status = document.getElementById('status');
+function say(m){ status.textContent = m || ''; }
+
+async function fileFrom(url, name, type){
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Could not read ' + name);
+  const buf = await res.arrayBuffer();
+  return new File([buf], name, { type: type || 'application/octet-stream' });
+}
+
+async function saveFile(url, name, type){
+  say('Preparing ' + name + '…');
+  const file = await fileFrom(url, name, type);
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: name });
+      say('If the share sheet appeared, choose Save to Files.');
+      return;
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') { say('Cancelled.'); return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file);
+  a.download = name;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  say('Saved ' + name + '. Check Downloads or Files.');
+}
+
+document.getElementById('saveAll').addEventListener('click', async function(){
+  this.disabled = true;
+  try { await saveFile('Plumb-2.249.0.zip', 'Plumb-2.249.0.zip', 'application/zip'); }
+  catch (e) { say('Could not save the pack. Try a single file below.'); }
+  this.disabled = false;
+});
+
+document.querySelectorAll('button.file').forEach(function(btn){
+  btn.addEventListener('click', async function(){
+    try { await saveFile(btn.getAttribute('data-src'), btn.getAttribute('data-name')); }
+    catch (e) { say('Could not save that file. Try Save the pack instead.'); }
+  });
+});
+</script>
+</body>
+</html>

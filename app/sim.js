@@ -1103,11 +1103,16 @@ t('the house briefing lists every still-open fact', (function(){
   return lines.length>=2&&lines.every(function(line){return html.indexOf(line)>=0;});
 })());
 t('a house from the list opens the briefing', $("String(renderOvCards)").indexOf('nyOpenHouse')>=0&&$("String(renderOvCards)").indexOf("onclick=\"openSiteFromOverview")<0);
-t('home has a field door to log a photo', $("String(renderToday)").indexOf('openLogPick')>=0&&$("typeof openLogPick")==='function'&&$("String(openLogPick)").indexOf('logPickHouse')>=0);
+t('home has a field door to log a photo', $("String(renderToday)").indexOf('openLogPick')>=0&&$("String(renderToday)").indexOf('Field Notes')>=0&&$("typeof openLogPick")==='function'&&$("String(openLogPick)").indexOf('logPickHouse')>=0);
 t('the briefing keeps log schedule selections money and the full site', (function(){
   const s=$("String(houseHTML)");
-  return s.indexOf('logFromHouse')>=0&&s.indexOf('houseGoCal')>=0&&s.indexOf('houseGoMoney')>=0&&s.indexOf('houseGoSite')>=0&&s.indexOf('Full site')>=0;
+  return s.indexOf('logFromHouse')>=0&&s.indexOf('houseGoCal')>=0&&s.indexOf('houseGoMoney')>=0&&s.indexOf('houseGoSite')>=0&&s.indexOf('Full site')>=0&&s.indexOf('hs-doors')>=0;
 })());
+t('the house briefing does not repeat the street', $("String(houseHTML)").indexOf('This job')<0&&$("String(houseHTML)").indexOf('pkt-head')<0);
+t('rooms on the house are doors not a second inbox', $("String(houseHTML)").indexOf('hs-doors')>=0&&$("String(houseHTML)").indexOf("Read and close old lines")<0&&$("String(houseHTML)").indexOf("This house</div>")<0);
+t('money is one sentence', $("String(houseMoneyLine)").indexOf('Contracted')>=0&&$("String(houseMoneyLine)").indexOf('billed')>=0);
+t('settings leads with company', $("String(renderSettings)").indexOf("set-hd\">Company")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
+t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
 t('a room from the briefing comes back to the house', $("String(houseGoSite)").indexOf('navPush')>=0&&$("String(houseGoSite)").indexOf('nyOpenHouse')>=0);
 t('a packet from the house stays on the briefing', (function(){
   asBuilder();

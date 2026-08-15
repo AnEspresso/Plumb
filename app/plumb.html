@@ -594,10 +594,24 @@
   .pkt-strip .meta{font-size:12.5px;color:var(--ink-2);margin-top:5px;line-height:1.45;}
   .pkt-open{background:rgba(176,96,74,.10);border-radius:14px;padding:12px 14px;margin:0 0 16px;}
   .pkt-open .h{font-weight:700;color:var(--clay);font-size:14.5px;margin-bottom:6px;letter-spacing:-.015em;}
-  .pkt-or{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid rgba(176,96,74,.16);cursor:pointer;}
+  .pkt-or{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid rgba(176,96,74,.16);cursor:pointer;}
   .pkt-or:first-of-type{border-top:none;padding-top:4px;}
-  .pkt-or .k{font-weight:650;font-size:14.5px;color:var(--ink);}
+  .pkt-or .k{font-weight:650;font-size:14.5px;color:var(--ink);line-height:1.3;}
   .pkt-or .m{font-size:12px;color:var(--ink-3);margin-top:2px;}
+  .pkt-or .td-chev{flex:none;margin-top:2px;line-height:1;}
+  .hs-sub{display:none;text-align:center;font-size:12.5px;color:var(--ink-3);margin:-8px 0 12px;font-weight:500;}
+  .hs-doors{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 6px;}
+  .hs-door{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 12px 11px;text-align:left;cursor:pointer;font-family:inherit;color:var(--ink);}
+  .hs-door:active{transform:scale(.98);}
+  .hs-door .k{font-size:13.5px;font-weight:650;letter-spacing:-.01em;}
+  .hs-door .m{font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.3;font-weight:500;}
+  .hs-door.wide{grid-column:1/-1;}
+  .set-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:16px 2px 4px;}
+  .set-hd:first-child{margin-top:2px;}
+  @media(min-width:700px){
+    .hs-doors{grid-template-columns:repeat(3,1fr);}
+    .hs-door.wide{grid-column:auto;}
+  }
   .pkt-or .who{margin-left:auto;flex:none;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--clay);}
   .pkt-ask{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid rgba(176,96,74,.16);cursor:pointer;}
   .pkt-ask .k{font-weight:600;font-size:13.5px;color:var(--ink);}
@@ -869,6 +883,16 @@
   .td-morebtn:active{opacity:.55;}
   .td-histbtn{display:block;width:100%;text-align:left;margin:2px 0 10px;font-family:inherit;font-size:12px;font-weight:500;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:4px 2px;}
   .td-histbtn:active{opacity:.55;}
+  .ov-field{display:flex;align-items:center;justify-content:center;width:158px;height:102px;
+    background:var(--ink);color:#F2EEE6;border:none;border-radius:20px;padding:8px 10px;margin:2px auto 14px;
+    font-family:inherit;cursor:pointer;box-shadow:var(--shadow-lift);position:relative;overflow:hidden;
+    transition:transform .18s cubic-bezier(.2,.7,.2,1);}
+  .ov-field::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 18% 0%, rgba(231,220,198,.1), transparent 46%),radial-gradient(130% 90% at 92% 8%, rgba(176,137,90,.22), transparent 52%);}
+  .ov-field .cam{position:relative;width:136px;height:84px;display:block;}
+  .ov-field:active{transform:scale(.975);}
+  #logPickScrim h4{color:var(--ink);letter-spacing:.06em;margin:0 0 8px;font-size:20px;}
+  #logPickScrim .fn-tag{text-align:center;font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-weight:400;font-size:14.5px;line-height:1.35;color:#B0895A;margin:0 0 16px;}
+  #logPickScrim .fn-ask{font-size:13px;font-weight:650;color:var(--ink);letter-spacing:.01em;margin:0 0 10px;text-align:left;}
   .ov-sortpill{font-size:11.5px;font-weight:650;letter-spacing:.01em;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:inherit;transition:all .12s ease;}
   .ov-sortpill.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
   .ov-sortpill:active{transform:scale(.96);}
@@ -2446,6 +2470,7 @@ body.on-tour .tour-card{display:block;}
   <div class="pmodal-scrim" id="houseScrim" style="z-index:88">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="houseTitle">This job</h4>
+      <div id="houseSub" class="hs-sub"></div>
       <div class="info-body" id="houseBody"></div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeHouse()">Done</button></div>
     </div>
@@ -2453,8 +2478,9 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="logPickScrim" style="z-index:89">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4>Log a photo</h4>
-      <div class="la-hint" style="margin:0 0 10px;text-align:left">Which house are you at?</div>
+      <h4>Field Notes</h4>
+      <div class="fn-tag">Log photos and notes from the field.</div>
+      <div class="fn-ask">Which house are you at?</div>
       <div class="pick-list" id="logPickBody"></div>
       <div class="row2" style="margin-top:12px"><button class="b1 b-cancel" style="flex:1" onclick="closeLogPick()">Cancel</button></div>
     </div>
@@ -2982,13 +3008,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.240.0 - A house opens as a briefing. Log a photo from home.';
+const PLUMB_VERSION='2.249.0 - One address. Quiet doors. Same power.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786819258459;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.240.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786832703342;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.249.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5484,15 +5510,18 @@ function renderSettings(){
     out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>'};
   let rows='';
   if(role==='hillan'){
-    rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
+    rows+='<div class="set-hd">Company</div>';
+    rows+=SET_GEAR_ROW('Company','Calendar, roster, invoices, team, new job','closeSettings();openCompany()','<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>');
     if(appMode()==='real'){
-      rows+=SET_GEAR_ROW('Homeowners','Portal access &amp; calendars, every home','closeSettings();openPeopleMode(\'homeowner\')',I.home);
+      rows+=SET_GEAR_ROW('Homeowners','Portal access & calendars, every home','closeSettings();openPeopleMode(\'homeowner\')',I.home);
       rows+=SET_GEAR_ROW('Selection templates','Build style & install spec sheets','closeSettings();openPeopleMode(\'templates\')',I.tmpl);
       rows+=SET_GEAR_ROW('First-time setup','Re-run the setup questions','closeSettings();openSetup()',I.wiz);
       if(sess.rpRole==='owner'&&prefsPending())rows+=SET_GEAR_ROW('Review setup','Choices made by '+esc((orgPrefs()._prov||{}).by||'a team member')+' need your OK','closeSettings();openSetupReview()',I.wiz);
     }else{
       rows+='<div class="empty" style="padding:8px 0 12px">Homeowner portals and templates manage your real company — switch to <b>Live</b> to use them.</div>';
     }
+    rows+='<div class="set-hd">This device</div>';
+    rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
     rows+=SET_GEAR_ROW('How SitePlumb works','Take the guided tour','closeSettings();startGrandTour()',I.how);
     rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
@@ -5502,8 +5531,9 @@ function renderSettings(){
     if(role==='subs')rows+=SET_GEAR_ROW('My schedule','Your bookings & blocked time','closeSettings();openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
     rows+=SET_GEAR_ROW('How SitePlumb works','Take the guided tour','closeSettings();startTour(\''+(role==='client'?'client':'sub')+'\')',I.how);
   }
+  rows+='<div class="set-hd">Account</div>';
   const _fbn=(state.feedback||[]).filter(f=>!f.done).length;
-  rows+=SET_GEAR_ROW('Report a problem or idea',_fbn?(_fbn+' open '+(_fbn===1?'item':'items')):'Share a bug or suggestion with the team','closeSettings();openFeedback()','<path d="M8 8a4 4 0 0 1 8 0v3a4 4 0 0 1-8 0z"/><path d="M12 12v6M5 9H3m18 0h-2M5 15H3m18 0h-2M9 5 7 3m8 2 2-2"/>');
+    rows+=SET_GEAR_ROW('Report a problem or idea',_fbn?(_fbn+' open '+(_fbn===1?'item':'items')):'Share a bug or suggestion with the team','closeSettings();openFeedback()','<path d="M8 8a4 4 0 0 1 8 0v3a4 4 0 0 1-8 0z"/><path d="M12 12v6M5 9H3m18 0h-2M5 15H3m18 0h-2M9 5 7 3m8 2 2-2"/>');
   try{if(_evNeeded())rows+=SET_GEAR_ROW('Confirm your email','Unconfirmed - this is what makes Forgot password work','closeSettings();evOpenFromSettings()','<path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/>');}catch(e){}
   rows+=SET_GEAR_ROW('Privacy &amp; legal','Policies, your data &amp; account deletion','closeSettings();openLegal()','<path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12.5l2 2 3.5-4"/>');
   rows+=SET_GEAR_ROW('Sign out','','closeSettings();logout()',I.out);
@@ -6589,8 +6619,11 @@ function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.cl
 function houseMoneyLine(p){
   try{
     const b=billingSummary(p);
-    if((Number(b.billed)||0)>0.005||(Number(b.out)||0)>0.005)
-      return 'Billed '+invUsd(b.billed)+' · left '+invUsd(Math.max(0,b.out));
+    const contracted=Number(b.net)||0;
+    const billed=Number(b.billed)||0;
+    const left=Math.max(0,Number(b.out)||0);
+    if(contracted>0.005||billed>0.005)
+      return 'Contracted '+invUsd(contracted)+' · billed '+invUsd(billed)+' · left '+invUsd(left);
     const cs=costSummary(p);
     if((Number(cs.budget)||0)>0.005)
       return (cs.over?'Over budget · ':'On budget · ')+invUsd(Math.abs(cs.remaining))+(cs.over?' over':' left');
@@ -6634,19 +6667,30 @@ function logPickHouse(pid){
 function closeLogPick(){const el=document.getElementById('logPickScrim');if(el)el.classList.remove('show');}
 function renderHouse(){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(_housePid);});
-  const ttl=document.getElementById('houseTitle');const body=document.getElementById('houseBody');
+  const ttl=document.getElementById('houseTitle');const sub=document.getElementById('houseSub');const body=document.getElementById('houseBody');
   if(!p||!body)return;
-  if(ttl)ttl.textContent=p.street||p.name||'This job';
+  if(ttl)ttl.textContent=p.street||p.name||'This house';
+  if(sub){sub.textContent=p.city||'';sub.style.display=p.city?'':'none';}
   body.innerHTML=houseHTML(p);
 }
 function houseHTML(p){
+  const sess=state.session||{};
+  const isBuilder=sess.role==='hillan';
+  const isClient=sess.role==='client';
   const issues=_nyIssues([p]).filter(function(x){return String(x.pid)===String(p.id)&&!x.cross;});
   issues.sort(function(a,b){return (a.pri-b.pri)||((b.ts||0)-(a.ts||0));});
   const deck=onDeckOf(p);const n=issues.length;
-  const stripSt=n?(n+' still '+(n===1?'needs':'need')+' you'):'All clear on this job';
-  const meta=[];if(p.city)meta.push(p.city);if(deck)meta.push('On deck \u00b7 '+(deck.name||specLabel(deck.trade)||''));
-  let h='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name||'')+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">This job</div></div>';
-  h+='<div class="pkt-strip '+(n?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
+  const money=houseMoneyLine(p);
+  let stripSt,meta=[];
+  if(isClient){
+    stripSt=n?(n===1?'One thing still needs you':'A few things still need you'):'All clear on this house';
+    if(deck)meta.push('Now building \u00b7 '+(deck.name||specLabel(deck.trade)||''));
+  }else{
+    stripSt=n?(n+' still '+(n===1?'needs':'need')+' you'):'All clear on this house';
+    if(deck)meta.push('On deck \u00b7 '+(deck.name||specLabel(deck.trade)||''));
+    if(isBuilder&&money&&money.indexOf('No money')<0)meta.push(money);
+  }
+  let h='<div class="pkt-strip '+(n?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   if(issues.length){
     h+='<div class="pkt-open"><div class="h">Still open</div>';
     issues.forEach(function(it){
@@ -6655,18 +6699,16 @@ function houseHTML(p){
     });
     h+='</div>';
   }
-  if(isIdleSite(p)){
+  if(isIdleSite(p)&&isBuilder){
     const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
     h+='<div class="pkt-ask" onclick="openNextSite(\''+String(p.id).replace(/'/g,'')+'\')"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
-  const money=houseMoneyLine(p);
-  h+='<div class="pkt-open"><div class="h">This house</div>';
-  h+='<div class="pkt-or" onclick="logFromHouse()"><div><div class="k">Log a photo</div><div class="m">Picture, then what happened</div></div><span class="td-chev">\u203a</span></div>';
-  h+='<div class="pkt-or" onclick="houseGoSite(\'log\')"><div><div class="k">Log</div><div class="m">Read and close old lines</div></div><span class="td-chev">\u203a</span></div>';
-  h+='<div class="pkt-or" onclick="houseGoCal()"><div><div class="k">Schedule</div><div class="m">This house on the calendar</div></div><span class="td-chev">\u203a</span></div>';
-  h+='<div class="pkt-or" onclick="houseGoSite(\'selections\')"><div><div class="k">Selections</div><div class="m">Finishes for this house</div></div><span class="td-chev">\u203a</span></div>';
-  h+='<div class="pkt-or" onclick="houseGoMoney()"><div><div class="k">Money</div><div class="m">'+esc(money)+'</div></div><span class="td-chev">\u203a</span></div>';
-  h+='<div class="pkt-or" onclick="houseGoSite(\'log\')"><div><div class="k">Full site</div><div class="m">Log, build, decisions, files</div></div><span class="td-chev">\u203a</span></div>';
+  h+='<div class="hs-doors">';
+  if(!isClient)h+='<button class="hs-door" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">Photo or a note</div></button>';
+  h+='<button class="hs-door" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
+  h+='<button class="hs-door" onclick="houseGoSite(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
+  if(isBuilder)h+='<button class="hs-door" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
+  if(!isClient)h+='<button class="hs-door wide" onclick="houseGoSite(\'log\')"><div class="k">Full site</div><div class="m">Log, build, decisions, files</div></button>';
   h+='</div>';
   return h;
 }
@@ -6699,7 +6741,7 @@ function renderToday(){
     if(b.start<today||b.start>today+7*864e5)return;
     soon.push({p:p,b:b,trade:tdTradeOf(p,b)});});});
   soon.sort(function(a,b){return a.b.start-b.b.start;});
-  let h='<button class="td-histbtn" style="margin:0 0 14px" onclick="event.stopPropagation();openLogPick()">Log a photo</button>';
+  let h='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="55" r="13.4"/></clipPath><radialGradient id="ovFade" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff"/><stop offset="70%" stop-color="#fff"/><stop offset="100%" stop-color="#000"/></radialGradient><mask id="ovLensMask"><circle cx="64" cy="55" r="13.4" fill="url(#ovFade)"/></mask><radialGradient id="ovGlass" cx="30%" cy="26%" r="74%"><stop offset="0%" stop-color="#E7DCC6" stop-opacity=".42"/><stop offset="38%" stop-color="#2A2418" stop-opacity=".08"/><stop offset="100%" stop-color="#070605" stop-opacity=".7"/></radialGradient><linearGradient id="ovBrass" x1="0.15" y1="0.1" x2="0.9" y2="0.95"><stop offset="0%" stop-color="#E7DCC6"/><stop offset="38%" stop-color="#C49A6C"/><stop offset="72%" stop-color="#B0895A"/><stop offset="100%" stop-color="#6E5430"/></linearGradient><linearGradient id="ovPlate" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2A241C"/><stop offset="100%" stop-color="#14110E"/></linearGradient></defs><rect x="8" y="17" width="112" height="54" rx="8" fill="none" stroke="#E7DCC6" stroke-width="1.55"/><path d="M50 17V11.2h28V17" fill="none" stroke="#E7DCC6" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/><rect x="54" y="12.2" width="7.2" height="3.4" rx=".5" fill="none" stroke="#C49A6C" stroke-width=".7"/><rect x="66.6" y="12.2" width="7.2" height="3.4" rx=".5" fill="none" stroke="#C49A6C" stroke-width=".7"/><line x1="14" y1="33.6" x2="114" y2="33.6" stroke="#B0895A" stroke-width=".6" opacity=".38"/><rect x="30" y="20.4" width="68" height="11.2" rx="1.5" fill="url(#ovPlate)" stroke="url(#ovBrass)" stroke-width=".95"/><text x="64" y="28.6" text-anchor="middle" fill="#E7DCC6" font-family="Source Serif 4, Georgia, serif" font-size="6.6" letter-spacing="1.85">FIELD NOTES</text><circle cx="66.2" cy="56.6" r="16.6" fill="none" stroke="#4A3A22" stroke-width="2" opacity=".45"/><circle cx="64" cy="55" r="16.8" fill="none" stroke="url(#ovBrass)" stroke-width="2.7"/><circle cx="64" cy="55" r="14.8" fill="none" stroke="#E7DCC6" stroke-width=".55" opacity=".4"/><circle cx="64" cy="55" r="13.4" fill="#0C0A08"/><g clip-path="url(#ovLens)" mask="url(#ovLensMask)"><g transform="translate(64,57.2) scale(-0.096,0.096) translate(-150,-138)" fill="none" stroke="#E7DCC6" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="228" x2="252" y2="228" stroke="#B0895A" stroke-width="16"/><path d="M78 228V96h144v132"/><polyline points="60,100 150,28 240,100" stroke-width="14"/><rect x="134" y="168" width="32" height="60"/></g></g><circle cx="64" cy="55" r="13.4" fill="url(#ovGlass)"/><ellipse cx="58.4" cy="49.2" rx="5.8" ry="2.7" fill="#E7DCC6" opacity=".22"/><path d="M55.2 46.8c3.2-4.2 8.8-5.6 13.2-3" fill="none" stroke="#E7DCC6" stroke-width="1.25" stroke-linecap="round" opacity=".72"/></svg></button>';
   h+='<div class="eyebrow">Needs you</div>';
   if(!houses.length&&!soon.length){
     h+='<div class="td-clear">All clear \u2014 nothing needs you today.</div>';
@@ -9067,7 +9109,6 @@ function renderClient(){
   if(T==='home'){
     h+=`<div class="cl-hero"><div class="eyebrow">Your home</div><div class="addr">${esc(p.street||p.name)}</div>
         <div class="cl-track ${track.cls}">${esc(track.txt)}</div>
-        <div class="pct">${ovPct}% complete</div><div class="pbar"><i style="width:${ovPct}%"></i></div>
         <div class="nx">Now building: <b>${esc(stageName)}</b><br>${next}</div></div>`;
     if(p.hoCal)h+=`<button class="cal-sugg" style="margin:0 0 12px" onclick="openCal()">\ud83d\uddd3 <b>Site calendar</b> — see which crews are on site and when</button>`;
     h+=`<div class="cl-stats">

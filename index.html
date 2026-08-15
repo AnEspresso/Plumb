@@ -53,10 +53,52 @@ try{
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
-<div id="shipBar" style="background:#1c1916;color:#f7f4ef;padding:12px 18px;font:15px/1.4 -apple-system,sans-serif;text-align:center">
-  2.240.0 is ready to publish.
-  <a href="/publish/" style="color:#f7f4ef;margin-left:10px">Download the files</a>
+<div id="shipBar">
+  <button type="button" id="shipBarToggle" aria-expanded="false">
+    <span>2.249.0 is ready to publish.</span>
+    <span class="ship-more">Three versions · tap to compare</span>
+  </button>
+  <div id="shipBarPanel" hidden>
+    <a class="ship-v" href="/publish/Plumb-2.239.0.zip">
+      <b>2.239.0 · Restore</b>
+      <span>Before house briefing. The last live app if you do not like the #2 work. Branch restore-2.239.0.</span>
+    </a>
+    <a class="ship-v" href="/publish/Plumb-2.248.0.zip">
+      <b>2.248.0 · Field Notes</b>
+      <span>#2 done. Rangefinder on home. A house opens as a briefing. The version just before this one.</span>
+    </a>
+    <a class="ship-v on" href="/publish/">
+      <b>2.249.0 · Coherent house</b>
+      <span>One address. Quiet doors. Money as one sentence. Three faces. Settings is setup. This version.</span>
+    </a>
+  </div>
+  <a class="ship-dl" href="/publish/">Download the files</a>
 </div>
+<style>
+#shipBar{background:#1c1916;color:#f7f4ef;padding:10px 16px 12px;font:15px/1.4 -apple-system,sans-serif;text-align:center}
+#shipBarToggle{display:block;width:100%;background:none;border:0;color:#f7f4ef;font:inherit;cursor:pointer;padding:4px 8px}
+#shipBarToggle .ship-more{display:block;margin-top:3px;font-size:12.5px;color:#c4b8a6}
+#shipBarPanel{display:none;max-width:560px;margin:10px auto 0;text-align:left}
+#shipBarPanel.open,#shipBarPanel:not([hidden]){display:block}
+#shipBarPanel[hidden]{display:none}
+.ship-v{display:block;background:#2a2622;color:#f7f4ef;text-decoration:none;border-radius:12px;padding:12px 14px;margin:0 0 8px;border:1px solid #3d372f}
+.ship-v b{display:block;font-size:14.5px}
+.ship-v span{display:block;margin-top:4px;font-size:12.5px;color:#c4b8a6;line-height:1.4}
+.ship-v.on{border-color:#b0895a}
+.ship-dl{display:inline-block;color:#f7f4ef;margin-top:6px;font-size:13px}
+</style>
+<script>
+(function(){
+  var b=document.getElementById('shipBarToggle');
+  var p=document.getElementById('shipBarPanel');
+  if(!b||!p)return;
+  b.addEventListener('click',function(){
+    var on=b.getAttribute('aria-expanded')==='true';
+    b.setAttribute('aria-expanded', on?'false':'true');
+    if(on)p.setAttribute('hidden',''); else p.removeAttribute('hidden');
+  });
+})();
+</script>
 <header class="nav" id="nav">
   <div class="wrap nav-in">
     <a class="brand" href="/">
