@@ -674,6 +674,7 @@
   .day-row .note{font-size:12.5px;color:var(--ink-2);margin-top:4px;background:var(--surface-2);border-radius:8px;padding:6px 9px;}
   .day-row.avr{opacity:.75;cursor:default;}
   #bkScrim select,#bkScrim input{width:100%;}
+  .bk-alerts{display:flex;flex-direction:column;gap:12px;margin:4px 0 0;}
   .bk-pkt{border-radius:12px;padding:11px 13px;margin:0;border:1.5px solid var(--line);background:var(--surface);}
   .bk-pkt.ok{border-color:var(--sage);background:rgba(122,140,110,.10);}
   .bk-pkt.warn{border-color:var(--clay);background:rgba(176,96,74,.09);}
@@ -995,7 +996,7 @@
 
   /* ───── subcontractor view ───── */
   .subview{position:absolute;inset:0;z-index:32;background:var(--paper);display:none;flex-direction:column;overflow:hidden;}
-  #calview{z-index:36;}   /* the calendar opens above sub/client site views */
+  #calview{z-index:95;}   /* the calendar opens above sub/client site views */
   .subview.show{display:flex;}
   .sv-head{padding:max(20px,env(safe-area-inset-top)) 22px 14px;display:flex;align-items:flex-start;justify-content:space-between;flex:0 0 auto;}
   .sv-head .wm{font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:500;display:flex;align-items:center;gap:9px;}
@@ -1946,8 +1947,7 @@ body.on-tour .tour-card{display:block;}
           <div class="gp-cal-acts"><button type="button" class="gp-cal-reset" onclick="bkCalReset()">Reset</button>
           <button type="button" class="gp-cal-ok" onclick="bkCalDone()" aria-label="Use these dates">✓</button></div></div>
         <input id="bkNote" placeholder="Note for sub — gate code, scope…" style="font-size:13.5px">
-        <div id="bkPacket"></div>
-        <div id="bkGuest"></div>
+        <div class="bk-alerts" id="bkAlerts"><div id="bkPacket"></div><div id="bkGuest"></div></div>
         <button class="b1 b-go" style="width:100%;margin-top:10px" id="bkSave" onclick="bkSave()">Save</button>
         <button class="add-sub-btn" style="margin-top:8px;display:none;color:var(--clay)" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
       </div>
@@ -2968,13 +2968,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.230.0 - The house card opens every still-open fact on that job.';
+const PLUMB_VERSION='2.232.0 - The reason you tapped leads the booking.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786792898492;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.230.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786797837262;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.232.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -6440,7 +6440,7 @@ function _nySiteNotReady(p,b,today){
   return !packetReady(p,trade);
 }
 function _nyHomeownerItems(p){
-  return (p.items||[]).filter(function(it){return it.client&&(it.status||'open')!=='done';});
+  return (p.items||[]).filter(function(it){return it.client&&(it.status||'open')!=='done'&&!it.reply;});
 }
 function _nyOnDeck(projs){
   const now=dayStart(Date.now());const out=[];
@@ -6491,7 +6491,7 @@ function _nyIssues(projs){
       if(_pkChangeOpen(b)){
         const ask=b.pkResp.start?fmtWin({start:b.pkResp.start,end:b.pkResp.end||b.pkResp.start}):'new dates';
         issues.push({kind:'Date change',pid:p.id,site:site,trade:trade,bid:b.id,pri:0,lvl:'msg',ts:b.pkResp.t||b.start,
-          line:(b.subName||'The crew')+' asked for '+ask,go:`openBk('${p.id}|${b.id}')`});
+          line:(b.subName||'The crew')+' asked for '+ask,go:`openBk('${p.id}|${b.id}','change')`});
       }
       if((b.pkQOpen||0)>0){
         const qs=b.pkQs||[];const qi=qs.findIndex(function(x){return !x.a;});
@@ -6500,11 +6500,11 @@ function _nyIssues(projs){
       }
       if(_nyDeclined(b,today)){
         issues.push({kind:'They declined',pid:p.id,site:site,trade:trade,bid:b.id,pri:0,lvl:'warn',ts:b.t||b.start,
-          line:(b.subName||'The crew')+' declined',go:`openBk('${p.id}|${b.id}')`});
+          line:(b.subName||'The crew')+' declined',go:`openBk('${p.id}|${b.id}','declined')`});
       }
       if(_nyWaiting(b)&&(b.end||b.start)>=today){
         issues.push({kind:'Waiting on them',pid:p.id,site:site,trade:trade,bid:b.id,pri:2,lvl:'msg',ts:b.pkSent||b.start,
-          line:'Waiting on '+(b.subName||'the crew'),go:`openBk('${p.id}|${b.id}')`});
+          line:'Waiting on '+(b.subName||'the crew'),go:`openBk('${p.id}|${b.id}','wait')`});
       }
       if(_nySiteNotReady(p,b,today)){
         const key='nr|'+p.id+'|'+trade;if(!seen[key]){seen[key]=1;
@@ -6518,7 +6518,7 @@ function _nyIssues(projs){
     const pid=c.a&&c.a.p&&c.a.p.id;const site=c.a&&c.a.p?(c.a.p.street||c.a.p.name):'';
     const trade=(c.a&&c.a.p)?tdTradeOf(c.a.p,c.a):'';
     issues.push({kind:'They\u2019re blocked',pid:pid,site:site,trade:trade,pri:0,lvl:'warn',ts:(c.a&&c.a.start)||today,
-      line:(c.name||'A crew')+' is blocked',go:`openCalOn(${(c.a&&c.a.start)||today}${pid?(",'"+pid+"'"):''})`});
+      line:(c.name||'A crew')+' is blocked',go:(pid&&bid)?(`openBk('${pid}|${bid}','blocked')`):''});
   });
   (projs||[]).forEach(function(p){
     (p.bookings||[]).forEach(function(b){
@@ -6535,18 +6535,20 @@ function _nyIssues(projs){
       }
     });
   });
-  bookingConflicts().filter(function(c){return c.kind==='double';}).forEach(function(c){
+    bookingConflicts().filter(function(c){return c.kind==='double';}).forEach(function(c){
     const where=[];(c.sites||[]).forEach(function(s){if(where.indexOf(s)<0)where.push(s);});
     const k='c|'+c.name+'|'+where.slice().sort().join('|');if(seen[k])return;seen[k]=1;
+    const fb=(c.bs||[])[0];
+    const go=fb&&fb.p?(`openBk('${fb.p.id}|${fb.id}','double')`):'';
     issues.push({kind:'Double-booked',pid:null,site:where.join(' \u00b7 '),trade:'',pri:1,lvl:'warn',ts:today-1,
-      line:(c.name||'A crew')+' is double-booked',go:`openCalOn(${c.day})`,cross:1});
+      line:(c.name||'A crew')+' is double-booked',go:go,cross:1});
   });
   (projs||[]).forEach(function(p){
     _nyHomeownerItems(p).forEach(function(it){
       const kind=it.kind==='idea'?'Idea':'Concern';
       issues.push({kind:'Homeowner wrote you',pid:p.id,site:p.street||p.name||'',trade:'',pri:2,lvl:'msg',ts:it.t||today,
         line:'Homeowner \u00b7 '+kind+(it.cap?(' \u00b7 '+_tdClip(it.cap,48)):''),
-        go:`todayGoRecord('${p.id}',${it.id})`});
+        go:`nyOpenHomeowner('${p.id}',${it.id})`});
     });
   });
   _nyOnDeck(projs).slice(0,3).forEach(function(o){
@@ -6637,7 +6639,7 @@ function renderToday(){
   h+=`<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
   if(soon.length){
     h+='<div class="eyebrow" style="margin-top:16px">Coming up</div>';
-    soon.slice(0,3).forEach(function(s){h+=`<div class="td-soon" onclick="openCalOn(${s.b.start},'${s.p.id}')"><span class="td-when">${tdDayLabel(s.b.start)}</span><span class="td-soontx">${esc(s.trade?specLabel(s.trade):(s.b.subName||'Crew'))} \u00b7 ${esc(s.p.street||s.p.name)}</span></div>`;});
+    soon.slice(0,3).forEach(function(s){h+=`<div class="td-soon" onclick="openBk('${s.p.id}|${s.b.id}')"><span class="td-when">${tdDayLabel(s.b.start)}</span><span class="td-soontx">${esc(s.trade?specLabel(s.trade):(s.b.subName||'Crew'))} \u00b7 ${esc(s.p.street||s.p.name)}</span></div>`;});
     if(soon.length>3)h+=`<div class="td-more">+${soon.length-3} more this week</div>`;
   }
   el.innerHTML=h;if(keep){const n=document.getElementById('nyQText');if(n){n.value=keep.v;try{n.focus();n.selectionStart=n.selectionEnd=keep.s;}catch(e){}}}}
@@ -8979,6 +8981,13 @@ function renderClient(){
         <div class="cl-stat ${led.out>0?'attn':''}" style="cursor:pointer" onclick="try{document.getElementById('clPayHead').scrollIntoView({behavior:'smooth'});}catch(e){}"><div class="k">To pay</div><div class="v">${led.out<0?'−':''}${usd(led.out)}</div></div>
       </div>`;
     h+=`<div class="row2" style="gap:10px;margin-bottom:20px"><button class="cl-concern" onclick="openConcern()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Raise a concern</button><button class="cl-concern" onclick="openIdea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Share an idea</button></div>`;
+    const hoMine=(p.items||[]).filter(function(it){return it.client;});
+    if(hoMine.length){
+      h+='<div class="eyebrow">You wrote us</div>';
+      hoMine.forEach(function(it){
+        h+='<div class="cl-dec"><div class="di"><div class="dt">'+esc(it.cap)+'</div>'+(it.reply?('<div class="ds">Your builder \u00b7 '+esc(it.reply)+'</div>'):'<div class="ds">Sent \u00b7 waiting on your builder</div>')+'</div></div>';
+      });
+    }
     h+=`<div class="eyebrow" id="clDecsHead">Decisions needed</div>`;
     /* deadline chips: each pending decision shows when the trade needs it */
     if(decisions.length){h+=decisions.map(s=>{
@@ -11305,8 +11314,15 @@ function bkSubModify(pid,id){
   bkSyncBtns();_bkCalHide();
   document.getElementById('bkScrim').classList.add('show');}
 function delAvail(pid,id){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;deleteAvail(p,id);renderDay();renderCal();}
+let _bkLead='';
+const BK_LEAD={wait:'Waiting on them',blocked:'They are blocked',declined:'They declined',double:'Double-booked',change:'Date change'};
+function bkLeadOrder(){
+  const a=document.getElementById('bkAlerts'),g=document.getElementById('bkGuest'),pk=document.getElementById('bkPacket');
+  if(!a||!g||!pk)return;
+  if(_bkLead)a.insertBefore(g,pk);else a.insertBefore(pk,g);
+}
 function openBk(ref,defTs){
-  _bkEdit=null;
+  _bkEdit=null;_bkLead=(ref&&BK_LEAD[defTs])?defTs:'';
   try{bkRenderGuestRow(null,null);}catch(e){}
   const siteSel=document.getElementById('bkSite'),subSel=document.getElementById('bkSub');
   const del=document.getElementById('bkDelete');const title=document.getElementById('bkTitle');
@@ -11316,7 +11332,7 @@ function openBk(ref,defTs){
     const parts=ref.split('|');const pid=parts[0],bid=parts[1];
     const p=state.projects.find(x=>String(x.id)===String(pid));
     const b=p&&(p.bookings||[]).find(x=>x.id===bid);if(!b)return;
-    _bkEdit={pid:pid,bid:bid};title.textContent='Edit booking';
+    _bkEdit={pid:pid,bid:bid};title.textContent=BK_LEAD[_bkLead]||'Edit booking';
     try{const gp=state.projects.find(x=>String(x.id)===String(pid));
       bkRenderGuestRow(gp,(gp.bookings||[]).find(x=>String(x.id)===String(bid)));}catch(e){}
     siteSel.value=pid;siteSel.disabled=true;
@@ -11341,7 +11357,7 @@ function openBk(ref,defTs){
   document.getElementById('bkSiteLbl').textContent=calIsSub()?'Saved under site':'Site';
   subSel.style.display='none';   // native select is the hidden source of truth; bkSubBtn is the visible picker
   siteSel.onchange=()=>{bkFillSubs(siteSel.value);bkRenderPacket();};
-  bkSyncBtns();bkRenderPacket();_bkCalHide();
+  bkSyncBtns();bkRenderPacket();bkLeadOrder();_bkCalHide();
   document.getElementById('bkScrim').classList.add('show');}
 function bkFillSubs(pid){
   const p=state.projects.find(x=>String(x.id)===String(pid));
@@ -11428,7 +11444,7 @@ function bkOfferInvite(p,name,wasAdded){
     body:esc(name)+' is scheduled. Send an invite so they can see '+esc(p.street||p.name)+' in SitePlumb — they get a code and a one-tap link. You can also do this anytime from the site’s Subs tab.',
     okLabel:'Send invite',cancelLabel:'Not now',
     onConfirm:()=>{try{Data.setActive(p.id);createInvite('sub',s.id);}catch(e){}}});}
-function closeBk(){document.getElementById('bkScrim').classList.remove('show');_bkSubMod=null;
+function closeBk(){document.getElementById('bkScrim').classList.remove('show');_bkSubMod=null;_bkLead='';
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
   if(houseStillOpen()){try{refreshHouse();}catch(e){}}
   try{if(document.getElementById('dayScrim').classList.contains('show'))renderDay();}catch(e){}}
@@ -12381,6 +12397,32 @@ function gpCalGoogle(remember){
   try{window.open(u,'_blank');}catch(e){}
 }
 /* Builder side of the loop: the booking editor shows send + reply state. */
+function _bkBriefHTML(p,b){
+  if(!p||!b)return '';
+  const box=function(title,body,act,go){
+    return '<div class="bk-pkt warn"><div class="bk-pkt-t">'+esc(title)+'</div><div class="bk-pkt-d">'+esc(body)+'</div>'
+      +(act&&go?('<button class="bk-pkt-btn" onclick="'+go+'">'+esc(act)+'</button>'):'')+'</div>';
+  };
+  const lead=_bkLead||'';
+  const show=function(k){return !lead||lead===k;};
+  if(show('declined')&&(b.status||'')==='declined'){
+    return box('They declined',(b.subName||'This crew')+' turned down '+fmtWin({start:b.start,end:b.end||b.start})+'. Pick new dates or another crew.');
+  }
+  if(show('wait')&&_nyWaiting(b)){
+    const days=Math.max(1,Math.floor((Date.now()-b.pkSent)/864e5));
+    return box('Waiting on them','Asked them to confirm '+fmtWin({start:b.start,end:b.end||b.start})+'. Sent '+days+' day'+(days===1?'':'s')+' ago. No reply yet.','Ask them again',"sendGuestPacket('"+String(p.id)+"','"+String(b.id)+"')");
+  }
+  const blocked=bookingConflicts().some(function(c){return c.kind==='blocked'&&c.a&&String(c.a.id)===String(b.id);});
+  if(show('blocked')&&blocked){
+    return box('They are blocked',(b.subName||'This crew')+' marked '+fmtWin({start:b.start,end:b.end||b.start})+' unavailable. Pick new dates.');
+  }
+  const dbl=bookingConflicts().filter(function(c){return c.kind==='double'&&(c.bs||[]).some(function(x){return String(x.id)===String(b.id);});})[0];
+  if(show('double')&&dbl){
+    const sites=[];(dbl.sites||[]).forEach(function(s){if(sites.indexOf(s)<0)sites.push(s);});
+    return box('Double-booked',(dbl.name||'This crew')+' is on '+sites.join(' and ')+'. Move this booking or add a crew.');
+  }
+  return '';
+}
 function _bkGuestStatusHTML(p,b,g){
   const r=(g&&g.resp)||(b&&b.pkResp)||null;
   const sent=b&&b.pkSent;
@@ -12402,11 +12444,12 @@ function _bkGuestStatusHTML(p,b,g){
 function bkRenderGuestRow(p,b){
   const el=document.getElementById('bkGuest');if(!el)return;
   if(!b){el.innerHTML='';return;}
-  let h='<button class="add-sub-btn" style="margin-top:8px" onclick="sendGuestPacket(\''+String(p.id)+'\',\''+String(b.id)+'\')">'
-    +(appMode()==='real'?'Text the packet link\u2026':'Preview the packet link\u2026')+'</button>';
+  let h=_bkBriefHTML(p,b);
   if(b.pkToken||b.pkResp||(b.pkQOpen||0)>0||(b.pkQs||[]).length){
-    h+='<div class="gp-sub" id="bkGuestStatus" style="margin-top:6px">'+_bkGuestStatusHTML(p,b,null)+'</div>';
+    h+='<div class="gp-sub" id="bkGuestStatus" style="margin-top:8px">'+_bkGuestStatusHTML(p,b,null)+'</div>';
   }
+  h+='<button class="add-sub-btn" style="margin-top:8px" onclick="sendGuestPacket(\''+String(p.id)+'\',\''+String(b.id)+'\')">'
+    +(appMode()==='real'?'Text the packet link\u2026':'Preview the packet link\u2026')+'</button>';
   el.innerHTML=h;
   if(b.pkToken&&appMode()==='real'&&_pkDb()){
     try{_pkDb().collection('packets').doc(String(b.pkToken)).get().then(d=>{
@@ -12620,21 +12663,50 @@ function openPkLog(){
 }
 function closePkLog(){const el=document.getElementById('pkLogScrim');if(el)el.classList.remove('show');}
 let _nyAsk=null;
+let _nyHo=null;
+function nyOpenHomeowner(pid,rid){
+  const p=state.projects.find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  const it=(p.items||[]).find(function(x){return String(x.id)===String(rid);});if(!it)return;
+  _nyHo={pid:String(p.id),rid:it.id};_nyAsk=null;
+  const kind=it.kind==='idea'?'Idea':'Concern';
+  document.getElementById('nyAskTitle').textContent='Homeowner';
+  document.getElementById('nyAskWho').textContent=(p.street||p.name||'')+' \u00b7 '+kind+(it.area?(' \u00b7 '+areaText(it.area)):'');
+  document.getElementById('nyAskQ').textContent=it.cap?('\u201c'+it.cap+'\u201d'):'They wrote you.';
+  const ta=document.getElementById('nyAskText');ta.value=it.reply||'';ta.placeholder='Your answer \u2014 they see this';
+  document.getElementById('nyAskScrim').classList.add('show');
+  setTimeout(function(){try{ta.focus();}catch(e){}},80);
+}
+function nyHoSend(){
+  if(!_nyHo)return;
+  const v=(document.getElementById('nyAskText').value||'').trim().slice(0,300);
+  if(!v){toast('Type the answer');return;}
+  const hold=_nyHo;
+  const p=state.projects.find(function(x){return String(x.id)===String(hold.pid);});
+  const it=p&&(p.items||[]).find(function(x){return String(x.id)===String(hold.rid);});
+  Data.updateItem(hold.pid,hold.rid,{reply:v,replyT:Date.now(),share:true});
+  try{pkLogAdd({kind:'answer',who:'Homeowner',site:(p&&(p.street||p.name))||'',detail:'\u201c'+((it&&it.cap)||'')+'\u201d \u2192 '+v});}catch(e){}
+  toast('Sent to the homeowner');
+  nyAskClose();
+  try{renderToday();}catch(e){}
+  if(houseStillOpen()){try{refreshHouse();}catch(e){}}
+}
 function nyOpenAsk(pid,bid,qi){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));if(!b)return;
   const qs=b.pkQs||[];const i=(qi>=0?qi:qs.findIndex(x=>!x.a));
   const q=qs[i]||{};
-  _nyAsk={pid:String(p.id),bid:String(b.id),qi:i<0?0:i};
+  _nyAsk={pid:String(p.id),bid:String(b.id),qi:i<0?0:i};_nyHo=null;
   document.getElementById('nyAskTitle').textContent='Question';
+  document.getElementById('nyAskText').placeholder='Your answer';
   document.getElementById('nyAskWho').textContent=(b.subName||'Crew')+' \u00b7 '+(p.street||p.name||'');
   document.getElementById('nyAskQ').textContent=q.text?('\u201c'+q.text+'\u201d'):'They asked a question.';
   document.getElementById('nyAskText').value='';
   document.getElementById('nyAskScrim').classList.add('show');
   setTimeout(function(){try{document.getElementById('nyAskText').focus();}catch(e){}},80);
 }
-function nyAskClose(){_nyAsk=null;const el=document.getElementById('nyAskScrim');if(el)el.classList.remove('show');if(houseStillOpen()){try{refreshHouse();}catch(e){}}}
+function nyAskClose(){_nyAsk=null;_nyHo=null;const el=document.getElementById('nyAskScrim');if(el)el.classList.remove('show');if(houseStillOpen()){try{refreshHouse();}catch(e){}}}
 function nyAskSend(){
+  if(_nyHo){nyHoSend();return;}
   if(!_nyAsk)return;
   const v=(document.getElementById('nyAskText').value||'').trim().slice(0,300);
   if(!v){toast('Type the answer');return;}

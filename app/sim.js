@@ -1115,6 +1115,12 @@ t('a packet from the house stays on the briefing', (function(){
   return stacked===true&&back===true;
 })());
 t('closing the house does not pop the page stack', $("String(closeHouse)").indexOf('navPop')<0);
+t('Needs You does not open the calendar', $("String(_nyIssues)").indexOf('openCalOn')<0);
+t('a blocked crew opens the booking', $("String(_nyIssues)").indexOf("is blocked")>=0&&$("String(_nyIssues)").indexOf('openBk')>=0&&$("String(_bkBriefHTML)").indexOf('They are blocked')>=0);
+t('a homeowner note opens a reply', $("String(_nyIssues)").indexOf('nyOpenHomeowner')>=0&&$("typeof nyOpenHomeowner")==='function'&&$("String(nyHoSend)").indexOf('reply')>=0);
+t('waiting shows ask them again', $("String(_bkBriefHTML)").indexOf('Ask them again')>=0&&$("String(bkRenderGuestRow)").indexOf('_bkBriefHTML')>=0);
+t('the tapped reason leads the booking', $("String(_nyIssues)").indexOf("openBk('${p.id}|${b.id}','wait')")>=0&&$("String(openBk)").indexOf('_bkLead')>=0&&$("String(bkLeadOrder)").indexOf('insertBefore')>=0);
+t('booking alerts have a gap', $("!!document.getElementById('bkAlerts')")===true&&$("document.documentElement.innerHTML").indexOf('.bk-alerts{display:flex;flex-direction:column;gap:12px')>=0);
 t('Open items is not a second inbox', $("String(renderOvSortRow)").indexOf('openOpenItems')<0);
 t('the packet lists the other house facts', $("String(pktAsk)").indexOf('_nyIssues')>=0);
 t('closing a spec does not pop the page stack', $("String(closeSpec)").indexOf('navPop')<0&&$("String(closeRecord)").indexOf('navPop')<0&&$("String(closeBk)").indexOf('navPop')<0);
