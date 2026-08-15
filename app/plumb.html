@@ -2971,13 +2971,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.235.0 - Packet updates say what changed. You can tell them.';
+const PLUMB_VERSION='2.236.0 - Double-booked names the dates. Their calendar shows the overlap.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786803840353;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.235.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786804773839;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.236.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account only, matched by hash — the address itself
    never appears in this file. */
 const DEV_OWNER_HASH='hkjm3d9';
@@ -6543,8 +6543,8 @@ function _nyIssues(projs){
     const k='c|'+c.name+'|'+where.slice().sort().join('|');if(seen[k])return;seen[k]=1;
     const fb=(c.bs||[])[0];
     const go=fb&&fb.p?(`openBk('${fb.p.id}|${fb.id}','double')`):'';
-    issues.push({kind:'Double-booked',pid:null,site:where.join(' \u00b7 '),trade:'',pri:1,lvl:'warn',ts:today-1,
-      line:(c.name||'A crew')+' is double-booked',go:go,cross:1});
+    issues.push({kind:'Double-booked',pid:null,site:where.join(' \u00b7 '),trade:'',pri:1,lvl:'warn',ts:c.day||today-1,
+      line:_dblWhere(c)+'. Overlap '+fmtDue(c.day),go:go,cross:1});
   });
   (projs||[]).forEach(function(p){
     _nyHomeownerItems(p).forEach(function(it){
@@ -10966,6 +10966,19 @@ function bookingConflicts(){
       out.push({kind:'blocked',name,a:b,x});}));
   });
   return out;}
+function _dblWhere(dbl){
+  const parts=[];const seen={};
+  (dbl&&dbl.bs||[]).forEach(function(b){
+    if(!b||seen[b.id])return;seen[b.id]=1;
+    const site=(b.p&&(b.p.street||b.p.name))||'';
+    parts.push((site?site+' ':'')+fmtWin({start:b.start,end:b.end||b.start}));
+  });
+  if(!parts.length){
+    const sites=[];((dbl&&dbl.sites)||[]).forEach(function(s){if(s&&sites.indexOf(s)<0)sites.push(s);});
+    return (dbl&&dbl.name||'This crew')+' is on '+sites.join(' and ');
+  }
+  return (dbl.name||'This crew')+' is on '+parts.join(' and ');
+}
 function conflictIds(){const ids={};bookingConflicts().forEach(c=>{if(c.bs)c.bs.forEach(b=>ids[b.id]=1);if(c.a)ids[c.a.id]=1;});return ids;}
 /* auto-suggest: trades on deck at each site with a sub aboard but no future booking */
 function calSuggestions(){
@@ -11070,7 +11083,7 @@ function rainRisks(){
     }});
   return out.slice(0,3);}
 /* ── calendar engine ── */
-let calMonth=null,calSiteFilter='all',calDay=null,_bkEdit=null;
+let calMonth=null,calSiteFilter='all',calDay=null,_bkEdit=null,calCrewFilter='',_bkCalPeek=false;
 function bkStatus(b){return b.status||'confirmed';}
 /* In the day sheet, nudge the builder to give a scheduled sub live access so
    they get the booking buzz and can confirm. Shows the code if already invited,
@@ -11183,11 +11196,24 @@ function idleBook(name){
 function calMine(b){return !calIsSub()||b.subName===(state.session||{}).name;}
 function calVisibleBookings(){
   if(calIsClient()){const sid=(state.session||{}).site;return allBookings().filter(b=>String(b.p.id)===String(sid)&&b.p.hoCal);}
+  if(calCrewFilter)return allBookings().filter(b=>b.subName===calCrewFilter);
   return allBookings().filter(b=>calMine(b)&&(calSiteFilter==='all'||String(b.p.id)===String(calSiteFilter)));}
-function calVisibleAvail(){if(calIsClient())return [];return allAvail().filter(a=>calMine(a));}
-function openCal(){
+function calVisibleAvail(){
+  if(calIsClient())return [];
+  if(calCrewFilter)return allAvail().filter(a=>a.subName===calCrewFilter);
+  return allAvail().filter(a=>calMine(a));}
+function openCal(keepCrew){
+  if(!keepCrew)calCrewFilter='';
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   document.getElementById('calview').classList.add('show');renderCal();}
+function openCalCrew(name,ts){
+  calCrewFilter=String(name||'');
+  calSiteFilter='all';
+  if(ts){try{const d=new Date(Number(ts));calMonth=new Date(d.getFullYear(),d.getMonth(),1);}catch(e){}}
+  const bk=document.getElementById('bkScrim');
+  if(bk&&bk.classList.contains('show')){_bkCalPeek=true;bk.classList.remove('show');}
+  else _bkCalPeek=false;
+  openCal(true);}
 function openPacketFor(pid,trade){
   const p=state.projects.find(function(x){return String(x.id)===String(pid);});if(!p)return;
   try{Data.setActive(pid);}catch(e){}
@@ -11196,7 +11222,13 @@ function openPacketFor(pid,trade){
   showInfo('Install packet', '<p style="margin:0">No '+esc(specLabel(trade)||'trade')+' sub on this site yet. Add them from the site and the packet fills itself.</p>');
 }
 function openCalOn(ts,siteId){try{const d=new Date(Number(ts));calMonth=new Date(d.getFullYear(),d.getMonth(),1);}catch(e){}calSiteFilter=(siteId===undefined||siteId===null||siteId==='')?'all':String(siteId);openCal();}
-function closeCal(){document.getElementById('calview').classList.remove('show');try{renderToday();}catch(e){}if(houseStillOpen()){try{refreshHouse();}catch(e){}}}
+function closeCal(){
+  calCrewFilter='';
+  document.getElementById('calview').classList.remove('show');
+  try{renderToday();}catch(e){}
+  if(_bkCalPeek){_bkCalPeek=false;const bk=document.getElementById('bkScrim');if(bk)bk.classList.add('show');}
+  else if(houseStillOpen()){try{refreshHouse();}catch(e){}}
+}
 function calNav(d){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+d,1);renderCal();}
 function calToday(){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);renderCal();}
 function calPick(siteId){calSiteFilter=siteId;renderCal();}
@@ -11205,8 +11237,9 @@ function renderCal(){
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   const who=document.getElementById('calWho');
   const fp=calSiteFilter==='all'?null:state.projects.find(x=>String(x.id)===String(calSiteFilter));
-  try{document.getElementById('calHdrT').textContent=calIsSub()?'My schedule':(calIsClient()?'Site calendar':'Trades Calendar');}catch(e){}
-  if(who)who.textContent=calIsClient()?('Your build \u2014 '+esc((clientProj()||{}).street||(clientProj()||{}).name||''))
+  try{document.getElementById('calHdrT').textContent=calCrewFilter?calCrewFilter:(calIsSub()?'My schedule':(calIsClient()?'Site calendar':'Trades Calendar'));}catch(e){}
+  if(who)who.textContent=calCrewFilter?('Every house they are on \u2014 overlap is marked')
+    :calIsClient()?('Your build \u2014 '+esc((clientProj()||{}).street||(clientProj()||{}).name||''))
     :calIsSub()?('Your schedule \u2014 '+((state.session||{}).name||'')):(fp?(fp.street||fp.name):'All sites');
   const y=calMonth.getFullYear(),m=calMonth.getMonth();
   const first=new Date(y,m,1);const startDow=(first.getDay()+6)%7;
@@ -11214,7 +11247,7 @@ function renderCal(){
   const todayK=dayKey(Date.now());
   const bs=calVisibleBookings();const av=calVisibleAvail();const cf=conflictIds();
   let chips='';
-  if(!calIsSub()&&!calIsClient()){
+  if(!calIsSub()&&!calIsClient()&&!calCrewFilter){
     const fHome=calSiteFilter!=='all'&&fp;
     chips='<div class="cal-ctrl">'
       +'<button class="cal-chip'+(calSiteFilter==='all'?' on':'')+'" onclick="calPick(\'all\')">All sites</button>'
@@ -11222,7 +11255,7 @@ function renderCal(){
       +'<button class="cal-chip" onclick="openIdle()">Idle / plan</button>'
       +'</div>';
   }
-  const conf=calIsClient()?[]:bookingConflicts().filter(c=>calMine(c.bs?c.bs[0]:c.a));
+  const conf=calIsClient()?[]:bookingConflicts().filter(c=>(!calCrewFilter||c.name===calCrewFilter)&&calMine(c.bs?c.bs[0]:c.a));
   const banner=conf.length?`<div class="pkt-banner warn" style="margin:0 2px 12px">${conf.slice(0,3).map(c=>c.kind==='double'
       ?('<b>'+esc(c.name)+'</b> needs '+c.sites.length+' crews (has '+c.cap+') on '+fmtDue(c.day)+' \u2014 '+[...new Set(c.sites)].map(esc).join(' & '))
       :('<b>'+esc(c.name)+'</b> is booked over time they marked unavailable')).join(' \u00b7 ')}${conf.length>3?' \u00b7 +'+(conf.length-3)+' more':''}</div>`:'';
@@ -12430,8 +12463,8 @@ function _bkBriefHTML(p,b){
   }
   const dbl=bookingConflicts().filter(function(c){return c.kind==='double'&&(c.bs||[]).some(function(x){return String(x.id)===String(b.id);});})[0];
   if(show('double')&&dbl){
-    const sites=[];(dbl.sites||[]).forEach(function(s){if(sites.indexOf(s)<0)sites.push(s);});
-    return box('Double-booked',(dbl.name||'This crew')+' is on '+sites.join(' and ')+'. Move this booking or add a crew.');
+    const nm=String(dbl.name||b.subName||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return box('Double-booked',_dblWhere(dbl)+'. Overlap '+fmtDue(dbl.day)+'. Move this booking or add a crew.','See their calendar',"openCalCrew('"+nm+"',"+Number(dbl.day||b.start)+")");
   }
   return '';
 }
