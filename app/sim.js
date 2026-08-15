@@ -1127,6 +1127,7 @@ t('packet updates say what changed', $("typeof pkDiffWhat")==='function'&&$("Str
 t('double-booked names the dates', $("typeof _dblWhere")==='function'&&$("String(_bkBriefHTML)").indexOf('_dblWhere')>=0&&$("String(_bkBriefHTML)").indexOf('See their calendar')>=0&&$("typeof openCalCrew")==='function'&&$("String(calVisibleBookings)").indexOf('calCrewFilter')>=0);
 t('builder creates the company record if the first read is refused', $("String(Org._adopt)").indexOf('org create')>=0&&$("String(Org._adopt)").indexOf('this.push')>=0);
 t('QA logins can open the workbench', $("typeof devQa")==='function'&&$("String(devAllowed)").indexOf('devQa')>=0&&$("String(devQa)").indexOf('pmgottschalkqa')>=0);
+t('a packet reply notifies the builder', $("String(_pkStamp)").indexOf('Notify.push')>=0&&$("String(_pkStamp)").indexOf('asked')>=0);
 t('Open items is not a second inbox', $("String(renderOvSortRow)").indexOf('openOpenItems')<0);
 t('the packet lists the other house facts', $("String(pktAsk)").indexOf('_nyIssues')>=0);
 t('closing a spec does not pop the page stack', $("String(closeSpec)").indexOf('navPop')<0&&$("String(closeRecord)").indexOf('navPop')<0&&$("String(closeBk)").indexOf('navPop')<0);

@@ -2866,6 +2866,8 @@ body.on-tour .tour-card{display:block;}
       <button class="dev-btn" onclick="devConnectSync()"><span><span>Connect / reconnect sync</span><span class="d">Saves config on this device &amp; starts live cross-device sync</span></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2"/><path d="M18 4v5h-5M6 20v-5h5"/></svg></span></button>
       <div class="eyebrow" style="margin-top:16px">QuickBooks</div>
       <div id="qbLine" style="font-size:13.5px;margin:6px 0 12px"></div>
+      <div class="eyebrow" style="margin-top:16px">Push</div>
+      <div id="pushLine" style="font-size:13.5px;margin:6px 0 12px"></div>
       <div class="eyebrow" style="margin-top:16px">Demo &amp; tour</div>
       <div style="display:flex;gap:8px;margin:6px 0 12px">
         <button class="b1 b-cancel" style="flex:1" onclick="closeDev();enterDemo()">Explore the example build</button>
@@ -2971,13 +2973,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.238.0 - QA logins can open the workbench.';
+const PLUMB_VERSION='2.239.0 - A sub reply can reach the lock screen.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786811407619;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.238.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786812042924;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.239.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8286,6 +8288,19 @@ function qbRenderLine(){
     el.innerHTML='<button class="b1 b-go" style="padding:9px 18px" onclick="qbConnect()">Connect QuickBooks</button>';
   }
 }
+function pushRenderLine(){
+  const el=document.getElementById('pushLine');if(!el)return;
+  const on=typeof Notify!=='undefined'&&Notify.permission()==='granted';
+  el.innerHTML=(on?'<b style="color:var(--sage)">This device is allowed</b>':'Notifications are off on this device')
+    +' <button class="la-link" style="margin-left:10px" onclick="Notify.enable().then(function(){pushRenderLine();})">'+(on?'Re-check':'Turn on')+'</button>'
+    +' <button class="la-link" onclick="pushTest()">Send a test</button>';
+}
+async function pushTest(){
+  try{
+    const r=await fnCall('notifyTest',{});
+    toast((r&&r.sent)?'Test sent — check the lock screen':'No token yet — tap Turn on, then try again');
+  }catch(e){toast('Test needs the push function deployed');}
+}
 async function qbConnect(){
   try{const r=await fnCall('qbConnect',{});window.open(r.url,'_blank','noopener');toast('Finish connecting in the QuickBooks window');}
   catch(e){toast('Could not start: '+e.message);}
@@ -12598,7 +12613,21 @@ function _pkStamp(p,b,g){
     const qOpen=qs.filter(x=>!x.a).length;
     const cur=JSON.stringify(b.pkResp||null)+'|'+(b.pkQOpen||0)+'|'+JSON.stringify(b.pkQs||[]);
     const next=JSON.stringify(r?{status:r.status,start:r.start||null,end:r.end||null,note:r.note||'',t:r.t||0}:null)+'|'+qOpen+'|'+JSON.stringify(qs);
-    if(cur!==next){updateBooking(p,b.id,{pkResp:r?{status:r.status,start:r.start||null,end:r.end||null,note:r.note||'',t:r.t||0}:null,pkQOpen:qOpen,pkQs:qs,pkStamp:Date.now()});try{renderOvCards();}catch(e){}}
+    if(cur!==next){updateBooking(p,b.id,{pkResp:r?{status:r.status,start:r.start||null,end:r.end||null,note:r.note||'',t:r.t||0}:null,pkQOpen:qOpen,pkQs:qs,pkStamp:Date.now()});try{renderOvCards();}catch(e){}
+      try{
+        if((state.session||{}).role==='hillan'&&typeof Notify!=='undefined'){
+          const site=p.street||p.name||'site';const who=b.subName||'A sub';
+          if(r&&r.status==='confirmed'&&(!b.pkResp||b.pkResp.status!=='confirmed'))
+            Notify.push('pkok:'+b.id+':'+(r.t||Date.now()),who+' confirmed \u2014 '+site,'Dates work',{pid:p.id,view:'schedule'},'builder');
+          if(r&&r.status==='change'&&(!b.pkResp||b.pkResp.status!=='change'||b.pkResp.t!==r.t))
+            Notify.push('pkchg:'+b.id+':'+(r.t||Date.now()),who+' suggested new dates \u2014 '+site,String(r.note||'See the booking').slice(0,180),{pid:p.id,view:'schedule'},'builder');
+          if(qs.length>(b.pkQs||[]).length){
+            const last=qs[qs.length-1]||{};
+            Notify.push('pkq:'+b.id+':'+(last.t||Date.now()),who+' asked \u2014 '+site,String(last.text||'').slice(0,180),{pid:p.id},'builder');
+          }
+        }
+      }catch(e){}
+    }
     else if(!b.pkStamp||Date.now()-b.pkStamp>6e5)updateBooking(p,b.id,{pkStamp:Date.now()});
   }catch(e){}
 }
@@ -13428,7 +13457,7 @@ function devSaveVapid(){const v=(document.getElementById('vapidInput')||{value:'
   try{if(v)localStorage.setItem('plumb.fcm.vapid',v);else localStorage.removeItem('plumb.fcm.vapid');}catch(e){}
   toast(v?'Push key saved — registering device':'Push key cleared');
   if(v)Notify.captureToken();}
-async function openDev(){try{qbRefreshStatus();}catch(e){}if(!devAllowed()){toast('Workbench is limited to the owner account');return;}if(!_lastLayoutSnap||Date.now()-_snapAt>1500){try{_lastLayoutSnap=buildLayoutSnap();}catch(e){}}document.getElementById('devpanel').classList.add('show');try{renderDevGrants();}catch(e){}try{renderDevErrors();}catch(e){}try{const ai=document.getElementById('appCheckInput');if(ai)ai.value=appCheckKey()||'';const vi=document.getElementById('vapidInput');if(vi)vi.value=Notify.vapid();renderLocalState();renderEventLog();renderFeedbackList();devSyncStatusText();}catch(e){}try{await refreshDev();}catch(e){}}
+async function openDev(){try{qbRefreshStatus();}catch(e){}try{pushRenderLine();}catch(e){}if(!devAllowed()){toast('Workbench is limited to the owner account');return;}if(!_lastLayoutSnap||Date.now()-_snapAt>1500){try{_lastLayoutSnap=buildLayoutSnap();}catch(e){}}document.getElementById('devpanel').classList.add('show');try{renderDevGrants();}catch(e){}try{renderDevErrors();}catch(e){}try{const ai=document.getElementById('appCheckInput');if(ai)ai.value=appCheckKey()||'';const vi=document.getElementById('vapidInput');if(vi)vi.value=Notify.vapid();renderLocalState();renderEventLog();renderFeedbackList();devSyncStatusText();}catch(e){}try{await refreshDev();}catch(e){}}
 function devSyncStatusText(){const el=document.getElementById('devSyncStatus');if(!el)return;const cfg=fbConfig();
   if(Sync.on){el.innerHTML='<b style="color:#9ED3AB">● Live</b> · project <code>'+esc((cfg&&cfg.projectId)||'')+'</code> · this device <code>'+esc(Sync.deviceId||'')+'</code>'+((Sync.authKind==='account'&&Sync.uid)?(' \u00b7 account <code>'+esc(Sync.uid.slice(0,8)+'\u2026')+'</code>'):(' \u00b7 <b style="color:#C8785F">no account \u2014 sign in</b>'));}
   else if(cfg){el.innerHTML='Config saved, not connected'+(Sync.err?' — '+esc(Sync.err):'')+'. Tap Connect.';}

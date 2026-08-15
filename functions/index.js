@@ -182,3 +182,38 @@ exports.telemetryClear = onRequest(async (req, res) => {
   }
   res.json({ result: { ok: true, n } });
 });
+
+/* ── Lock-screen push when a sub replies on a packet ── */
+const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const push = require('./lib/push');
+
+async function deliver(uids, notice) {
+  const tokens = await push.tokensFor(db, uids);
+  return push.sendPush(admin, tokens, notice);
+}
+
+exports.onPacketReply = onDocumentWritten('packets/{token}', async (event) => {
+  const before = event.data.before.exists ? event.data.before.data() : null;
+  const after = event.data.after.exists ? event.data.after.data() : null;
+  const notice = push.packetNotice(before, after);
+  if (!notice) return;
+  const siteId = after && after.siteId;
+  if (!siteId) return;
+  const siteSnap = await db.collection('sites').doc(String(siteId)).get();
+  if (!siteSnap.exists) return;
+  const uids = push.builderUids(siteSnap.data() || {});
+  if (!uids.length) return;
+  await deliver(uids, notice);
+});
+
+exports.notifyTest = onRequest(async (req, res) => {
+  if (cors(req, res)) return;
+  const user = await requireUser(req, res); if (!user) return;
+  const r = await deliver([user.uid], {
+    key: 'test:' + Date.now(),
+    title: 'SitePlumb test',
+    body: 'Lock-screen push is on for this login.',
+  });
+  res.json({ result: { ok: true, sent: r.sent || 0 } });
+});
+
