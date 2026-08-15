@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SitePlumb</title>
+<script>
+/* Auth emails sometimes land on a path GitHub Pages does not have
+   (for example /__/auth/action). Keep the query string and send them
+   into the app, where confirm and reset actually run. */
+try{
+  var q=new URLSearchParams(location.search||'');
+  var mode=q.get('mode')||'';
+  var code=(q.get('oobCode')||'').trim();
+  if(code&&(mode==='resetPassword'||mode==='verifyEmail'||mode==='recoverEmail'||mode==='signIn'))
+    location.replace('/app/'+location.search+location.hash);
+  else location.replace('/');
+}catch(e){location.replace('/');}
+</script>
+</head>
+<body></body>
+</html>

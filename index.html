@@ -18,7 +18,12 @@
    This runs before the stylesheet so the redirect happens before first paint -
    a home-screen launch must never flash the sales page. */
 try{
-  if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true)
+  var q=new URLSearchParams(location.search||'');
+  var mode=q.get('mode')||'';
+  var code=(q.get('oobCode')||'').trim();
+  if(code&&(mode==='resetPassword'||mode==='verifyEmail'||mode==='recoverEmail'||mode==='signIn'))
+    location.replace('/app/'+location.search+location.hash);
+  else if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true)
     location.replace('/app/');
 }catch(e){}
 </script>
@@ -48,6 +53,10 @@ try{
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
+<div style="background:#1c1916;color:#f7f4ef;padding:12px 18px;font:15px/1.4 -apple-system,sans-serif;text-align:center">
+  2.227.0 is ready to publish.
+  <a href="/publish/" style="color:#f7f4ef;margin-left:10px">Download the files</a>
+</div>
 
 <header class="nav" id="nav">
   <div class="wrap nav-in">
