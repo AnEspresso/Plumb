@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SitePlumb 2.251.0 — publish</title>
+<title>SitePlumb 2.254.0 — publish</title>
 <style>
   :root { --ink:#1c1916; --muted:#6b645c; --line:#e6e0d8; --paper:#f7f4ef; }
   * { box-sizing: border-box; }
@@ -36,7 +36,7 @@
 <body>
 <main>
   <div class="word">SitePlumb</div>
-  <h1>2.251.0</h1>
+  <h1>2.254.0</h1>
   <p>One zip. Folders match GitHub. Unzip, then upload <b>app</b> files into <b>app</b>, and upload <b>index.html</b> and <b>404.html</b> into the repo root.</p>
   <button class="primary" id="saveAll" type="button">Save the GitHub zip</button>
   <div id="status"></div>
@@ -54,7 +54,7 @@
     <li>github.com/AnEspresso/Plumb → open <b>app</b> → Add file → Upload files.</li>
     <li>Pick the files from the unzipped <b>app</b> folder. Do not rename.</li>
     <li>Then open the repo root (the folder above <b>app</b>). Upload <b>index.html</b> and <b>404.html</b> there.</li>
-    <li>Commit. Wait about a minute. Gear should say 2.251.0.</li>
+    <li>Commit. Wait about a minute. Gear should say 2.254.0.</li>
   </ol>
 </main>
 <script>
@@ -92,7 +92,7 @@ async function saveFile(url, name, type){
 
 document.getElementById('saveAll').addEventListener('click', async function(){
   this.disabled = true;
-  try { await saveFile('Plumb-2.251.0.zip', 'Plumb-2.251.0.zip', 'application/zip'); }
+  try { await saveFile('Plumb-2.254.0.zip', 'Plumb-2.254.0.zip', 'application/zip'); }
   catch (e) { say('Could not save the pack. Try a single file below.'); }
   this.disabled = false;
 });

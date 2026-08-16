@@ -1056,14 +1056,14 @@ t('removing a booking clears its Needs You card', (function(){
 t('leaving the calendar redraws Needs You', $("String(closeCal)").indexOf('renderToday')>=0);
 t('Needs You names the kind of work', $("String(_nyIssues)").indexOf('Date change')>=0&&$("String(_nyIssues)").indexOf('Question')>=0);
 t('Needs You covers the six new kinds', $("String(_nyIssues)").indexOf('They declined')>=0&&$("String(_nyIssues)").indexOf('Waiting on them')>=0&&$("String(_nyIssues)").indexOf('Site not ready')>=0&&$("String(_nyIssues)").indexOf('Homeowner wrote you')>=0&&$("String(_nyIssues)").indexOf('On deck, not booked')>=0&&$("String(_nyOnDeck)").indexOf('prevDone')>=0);
-t('Show all and Recent decisions are separate actions', $("String(renderToday)").indexOf('td-histbtn')>=0&&$("String(renderToday)").indexOf('Recent decisions')>=0);
+t('Show all and Recent decisions are separate actions', $("String(renderOvCards)").indexOf('openPkLog')>=0&&$("String(renderToday)").indexOf('toggleSoon')>=0);
 t('untagged site files stay out of a trade packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Construction Contract.pdf'})")===false);
 t('a trade-tagged plan is in that packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Plumbing Rough-In Plan.pdf',trade:'plumb'})")===true);
 t('the packet is a briefing with still-open first', $("String(packetHTML)").indexOf('pkt-strip')>=0&&$("String(packetHTML)").indexOf('For the truck')>=0&&$("String(pktAsk)").indexOf('No dates on the calendar')>=0);
 t('answering a spec from the packet does not tear the packet down', $("String(pktFillSpec)").indexOf('closeInfo')<0&&$("String(pktFillSpec)").indexOf('openSpec')>=0);
 t('Needs You opens a packet without leaving home', $("String(openPacketFor)").indexOf('openSiteFromOverview')<0);
 t('Back returns through the sheet stack', $("String(backToOverview)").indexOf('navPop')>=0&&$("String(navPush)").indexOf('restore')>=0);
-t('Gone quiet whispers on the house, not Needs You', $("String(_nyIssues)").indexOf('Gone quiet')<0&&$("String(_siteWhisper)").indexOf('Quiet')>=0&&$("String(renderOvCards)").indexOf("kind==='idle'")>=0&&$("String(renderOvCards)").indexOf('openNextSite')>=0);
+t('Gone quiet whispers on the house, not Needs You', $("String(_nyIssues)").indexOf('Gone quiet')<0&&$("String(_siteWhisper)").indexOf('Quiet')>=0&&$("String(nyCardBits)").indexOf('_siteWhisper')>=0);
 t('Gone quiet keeps home under the sheet', (function(){
   asBuilder();
   $('enterDemo()');
@@ -1083,8 +1083,18 @@ t('Needs You is one card per house', (function(){
   const n=$("(function(){var hs=[].slice.call(document.querySelectorAll('#ovCards .ov-card .st')).map(function(el){return el.textContent;});return hs.filter(function(x){return x.indexOf('Calderwood')>=0;}).length;})()");
   return n===1;
 })());
-t('Attention uses Needs You language', $("String(renderOvCards)").indexOf('needs you')>=0&&$("String(renderOvCards)").indexOf("_ovSort==='attn'")>=0);
-t('A-Z keeps the portfolio card', $("String(renderOvCards)").indexOf('% complete')>=0&&$("String(renderOvCards)").indexOf('On deck')>=0);
+t('Attention uses Needs You language', $("String(renderOvCards)").indexOf('needs you')>=0&&$("String(renderOvCards)").indexOf("_ovSort==='attn'")>=0&&$("SORTLABELS.attn")==='Needs You');
+t('All houses is the first decisions door', $("String(renderOvCards)").indexOf('All houses')>=0&&$("String(renderOvCards)").indexOf('openPkLog')>=0&&$("String(openPkLog)").indexOf('openInb')>=0);
+t('Needs You opens an inbox', $("String(renderOvCards)").indexOf('All homes')>=0&&$("String(renderOvCards)").indexOf('openNyInbox')>=0&&$("String(inbDraw)").indexOf('smart')>=0);
+t('the house list pills are Needs You, decisions, A-Z', $("SORTLABELS.recent")==='Recent decisions'&&$("String(renderOvSortRow)").indexOf('ov-allpill')<0);
+t('coming up more this week expands', $("String(renderToday)").indexOf('toggleSoon')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
+t('the day sheet sits over the calendar', (function(){
+  const z=$("(function(){var d=document.getElementById('dayScrim');var c=document.getElementById('calview');return getComputedStyle(d).zIndex+'|'+getComputedStyle(c).zIndex;})()");
+  const p=z.split('|').map(Number);
+  return p[0]>=96&&p[0]>p[1];
+})());
+t('back to a list keeps your place', $("String(nyOpenHouse)").indexOf("saveScroll('home')")>=0&&$("String(houseLeave)").indexOf("saveScroll('house')")>=0&&$("String(showOverview)").indexOf('applyScroll')>=0&&$("String(closeHouse)").indexOf("applyScroll('home')")>=0);
+t('A-Z keeps the portfolio card', $("String(renderOvCards)").indexOf('localeCompare')>=0&&$("String(renderOvCards)").indexOf('nyCardBits')>=0);
 t('tapping a house card opens the briefing on home', (function(){
   asBuilder();
   $('enterDemo()');
@@ -1193,12 +1203,12 @@ t('the example build includes declined, waiting, and a homeowner note', (functio
   const blocked=(p.avail||[]).some(function(a){return a.subName==='Clearwater Plumbing';});
   return declined&&waiting&&ho&&blocked;
 })());
-t('house cards whisper a waiting sub', $("String(renderOvCards)").indexOf('ov-whisper')>=0&&$("typeof _siteWhisper")==='function');
+t('house cards whisper a waiting sub', $("String(nyCardBits)").indexOf('_siteWhisper')>=0&&$("typeof _siteWhisper")==='function');
 t('a date change whispers on the house card', (function(){
   $("(function(){var p=state.projects[1];p._whBk={id:'bkWhis',subName:'Whisper Crew',trade:'plumb',start:Date.now()+864e5,end:Date.now()+2*864e5,pkToken:'pkWH',pkResp:{status:'change',start:Date.now()+3*864e5,end:Date.now()+4*864e5,t:1},pkQOpen:0};p.bookings.push(p._whBk);_ovSort='az';renderOvCards();})()");
   const html=$("document.getElementById('ovCards').innerHTML");
   $("(function(){var p=state.projects[1];p.bookings=p.bookings.filter(function(b){return b.id!=='bkWhis';});delete p._whBk;_ovSort='attn';renderOvCards();})()");
-  return html.indexOf('ov-whisper')>=0&&html.indexOf('asked for')>=0;
+  return html.indexOf('asked for')>=0;
 })());
 t('the packet page keeps listening after it opens', $("String(renderGuestPacket)").indexOf('_gpListen')>=0&&$("String(_gpListen)").indexOf('onSnapshot')>=0);
 t('a painted packet is not wiped on a slow retry', $("String(renderGuestPacket)").indexOf('painted')>=0&&$("String(renderGuestPacket)").indexOf('20000')>=0);

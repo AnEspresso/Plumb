@@ -876,13 +876,21 @@
     font-size:12.5px;font-weight:600;color:var(--ink-2);cursor:pointer;}
   .ov-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 22px 150px;}
   .ov-foot-spacer{display:none;}
-  .ov-sortrow{display:flex;align-items:center;gap:8px;margin:0 0 12px;}
-  .ov-sortpills{display:flex;gap:6px;flex-wrap:wrap;}
+  .ov-sortrow{display:flex;align-items:center;gap:8px;margin:0 0 12px;flex-wrap:wrap;}
+  .ov-sortpills{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0;}
+  .ov-allpill{display:none;}
+  .ov-inbtabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 10px;margin:0 0 4px;}
+  .ov-inbtabs .ov-sortpill{flex:0 0 auto;}
+  .ov-search{width:100%;box-sizing:border-box;}
   .ov-openchip{margin-left:auto;white-space:nowrap;font-size:12px;}
-  .td-morebtn{display:block;width:100%;text-align:left;margin:10px 0 2px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--oak);background:none;border:none;cursor:pointer;padding:4px 2px;letter-spacing:.01em;}
+  .td-morebtn{display:block;width:100%;text-align:left;margin:10px 0 2px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--oak);background:none;border:none;cursor:pointer;padding:12px 2px;min-height:44px;letter-spacing:.01em;}
   .td-morebtn:active{opacity:.55;}
-  .td-histbtn{display:block;width:100%;text-align:left;margin:2px 0 10px;font-family:inherit;font-size:12px;font-weight:500;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:4px 2px;}
-  .td-histbtn:active{opacity:.55;}
+  .td-histbtn{display:none;}
+  .ov-decs{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);}
+  .ov-dec{font-size:12px;color:var(--ink-2);line-height:1.35;padding:8px 0;min-height:36px;cursor:pointer;}
+  .ov-dec:active{opacity:.6;}
+  .ov-dec.more{color:var(--oak);font-weight:650;}
+  .ov-card.allh{border-style:dashed;}
   .ov-field{display:flex;align-items:center;justify-content:center;width:158px;height:102px;
     background:var(--ink);color:#F2EEE6;border:none;border-radius:20px;padding:8px 10px;margin:2px auto 14px;
     font-family:inherit;cursor:pointer;box-shadow:var(--shadow-lift);position:relative;overflow:hidden;
@@ -943,10 +951,10 @@
   .td-q:focus{outline:none;border-color:var(--oak);}
   .ov-whisper{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink);font-weight:560;letter-spacing:-.01em;line-height:1.35;}
   .ov-whisper b{font-weight:650;}
-  .td-soon{display:flex;align-items:center;gap:10px;padding:8px 2px;cursor:pointer;}
+  .td-soon{display:flex;align-items:center;gap:10px;padding:10px 2px;min-height:44px;cursor:pointer;}
   .td-when{flex:0 0 auto;min-width:74px;font-size:12px;font-weight:700;color:var(--oak);}
   .td-soontx{flex:1;font-size:13px;color:var(--ink-2);}
-  .td-more{font-size:12px;color:var(--ink-3);padding:4px 2px;}
+  .td-more{display:none;}
   .tour-catch{position:fixed;inset:0;z-index:1999;background:transparent;}
   .tc-p{position:fixed;z-index:1998;background:transparent;}
 .tour-holeframe{position:fixed;z-index:2001;pointer-events:none;border:2px dashed #CBA268;border-radius:14px;
@@ -1141,7 +1149,7 @@
     margin:34px 0 8px;padding:14px;cursor:pointer;-webkit-user-select:none;user-select:none;}
   /* password gate + feedback form (shared paper modal) */
   #promptScrim,#webPickScrim{z-index:96 !important;}
-  #specScrim,#docScrim,#recScrim,#pktLogScrim,#readyScrim,#bkScrim{z-index:96;}
+  #specScrim,#docScrim,#recScrim,#pktLogScrim,#readyScrim,#bkScrim,#dayScrim,#idleScrim{z-index:96;}
 .pmodal-scrim{position:absolute;inset:0;z-index:90;background:rgba(20,18,14,.55);backdrop-filter:blur(6px);
     display:none;align-items:center;justify-content:center;padding:24px;}
   .pmodal-scrim.show{display:flex;}
@@ -2098,10 +2106,12 @@ body.on-tour .tour-card{display:block;}
   </div>
 
   <div class="pmodal-scrim" id="pkLogScrim" style="z-index:117">
-    <div class="pmodal">
+    <div class="pmodal" style="max-width:360px">
       <div class="mgrip" onclick="closePkLog()"></div>
-      <h4>Decisions</h4>
-      <p style="font-size:13px;color:var(--ink-3);margin:-4px 2px 12px">Dates you confirmed and answers you sent.</p>
+      <h4 id="pkLogTitle">Decisions</h4>
+      <p id="pkLogSub" style="font-size:13px;color:var(--ink-3);margin:-4px 2px 10px">Dates you confirmed and answers you sent.</p>
+      <input id="pkLogQ" class="ov-search" placeholder="Search…" oninput="inbDraw()" style="display:block;margin:0 0 8px">
+      <div class="ov-inbtabs" id="pkLogTabs"></div>
       <div id="pkLogBody"></div>
       <button class="add-sub-btn" style="margin-top:14px" onclick="closePkLog()">Done</button>
     </div>
@@ -3008,13 +3018,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.251.0 - One house list. Attention, Recent, A-Z.';
+const PLUMB_VERSION='2.254.0 - Needs You inbox. Recent decisions. Smart All homes.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786841081603;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.251.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786887578603;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.254.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -3149,7 +3159,7 @@ function sampleState(){
   const ds=n=>{const x=new Date(Date.now()-n*D);const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());};
   const day=n=>dayStart(Date.now()+n*D);
   const st = {
-    activeId:'p2', showSamples:true, seeded:true, seedVersion:SEED_VERSION, feedback:[], eventLog:[], pkLog:[{t:Date.now()-864e5,kind:'dates',who:'Clearwater Plumbing',site:'288 Calderwood Ln',detail:'Aug 8 \u2013 Aug 10 \u2192 Aug 10 \u2013 Aug 12'}], session:null,
+    activeId:'p2', showSamples:true, seeded:true, seedVersion:SEED_VERSION, feedback:[], eventLog:[], pkLog:[{t:Date.now()-864e5,kind:'dates',who:'Clearwater Plumbing',pid:'p2',site:'288 Calderwood Ln',detail:'Aug 8 \u2013 Aug 10 \u2192 Aug 10 \u2013 Aug 12'},{t:Date.now()-2*864e5,kind:'answer',who:'Timberline Framing',pid:'p2',site:'288 Calderwood Ln',detail:'Keep the oak \u2014 yes, we will wrap it'},{t:Date.now()-3*864e5,kind:'dates',who:'Brightpath Electric',pid:'p3',site:'741 Whitaker Ave',detail:'Aug 19 \u2013 Aug 21 confirmed'}], session:null,
     projects:[
       /* ───────── 1 · CLOSE TO START — sitework / foundation ───────── */
       {
@@ -5484,9 +5494,9 @@ function startConverge(){
     <p style="color:var(--ink-3);font-size:12.5px;margin:14px 0 0">Everything else fills in as you go — log a photo, set a stage, add a selection whenever it comes up.</p>`);
 }
 const SET_GEAR_ROW=(label,desc,onclick,icon)=>`<button class="set-row" onclick="${onclick}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg><div style="flex:1"><div>${label}</div>${desc?`<div class="sr-d">${desc}</div>`:''}</div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M9 6l6 6-6 6"/></svg></button>`;
-function openSettings(){renderSettings();document.getElementById('settingsScrim').classList.add('show');}
+function openSettings(){saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
 function closeSettings(){document.getElementById('settingsScrim').classList.remove('show');}
-function openCompany(){renderCompany();document.getElementById('companyScrim').classList.add('show');}
+function openCompany(){saveScroll('home');renderCompany();document.getElementById('companyScrim').classList.add('show');}
 function closeCompany(){document.getElementById('companyScrim').classList.remove('show');}
 function renderCompany(){
   const el=document.getElementById('companyBody');if(!el)return;
@@ -6299,10 +6309,31 @@ function routeAfterLogin(){document.getElementById('login').classList.add('hide'
   const role=state.session&&state.session.role;
   if(role==='subs')showSubView();else if(role==='client')showClientView();else showOverview();}
 function logout(){Data.setSession(null);logEvent('logout','');setChrome(true);
+  _keepScrollY.home=0;_keepScrollY.house=0;_keepScrollY.packet=0;_keepScrollY.site=0;_ovSort='attn';
   document.getElementById('overview').classList.remove('show');document.getElementById('subview').classList.remove('show');document.getElementById('clientview').classList.remove('show');
   document.getElementById('login').classList.remove('hide');setRole('hillan');document.getElementById('loginSelect').selectedIndex=0;}
-function showOverview(){_ovAnimateTs=Date.now();document.getElementById('overview').classList.add('show');document.getElementById('backBtn').classList.remove('show');renderOverview();const _b=document.querySelector('.ov-body');if(_b)_b.scrollTop=0;}
+function showOverview(){_ovAnimateTs=Date.now();document.getElementById('overview').classList.add('show');document.getElementById('backBtn').classList.remove('show');renderOverview();applyScroll('home');}
 function backToOverview(){if(_navStack.length){navPop();return;}showOverview();}
+const _keepScrollY={home:0,house:0,packet:0,site:0};
+const _holdModalScroll=new Set();
+let _houseResumeScroll=false;
+function scrollEl(which){
+  if(which==='home')return document.querySelector('.ov-body');
+  if(which==='house')return document.querySelector('#houseScrim .pmodal');
+  if(which==='packet')return document.querySelector('#infoScrim .pmodal');
+  if(which==='site')return document.getElementById('main');
+  return null;
+}
+function saveScroll(which){const el=scrollEl(which);if(el)_keepScrollY[which]=el.scrollTop||0;}
+function applyScroll(which){
+  const el=scrollEl(which);if(!el)return;
+  const y=Number(_keepScrollY[which])||0;
+  if(which==='house')_holdModalScroll.add('houseScrim');
+  if(which==='packet')_holdModalScroll.add('infoScrim');
+  const pin=function(){try{el.scrollTop=y;}catch(e){}};
+  pin();
+  requestAnimationFrame(function(){pin();setTimeout(function(){pin();_holdModalScroll.delete('houseScrim');_holdModalScroll.delete('infoScrim');},40);});
+}
 function subsFromOverview(){openSubsRoster();}
 /* company-wide subcontractor roster — seeds every new site */
 function openSubsRoster(){
@@ -6619,18 +6650,24 @@ function _nyIssues(projs){
 }
 function nyOpenHouse(pid){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
-  if(String(_housePid)!==String(p.id))_houseOpenAll=false;
+  saveScroll('home');
+  const keep=_houseResumeScroll&&String(_housePid)===String(p.id);
+  _houseResumeScroll=false;
+  if(String(_housePid)!==String(p.id)){_keepScrollY.house=0;_houseOpenAll=false;}
   _housePid=String(p.id);
   try{Data.setActive(p.id);}catch(e){}
   renderHouse();
   document.getElementById('houseScrim').classList.add('show');
+  if(keep)applyScroll('house');
 }
 let _housePid=null,_houseCalPeek=false,_houseResume=null,_houseOpenAll=false,_houseFacts=[];
 function houseStillOpen(){const el=document.getElementById('houseScrim');return !!(el&&el.classList.contains('show')&&_housePid);}
 function refreshHouse(){if(!houseStillOpen())return;renderHouse();}
-function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');_housePid=null;_houseResume=null;try{renderToday();}catch(e){}}
+function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');_housePid=null;_houseResume=null;_houseResumeScroll=false;_keepScrollY.house=0;try{renderToday();}catch(e){}applyScroll('home');}
 function houseLeave(then){
   const pid=_housePid;
+  saveScroll('house');
+  _houseResumeScroll=true;
   const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');
   _houseResume=pid||null;
   if(typeof then==='function')then();
@@ -6668,8 +6705,11 @@ function logFromHouse(){
 }
 function houseGoSite(view){
   const pid=_housePid;if(!pid)return;
+  saveScroll('house');
+  _houseResumeScroll=true;
   const hs=document.getElementById('houseScrim');if(hs)hs.classList.remove('show');
   _houseResume=null;
+  _keepScrollY.site=0;
   navPush(function(){showOverview();nyOpenHouse(pid);});
   openSiteFromOverview(pid);
   if(view==='selections'){
@@ -6690,6 +6730,7 @@ function houseGoMoney(){
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openBudget();});
 }
 function openLogPick(){
+  saveScroll('home');
   const ps=(visibleProjects()||[]).slice().sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
   if(!ps.length){toast('Add a house first');return;}
   if(ps.length===1){logPickHouse(ps[0].id);return;}
@@ -6771,10 +6812,10 @@ function renderToday(){
   let h='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="55" r="13.4"/></clipPath><radialGradient id="ovFade" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff"/><stop offset="70%" stop-color="#fff"/><stop offset="100%" stop-color="#000"/></radialGradient><mask id="ovLensMask"><circle cx="64" cy="55" r="13.4" fill="url(#ovFade)"/></mask><radialGradient id="ovGlass" cx="30%" cy="26%" r="74%"><stop offset="0%" stop-color="#E7DCC6" stop-opacity=".42"/><stop offset="38%" stop-color="#2A2418" stop-opacity=".08"/><stop offset="100%" stop-color="#070605" stop-opacity=".7"/></radialGradient><linearGradient id="ovBrass" x1="0.15" y1="0.1" x2="0.9" y2="0.95"><stop offset="0%" stop-color="#E7DCC6"/><stop offset="38%" stop-color="#C49A6C"/><stop offset="72%" stop-color="#B0895A"/><stop offset="100%" stop-color="#6E5430"/></linearGradient><linearGradient id="ovPlate" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2A241C"/><stop offset="100%" stop-color="#14110E"/></linearGradient></defs><rect x="8" y="17" width="112" height="54" rx="8" fill="none" stroke="#E7DCC6" stroke-width="1.55"/><path d="M50 17V11.2h28V17" fill="none" stroke="#E7DCC6" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/><rect x="54" y="12.2" width="7.2" height="3.4" rx=".5" fill="none" stroke="#C49A6C" stroke-width=".7"/><rect x="66.6" y="12.2" width="7.2" height="3.4" rx=".5" fill="none" stroke="#C49A6C" stroke-width=".7"/><line x1="14" y1="33.6" x2="114" y2="33.6" stroke="#B0895A" stroke-width=".6" opacity=".38"/><rect x="30" y="20.4" width="68" height="11.2" rx="1.5" fill="url(#ovPlate)" stroke="url(#ovBrass)" stroke-width=".95"/><text x="64" y="28.6" text-anchor="middle" fill="#E7DCC6" font-family="Source Serif 4, Georgia, serif" font-size="6.6" letter-spacing="1.85">FIELD NOTES</text><circle cx="66.2" cy="56.6" r="16.6" fill="none" stroke="#4A3A22" stroke-width="2" opacity=".45"/><circle cx="64" cy="55" r="16.8" fill="none" stroke="url(#ovBrass)" stroke-width="2.7"/><circle cx="64" cy="55" r="14.8" fill="none" stroke="#E7DCC6" stroke-width=".55" opacity=".4"/><circle cx="64" cy="55" r="13.4" fill="#0C0A08"/><g clip-path="url(#ovLens)" mask="url(#ovLensMask)"><g transform="translate(64,57.2) scale(-0.096,0.096) translate(-150,-138)" fill="none" stroke="#E7DCC6" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="228" x2="252" y2="228" stroke="#B0895A" stroke-width="16"/><path d="M78 228V96h144v132"/><polyline points="60,100 150,28 240,100" stroke-width="14"/><rect x="134" y="168" width="32" height="60"/></g></g><circle cx="64" cy="55" r="13.4" fill="url(#ovGlass)"/><ellipse cx="58.4" cy="49.2" rx="5.8" ry="2.7" fill="#E7DCC6" opacity=".22"/><path d="M55.2 46.8c3.2-4.2 8.8-5.6 13.2-3" fill="none" stroke="#E7DCC6" stroke-width="1.25" stroke-linecap="round" opacity=".72"/></svg></button>';
   if(soon.length){
     h+='<div class="eyebrow">Coming up</div>';
-    soon.slice(0,3).forEach(function(s){h+=`<div class="td-soon" onclick="openBk('${s.p.id}|${s.b.id}')"><span class="td-when">${tdDayLabel(s.b.start)}</span><span class="td-soontx">${esc(s.trade?specLabel(s.trade):(s.b.subName||'Crew'))} \u00b7 ${esc(s.p.street||s.p.name)}</span></div>`;});
-    if(soon.length>3)h+=`<div class="td-more">+${soon.length-3} more this week</div>`;
+    const shown=_soonOpen?soon:soon.slice(0,3);
+    shown.forEach(function(s){h+=`<div class="td-soon" onclick="openBk('${s.p.id}|${s.b.id}')"><span class="td-when">${tdDayLabel(s.b.start)}</span><span class="td-soontx">${esc(s.trade?specLabel(s.trade):(s.b.subName||'Crew'))} \u00b7 ${esc(s.p.street||s.p.name)}</span></div>`;});
+    if(soon.length>3)h+=`<button type="button" class="td-morebtn" onclick="event.stopPropagation();toggleSoon()">`+(_soonOpen?'Show less':('+'+(soon.length-3)+' more this week'))+`</button>`;
   }
-  h+='<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>';
   el.innerHTML=h;if(keep){const n=document.getElementById('nyQText');if(n){n.value=keep.v;try{n.focus();n.selectionStart=n.selectionEnd=keep.s;}catch(e){}}}
 }
 function todayGo(pid,view,selId){navPush(function(){showOverview();});openSiteFromOverview(pid);if(view)setTimeout(()=>{try{go(view);if(selId)setTimeout(()=>{try{highlightSel(selId);}catch(e){}},150);}catch(e){}},70);}
@@ -6793,9 +6834,59 @@ function nyBookSub(pid,subName){
 }
 
 function highlightSel(id){const row=document.querySelector('.sel-row[data-sel="'+id+'"]');if(!row)return;try{row.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){row.scrollIntoView();}row.classList.remove('sel-hl');void row.offsetWidth;row.classList.add('sel-hl');setTimeout(()=>row.classList.remove('sel-hl'),2400);}
-let _ovSort=(function(){try{return localStorage.getItem('plumb.ovSort')||'attn';}catch(e){return 'attn';}})();
-let _ovAnimateTs=0; // card entrance plays only for renders right after a fresh open — not on live-sync rebuilds
-const SORTLABELS={attn:'Attention',recent:'Recent',az:'A\u2013Z'};
+const SORTLABELS={attn:'Needs You',recent:'Recent decisions',az:'A\u2013Z'};
+let _ovSort='attn';
+let _ovAnimateTs=0;
+let _soonOpen=false;
+function toggleSoon(){_soonOpen=!_soonOpen;renderToday();}
+function pkKind(r){return r.kind==='dates'?'Date change':(r.kind==='answer'?'Answer':'Decision');}
+function pkLine(r){const d=String(r.detail||'').trim();return pkKind(r)+(d?(' \u00b7 '+d):'');}
+function pkRowsFor(pid){
+  const rows=state.pkLog||[];
+  if(!pid)return rows.slice();
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});
+  const site=p?(p.street||p.name||''):'';
+  return rows.filter(function(r){return String(r.pid||'')===String(pid)||(site&&r.site===site);});
+}
+function nySorted(list){return (list||[]).slice().sort(function(a,b){return (a.pri-b.pri)||((b.ts||0)-(a.ts||0));});}
+function nyForHouse(p){return nySorted(_nyIssues([p]).filter(function(x){return !x.cross&&String(x.pid)===String(p.id);}));}
+function pkCardBits(p){
+  const rows=pkRowsFor(p.id);
+  if(!rows.length)return '<div class="ov-decs"><div class="ov-dec">Nothing decided yet</div></div>';
+  const shown=rows.slice(0,2);
+  let h='<div class="ov-decs">';
+  shown.forEach(function(r){h+='<div class="ov-dec" onclick="event.stopPropagation();openPkLog(\''+String(p.id).replace(/'/g,'')+'\')">'+esc(pkLine(r))+(r.t?(' \u00b7 '+esc(timeAgo(r.t))):'')+'</div>';});
+  if(rows.length>2)h+='<div class="ov-dec more" onclick="event.stopPropagation();openPkLog(\''+String(p.id).replace(/'/g,'')+'\')">All '+rows.length+' on this house</div>';
+  return h+'</div>';
+}
+function nyCardBits(p){
+  const issues=nyForHouse(p);
+  const whis=_siteWhisper(p);
+  if(!issues.length){
+    if(!whis)return '';
+    return '<div class="ov-decs"><div class="ov-dec">'+esc(whis.text)+'</div></div>';
+  }
+  let h='<div class="ov-decs">';
+  issues.slice(0,2).forEach(function(it){h+='<div class="ov-dec">'+esc(it.kind)+' \u00b7 '+esc(it.line)+'</div>';});
+  if(issues.length>2)h+='<div class="ov-dec more">'+issues.length+' still need you</div>';
+  return h+'</div>';
+}
+function allNyPreview(){
+  const issues=nySorted(_nyIssues(visibleProjects()));
+  if(!issues.length)return {n:0,html:'<div class="nm">All clear \u2014 nothing needs you</div>'};
+  let h='<div class="ov-decs">';
+  issues.slice(0,2).forEach(function(it){h+='<div class="ov-dec">'+esc(it.kind)+(it.site?(' \u00b7 '+esc(it.site)):'')+' \u00b7 '+esc(it.line)+'</div>';});
+  if(issues.length>2)h+='<div class="ov-dec more">'+issues.length+' still need you</div>';
+  return {n:issues.length,html:h+'</div>'};
+}
+function allPkPreview(){
+  const rows=pkRowsFor('');
+  if(!rows.length)return {n:0,html:'<div class="nm">Nothing decided yet</div>'};
+  let h='<div class="ov-decs">';
+  rows.slice(0,2).forEach(function(r){h+='<div class="ov-dec">'+esc(pkLine(r))+(r.t?(' \u00b7 '+esc(timeAgo(r.t))):'')+'</div>';});
+  if(rows.length>2)h+='<div class="ov-dec more">All '+rows.length+' decisions</div>';
+  return {n:rows.length,html:h+'</div>'};
+}
 function renderOvSortRow(){
   const row=document.getElementById('ovSortRow');if(!row)return;
   const projs=visibleProjects();
@@ -6804,7 +6895,7 @@ function renderOvSortRow(){
   row.style.display='flex';
   row.innerHTML=`<div class="ov-sortpills">${pills}</div>`;
 }
-function setOvSort(m){_ovSort=m;try{localStorage.setItem('plumb.ovSort',m);}catch(e){}renderOvSortRow();renderOvCards();}
+function setOvSort(m){_ovSort=m;_keepScrollY.home=0;try{localStorage.setItem('plumb.ovSort',m);}catch(e){}renderOvSortRow();renderOvCards();}
 function renderOvCards(){
   const projs=visibleProjects();
   const q=((document.getElementById('ovSearch')||{}).value||'').trim().toLowerCase();
@@ -6821,51 +6912,40 @@ function renderOvCards(){
         return (A.pri-B.pri)||((B.ts||0)-(A.ts||0));
       });
   }else if(_ovSort==='recent'){
-    list.sort(function(a,b){return lastActivityTs(b)-lastActivityTs(a);});
+    list.sort(function(a,b){
+      const ta=(pkRowsFor(a.id)[0]||{}).t||lastActivityTs(a)||0;
+      const tb=(pkRowsFor(b.id)[0]||{}).t||lastActivityTs(b)||0;
+      return tb-ta;
+    });
   }else{
     list.sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
   }
   list=list.filter(function(p){return !q||((p.street||'')+' '+(p.name||'')+' '+(p.city||'')+' '+(p.state||'')).toLowerCase().includes(q);});
   let head='';
-  if(_ovSort==='attn'&&need.cross.length){
-    need.cross.forEach(function(w){
-      head+=`<div class="td-alert ${w.lvl||'warn'}" onclick="${w.go}"><span class="td-bar"></span><div class="td-tx"><b>${esc(w.kind||'Needs you')}</b><div class="td-meta">${esc(w.line)}${w.site?(' \u00b7 '+esc(w.site)):''}</div></div><span class="td-chev">\u203a</span></div>`;
-    });
+  if(_ovSort==='recent'){
+    const prev=allPkPreview();
+    head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openPkLog()"><div class="ct"><div><div class="st">All houses</div><div class="nm">${prev.n?prev.n+' recent decision'+(prev.n===1?'':'s'):'Dates confirmed and answers sent'}</div></div><span class="td-chev">\u203a</span></div>${prev.html}</div>`;
+  }else{
+    const prev=allNyPreview();
+    head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openNyInbox()"><div class="ct"><div><div class="st">All homes</div><div class="nm">${prev.n?prev.n+' still need'+(prev.n===1?'s':'')+' you':'All clear across the jobs'}</div></div><span class="td-chev">\u203a</span></div>${prev.html}</div>`;
   }
   const body=list.map(function(p,i){
-    const open=openCountP(p);const pct=overallPct(p);const deck=onDeckOf(p);
-    const whis=_siteWhisper(p);
-    const top=need.map[String(p.id)];
-    const _ttl=p.street||p.name||'Untitled site';const _loc=[p.city,p.state].filter(Boolean).join(', ');
-    const _sub=[p.name&&p.name!==_ttl?p.name:'',_loc].filter(Boolean).join(' \u00b7 ');
-    if(_ovSort==='attn'){
-      const line=top?top.line:(whis?whis.text:'Needs you');
-      const n=top?top.n:0;
-      return `<div class="ov-card attn${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
-      <div class="ct"><div><div class="st">${esc(_ttl)}</div><div class="nm">${esc(line)}</div></div>
-        <div class="ov-hero attn"><div class="hn">${n||'\u2014'}</div><div class="hl">${n?(n===1?'needs you':'need you'):'quiet'}</div></div></div>
-      ${whis&&!top?`<div class="ov-whisper" onclick="event.stopPropagation();${whis.kind==='idle'?("openNextSite('"+p.id+"')"):("openBk('"+p.id+"|"+whis.bid+"')")}">${esc(whis.text)}</div>`:''}
-    </div>`;
-    }
+    const n=(need.map[String(p.id)]||{}).n||0;
+    const _ttl=p.street||p.name||'Untitled site';
     if(_ovSort==='recent'){
-      const when=lastActivityTs(p)?timeAgo(lastActivityTs(p)):'No activity yet';
-      return `<div class="ov-card ${open||whis?'attn':''}${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
-      <div class="ct"><div><div class="st">${esc(_ttl)}</div>${_sub?`<div class="nm">${esc(_sub)}</div>`:''}</div>
-        <div class="ov-hero ${open?'attn':'clean'}"><div class="hn">${open||'\u2713'}</div><div class="hl">${open?'open':'clear'}</div></div></div>
-      <div class="foot"><span>${esc(when)}</span>${deck?`<span class="dotsep"></span><span>${esc(deck.name)}</span>`:''}</div>
+      return `<div class="ov-card${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
+      <div class="ct"><div><div class="st">${esc(_ttl)}</div></div><span class="td-chev">\u203a</span></div>
+      ${pkCardBits(p)}
     </div>`;
     }
-    return `<div class="ov-card ${open||whis?'attn':''}${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
-      <div class="ct"><div><div class="st">${esc(_ttl)}</div>${_sub?`<div class="nm">${esc(_sub)}</div>`:''}</div>
-        <div class="ov-hero ${open?'attn':'clean'}"><div class="hn">${open||'\u2713'}</div><div class="hl">${open?'open':'clear'}</div></div></div>
-      <div class="pbar"><i style="width:${pct}%"></i></div>
-      <div class="foot"><span>${pct}% complete</span><span class="dotsep"></span><span>${deck?esc(deck.name):'Complete'}</span></div>
-      ${whis?`<div class="ov-whisper" onclick="event.stopPropagation();${whis.kind==='idle'?("openNextSite('"+p.id+"')"):("openBk('"+p.id+"|"+whis.bid+"')")}">${esc(whis.text)}</div>`:''}
-      ${deck?`<div class="foot-deck"><span class="od" onclick="event.stopPropagation();openNextSite('${p.id}')">On deck: ${esc(specLabel(deck.trade))} \u2192</span></div>`:''}
+    return `<div class="ov-card ${n?'attn':''}${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
+      <div class="ct"><div><div class="st">${esc(_ttl)}</div></div>
+        <div class="ov-hero ${n?'attn':'clean'}"><div class="hn">${n||'\u2713'}</div><div class="hl">${n?(n===1?'needs you':'need you'):'clear'}</div></div></div>
+      ${nyCardBits(p)}
     </div>`;
   }).join('');
-  const empty=(_ovSort==='attn'&&!list.length&&!need.cross.length)
-    ?('<div class="td-clear">All clear \u2014 nothing needs you.</div>')
+  const empty=(_ovSort==='attn'&&!list.length)
+    ?'<div class="td-clear">All clear \u2014 nothing needs you.</div>'
     :((!list.length)?(`<div class="empty">${q?'No sites match \u201c'+esc(q)+'\u201d.':((state.session&&state.session.role==='hillan')?'No sites yet \u2014 add your first build to get started.':'No sites assigned to you yet.')}</div>`+((!q&&state.session&&state.session.role==='hillan')?`<button class="ov-newbtn" onclick="openNewSite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New site</button>`:'')):'');
   cards.innerHTML=head+body+empty;
   if(_sc)_sc.scrollTop=_keepScroll;
@@ -8373,6 +8453,7 @@ try{window.addEventListener('resize',()=>{try{if(document.getElementById('budget
    modal and sheet, present and future. ── */
 function resetModalScroll(host){
   try{
+    if(host&&_holdModalScroll.has(host.id))return;
     host.scrollTop=0;
     host.querySelectorAll('.pmodal,.sheet,.info-body').forEach(el=>{el.scrollTop=0;});
   }catch(e){}
@@ -11394,6 +11475,7 @@ function calVisibleAvail(){
   if(calCrewFilter)return allAvail().filter(a=>a.subName===calCrewFilter);
   return allAvail().filter(a=>calMine(a));}
 function openCal(keepCrew){
+  saveScroll('home');
   if(!keepCrew)calCrewFilter='';
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   document.getElementById('calview').classList.add('show');renderCal();}
@@ -12995,19 +13077,82 @@ function pkLogAdd(e){
   if(state.pkLog.length>40)state.pkLog=state.pkLog.slice(0,40);
   try{persist();}catch(err){}
 }
-function openPkLog(){
+let _inbMode='pk',_inbPid=null,_inbTab='all';
+function inbTabs(){
+  if(_inbMode==='pk')return ['all','Date change','Answer','Decision'];
+  const kinds=[];
+  inbRaw().forEach(function(r){if(r.kind&&kinds.indexOf(r.kind)<0)kinds.push(r.kind);});
+  return ['smart','all'].concat(kinds);
+}
+function inbRaw(){
+  if(_inbMode==='pk')return pkRowsFor(_inbPid||'');
+  const all=_nyIssues(visibleProjects());
+  if(!_inbPid)return all;
+  return all.filter(function(r){return String(r.pid||'')===String(_inbPid);});
+}
+function inbFiltered(){
+  const q=((document.getElementById('pkLogQ')||{}).value||'').trim().toLowerCase();
+  let rows=inbRaw();
+  if(_inbMode==='pk'){
+    if(_inbTab&&_inbTab!=='all')rows=rows.filter(function(r){return pkKind(r)===_inbTab;});
+    rows=rows.slice().sort(function(a,b){return (b.t||0)-(a.t||0);});
+  }else{
+    if(_inbTab&&_inbTab!=='all'&&_inbTab!=='smart')rows=rows.filter(function(r){return r.kind===_inbTab;});
+    rows=nySorted(rows);
+  }
+  if(q)rows=rows.filter(function(r){
+    const blob=[r.kind,r.line,r.site,r.who,r.detail,pkKind(r)].join(' ').toLowerCase();
+    return blob.indexOf(q)>=0;
+  });
+  return rows;
+}
+function inbSetTab(tab){_inbTab=tab;inbDraw();}
+function inbDraw(){
   const el=document.getElementById('pkLogBody');if(!el)return;
-  const rows=state.pkLog||[];
-  el.innerHTML=rows.length?rows.map(function(r){
-    const when=new Date(r.t).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-    const title=r.kind==='dates'?'Date change':(r.kind==='answer'?'Answer':'Decision');
-    return '<div class="pkt-sel" style="margin-top:8px"><div class="ps-h"><b>'+esc(title)+'</b><span class="ps-c">'+esc(when)+'</span></div>'
-      +'<div class="td-meta" style="margin-top:4px">'+esc(r.who||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div>'
-      +(r.detail?'<div class="td-quote" style="margin-top:4px">'+esc(r.detail)+'</div>':'')
-      +'</div>';
-  }).join(''):'<div class="empty">Nothing decided yet.</div>';
+  const tabs=document.getElementById('pkLogTabs');
+  if(tabs)tabs.innerHTML=inbTabs().map(function(t){
+    const lab=t==='smart'?'Needs you':(t==='all'?'All':t);
+    return '<button type="button" class="ov-sortpill'+(_inbTab===t?' on':'')+'" onclick="inbSetTab(\''+String(t).replace(/'/g,'\\\'')+'\')">'+esc(lab)+'</button>';
+  }).join('');
+  const rows=inbFiltered();
+  if(!rows.length){el.innerHTML='<div class="empty">Nothing matches.</div>';return;}
+  el.innerHTML=rows.map(function(r){
+    if(_inbMode==='pk'){
+      const when=r.t?new Date(r.t).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+      return '<div class="pkt-sel" style="margin-top:8px"><div class="ps-h"><b>'+esc(pkKind(r))+'</b><span class="ps-c">'+esc(when)+'</span></div>'
+        +'<div class="td-meta" style="margin-top:4px">'+esc(r.who||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div>'
+        +(r.detail?'<div class="td-quote" style="margin-top:4px">'+esc(r.detail)+'</div>':'')
+        +'</div>';
+    }
+    const when=r.ts?new Date(r.ts).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+    const go=r.go?String(r.go).replace(/"/g,'"'):'';
+    return '<div class="pkt-or" style="margin-top:8px" onclick="closePkLog();'+go+'"><div><div class="k">'+esc(r.kind||'Needs you')+'</div>'
+      +'<div class="m">'+esc(r.line||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div></div>'
+      +'<div><div class="ps-c">'+esc(when)+'</div><span class="td-chev">\u203a</span></div></div>';
+  }).join('');
+}
+function openInb(mode,pid){
+  saveScroll('home');
+  _inbMode=mode==='ny'?'ny':'pk';
+  _inbPid=pid||null;
+  _inbTab=_inbMode==='ny'?'smart':'all';
+  const p=_inbPid?(state.projects||[]).find(function(x){return String(x.id)===String(_inbPid);}):null;
+  const ttl=document.getElementById('pkLogTitle');
+  const sub=document.getElementById('pkLogSub');
+  const q=document.getElementById('pkLogQ');
+  if(q)q.value='';
+  if(_inbMode==='ny'){
+    if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All homes';
+    if(sub)sub.textContent=p?'What still needs you on this house.':'Most time-sensitive first. Search or filter by type.';
+  }else{
+    if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All houses';
+    if(sub)sub.textContent=p?'Dates confirmed and answers sent on this house.':'Dates you confirmed and answers you sent.';
+  }
+  inbDraw();
   document.getElementById('pkLogScrim').classList.add('show');
 }
+function openPkLog(pid){openInb('pk',pid);}
+function openNyInbox(pid){openInb('ny',pid);}
 function closePkLog(){const el=document.getElementById('pkLogScrim');if(el)el.classList.remove('show');}
 let _nyAsk=null;
 let _nyHo=null;
@@ -13031,7 +13176,7 @@ function nyHoSend(){
   const p=state.projects.find(function(x){return String(x.id)===String(hold.pid);});
   const it=p&&(p.items||[]).find(function(x){return String(x.id)===String(hold.rid);});
   Data.updateItem(hold.pid,hold.rid,{reply:v,replyT:Date.now(),share:true});
-  try{pkLogAdd({kind:'answer',who:'Homeowner',site:(p&&(p.street||p.name))||'',detail:'\u201c'+((it&&it.cap)||'')+'\u201d \u2192 '+v});}catch(e){}
+  try{pkLogAdd({kind:'answer',who:'Homeowner',pid:hold.pid,site:(p&&(p.street||p.name))||'',detail:'\u201c'+((it&&it.cap)||'')+'\u201d \u2192 '+v});}catch(e){}
   toast('Sent to the homeowner');
   nyAskClose();
   try{renderToday();}catch(e){}
@@ -13086,7 +13231,7 @@ function nySendAnswer(pid,bid,qi){
     q[qi].a=v;q[qi].at=Date.now();
     _pkStamp(p,b,{resp:b.pkResp||null,q:q});
     _nyQKey='';
-    try{pkLogAdd({kind:'answer',who:b.subName||'Crew',site:p.street||p.name||'',detail:'\u201c'+(q[qi].text||'Question')+'\u201d \u2192 '+v});}catch(e){}
+    try{pkLogAdd({kind:'answer',who:b.subName||'Crew',pid:p.id,site:p.street||p.name||'',detail:'\u201c'+(q[qi].text||'Question')+'\u201d \u2192 '+v});}catch(e){}
     toast('Answered '+(b.subName||'the crew')+' at '+(p.street||p.name||'the site'));
     try{bkRenderGuestRow(p,b);}catch(e){}
     try{renderToday();}catch(e){}
@@ -13119,7 +13264,7 @@ function bkAcceptChange(pid,bid,start,end){
     try{_pkDb().collection('packets').doc(String(b.pkToken)).update({resp:{status:'confirmed',start:ns,end:ne,t:Date.now()}}).catch(function(){});}catch(e){}
   }
   toast('Confirmed '+now+' for '+(b&&b.subName?b.subName:'the crew')+' at '+(p.street||p.name||'the site'));
-  try{pkLogAdd({kind:'dates',who:(b&&b.subName)||'Crew',site:p.street||p.name||'',detail:(was&&was!==now)?(was+' \u2192 '+now):now});}catch(e){}
+  try{pkLogAdd({kind:'dates',who:(b&&b.subName)||'Crew',pid:p.id,site:p.street||p.name||'',detail:(was&&was!==now)?(was+' \u2192 '+now):now});}catch(e){}
   try{renderCal();}catch(e){}
   try{renderToday();}catch(e){}
   try{renderOvCards();}catch(e){}
@@ -13586,7 +13731,7 @@ function closeLightbox(){
 /* ════════ record detail / edit (Recent + Items) ════════ */
 let editingRecId=null;
 function pickRecStatus(el){document.querySelectorAll('#recStatusSeg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
-function openRecord(id){const it=P().items.find(x=>x.id===id);if(!it)return;editingRecId=id;
+function openRecord(id){saveScroll('site');const it=P().items.find(x=>x.id===id);if(!it)return;editingRecId=id;
   document.getElementById('recTitle').textContent=it.issue?'Edit item':'Edit entry';
   const thumb=document.getElementById('recThumb');
   const _tsrc=photoSrc(it);if(_tsrc){thumb.innerHTML=`<img src="${_tsrc}" alt="" style="width:100%;border-radius:13px;display:block" onclick="openLightbox(${id})">`;}
@@ -13601,6 +13746,7 @@ function openRecord(id){const it=P().items.find(x=>x.id===id);if(!it)return;edit
 function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
   try{houseMaybeResume();}catch(e){}
+  try{applyScroll('site');}catch(e){}
   try{if(_pktLogCtx&&document.getElementById('pktLogScrim').classList.contains('show'))renderPacketLog();}catch(e){}}
 function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);if(!it)return;
   const cap=document.getElementById('recNote').value.trim()||'(no note)';
