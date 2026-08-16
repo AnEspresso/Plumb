@@ -7,7 +7,10 @@
   },
   "emulators": {
     "firestore": {
-      "port": 8080
+      "port": 8088
+    },
+    "auth": {
+      "port": 9099
     },
     "storage": {
       "port": 9199

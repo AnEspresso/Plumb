@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SitePlumb materials</title>
+<style>
+  :root{
+    --paper:#F2EEE6; --surface:#FBF9F4; --surface-2:#F7F3EB;
+    --ink:#1B1916; --ink-2:#5C564C; --ink-3:#928B7E;
+    --line:#E4DDD0; --oak:#B0895A; --oak-soft:#CDB48C;
+    --clay:#B0604A; --sage:#6F7B58;
+    --r:18px;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--paper);color:var(--ink);font:16px/1.45 "Hanken Grotesk",system-ui,sans-serif;padding:28px 22px 80px}
+  h1{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:32px;letter-spacing:-.03em;margin:0 0 6px}
+  .sub{color:var(--ink-3);margin:0 0 28px}
+  h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:28px 0 10px}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+  .sw{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+  .sw i{display:block;height:64px}
+  .sw b,.sw span{display:block;padding:0 10px}
+  .sw b{font-size:13px;margin-top:8px}
+  .sw span{font-size:11px;color:var(--ink-3);padding-bottom:10px}
+  .type .a{font-family:"Fraunces",Georgia,serif;font-size:28px;font-weight:500}
+  .type .b{font-family:"Source Serif 4",Georgia,serif;font-size:20px;font-weight:600;margin-top:8px}
+  .type .c{font-family:"Source Serif 4",Georgia,serif;font-size:16px;margin-top:6px;color:var(--ink-2)}
+  .type .d{font-size:13px;color:var(--ink-3);margin-top:6px}
+  .rules{color:var(--ink-2);font-size:14.5px}
+  .rules li{margin:0 0 8px}
+  .chip{display:inline-block;background:var(--ink);color:var(--paper);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;margin-right:8px}
+  .chip.oak{background:var(--oak);color:#15130F}
+  .chip.clay{background:var(--clay);color:#fff}
+  .space{display:flex;align-items:flex-end;gap:8px;margin-top:8px}
+  .space span{background:var(--oak);border-radius:3px}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9,500&family=Source+Serif+4:ital,wght@0,400;0,600&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h1>Materials</h1>
+  <p class="sub">If it is not here, it does not go in the app.</p>
+
+  <h2>Color — five, plus sage</h2>
+  <div class="swatches">
+    <div class="sw"><i style="background:#F2EEE6"></i><b>Paper</b><span>#F2EEE6 · page</span></div>
+    <div class="sw"><i style="background:#FBF9F4"></i><b>Surface</b><span>#FBF9F4 · cards</span></div>
+    <div class="sw"><i style="background:#1B1916"></i><b>Ink</b><span>#1B1916 · type</span></div>
+    <div class="sw"><i style="background:#B0895A"></i><b>Oak</b><span>#B0895A · brand</span></div>
+    <div class="sw"><i style="background:#B0604A"></i><b>Clay</b><span>#B0604A · blockers only</span></div>
+    <div class="sw"><i style="background:#6F7B58"></i><b>Sage</b><span>#6F7B58 · rare, calm</span></div>
+  </div>
+  <p class="sub" style="margin-top:12px">Muted ink #5C564C / #928B7E. Lines #E4DDD0. No fifth beige. No extra accent.</p>
+
+  <h2>Type</h2>
+  <div class="type">
+    <div class="a">SitePlumb</div>
+    <div class="b">288 Calderwood Ln</div>
+    <div class="c">Clearwater asked to move the start to Tuesday.</div>
+    <div class="d">Hanken Grotesk for UI. Source Serif 4 for houses and sentences. Fraunces only on the wordmark.</div>
+  </div>
+
+  <h2>Rhythm</h2>
+  <div class="space">
+    <span style="width:6px;height:6px"></span>
+    <span style="width:8px;height:8px"></span>
+    <span style="width:10px;height:10px"></span>
+    <span style="width:12px;height:12px"></span>
+    <span style="width:16px;height:16px"></span>
+    <span style="width:24px;height:24px"></span>
+  </div>
+  <p class="sub">6 · 8 · 10 · 12 · 16 · 24. No 7s. No 13s. Tap targets 44px.</p>
+
+  <h2>Voice of a button</h2>
+  <span class="chip">Primary · ink</span>
+  <span class="chip oak">Brand · oak</span>
+  <span class="chip clay">Blocker · clay</span>
+
+  <h2>Laws</h2>
+  <ul class="rules">
+    <li>One question per screen.</li>
+    <li>Clay only when something is blocked or overdue.</li>
+    <li>Lucide strokes for chrome. The rangefinder is the only custom mark.</li>
+    <li>No emoji as icons. No new hue to “make it pop.”</li>
+  </ul>
+</body>
+</html>
