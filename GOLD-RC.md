@@ -7,7 +7,7 @@ Freeze when every box is checked. No new modules until then.
 - [x] **3. Desktop split** — 1100+: month calendar left, house list right. Camera in the list header.
 - [x] **4. Field Notes is three taps** — house → photo → descriptor chip → send. Tap *(i)* for what each chip files.
 - [ ] **4b. Desk file-to** — after send or on edit: optional trade + room so it filters and lands in that packet. Not on the field screen.
-- [ ] **5. Visual pass** — one type scale, 8px rhythm, clay only on blockers. Token page is the law.
+- [x] **5. Visual pass** — one type scale, 8px rhythm, clay only on blockers. Token page is the law.
 - [ ] **6. Four-viewport contact sheet is green** — `node scripts/contact-sheet.mjs` on iPhone, Android, Mac, PC.
 - [ ] **7. QA book restore** — old 10-house QA snapshot back on the QA logins. Hydrate must not come back empty.
 - [ ] **8. Freeze + real-mode pass** — builder, team, homeowner, sub, guest packet. Forward and back.

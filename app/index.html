@@ -31,7 +31,7 @@
   html,body{height:100%;}
   body{
     font-family:'Hanken Grotesk',system-ui,-apple-system,sans-serif;
-    background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;
+    background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
     line-height:1.45;overscroll-behavior:none;display:flex;justify-content:center;
   }
   body::before{
@@ -87,7 +87,7 @@
   @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 
   .eyebrow{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
-    margin:26px 2px 13px;display:flex;align-items:center;gap:10px;}
+    margin:24px 2px 12px;display:flex;align-items:center;gap:10px;}
   .eyebrow::after{content:"";flex:1;height:1px;background:var(--line);}
 .eyebrow-c{font-size:15px;font-weight:700;letter-spacing:.08em;color:var(--ink-2);}
 .rail-brand,.rail-foot{display:none;}
@@ -134,6 +134,7 @@
   .item .body{flex:1;min-width:0;display:flex;flex-direction:column;}
   .item .cap{font-size:14.5px;font-weight:500;letter-spacing:-.01em;line-height:1.3;}
   .item .meta{margin-top:auto;padding-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .tag.ho{color:var(--oak);border-color:rgba(176,137,90,.35);background:rgba(176,137,90,.08);}
   .tag{font-size:11px;font-weight:600;color:var(--ink-2);background:var(--surface-2);
     border:1px solid var(--line-2);padding:3px 9px;border-radius:20px;}
   .tag.area{color:var(--oak);border-color:rgba(176,137,90,.3);background:rgba(176,137,90,.07);}
@@ -195,12 +196,12 @@
     transition:transform .42s cubic-bezier(.2,.8,.2,1), visibility 0s linear .42s;box-shadow:0 -20px 60px rgba(27,25,22,.18);max-height:90%;overflow-y:auto;}
   .sheet.show{transform:none;visibility:visible;transition:transform .42s cubic-bezier(.2,.8,.2,1), visibility 0s;}
   .grip{width:38px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 14px;}
-  .sheet h3{font-family:'Source Serif 4',Georgia,serif;font-weight:500;font-size:21px;letter-spacing:-.01em;margin-bottom:3px;}
-  .sheet .sub{font-size:13px;color:var(--ink-2);margin-bottom:18px;}
+  .sheet h3{font-family:'Source Serif 4',Georgia,serif;font-weight:500;font-size:20px;letter-spacing:-.01em;margin-bottom:4px;text-wrap:balance;}
+  .sheet .sub{font-size:13px;color:var(--ink-2);margin-bottom:16px;}
   .photo-drop{border-radius:14px;border:1.5px dashed var(--line);background:var(--surface);min-height:84px;max-height:96px;
     display:grid;place-items:center;overflow:hidden;cursor:pointer;position:relative;margin-bottom:14px;}
 .photo-drop img{width:100%;height:96px;object-fit:cover;}
-.photo-drop.drag,.imp-on.drag{border-color:#CBA268;background:rgba(203,162,104,.08);}
+.photo-drop.drag,.imp-on.drag{border-color:var(--oak);background:rgba(176,137,90,.08);}
 .photo-drop .ph svg{width:22px;height:22px;}
 .photo-drop .ph .t{font-size:13px;}
   .photo-drop:active{background:var(--surface-2);}
@@ -269,7 +270,7 @@
   .toggle{width:50px;height:30px;border-radius:16px;background:var(--line);position:relative;cursor:pointer;transition:background .25s;flex:0 0 auto;}
   .toggle::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;
     box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .25s cubic-bezier(.2,.8,.2,1);}
-  .toggle.on{background:var(--clay);}.toggle.on::after{transform:translateX(20px);}
+  .toggle.on{background:var(--ink);}.toggle.on::after{transform:translateX(20px);}
   .save{width:100%;border:none;background:var(--ink);color:var(--paper);font-family:inherit;font-size:16px;font-weight:600;
     letter-spacing:-.01em;padding:16px;border-radius:15px;cursor:pointer;transition:transform .15s;}
   .save:active{transform:scale(.98);}.save:disabled{opacity:.4;}
@@ -568,7 +569,7 @@
   .pkt-sel{margin-bottom:12px;}
   .pkt-sel .ps-h{display:flex;flex-direction:column;margin-bottom:4px;}
   .pkt-sel .ps-c{font-size:12px;color:var(--ink-3);}
-  .pkt-ho{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--clay);border:1px solid rgba(176,96,74,.35);border-radius:6px;padding:1px 5px;margin-left:6px;vertical-align:1px;}
+  .pkt-ho{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--oak);border:1px solid rgba(176,137,90,.35);border-radius:6px;padding:1px 5px;margin-left:6px;vertical-align:1px;}
   .pkt-gap{color:var(--clay);font-style:italic;}
   .pkt-doc{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:7px;cursor:pointer;}
   .pkt-doc .n{font-weight:600;font-size:13.5px;}
@@ -612,15 +613,15 @@
     .hs-doors{grid-template-columns:repeat(3,1fr);}
     .hs-door.wide{grid-column:auto;}
   }
-  .pkt-or .who{margin-left:auto;flex:none;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--clay);}
+  .pkt-or .who{margin-left:auto;flex:none;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--oak);}
   .pkt-ask{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid rgba(176,96,74,.16);cursor:pointer;}
   .pkt-ask .k{font-weight:600;font-size:13.5px;color:var(--ink);}
   .pkt-ask .m{font-size:12px;color:var(--ink-3);margin-top:1px;}
   .pkt-ask .td-chev{margin-left:auto;color:var(--ink-3);}
   .pkt-doc.quiet{opacity:.78;background:transparent;}
-  .ho-due{display:inline-block;font-size:10.5px;font-weight:700;color:var(--clay);border:1px solid rgba(176,96,74,.3);border-radius:6px;padding:1px 6px;margin-left:6px;}
+  .ho-due{display:inline-block;font-size:10.5px;font-weight:700;color:var(--oak);border:1px solid rgba(176,137,90,.3);border-radius:6px;padding:1px 6px;margin-left:6px;}
   .inv-chip{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:7px;padding:3px 8px;}
-  .inv-chip.sent{color:var(--clay);background:rgba(176,96,74,.12);}
+  .inv-chip.sent{color:var(--oak);background:rgba(176,137,90,.12);}
   .inv-chip.approved{color:var(--oak);background:rgba(176,137,90,.14);}
   .inv-chip.paid{color:var(--sage);background:rgba(106,127,94,.14);}
   .inv-chip.partial{color:var(--oak);background:rgba(176,137,90,.20);}
@@ -923,13 +924,13 @@
   .ov-stat .v{font-family:'Source Serif 4',Georgia,serif;font-size:25px;font-weight:500;line-height:1;}
   .ov-stat .v.warn{color:var(--clay);}
   .ov-stat .l{font-size:10.5px;color:var(--ink-3);margin-top:5px;font-weight:600;line-height:1.3;}
-  .ov-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 17px;margin-bottom:11px;
+  .ov-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:12px;
     box-shadow:var(--shadow);cursor:pointer;transition:transform .15s;}
   .ov-card:active{transform:scale(.985);}
   .ov-card.enter{animation:rise .5s cubic-bezier(.2,.7,.2,1) both;}
   .ov-card.attn{border-color:rgba(176,96,74,.35);}
-  .ov-card .ct{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:11px;}
-  .ov-card .st{font-family:'Source Serif 4',Georgia,serif;font-size:17px;font-weight:500;letter-spacing:-.01em;line-height:1.15;}
+  .ov-card .ct{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;}
+  .ov-card .st{font-family:'Source Serif 4',Georgia,serif;font-size:17px;font-weight:500;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;}
   .ov-card .nm{font-size:12px;color:var(--ink-3);margin-top:2px;}
   .ov-open{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--clay);background:rgba(176,96,74,.1);border-radius:20px;padding:4px 10px;}
   .ov-open.clean{color:var(--sage);background:rgba(111,123,88,.12);}
@@ -969,9 +970,9 @@
   .td-more{display:none;}
   .tour-catch{position:fixed;inset:0;z-index:1999;background:transparent;}
   .tc-p{position:fixed;z-index:1998;background:transparent;}
-.tour-holeframe{position:fixed;z-index:2001;pointer-events:none;border:2px dashed #CBA268;border-radius:14px;
+.tour-holeframe{position:fixed;z-index:2001;pointer-events:none;border:2px dashed var(--oak);border-radius:14px;
   box-shadow:0 0 0 3px rgba(203,162,104,.14);animation:holepulse 1.6s ease-in-out infinite;}
-@keyframes holepulse{0%,100%{box-shadow:0 0 0 3px rgba(203,162,104,.18);border-color:#CBA268;}
+@keyframes holepulse{0%,100%{box-shadow:0 0 0 3px rgba(176,137,90,.18);border-color:var(--oak);}
   50%{box-shadow:0 0 0 10px rgba(203,162,104,.42);border-color:#E8C083;}}
 .tour-next-glow{animation:nextglow 1.4s ease-in-out infinite;}
 @keyframes nextglow{0%,100%{box-shadow:0 0 0 0 rgba(203,162,104,.0);}50%{box-shadow:0 0 0 8px rgba(203,162,104,.38);}}
@@ -998,7 +999,7 @@
   .tour-foot>div{display:flex;gap:8px;}
   .tour-back{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);border-radius:10px;padding:8px 13px;font-family:inherit;font-size:13px;font-weight:650;cursor:pointer;}
   .tour-next{background:var(--ink);color:var(--paper);border:none;border-radius:10px;padding:8px 15px;font-family:inherit;font-size:13px;font-weight:650;cursor:pointer;}
-.tour-gold{background:#CBA268;color:#241E15;border:none;border-radius:10px;padding:8px 15px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+.tour-gold{background:var(--oak);color:#15130F;border:none;border-radius:10px;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
   .ov-hero{flex:0 0 auto;text-align:center;min-width:46px;}
   .ov-hero .hn{font-size:26px;font-weight:700;line-height:1;color:var(--sage);}
   .ov-hero.attn .hn{color:var(--clay);}
@@ -1212,7 +1213,7 @@
     background-repeat:no-repeat;background-position:right 12px center;background-size:18px;}
   .pmodal .ic{text-align:center;color:var(--oak);margin-bottom:8px;}
   .pmodal .ic svg{width:30px;height:30px;}
-  .pmodal h4{font-family:'Source Serif 4',Georgia,serif;font-weight:500;font-size:19px;text-align:center;margin-bottom:14px;}
+  .pmodal h4{font-family:'Source Serif 4',Georgia,serif;font-weight:500;font-size:20px;text-align:center;margin-bottom:12px;text-wrap:balance;}
   .pmodal input,.pmodal textarea,.pmodal select{width:100%;border:1px solid var(--line);background:var(--surface);
     border-radius:11px;padding:12px 13px;font-family:inherit;font-size:16px;color:var(--ink);outline:none;margin-bottom:10px;
     -webkit-user-select:text;user-select:text;touch-action:manipulation;}
@@ -1615,7 +1616,7 @@
 .exc-roles{display:inline-flex;background:rgba(231,220,198,.10);border:1px solid rgba(231,220,198,.22);border-radius:999px;padding:2px;}
 .exc-roles button{background:none;border:none;border-radius:999px;color:rgba(231,220,198,.75);
   font-family:inherit;font-size:12px;font-weight:700;padding:4px 13px;cursor:pointer;}
-.exc-roles button.on{background:#CBA268;color:#241E15;}
+.exc-roles button.on{background:var(--oak);color:#15130F;}
 .exc-exit{background:rgba(231,220,198,.14);border:1px solid rgba(231,220,198,.3);color:#E7DCC6;
   border-radius:999px;padding:4px 13px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
 body.on-excursion .exc-banner{display:flex;}
@@ -1669,9 +1670,9 @@ body.on-tour .tour-card{display:block;}
 .ig-lead{max-width:340px;margin:22px 0 6px;font-size:15px;line-height:1.55;color:rgba(231,220,198,.8);}
 .ig-steps{margin-top:18px;display:flex;flex-direction:column;gap:12px;align-items:flex-start;}
 .ig-step{display:flex;align-items:center;font-size:14.5px;color:rgba(231,220,198,.9);}
-.ig-step>b:first-child{width:24px;height:24px;border-radius:50%;background:rgba(176,137,90,.22);color:#CBA268;
+.ig-step>b:first-child{width:24px;height:24px;border-radius:50%;background:rgba(176,137,90,.22);color:var(--oak);
   display:inline-flex;align-items:center;justify-content:center;font-size:12px;margin-right:12px;flex:none;}
-.ig-install{margin-top:22px;background:#CBA268;color:#241E15;border:none;border-radius:14px;padding:14px 38px;
+.ig-install{margin-top:24px;background:var(--oak);color:#15130F;border:none;border-radius:14px;padding:14px 38px;
   font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;}
 .ig-skip{margin-top:26px;color:rgba(231,220,198,.45);}
 .ig-hint{font-size:12px;color:rgba(231,220,198,.42);margin-top:4px;max-width:300px;line-height:1.45;text-align:left;}
@@ -3066,13 +3067,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.258.0 - Field Notes in three taps.';
+const PLUMB_VERSION='2.259.0 - Visual pass. Clay only on blockers.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786903441842;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.258.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786904309493;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.259.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4361,7 +4362,7 @@ function renderFeed(){
     <div class="item tappable" style="animation-delay:${i*55}ms" onclick="openRecord(${it.id})">
       <div class="thumb">${thumbHTML(it)}</div>
       <div class="body"><div class="cap">${esc(it.cap)}</div>
-        <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag" style="color:var(--clay);border-color:rgba(176,96,74,.32)">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
+        <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div>
     </div>`).join('')||`<div class="empty">No entries yet. Tap Capture to start the record.</div>`;
 }
@@ -4381,7 +4382,7 @@ function renderIssues(){
     <div class="item tappable" id="issue-${it.id}" style="animation-delay:${i*55}ms" onclick="openRecord(${it.id})">
       <div class="thumb">${thumbHTML(it)}</div>
       <div class="body"><div class="cap">${esc(it.cap)}</div>
-        <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag" style="color:var(--clay);border-color:rgba(176,96,74,.32)">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
+        <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div>
       <button onclick='event.stopPropagation();toggleIssue(${it.id})' title="${issueFilter==='open'?'Mark done':'Reopen'}" style="align-self:center;border:none;background:transparent;cursor:pointer;color:${issueFilter==='open'?'var(--sage)':'var(--ink-3)'}">
         <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12l2.5 2.5L16 9"/></svg>
@@ -7878,8 +7879,8 @@ function renderSubView(){
    <button class="sv-cap" id="svPacket" style="background:var(--surface-2);color:var(--ink)" onclick="openSubPacket('${p.id}','${tr.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9zM9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 11h6M9 15h6"/></svg>Your install packet</button>
    <button class="sv-cap" id="svUpdate" onclick="subCapture('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>Post an update</button>
    <div class="eyebrow">Your open items</div>
-   <div class="feed">${open.length?open.map(it=>`<div class="item"><div class="thumb">${thumbHTML(it)}</div><div class="body"><div class="cap">${esc(it.cap)}</div><div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag" style="color:var(--clay);border-color:rgba(176,96,74,.32)">Homeowner</span>':''}<span class="when">${timeAgo(it.t)}</span></div></div><button onclick="closeSubItem('${p.id}',${it.id})" title="Mark done" style="align-self:center;border:none;background:transparent;cursor:pointer;color:var(--sage)"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/></svg></button></div>`).join(''):`<div class="empty">No open items on your scope.</div>`}</div>
-   ${recent.length?'<div class="eyebrow">Recent on your scope</div><div class="feed">'+recent.map(it=>`<div class="item"><div class="thumb">${thumbHTML(it)}</div><div class="body"><div class="cap">${esc(it.cap)}</div><div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag" style="color:var(--clay);border-color:rgba(176,96,74,.32)">Homeowner</span>':''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div></div>${(it.issue&&it.status!=='open')?`<button onclick="reopenSubItem('${p.id}',${it.id})" title="Reopen" style="align-self:center;border:none;background:transparent;cursor:pointer"><svg viewBox="0 0 24 24" width="26" height="26" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="var(--sage)" stroke="var(--sage)"/><path d="M8.5 12l2.5 2.5L16 9" fill="none" stroke="var(--surface)"/></svg></button>`:''}</div>`).join('')+'</div>':''}${docsHTML}`;
+   <div class="feed">${open.length?open.map(it=>`<div class="item"><div class="thumb">${thumbHTML(it)}</div><div class="body"><div class="cap">${esc(it.cap)}</div><div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}<span class="when">${timeAgo(it.t)}</span></div></div><button onclick="closeSubItem('${p.id}',${it.id})" title="Mark done" style="align-self:center;border:none;background:transparent;cursor:pointer;color:var(--sage)"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/></svg></button></div>`).join(''):`<div class="empty">No open items on your scope.</div>`}</div>
+   ${recent.length?'<div class="eyebrow">Recent on your scope</div><div class="feed">'+recent.map(it=>`<div class="item"><div class="thumb">${thumbHTML(it)}</div><div class="body"><div class="cap">${esc(it.cap)}</div><div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div></div>${(it.issue&&it.status!=='open')?`<button onclick="reopenSubItem('${p.id}',${it.id})" title="Reopen" style="align-self:center;border:none;background:transparent;cursor:pointer"><svg viewBox="0 0 24 24" width="26" height="26" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="var(--sage)" stroke="var(--sage)"/><path d="M8.5 12l2.5 2.5L16 9" fill="none" stroke="var(--surface)"/></svg></button>`:''}</div>`).join('')+'</div>':''}${docsHTML}`;
   setSync(syncStatus);
 }
 function subGo(t){subTab=t;renderSubView();const b=document.getElementById('svBody');if(b)b.scrollTop=0;}
@@ -10386,7 +10387,7 @@ function openStage(i){const st=stagesFor(P())[i];if(!st)return;const status=stag
       <div class="item tappable" onclick="openRecord(${it.id})">
         <div class="thumb">${thumbHTML(it)}</div>
         <div class="body"><div class="cap">${esc(it.cap)}</div>
-          <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag" style="color:var(--clay);border-color:rgba(176,96,74,.32)">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
+          <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
         </div>
       </div>`).join('')+`</div>`
     :`<div class="jc-empty">No records tagged to this stage yet. Photos and items logged to ${esc(st.areas.join(', '))} show up here.</div>`;
@@ -12108,7 +12109,7 @@ function renderPacketLog(){
   const card=it=>{const on=itemPinned(p,tradeId,it.id);return `<div class="item tappable pkt-pinrow${on?' pinned':''}">
       <div class="thumb" onclick="openRecord(${it.id})">${thumbHTML(it)}</div>
       <div class="body" onclick="openRecord(${it.id})"><div class="cap">${esc(it.cap)}</div>
-        <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag" style="color:var(--clay);border-color:rgba(176,96,74,.32)">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
+        <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div>
       <button class="pkt-pin${on?' on':''}" title="${on?'In packet':'Add to packet'}" onclick="event.stopPropagation();togglePacketItem('${pid}','${esc(tradeId)}',${it.id})">${pinSvg}</button>
     </div>`;};
@@ -13442,7 +13443,7 @@ function renderDecisions(){
   if(items.length)h+='<div class="eyebrow">Open site issues</div>'+items.map(it=>`
     <div class="item tappable" onclick="openRecord(${it.id})"><div class="thumb">${thumbHTML(it)}</div>
       <div class="body"><div class="cap">${esc(it.cap)}</div>
-        <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag" style="color:var(--clay);border-color:rgba(176,96,74,.32)">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
+        <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div></div>`).join('');
   if(awaiting.length)h+='<div class="eyebrow" style="margin-top:14px">Awaiting homeowner sign-off</div>'+awaiting.map(s=>`
     <div class="sel-row"><div class="si" onclick="openEditSel(${s.id})"><div class="it">${esc(s.item||'(unspecified)')}</div>
