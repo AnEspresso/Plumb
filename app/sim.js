@@ -1096,6 +1096,8 @@ t('field chip meanings tap i', SRC.indexOf('toggleFieldHint')>=0&&SRC.indexOf('f
 t('visual pass clay is not a label', SRC.indexOf('.tag.ho')>=0&&SRC.indexOf('.pkt-ho{')>=0&&SRC.indexOf('toggle.on{background:var(--ink)')>=0);
 t('desk file-to after send', SRC.indexOf('function openFileTo')>=0&&SRC.indexOf('fileToScrim')>=0&&SRC.indexOf('saveFileTo')>=0);
 t('sub hat is not overwritten', SRC.indexOf("have==='sub'")>=0&&SRC.indexOf('function applyLiveRole')>=0);
+t('new walkthrough is five spots', SRC.indexOf("Five spots. That is the whole walk")>=0&&SRC.indexOf('teamLegacy:[')>=0);
+t('walkthrough has spoken scripts', SRC.indexOf("say:'Welcome to Site Plumb")>=0&&SRC.indexOf('function tourWarmVoice')>=0);
 t('the house list pills are Needs You, decisions, A-Z', $("SORTLABELS.recent")==='Recent decisions'&&$("String(renderOvSortRow)").indexOf('ov-allpill')<0);
 t('coming up more this week expands', $("String(renderToday)").indexOf('toggleSoon')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
 t('the day sheet sits over the calendar', (function(){

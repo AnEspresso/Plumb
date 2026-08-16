@@ -20,7 +20,7 @@ A single-file PWA for residential construction project management — it connect
 
 **Pinned next after gold-master freeze:** Field Notes *file to* on the desk — optional trade + room after Send or on edit, so photos filter and land in that packet. Not on the field screen.
 
-**v2.262.0 is live.** Sub sign-in keeps the sub hat. 2.261 stays the Full site restore.
+**v2.264.0 is live.** Five-spot walkthrough with a natural voice. Classic tour saved. 2.262 stays the sub-hat restore.
 
 **Gold-master RC:** [GOLD-RC.md](GOLD-RC.md) — next is #1 empty-state hide + #2 All homes as a header.
 

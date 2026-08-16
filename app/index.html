@@ -3072,13 +3072,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.262.0 - Sub sign-in keeps the sub hat.';
+const PLUMB_VERSION='2.264.0 - Walkthrough voice: natural scripts, better voices.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786919927390;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.262.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786921518775;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.264.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5634,7 +5634,8 @@ function renderSettings(){
     rows+='<div class="set-hd">This device</div>';
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
-    rows+=SET_GEAR_ROW('How SitePlumb works','Take the guided tour','closeSettings();startGrandTour()',I.how);
+    rows+=SET_GEAR_ROW('How SitePlumb works','Five spots \u2014 Field Notes to Full site','closeSettings();startTour(\'team\')',I.how);
+    rows+=SET_GEAR_ROW('Classic walkthrough','The older Full-site tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
     rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
     if(devAllowed())rows+=SET_GEAR_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()',I.dev);
   }else{
@@ -5707,6 +5708,17 @@ function jumpToSubs(){try{go('subs');}catch(e){}}
    optional nav() hooks; tap the highlighted control to try it, or Next to skip
    ahead. Role walkthroughs live in TOUR{}. ── */
 const TOUR={team:[
+ {title:'Welcome to SitePlumb',body:'Five spots. That is the whole walk. Tap Next, or Skip anytime.',say:'Welcome to Site Plumb. Five spots. That is the whole walk. Tap Next, or Skip any time.',nav:()=>{try{showOverview();renderToday();renderOvCards();}catch(e){}}},
+ {sel:'.ov-field',bubSide:'tb',title:'Field Notes',body:'From the field: house, photo, chip, Send. File the trade later at a desk. Same camera everywhere.',say:'Field Notes. From the field: house, photo, a chip, then Send. File the trade later, at a desk. Same camera, everywhere.',nav:()=>{try{showOverview();renderToday();}catch(e){}}},
+ {sel:'#ovSortRow',title:'Needs You',body:'Your book. Needs You is first \u2014 time-sensitive on top. Recent Decisions and A\u2013Z are one tap.',say:'Needs You. This is your book. Time-sensitive work sits on top. Recent Decisions and A to Z are one tap away.',nav:()=>{try{showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}}},
+ {sel:'#ovCards',title:'The houses',body:'All homes is the header. Each house shows what needs you. Tap one.',say:'The houses. All homes is the header. Each house shows what needs you. Tap one.',nav:()=>{try{showOverview();renderOvCards();}catch(e){}}},
+ {sel:'#houseBody .pkt-strip',title:'The briefing',body:'This house, not the whole app. What is still open, then the doors.',say:'The briefing. This house — not the whole app. What is still open, then the doors.',nav:()=>{try{showOverview();const sp=state.projects||[];const pick=sp.find(function(p){return !p.sample;})||sp[0];if(pick&&typeof nyOpenHouse==='function')nyOpenHouse(pick.id);}catch(e){}}},
+ {sel:'#houseBody .pkt-open, #houseBody .pkt-strip',title:'The packet',body:'Still open is what the sub sees. File-to puts a Leak or Punch on their trade. They get it live.',say:'The packet. Still open is what the sub sees. File-to puts a leak or a punch on their trade. They get it live.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
+ {sel:'#houseBody .hs-door.wide',title:'Full site',body:'Log, Needs You, Build, Files \u2014 same four jobs, same Field Notes camera. Desk work lives here. You can stay on the briefing most days.',say:'Full site. Log, Needs You, Build, and Files. Same four jobs. Same Field Notes camera. Desk work lives here. Most days, you can stay on the briefing.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
+ {title:'That\u2019s the walk',body:'Field Notes. The list. The briefing. The packet. Full site when you need it. Replay anytime from Settings.',say:'That is the walk. Field Notes. The list. The briefing. The packet. Full site when you need it. Replay any time from Settings.',nav:()=>{try{closeHouse();showOverview();}catch(e){}}}
+],
+/* Saved 2.262 builder walkthrough. Replay from Settings \u2192 Classic walkthrough. */
+teamLegacy:[
  {title:'Welcome to SitePlumb',body:'A quick tour of how SitePlumb runs your jobs. Tap the highlighted spots to try them, or use Next to skip ahead \u2014 and Skip to leave anytime.',nav:()=>{try{showOverview();}catch(e){}}},
  {sel:'#ovToday',title:'Today',body:'SitePlumb watches every job and tells you what needs you \u2014 a crew arriving before specs are signed, a sub double-booked, a site gone quiet.'},
  {sel:'#ovCompanyBtn',title:'Company',body:'One button for everything company-wide: your trades calendar, invoices, subcontractor roster, team, and adding a job.'},
@@ -5891,6 +5903,7 @@ function startTour(role){
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
   try{document.getElementById('installGate').classList.remove('show');}catch(e){}
   _tourSteps=TOUR[role]||TOUR.team;_tourIdx=0;window._tourBack=false;try{_tourSteps.forEach(s=>{delete s.__done;});}catch(e){}
+  try{tourWarmVoice();}catch(e){}
   if(!document.getElementById('tourCatch')){
     const c=document.createElement('div');c.id='tourCatch';c.className='tour-catch';
     const s=document.createElement('div');s.id='tourSpot';s.className='tour-spot';
@@ -9256,11 +9269,11 @@ function tourAudioProbe(){
 }
 function tourNarrate(step,idx){
   try{
-    if(!step||!step.body)return;
+    if(!step||!(step.say||step.body))return;
     tourAudioStop();
     try{if(typeof speechSynthesis!=='undefined')speechSynthesis.cancel();}catch(e){}
     if(tourMuted())return;
-    const text=(step.title?step.title+'. ':'')+step.body;
+    const text=tourSayText(step);
     const isGrand=(typeof TOUR!=='undefined'&&_tourSteps===TOUR.grand);
     tourAudioProbe();
     /* iOS only speaks when speech STARTS inside the tap gesture \u2014 so unless
@@ -9276,32 +9289,61 @@ function tourNarrate(step,idx){
       if(p&&p.catch)p.catch(()=>{if(_tourAudio===a){_tourAudio=null;tourSpeak(text);}});
       try{_tourPre=new Audio('tour-audio/'+(idx+2)+'.mp3');_tourPre.preload='auto';_tourPre.onerror=()=>{};}catch(e){}
     } else tourSpeak(text);
-  }catch(e){try{tourSpeak((step.title?step.title+'. ':'')+step.body);}catch(_){}}
+  }catch(e){try{tourSpeak(tourSayText(step));}catch(_){}}
 }
-let _tourVoice;
+function tourSayText(step){
+  if(!step)return '';
+  if(step.say)return step.say;
+  return (step.title?step.title+'. ':'')+(step.body||'');
+}
+let _tourVoice,_tourVoiceKind='stock';
+function tourWarmVoice(){
+  try{
+    if(typeof speechSynthesis==='undefined')return;
+    tourPickVoice();
+    if(window._tourWarmed)return;
+    const u=new SpeechSynthesisUtterance(' ');
+    u.volume=0;u.rate=1;u.pitch=1;
+    speechSynthesis.speak(u);
+    window._tourWarmed=true;
+  }catch(e){}
+}
 function tourPickVoice(){
   try{
     const vs=(speechSynthesis.getVoices()||[]).filter(v=>/^en/i.test(v.lang));
-    if(!vs.length){_tourVoice=null;return;}
-    /* Rank by what actually sounds human, best first. */
-    const NAMES=['ava (premium)','zoe (premium)','ava (enhanced)','evan (enhanced)','joelle (enhanced)',
-      'samantha (enhanced)','allison (enhanced)','tom (enhanced)','nathan (enhanced)','noelle (enhanced)',
-      'ava','zoe','samantha','allison','daniel','karen','moira'];
+    if(!vs.length){_tourVoice=null;_tourVoiceKind='stock';return;}
+    /* Prefer neural / premium / online-natural. Novelty and compact voices last. */
+    const NAMES=[
+      'ava (premium)','zoe (premium)','ava (enhanced)','zoe (enhanced)',
+      'evan (enhanced)','nicky (enhanced)','reed (enhanced)','flo (enhanced)',
+      'joelle (enhanced)','samantha (enhanced)','allison (enhanced)','tom (enhanced)',
+      'nathan (enhanced)','noelle (enhanced)','sandy (enhanced)','shelley (enhanced)',
+      'microsoft aria online','microsoft jenny online','microsoft andrew online',
+      'microsoft emma online','microsoft guy online','microsoft sonia online',
+      'microsoft aria','microsoft jenny','google us english','google uk english female',
+      'ava','zoe','samantha','allison','nicky','evan','daniel','karen','moira','tessa'
+    ];
     const score=v=>{
       const n=v.name.toLowerCase();
       let s=0;
-      const idx=NAMES.findIndex(x=>n===x||n.startsWith(x));
-      if(idx>-1)s+=(NAMES.length-idx)*10;
-      if(/premium/.test(n))s+=60;else if(/enhanced/.test(n))s+=40;
-      else if(/natural|neural|siri/.test(n))s+=30;
-      if(/google (us|uk) english/i.test(v.name))s+=25;      /* Android/Chrome best */
-      if(/^en-US/i.test(v.lang))s+=6;else if(/^en-GB/i.test(v.lang))s+=3;
-      if(v.localService)s+=4;
-      if(/compact|espeak|eloquence|fred|zarvox|albert|trinoids|whisper|bells|organ|cellos|bad news/i.test(n))s-=100;
+      const idx=NAMES.findIndex(x=>n===x||n.indexOf(x)===0||n.indexOf(x)>=0&&x.length>8);
+      if(idx>-1)s+=(NAMES.length-idx)*8;
+      if(/premium/.test(n))s+=80;
+      else if(/online \(natural\)|neural/.test(n))s+=70;
+      else if(/natural/.test(n))s+=50;
+      else if(/enhanced/.test(n))s+=42;
+      else if(/siri/.test(n))s+=28;
+      if(/google (us english|uk english female)/i.test(v.name))s+=32;
+      if(/^en-US/i.test(v.lang))s+=8;else if(/^en-GB/i.test(v.lang))s+=4;else if(/^en-AU/i.test(v.lang))s+=2;
+      if(v.localService)s+=5;
+      if(v.default)s+=1;
+      if(/compact|espeak|eloquence|fred|zarvox|albert|trinoids|whisper|bells|organ|cellos|bad news|good news|boing|bubbles|junior|kathy|princess|ralph|jester|superstar|novelty/i.test(n))s-=140;
       return s;
     };
-    _tourVoice=vs.sort((a,b)=>score(b)-score(a))[0]||null;
-  }catch(e){_tourVoice=null;}
+    _tourVoice=vs.slice().sort((a,b)=>score(b)-score(a))[0]||null;
+    const n=(_tourVoice&&_tourVoice.name||'').toLowerCase();
+    _tourVoiceKind=/premium|online \(natural\)|neural/.test(n)?'premium':(/enhanced|natural|google (us|uk)/.test(n)?'enhanced':'stock');
+  }catch(e){_tourVoice=null;_tourVoiceKind='stock';}
 }
 try{if(typeof speechSynthesis!=='undefined')speechSynthesis.addEventListener('voiceschanged',()=>{try{tourPickVoice();}catch(e){}});}catch(e){}
 function tourMuted(){try{return localStorage.getItem('plumbTourMute')==='1';}catch(e){return false;}}
@@ -9312,43 +9354,55 @@ function tourMuteRender(){const b=document.getElementById('tourMute');if(b)b.tex
 function speakify(t){
   /* the voice's own script: what LOOKS right and what SOUNDS right differ */
   return String(t)
+    .replace(/SitePlumb/g,'Site Plumb')
+    .replace(/A[–\-−]Z/g,'A to Z')
+    .replace(/File-to/g,'File to')
+    .replace(/HVAC/g,'H-vac')
     .replace(/\u2713/g,'')
     .replace(/spec\u2019d/gi,'specked')
-    /* heteronyms: force the noun REH-cord; the adjective LIVE becomes plain words */
     .replace(/\brecord(s?)\b/gi,'reck erd$1')
     .replace(/\bLive\. No calls\./,'In real time. No calls.')
     .replace(/, live in every hand/i,', up to date in every hand')
-    .replace(/\u2014|\u2013|--/g,'. ')           /* dashes become full-stop pauses */
+    .replace(/\banytime\b/gi,'any time')
+    .replace(/\u2014|\u2013|--/g,'. ')
     .replace(/\u00b7/g,', ')
-    .replace(/\u2019(?=[a-z])/gi,"'")                    /* it's, how's \u2014 keep the apostrophe */
-    .replace(/[\u2018\u2019\u201c\u201d]/g,'')            /* quotation marks are silent */
+    .replace(/\u2019(?=[a-z])/gi,"'")
+    .replace(/[\u2018\u2019\u201c\u201d]/g,'')
     .replace(/\s+/g,' ').trim();
 }
 function tourSpeak(text){
   try{
     if(tourMuted()||typeof speechSynthesis==='undefined')return Promise.resolve();
-    const gen=(window._spkGen=(window._spkGen||0)+1);      /* newer speech silences every older chain */
-    speechSynthesis.cancel();
+    const gen=(window._spkGen=(window._spkGen||0)+1);
+    try{speechSynthesis.cancel();}catch(e){}
     if(!_tourVoice)tourPickVoice();
     const clean=speakify(text);
-    const parts=(clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[clean]).map(s=>s.trim())
-      .filter(s=>s.replace(/[^a-z0-9]/gi,'').length>=2);   /* orphan punctuation fragments are silent */
-    const est=Math.max(1200,clean.split(/\s+/).length*380+parts.length*260);
-    return new Promise(res=>{
-      let done=false;const fin=()=>{if(!done){done=true;res();}};
-      setTimeout(fin,est*1.5+1200);                          /* safety: never hang the tour on a mute engine */
-      const speakAt=(i)=>{
-        if(gen!==window._spkGen){fin();return;}            /* superseded: stand down */
-        if(i>=parts.length){setTimeout(fin,150);return;}
+    const parts=(clean.match(/[^.!?;:]+[.!?;:]+|[^.!?;:]+$/g)||[clean]).map(function(s){return s.trim();})
+      .filter(function(s){return s.replace(/[^a-z0-9]/gi,'').length>=2;});
+    const kind=_tourVoiceKind||'stock';
+    const titleRate=kind==='premium'?0.86:(kind==='enhanced'?0.89:0.91);
+    const bodyRate=kind==='premium'?0.90:(kind==='enhanced'?0.92:0.94);
+    const titleGap=kind==='premium'?620:520;
+    const bodyGap=kind==='premium'?340:280;
+    const est=Math.max(1400,clean.split(/\s+/).length*420+parts.length*300);
+    return new Promise(function(res){
+      let done=false;const fin=function(){if(!done){done=true;res();}};
+      setTimeout(fin,est*1.6+1400);
+      const speakAt=function(i){
+        if(gen!==window._spkGen){fin();return;}
+        if(i>=parts.length){setTimeout(fin,180);return;}
         const u=new SpeechSynthesisUtterance(parts[i]);
         if(_tourVoice)u.voice=_tourVoice;
-        u.rate=i===0?0.94:0.97;u.pitch=1.02;                 /* the title lands a touch slower */
-        u.onend=()=>setTimeout(()=>speakAt(i+1),i===0?480:260);   /* real breaths between sentences */
-        u.onerror=()=>setTimeout(()=>speakAt(i+1),120);
-        speechSynthesis.speak(u);
+        u.lang=(_tourVoice&&_tourVoice.lang)||'en-US';
+        u.rate=i===0?titleRate:bodyRate;
+        u.pitch=1;
+        u.volume=1;
+        u.onend=function(){setTimeout(function(){speakAt(i+1);},i===0?titleGap:bodyGap);};
+        u.onerror=function(){setTimeout(function(){speakAt(i+1);},120);};
+        try{speechSynthesis.speak(u);}catch(e){setTimeout(function(){speakAt(i+1);},80);}
       };
       speakAt(0);
-      setTimeout(()=>{try{speechSynthesis.resume();}catch(e){}},80);
+      setTimeout(function(){try{speechSynthesis.resume();}catch(e){}},60);
     });
   }catch(e){return Promise.resolve();}
 }
