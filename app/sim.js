@@ -1089,6 +1089,8 @@ t('empty book hides field notes', $("String(renderToday)").indexOf('if(!projs.le
 t('empty book hides houses header', $("String(renderOverview)").indexOf("hd.style.display=projs.length")>=0);
 t('Needs You opens an inbox', $("String(renderOvCards)").indexOf('All homes')>=0&&$("String(renderOvCards)").indexOf('openNyInbox')>=0&&$("String(inbTabLabel)").indexOf('Needs you')>=0);
 t('All homes is a header not a clone', $("String(allNyPreview)").indexOf('slice(0,2)')<0&&$("String(renderOvCards)").indexOf('ov-allhot')>=0&&$("String(allNyPreview)").indexOf('hot')>=0);
+t('desktop week pane exists', $("document.getElementById('ovWeek')")&&SRC.indexOf('renderOvWeek')>=0);
+t('desktop split at 1100', SRC.indexOf('min-width:1100px')>=0&&SRC.indexOf('ov-week')>=0);
 t('the house list pills are Needs You, decisions, A-Z', $("SORTLABELS.recent")==='Recent decisions'&&$("String(renderOvSortRow)").indexOf('ov-allpill')<0);
 t('coming up more this week expands', $("String(renderToday)").indexOf('toggleSoon')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
 t('the day sheet sits over the calendar', (function(){
