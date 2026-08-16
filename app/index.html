@@ -3072,13 +3072,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.261.0 - One voice on Full site. Field Notes is the camera.';
+const PLUMB_VERSION='2.262.0 - Sub sign-in keeps the sub hat.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786913352461;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.261.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786919927390;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.262.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4838,6 +4838,7 @@ async function laEnter(p){
     }
   }catch(e){}}
   routeAfterLogin();
+  try{setTimeout(function(){try{applyLiveRole();}catch(e){}},1800);}catch(e){}
   try{
     if(appMode()==='real'){
       const noSites=!(state.projects&&state.projects.length);
@@ -5228,11 +5229,49 @@ function ensureMembership(p){
   const s=state.session||{};
   if(appMode()!=='real'||s.role!=='hillan'||!s.auth||!s.auth.uid)return false;
   p.members=p.members||{};p.memberInfo=p.memberInfo||{};
-  if(p.members[s.auth.uid]!=='builder'){
+  const have=p.members[s.auth.uid];
+  if(have==='sub'||have==='client')return false;
+  if(have!=='builder'){
     p.members[s.auth.uid]='builder';
     p.memberInfo[s.auth.uid]={name:s.name||'',rpRole:s.rpRole||''};
     return true;}
   return false;}
+function liveRoleFromSites(){
+  const uid=((state.session&&state.session.auth&&state.session.auth.uid)||(typeof Sync!=='undefined'&&Sync.uid))||'';
+  if(!uid)return null;
+  let sub=null,client=null;
+  (state.projects||[]).forEach(function(p){
+    const r=p.members&&p.members[uid];
+    const info=(p.memberInfo&&p.memberInfo[uid])||{};
+    if(r==='sub'&&!sub)sub={role:'sub',siteId:String(p.id),name:info.name||'',trade:info.trade||'',email:info.email||''};
+    if(r==='client'&&!client)client={role:'client',siteId:String(p.id),name:info.name||'',email:info.email||''};
+  });
+  if(sub)return sub;
+  if(client)return client;
+  return null;
+}
+function applyLiveRole(){
+  if(appMode()!=='real')return false;
+  const m=liveRoleFromSites();if(!m)return false;
+  const s=state.session||{};
+  if(m.role==='sub'&&s.role!=='subs'){
+    Data.setSession({role:'subs',name:m.name||s.name||'',since:Date.now(),mode:'real',auth:s.auth,member:m});
+    try{const p=laProfile();if(p){p.member=m;laSaveProfile(p);}}catch(e){}
+    try{document.getElementById('overview')?.classList.remove('show');}catch(e){}
+    try{document.getElementById('clientview')?.classList.remove('show');}catch(e){}
+    try{showSubView();}catch(e){}
+    return true;
+  }
+  if(m.role==='client'&&s.role!=='client'){
+    Data.setSession({role:'client',site:m.siteId,name:m.name||s.name||'',since:Date.now(),mode:'real',auth:s.auth,member:m});
+    try{const p=laProfile();if(p){p.member=m;laSaveProfile(p);}}catch(e){}
+    try{document.getElementById('overview')?.classList.remove('show');}catch(e){}
+    try{document.getElementById('subview')?.classList.remove('show');}catch(e){}
+    try{showClientView();}catch(e){}
+    return true;
+  }
+  return false;
+}
 function backfillMemberships(){if(appMode()!=='real')return;let ch=false;(state.projects||[]).forEach(p=>{if(ensureMembership(p))ch=true;});if(ch)persist();}
 /* v2.27 migration: older cloud site docs carry members only inside meta, where
    security rules can't see them. Builder devices stamp top-level members +
@@ -7114,6 +7153,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       this.deviceId=this._devId();
       this.on=true;this.err='';this._retries=0;clearTimeout(this._retryT);setSync('synced');
       this._watchAuth();
+      try{if(this.mode==='live')applyLiveRole();}catch(e){}
       try{if(this.mode==='live')backfillMemberships();}catch(e){}
       try{if(this.mode==='live')stampMemberUids();}catch(e){}
       this.subscribe();this.startHeartbeat();this.pushAll();try{CloudFiles.flush();}catch(e){}try{if(this.mode==='live')watchClaims();}catch(e){}try{if(this.mode==='live')setTimeout(()=>{try{Org.init();}catch(e){}},1200);}catch(e){}try{setTimeout(()=>{try{Notify.startSweep();Notify.captureToken();}catch(e){}},2500);}catch(e){}try{setTimeout(()=>{try{backfillPhotos();}catch(e){}},3000);}catch(e){}
@@ -7719,6 +7759,7 @@ function diffSiteOps(sh,p){const ops=[];
 function fbDelete(){try{return firebase.firestore.FieldValue.delete();}catch(e){return undefined;}}
 function persistLocalOnly(){try{localStorage.setItem(storeKey(),JSON.stringify(state));}catch(e){}}
 function rerenderCurrent(){try{
+  try{if(appMode()==='real')applyLiveRole();}catch(e){}
   if(document.getElementById('clientview').classList.contains('show'))renderClient();
   else if(document.getElementById('subview').classList.contains('show'))renderSubView();
   else if(document.getElementById('overview').classList.contains('show'))renderOverview();

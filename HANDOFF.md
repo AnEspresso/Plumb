@@ -20,7 +20,7 @@ A single-file PWA for residential construction project management — it connect
 
 **Pinned next after gold-master freeze:** Field Notes *file to* on the desk — optional trade + room after Send or on edit, so photos filter and land in that packet. Not on the field screen.
 
-**v2.261.0 is live.** One voice on Full site. Field Notes is the camera. **2.260 is the gold master restore.**
+**v2.262.0 is live.** Sub sign-in keeps the sub hat. 2.261 stays the Full site restore.
 
 **Gold-master RC:** [GOLD-RC.md](GOLD-RC.md) — next is #1 empty-state hide + #2 All homes as a header.
 
@@ -48,6 +48,7 @@ The black bar on the marketing page is the download door. It always shows this v
 1. Live packet link (guest page as the sub) — done
 2. Teammate account — done. `pmgottschalkqa+team@gmail.com` / `Pooperqa-team!?` (PM, Alex Rivera, all 10 sites). Also in `.secrets/qa_team_*`
 3. Homeowner signed in — done. `pmgottschalkqa+home@gmail.com` / `Pooperqa-home!?` (Jordan Calderwood, 288 Calderwood Ln). Also in `.secrets/qa_home_*`
+4. Signed-in sub — done. `pmgottschalkqa+sub@gmail.com` / `Pooperqa-sub!?` (Northwind Mechanical, HVAC, 288 Calderwood Ln). Also in `.secrets/qa_sub_*`
 4. QuickBooks — done. QA login connected to Intuit sandbox “Sandbox Company US 066d”. Calderwood export: 5 sent, 4 already there, 0 failed.
 5. Push notification — **PIN: wait for a laptop.** In-app notices are live (2.239). Lock screen needs a Firebase CI token (`firebase login:ci`) then Grok deploys `onPacketReply` + `notifyTest`. Cannot be done on the phone. Ask Peter when he has a computer.
 
