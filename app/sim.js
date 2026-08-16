@@ -1091,6 +1091,8 @@ t('Needs You opens an inbox', $("String(renderOvCards)").indexOf('All homes')>=0
 t('All homes is a header not a clone', $("String(allNyPreview)").indexOf('slice(0,2)')<0&&$("String(renderOvCards)").indexOf('ov-allhot')>=0&&$("String(allNyPreview)").indexOf('hot')>=0);
 t('desktop week pane exists', $("document.getElementById('ovWeek')")&&SRC.indexOf('renderOvWeek')>=0);
 t('desktop split at 1100', SRC.indexOf('min-width:1100px')>=0&&SRC.indexOf('ov-week')>=0);
+t('field notes three taps', SRC.indexOf('function openFieldNote')>=0&&SRC.indexOf('FIELD_KINDS')>=0&&SRC.indexOf("saveBtn').textContent='Send'")>=0);
+t('field chip meanings tap i', SRC.indexOf('toggleFieldHint')>=0&&SRC.indexOf('fieldKindHint')>=0);
 t('the house list pills are Needs You, decisions, A-Z', $("SORTLABELS.recent")==='Recent decisions'&&$("String(renderOvSortRow)").indexOf('ov-allpill')<0);
 t('coming up more this week expands', $("String(renderToday)").indexOf('toggleSoon')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
 t('the day sheet sits over the calendar', (function(){

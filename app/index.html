@@ -904,6 +904,12 @@
   #logPickScrim h4{color:var(--ink);letter-spacing:.06em;margin:0 0 8px;font-size:20px;}
   #logPickScrim .fn-tag{text-align:center;font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-weight:400;font-size:14.5px;line-height:1.35;color:#B0895A;margin:0 0 16px;}
   #logPickScrim .fn-ask{font-size:13px;font-weight:650;color:var(--ink);letter-spacing:.01em;margin:0 0 10px;text-align:left;}
+  .fn-i{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:6px;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink-3);font:700 12px/1 inherit;vertical-align:middle;cursor:pointer;padding:0;}
+  .fn-i:active{transform:scale(.94);}
+  .fn-hint{margin:0 0 14px;padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:12.5px;line-height:1.45;color:var(--ink-2);}
+  .fn-hint[hidden]{display:none;}
+  .fn-hint b{color:var(--ink);font-weight:700;margin-right:6px;}
+  .fn-hint div+div{margin-top:6px;}
   .ov-sortpill{font-size:11.5px;font-weight:650;letter-spacing:.01em;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:inherit;transition:all .12s ease;}
   .ov-sortpill.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
   .ov-sortpill:active{transform:scale(.96);}
@@ -2835,7 +2841,16 @@ body.on-tour .tour-card{display:block;}
       </div>
       <input type="file" id="file" accept="image/*" hidden onchange="onPhoto(event)">
     </div>
-    <div class="field-lbl">Note</div>
+    <div class="field-lbl" id="fieldKindLbl" style="display:none">What is it? <button type="button" class="fn-i" onclick="toggleFieldHint(event)" aria-label="What these chips mean">i</button></div>
+    <div class="chips" id="fieldKindChips" style="display:none"></div>
+    <div class="fn-hint" id="fieldKindHint" hidden>
+      <div><b>Note</b> House record. Not an open item.</div>
+      <div><b>Leak</b> Water or a drip. Needs You.</div>
+      <div><b>Damage</b> Broken or wrong. Needs You.</div>
+      <div><b>Decision</b> A call to make. House record.</div>
+      <div><b>Punch</b> Walkthrough leftover. Needs You.</div>
+    </div>
+    <div class="field-lbl" id="sheetNoteLbl">Note</div>
     <textarea class="ti" id="caption" rows="2" oninput="growNote(this)" placeholder="A few words…"></textarea>
     <div class="chips" id="areaChips"></div>
     <div class="field-lbl" id="sheetAssignLbl">Assign to <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-3)">· optional</span></div>
@@ -3051,13 +3066,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.257.0 - Desktop split. Calendar left, book right.';
+const PLUMB_VERSION='2.258.0 - Field Notes in three taps.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786902303711;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.257.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786903441842;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.258.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6743,7 +6758,7 @@ function houseMoneyLine(p){
   return 'No money on this job yet';
 }
 function logFromHouse(){
-  houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openSheet();});
+  houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openFieldNote();});
 }
 function houseGoSite(view){
   const pid=_housePid;if(!pid)return;
@@ -6786,7 +6801,7 @@ function logPickHouse(pid){
   closeLogPick();
   if(!(state.projects||[]).some(function(x){return String(x.id)===String(pid);}))return;
   try{Data.setActive(pid);}catch(e){}
-  openSheet();
+  openFieldNote();
 }
 function closeLogPick(){const el=document.getElementById('logPickScrim');if(el)el.classList.remove('show');}
 function renderHouse(){
@@ -13682,13 +13697,58 @@ if(typeof window!=='undefined'){
 }
 
 function growNote(ta){if(!ta)return;ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,260)+'px';}
+const FIELD_KINDS=[
+  {id:'note',n:'Note',issue:false},
+  {id:'leak',n:'Leak',issue:true},
+  {id:'damage',n:'Damage',issue:true},
+  {id:'decision',n:'Decision',issue:false},
+  {id:'punch',n:'Punch',issue:true}
+];
+let _fieldNote=false,_fieldKind='note';
+function pickFieldKind(id){
+  _fieldKind=id;
+  document.querySelectorAll('#fieldKindChips .chip').forEach(function(c){c.classList.toggle('on',c.dataset.k===id);});
+}
+function toggleFieldHint(e){
+  if(e)e.stopPropagation();
+  const h=document.getElementById('fieldKindHint');if(!h)return;
+  h.hidden=!h.hidden;
+}
+function openFieldNote(){
+  _fieldNote=true;_fieldKind='note';
+  openSheet(false);
+  const p=P()||{};
+  document.getElementById('sheetTitle').textContent='Field Notes';
+  document.getElementById('sheetSub').textContent='Log photos and notes from the field'+(p.street?(' \u2014 '+(p.street||p.name)):'')+'.';
+  document.getElementById('saveBtn').textContent='Send';
+  ['sheetAssignLbl','crewSelect','crewSelect__ss','sheetShareRow','flag'].forEach(function(id){
+    const el=id==='flag'?document.getElementById('flag')&&document.getElementById('flag').closest('.flagrow'):document.getElementById(id);
+    if(el)el.style.display='none';
+  });
+  const ac=document.getElementById('areaChips');if(ac)ac.style.display='none';
+  const fl=document.getElementById('fieldKindLbl');if(fl)fl.style.display='';
+  const fc=document.getElementById('fieldKindChips');
+  if(fc){
+    fc.style.display='';
+    fc.innerHTML=FIELD_KINDS.map(function(k){return '<button type="button" class="chip'+(_fieldKind===k.id?' on':'')+'" data-k="'+k.id+'" onclick="pickFieldKind(\''+k.id+'\')">'+esc(k.n)+'</button>';}).join('');
+  }
+  const nl=document.getElementById('sheetNoteLbl');if(nl)nl.textContent='Note · optional';
+  const hint=document.getElementById('fieldKindHint');if(hint)hint.hidden=true;
+  setTimeout(function(){try{document.getElementById('file')&&document.getElementById('file').click();}catch(e){}},180);
+}
 function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDate||todayStr()):null;
+  if(!asLog&&!_fieldNote)_fieldNote=false;
   const isSub=(state.session||{}).role==='subs';
   document.getElementById('sheetTitle').textContent=isSub?'Post an update':(asLog?'Daily log entry':'New entry');
   document.getElementById('sheetSub').textContent=isSub?'Photo first — your builder sees this on their feed.':(asLog?(editingLogDate===todayStr()?'Crew, conditions, what got done.':'Editing '+fmtLogDate(editingLogDate)+'.'):'Photo first — everything else is optional.');
   document.getElementById('saveBtn').textContent=isSub?'Send to builder':(asLog?'Save entry':'Add to log');
   ['sheetAssignLbl','crewSelect','crewSelect__ss','sheetShareRow'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isSub?'none':'';});
-  {const ac=document.getElementById('areaChips');if(ac)ac.style.display=asLog?'none':'';}   // a day is not a place, and saveLog never stored one
+  {const fl=document.getElementById('flag');const fr=fl&&fl.closest('.flagrow');if(fr)fr.style.display=isSub?'none':'';}
+  {const ac=document.getElementById('areaChips');if(ac)ac.style.display=asLog?'none':'';}
+  {const fl=document.getElementById('fieldKindLbl');if(fl)fl.style.display='none';}
+  {const fc=document.getElementById('fieldKindChips');if(fc)fc.style.display='none';}
+  {const fh=document.getElementById('fieldKindHint');if(fh)fh.hidden=true;}
+  {const nl=document.getElementById('sheetNoteLbl');if(nl)nl.textContent='Note';}
   if(asLog){const e=(P().logs||[]).find(l=>l.date===editingLogDate);document.getElementById('caption').value=e?e.text:'';document.getElementById('shareToggle').classList.toggle('on',!!(e&&e.share));}
   syncAreaExclusivity(document.getElementById('areaChips'));
   const _sc=document.getElementById('scrim'),_sh=document.getElementById('sheet');
@@ -13714,7 +13774,7 @@ function rebuildDrop(dropId,phId,phInner,inputId,onchange){
   /* NEVER set capture here. It is a hard camera-only instruction on iOS, and
      this rebuild runs on every sheet close - which silently undid the fix. */
   inp.hidden=true;inp.onchange=onchange;drop.appendChild(inp);}
-function resetSheet(){pendingPhotoId=null;document.getElementById('caption').value='';document.getElementById('flag').classList.remove('on');document.getElementById('shareToggle').classList.remove('on');
+function resetSheet(){pendingPhotoId=null;_fieldNote=false;_fieldKind='note';document.getElementById('caption').value='';document.getElementById('flag').classList.remove('on');document.getElementById('shareToggle').classList.remove('on');
   document.querySelectorAll('.sheet .chip').forEach(c=>{c.classList.remove('on');c.disabled=false;});
   syncAreaExclusivity(document.getElementById('areaChips'));   // lock is a property - clearing classes does not lift it
   const cs=document.getElementById('crewSelect');if(cs)cs.selectedIndex=0;
@@ -13731,6 +13791,16 @@ async function save(){
   const isIssue=document.getElementById('flag').classList.contains('on');
   const share=document.getElementById('shareToggle').classList.contains('on');
   if(sheetIsLog){const txt=cap||'Site visit logged.';const d=editingLogDate||todayStr();Data.saveLog(d,txt,share);logEvent('dailyLogSave',d+' · '+txt.slice(0,32));renderDayLog();closeSheet();toast(share?'Daily log saved · shared with homeowner':'Daily log saved');return;}
+  if(_fieldNote){
+    const kind=FIELD_KINDS.find(function(k){return k.id===_fieldKind;})||FIELD_KINDS[0];
+    const text=cap||'';
+    if(!text&&!pendingPhotoId){closeSheet();return;}
+    const rec={id:Data.nextItemId(),cap:text||kind.n,area:kind.n,crew:'',issue:!!kind.issue,status:kind.issue?'open':undefined,photoId:pendingPhotoId,sw:'dove',t:Date.now(),day:0,share:false,fieldKind:kind.id};
+    Data.addItem(rec);logEvent('fieldNote','#'+rec.id+' · '+kind.n);
+    try{renderFeed();}catch(e){}try{renderSiteSummary();}catch(e){}try{renderToday();renderOvCards();}catch(e){}
+    closeSheet();toast(kind.issue?(kind.n+' logged — needs you'):(kind.n+' sent'));
+    return;
+  }
   if(!cap&&!pendingPhotoId){closeSheet();return;}
   const rec={id:Data.nextItemId(),cap:cap||'(no note)',area,crew,issue:isIssue,status:isIssue?'open':undefined,photoId:pendingPhotoId,sw:'dove',t:Date.now(),day:0,share};
   Data.addItem(rec);logEvent('recordSave','#'+rec.id+(isIssue?' [issue]':'')+(share?' [shared]':'')+' · '+area);
