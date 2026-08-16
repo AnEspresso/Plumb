@@ -1056,7 +1056,7 @@ t('removing a booking clears its Needs You card', (function(){
 t('leaving the calendar redraws Needs You', $("String(closeCal)").indexOf('renderToday')>=0);
 t('Needs You names the kind of work', $("String(_nyIssues)").indexOf('Date change')>=0&&$("String(_nyIssues)").indexOf('Question')>=0);
 t('Needs You covers the six new kinds', $("String(_nyIssues)").indexOf('They declined')>=0&&$("String(_nyIssues)").indexOf('Waiting on them')>=0&&$("String(_nyIssues)").indexOf('Site not ready')>=0&&$("String(_nyIssues)").indexOf('Homeowner wrote you')>=0&&$("String(_nyIssues)").indexOf('On deck, not booked')>=0&&$("String(_nyOnDeck)").indexOf('prevDone')>=0);
-t('Show all and Recent decisions are separate actions', $("String(renderToday)").indexOf('td-histbtn')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
+t('Show all and Recent decisions are separate actions', $("String(renderToday)").indexOf('td-histbtn')>=0&&$("String(renderToday)").indexOf('Recent decisions')>=0);
 t('untagged site files stay out of a trade packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Construction Contract.pdf'})")===false);
 t('a trade-tagged plan is in that packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Plumbing Rough-In Plan.pdf',trade:'plumb'})")===true);
 t('the packet is a briefing with still-open first', $("String(packetHTML)").indexOf('pkt-strip')>=0&&$("String(packetHTML)").indexOf('For the truck')>=0&&$("String(pktAsk)").indexOf('No dates on the calendar')>=0);
@@ -1079,10 +1079,12 @@ t('Needs You is one card per house', (function(){
   asBuilder();
   $('enterDemo()');
   $('showOverview()');
-  $('_needsExpanded=true;renderToday()');
-  const n=$("(function(){var hs=[].slice.call(document.querySelectorAll('#ovToday .td-alert b')).map(function(el){return el.textContent;});return hs.filter(function(x){return x.indexOf('Calderwood')>=0;}).length;})()");
+  $("_ovSort='attn';renderOvCards()");
+  const n=$("(function(){var hs=[].slice.call(document.querySelectorAll('#ovCards .ov-card .st')).map(function(el){return el.textContent;});return hs.filter(function(x){return x.indexOf('Calderwood')>=0;}).length;})()");
   return n===1;
 })());
+t('Attention uses Needs You language', $("String(renderOvCards)").indexOf('needs you')>=0&&$("String(renderOvCards)").indexOf("_ovSort==='attn'")>=0);
+t('A-Z keeps the portfolio card', $("String(renderOvCards)").indexOf('% complete')>=0&&$("String(renderOvCards)").indexOf('On deck')>=0);
 t('tapping a house card opens the briefing on home', (function(){
   asBuilder();
   $('enterDemo()');
@@ -1193,9 +1195,9 @@ t('the example build includes declined, waiting, and a homeowner note', (functio
 })());
 t('house cards whisper a waiting sub', $("String(renderOvCards)").indexOf('ov-whisper')>=0&&$("typeof _siteWhisper")==='function');
 t('a date change whispers on the house card', (function(){
-  $("(function(){var p=state.projects[1];p._whBk={id:'bkWhis',subName:'Whisper Crew',trade:'plumb',start:Date.now()+864e5,end:Date.now()+2*864e5,pkToken:'pkWH',pkResp:{status:'change',start:Date.now()+3*864e5,end:Date.now()+4*864e5,t:1},pkQOpen:0};p.bookings.push(p._whBk);renderOvCards();})()");
+  $("(function(){var p=state.projects[1];p._whBk={id:'bkWhis',subName:'Whisper Crew',trade:'plumb',start:Date.now()+864e5,end:Date.now()+2*864e5,pkToken:'pkWH',pkResp:{status:'change',start:Date.now()+3*864e5,end:Date.now()+4*864e5,t:1},pkQOpen:0};p.bookings.push(p._whBk);_ovSort='az';renderOvCards();})()");
   const html=$("document.getElementById('ovCards').innerHTML");
-  $("(function(){var p=state.projects[1];p.bookings=p.bookings.filter(function(b){return b.id!=='bkWhis';});delete p._whBk;renderOvCards();})()");
+  $("(function(){var p=state.projects[1];p.bookings=p.bookings.filter(function(b){return b.id!=='bkWhis';});delete p._whBk;_ovSort='attn';renderOvCards();})()");
   return html.indexOf('ov-whisper')>=0&&html.indexOf('asked for')>=0;
 })());
 t('the packet page keeps listening after it opens', $("String(renderGuestPacket)").indexOf('_gpListen')>=0&&$("String(_gpListen)").indexOf('onSnapshot')>=0);

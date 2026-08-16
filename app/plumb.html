@@ -3008,13 +3008,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.250.0 - One sheet. Three facts. Selections is selections.';
+const PLUMB_VERSION='2.251.0 - One house list. Attention, Recent, A-Z.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786837151445;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.250.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786841081603;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.251.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6443,7 +6443,7 @@ function renderOverview(){
   const _roleLbl=who&&who.role==='subs'?'Subcontractor':'Builder';
   document.getElementById('ovWho').textContent=(who&&who.name&&who.name!==_roleLbl?who.name+' · ':'')+_roleLbl;
   const projs=visibleProjects();
-  const bh=document.getElementById('ovBuildsHd');if(bh)bh.textContent=projs.length+' Active Builds';
+  const bh=document.getElementById('ovBuildsHd');if(bh)bh.textContent=projs.length+(projs.length===1?' house':' houses');
   // search box appears only when there's enough to warrant it (cap 5, per item 13)
   const sb=document.getElementById('ovSearch');if(sb)sb.style.display=projs.length>5?'':'none';
   renderToday();
@@ -6458,8 +6458,20 @@ function renderOverview(){
 function tdDayLabel(ts){const d=dayStart(Date.now());if(ts<=d)return 'today';if((ts-d)/864e5<=1)return 'tomorrow';
   return new Date(ts).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
 function tdTradeOf(p,b){return b.trade||((p.subs||[]).find(s=>s.name===b.subName)||{}).specialty||'';}
-let _needsExpanded=false,_nyQKey='';
-function toggleNeeds(){_needsExpanded=!_needsExpanded;renderToday();}
+function _nyByHouse(projs){
+  const issues=_nyIssues(projs||visibleProjects());
+  const map={};const cross=[];
+  issues.forEach(function(it){
+    if(it.cross||it.pid==null||it.pid===''){cross.push(it);return;}
+    const k=String(it.pid);
+    if(!map[k])map[k]={pid:it.pid,site:it.site,lvl:it.lvl,pri:it.pri,ts:it.ts,line:it.line,n:0};
+    const c=map[k];c.n++;
+    if(it.pri<c.pri||(it.pri===c.pri&&(it.ts||0)>(c.ts||0))){c.pri=it.pri;c.ts=it.ts;c.line=it.line;}
+    if(it.lvl==='warn')c.lvl='warn';
+  });
+  return {map:map,cross:cross};
+}
+let _nyQKey='';
 function nyOpenQ(pid,bid,qi){
   try{if(typeof event!=='undefined'&&event&&event.stopPropagation)event.stopPropagation();}catch(e){}
   const k=String(pid)+'|'+String(bid)+'|'+String(qi);
@@ -6751,46 +6763,20 @@ function renderToday(){
   const keep=typing&&document.activeElement===typing?{v:typing.value,s:typing.selectionStart}:null;
   const projs=visibleProjects();const today=dayStart(Date.now());
   try{pkSweep();}catch(e){}
-  const issues=_nyIssues(projs);
-  const houses=[];const ix={};
-  issues.forEach(function(it){
-    if(it.cross||it.pid==null||it.pid===''){
-      houses.push({cross:1,lvl:it.lvl,pri:it.pri,ts:it.ts,html:'<b>'+esc(it.kind)+'</b><div class="td-meta">'+esc(it.line)+(it.site?(' \u00b7 '+it.site):'')+'</div>',go:it.go});
-      return;
-    }
-    const k=String(it.pid);
-    if(!ix[k]){ix[k]={pid:it.pid,site:it.site,lvl:it.lvl,pri:it.pri,ts:it.ts,line:it.line,n:0};houses.push(ix[k]);}
-    const c=ix[k];c.n++;
-    if(it.pri<c.pri||(it.pri===c.pri&&(it.ts||0)>(c.ts||0))){c.pri=it.pri;c.ts=it.ts;c.line=it.line;}
-    if(it.lvl==='warn')c.lvl='warn';
-  });
-  houses.forEach(function(c){
-    if(c.cross)return;
-    c.html='<b>'+esc(c.site||'This job')+'</b><div class="td-meta">'+esc(c.line)+'</div>';
-    c.go=`nyOpenHouse('${c.pid}')`;
-  });
   const soon=[];projs.forEach(function(p){(p.bookings||[]).forEach(function(b){
     if((b.status||'confirmed')==='declined')return;
     if(b.start<today||b.start>today+7*864e5)return;
     soon.push({p:p,b:b,trade:tdTradeOf(p,b)});});});
   soon.sort(function(a,b){return a.b.start-b.b.start;});
   let h='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="55" r="13.4"/></clipPath><radialGradient id="ovFade" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff"/><stop offset="70%" stop-color="#fff"/><stop offset="100%" stop-color="#000"/></radialGradient><mask id="ovLensMask"><circle cx="64" cy="55" r="13.4" fill="url(#ovFade)"/></mask><radialGradient id="ovGlass" cx="30%" cy="26%" r="74%"><stop offset="0%" stop-color="#E7DCC6" stop-opacity=".42"/><stop offset="38%" stop-color="#2A2418" stop-opacity=".08"/><stop offset="100%" stop-color="#070605" stop-opacity=".7"/></radialGradient><linearGradient id="ovBrass" x1="0.15" y1="0.1" x2="0.9" y2="0.95"><stop offset="0%" stop-color="#E7DCC6"/><stop offset="38%" stop-color="#C49A6C"/><stop offset="72%" stop-color="#B0895A"/><stop offset="100%" stop-color="#6E5430"/></linearGradient><linearGradient id="ovPlate" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2A241C"/><stop offset="100%" stop-color="#14110E"/></linearGradient></defs><rect x="8" y="17" width="112" height="54" rx="8" fill="none" stroke="#E7DCC6" stroke-width="1.55"/><path d="M50 17V11.2h28V17" fill="none" stroke="#E7DCC6" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/><rect x="54" y="12.2" width="7.2" height="3.4" rx=".5" fill="none" stroke="#C49A6C" stroke-width=".7"/><rect x="66.6" y="12.2" width="7.2" height="3.4" rx=".5" fill="none" stroke="#C49A6C" stroke-width=".7"/><line x1="14" y1="33.6" x2="114" y2="33.6" stroke="#B0895A" stroke-width=".6" opacity=".38"/><rect x="30" y="20.4" width="68" height="11.2" rx="1.5" fill="url(#ovPlate)" stroke="url(#ovBrass)" stroke-width=".95"/><text x="64" y="28.6" text-anchor="middle" fill="#E7DCC6" font-family="Source Serif 4, Georgia, serif" font-size="6.6" letter-spacing="1.85">FIELD NOTES</text><circle cx="66.2" cy="56.6" r="16.6" fill="none" stroke="#4A3A22" stroke-width="2" opacity=".45"/><circle cx="64" cy="55" r="16.8" fill="none" stroke="url(#ovBrass)" stroke-width="2.7"/><circle cx="64" cy="55" r="14.8" fill="none" stroke="#E7DCC6" stroke-width=".55" opacity=".4"/><circle cx="64" cy="55" r="13.4" fill="#0C0A08"/><g clip-path="url(#ovLens)" mask="url(#ovLensMask)"><g transform="translate(64,57.2) scale(-0.096,0.096) translate(-150,-138)" fill="none" stroke="#E7DCC6" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="228" x2="252" y2="228" stroke="#B0895A" stroke-width="16"/><path d="M78 228V96h144v132"/><polyline points="60,100 150,28 240,100" stroke-width="14"/><rect x="134" y="168" width="32" height="60"/></g></g><circle cx="64" cy="55" r="13.4" fill="url(#ovGlass)"/><ellipse cx="58.4" cy="49.2" rx="5.8" ry="2.7" fill="#E7DCC6" opacity=".22"/><path d="M55.2 46.8c3.2-4.2 8.8-5.6 13.2-3" fill="none" stroke="#E7DCC6" stroke-width="1.25" stroke-linecap="round" opacity=".72"/></svg></button>';
-  h+='<div class="eyebrow">Needs you</div>';
-  if(!houses.length&&!soon.length){
-    h+='<div class="td-clear">All clear \u2014 nothing needs you today.</div>';
-    h+=`<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
-    el.innerHTML=h;return;}
-  houses.sort(function(a,b){return (a.pri-b.pri)||((b.ts||0)-(a.ts||0));});
-  const _CAP=3;const _truncated=!_needsExpanded&&houses.length>_CAP;const _shown=_truncated?houses.slice(0,_CAP):houses;
-  _shown.forEach(function(w){h+=`<div class="td-alert ${w.lvl}" onclick="${w.go}"><span class="td-bar"></span><div class="td-tx">${w.html}</div><span class="td-chev">\u203a</span></div>`;});
-  if(houses.length>_CAP){h+=`<button class="td-morebtn" onclick="event.stopPropagation();toggleNeeds()">`+(_needsExpanded?'Show less':('Show all '+houses.length))+`</button>`;}
-  h+=`<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>`;
   if(soon.length){
-    h+='<div class="eyebrow" style="margin-top:16px">Coming up</div>';
+    h+='<div class="eyebrow">Coming up</div>';
     soon.slice(0,3).forEach(function(s){h+=`<div class="td-soon" onclick="openBk('${s.p.id}|${s.b.id}')"><span class="td-when">${tdDayLabel(s.b.start)}</span><span class="td-soontx">${esc(s.trade?specLabel(s.trade):(s.b.subName||'Crew'))} \u00b7 ${esc(s.p.street||s.p.name)}</span></div>`;});
     if(soon.length>3)h+=`<div class="td-more">+${soon.length-3} more this week</div>`;
   }
-  el.innerHTML=h;if(keep){const n=document.getElementById('nyQText');if(n){n.value=keep.v;try{n.focus();n.selectionStart=n.selectionEnd=keep.s;}catch(e){}}}}
+  h+='<button class="td-histbtn" onclick="event.stopPropagation();openPkLog()">Recent decisions</button>';
+  el.innerHTML=h;if(keep){const n=document.getElementById('nyQText');if(n){n.value=keep.v;try{n.focus();n.selectionStart=n.selectionEnd=keep.s;}catch(e){}}}
+}
 function todayGo(pid,view,selId){navPush(function(){showOverview();});openSiteFromOverview(pid);if(view)setTimeout(()=>{try{go(view);if(selId)setTimeout(()=>{try{highlightSel(selId);}catch(e){}},150);}catch(e){}},70);}
 function todayGoRecord(pid,recId){try{Data.setActive(pid);}catch(e){}openRecord(recId);}
 function nyBookSub(pid,subName){
@@ -6813,8 +6799,8 @@ const SORTLABELS={attn:'Attention',recent:'Recent',az:'A\u2013Z'};
 function renderOvSortRow(){
   const row=document.getElementById('ovSortRow');if(!row)return;
   const projs=visibleProjects();
-  const pills=projs.length<2?'':['attn','recent','az'].map(m=>`<button class="ov-sortpill${_ovSort===m?' on':''}" onclick="setOvSort('${m}')">${SORTLABELS[m]}</button>`).join('');
-  if(!pills){row.innerHTML='';row.style.display='none';return;}
+  if(projs.length<2){row.innerHTML='';row.style.display='none';return;}
+  const pills=['attn','recent','az'].map(m=>`<button class="ov-sortpill${_ovSort===m?' on':''}" onclick="setOvSort('${m}')">${SORTLABELS[m]}</button>`).join('');
   row.style.display='flex';
   row.innerHTML=`<div class="ov-sortpills">${pills}</div>`;
 }
@@ -6822,18 +6808,53 @@ function setOvSort(m){_ovSort=m;try{localStorage.setItem('plumb.ovSort',m);}catc
 function renderOvCards(){
   const projs=visibleProjects();
   const q=((document.getElementById('ovSearch')||{}).value||'').trim().toLowerCase();
-  const _S={attn:(a,b)=>openCountP(b)-openCountP(a),recent:(a,b)=>lastActivityTs(b)-lastActivityTs(a),az:(a,b)=>String(a.street||a.name||'').localeCompare(String(b.street||b.name||''))};
-  const sorted=[...projs].sort(_S[_ovSort]||_S.attn)
-    .filter(p=>!q||((p.street||'')+' '+(p.name||'')+' '+(p.city||'')+' '+(p.state||'')).toLowerCase().includes(q));
+  const need=_nyByHouse(projs);
   const cards=document.getElementById('ovCards');
-  const _ent=(Date.now()-_ovAnimateTs)<900; // only just after a fresh open
-  const _sc=document.querySelector('.ov-body');const _keepScroll=_sc?_sc.scrollTop:0;  // .ov-body is the scroller — hold position across live-sync rebuilds
-  cards.classList.remove('scroll');  // no nested card scroller
-  cards.innerHTML=sorted.map((p,i)=>{
+  const _ent=(Date.now()-_ovAnimateTs)<900;
+  const _sc=document.querySelector('.ov-body');const _keepScroll=_sc?_sc.scrollTop:0;
+  cards.classList.remove('scroll');
+  let list=projs.slice();
+  if(_ovSort==='attn'){
+    list=list.filter(function(p){return !!need.map[String(p.id)]||!!_siteWhisper(p);})
+      .sort(function(a,b){
+        const A=need.map[String(a.id)]||{pri:9,ts:0};const B=need.map[String(b.id)]||{pri:9,ts:0};
+        return (A.pri-B.pri)||((B.ts||0)-(A.ts||0));
+      });
+  }else if(_ovSort==='recent'){
+    list.sort(function(a,b){return lastActivityTs(b)-lastActivityTs(a);});
+  }else{
+    list.sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
+  }
+  list=list.filter(function(p){return !q||((p.street||'')+' '+(p.name||'')+' '+(p.city||'')+' '+(p.state||'')).toLowerCase().includes(q);});
+  let head='';
+  if(_ovSort==='attn'&&need.cross.length){
+    need.cross.forEach(function(w){
+      head+=`<div class="td-alert ${w.lvl||'warn'}" onclick="${w.go}"><span class="td-bar"></span><div class="td-tx"><b>${esc(w.kind||'Needs you')}</b><div class="td-meta">${esc(w.line)}${w.site?(' \u00b7 '+esc(w.site)):''}</div></div><span class="td-chev">\u203a</span></div>`;
+    });
+  }
+  const body=list.map(function(p,i){
     const open=openCountP(p);const pct=overallPct(p);const deck=onDeckOf(p);
     const whis=_siteWhisper(p);
+    const top=need.map[String(p.id)];
     const _ttl=p.street||p.name||'Untitled site';const _loc=[p.city,p.state].filter(Boolean).join(', ');
     const _sub=[p.name&&p.name!==_ttl?p.name:'',_loc].filter(Boolean).join(' \u00b7 ');
+    if(_ovSort==='attn'){
+      const line=top?top.line:(whis?whis.text:'Needs you');
+      const n=top?top.n:0;
+      return `<div class="ov-card attn${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
+      <div class="ct"><div><div class="st">${esc(_ttl)}</div><div class="nm">${esc(line)}</div></div>
+        <div class="ov-hero attn"><div class="hn">${n||'\u2014'}</div><div class="hl">${n?(n===1?'needs you':'need you'):'quiet'}</div></div></div>
+      ${whis&&!top?`<div class="ov-whisper" onclick="event.stopPropagation();${whis.kind==='idle'?("openNextSite('"+p.id+"')"):("openBk('"+p.id+"|"+whis.bid+"')")}">${esc(whis.text)}</div>`:''}
+    </div>`;
+    }
+    if(_ovSort==='recent'){
+      const when=lastActivityTs(p)?timeAgo(lastActivityTs(p)):'No activity yet';
+      return `<div class="ov-card ${open||whis?'attn':''}${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
+      <div class="ct"><div><div class="st">${esc(_ttl)}</div>${_sub?`<div class="nm">${esc(_sub)}</div>`:''}</div>
+        <div class="ov-hero ${open?'attn':'clean'}"><div class="hn">${open||'\u2713'}</div><div class="hl">${open?'open':'clear'}</div></div></div>
+      <div class="foot"><span>${esc(when)}</span>${deck?`<span class="dotsep"></span><span>${esc(deck.name)}</span>`:''}</div>
+    </div>`;
+    }
     return `<div class="ov-card ${open||whis?'attn':''}${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
       <div class="ct"><div><div class="st">${esc(_ttl)}</div>${_sub?`<div class="nm">${esc(_sub)}</div>`:''}</div>
         <div class="ov-hero ${open?'attn':'clean'}"><div class="hn">${open||'\u2713'}</div><div class="hl">${open?'open':'clear'}</div></div></div>
@@ -6842,7 +6863,11 @@ function renderOvCards(){
       ${whis?`<div class="ov-whisper" onclick="event.stopPropagation();${whis.kind==='idle'?("openNextSite('"+p.id+"')"):("openBk('"+p.id+"|"+whis.bid+"')")}">${esc(whis.text)}</div>`:''}
       ${deck?`<div class="foot-deck"><span class="od" onclick="event.stopPropagation();openNextSite('${p.id}')">On deck: ${esc(specLabel(deck.trade))} \u2192</span></div>`:''}
     </div>`;
-  }).join('')||(`<div class="empty">${q?'No sites match \u201c'+esc(q)+'\u201d.':((state.session&&state.session.role==='hillan')?'No sites yet \u2014 add your first build to get started.':'No sites assigned to you yet.')}</div>`+((!q&&state.session&&state.session.role==='hillan')?`<button class="ov-newbtn" onclick="openNewSite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New site</button>`:''));
+  }).join('');
+  const empty=(_ovSort==='attn'&&!list.length&&!need.cross.length)
+    ?('<div class="td-clear">All clear \u2014 nothing needs you.</div>')
+    :((!list.length)?(`<div class="empty">${q?'No sites match \u201c'+esc(q)+'\u201d.':((state.session&&state.session.role==='hillan')?'No sites yet \u2014 add your first build to get started.':'No sites assigned to you yet.')}</div>`+((!q&&state.session&&state.session.role==='hillan')?`<button class="ov-newbtn" onclick="openNewSite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New site</button>`:'')):'');
+  cards.innerHTML=head+body+empty;
   if(_sc)_sc.scrollTop=_keepScroll;
 }
 
@@ -11392,6 +11417,7 @@ function closeCal(){
   calCrewFilter='';
   document.getElementById('calview').classList.remove('show');
   try{renderToday();}catch(e){}
+  try{renderOvCards();}catch(e){}
   if(_bkCalPeek){_bkCalPeek=false;const bk=document.getElementById('bkScrim');if(bk)bk.classList.add('show');}
   else if(_houseCalPeek){_houseCalPeek=false;navPop();}
   else {try{houseMaybeResume();}catch(e){}}
