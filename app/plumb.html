@@ -2563,7 +2563,23 @@ body.on-tour .tour-card{display:block;}
       </div>
       <div class="flagrow" style="margin:0 0 4px"><div class="l"><div class="t">Share with homeowner</div><div class="s">Show on their progress view</div></div><div class="toggle" id="recShare" onclick="this.classList.toggle('on')"></div></div>
       <div class="row2" style="margin-top:10px"><button class="b1 b-cancel" onclick="closeRecord()">Cancel</button><button class="b1 b-go" onclick="saveRecord()">Save</button></div>
+      <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:1.5px solid var(--line);color:var(--ink-2);font-weight:600;font-size:13px;cursor:pointer" onclick="openFileTo(editingRecId)">File to a trade…</button>
       <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:none;color:var(--clay);font-weight:600;font-size:13px;cursor:pointer" onclick="deleteRecord()">Delete this entry</button>
+    </div>
+  </div>
+
+  <div class="pmodal-scrim" id="fileToScrim" style="z-index:97">
+    <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
+      <h4>File this</h4>
+      <div class="fn-tag" id="fileToLead">Optional. A trade puts it in that packet. A room makes it filterable.</div>
+      <div class="fld-label">Trade</div>
+      <div class="chips" id="fileToTrades"></div>
+      <div class="fld-label">Room · optional</div>
+      <div class="chips" id="fileToRooms"></div>
+      <div class="row2" style="margin-top:14px">
+        <button class="b1 b-cancel" onclick="closeFileTo()">Skip</button>
+        <button class="b1 b-go" onclick="saveFileTo()">File</button>
+      </div>
     </div>
   </div>
 
@@ -3067,13 +3083,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.259.0 - Visual pass. Clay only on blockers.';
+const PLUMB_VERSION='2.260.0 - Desk file-to. Trade and room after Send.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786904309493;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.259.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786906960799;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.260.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -13459,7 +13475,7 @@ function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;con
   if(closing&&row){row.classList.add('closing');setTimeout(apply,260);}else apply();}
 
 /* ── universal modal dismissal: tap grip, or swipe the modal down ── */
-const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
+const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',fileToScrim:'closeFileTo',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
 function dismissScrim(scrim){if(!scrim)return;const fn=MODAL_CLOSERS[scrim.id];if(fn&&typeof window[fn]==='function'){try{window[fn]();return;}catch(e){}}scrim.classList.remove('show');}
 function dismissParent(elm){let n=elm;while(n&&!(n.classList&&n.classList.contains('pmodal-scrim')))n=n.parentElement;dismissScrim(n);}
 if(typeof window!=='undefined'){window.addEventListener('load',function(){
@@ -13800,6 +13816,7 @@ async function save(){
     Data.addItem(rec);logEvent('fieldNote','#'+rec.id+' · '+kind.n);
     try{renderFeed();}catch(e){}try{renderSiteSummary();}catch(e){}try{renderToday();renderOvCards();}catch(e){}
     closeSheet();toast(kind.issue?(kind.n+' logged — needs you'):(kind.n+' sent'));
+    if((state.session||{}).role==='hillan')setTimeout(function(){try{openFileTo(rec.id);}catch(e){}},380);
     return;
   }
   if(!cap&&!pendingPhotoId){closeSheet();return;}
@@ -13919,6 +13936,65 @@ function closeRecord(){document.getElementById('recScrim').classList.remove('sho
   try{houseMaybeResume();}catch(e){}
   try{applyScroll('site');}catch(e){}
   try{if(_pktLogCtx&&document.getElementById('pktLogScrim').classList.contains('show'))renderPacketLog();}catch(e){}}
+let _fileToId=null,_fileToTrade='',_fileToRoom='';
+const FILE_ROOMS=['Whole House','Kitchen','Primary Bath','Hall Bath','Primary Suite','Living Room','Garage','Basement','Stairs / Hall'];
+function pickFileTrade(id){
+  _fileToTrade=_fileToTrade===id?'':id;
+  document.querySelectorAll('#fileToTrades .chip').forEach(function(c){c.classList.toggle('on',c.dataset.t===_fileToTrade);});
+}
+function pickFileRoom(name){
+  _fileToRoom=_fileToRoom===name?'':name;
+  document.querySelectorAll('#fileToRooms .chip').forEach(function(c){c.classList.toggle('on',c.dataset.r===_fileToRoom);});
+}
+function openFileTo(id){
+  const p=P();if(!p||id==null)return;
+  const it=(p.items||[]).find(function(x){return String(x.id)===String(id);});if(!it)return;
+  _fileToId=id;_fileToTrade='';_fileToRoom='';
+  if(it.crew){const hit=SPECIALTIES.find(function(s){return s.label===it.crew||s.id===it.crew;});if(hit)_fileToTrade=hit.id;}
+  const tags=areaTags(it.area||'');
+  _fileToRoom=tags.find(function(t){return AREAS.indexOf(t)>=0&&t!=='Leak'&&t!=='Damage'&&t!=='Punch'&&t!=='Note'&&t!=='Decision';})||'';
+  const onSite={};
+  (p.subs||[]).forEach(function(s){if(s.specialty)onSite[s.specialty]=true;});
+  const trades=SPECIALTIES.filter(function(s){return onSite[s.id]||['plumb','elec','hvac','framing','paint','floor','drywall','roofing'].indexOf(s.id)>=0;});
+  const seen={};const list=[];
+  trades.concat(SPECIALTIES).forEach(function(s){if(!seen[s.id]){seen[s.id]=true;list.push(s);}});
+  const shown=list.slice(0,12);
+  document.getElementById('fileToTrades').innerHTML=shown.map(function(s){
+    return '<button type="button" class="chip'+(_fileToTrade===s.id?' on':'')+'" data-t="'+s.id+'" onclick="pickFileTrade(\''+s.id+'\')">'+esc(s.label)+'</button>';
+  }).join('');
+  document.getElementById('fileToRooms').innerHTML=FILE_ROOMS.map(function(r){
+    return '<button type="button" class="chip'+(_fileToRoom===r?' on':'')+'" data-r="'+esc(r)+'" onclick="pickFileRoom(\''+String(r).replace(/'/g,'\\\'')+'\')">'+esc(r)+'</button>';
+  }).join('');
+  const lead=document.getElementById('fileToLead');
+  if(lead)lead.textContent=(it.fieldKind?(it.fieldKind.charAt(0).toUpperCase()+it.fieldKind.slice(1)+' · '):'')+'A trade puts it in that packet. A room makes it filterable.';
+  try{document.getElementById('recScrim').classList.remove('show');}catch(e){}
+  document.getElementById('fileToScrim').classList.add('show');
+}
+function closeFileTo(){
+  const el=document.getElementById('fileToScrim');if(el)el.classList.remove('show');
+  _fileToId=null;_fileToTrade='';_fileToRoom='';
+  try{houseMaybeResume();}catch(e){}
+}
+function saveFileTo(){
+  const p=P();if(!p||_fileToId==null){closeFileTo();return;}
+  const it=(p.items||[]).find(function(x){return String(x.id)===String(_fileToId);});
+  if(!it){closeFileTo();return;}
+  const spec=SPECIALTIES.find(function(s){return s.id===_fileToTrade;});
+  const crew=spec?spec.label:'';
+  const kind=it.fieldKind?((FIELD_KINDS.find(function(k){return k.id===it.fieldKind;})||{}).n||''):'';
+  const room=_fileToRoom||'';
+  const area=[room,kind].filter(Boolean).join(' \u00b7 ')||it.area||'Whole House';
+  const patch={area:area};
+  if(crew){
+    patch.crew=crew;
+    if(!it.issue){patch.issue=true;patch.status='open';}
+  }
+  Data.updateItem(p.id,it.id,patch);
+  logEvent('fileTo','#'+it.id+(crew?' · '+crew:'')+(room?' · '+room:''));
+  closeFileTo();
+  try{renderFeed();renderIssues();renderToday();renderOvCards();}catch(e){}
+  toast(crew?(crew+' packet · '+(room||'filed')):(room?('Filed to '+room):'Left on the house record'));
+}
 function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);if(!it)return;
   const cap=document.getElementById('recNote').value.trim()||'(no note)';
   const area=[...document.querySelectorAll('#recAreaChips .chip.on')].map(c=>c.dataset.area).join(' \u00b7 ')||'Whole House';
