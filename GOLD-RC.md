@@ -2,8 +2,8 @@
 
 Freeze when every box is checked. No new modules until then.
 
-- [ ] **1. Empty-state hide** — pills, All homes, Coming Up, and Field Notes stay off until house 1 exists. First house is the only door.
-- [ ] **2. All homes is a header** — count + the single hottest line. Not a clone of the cards.
+- [x] **1. Empty-state hide** — pills, All homes, Coming Up, and Field Notes stay off until house 1 exists. First house is the only door.
+- [x] **2. All homes is a header** — count + the single hottest line. Not a clone of the cards.
 - [ ] **3. Desktop split** — 1440+: week calendar left, house list right. Camera in the list header.
 - [ ] **4. Field Notes is three taps** — house → photo → descriptor chip → send.
 - [ ] **5. Visual pass** — one type scale, 8px rhythm, clay only on blockers. Token page is the law.
