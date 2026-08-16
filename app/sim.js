@@ -698,12 +698,12 @@ t('calendar door atop Schedule pane', el('buildSchedule').innerHTML.includes('Tr
 $("calSiteFilter=String(state.activeId);openCal()");
 t('door opens calendar scoped to this site', el('calview').classList.contains('show'));
 $("document.getElementById('calview').classList.remove('show')");
+t('Full site tab says Needs You', $("document.querySelector('nav .tab[data-v=\"decisions\"] span').textContent")==='Needs You');
 t('To-Do segments speak one language', el('view-decisions').innerHTML.includes('Waiting on you')&&el('view-decisions').innerHTML.includes('Site issues'));
+t('Log camera is Field Notes', $("!!document.querySelector('#view-log .site-field')")===true);
+t('Photos pane uses Field Notes', el('filesPhotos').innerHTML.includes('Field Notes')&&el('filesPhotos').innerHTML.includes('openFieldNote'));
 $("go('decisions')");$("decSeg('waiting',document.querySelector('[data-d=waiting]'))");
 t('issues header matches segment vocabulary', el('view-decisions').innerHTML.includes('Open site issues'));
-t('Log capture button says Take a photo', el('view-log').innerHTML.includes('Take a photo'));
-$("go('files')");
-t('Photos pane has its own Take a photo door', el('filesPhotos').innerHTML.includes('Take a photo'));
 // homeowner side
 $("state.activeId='p2'");
 const CH=clientHTML('p2','home');

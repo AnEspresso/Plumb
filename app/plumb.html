@@ -2723,16 +2723,7 @@ body.on-tour .tour-card{display:block;}
   <main id="main">
     <section class="view active" id="view-log">
       <div id="siteSummary" class="site-summary"></div>
-      <div class="capture-card">
-        <div class="k">Today · <span id="todayDate"></span></div>
-        <h2>What happened<br>on site today?</h2>
-        <button class="cap-btn" onclick="openSheet()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>
-          Take a photo
-        </button>
-        <div class="cap-hint">Snap a photo — it files itself by date &amp; area</div>
-      </div>
-      <div class="eyebrow">Daily Log</div>
+      <button class="ov-field site-field" onclick="openFieldNote()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="siteLens"><circle cx="64" cy="55" r="13.4"/></clipPath><radialGradient id="siteFade" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff"/><stop offset="70%" stop-color="#fff"/><stop offset="100%" stop-color="#000"/></radialGradient><mask id="siteLensMask"><circle cx="64" cy="55" r="13.4" fill="url(#siteFade)"/></mask><radialGradient id="siteGlass" cx="30%" cy="26%" r="74%"><stop offset="0%" stop-color="#E7DCC6" stop-opacity=".42"/><stop offset="38%" stop-color="#2A2418" stop-opacity=".08"/><stop offset="100%" stop-color="#070605" stop-opacity=".7"/></radialGradient><linearGradient id="siteBrass" x1="0.15" y1="0.1" x2="0.9" y2="0.95"><stop offset="0%" stop-color="#E7DCC6"/><stop offset="38%" stop-color="#C49A6C"/><stop offset="72%" stop-color="#B0895A"/><stop offset="100%" stop-color="#6E5430"/></linearGradient><linearGradient id="sitePlate" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2A241C"/><stop offset="100%" stop-color="#14110E"/></linearGradient></defs><rect x="8" y="17" width="112" height="54" rx="8" fill="none" stroke="#E7DCC6" stroke-width="1.55"/><path d="M50 17V11.2h28V17" fill="none" stroke="#E7DCC6" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/><rect x="54" y="12.2" width="7.2" height="3.4" rx=".5" fill="none" stroke="#C49A6C" stroke-width=".7"/><rect x="66.6" y="12.2" width="7.2" height="3.4" rx=".5" fill="none" stroke="#C49A6C" stroke-width=".7"/><line x1="14" y1="33.6" x2="114" y2="33.6" stroke="#B0895A" stroke-width=".6" opacity=".38"/><rect x="30" y="20.4" width="68" height="11.2" rx="1.5" fill="url(#sitePlate)" stroke="url(#siteBrass)" stroke-width=".95"/><text x="64" y="28.6" text-anchor="middle" fill="#E7DCC6" font-family="Source Serif 4, Georgia, serif" font-size="6.6" letter-spacing="1.85">FIELD NOTES</text><circle cx="66.2" cy="56.6" r="16.6" fill="none" stroke="#4A3A22" stroke-width="2" opacity=".45"/><circle cx="64" cy="55" r="16.8" fill="none" stroke="url(#siteBrass)" stroke-width="2.7"/><circle cx="64" cy="55" r="14.8" fill="none" stroke="#E7DCC6" stroke-width=".55" opacity=".4"/><circle cx="64" cy="55" r="13.4" fill="#0C0A08"/><g clip-path="url(#siteLens)" mask="url(#siteLensMask)"><g transform="translate(64,57.2) scale(-0.096,0.096) translate(-150,-138)" fill="none" stroke="#E7DCC6" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="228" x2="252" y2="228" stroke="#B0895A" stroke-width="16"/><path d="M78 228V96h144v132"/><polyline points="60,100 150,28 240,100" stroke-width="14"/><rect x="134" y="168" width="32" height="60"/></g></g><circle cx="64" cy="55" r="13.4" fill="url(#siteGlass)"/><ellipse cx="58.4" cy="49.2" rx="5.8" ry="2.7" fill="#E7DCC6" opacity=".22"/><path d="M55.2 46.8c3.2-4.2 8.8-5.6 13.2-3" fill="none" stroke="#E7DCC6" stroke-width="1.25" stroke-linecap="round" opacity=".72"/></svg></button>
       <div class="daylog" onclick="openSheet(true)">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg></div>
         <div class="b"><div class="t" id="logTitle">Add today's entry</div><div class="s" id="logSub">Crew, conditions, what got done</div></div>
@@ -2745,10 +2736,9 @@ body.on-tour .tour-card{display:block;}
     </section>
 
     <section class="view" id="view-files">
-      <div class="eyebrow">Files</div>
       <div class="seg seg-top"><button class="on" data-fl="photos" onclick="filesSeg('photos',this)">Photos</button><button data-fl="docs" onclick="filesSeg('docs',this)">Documents</button></div>
       <div id="filesPhotos" class="files-pane">
-      <button class="add-sub-btn" style="margin-bottom:12px" onclick="openSheet()">Take a photo</button>
+      <button class="add-sub-btn" style="margin-bottom:12px" onclick="openFieldNote()">Field Notes</button>
       <div class="searchbar photo-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
         <input id="photoSearch" placeholder="Search photos by area or note…" oninput="renderPhotos()">
@@ -2770,7 +2760,6 @@ body.on-tour .tour-card{display:block;}
     </section>
 
     <section class="view" id="view-decisions">
-      <div class="eyebrow">To-Do</div>
       <div class="seg seg-top"><button class="on" data-d="waiting" onclick="decSeg('waiting',this)">Waiting on you</button><button data-d="items" onclick="decSeg('items',this)">Site issues</button><button data-d="selections" onclick="decSeg('selections',this)">Selections</button></div>
       <div id="decWaiting" class="dec-pane"></div>
       <div id="decItems" class="dec-pane" style="display:none">
@@ -2837,7 +2826,7 @@ body.on-tour .tour-card{display:block;}
     </div>
     <div class="tabs">
       <button class="tab on" data-v="log" onclick="go('log',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg><span>Log</span></button>
-      <button class="tab" data-v="decisions" onclick="go('decisions',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2.5 2.5L16 9"/><rect x="3.5" y="4" width="17" height="16" rx="3"/></svg><span>To-Do</span></button>
+      <button class="tab" data-v="decisions" onclick="go('decisions',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2.5 2.5L16 9"/><rect x="3.5" y="4" width="17" height="16" rx="3"/></svg><span>Needs You</span></button>
       <button class="tab" data-v="build" onclick="go('build',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V9l5-4 5 4M4 20h16M14 20V5l6 4v11"/><path d="M8 20v-4h2v4"/></svg><span>Build</span></button>
       <button class="tab" data-v="files" onclick="go('files',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="11" r="2"/><path d="m3 17 5-4 4 3 3-2 6 5"/></svg><span>Files</span></button>
     </div>
@@ -3083,13 +3072,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.260.0 - Desk file-to. Trade and room after Send.';
+const PLUMB_VERSION='2.261.0 - One voice on Full site. Field Notes is the camera.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786906960799;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.260.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786913352461;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.261.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5685,7 +5674,7 @@ const TOUR={team:[
  {sel:'#ovCards .ov-card',title:'Your jobs',body:'Each home shows its open count, progress, and what\u2019s on deck. We\u2019ll step into one now.',nav:()=>{try{showOverview();}catch(e){}}},
  {sel:'#siteSummary',title:'The site at a glance',body:'A job opens calm: current stage and %, what it\u2019s waiting on, and who\u2019s next on site.',nav:()=>{try{const sp=state.projects||[];const pick=sp.find(p=>!p.sample)||sp[0];if(pick)openSiteFromOverview(pick.id);}catch(e){}}},
  {sel:'#siteSummary .ss-card:last-child',title:'Next on site',body:'The smart one: it suggests the best subs free across all your jobs for the work that\u2019s due \u2014 by who can start first, who has room, or who knows the site.'},
- {sel:'nav .tabs .tab[data-v="decisions"]',tap:true,title:'To-Do',body:'Everything the job is waiting on \u2014 open issues and selections in one list. Tap it to look.'},
+ {sel:'nav .tabs .tab[data-v="decisions"]',tap:true,title:'Needs You',body:'Everything the job is waiting on \u2014 open issues and selections in one list. Tap it to look.'},
  {sel:'nav .tabs .tab[data-v="build"]',tap:true,title:'Build',body:'Your schedule, permits and subs \u2014 the whole build in one place. Tap Build.'},
  {sel:'nav .tabs .tab[data-v="files"]',tap:true,title:'Files',body:'Photos and documents together, filed by date and trade. Tap Files.'},
  {title:'That\u2019s the tour',body:'Explore the demo freely \u2014 three sample homes at different stages. When you\u2019re ready, switch to Live to run your own jobs.',nav:()=>{try{go('log');}catch(e){}}}
@@ -5702,14 +5691,14 @@ const TOUR={team:[
   acts:[{do:()=>demoRole('hillan')}]},
  {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the stage you\u2019re in, the percent complete, what\u2019s waiting on you, and who\u2019s next on site. The answer to \u2018how\u2019s it going?\u2019 \u2014 before anyone has to ask.',
   acts:[{do:()=>demoRole('hillan')},{tap:'#ovCards .ov-card[onclick*="p2"]',do:()=>{openSiteFromOverview('p2');go('log');}}]},
- {sel:'.capture-card',bubSide:'tb',title:'The Daily Log',body:'This is the heart of SitePlumb \u2014 the record that builds itself. A photo files itself by date and area; the day takes one line. Your turn \u2014 I\u2019ll point.',
+ {sel:'.site-field',bubSide:'tb',title:'Field Notes',body:'This is how you log a photo \u2014 same camera as home. A chip says what it is; file it to a trade later. The day still takes one line below.',
   acts:[{do:()=>tourGoto('log')}],
   task:{payoff:'You just kept the record \u2014 photo filed, day written. Do that once a day, and months later you can prove exactly what happened on site.',
     steps:[
-      {t:'.capture-card .cap-btn',say:'Now you: press Take a photo.',
-       hint:'The big button in the dark card \u2014 press it.',
-       intercept:()=>{try{tourDemoPhoto();openSheet(false);
-         const ta=document.getElementById('cNote');if(ta&&!String(ta.value||'').trim())ta.value='Crew of 2 \u2014 waste lines strapped, second-floor bath.';
+      {t:'.site-field',say:'Now you: Field Notes.',
+       hint:'The camera \u2014 press it.',
+       intercept:()=>{try{tourDemoPhoto();openFieldNote();
+         const ta=document.getElementById('caption');if(ta&&!String(ta.value||'').trim())ta.value='Crew of 2 \u2014 waste lines strapped, second-floor bath.';
          toast('Filed \u2014 in the real app this opens your camera');}catch(e){}},
        done:()=>{try{return document.getElementById('sheet').classList.contains('show');}catch(e){return false;}},
        stageAfter:'#sheet',
@@ -5732,7 +5721,7 @@ const TOUR={team:[
        hint:'The Save entry button at the bottom of the sheet.',
        done:()=>{try{return !document.getElementById('sheet').classList.contains('show')&&(P().logs||[]).some(l=>String(l.text||'').includes('waste lines'));}catch(e){return false;}}}
     ]}},
-{sel:'#decWaiting',title:'To-Do',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open issues \u2014 in one list. When this screen is empty, nobody on your job is stuck.',
+{sel:'#decWaiting',title:'Needs You',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open issues \u2014 in one list. When this screen is empty, nobody on your job is stuck.',
   acts:[{tap:'nav .tab[data-v=decisions]',do:()=>tourGoto('decisions')},{tap:'[data-d=waiting]',jump:true,do:()=>{try{decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}}],
   after:async(tok)=>{
     await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
@@ -6868,7 +6857,7 @@ function houseHTML(p){
   h+='<button class="hs-door" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
   h+='<button class="hs-door" onclick="houseGoSite(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
   if(isBuilder)h+='<button class="hs-door" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
-  if(!isClient)h+='<button class="hs-door wide" onclick="houseGoSite(\'log\')"><div class="k">Full site</div><div class="m">Log, build, decisions, files</div></button>';
+  if(!isClient)h+='<button class="hs-door wide" onclick="houseGoSite(\'log\')"><div class="k">Full site</div><div class="m">Log, Needs You, Build, Files</div></button>';
   h+='</div>';
   return h;
 }
@@ -14230,7 +14219,7 @@ async function devSelfTest(){
 
 /* ════════ init ════════ */
 (async function init(){
-  document.getElementById('todayDate').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  document.getElementById('todayDate')&& (document.getElementById('todayDate').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}));
   buildChips();
   // The shell (.device) is overflow:hidden and must never scroll — main is the scroller.
   // iOS scrollIntoView can drag an overflow:hidden ancestor and leave it stuck (stranding the
