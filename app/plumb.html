@@ -879,7 +879,7 @@
   .ov-sortrow{display:flex;align-items:center;gap:8px;margin:0 0 12px;flex-wrap:wrap;}
   .ov-sortpills{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0;}
   .ov-allpill{display:none;}
-  .ov-inbtabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 10px;margin:0 0 4px;}
+  .ov-inbtabs{display:flex;gap:6px;flex-wrap:wrap;overflow-x:visible;padding:2px 0 10px;margin:0 0 4px;}
   .ov-inbtabs .ov-sortpill{flex:0 0 auto;}
   .ov-search{width:100%;box-sizing:border-box;}
   .ov-openchip{margin-left:auto;white-space:nowrap;font-size:12px;}
@@ -3018,13 +3018,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.254.0 - Needs You inbox. Recent decisions. Smart All homes.';
+const PLUMB_VERSION='2.255.0 - Company book door. Short inbox tabs. First house CTA.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786887578603;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.254.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786891179762;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.255.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5319,10 +5319,14 @@ function finishSetup(skipped){
   }
   try{localStorage.setItem('plumb.setupDone','1');}catch(e){}
   closeSetup();
-  if(skipped){toast('Setup skipped — run it any time from People & invites');return;}
-  showInfo('You\u2019re set up',`<p style="margin:0 0 10px"><b>${esc(setupDraft.company||'Your company')}</b> is ready. Your roster and selections style apply to every new site automatically.</p>
-    <p style="margin:0 0 10px">Want to see SitePlumb in action first? The <b>Demo</b> on the sign-in screen is a fully built sample site — a safe place to learn the feed, stages, selections and specs before your real build.</p>
-    <p style="color:var(--ink-3);font-size:12.5px;margin:0">Change any of this later: People &amp; invites → Run first-time setup again.</p>`);
+  if(skipped){toast('Setup skipped \u2014 run it any time from People & invites');return;}
+  const hasJobs=(state.projects||[]).length>0;
+  showInfo(hasJobs?'You\u2019re set up':'Company is ready',hasJobs
+    ?`<p style="margin:0 0 10px"><b>${esc(setupDraft.company||'Your company')}</b> is ready. Your roster and selections style apply to every new site automatically.</p>
+    <p style="color:var(--ink-3);font-size:12.5px;margin:0">Change any of this later: People & invites \u2192 Run first-time setup again.</p>`
+    :`<p style="margin:0 0 10px"><b>${esc(setupDraft.company||'Your company')}</b> is on the book. Roster and selections style apply to every house you add.</p>
+    <button class="b1 b-go" style="width:100%;margin-top:8px" onclick="closeInfo();openNewSite()">Add the first house</button>
+    <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0">You can add the rest from home. This is a company, not a single job.</p>`);
   logEvent('setupDone',setupDraft.customLevel+' · '+setupDraft.subRoster.length+' subs');}
 
 /* ════════ First-run fork ════════
@@ -5337,18 +5341,22 @@ function renderStart(){
   const el=document.getElementById('startBody');if(!el)return;
   document.getElementById('startTitle').textContent='Welcome to SitePlumb';
   el.innerHTML=`
-    <p style="margin:0 0 14px;color:var(--ink-2);font-size:14px;line-height:1.5">Let\u2019s get one job into SitePlumb. Pick whichever fits where you are right now — you can do the other next.</p>
+    <p style="margin:0 0 14px;color:var(--ink-2);font-size:14px;line-height:1.5">Get your company into SitePlumb. Start with one job, or set the book up and add houses as you go.</p>
     <button class="start-door" onclick="startPath('import')">
       <div class="sd-ic">\u{1F4E5}</div>
-      <div><div class="t">A job I\u2019m already building</div><div class="d">Bring an in-flight job in — pull a sub from contacts, forward a permit, drop in site photos. Your scattered job, in one place.</div></div></button>
+      <div><div class="t">A job I\u2019m already building</div><div class="d">Bring an in-flight job in \u2014 pull a sub from contacts, forward a permit, drop in site photos.</div></div></button>
     <button class="start-door" onclick="startPath('new')">
       <div class="sd-ic">\u{1F3D7}\u{FE0F}</div>
-      <div><div class="t">A new build starting soon</div><div class="d">Set it up clean before day one — site details, your trades, and the homeowner ready to follow along.</div></div></button>
+      <div><div class="t">A new build starting soon</div><div class="d">Set it up clean before day one \u2014 site details, your trades, and the homeowner ready to follow along.</div></div></button>
+    <button class="start-door" onclick="startPath('book')">
+      <div class="sd-ic">\u{1F3D8}\u{FE0F}</div>
+      <div><div class="t">I run several jobs</div><div class="d">Company name, standing roster, then add the houses. Built for a book, not a single site.</div></div></button>
     <button class="la-link" style="display:block;margin:10px auto 0;color:var(--ink-3)" onclick="startSkip()">I\u2019ll explore on my own</button>`;
 }
 function startSkip(){startDone();closeStart();toast('You can set up a job any time from the + on the home screen');}
 function startPath(kind){
   startDone();closeStart();
+  if(kind==='book'){openSetup();return;}
   if(kind==='new'){_startConverge='import';openNewSite();}
   else{_startConverge='new';openImport();}
 }
@@ -6922,12 +6930,14 @@ function renderOvCards(){
   }
   list=list.filter(function(p){return !q||((p.street||'')+' '+(p.name||'')+' '+(p.city||'')+' '+(p.state||'')).toLowerCase().includes(q);});
   let head='';
-  if(_ovSort==='recent'){
-    const prev=allPkPreview();
-    head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openPkLog()"><div class="ct"><div><div class="st">All houses</div><div class="nm">${prev.n?prev.n+' recent decision'+(prev.n===1?'':'s'):'Dates confirmed and answers sent'}</div></div><span class="td-chev">\u203a</span></div>${prev.html}</div>`;
-  }else{
-    const prev=allNyPreview();
-    head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openNyInbox()"><div class="ct"><div><div class="st">All homes</div><div class="nm">${prev.n?prev.n+' still need'+(prev.n===1?'s':'')+' you':'All clear across the jobs'}</div></div><span class="td-chev">\u203a</span></div>${prev.html}</div>`;
+  if(projs.length){
+    if(_ovSort==='recent'){
+      const prev=allPkPreview();
+      head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openPkLog()"><div class="ct"><div><div class="st">All houses</div><div class="nm">${prev.n?prev.n+' recent decision'+(prev.n===1?'':'s'):'Dates confirmed and answers sent'}</div></div><span class="td-chev">\u203a</span></div>${prev.html}</div>`;
+    }else{
+      const prev=allNyPreview();
+      head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openNyInbox()"><div class="ct"><div><div class="st">All homes</div><div class="nm">${prev.n?prev.n+' still need'+(prev.n===1?'s':'')+' you':'All clear across the jobs'}</div></div><span class="td-chev">\u203a</span></div>${prev.html}</div>`;
+    }
   }
   const body=list.map(function(p,i){
     const n=(need.map[String(p.id)]||{}).n||0;
@@ -6944,9 +6954,13 @@ function renderOvCards(){
       ${nyCardBits(p)}
     </div>`;
   }).join('');
-  const empty=(_ovSort==='attn'&&!list.length)
+  const empty=(!projs.length)
+    ?((state.session&&state.session.role==='hillan')
+      ?`<div class="empty">No houses on the book yet.</div><button class="ov-newbtn" onclick="openNewSite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add the first house</button>`
+      :`<div class="empty">No sites assigned to you yet.</div>`)
+    :(_ovSort==='attn'&&!list.length)
     ?'<div class="td-clear">All clear \u2014 nothing needs you.</div>'
-    :((!list.length)?(`<div class="empty">${q?'No sites match \u201c'+esc(q)+'\u201d.':((state.session&&state.session.role==='hillan')?'No sites yet \u2014 add your first build to get started.':'No sites assigned to you yet.')}</div>`+((!q&&state.session&&state.session.role==='hillan')?`<button class="ov-newbtn" onclick="openNewSite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New site</button>`:'')):'');
+    :((!list.length)?(`<div class="empty">${q?'No sites match \u201c'+esc(q)+'\u201d.':'No sites match.'}</div>`):'');
   cards.innerHTML=head+body+empty;
   if(_sc)_sc.scrollTop=_keepScroll;
 }
@@ -13106,12 +13120,28 @@ function inbFiltered(){
   });
   return rows;
 }
+function inbTabLabel(t){
+  if(t==='smart')return 'Needs you';
+  if(t==='all')return 'All';
+  return ({
+    'On deck, not booked':'On deck',
+    'Homeowner wrote you':'Homeowner',
+    'Site not ready':'Not ready',
+    'Waiting on them':'Waiting',
+    'They declined':'Declined',
+    'They\u2019re blocked':'Blocked',
+    'Spec still open':'Specs',
+    'Double-booked':'Overlap',
+    'Date change':'Dates',
+    'Question':'Question'
+  })[t]||t;
+}
 function inbSetTab(tab){_inbTab=tab;inbDraw();}
 function inbDraw(){
   const el=document.getElementById('pkLogBody');if(!el)return;
   const tabs=document.getElementById('pkLogTabs');
   if(tabs)tabs.innerHTML=inbTabs().map(function(t){
-    const lab=t==='smart'?'Needs you':(t==='all'?'All':t);
+    const lab=inbTabLabel(t);
     return '<button type="button" class="ov-sortpill'+(_inbTab===t?' on':'')+'" onclick="inbSetTab(\''+String(t).replace(/'/g,'\\\'')+'\')">'+esc(lab)+'</button>';
   }).join('');
   const rows=inbFiltered();

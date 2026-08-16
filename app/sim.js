@@ -1084,8 +1084,8 @@ t('Needs You is one card per house', (function(){
   return n===1;
 })());
 t('Attention uses Needs You language', $("String(renderOvCards)").indexOf('needs you')>=0&&$("String(renderOvCards)").indexOf("_ovSort==='attn'")>=0&&$("SORTLABELS.attn")==='Needs You');
-t('All houses is the first decisions door', $("String(renderOvCards)").indexOf('All houses')>=0&&$("String(renderOvCards)").indexOf('openPkLog')>=0&&$("String(openPkLog)").indexOf('openInb')>=0);
-t('Needs You opens an inbox', $("String(renderOvCards)").indexOf('All homes')>=0&&$("String(renderOvCards)").indexOf('openNyInbox')>=0&&$("String(inbDraw)").indexOf('smart')>=0);
+t('empty company does not show All homes', $("String(renderOvCards)").indexOf('if(projs.length)')>=0&&$("String(renderOvCards)").indexOf('No houses on the book')>=0);
+t('Needs You opens an inbox', $("String(renderOvCards)").indexOf('All homes')>=0&&$("String(renderOvCards)").indexOf('openNyInbox')>=0&&$("String(inbTabLabel)").indexOf('Needs you')>=0);
 t('the house list pills are Needs You, decisions, A-Z', $("SORTLABELS.recent")==='Recent decisions'&&$("String(renderOvSortRow)").indexOf('ov-allpill')<0);
 t('coming up more this week expands', $("String(renderToday)").indexOf('toggleSoon')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
 t('the day sheet sits over the calendar', (function(){
