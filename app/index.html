@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.282.0 - Walk: gold box is the scene. Orb talks with Ara.';
+const PLUMB_VERSION='2.283.0 - Walk: gold box stays on screen. Full site is the whole job.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786968437640;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.282.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786970537266;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.283.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5772,10 +5772,10 @@ const TOUR={team:[
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
     {f:'s8a',point:'[data-door=full]',stage:'#houseBody'},
-    {do:function(){try{const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}catch(e){}},f:'s8b',point:'nav .tab[data-v=log]',tab:'log',stage:'nav'},
-    {f:'s8c',point:'nav .tab[data-v=decisions]',tab:'decisions',stage:'nav'},
-    {f:'s8d',point:'nav .tab[data-v=build]',tab:'build',stage:'nav'},
-    {f:'s8e',point:'nav .tab[data-v=files]',tab:'files',stage:'nav'}
+    {do:function(){try{const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}catch(e){}},f:'s8b',point:'nav .tab[data-v=log]',tab:'log',stage:'site'},
+    {f:'s8c',point:'nav .tab[data-v=decisions]',tab:'decisions',stage:'site'},
+    {f:'s8d',point:'nav .tab[data-v=build]',tab:'build',stage:'site'},
+    {f:'s8e',point:'nav .tab[data-v=files]',tab:'files',stage:'site'}
   ]},
  {sel:'#overview',bubSide:'bb',title:'Company',body:'Calendar, invoices, roster, team. The office drawer.',
   nav:()=>{try{closeHouse();showOverview();}catch(e){}},
@@ -9286,9 +9286,10 @@ async function tourPlayCues(step,tok){
       }catch(e){}
     }
     await tourWait(c.do||c.tab?400:40,tok);
-    const stageSel=c.stage||step.sel||null;
-    if(stageSel)await tourWaitReady(stageSel,tok,1400);
+    const rawStage=c.stage||step.sel||null;
+    if(typeof rawStage==='string'&&rawStage!=='site'&&rawStage!=='nav')await tourWaitReady(rawStage,tok,1400);
     if(!tourAlive(tok))return;
+    const stageSel=tourExpandStage(rawStage);
     if(stageSel){
       try{await ringStage(stageSel,tok);}catch(e){}
     }
@@ -9591,7 +9592,40 @@ async function runTask(step,tok){
   try{await tourSpeak(T.payoff||'');}catch(e){}          /* the congratulation finishes before the tour moves */
   setTimeout(()=>{if(tourAlive(tok))tourNext();},readBeat(T.payoff,800));
 }
-/* unionRect: one frame around two regions \u2014 the stage spans the story */
+function tourStageRect(src){
+  let r=null;
+  try{
+    if(src&&typeof src==='object'&&typeof src.top==='number'&&src.width)r=src;
+    else if(typeof src==='function')r=src();
+    else{
+      const el=typeof src==='string'?document.querySelector(src):src;
+      if(el&&el.getBoundingClientRect)r=el.getBoundingClientRect();
+    }
+  }catch(e){}
+  if(!r||!r.width||!r.height)return null;
+  const inset=10;
+  const top=Math.max(r.top,inset);
+  const left=Math.max(r.left,inset);
+  const right=Math.min(r.right,innerWidth-inset);
+  let bot=Math.min(r.bottom,innerHeight-inset);
+  let w=right-left,h=bot-top;
+  if(w<56)w=Math.min(innerWidth-inset*2,220);
+  if(h<72)h=Math.min(innerHeight-inset*2,140);
+  const cap=Math.round(innerHeight*0.72);
+  if(h>cap)h=cap;
+  return {top:top,left:left,width:w,height:h,right:left+w,bottom:top+h};
+}
+function tourExpandStage(sel){
+  if(sel==='site'||sel==='nav'){
+    return function(){
+      const main=document.querySelector('main')||document.querySelector('#log')||document.querySelector('.device');
+      const nav=document.querySelector('nav');
+      if(main&&nav)return unionRect(main,nav);
+      return main||nav||null;
+    };
+  }
+  return sel;
+}
 function unionRect(a,b){
   const ea=typeof a==='string'?document.querySelector(a):a;
   const eb=typeof b==='string'?document.querySelector(b):b;
@@ -9605,15 +9639,12 @@ function unionRect(a,b){
 /* ringStage: settle-gated, animated ring move to a large stable region.
    The bubble is never touched (LAW 4) \u2014 stage changes are ring-only. */
 async function ringStage(sel,tok){
-  tlog('restage',typeof sel==='string'?sel:'fn');
-  if(typeof sel==='function'){                            /* rect-producing stage (e.g. a union) */
-    let r=sel();if(!r||!tourAlive(tok))return null;
-    if(r.top<74||r.bottom>innerHeight-70){                /* bring the whole story into frame first */
-      const sc=document.querySelector('main')||document.scrollingElement;
-      if(sc){sc.scrollTop+=(r.top-88);await new Promise(z=>setTimeout(z,420));r=sel()||r;}
-    }
-    if(!tourAlive(tok))return null;
-    window._stageEl=sel;
+  tlog('restage',typeof sel==='string'?sel:(typeof sel==='function'?'fn':'el'));
+  if(!tourAlive(tok))return null;
+  if(typeof sel==='function'||(sel&&typeof sel==='object'&&sel.top!=null&&!sel.querySelector)){
+    const r=tourStageRect(typeof sel==='function'?sel:sel);
+    if(!r)return null;
+    window._stageEl=typeof sel==='function'?function(){return tourStageRect(sel());}:sel;
     tourPlace(r,false,undefined,true);
     await awaitSpotRest();
     return null;
@@ -9621,19 +9652,24 @@ async function ringStage(sel,tok){
   const el=typeof sel==='string'?document.querySelector(sel):sel;
   if(!el||!tourAlive(tok))return null;
   window._stageEl=el;
-  smoothScrollTo(el,0.22);
-  await awaitSettle(el);
+  try{
+    const raw=el.getBoundingClientRect();
+    if(raw&&raw.height&&raw.height<innerHeight*0.88){
+      smoothScrollTo(el,0.18);
+      await awaitSettle(el);
+    }
+  }catch(e){}
   if(!tourAlive(tok))return null;
-  try{const r=el.getBoundingClientRect();if(r&&r.height)tourPlace(r,false,undefined,true);}catch(e){}
+  const r=tourStageRect(el);
+  if(r)tourPlace(r,false,undefined,true);
   await awaitSpotRest();
   return el;
 }
-/* re-glue: after any scroll, the ring re-measures its stage (LAW 1: instantly) */
 function stageReglue(){
   try{
     const s=window._stageEl;if(!s)return;
-    const r=typeof s==='function'?s():s.getBoundingClientRect();
-    if(r&&r.height)tourPlace(r,true,undefined,true);
+    const r=tourStageRect(typeof s==='function'?s():s);
+    if(r)tourPlace(r,true,undefined,true);
   }catch(e){}
 }
 /* tourPoint: the orb alone visits and pulses each target \u2014 the ring stays

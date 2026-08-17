@@ -20,7 +20,7 @@ A single-file PWA for residential construction project management — it connect
 
 **Pinned next after gold-master freeze:** Field Notes *file to* on the desk — optional trade + room after Send or on edit, so photos filter and land in that packet. Not on the field screen.
 
-**v2.282.0 is live.** Gold box is the scene. Orb talks with Ara. PWA starts before demo load. 2.280 stays the prior Safari-working restore.
+**v2.283.0 is live.** Gold box stays on screen. Full site is the whole job. 2.282 stays the prior restore.
 
 **Gold-master RC:** [GOLD-RC.md](GOLD-RC.md) — next is #1 empty-state hide + #2 All homes as a header.
 

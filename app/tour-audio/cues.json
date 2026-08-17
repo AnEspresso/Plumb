@@ -103,10 +103,10 @@
       "nav": "briefing",
       "cues": [
         { "id": "s8a", "say": "Full site is there when you need the whole job.", "point": "[data-door=full]", "stage": "#houseBody" },
-        { "id": "s8b", "say": "Log.", "point": "nav .tab[data-v=log]", "do": "openFull", "tab": "log", "stage": "nav" },
-        { "id": "s8c", "say": "Needs You.", "point": "nav .tab[data-v=decisions]", "tab": "decisions", "stage": "nav" },
-        { "id": "s8d", "say": "Build.", "point": "nav .tab[data-v=build]", "tab": "build", "stage": "nav" },
-        { "id": "s8e", "say": "And Files. Same four jobs you already know. Same Field Notes camera. Desk work lives here. You don't have to start here.", "point": "nav .tab[data-v=files]", "tab": "files", "stage": "nav" }
+        { "id": "s8b", "say": "Log.", "point": "nav .tab[data-v=log]", "do": "openFull", "tab": "log", "stage": "site" },
+        { "id": "s8c", "say": "Needs You.", "point": "nav .tab[data-v=decisions]", "tab": "decisions", "stage": "site" },
+        { "id": "s8d", "say": "Build.", "point": "nav .tab[data-v=build]", "tab": "build", "stage": "site" },
+        { "id": "s8e", "say": "And Files. Same four jobs you already know. Same Field Notes camera. Desk work lives here. You don't have to start here.", "point": "nav .tab[data-v=files]", "tab": "files", "stage": "site" }
       ]
     },
     {
