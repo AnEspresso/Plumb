@@ -3072,13 +3072,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.265.0 - Friendly walkthrough. Speaks like a person.';
+const PLUMB_VERSION='2.267.0 - Ara voice baked into the walkthrough.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786925489608;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.265.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786928193054;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.267.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4846,7 +4846,7 @@ async function laEnter(p){
       if(isOwner&&noSites&&!localStorage.getItem('plumb.startDone'))setTimeout(()=>{try{openStart();}catch(e){}},450);
       else if((!m||(m.role==='team'&&m.setup))&&!localStorage.getItem('plumb.setupDone'))setTimeout(()=>{try{openSetup();}catch(e){}},450);
       else if(p.rpRole==='owner'&&prefsPending())setTimeout(()=>{try{openSetupReview();}catch(e){}},450);
-      else if(m&&!localStorage.getItem('plumb.orientDone'))setTimeout(()=>{try{const _r=m.role==='client'?'client':(m.role==='team'?'team':'sub');startTour(_r);}catch(e){}},450);
+      else if(m&&!localStorage.getItem('plumb.orientDone'))setTimeout(()=>{try{const _r=m.role==='client'?'client':(m.role==='team'?'team':'sub');if(_r==='team')startTeamTour();else startTour(_r);}catch(e){}},450);
     }
   }catch(e){}
   if(m&&m.role==='team'&&!state.projects.length)toast('Connecting you to the team — sites appear once a teammate\u2019s device confirms your invite');
@@ -5634,7 +5634,7 @@ function renderSettings(){
     rows+='<div class="set-hd">This device</div>';
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
-    rows+=SET_GEAR_ROW('How SitePlumb works','A friendly walk around your book','closeSettings();startTour(\'team\')',I.how);
+    rows+=SET_GEAR_ROW('How SitePlumb works','A friendly walk around the example book','closeSettings();startTeamTour()',I.how);
     rows+=SET_GEAR_ROW('Classic walkthrough','The older Full-site tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
     rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
     if(devAllowed())rows+=SET_GEAR_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()',I.dev);
@@ -5708,16 +5708,108 @@ function jumpToSubs(){try{go('subs');}catch(e){}}
    optional nav() hooks; tap the highlighted control to try it, or Next to skip
    ahead. Role walkthroughs live in TOUR{}. ── */
 const TOUR={team:[
- {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once \u2014 the daily habit, your book of houses, and where the desk work lives. Skip anytime. Nothing here can break.',say:'Hey. Glad you\'re here. | I\'ll walk you around Site Plumb once. The daily habit. Your book of houses. And where the desk work lives. | Skip whenever you like. Nothing here can break.',nav:()=>{try{closeHouse();showOverview();renderToday();renderOvCards();}catch(e){}}},
- {sel:'.ov-field',bubSide:'tb',title:'Field Notes',body:'This camera is how you keep the record from the field. Pick the house, take a photo, tap a chip, hit Send. File the trade later at a desk. Same camera everywhere.',say:'See this camera? That\'s Field Notes. | Out on a job you pick the house, take a picture, tap a chip, and hit Send. | You can file the trade later, sitting at a desk. Same camera, everywhere you work.',nav:()=>{try{showOverview();renderToday();}catch(e){}}},
- {sel:'#ovSortRow',title:'Your book',body:'Needs You is the default \u2014 hottest work first. Recent Decisions is the paper trail. A\u2013Z is just the street names. Three cuts of the same book.',say:'This is your book. | Needs You is what opens first. The hottest work sits on top. Recent Decisions is the paper trail. A to Z is just the street names. | Three ways to look at the same houses.',nav:()=>{try{showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}}},
- {sel:'#ovCards',title:'The houses',body:'All homes is the first card \u2014 every open item, every house. Each row is one job. Tap a house to brief it. You don\u2019t have to open the whole site.',say:'All homes sits at the top. That\'s every open item, every house. | Each row under it is one job. Tap a house and you get a briefing. You don\'t have to open the whole site.',nav:()=>{try{showOverview();renderOvCards();}catch(e){}}},
- {sel:'#houseBody .pkt-strip, #houseBody',title:'The briefing',body:'One house. What still needs you, then the doors: Field Notes, Schedule, Selections, and Money. Most days this is enough.',say:'This is the briefing. Just this house. | What still needs you is at the top. Then the doors. Field Notes, Schedule, Selections, and Money. | Most days, this is enough.',nav:()=>{try{showOverview();const sp=state.projects||[];const pick=sp.find(function(p){return !p.sample;})||sp[0];if(pick&&typeof nyOpenHouse==='function')nyOpenHouse(pick.id);}catch(e){}}},
- {sel:'#houseBody .hs-doors',title:'The doors',body:'Schedule is this house on the calendar. Selections are the finishes. Money is what they owe. Field Notes from here already knows the house.',say:'These doors stay on this house. | Schedule is the calendar for just this job. Selections are the finishes. Money is what they owe. | And Field Notes from here already knows which house you\'re on.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
- {sel:'#houseBody .pkt-open, #houseBody .pkt-strip',title:'The packet',body:'Still open is what your sub sees in their install packet. File a Leak or Punch to a trade at the desk, and it shows up on their phone live.',say:'See what\'s still open? | That\'s what your sub sees in their install packet. File a leak or a punch to a trade at the desk, and it shows up on their phone. Live. No text thread.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
- {sel:'#houseBody .hs-door.wide',title:'Full site',body:'When you need the whole job: Log, Needs You, Build, and Files. Same four jobs. Same Field Notes camera. Desk work lives here.',say:'Full site is there when you need the whole job. | Log, Needs You, Build, and Files. Same four jobs you already know. Same Field Notes camera. | Desk work lives here. You don\'t have to start here.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
- {sel:'#ovCompanyBtn',title:'Company',body:'The office drawer. Trades calendar across every house, invoices, your standing roster, the team, and add a job.',say:'And this little briefcase? That\'s Company. | The trades calendar across every house. Invoices. Your standing roster. The team. Add a job. | It\'s the office drawer, not a house.',nav:()=>{try{closeHouse();showOverview();}catch(e){}}},
- {title:'You\u2019re set',body:'Field Notes from the field. The book at home. A briefing per house. The packet for the sub. Full site and Company when you need the desk. Replay anytime from Settings.',say:'You\'re set. | Field Notes from the field. The book when you\'re home. A briefing per house. The packet for the sub. | Full site and Company when you need the desk. Replay any time from Settings. I\'ll get out of your way.',nav:()=>{try{closeHouse();showOverview();}catch(e){}}}
+ {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once \u2014 the daily habit, your book of houses, and where the desk work lives. Skip anytime. Nothing here can break.',say:'Glad you\'re here. | I\'ll walk you around Site Plumb once. The daily habit. Your book of houses. And where the desk work lives. | Skip whenever you like. Nothing here can break.',nav:()=>{try{closeHouse();closeCompany();showOverview();renderToday();renderOvCards();}catch(e){}}},
+ {sel:'.ov-field',bubSide:'tb',title:'Field Notes',body:'This camera is how you keep the record from the field. Pick the house, take a photo, tap a chip, hit Send. File the trade later at a desk. Same camera everywhere.',say:'See this camera? That\'s Field Notes. | Out on a job you pick the house, take a picture, tap a chip, and hit Send. | You can file the trade later, sitting at a desk. Same camera, everywhere you work.',nav:()=>{try{showOverview();renderToday();}catch(e){}},
+  task:{payoff:'That\u2019s the whole field habit.',
+    steps:[
+      {t:'.ov-field',say:'Now you \u2014 tap the camera.',
+       hint:'The Field Notes camera.',
+       intercept:()=>{try{
+         const p=tourDemoHouse();if(p){try{Data.setActive(p.id);}catch(e){}openFieldNote();}
+         toast('In the field this opens your camera');
+       }catch(e){}},
+       done:()=>{try{return document.getElementById('sheet').classList.contains('show');}catch(e){return false;}},
+       stageAfter:'#sheet',
+       perform:async(tok)=>{
+         const chips=[...document.querySelectorAll('#sheet .chip')].slice(0,5);
+         if(chips.length)await tourPoint(chips,tok,380);
+         if(!tourAlive(tok))return;
+         const send=document.getElementById('saveBtn');
+         if(send)await tourPoint([send],tok,500);
+       }}
+    ]}},
+ {sel:'#ovSortRow',title:'Your book',body:'Needs You is the default \u2014 hottest work first. Recent Decisions is the paper trail. A\u2013Z is just the street names. Three cuts of the same book.',say:'This is your book. | Needs You is what opens first. The hottest work sits on top. Recent Decisions is the paper trail. A to Z is just the street names. | Three ways to look at the same houses.',nav:()=>{try{try{closeSheet();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}},
+  after:async(tok)=>{
+    await tourBeat(tok);
+    const order=['attn','recent','az'];
+    for(let i=0;i<order.length;i++){
+      if(!tourAlive(tok))return;
+      const el=document.querySelector('[data-sort="'+order[i]+'"]');
+      if(!el)continue;
+      await tourPoint([el],tok,620);
+      try{setOvSort(order[i]);}catch(e){}
+      await tourWait(280,tok);
+    }
+    try{setOvSort('attn');}catch(e){}
+  }},
+ {sel:'#ovCards',title:'The houses',body:'All homes is the first card \u2014 every open item, every house. Each row is one job. Tap a house to brief it. You don\u2019t have to open the whole site.',say:'All homes sits at the top. That\'s every open item, every house. | Each row under it is one job. Tap a house and you get a briefing. You don\'t have to open the whole site.',nav:()=>{try{showOverview();renderOvCards();}catch(e){}},
+  after:async(tok)=>{
+    await tourBeat(tok);
+    const all=document.querySelector('#ovCards .allh')||document.querySelector('#ovCards .ov-card');
+    const house=document.querySelector('#ovCards .ov-card:not(.allh)');
+    if(all)await tourPoint([all],tok,800);
+    if(!tourAlive(tok))return;
+    if(house)await tourPoint([house],tok,800);
+  }},
+ {sel:'#houseBody .pkt-strip, #houseBody',title:'The briefing',body:'One house. What still needs you, then the doors: Field Notes, Schedule, Selections, and Money. Most days this is enough.',say:'This is the briefing. Just this house. | What still needs you is at the top. Then the doors. Field Notes, Schedule, Selections, and Money. | Most days, this is enough.',nav:()=>{try{showOverview();const p=tourDemoHouse();if(p&&typeof nyOpenHouse==='function')nyOpenHouse(p.id);}catch(e){}},
+  after:async(tok)=>{
+    await tourBeat(tok);
+    const strip=document.querySelector('#houseBody .pkt-strip');
+    const open=document.querySelector('#houseBody .pkt-open');
+    if(strip)await tourPoint([strip],tok,700);
+    if(!tourAlive(tok))return;
+    if(open)await tourPoint([open],tok,700);
+    if(!tourAlive(tok))return;
+    const doors=document.querySelector('#houseBody .hs-doors');
+    if(doors)await tourPoint([doors],tok,500);
+  }},
+ {sel:'#houseBody .hs-doors',title:'The doors',body:'Schedule is this house on the calendar. Selections are the finishes. Money is what they owe. Field Notes from here already knows the house.',say:'These doors stay on this house. | Schedule is the calendar for just this job. Selections are the finishes. Money is what they owe. | And Field Notes from here already knows which house you\'re on.',nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
+  after:async(tok)=>{
+    await tourBeat(tok);
+    const ids=['field','cal','sel','money'];
+    const els=ids.map(function(id){return document.querySelector('#houseBody [data-door="'+id+'"]');}).filter(Boolean);
+    if(els.length)await tourPoint(els,tok,560);
+  }},
+ {sel:'#houseBody .pkt-open, #houseBody .pkt-strip',title:'The packet',body:'Still open is what your sub sees in their install packet. File a Leak or Punch to a trade at the desk, and it shows up on their phone live.',say:'See what\'s still open? | That\'s what your sub sees in their install packet. File a leak or a punch to a trade at the desk, and it shows up on their phone. Live. No text thread.',nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
+  after:async(tok)=>{
+    await tourBeat(tok);
+    const row=document.querySelector('#houseBody .pkt-or');
+    if(row)await tourPoint([row],tok,1100);
+  }},
+ {sel:'#houseBody .hs-door.wide, [data-door=full]',title:'Full site',body:'When you need the whole job: Log, Needs You, Build, and Files. Same four jobs. Same Field Notes camera. Desk work lives here.',say:'Full site is there when you need the whole job. | Log, Needs You, Build, and Files. Same four jobs you already know. Same Field Notes camera. | Desk work lives here. You don\'t have to start here.',nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
+  after:async(tok)=>{
+    await tourBeat(tok);
+    const door=document.querySelector('[data-door=full]');
+    if(door)await tourPoint([door],tok,400,{press:true});
+    try{const p=tourDemoHouse();if(p)openSiteFromOverview(p.id);go('log');}catch(e){}
+    await tourWait(700,tok);
+    if(!tourAlive(tok))return;
+    await ringStage('nav .tabs',tok);
+    const tabs=['log','decisions','build','files'];
+    for(let i=0;i<tabs.length;i++){
+      if(!tourAlive(tok))return;
+      const el=document.querySelector('nav .tab[data-v="'+tabs[i]+'"]');
+      if(!el)continue;
+      await tourPoint([el],tok,480,{press:true});
+      try{el.click();}catch(e){}
+      await tourWait(360,tok);
+    }
+  }},
+ {sel:'#ovCompanyBtn',title:'Company',body:'The office drawer. Trades calendar across every house, invoices, your standing roster, the team, and add a job.',say:'And this little briefcase? That\'s Company. | The trades calendar across every house. Invoices. Your standing roster. The team. Add a job. | It\'s the office drawer, not a house.',nav:()=>{try{closeHouse();showOverview();}catch(e){}},
+  after:async(tok)=>{
+    await tourBeat(tok);
+    const btn=document.getElementById('ovCompanyBtn');
+    if(btn)await tourPoint([btn],tok,360,{press:true});
+    try{openCompany();}catch(e){}
+    await tourWait(500,tok);
+    if(!tourAlive(tok))return;
+    await ringStage('#companyBody',tok);
+    const rows=[...document.querySelectorAll('#companyBody .set-row')].slice(0,5);
+    if(rows.length)await tourPoint(rows,tok,480);
+    await tourWait(400,tok);
+    try{closeCompany();}catch(e){}
+  }},
+ {title:'You\u2019re set',body:'Field Notes from the field. The book at home. A briefing per house. The packet for the sub. Full site and Company when you need the desk. Replay anytime from Settings.',say:'You\'re set. | Field Notes from the field. The book when you\'re home. A briefing per house. The packet for the sub. | Full site and Company when you need the desk. Replay any time from Settings. I\'ll get out of your way.',nav:()=>{try{closeCompany();closeHouse();showOverview();}catch(e){}}}
 ],
 /* Saved 2.262 builder walkthrough. Replay from Settings \u2192 Classic walkthrough. */
 teamLegacy:[
@@ -6910,11 +7002,11 @@ function houseHTML(p){
     h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
   h+='<div class="hs-doors">';
-  if(!isClient)h+='<button class="hs-door" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">Photo or a note</div></button>';
-  h+='<button class="hs-door" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
-  h+='<button class="hs-door" onclick="houseGoSite(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
-  if(isBuilder)h+='<button class="hs-door" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
-  if(!isClient)h+='<button class="hs-door wide" onclick="houseGoSite(\'log\')"><div class="k">Full site</div><div class="m">Log, Needs You, Build, Files</div></button>';
+  if(!isClient)h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">Photo or a note</div></button>';
+  h+='<button class="hs-door" data-door="cal" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
+  h+='<button class="hs-door" data-door="sel" onclick="houseGoSite(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
+  if(isBuilder)h+='<button class="hs-door" data-door="money" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
+  if(!isClient)h+='<button class="hs-door wide" data-door="full" onclick="houseGoSite(\'log\')"><div class="k">Full site</div><div class="m">Log, Needs You, Build, Files</div></button>';
   h+='</div>';
   return h;
 }
@@ -7047,7 +7139,7 @@ function renderOvSortRow(){
   const row=document.getElementById('ovSortRow');if(!row)return;
   const projs=visibleProjects();
   if(projs.length<2){row.innerHTML='';row.style.display='none';return;}
-  const pills=['attn','recent','az'].map(m=>`<button class="ov-sortpill${_ovSort===m?' on':''}" onclick="setOvSort('${m}')">${SORTLABELS[m]}</button>`).join('');
+  const pills=['attn','recent','az'].map(m=>`<button class="ov-sortpill${_ovSort===m?' on':''}" data-sort="${m}" onclick="setOvSort('${m}')">${SORTLABELS[m]}</button>`).join('');
   row.style.display='flex';
   row.innerHTML=`<div class="ov-sortpills">${pills}</div>`;
 }
@@ -8873,6 +8965,21 @@ function startGrandTour(){
   if(appMode()!=='demo')enterDemo();
   setTimeout(()=>{try{startTour('grand');}catch(e){}},350);
 }
+function tourDemoHouse(){return (state.projects||[]).find(function(p){return String(p.id)==='p2';})||(state.projects||[])[0]||null;}
+function tourWait(ms,tok){return new Promise(function(r){setTimeout(r,ms||400);});}
+function tourBeat(tok){
+  return Promise.resolve(window._narrDone).catch(function(){}).then(function(){return tourWait(180,tok);});
+}
+function startTeamTour(){
+  try{tourAudioProbe();tourUnlockAudio();}catch(e){}
+  welcomeDone();
+  try{closeStart();closeSetup();closeHouse();closeCompany();}catch(e){}
+  try{sessionStorage.setItem('plumbTourOffered','1');}catch(e){}
+  try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
+  if(appMode()!=='demo')enterDemo();
+  try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
+  setTimeout(function(){try{showOverview();renderToday();renderOvCards();startTour('team');}catch(e){}},400);
+}
 /* ═══ TOUR MOTION LAWS (Peter's, 2026-07-07 — every frame, both directions) ═══
    1. Rings land right the FIRST time and stay put: measure only when the target
       is at rest (awaitSettle). Corrections, if ever needed, are instant+invisible.
@@ -9262,15 +9369,47 @@ function orbTaps(taps,instantFirst){
 }
 function orbHide(){try{const o=_orbEl();if(o){o.classList.remove('show','tap','active');}}catch(e){}}
 function endGrandTour(silent){try{tourEnd();}catch(e){}tourAudioStop();try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
-/* voice: pre-recorded narration plays from tour-audio/{n}.mp3 when present;
-   otherwise the best local speechSynthesis voice carries the tour. */
+/* voice: baked MP3s in tour-audio/ when present (Ara, warm). Else the local engine. */
 let _tourAudio=null,_tourPre=null;
-function tourAudioStop(){try{if(_tourAudio){_tourAudio.onerror=null;_tourAudio.pause();_tourAudio=null;}}catch(e){}}
+function tourAudioStop(){try{if(_tourAudio){_tourAudio.onended=null;_tourAudio.onerror=null;_tourAudio.pause();_tourAudio=null;}}catch(e){}}
+function tourClipUrl(idx){
+  try{
+    if(typeof TOUR==='undefined'||typeof _tourSteps==='undefined')return '';
+    if(_tourSteps===TOUR.team)return 'tour-audio/team-'+(idx+1)+'.mp3';
+    if(_tourSteps===TOUR.grand)return 'tour-audio/'+(idx+1)+'.mp3';
+  }catch(e){}
+  return '';
+}
 function tourAudioProbe(){
   if(window._tourAudioOK!==undefined)return;
   window._tourAudioOK='checking';
-  try{fetch('tour-audio/1.mp3',{method:'HEAD'}).then(r=>{window._tourAudioOK=!!(r&&r.ok);}).catch(()=>{window._tourAudioOK=false;});}
+  try{fetch('tour-audio/team-1.mp3',{method:'HEAD'}).then(function(r){window._tourAudioOK=!!(r&&r.ok);}).catch(function(){window._tourAudioOK=false;});}
   catch(e){window._tourAudioOK=false;}
+}
+function tourUnlockAudio(){
+  try{
+    const a=new Audio('tour-audio/team-1.mp3');
+    a.muted=true;a.volume=0;
+    const p=a.play();
+    if(p&&p.then)p.then(function(){try{a.pause();a.currentTime=0;}catch(e){}}).catch(function(){});
+  }catch(e){}
+}
+function tourPlayClip(url,text){
+  window._narrDone=new Promise(function(res){
+    window.__narrRes=res;
+    setTimeout(res,48000);
+  });
+  const a=new Audio(url);
+  a.preload='auto';
+  a.onended=function(){try{if(window.__narrRes)window.__narrRes();}catch(e){}};
+  a.onerror=function(){if(_tourAudio===a){_tourAudio=null;tourSpeak(text);}};
+  _tourAudio=a;
+  const p=a.play();
+  if(p&&p.catch)p.catch(function(){if(_tourAudio===a){_tourAudio=null;tourSpeak(text);}});
+  try{
+    const n=url.match(/(\d+)(\.mp3)$/);
+    if(n){_tourPre=new Audio(url.replace(/(\d+)(\.mp3)$/, String(Number(n[1])+1)+n[2]));_tourPre.preload='auto';_tourPre.onerror=function(){};}
+  }catch(e){}
 }
 function tourNarrate(step,idx){
   try{
@@ -9279,21 +9418,10 @@ function tourNarrate(step,idx){
     try{if(typeof speechSynthesis!=='undefined')speechSynthesis.cancel();}catch(e){}
     if(tourMuted())return;
     const text=tourSayText(step);
-    const isGrand=(typeof TOUR!=='undefined'&&_tourSteps===TOUR.grand);
     tourAudioProbe();
-    /* iOS only speaks when speech STARTS inside the tap gesture \u2014 so unless
-       narration files are KNOWN to exist, speak synchronously right now. */
-    if(window._tourAudioOK!==true){window._narrDone=tourSpeak(text);return;}
-    if(isGrand&&typeof Audio!=='undefined'){
-      window._narrDone=new Promise(res=>{window.__narrRes=res;setTimeout(res,45000);});
-      const a=new Audio('tour-audio/'+(idx+1)+'.mp3');
-      a.preload='auto';
-      a.onerror=()=>{if(_tourAudio===a){_tourAudio=null;tourSpeak(text);}};
-      _tourAudio=a;
-      const p=a.play();
-      if(p&&p.catch)p.catch(()=>{if(_tourAudio===a){_tourAudio=null;tourSpeak(text);}});
-      try{_tourPre=new Audio('tour-audio/'+(idx+2)+'.mp3');_tourPre.preload='auto';_tourPre.onerror=()=>{};}catch(e){}
-    } else tourSpeak(text);
+    const url=tourClipUrl(idx);
+    if(url&&typeof Audio!=='undefined'){tourPlayClip(url,text);return;}
+    window._narrDone=tourSpeak(text);
   }catch(e){try{tourSpeak(tourSayText(step));}catch(_){}}
 }
 function tourSayText(step){
