@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.286.0 - Walk: gold box holds still per scene. Film tool added.';
+const PLUMB_VERSION='2.287.0 - Walk: Today is Today. Camera is the camera. Houses stay on the list.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786977487468;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.286.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786979035416;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.287.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6113,7 +6113,10 @@ function tourStep(){
     (el&&!huge?awaitSettle(el):Promise.resolve()).then(()=>{
       if(_tok!==_gtTok)return;
       const bub=document.getElementById('tourBubble');if(!bub)return;
-      const rect=el?el.getBoundingClientRect():null;
+      const stageFn=tourExpandStage(step.sel);
+      let rect=null;
+      try{rect=tourStageRect(typeof stageFn==='function'?stageFn:el);}catch(e){rect=el?el.getBoundingClientRect():null;}
+      if(!rect&&el)rect=el.getBoundingClientRect();
       if(el){const cs=getComputedStyle(el);_tourLiftPrev={pos:el.style.position,z:el.style.zIndex};
         if(cs.position==='static')el.style.position='relative';el.style.zIndex='2001';_tourLift=el;
         if(step.tap){_tourTapEl=el;_tourTapFn=()=>{tourNext();};el.addEventListener('click',_tourTapFn,{once:true});}}
@@ -9648,7 +9651,7 @@ function tourSceneRect(name){
     let left=Math.min.apply(null,rs.map(function(r){return r.left;}))-8;
     let right=Math.max.apply(null,rs.map(function(r){return r.right;}))+8;
     let bot=Math.max.apply(null,rs.map(function(r){return r.bottom;}))+8;
-    top=Math.max(8,top);
+    top=Math.max(56,top);
     left=Math.max(8,left);
     right=Math.min(innerWidth-8,right);
     bot=Math.min(innerHeight-8,bot);
@@ -9661,20 +9664,25 @@ function tourSceneRect(name){
     return {top:top,left:left,width:right-left,height:bot-top,right:right,bottom:bot};
   };
   if(name==='home'||name==='welcome'){
-    return join([document.getElementById('ovToday'),document.querySelector('.ov-list .ov-field, .ov-field')],'bb');
+    return join([document.getElementById('ovToday')],'bb');
   }
   if(name==='book'||name==='houses'){
-    const keep=[document.getElementById('ovSortRow')];
-    const maxBot=innerHeight-150;
+    const pills=document.getElementById('ovSortRow');
+    try{if(pills)pills.scrollIntoView({block:'start',behavior:'instant'});}catch(e){}
+    const keep=[pills];
+    const maxBot=innerHeight-160;
     document.querySelectorAll('#ovCards .allh, #ovCards .ov-card').forEach(function(c){
-      const r=box(c);if(r&&r.top<maxBot-24)keep.push(c);
+      const r=box(c);
+      if(r&&r.top<maxBot-20&&r.bottom>80)keep.push(c);
     });
     return join(keep,'tb');
   }
   if(name==='field'){
     const sh=document.getElementById('sheet');
     if(sh&&sh.classList.contains('show'))return join([sh],'tb');
-    return join([document.querySelector('.ov-list .ov-field, .ov-field'),document.getElementById('ovToday')],'bb');
+    const cam=document.querySelector('.ov-list .ov-field, button.ov-field, .ov-field');
+    try{if(cam)cam.scrollIntoView({block:'center',behavior:'instant'});}catch(e){}
+    return join([cam],'bb');
   }
   if(name==='sheet')return join([document.getElementById('sheet')],'tb');
   if(name==='briefing'||name==='doors'||name==='packet'){
