@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.291.0 - Walk: no pause at Next. Book stays on the pills. Card has air.';
+const PLUMB_VERSION='2.292.0 - Walk: one hello. You send the note. Orb underlines the words.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786992632974;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.291.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786997244704;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.292.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5724,21 +5724,21 @@ const TOUR={team:[
  {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',sel:'#ovToday',
   nav:()=>{try{closeHouse();closeCompany();showOverview();renderToday();renderOvCards();}catch(e){}},
   play:[{f:'s1a',stage:'welcome'},{f:'s1b',point:'#ovToday',stage:'welcome'},{f:'s1c',stage:'welcome'}]},
- {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'House, photo, chip, Send. Same camera everywhere.',
+ {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'Tap the camera. Chip, a few words, Send.',
   nav:()=>{try{showOverview();renderToday();}catch(e){}},
   play:[
-    {f:'s2a',point:'.ov-field',stage:'field'},
-    {do:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}},f:'s2b',point:'#sheet .chip',stage:'sheet'},
-    {f:'s2c',point:'#saveBtn',stage:'sheet'},
-    {do:function(){try{closeSheet();}catch(e){}},f:'s2d',point:'.ov-field',waitTap:'.ov-field',stage:'field',intercept:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}}}
+    {f:'s2a',point:'.ov-field',stage:'field',waitTap:'.ov-field',waitMs:30000,intercept:function(){try{const p=tourDemoHouse();if(p)Data.setActive(p.id);openFieldNote();}catch(e){}}},
+    {f:'s2b',point:'#fieldKindChips .chip',stage:'sheet'},
+    {f:'s2c',point:'#caption',stage:'sheet'},
+    {f:'s2d',point:'#saveBtn',stage:'sheet',waitTap:'#saveBtn',waitMs:50000,intercept:function(){try{const t=document.getElementById('caption');if(t&&!String(t.value||'').trim())t.value='Siding looks proud at the corner.';save();}catch(e){}}}
   ]},
  {sel:'#ovSortRow',bubSide:'tb',title:'Your book',body:'Needs You. Recent Decisions. A\u2013Z.',
   nav:()=>{try{try{closeSheet();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}},
   play:[
     {f:'s3a',point:'#ovSortRow',stage:'book'},
-    {do:function(){try{setOvSort('attn');}catch(e){}},f:'s3b',point:'[data-sort=attn]',stage:'book'},
-    {do:function(){try{setOvSort('recent');}catch(e){}},f:'s3c',point:'[data-sort=recent]',stage:'book'},
-    {do:function(){try{setOvSort('az');}catch(e){}},f:'s3d',point:'[data-sort=az]',stage:'book'}
+    {do:function(){try{setOvSort('attn');}catch(e){}},f:'s3b',point:'[data-sort=attn]',stage:'book',line:true},
+    {do:function(){try{setOvSort('recent');}catch(e){}},f:'s3c',point:'[data-sort=recent]',stage:'book',line:true},
+    {do:function(){try{setOvSort('az');}catch(e){}},f:'s3d',point:'[data-sort=az]',stage:'book',line:true}
   ]},
  {sel:'#ovCards',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
   nav:()=>{try{try{setOvSort('attn');}catch(e){}showOverview();renderOvCards();}catch(e){}},
@@ -5757,10 +5757,10 @@ const TOUR={team:[
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
     {f:'s6a',point:'#houseBody .hs-doors',stage:'#houseBody'},
-    {f:'s6b',point:'#houseBody [data-door=cal]',stage:'#houseBody'},
-    {f:'s6c',point:'#houseBody [data-door=sel]',stage:'#houseBody'},
-    {f:'s6d',point:'#houseBody [data-door=money]',stage:'#houseBody'},
-    {f:'s6e',point:'#houseBody [data-door=field]',stage:'#houseBody'}
+    {f:'s6b',point:'#houseBody [data-door=cal]',stage:'#houseBody',line:true},
+    {f:'s6c',point:'#houseBody [data-door=sel]',stage:'#houseBody',line:true},
+    {f:'s6d',point:'#houseBody [data-door=money]',stage:'#houseBody',line:true},
+    {f:'s6e',point:'#houseBody [data-door=field]',stage:'#houseBody',line:true}
   ]},
  {sel:'#houseBody',bubSide:'tb',title:'The packet',body:'Still open is what the sub sees. Live.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
@@ -5772,10 +5772,10 @@ const TOUR={team:[
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
     {f:'s8a',point:'[data-door=full]',stage:'#houseBody'},
-    {do:function(){try{const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}catch(e){}},f:'s8b',point:'nav .tab[data-v=log]',tab:'log',stage:'site'},
-    {f:'s8c',point:'nav .tab[data-v=decisions]',tab:'decisions',stage:'site'},
-    {f:'s8d',point:'nav .tab[data-v=build]',tab:'build',stage:'site'},
-    {f:'s8e',point:'nav .tab[data-v=files]',tab:'files',stage:'site'}
+    {do:function(){try{closeHouse();const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}catch(e){}},f:'s8b',point:'nav .tab[data-v=log]',tab:'log',stage:'site',line:true},
+    {f:'s8c',point:'nav .tab[data-v=decisions]',tab:'decisions',stage:'site',line:true},
+    {f:'s8d',point:'nav .tab[data-v=build]',tab:'build',stage:'site',line:true},
+    {f:'s8e',point:'nav .tab[data-v=files]',tab:'files',stage:'site',line:true}
   ]},
  {sel:'#ovCompanyBtn',bubSide:'bb',title:'Company',body:'Calendar, invoices, roster, team. The office drawer.',
   nav:()=>{try{closeHouse();showOverview();}catch(e){}},
@@ -5989,7 +5989,7 @@ function startTourSteps(steps){
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
-function tourEnd(){window._tourQuiet=false;orbHide();tourAudioStop();try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+function tourEnd(){window._tourQuiet=false;orbHide();tourAudioStop();try{window._tourQuiet=false;}catch(e){}try{const ln=document.getElementById('tourLine');if(ln)ln.remove();}catch(e){}try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
 function tourNext(){window._tourBack=false;tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
 function tourPrev(){window._tourBack=true;tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
@@ -9189,7 +9189,6 @@ function tourPlayFile(name){
     }
     timers.push(setInterval(function(){
       if(settled)return;
-      if(startAc()){try{a.pause();}catch(e){}return;}
       try{
         if(a.ended||(a.duration&&a.currentTime>=a.duration-0.12)){done('ended');return;}
         if(!waiting&&a.paused&&a.currentTime<0.08){done('silence');return;}
@@ -9198,7 +9197,7 @@ function tourPlayFile(name){
     timers.push(setTimeout(function(){done('timeout');},14000));
   });
 }
-function tourWaitTap(sel,intercept,tok){
+function tourWaitTap(sel,intercept,tok,ms){
   return new Promise(function(res){
     const el=document.querySelector(sel);
     if(!el){res();return;}
@@ -9223,13 +9222,15 @@ function tourWaitTap(sel,intercept,tok){
       if(done||!tourAlive(tok))return;
       try{if(intercept)intercept();}catch(e){}
       finish();
-    },12000);
-    const poll=function(){
-      if(!tourAlive(tok)){finish();return;}
-      try{if(document.getElementById('sheet')&&document.getElementById('sheet').classList.contains('show')){finish();return;}}catch(e){}
-      setTimeout(poll,200);
-    };
-    poll();
+    },ms||24000);
+    if(typeof sel==='string'&&sel.indexOf('ov-field')>=0){
+      const poll=function(){
+        if(done||!tourAlive(tok))return;
+        try{if(document.getElementById('sheet')&&document.getElementById('sheet').classList.contains('show'))finish();}catch(e){}
+        if(!done)setTimeout(poll,200);
+      };
+      poll();
+    }
   });
 }
 function tourHits(a,b){
@@ -9319,14 +9320,16 @@ async function tourPlayCues(step,tok){
     }else if(stageSel){
       try{stageReglue();}catch(e){}
     }
-    if(c.point){
+    if(c.line&&c.point){
+      try{await tourUnderline(c.point,tok);}catch(e){}
+    }else if(c.point){
       try{orbTo(c.point,{settle:true,rest:true});}catch(e){}
       try{tourPoint(String(c.point).split(',').map(function(s){return s.trim();}),tok,80);}catch(e){}
     }
     try{tourSeeSnap(c);}catch(e){}
     await audioP;
     if(!tourAlive(tok))return;
-    if(c.waitTap)await tourWaitTap(c.waitTap,c.intercept,tok);
+    if(c.waitTap)await tourWaitTap(c.waitTap,c.intercept,tok,c.waitMs);
     try{if(c.doAfter)c.doAfter();}catch(e){}
   }
   try{if(step.title==='Company')closeCompany();}catch(e){}
@@ -9790,6 +9793,42 @@ async function tourPoint(sels,tok,dwell,opts){
     await new Promise(r=>setTimeout(r,dwell||800));
   }
 }
+async function tourUnderline(sel,tok){
+  const el=typeof sel==='string'?document.querySelector(sel):sel;
+  if(!el||!tourAlive(tok))return;
+  let r=el.getBoundingClientRect();
+  if(r.top<70||r.bottom>innerHeight-90){
+    smoothScrollTo(el,0.32);
+    await awaitSettle(el);
+    if(!tourAlive(tok))return;
+    r=el.getBoundingClientRect();
+  }
+  let n=document.getElementById('tourLine');
+  if(!n){
+    n=document.createElement('div');
+    n.id='tourLine';
+    n.style.cssText='position:fixed;height:3px;border-radius:2px;background:linear-gradient(90deg,#E7DCC6,#C49A6C 55%,#B0895A);box-shadow:0 0 10px rgba(196,154,108,.5);pointer-events:none;z-index:2002;opacity:0;transform-origin:left center;transition:width .65s cubic-bezier(.4,0,.2,1),opacity .2s ease';
+    document.body.appendChild(n);
+  }
+  const x=r.left+6,y=r.bottom+3,w=Math.max(28,r.width-12);
+  n.style.left=x+'px';n.style.top=y+'px';n.style.width='0px';n.style.opacity='1';
+  const o=_orbEl();
+  if(o){o.classList.add('show');_orbPlace(o,x,y,false);}
+  await tourWait(30,tok);
+  n.style.width=w+'px';
+  const t0=performance.now();
+  await new Promise(function(res){
+    const go=function(t){
+      const p=Math.min(1,(t-t0)/650);
+      if(o)_orbPlace(o,x+w*p,y,true);
+      if(p>=1||!tourAlive(tok)){res();return;}
+      requestAnimationFrame(go);
+    };
+    requestAnimationFrame(go);
+  });
+  await tourWait(220,tok);
+  n.style.opacity='0';
+}
 async function tourPing(sels,tok,dwell,startEl){
   await awaitSpotRest();                             /* LAW 2: the ride starts from rest, never mid-glide */
   if(!tourAlive(tok))return;
@@ -9860,13 +9899,6 @@ function tourUnlockAudio(){
       const s=_tourAC.createBufferSource();
       s.buffer=z;s.connect(_tourAC.destination);s.start();
     }
-  }catch(e){}
-  try{
-    if(!_tourEl){_tourEl=new Audio();_tourEl.preload='auto';}
-    _tourEl.muted=false;_tourEl.volume=1;
-    if(!(_tourEl.currentSrc&&_tourEl.currentSrc.indexOf('s1a.mp3')>=0))_tourEl.src='tour-audio/s1a.mp3';
-    const p=_tourEl.play();
-    if(p&&p.catch)p.catch(function(){});
   }catch(e){}
 }
 function tourPrefetch(){
