@@ -64,7 +64,7 @@ await page.evaluate(() => { try { startTeamTour(); } catch (e) {} });
 const frames = [];
 const t0 = Date.now();
 let lastIdx = -1, lastChange = 0;
-for (let i = 0; i < 240; i++) {
+for (let i = 0; i < 160; i++) {
   const snap = await page.evaluate(() => {
     const s = _tourSteps && typeof _tourIdx === "number" ? _tourSteps[_tourIdx] : null;
     const spot = document.getElementById("tourSpot");

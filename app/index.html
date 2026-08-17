@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.287.0 - Walk: Today is Today. Camera is the camera. Houses stay on the list.';
+const PLUMB_VERSION='2.288.0 - Walk: Ara starts on the tap. Orb is back.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786979035416;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.287.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786981550197;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.288.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6139,6 +6139,9 @@ function tourStep(){
         try{const rq=tourStageRect(step.stageRect?step.stageRect():el);if(rq)tourPlace(rq,true,undefined,true);}catch(e){}},90));
       if(_tourSteps!==TOUR.team){
         if(el)orbTo(el,{settle:true,rest:true,noscroll:true});else orbHide();
+      }else{
+        const aim=document.querySelector((step.play&&step.play[0]&&step.play[0].point)||step.sel||'#ovToday')||el;
+        if(aim)orbTo(aim,{settle:true,rest:true,noscroll:true});
       }
       {const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';}
       try{if(_tourSteps===TOUR.team)tourAvoidCover(null);}catch(e){}
@@ -9157,6 +9160,7 @@ function tourPlayFile(name){
     a.onended=function(){done('ended');};
     a.onerror=function(){done('error');};
     _tourAudio=a;
+    let waiting=false;
     if(same&&!a.paused&&a.currentTime>0.05&&a.duration&&a.currentTime<a.duration-0.15){
       tourTrace('play-el',name,'reuse');
     }else if(same&&(a.ended||(a.duration&&a.currentTime>=a.duration-0.15))){
@@ -9164,18 +9168,20 @@ function tourPlayFile(name){
       return;
     }else{
       if(!same){try{a.pause();}catch(e){}a.src=url;}
-      tourTrace('play-el',name);
+      waiting=true;
       const p=a.play();
-      if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));if(!startAc())done('play-fail');});
+      if(p&&p.then)p.then(function(){waiting=false;}).catch(function(err){waiting=false;tourTrace('play-fail',name,String(err&&err.message||err));if(!startAc())done('play-fail');});
+      else waiting=false;
+      tourTrace('play-el',name);
     }
     timers.push(setInterval(function(){
       if(settled)return;
       if(startAc()){try{a.pause();}catch(e){}return;}
       try{
         if(a.ended||(a.duration&&a.currentTime>=a.duration-0.12)){done('ended');return;}
-        if(a.paused&&a.currentTime<0.08){done('silence');return;}
+        if(!waiting&&a.paused&&a.currentTime<0.08){done('silence');return;}
       }catch(e){}
-    },250));
+    },400));
     timers.push(setTimeout(function(){done('timeout');},14000));
   });
 }
@@ -9301,10 +9307,8 @@ async function tourPlayCues(step,tok){
       try{stageReglue();}catch(e){}
     }
     if(c.point){
+      try{orbTo(c.point,{settle:true,rest:true});}catch(e){}
       try{tourPoint(String(c.point).split(',').map(function(s){return s.trim();}),tok,80);}catch(e){}
-      try{tourAvoidCover(document.querySelector(stageSel||c.point));}catch(e){}
-    } else {
-      try{tourAvoidCover(document.querySelector(stageSel||step.sel));}catch(e){}
     }
     try{tourSeeSnap(c);}catch(e){}
     await audioP;
@@ -9865,7 +9869,8 @@ function tourUnlockAudio(){
   }catch(e){}
   try{
     if(!_tourEl){_tourEl=new Audio();_tourEl.preload='auto';}
-    _tourEl.src='tour-audio/s1a.mp3';
+    _tourEl.muted=false;_tourEl.volume=1;
+    if(!(_tourEl.currentSrc&&_tourEl.currentSrc.indexOf('s1a.mp3')>=0))_tourEl.src='tour-audio/s1a.mp3';
     const p=_tourEl.play();
     if(p&&p.catch)p.catch(function(){});
   }catch(e){}
@@ -9901,14 +9906,6 @@ function tourAudioProbe(){
   window._tourAudioOK='checking';
   try{fetch('tour-audio/s1a.mp3',{method:'HEAD'}).then(function(r){window._tourAudioOK=!!(r&&r.ok);}).catch(function(){window._tourAudioOK=false;});}
   catch(e){window._tourAudioOK=false;}
-}
-function tourUnlockAudio(){
-  try{
-    const a=new Audio('tour-audio/s1a.mp3');
-    a.muted=true;a.volume=0;
-    const p=a.play();
-    if(p&&p.then)p.then(function(){try{a.pause();a.currentTime=0;}catch(e){}}).catch(function(){});
-  }catch(e){}
 }
 function tourPlayClip(url,text){
   window._narrDone=new Promise(function(res){
