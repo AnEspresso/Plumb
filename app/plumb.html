@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.279.0 - Walk shows the card at once. Demo loads before the walk.';
+const PLUMB_VERSION='2.280.0 - Walk starts from the Settings tap. Audio plays once.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786938377988;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.279.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786961429324;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.280.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5646,7 +5646,7 @@ function renderSettings(){
     rows+='<div class="set-hd">This device</div>';
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
-    rows+=SET_GEAR_ROW('How SitePlumb works','A friendly walk around the example book','closeSettings();startTeamTour()',I.how);
+    rows+=SET_GEAR_ROW('How SitePlumb works','A friendly walk around the example book','startTeamTour()',I.how);
     rows+=SET_GEAR_ROW('Walkthrough studio','Play one beat. Check the orb and the card.','closeSettings();openTourStudio()',I.dev);
     rows+=SET_GEAR_ROW('Classic walkthrough','The older Full-site tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
     rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
@@ -8843,9 +8843,12 @@ function enterDemo(){
 /* Arriving in the demo offers the guided walkthrough rather than imposing it.
    Once per session: someone bouncing between roles should not be re-asked. */
 function maybeOfferTour(){
-  try{if(sessionStorage.getItem('plumbTourOffered')==='1')return;
+  try{
+    if(window._tourQuiet)return;
+    if(sessionStorage.getItem('plumbTourOffered')==='1')return;
     sessionStorage.setItem('plumbTourOffered','1');
-    document.getElementById('demoIntroScrim').classList.add('show');}catch(e){}}
+    document.getElementById('demoIntroScrim').classList.add('show');
+  }catch(e){}}
 function demoIntroTour(){
   try{document.getElementById('demoIntroScrim').classList.remove('show');}catch(e){}
   try{startGrandTour();}catch(e){}}
@@ -8980,17 +8983,20 @@ function tourBeat(tok){
 }
 function startTeamTour(){
   window._tourQuiet=true;
+  try{toast('Starting the walk');}catch(e){}
   try{tourUnlockAudio();tourPrefetch();}catch(e){}
   try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
   try{welcomeDone();}catch(e){}
-  try{closeStart();closeSetup();closeHouse();closeCompany();closeSettings();}catch(e){}
+  try{closeSettings();closeStart();closeSetup();closeHouse();closeCompany();}catch(e){}
   try{sessionStorage.setItem('plumbTourOffered','1');}catch(e){}
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
-  try{if(appMode()!=='demo')enterDemo();}catch(e){}
+  try{
+    if(appMode()!=='demo'||!(state.projects||[]).length)enterDemo();
+  }catch(e){}
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
   try{showOverview();renderToday();renderOvCards();}catch(e){}
-  try{startTour('team');}catch(e){}
+  startTour('team');
 }
 function tourNavFn(name){
   const map={
@@ -9117,8 +9123,9 @@ function tourPlayFile(name){
     };
     _tourPlayFin=done;
     _tourPlayTimers=timers;
+    let acOn=false;
     const startAc=function(){
-      if(!_tourAC||!_tourBuf[name])return false;
+      if(acOn||!_tourAC||!_tourBuf[name])return false;
       try{if(_tourAC.state!=='running'&&_tourAC.resume)_tourAC.resume();}catch(e){}
       try{
         const src=_tourAC.createBufferSource();
@@ -9127,6 +9134,7 @@ function tourPlayFile(name){
         src.onended=function(){done('ended');};
         src.start();
         _tourSrc=src;
+        acOn=true;
         tourTrace('play-ac',name,String(Math.round(_tourBuf[name].duration*10)/10));
         timers.push(setTimeout(function(){done('timeout');},_tourBuf[name].duration*1000+1500));
         return true;
