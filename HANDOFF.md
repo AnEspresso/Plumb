@@ -20,7 +20,7 @@ A single-file PWA for residential construction project management — it connect
 
 **Pinned next after gold-master freeze:** Field Notes *file to* on the desk — optional trade + room after Send or on edit, so photos filter and land in that packet. Not on the field screen.
 
-**v2.284.0 is live.** Walk starts first. Demo loads later. 2.283 froze Safari.
+**v2.285.0 is live.** Card sits outside the gold box. Orb names the thing. 2.284 stays the prior restore.
 
 **Gold-master RC:** [GOLD-RC.md](GOLD-RC.md) — next is #1 empty-state hide + #2 All homes as a header.
 

@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.284.0 - Walk starts without loading the demo first. Gold box will not wait.';
+const PLUMB_VERSION='2.285.0 - Walk: card sits outside the gold box. Orb names the thing.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786972469326;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.284.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786974021206;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.285.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5740,11 +5740,11 @@ const TOUR={team:[
     {do:function(){try{setOvSort('recent');}catch(e){}},f:'s3c',point:'[data-sort=recent]',stage:'.ov-list'},
     {do:function(){try{setOvSort('az');}catch(e){}},f:'s3d',point:'[data-sort=az]',stage:'.ov-list'}
   ]},
- {sel:'#ovCards',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
+ {sel:'.ov-list',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
   nav:()=>{try{try{setOvSort('attn');}catch(e){}showOverview();renderOvCards();}catch(e){}},
   play:[
-    {f:'s4a',point:'#ovCards .allh',stage:'#ovCards'},
-    {f:'s4b',point:'#ovCards .ov-card:not(.allh)',stage:'#ovCards'}
+    {f:'s4a',point:'#ovCards .allh',stage:'.ov-list'},
+    {f:'s4b',point:'#ovCards .ov-card:not(.allh)',stage:'.ov-list'}
   ]},
  {sel:'#houseBody',bubSide:'tb',title:'The briefing',body:'One house. What still needs you, then the doors.',
   nav:()=>{try{showOverview();const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
@@ -6131,17 +6131,13 @@ function tourStep(){
       tlog('ring',(step.sel||'(no stage)')+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
       try{if(rect){const cr=tourStageRect(rect);if(cr)rect=cr;}}catch(e){}
       tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false);
-      if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
-        try{const rq=step.stageRect?step.stageRect():el.getBoundingClientRect();
-          if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true,undefined,true);}catch(e){}},90));
-      if(el)orbTo(el,{settle:true,rest:true,noscroll:true});else orbHide();   // glides to the edge — the orb is always followed
-      if(el&&rect)setTimeout(()=>{                       // stabilization: layout can settle late — re-measure once
-        try{const el2=step.sel?document.querySelector(step.sel):null;if(!el2)return;
-          const r2=el2.getBoundingClientRect();
-          if(r2&&(Math.abs(r2.top-rect.top)>4||Math.abs(r2.left-rect.left)>4||Math.abs(r2.height-rect.height)>4)){
-            tourPlace(r2,true,undefined,true);orbTo(el2,{settle:true,instant:true,rest:true,noscroll:true});}}catch(e){}},420);
+      if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{
+        try{const rq=tourStageRect(step.stageRect?step.stageRect():el);if(rq)tourPlace(rq,true,undefined,true);}catch(e){}},90));
+      if(_tourSteps!==TOUR.team){
+        if(el)orbTo(el,{settle:true,rest:true,noscroll:true});else orbHide();
+      }
       {const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';}
-      try{if(el&&_tourSteps===TOUR.team)tourAvoidCover(el);}catch(e){}
+      try{if(_tourSteps===TOUR.team)tourAvoidCover(null);}catch(e){}
     });
   },(step.nav||step.acts)?240:0);
   if(step.play){
@@ -9607,15 +9603,26 @@ function tourStageRect(src){
   }catch(e){}
   if(!r||!r.width||!r.height)return null;
   const inset=10;
-  const top=Math.max(r.top,inset);
+  let top=Math.max(r.top,inset);
   const left=Math.max(r.left,inset);
   const right=Math.min(r.right,innerWidth-inset);
   let bot=Math.min(r.bottom,innerHeight-inset);
   let w=right-left,h=bot-top;
   if(w<56)w=Math.min(innerWidth-inset*2,220);
   if(h<72)h=Math.min(innerHeight-inset*2,140);
-  const cap=Math.round(innerHeight*0.72);
+  const bub=document.getElementById('tourBubble');
+  const side=(bub&&bub.dataset.side)||'bb';
+  const band=Math.round(Math.min(200, Math.max(132,(bub&&bub.offsetHeight)||160)+16));
+  if(side==='tb'){
+    const minTop=band+8;
+    if(top<minTop){h-=(minTop-top);top=minTop;}
+  }else{
+    const maxBot=innerHeight-band;
+    if(top+h>maxBot)h=maxBot-top;
+  }
+  const cap=Math.round(innerHeight*0.56);
   if(h>cap)h=cap;
+  if(h<72)h=72;
   return {top:top,left:left,width:w,height:h,right:left+w,bottom:top+h};
 }
 function tourExpandStage(sel){

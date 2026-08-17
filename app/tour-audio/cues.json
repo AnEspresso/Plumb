@@ -46,12 +46,12 @@
       "id": "houses",
       "title": "The houses",
       "body": "All homes, then each job. Tap for a briefing.",
-      "sel": "#ovCards",
+      "sel": ".ov-list",
       "bubSide": "tb",
       "nav": "houses",
       "cues": [
-        { "id": "s4a", "say": "All homes sits at the top. That's every open item, every house.", "point": "#ovCards .allh", "stage": "#ovCards" },
-        { "id": "s4b", "say": "Each row under it is one job. Tap a house and you get a briefing. You don't have to open the whole site.", "point": "#ovCards .ov-card:not(.allh)", "stage": "#ovCards" }
+        { "id": "s4a", "say": "All homes sits at the top. That's every open item, every house.", "point": "#ovCards .allh", "stage": ".ov-list" },
+        { "id": "s4b", "say": "Each row under it is one job. Tap a house and you get a briefing. You don't have to open the whole site.", "point": "#ovCards .ov-card:not(.allh)", "stage": ".ov-list" }
       ]
     },
     {
