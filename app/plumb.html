@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.289.0 - Walk: Today, camera, and the book each get their own box.';
+const PLUMB_VERSION='2.290.0 - Walk: after Ara finishes, the next scene starts. Box stays put.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786984609075;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.289.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786986218300;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.290.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6131,7 +6131,7 @@ function tourStep(){
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
         +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+esc(lastBtn)+'</button></div></div>';
       if(step.stageRect){try{const r2=step.stageRect();if(r2&&r2.height)rect=r2;window._stageEl=step.stageRect;}catch(e){}}
-      else window._stageEl=el||null;
+      else window._stageEl=typeof stageFn==='function'?stageFn:el;
       tlog('ring',(step.sel||'(no stage)')+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
       try{if(rect){const cr=tourStageRect(rect);if(cr)rect=cr;}}catch(e){}
       tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false);
@@ -9529,6 +9529,7 @@ async function cueNext(tok){
       requestAnimationFrame(spin);};
     requestAnimationFrame(spin);});
   _orbPlace(o,Math.min(cx+rx+20,innerWidth-24),cy,false);
+  if(tourAlive(tok))tourNext();
 }
 function taskCleanup(){
   try{document.querySelectorAll('.tour-next-glow').forEach(e=>e.classList.remove('tour-next-glow'));}catch(e){}

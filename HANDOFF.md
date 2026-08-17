@@ -1,6 +1,6 @@
-**v2.289.0 is live.** Today, camera, and the book each get their own box. 2.288 stays the prior restore.
+**v2.290.0 is live.** After Ara finishes, the next scene starts. 2.289 stays the prior restore.
 
-# SitePlumb — handoff (current build v2.289.0)
+# SitePlumb — handoff (current build v2.290.0)
 
 
 Paste this file into a new chat, attach the artifacts alongside it, and work continues without re-explaining anything.
