@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.278.0 - Walk keeps going after hello. Buffers + ended watchdog.';
+const PLUMB_VERSION='2.279.0 - Walk shows the card at once. Demo loads before the walk.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786937697499;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.278.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786938377988;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.279.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5981,7 +5981,7 @@ function startTourSteps(steps){
   if(!document.getElementById('tourCatch')){
     const c=document.createElement('div');c.id='tourCatch';c.className='tour-catch';
     const s=document.createElement('div');s.id='tourSpot';s.className='tour-spot';
-    const b=document.createElement('div');b.id='tourBubble';b.className='tour-bubble';b.style.opacity='0';
+    const b=document.createElement('div');b.id='tourBubble';b.className='tour-bubble';b.style.opacity='1';
     document.body.appendChild(c);document.body.appendChild(s);document.body.appendChild(b);
   }
   tourStep();}
@@ -6043,6 +6043,7 @@ function tourPlace(rect,instant,dock,skipBub){
 function tourStep(){
   try{const _s=_tourSteps[_tourIdx];if(_s)tourNarrate(_s,_tourIdx);}catch(e){}
   const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
+  try{const _b0=document.getElementById('tourBubble');if(_b0)_b0.style.opacity='1';}catch(e){}
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
   tlog('slide',(_tourIdx+1)+' '+(step.title||''));
@@ -6141,9 +6142,7 @@ function tourStep(){
     });
   },(step.nav||step.acts)?240:0);
   if(step.play){
-    setTimeout(function(){
-      Promise.resolve(tourPlayCues(step,_tok)).then(function(){if(tourAlive(_tok))cueNext(_tok);}).catch(function(){});
-    },320);
+    Promise.resolve(tourPlayCues(step,_tok)).then(function(){if(tourAlive(_tok))cueNext(_tok);}).catch(function(){});
   }
   else if(step.task){
     const doneAll=step.__done||step.task.steps.every(s2=>{try{return s2.done&&s2.done();}catch(e){return false;}});
@@ -8983,15 +8982,15 @@ function startTeamTour(){
   window._tourQuiet=true;
   try{tourUnlockAudio();tourPrefetch();}catch(e){}
   try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
-  welcomeDone();
-  try{closeStart();closeSetup();closeHouse();closeCompany();}catch(e){}
+  try{welcomeDone();}catch(e){}
+  try{closeStart();closeSetup();closeHouse();closeCompany();closeSettings();}catch(e){}
   try{sessionStorage.setItem('plumbTourOffered','1');}catch(e){}
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
+  try{if(appMode()!=='demo')enterDemo();}catch(e){}
+  try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
   try{showOverview();renderToday();renderOvCards();}catch(e){}
   try{startTour('team');}catch(e){}
-  try{if(appMode()!=='demo')enterDemo();}catch(e){}
-  try{loadTourCues();}catch(e){}
 }
 function tourNavFn(name){
   const map={
@@ -9806,13 +9805,13 @@ function tourPlayClip(url,text){
 }
 function tourNarrate(step,idx){
   try{
+    if(step&&step.play){window._narrDone=Promise.resolve();return;}
     if(!step||!(step.say||step.body))return;
     tourAudioStop();
     try{if(typeof speechSynthesis!=='undefined')speechSynthesis.cancel();}catch(e){}
     if(tourMuted())return;
     const text=tourSayText(step);
     tourAudioProbe();
-    if(step.play){window._narrDone=Promise.resolve();return;}
     const url=tourClipUrl(idx);
     if(url&&typeof Audio!=='undefined'){tourPlayClip(url,text);return;}
     window._narrDone=tourSpeak(text);

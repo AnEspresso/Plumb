@@ -20,7 +20,7 @@ A single-file PWA for residential construction project management — it connect
 
 **Pinned next after gold-master freeze:** Field Notes *file to* on the desk — optional trade + room after Send or on edit, so photos filter and land in that packet. Not on the field screen.
 
-**v2.278.0 is live.** Walk must keep going after hello. **Walk-only ships allowed without password until 6:00 AM EDT Mon 2026-08-17.** Nothing else ships without the password.
+**v2.279.0 shipping.** Card shows immediately. Demo before walk. Walk-only ships allowed until 6:00 AM EDT Mon 2026-08-17. User asked for unattended work until then — do not ping.
 
 **Gold-master RC:** [GOLD-RC.md](GOLD-RC.md) — next is #1 empty-state hide + #2 All homes as a header.
 
