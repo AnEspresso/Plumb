@@ -1,0 +1,9 @@
+{
+  "name": "siteplumb-app",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "tour:bake": "python3 ../scripts/bake-tour-voice.py",
+    "tour:record": "node ../scripts/tour-record.mjs"
+  }
+}

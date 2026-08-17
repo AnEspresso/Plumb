@@ -609,6 +609,7 @@
   .hs-door.wide{grid-column:1/-1;}
   .set-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:16px 2px 4px;}
   .set-hd:first-child{margin-top:2px;}
+  .st-note{font-size:13px;color:var(--ink-3);line-height:1.4;padding:4px 2px 10px;}
   @media(min-width:700px){
     .hs-doors{grid-template-columns:repeat(3,1fr);}
     .hs-door.wide{grid-column:auto;}
@@ -2492,6 +2493,17 @@ body.on-tour .tour-card{display:block;}
     </div>
   </div>
 
+  <div class="pmodal-scrim" id="studioScrim">
+    <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
+      <h4>Walkthrough studio</h4>
+      <div class="info-body" id="studioBody"></div>
+      <div class="row2" style="margin-top:14px">
+        <button class="b1" style="flex:1" onclick="closeTourStudio();startTeamTour()">Play all</button>
+        <button class="b1 b-go" style="flex:1" onclick="closeTourStudio()">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div class="pmodal-scrim" id="companyScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4>Company</h4>
@@ -3072,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.268.0 - Walk syncs to Ara. No robot voice.';
+const PLUMB_VERSION='2.270.0 - Walk: tighter ring, bubble stays off the highlight.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786929835563;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.268.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786931916483;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.270.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5635,6 +5647,7 @@ function renderSettings(){
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
     rows+=SET_GEAR_ROW('How SitePlumb works','A friendly walk around the example book','closeSettings();startTeamTour()',I.how);
+    rows+=SET_GEAR_ROW('Walkthrough studio','Play one beat. Check the orb and the card.','closeSettings();openTourStudio()',I.dev);
     rows+=SET_GEAR_ROW('Classic walkthrough','The older Full-site tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
     rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
     if(devAllowed())rows+=SET_GEAR_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()',I.dev);
@@ -5727,13 +5740,13 @@ const TOUR={team:[
     {do:function(){try{setOvSort('recent');}catch(e){}},f:'s3c',point:'[data-sort=recent]'},
     {do:function(){try{setOvSort('az');}catch(e){}},f:'s3d',point:'[data-sort=az]'}
   ]},
- {sel:'#ovCards',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
+ {sel:'#ovCards .allh',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
   nav:()=>{try{try{setOvSort('attn');}catch(e){}showOverview();renderOvCards();}catch(e){}},
   play:[
     {f:'s4a',point:'#ovCards .allh'},
     {f:'s4b',point:'#ovCards .ov-card:not(.allh)'}
   ]},
- {sel:'#houseBody .pkt-strip, #houseBody',bubSide:'tb',title:'The briefing',body:'One house. What still needs you, then the doors.',
+ {sel:'#houseBody .pkt-strip',bubSide:'tb',title:'The briefing',body:'One house. What still needs you, then the doors.',
   nav:()=>{try{showOverview();const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
     {f:'s5a',point:'#houseBody .pkt-strip'},
@@ -5749,7 +5762,7 @@ const TOUR={team:[
     {f:'s6d',point:'#houseBody [data-door=money]'},
     {f:'s6e',point:'#houseBody [data-door=field]'}
   ]},
- {sel:'#houseBody .pkt-open, #houseBody .pkt-strip',bubSide:'tb',title:'The packet',body:'Still open is what the sub sees. Live.',
+ {sel:'#houseBody .pkt-or',bubSide:'tb',title:'The packet',body:'Still open is what the sub sees. Live.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
     {f:'s7a',point:'#houseBody .pkt-or'},
@@ -5958,9 +5971,12 @@ teamLegacy:[
 ]};
 let _tourSteps=[],_tourIdx=0,_tourLift=null,_tourLiftPrev=null,_tourTapEl=null,_tourTapFn=null;
 function startTour(role){
+  startTourSteps(TOUR[role]||TOUR.team);
+}
+function startTourSteps(steps){
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
   try{document.getElementById('installGate').classList.remove('show');}catch(e){}
-  _tourSteps=TOUR[role]||TOUR.team;_tourIdx=0;window._tourBack=false;try{_tourSteps.forEach(s=>{delete s.__done;});}catch(e){}
+  _tourSteps=steps||TOUR.team;_tourIdx=0;window._tourBack=false;try{_tourSteps.forEach(s=>{delete s.__done;});}catch(e){}
   try{tourWarmVoice();}catch(e){}
   if(!document.getElementById('tourCatch')){
     const c=document.createElement('div');c.id='tourCatch';c.className='tour-catch';
@@ -5991,9 +6007,12 @@ function tourPlace(rect,instant,dock,skipBub){
       const bh2=bub.offsetHeight;
       let side=bub.dataset.side;
       if(rect){
-        const ovT=Math.max(0,Math.min(12+bh2,rect.top+rect.height)-Math.max(12,rect.top));
-        const ovB=Math.max(0,Math.min(vh-12,rect.top+rect.height)-Math.max(vh-12-bh2,rect.top));
-        side=(ovT<=ovB)?'tb':'bb';bub.dataset.side=side;
+        const honor=_tourSteps===TOUR.team&&(bub.dataset.side==='tb'||bub.dataset.side==='bb');
+        if(!honor){
+          const ovT=Math.max(0,Math.min(12+bh2,rect.top+rect.height)-Math.max(12,rect.top));
+          const ovB=Math.max(0,Math.min(vh-12,rect.top+rect.height)-Math.max(vh-12-bh2,rect.top));
+          side=(ovT<=ovB)?'tb':'bb';bub.dataset.side=side;
+        }
       } else if(side!=='tb'&&side!=='bb'){side='tb';bub.dataset.side=side;}
       top=(side==='tb')?12:(vh-bh2-12);left=12;
     } else {
@@ -6118,7 +6137,7 @@ function tourStep(){
           if(r2&&(Math.abs(r2.top-rect.top)>4||Math.abs(r2.left-rect.left)>4||Math.abs(r2.height-rect.height)>4)){
             tourPlace(r2,true,undefined,true);orbTo(el2,{settle:true,instant:true,rest:true,noscroll:true});}}catch(e){}},420);
       {const b=document.getElementById('tourBubble');if(b)b.style.opacity='1';}
-      try{if(el)tourAvoidCover(el);}catch(e){}
+      try{if(el&&_tourSteps===TOUR.team)tourAvoidCover(el);}catch(e){}
     });
   },(step.nav||step.acts)?240:0);
   if(step.play){
@@ -8949,25 +8968,108 @@ function startTeamTour(){
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
   if(appMode()!=='demo')enterDemo();
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
-  setTimeout(function(){try{showOverview();renderToday();renderOvCards();startTour('team');}catch(e){}},400);
+  Promise.resolve(loadTourCues()).then(function(){
+    setTimeout(function(){try{showOverview();renderToday();renderOvCards();startTour('team');}catch(e){}},400);
+  });
+}
+function tourNavFn(name){
+  const map={
+    home:function(){closeHouse();closeCompany();showOverview();renderToday();renderOvCards();},
+    field:function(){showOverview();renderToday();},
+    book:function(){try{closeSheet();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();},
+    houses:function(){try{setOvSort('attn');}catch(e){}showOverview();renderOvCards();},
+    briefing:function(){showOverview();const p=tourDemoHouse();if(p)nyOpenHouse(p.id);},
+    company:function(){closeHouse();showOverview();},
+    close:function(){closeCompany();closeHouse();showOverview();}
+  };
+  return function(){try{(map[name]||map.home)();}catch(e){}};
+}
+function tourDoFn(name){
+  const map={
+    openField:function(){const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}},
+    closeSheet:function(){try{closeSheet();}catch(e){}},
+    sortAttn:function(){setOvSort('attn');},
+    sortRecent:function(){setOvSort('recent');},
+    sortAz:function(){setOvSort('az');},
+    openCompany:function(){openCompany();},
+    openFull:function(){const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}
+  };
+  return map[name];
+}
+function tourFromCues(data){
+  if(!data||!data.slides)return;
+  TOUR.team=data.slides.map(function(s){
+    return {
+      title:s.title,body:s.body,sel:s.sel||undefined,bubSide:s.bubSide||undefined,
+      nav:tourNavFn(s.nav),
+      play:(s.cues||[]).map(function(c){
+        const o={f:c.id,point:c.point};
+        if(c.do)o.do=tourDoFn(c.do);
+        if(c.tab)o.tab=c.tab;
+        if(c.waitTap){o.waitTap=c.waitTap;o.intercept=tourDoFn(c.intercept||'openField');}
+        return o;
+      })
+    };
+  });
+}
+function loadTourCues(){
+  if(window._tourCues)return Promise.resolve(window._tourCues);
+  return fetch('tour-audio/cues.json',{cache:'no-store'}).then(function(r){
+    if(!r.ok)return null;
+    return r.json();
+  }).then(function(data){
+    if(data&&data.slides){window._tourCues=data;tourFromCues(data);}
+    return data||null;
+  }).catch(function(){return null;});
+}
+function openTourStudio(){
+  try{closeSettings();}catch(e){}
+  Promise.resolve(loadTourCues()).then(function(){
+    renderTourStudio();
+    document.getElementById('studioScrim').classList.add('show');
+  });
+}
+function closeTourStudio(){try{document.getElementById('studioScrim').classList.remove('show');}catch(e){}}
+function renderTourStudio(){
+  const el=document.getElementById('studioBody');if(!el)return;
+  const slides=(window._tourCues&&window._tourCues.slides)||[];
+  let h='<div class="st-note">Play one beat on the example book. Ara and the orb run just like the real walk.</div>';
+  slides.forEach(function(s,i){
+    h+='<button class="set-row" onclick="studioPlaySlide('+i+')"><div style="flex:1"><div>'+esc(s.title)+'</div><div class="sr-d">'+(s.cues||[]).length+' phrases · '+esc(s.body||'')+'</div></div></button>';
+  });
+  el.innerHTML=h;
+}
+function studioPlaySlide(i){
+  closeTourStudio();
+  try{tourUnlockAudio();}catch(e){}
+  try{sessionStorage.setItem('plumbTourOffered','1');}catch(e){}
+  if(appMode()!=='demo')enterDemo();
+  try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
+  Promise.resolve(loadTourCues()).then(function(){
+    setTimeout(function(){
+      try{
+        showOverview();renderToday();renderOvCards();
+        const one=TOUR.team&&TOUR.team[i]?[TOUR.team[i]]:TOUR.team;
+        startTourSteps(one);
+      }catch(e){}
+    },350);
+  });
 }
 function tourAvoidCover(el){
   try{
     const bub=document.getElementById('tourBubble');
     if(!bub)return;
-    const br=bub.getBoundingClientRect();
     const sr=el?el.getBoundingClientRect():null;
-    const hit=sr&&br.left<sr.right&&br.right>sr.left&&br.top<sr.bottom&&br.bottom>sr.top;
-    const stageTop=sr?(sr.top+sr.height/2<innerHeight*0.48):false;
-    if(!hit&&bub.dataset.parked)return;
-    const side=stageTop?'bb':'tb';
+    const mid=sr?(sr.top+Math.min(sr.height,90)/2):(innerHeight/2);
+    const side=mid<innerHeight*0.52?'bb':'tb';
     bub.dataset.side=side;
-    bub.dataset.parked='1';
+    bub.classList.add('tour-bub-dock');
     const bh=bub.offsetHeight;
     bub.style.width='calc(100vw - 24px)';
     bub.style.maxWidth='calc(100vw - 24px)';
     bub.style.left='12px';
-    bub.style.top=(side==='tb'?10:(innerHeight-bh-14))+'px';
+    bub.style.right='';
+    bub.style.top=(side==='tb'?10:(innerHeight-bh-16))+'px';
   }catch(e){}
 }
 function tourPlayFile(name){
@@ -8983,6 +9085,7 @@ function tourPlayFile(name){
     a.onerror=fin;
     const p=a.play();
     if(p&&p.catch)p.catch(fin);
+    setTimeout(function(){try{if(a.paused&&a.currentTime<0.05)fin();}catch(e){fin();}},700);
     setTimeout(fin,18000);
   });
 }
@@ -9044,6 +9147,13 @@ async function tourPlayCues(step,tok){
       if(el){
         try{smoothScrollTo(el,0.28);}catch(e){}
         await orbTo(el,{settle:true,rest:true});
+        try{
+          const r=el.getBoundingClientRect();
+          if(r.width&&r.height&&r.height<innerHeight*0.42){
+            window._stageEl=el;
+            tourPlace(r,false,undefined,true);
+          }
+        }catch(e){}
         tourAvoidCover(el);
       }
     } else {
@@ -13787,7 +13897,7 @@ function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;con
   if(closing&&row){row.classList.add('closing');setTimeout(apply,260);}else apply();}
 
 /* ── universal modal dismissal: tap grip, or swipe the modal down ── */
-const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',fileToScrim:'closeFileTo',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
+const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',fileToScrim:'closeFileTo',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',studioScrim:'closeTourStudio',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
 function dismissScrim(scrim){if(!scrim)return;const fn=MODAL_CLOSERS[scrim.id];if(fn&&typeof window[fn]==='function'){try{window[fn]();return;}catch(e){}}scrim.classList.remove('show');}
 function dismissParent(elm){let n=elm;while(n&&!(n.classList&&n.classList.contains('pmodal-scrim')))n=n.parentElement;dismissScrim(n);}
 if(typeof window!=='undefined'){window.addEventListener('load',function(){

@@ -1,0 +1,137 @@
+{
+  "voice": "ara",
+  "slides": [
+    {
+      "id": "welcome",
+      "title": "Glad you're here",
+      "body": "I'll walk you around once. Skip anytime.",
+      "bubSide": "bb",
+      "nav": "home",
+      "cues": [
+        { "id": "s1a", "say": "Glad you're here." },
+        { "id": "s1b", "say": "I'll walk you around Site Plumb once. The daily habit. Your book of houses. And where the desk work lives." },
+        { "id": "s1c", "say": "Skip whenever you like. Nothing here can break." }
+      ]
+    },
+    {
+      "id": "field",
+      "title": "Field Notes",
+      "body": "House, photo, chip, Send. Same camera everywhere.",
+      "sel": ".ov-field",
+      "bubSide": "bb",
+      "nav": "field",
+      "cues": [
+        { "id": "s2a", "say": "See this camera? That's Field Notes.", "point": ".ov-field" },
+        { "id": "s2b", "say": "Out on a job you pick the house, take a picture, tap a chip, and hit Send.", "point": "#sheet .chip", "do": "openField" },
+        { "id": "s2c", "say": "You can file the trade later, sitting at a desk. Same camera, everywhere you work.", "point": "#saveBtn" },
+        { "id": "s2d", "say": "Now you. Tap the camera.", "point": ".ov-field", "do": "closeSheet", "waitTap": ".ov-field", "intercept": "openField" }
+      ]
+    },
+    {
+      "id": "book",
+      "title": "Your book",
+      "body": "Needs You. Recent Decisions. A–Z.",
+      "sel": "#ovSortRow",
+      "bubSide": "bb",
+      "nav": "book",
+      "cues": [
+        { "id": "s3a", "say": "This is your book.", "point": "#ovSortRow" },
+        { "id": "s3b", "say": "Needs You is what opens first. The hottest work sits on top.", "point": "[data-sort=attn]", "do": "sortAttn" },
+        { "id": "s3c", "say": "Recent Decisions is the paper trail.", "point": "[data-sort=recent]", "do": "sortRecent" },
+        { "id": "s3d", "say": "A to Z is just the street names. Three ways to look at the same houses.", "point": "[data-sort=az]", "do": "sortAz" }
+      ]
+    },
+    {
+      "id": "houses",
+      "title": "The houses",
+      "body": "All homes, then each job. Tap for a briefing.",
+      "sel": "#ovCards .allh",
+      "bubSide": "tb",
+      "nav": "houses",
+      "cues": [
+        { "id": "s4a", "say": "All homes sits at the top. That's every open item, every house.", "point": "#ovCards .allh" },
+        { "id": "s4b", "say": "Each row under it is one job. Tap a house and you get a briefing. You don't have to open the whole site.", "point": "#ovCards .ov-card:not(.allh)" }
+      ]
+    },
+    {
+      "id": "briefing",
+      "title": "The briefing",
+      "body": "One house. What still needs you, then the doors.",
+      "sel": "#houseBody .pkt-strip",
+      "bubSide": "tb",
+      "nav": "briefing",
+      "cues": [
+        { "id": "s5a", "say": "This is the briefing. Just this house.", "point": "#houseBody .pkt-strip" },
+        { "id": "s5b", "say": "What still needs you is at the top.", "point": "#houseBody .pkt-open, #houseBody .pkt-strip" },
+        { "id": "s5c", "say": "Then the doors. Field Notes, Schedule, Selections, and Money. Most days, this is enough.", "point": "#houseBody .hs-doors" }
+      ]
+    },
+    {
+      "id": "doors",
+      "title": "The doors",
+      "body": "Schedule, Selections, Money, Field Notes — this house only.",
+      "sel": "#houseBody .hs-doors",
+      "bubSide": "tb",
+      "nav": "briefing",
+      "cues": [
+        { "id": "s6a", "say": "These doors stay on this house.", "point": "#houseBody .hs-doors" },
+        { "id": "s6b", "say": "Schedule is the calendar for just this job.", "point": "#houseBody [data-door=cal]" },
+        { "id": "s6c", "say": "Selections are the finishes.", "point": "#houseBody [data-door=sel]" },
+        { "id": "s6d", "say": "Money is what they owe.", "point": "#houseBody [data-door=money]" },
+        { "id": "s6e", "say": "And Field Notes from here already knows which house you're on.", "point": "#houseBody [data-door=field]" }
+      ]
+    },
+    {
+      "id": "packet",
+      "title": "The packet",
+      "body": "Still open is what the sub sees. Live.",
+      "sel": "#houseBody .pkt-or",
+      "bubSide": "tb",
+      "nav": "briefing",
+      "cues": [
+        { "id": "s7a", "say": "See what's still open?", "point": "#houseBody .pkt-or" },
+        { "id": "s7b", "say": "That's what your sub sees in their install packet. File a leak or a punch to a trade at the desk, and it shows up on their phone. Live. No text thread.", "point": "#houseBody .pkt-or" }
+      ]
+    },
+    {
+      "id": "full",
+      "title": "Full site",
+      "body": "Log, Needs You, Build, Files. Desk work.",
+      "sel": "#houseBody .hs-door.wide, [data-door=full]",
+      "bubSide": "tb",
+      "nav": "briefing",
+      "cues": [
+        { "id": "s8a", "say": "Full site is there when you need the whole job.", "point": "[data-door=full]" },
+        { "id": "s8b", "say": "Log.", "point": "nav .tab[data-v=log]", "do": "openFull", "tab": "log" },
+        { "id": "s8c", "say": "Needs You.", "point": "nav .tab[data-v=decisions]", "tab": "decisions" },
+        { "id": "s8d", "say": "Build.", "point": "nav .tab[data-v=build]", "tab": "build" },
+        { "id": "s8e", "say": "And Files. Same four jobs you already know. Same Field Notes camera. Desk work lives here. You don't have to start here.", "point": "nav .tab[data-v=files]", "tab": "files" }
+      ]
+    },
+    {
+      "id": "company",
+      "title": "Company",
+      "body": "Calendar, invoices, roster, team. The office drawer.",
+      "sel": "#ovCompanyBtn",
+      "bubSide": "bb",
+      "nav": "company",
+      "cues": [
+        { "id": "s9a", "say": "And this little briefcase? That's Company.", "point": "#ovCompanyBtn" },
+        { "id": "s9b", "say": "The trades calendar across every house. Invoices. Your standing roster. The team. Add a job.", "point": "#companyBody .set-row", "do": "openCompany" },
+        { "id": "s9c", "say": "It's the office drawer, not a house.", "point": "#companyBody" }
+      ]
+    },
+    {
+      "id": "done",
+      "title": "You're set",
+      "body": "Replay anytime from Settings.",
+      "bubSide": "bb",
+      "nav": "close",
+      "cues": [
+        { "id": "s10a", "say": "You're set." },
+        { "id": "s10b", "say": "Field Notes from the field. The book when you're home. A briefing per house. The packet for the sub." },
+        { "id": "s10c", "say": "Full site and Company when you need the desk. Replay any time from Settings. I'll get out of your way." }
+      ]
+    }
+  ]
+}

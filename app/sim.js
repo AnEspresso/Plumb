@@ -1101,6 +1101,7 @@ t('walkthrough has spoken scripts', SRC.indexOf("f:'s1a'")>=0&&SRC.indexOf('func
 t('walkthrough motion on demo', SRC.indexOf('function tourDemoHouse')>=0&&SRC.indexOf('data-door="field"')>=0&&SRC.indexOf('data-sort=')>=0);
 t('baked walkthrough voice', SRC.indexOf('tour-audio/s2a')>=0||SRC.indexOf("f:'s2a'")>=0);
 t('walk syncs phrases', SRC.indexOf('function tourPlayCues')>=0&&SRC.indexOf('function tourAvoidCover')>=0);
+t('walkthrough studio and cues', SRC.indexOf('function openTourStudio')>=0&&SRC.indexOf('function loadTourCues')>=0);
 t('the house list pills are Needs You, decisions, A-Z', $("SORTLABELS.recent")==='Recent decisions'&&$("String(renderOvSortRow)").indexOf('ov-allpill')<0);
 t('coming up more this week expands', $("String(renderToday)").indexOf('toggleSoon')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
 t('the day sheet sits over the calendar', (function(){
