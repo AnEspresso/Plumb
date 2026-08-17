@@ -3089,7 +3089,7 @@ const PLUMB_VERSION='2.290.0 - Walk: after Ara finishes, the next scene starts. 
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786986218300;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1786987755852;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.290.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
@@ -9097,20 +9097,33 @@ function tourAvoidCover(el){
   try{
     const bub=document.getElementById('tourBubble');
     if(!bub)return;
+    const spot=document.getElementById('tourSpot');
+    let stage=null;
+    try{
+      if(spot){const r=spot.getBoundingClientRect();if(r.height>12)stage=r;}
+      else if(el){const r=el.getBoundingClientRect();if(r.height>12)stage=r;}
+    }catch(e){}
+    const bh=bub.offsetHeight||156;
+    const gap=12;
+    const topBand=stage?Math.max(0,stage.top-gap):80;
+    const botBand=stage?Math.max(0,innerHeight-stage.bottom-gap):80;
     const sheetOn=!!document.getElementById('sheet')?.classList.contains('show');
     const houseOn=!!document.getElementById('houseScrim')?.classList.contains('show');
-    const sr=el?el.getBoundingClientRect():null;
-    const mid=sr?(sr.top+Math.min(sr.height,90)/2):(innerHeight/2);
-    let side=mid<innerHeight*0.52?'bb':'tb';
-    if(sheetOn||houseOn)side='tb';
+    let side;
+    if(sheetOn||houseOn)side=topBand>=botBand?'tb':'bb';
+    else if(topBand>=bh+8&&topBand>=botBand)side='tb';
+    else if(botBand>=bh+8)side='bb';
+    else side=topBand>=botBand?'tb':'bb';
     bub.dataset.side=side;
     bub.classList.add('tour-bub-dock');
-    const bh=bub.offsetHeight;
-    bub.style.width='calc(100vw - 24px)';
-    bub.style.maxWidth='calc(100vw - 24px)';
-    bub.style.left='12px';
+    const wide=innerWidth<700;
+    bub.style.width=wide?'calc(100vw - 24px)':'min(420px, calc(100vw - 24px))';
+    bub.style.maxWidth=wide?'calc(100vw - 24px)':'420px';
+    const bw=Math.min(innerWidth-24, wide?innerWidth-24:420);
+    bub.style.left=((innerWidth-bw)/2)+'px';
     bub.style.right='';
-    bub.style.top=(side==='tb'?10:(innerHeight-bh-16))+'px';
+    const top=side==='tb'?10:Math.max(10,innerHeight-bh-16);
+    bub.style.top=top+'px';
   }catch(e){}
 }
 function tourPlayFile(name){
@@ -9754,7 +9767,7 @@ async function ringStage(sel,tok){
   }catch(e){}
   if(!tourAlive(tok))return null;
   const r=tourStageRect(el);
-  if(r)tourPlace(r,false,undefined,true);
+  if(r){tourPlace(r,false,undefined,true);try{tourAvoidCover(null);}catch(e){}}
   await awaitSpotRest();
   return el;
 }
@@ -9762,7 +9775,7 @@ function stageReglue(){
   try{
     const s=window._stageEl;if(!s)return;
     const r=tourStageRect(typeof s==='function'?s():s);
-    if(r)tourPlace(r,true,undefined,true);
+    if(r){tourPlace(r,true,undefined,true);tourAvoidCover(null);}
   }catch(e){}
 }
 /* tourPoint: the orb alone visits and pulses each target \u2014 the ring stays
