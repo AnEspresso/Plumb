@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.280.0 - Walk starts from the Settings tap. Audio plays once.';
+const PLUMB_VERSION='2.282.0 - Walk: gold box is the scene. Orb talks with Ara.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786961429324;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.280.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786968437640;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.282.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5721,72 +5721,72 @@ function jumpToSubs(){try{go('subs');}catch(e){}}
    optional nav() hooks; tap the highlighted control to try it, or Next to skip
    ahead. Role walkthroughs live in TOUR{}. ── */
 const TOUR={team:[
- {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',sel:'#ovToday',
+ {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',sel:'.ov-list',
   nav:()=>{try{closeHouse();closeCompany();showOverview();renderToday();renderOvCards();}catch(e){}},
-  play:[{f:'s1a'},{f:'s1b'},{f:'s1c'}]},
- {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'House, photo, chip, Send. Same camera everywhere.',
+  play:[{f:'s1a',stage:'.ov-list'},{f:'s1b',point:'#ovToday',stage:'.ov-list'},{f:'s1c',stage:'.ov-list'}]},
+ {sel:'.ov-list',bubSide:'bb',title:'Field Notes',body:'House, photo, chip, Send. Same camera everywhere.',
   nav:()=>{try{showOverview();renderToday();}catch(e){}},
   play:[
-    {f:'s2a',point:'.ov-field'},
+    {f:'s2a',point:'.ov-field',stage:'.ov-list'},
     {do:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}},f:'s2b',point:'#sheet .chip',stage:'#sheet'},
     {f:'s2c',point:'#saveBtn',stage:'#sheet'},
-    {do:function(){try{closeSheet();}catch(e){}},f:'s2d',point:'.ov-field',waitTap:'.ov-field',stage:'.ov-field',intercept:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}}}
+    {do:function(){try{closeSheet();}catch(e){}},f:'s2d',point:'.ov-field',waitTap:'.ov-field',stage:'.ov-list',intercept:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}}}
   ]},
- {sel:'#ovSortRow',bubSide:'bb',title:'Your book',body:'Needs You. Recent Decisions. A\u2013Z.',
+ {sel:'.ov-list',bubSide:'bb',title:'Your book',body:'Needs You. Recent Decisions. A\u2013Z.',
   nav:()=>{try{try{closeSheet();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}},
   play:[
-    {f:'s3a',point:'#ovSortRow'},
-    {do:function(){try{setOvSort('attn');}catch(e){}},f:'s3b',point:'[data-sort=attn]'},
-    {do:function(){try{setOvSort('recent');}catch(e){}},f:'s3c',point:'[data-sort=recent]'},
-    {do:function(){try{setOvSort('az');}catch(e){}},f:'s3d',point:'[data-sort=az]'}
+    {f:'s3a',point:'#ovSortRow',stage:'.ov-list'},
+    {do:function(){try{setOvSort('attn');}catch(e){}},f:'s3b',point:'[data-sort=attn]',stage:'.ov-list'},
+    {do:function(){try{setOvSort('recent');}catch(e){}},f:'s3c',point:'[data-sort=recent]',stage:'.ov-list'},
+    {do:function(){try{setOvSort('az');}catch(e){}},f:'s3d',point:'[data-sort=az]',stage:'.ov-list'}
   ]},
  {sel:'#ovCards',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
   nav:()=>{try{try{setOvSort('attn');}catch(e){}showOverview();renderOvCards();}catch(e){}},
   play:[
-    {f:'s4a',point:'#ovCards .allh'},
-    {f:'s4b',point:'#ovCards .ov-card:not(.allh)'}
+    {f:'s4a',point:'#ovCards .allh',stage:'#ovCards'},
+    {f:'s4b',point:'#ovCards .ov-card:not(.allh)',stage:'#ovCards'}
   ]},
  {sel:'#houseBody',bubSide:'tb',title:'The briefing',body:'One house. What still needs you, then the doors.',
   nav:()=>{try{showOverview();const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
-    {f:'s5a',point:'#houseBody .pkt-strip'},
-    {f:'s5b',point:'#houseBody .pkt-open, #houseBody .pkt-strip'},
-    {f:'s5c',point:'#houseBody .hs-doors'}
+    {f:'s5a',point:'#houseBody .pkt-strip',stage:'#houseBody'},
+    {f:'s5b',point:'#houseBody .pkt-open, #houseBody .pkt-strip',stage:'#houseBody'},
+    {f:'s5c',point:'#houseBody .hs-doors',stage:'#houseBody'}
   ]},
- {sel:'#houseBody .hs-doors',bubSide:'tb',title:'The doors',body:'Schedule, Selections, Money, Field Notes \u2014 this house only.',
+ {sel:'#houseBody',bubSide:'tb',title:'The doors',body:'Schedule, Selections, Money, Field Notes \u2014 this house only.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
-    {f:'s6a',point:'#houseBody .hs-doors'},
-    {f:'s6b',point:'#houseBody [data-door=cal]'},
-    {f:'s6c',point:'#houseBody [data-door=sel]'},
-    {f:'s6d',point:'#houseBody [data-door=money]'},
-    {f:'s6e',point:'#houseBody [data-door=field]'}
+    {f:'s6a',point:'#houseBody .hs-doors',stage:'#houseBody'},
+    {f:'s6b',point:'#houseBody [data-door=cal]',stage:'#houseBody'},
+    {f:'s6c',point:'#houseBody [data-door=sel]',stage:'#houseBody'},
+    {f:'s6d',point:'#houseBody [data-door=money]',stage:'#houseBody'},
+    {f:'s6e',point:'#houseBody [data-door=field]',stage:'#houseBody'}
   ]},
- {sel:'#houseBody .pkt-or',bubSide:'tb',title:'The packet',body:'Still open is what the sub sees. Live.',
+ {sel:'#houseBody',bubSide:'tb',title:'The packet',body:'Still open is what the sub sees. Live.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
-    {f:'s7a',point:'#houseBody .pkt-or'},
-    {f:'s7b',point:'#houseBody .pkt-or'}
+    {f:'s7a',point:'#houseBody .pkt-or',stage:'#houseBody'},
+    {f:'s7b',point:'#houseBody .pkt-or',stage:'#houseBody'}
   ]},
- {sel:'#houseBody .hs-door.wide, [data-door=full]',bubSide:'tb',title:'Full site',body:'Log, Needs You, Build, Files. Desk work.',
+ {sel:'#houseBody',bubSide:'tb',title:'Full site',body:'Log, Needs You, Build, Files. Desk work.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
-    {f:'s8a',point:'[data-door=full]'},
-    {do:function(){try{const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}catch(e){}},f:'s8b',point:'nav .tab[data-v=log]',tab:'log'},
-    {f:'s8c',point:'nav .tab[data-v=decisions]',tab:'decisions'},
-    {f:'s8d',point:'nav .tab[data-v=build]',tab:'build'},
-    {f:'s8e',point:'nav .tab[data-v=files]',tab:'files'}
+    {f:'s8a',point:'[data-door=full]',stage:'#houseBody'},
+    {do:function(){try{const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}catch(e){}},f:'s8b',point:'nav .tab[data-v=log]',tab:'log',stage:'nav'},
+    {f:'s8c',point:'nav .tab[data-v=decisions]',tab:'decisions',stage:'nav'},
+    {f:'s8d',point:'nav .tab[data-v=build]',tab:'build',stage:'nav'},
+    {f:'s8e',point:'nav .tab[data-v=files]',tab:'files',stage:'nav'}
   ]},
- {sel:'#ovCompanyBtn',bubSide:'bb',title:'Company',body:'Calendar, invoices, roster, team. The office drawer.',
+ {sel:'#overview',bubSide:'bb',title:'Company',body:'Calendar, invoices, roster, team. The office drawer.',
   nav:()=>{try{closeHouse();showOverview();}catch(e){}},
   play:[
-    {f:'s9a',point:'#ovCompanyBtn'},
-    {do:function(){try{openCompany();}catch(e){}},f:'s9b',point:'#companyBody .set-row'},
-    {f:'s9c',point:'#companyBody'}
+    {f:'s9a',point:'#ovCompanyBtn',stage:'#overview'},
+    {do:function(){try{openCompany();}catch(e){}},f:'s9b',point:'#companyBody .set-row',stage:'#companyBody'},
+    {f:'s9c',point:'#companyBody',stage:'#companyBody'}
   ]},
- {title:'You\u2019re set',body:'Replay anytime from Settings.',bubSide:'bb',
+ {title:'You\u2019re set',body:'Replay anytime from Settings.',bubSide:'bb',sel:'.ov-list',
   nav:()=>{try{closeCompany();closeHouse();showOverview();}catch(e){}},
-  play:[{f:'s10a'},{f:'s10b'},{f:'s10c'}]}
+  play:[{f:'s10a',stage:'.ov-list'},{f:'s10b',stage:'.ov-list'},{f:'s10c',stage:'.ov-list'}]}
 ],
 /* Saved 2.262 builder walkthrough. Replay from Settings \u2192 Classic walkthrough. */
 teamLegacy:[
@@ -8816,14 +8816,16 @@ try{window.addEventListener('message',ev=>{if(ev&&ev.data==='qb-connected'){toas
    live state live under SEPARATE storage keys, so entering is a mode flip; the
    suspend flag only drives the banner and crash recovery. ── */
 function onExcursion(){try{return !!localStorage.getItem('plumbSuspend');}catch(e){return false;}}
-function enterDemo(){
+function enterDemo(opts){
+  opts=opts||{};
   try{if(!localStorage.getItem('plumbSuspend'))localStorage.setItem('plumbSuspend', state.session?'1':'splash');}catch(e){}
   try{sessionStorage.setItem('plumbDemoLive','1');}catch(e){}
   setMode('demo');
   /* The example build reseeds on every entry, so its dates always hang off
      today and the data is pristine for each visitor. Edits made inside one
      visit still persist for that visit; the next entry starts fresh. */
-  state=sampleState();try{persist();}catch(e){}
+  state=sampleState();
+  if(!opts.skipPersist)try{persist();}catch(e){}
   Data.setSession({role:'hillan',name:'Demo Builder'});
   state.activeId=state.activeId||((state.projects[0]||{}).id)||null;
   try{const p2=(state.projects||[]).find(p=>String(p.id)==='p2');
@@ -8991,12 +8993,15 @@ function startTeamTour(){
   try{sessionStorage.setItem('plumbTourOffered','1');}catch(e){}
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
-  try{
-    if(appMode()!=='demo'||!(state.projects||[]).length)enterDemo();
-  }catch(e){}
-  try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
-  try{showOverview();renderToday();renderOvCards();}catch(e){}
-  startTour('team');
+  try{startTour('team');}catch(e){}
+  setTimeout(function(){
+    try{
+      if(appMode()!=='demo'||!(state.projects||[]).length)enterDemo({skipPersist:true});
+      document.getElementById('demoIntroScrim')?.classList.remove('show');
+      showOverview();renderToday();renderOvCards();
+    }catch(e){}
+    try{setTimeout(function(){try{persist();}catch(err){}},400);}catch(e){}
+  },0);
 }
 function tourNavFn(name){
   const map={
@@ -9281,29 +9286,18 @@ async function tourPlayCues(step,tok){
       }catch(e){}
     }
     await tourWait(c.do||c.tab?400:40,tok);
-    if(c.stage)await tourWaitReady(c.stage,tok,1400);
+    const stageSel=c.stage||step.sel||null;
+    if(stageSel)await tourWaitReady(stageSel,tok,1400);
     if(!tourAlive(tok))return;
-    let el=null;
-    if(c.point){
-      el=document.querySelector(c.point);
-      if(el){
-        try{smoothScrollTo(el,0.28);}catch(e){}
-        await orbTo(el,{settle:true,rest:true});
-        tourAvoidCover(el);
-      }
-    } else {
-      try{tourAvoidCover(document.querySelector(step.sel));}catch(e){}
+    if(stageSel){
+      try{await ringStage(stageSel,tok);}catch(e){}
     }
-    try{
-      const stageSel=c.stage||null;
-      if(stageSel){
-        const st=await tourWaitReady(stageSel,tok,400);
-        if(st){
-          const r=st.getBoundingClientRect();
-          if(r.width&&r.height)tourPlace(r,false,undefined,true);
-        }
-      }
-    }catch(e){}
+    if(c.point){
+      try{tourPoint(String(c.point).split(',').map(function(s){return s.trim();}),tok,80);}catch(e){}
+      try{tourAvoidCover(document.querySelector(stageSel||c.point));}catch(e){}
+    } else {
+      try{tourAvoidCover(document.querySelector(stageSel||step.sel));}catch(e){}
+    }
     try{tourSeeSnap(c);}catch(e){}
     await audioP;
     if(!tourAlive(tok))return;

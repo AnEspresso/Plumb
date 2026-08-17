@@ -1,6 +1,6 @@
 /* Plumb service worker — caches the app shell for offline use.
    Bump CACHE when you ship a new build so clients update. */
-const CACHE = 'plumb-v2.280.0';
+const CACHE = 'plumb-v2.282.0';
 const SHELL = [
   './',
   'index.html',
@@ -52,6 +52,12 @@ self.addEventListener('fetch', e => {
         return (await caches.match(req)) || (await caches.match('index.html'));
       }
     })());
+    return;
+  }
+
+  // Walk clips must never fall back to index.html (wrong MIME = silent PWA).
+  if (url.origin === location.origin && (url.pathname.indexOf('tour-audio') >= 0 || /\.mp3$/i.test(url.pathname))) {
+    e.respondWith(fetch(req).catch(() => new Response('', { status: 404, statusText: 'audio-miss' })));
     return;
   }
 
