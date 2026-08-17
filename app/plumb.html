@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.283.0 - Walk: gold box stays on screen. Full site is the whole job.';
+const PLUMB_VERSION='2.284.0 - Walk starts without loading the demo first. Gold box will not wait.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786970537266;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.283.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786972469326;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.284.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6106,8 +6106,10 @@ function tourStep(){
   _tapP.then(()=>{
   setTimeout(()=>{
     const el=step.sel?document.querySelector(step.sel):null;
-    if(el)smoothScrollTo(el,0.35);                    // LAW 2: one smooth motion into place
-    (el?awaitSettle(el):Promise.resolve()).then(()=>{ // LAW 1: measure only at rest
+    let huge=false;
+    try{if(el){const rr=el.getBoundingClientRect();huge=rr.height>innerHeight*0.82;}}catch(e){}
+    if(el&&!huge)smoothScrollTo(el,0.35);
+    (el&&!huge?awaitSettle(el):Promise.resolve()).then(()=>{
       if(_tok!==_gtTok)return;
       const bub=document.getElementById('tourBubble');if(!bub)return;
       const rect=el?el.getBoundingClientRect():null;
@@ -6127,7 +6129,8 @@ function tourStep(){
       if(step.stageRect){try{const r2=step.stageRect();if(r2&&r2.height)rect=r2;window._stageEl=step.stageRect;}catch(e){}}
       else window._stageEl=el||null;
       tlog('ring',(step.sel||'(no stage)')+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
-      tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false); // ring glides; bubble placed ONCE, corner chosen to avoid this slide's presses
+      try{if(rect){const cr=tourStageRect(rect);if(cr)rect=cr;}}catch(e){}
+      tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false);
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{ // backstop: if anything shifted, correct instantly — ring only
         try{const rq=step.stageRect?step.stageRect():el.getBoundingClientRect();
           if(rq&&(Math.abs(rq.top-rect.top)>3||Math.abs(rq.height-rect.height)>3))tourPlace(rq,true,undefined,true);}catch(e){}},90));
@@ -8996,12 +8999,13 @@ function startTeamTour(){
   try{startTour('team');}catch(e){}
   setTimeout(function(){
     try{
-      if(appMode()!=='demo'||!(state.projects||[]).length)enterDemo({skipPersist:true});
-      document.getElementById('demoIntroScrim')?.classList.remove('show');
-      showOverview();renderToday();renderOvCards();
+      if(appMode()!=='demo'||!(state.projects||[]).length){
+        enterDemo({skipPersist:true});
+        document.getElementById('demoIntroScrim')?.classList.remove('show');
+        showOverview();renderToday();renderOvCards();
+      }
     }catch(e){}
-    try{setTimeout(function(){try{persist();}catch(err){}},400);}catch(e){}
-  },0);
+  },1800);
 }
 function tourNavFn(name){
   const map={
@@ -9285,13 +9289,12 @@ async function tourPlayCues(step,tok){
         else if(c.tab==='files')go('files');
       }catch(e){}
     }
-    await tourWait(c.do||c.tab?400:40,tok);
+    await tourWait(c.do||c.tab?280:20,tok);
     const rawStage=c.stage||step.sel||null;
-    if(typeof rawStage==='string'&&rawStage!=='site'&&rawStage!=='nav')await tourWaitReady(rawStage,tok,1400);
     if(!tourAlive(tok))return;
     const stageSel=tourExpandStage(rawStage);
     if(stageSel){
-      try{await ringStage(stageSel,tok);}catch(e){}
+      try{await Promise.race([ringStage(stageSel,tok),tourWait(500,tok)]);}catch(e){}
     }
     if(c.point){
       try{tourPoint(String(c.point).split(',').map(function(s){return s.trim();}),tok,80);}catch(e){}
@@ -9429,7 +9432,7 @@ function awaitSpotRest(){
       const t=sp.getBoundingClientRect().top;
       if(last!==null&&Math.abs(t-last)<0.6)stable++;else stable=0;
       last=t;n++;
-      if(stable>=3||n>80){setTimeout(res,280);return;} /* a clear beat between landing and the next motion */
+      if(stable>=3||n>80){res();return;}
     }catch(e){res();return;}
     requestAnimationFrame(tick);};
     requestAnimationFrame(tick);
