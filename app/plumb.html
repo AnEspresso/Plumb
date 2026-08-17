@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.277.0 - Walk: one player. Next clip after Glad you are here.';
+const PLUMB_VERSION='2.278.0 - Walk keeps going after hello. Buffers + ended watchdog.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786937143147;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.277.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786937697499;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.278.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5607,7 +5607,7 @@ function startConverge(){
     <p style="color:var(--ink-3);font-size:12.5px;margin:14px 0 0">Everything else fills in as you go — log a photo, set a stage, add a selection whenever it comes up.</p>`);
 }
 const SET_GEAR_ROW=(label,desc,onclick,icon)=>`<button class="set-row" onclick="${onclick}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg><div style="flex:1"><div>${label}</div>${desc?`<div class="sr-d">${desc}</div>`:''}</div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M9 6l6 6-6 6"/></svg></button>`;
-function openSettings(){saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
+function openSettings(){try{tourPrefetch();}catch(e){}saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
 function closeSettings(){document.getElementById('settingsScrim').classList.remove('show');}
 function openCompany(){saveScroll('home');renderCompany();document.getElementById('companyScrim').classList.add('show');}
 function closeCompany(){document.getElementById('companyScrim').classList.remove('show');}
@@ -9111,12 +9111,29 @@ function tourPlayFile(name){
       if(settled||gen!==_tourPlayGen)return;
       settled=true;
       if(_tourPlayFin===done)_tourPlayFin=null;
-      timers.forEach(function(id){clearTimeout(id);});
+      timers.forEach(function(id){clearTimeout(id);clearInterval(id);});
+      try{if(_tourSrc){_tourSrc.onended=null;}}catch(e){}
       tourTrace(why||'end',name);
       res();
     };
     _tourPlayFin=done;
     _tourPlayTimers=timers;
+    const startAc=function(){
+      if(!_tourAC||!_tourBuf[name])return false;
+      try{if(_tourAC.state!=='running'&&_tourAC.resume)_tourAC.resume();}catch(e){}
+      try{
+        const src=_tourAC.createBufferSource();
+        src.buffer=_tourBuf[name];
+        src.connect(_tourAC.destination);
+        src.onended=function(){done('ended');};
+        src.start();
+        _tourSrc=src;
+        tourTrace('play-ac',name,String(Math.round(_tourBuf[name].duration*10)/10));
+        timers.push(setTimeout(function(){done('timeout');},_tourBuf[name].duration*1000+1500));
+        return true;
+      }catch(e){tourTrace('ac-fail',name,String(e&&e.message||e));return false;}
+    };
+    if(startAc())return;
     if(!_tourEl){_tourEl=new Audio();_tourEl.preload='auto';}
     const a=_tourEl;
     const url='tour-audio/'+name+'.mp3';
@@ -9124,21 +9141,26 @@ function tourPlayFile(name){
     a.onended=function(){done('ended');};
     a.onerror=function(){done('error');};
     _tourAudio=a;
-    if(same&&!a.paused&&a.currentTime>0.05){
+    if(same&&!a.paused&&a.currentTime>0.05&&a.duration&&a.currentTime<a.duration-0.15){
       tourTrace('play-el',name,'reuse');
-    }else if(same&&(a.ended||(a.paused&&a.currentTime>0.2))){
+    }else if(same&&(a.ended||(a.duration&&a.currentTime>=a.duration-0.15))){
       done('ended');
       return;
     }else{
       if(!same){try{a.pause();}catch(e){}a.src=url;}
       tourTrace('play-el',name);
       const p=a.play();
-      if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));done('play-fail');});
+      if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));if(!startAc())done('play-fail');});
     }
-    timers.push(setTimeout(function(){
-      try{if(a.paused&&a.currentTime<0.08)done('silence');}catch(e){done('silence');}
-    },900));
-    timers.push(setTimeout(function(){done('timeout');},16000));
+    timers.push(setInterval(function(){
+      if(settled)return;
+      if(startAc()){try{a.pause();}catch(e){}return;}
+      try{
+        if(a.ended||(a.duration&&a.currentTime>=a.duration-0.12)){done('ended');return;}
+        if(a.paused&&a.currentTime<0.08){done('silence');return;}
+      }catch(e){}
+    },250));
+    timers.push(setTimeout(function(){done('timeout');},14000));
   });
 }
 function tourWaitTap(sel,intercept,tok){
@@ -9710,7 +9732,13 @@ function tourAudioStop(){
 function tourUnlockAudio(){
   try{
     const AC=window.AudioContext||window.webkitAudioContext;
-    if(AC){_tourAC=_tourAC||new AC();if(_tourAC.resume)_tourAC.resume();}
+    if(AC){
+      _tourAC=_tourAC||new AC();
+      if(_tourAC.resume)_tourAC.resume();
+      const z=_tourAC.createBuffer(1,1,_tourAC.sampleRate);
+      const s=_tourAC.createBufferSource();
+      s.buffer=z;s.connect(_tourAC.destination);s.start();
+    }
   }catch(e){}
   try{
     if(!_tourEl){_tourEl=new Audio();_tourEl.preload='auto';}
@@ -9720,10 +9748,17 @@ function tourUnlockAudio(){
   }catch(e){}
 }
 function tourPrefetch(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(AC)_tourAC=_tourAC||new AC();
+  }catch(e){}
   const names=[];
   try{(TOUR.team||[]).forEach(function(s){(s.play||[]).forEach(function(c){if(c.f)names.push(c.f);});});}catch(e){}
+  if(!names.length){
+    's1a s1b s1c s2a s2b s2c s2d s3a s3b s3c s3d s4a s4b s5a s5b s5c s6a s6b s6c s6d s6e s7a s7b s8a s8b s8c s8d s8e s9a s9b s9c s10a s10b s10c'.split(' ').forEach(function(n){names.push(n);});
+  }
   names.forEach(function(n){
-    if(_tourBuf[n]||!_tourAC)return;
+    if(_tourBuf[n])return;
     fetch('tour-audio/'+n+'.mp3').then(function(r){return r.arrayBuffer();}).then(function(b){
       if(!_tourAC)return null;
       return _tourAC.decodeAudioData(b.slice(0));
