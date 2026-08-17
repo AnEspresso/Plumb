@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.275.0 - Walk: clips finish. Field Notes ring follows the sheet.';
+const PLUMB_VERSION='2.276.0 - Walk plays on tap. Never waits on decode.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786935861103;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.275.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786936533074;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.276.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8982,6 +8982,12 @@ function tourBeat(tok){
 function startTeamTour(){
   window._tourQuiet=true;
   try{tourUnlockAudio();tourPrefetch();}catch(e){}
+  try{
+    const kick=new Audio('tour-audio/s1a.mp3');
+    const kp=kick.play();
+    if(kp&&kp.catch)kp.catch(function(){});
+    window._tourKick=kick;
+  }catch(e){}
   try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
   welcomeDone();
   try{closeStart();closeSetup();closeHouse();closeCompany();}catch(e){}
@@ -9118,19 +9124,24 @@ function tourPlayFile(name){
     _tourPlayTimers=timers;
     const playEl=function(){
       if(gen!==_tourPlayGen)return;
-      const a=new Audio('tour-audio/'+name+'.mp3');
+      let a=null;
+      if(name==='s1a'&&window._tourKick){
+        a=window._tourKick;window._tourKick=null;
+      }else{
+        a=new Audio('tour-audio/'+name+'.mp3');
+      }
       _tourAudio=a;
       a.onended=function(){done('ended');};
       a.onerror=function(){done('error');};
       tourTrace('play-el',name);
-      const p=a.play();
-      if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));done('play-fail');});
-      timers.push(setTimeout(function(){done('timeout');},24000));
+      if(a.paused){
+        const p=a.play();
+        if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));done('play-fail');});
+      }
+      timers.push(setTimeout(function(){done('timeout');},16000));
     };
-    const playAc=function(){
+    if(_tourAC&&_tourBuf[name]&&_tourAC.state==='running'){
       try{
-        if(gen!==_tourPlayGen)return;
-        if(!_tourAC||_tourAC.state!=='running'||!_tourBuf[name]){playEl();return;}
         const src=_tourAC.createBufferSource();
         src.buffer=_tourBuf[name];
         src.connect(_tourAC.destination);
@@ -9139,20 +9150,8 @@ function tourPlayFile(name){
         src.start();
         tourTrace('play-ac',name,String(Math.round(_tourBuf[name].duration*10)/10));
         timers.push(setTimeout(function(){done('timeout');},_tourBuf[name].duration*1000+2500));
-      }catch(e){tourTrace('ac-fail',name,String(e&&e.message||e));playEl();}
-    };
-    if(_tourAC&&_tourBuf[name]){playAc();return;}
-    if(_tourAC){
-      fetch('tour-audio/'+name+'.mp3').then(function(r){return r.arrayBuffer();}).then(function(b){
-        if(gen!==_tourPlayGen||settled)return null;
-        return _tourAC.decodeAudioData(b.slice(0));
-      }).then(function(buf){
-        if(gen!==_tourPlayGen||settled)return;
-        if(!buf){playEl();return;}
-        _tourBuf[name]=buf;
-        playAc();
-      }).catch(function(){if(gen===_tourPlayGen&&!settled)playEl();});
-      return;
+        return;
+      }catch(e){tourTrace('ac-fail',name,String(e&&e.message||e));}
     }
     playEl();
   });
@@ -9255,6 +9254,7 @@ async function tourPlayCues(step,tok){
   for(let i=0;i<cues.length;i++){
     if(!tourAlive(tok))return;
     const c=cues[i];
+    const audioP=c.f?tourPlayFile(c.f):Promise.resolve();
     try{if(c.do)c.do();}catch(e){}
     if(c.tab){
       try{
@@ -9291,7 +9291,7 @@ async function tourPlayCues(step,tok){
       }
     }catch(e){}
     try{tourSeeSnap(c);}catch(e){}
-    if(c.f)await tourPlayFile(c.f);
+    await audioP;
     if(!tourAlive(tok))return;
     if(c.waitTap)await tourWaitTap(c.waitTap,c.intercept,tok);
     try{if(c.doAfter)c.doAfter();}catch(e){}
