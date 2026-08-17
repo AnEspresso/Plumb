@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.290.0 - Walk: after Ara finishes, the next scene starts. Box stays put.';
+const PLUMB_VERSION='2.291.0 - Walk: no pause at Next. Book stays on the pills. Card has air.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786987755852;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.290.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786992632974;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.291.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5743,8 +5743,8 @@ const TOUR={team:[
  {sel:'#ovCards',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
   nav:()=>{try{try{setOvSort('attn');}catch(e){}showOverview();renderOvCards();}catch(e){}},
   play:[
-    {f:'s4a',point:'#ovCards .allh',stage:'book'},
-    {f:'s4b',point:'#ovCards .ov-card:not(.allh)',stage:'book'}
+    {f:'s4a',point:'#ovCards .allh',stage:'houses'},
+    {f:'s4b',point:'#ovCards .ov-card:not(.allh)',stage:'houses'}
   ]},
  {sel:'#houseBody',bubSide:'tb',title:'The briefing',body:'One house. What still needs you, then the doors.',
   nav:()=>{try{showOverview();const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
@@ -9104,7 +9104,7 @@ function tourAvoidCover(el){
       else if(el){const r=el.getBoundingClientRect();if(r.height>12)stage=r;}
     }catch(e){}
     const bh=bub.offsetHeight||156;
-    const gap=12;
+    const gap=20;
     const topBand=stage?Math.max(0,stage.top-gap):80;
     const botBand=stage?Math.max(0,innerHeight-stage.bottom-gap):80;
     const sheetOn=!!document.getElementById('sheet')?.classList.contains('show');
@@ -9122,7 +9122,7 @@ function tourAvoidCover(el){
     const bw=Math.min(innerWidth-24, wide?innerWidth-24:420);
     bub.style.left=((innerWidth-bw)/2)+'px';
     bub.style.right='';
-    const top=side==='tb'?10:Math.max(10,innerHeight-bh-16);
+    const top=side==='tb'?12:Math.max(12,innerHeight-bh-20);
     bub.style.top=top+'px';
   }catch(e){}
 }
@@ -9522,27 +9522,7 @@ function readBeat(text,base){
 }
 async function cueNext(tok){
   if(!tourAlive(tok))return;
-  const bub=document.getElementById('tourBubble');if(!bub)return;
-  const nb=bub.querySelector('.tour-gold')||[...bub.querySelectorAll('.tour-next')].pop();
-  if(!nb)return;
-  nb.classList.add('tour-next-glow');
-  const r=nb.getBoundingClientRect();if(!r.width)return;
-  const o=_orbEl();if(!o)return;
-  window._orbGen=(window._orbGen||0)+1;                    /* LAW 5: no stray ripples over the bubble */
-  o.classList.remove('tap','invite');
-  await orbTo(nb,{settle:true,rest:true,noscroll:true});
-  if(!tourAlive(tok)){nb.classList.remove('tour-next-glow');return;}
-  const cx=r.left+r.width/2,cy=r.top+r.height/2;
-  const rx=r.width/2+12,ry=r.height/2+10;
-  await new Promise(res=>{const t0=performance.now();
-    const spin=(t)=>{const p=(t-t0)/850;
-      if(p>=1||!tourAlive(tok)){res();return;}
-      const a=-Math.PI/2+p*2*Math.PI;
-      _orbPlace(o,cx+Math.cos(a)*rx,cy+Math.sin(a)*ry,true);
-      requestAnimationFrame(spin);};
-    requestAnimationFrame(spin);});
-  _orbPlace(o,Math.min(cx+rx+20,innerWidth-24),cy,false);
-  if(tourAlive(tok))tourNext();
+  tourNext();
 }
 function taskCleanup(){
   try{document.querySelectorAll('.tour-next-glow').forEach(e=>e.classList.remove('tour-next-glow'));}catch(e){}
@@ -9675,7 +9655,7 @@ function tourSceneRect(name){
     bot=Math.min(innerHeight-8,bot);
     const bub=document.getElementById('tourBubble');
     const dock=(side||(bub&&bub.dataset.side)||'bb');
-    const band=Math.round(Math.min(188,Math.max(140,(bub&&bub.offsetHeight)||156)+14));
+    const band=Math.round(Math.max(176,((bub&&bub.offsetHeight)||156)+32));
     if(dock==='tb')top=Math.max(top,band);
     else bot=Math.min(bot,innerHeight-band);
     if(bot-top<80)bot=Math.min(innerHeight-8,top+80);
@@ -9689,15 +9669,13 @@ function tourSceneRect(name){
     if(r&&r.height>220){r.height=220;r.bottom=r.top+220;}
     return r;
   }
-  if(name==='book'||name==='houses'){
+  if(name==='book'){
+    return join([document.getElementById('ovSortRow')],'tb');
+  }
+  if(name==='houses'){
     const pills=document.getElementById('ovSortRow');
-    const keep=[pills];
-    const maxBot=innerHeight-160;
-    document.querySelectorAll('#ovCards .allh, #ovCards .ov-card').forEach(function(c){
-      const r=box(c);
-      if(r&&r.top>=72&&r.top<maxBot-20)keep.push(c);
-    });
-    return join(keep,'tb');
+    const row=document.querySelector('#ovCards .allh')||document.querySelector('#ovCards .ov-card');
+    return join([pills,row],'tb');
   }
   if(name==='field'){
     const sh=document.getElementById('sheet');

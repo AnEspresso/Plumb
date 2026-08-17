@@ -1,6 +1,6 @@
-**v2.290.0 is live.** After Ara finishes, the next scene starts. 2.289 stays the prior restore. Pages rebuild.
+**v2.291.0 is live.** No Next-circle. Book stays on the pills. Card has air. 2.290 stays the prior restore.
 
-# SitePlumb — handoff (current build v2.290.0)
+# SitePlumb — handoff (current build v2.291.0)
 
 
 Paste this file into a new chat, attach the artifacts alongside it, and work continues without re-explaining anything.

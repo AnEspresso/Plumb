@@ -59,7 +59,7 @@ let lastIdx = -1;
 let lastChange = 0;
 let nShot = 0;
 
-for (let i = 0; i < 520; i++) {
+for (let i = 0; i < 700; i++) {
   const snap = await page.evaluate(() => {
     const s = _tourSteps && typeof _tourIdx === "number" ? _tourSteps[_tourIdx] : null;
     const spot = document.getElementById("tourSpot");
