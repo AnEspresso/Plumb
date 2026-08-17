@@ -1,4 +1,7 @@
-# SitePlumb — handoff (current build v2.242.0)
+**v2.289.0 is live.** Today, camera, and the book each get their own box. 2.288 stays the prior restore.
+
+# SitePlumb — handoff (current build v2.289.0)
+
 
 Paste this file into a new chat, attach the artifacts alongside it, and work continues without re-explaining anything.
 
@@ -20,7 +23,7 @@ A single-file PWA for residential construction project management — it connect
 
 **Pinned next after gold-master freeze:** Field Notes *file to* on the desk — optional trade + room after Send or on edit, so photos filter and land in that packet. Not on the field screen.
 
-**v2.288.0 is live.** Ara starts on the tap. Orb is back. 2.287 stays the prior restore.
+**v2.289.0 is built, not shipped.** Full 2.288 pass: Welcome/Book/Houses were one 485px slice. Now Today, camera, book are named stages. 2.288 is live.
 
 **Gold-master RC:** [GOLD-RC.md](GOLD-RC.md) — next is #1 empty-state hide + #2 All homes as a header.
 

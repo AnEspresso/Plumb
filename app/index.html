@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.288.0 - Walk: Ara starts on the tap. Orb is back.';
+const PLUMB_VERSION='2.289.0 - Walk: Today, camera, and the book each get their own box.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786981550197;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.288.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786984609075;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.289.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5721,30 +5721,30 @@ function jumpToSubs(){try{go('subs');}catch(e){}}
    optional nav() hooks; tap the highlighted control to try it, or Next to skip
    ahead. Role walkthroughs live in TOUR{}. ── */
 const TOUR={team:[
- {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',sel:'.ov-list',
+ {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',sel:'#ovToday',
   nav:()=>{try{closeHouse();closeCompany();showOverview();renderToday();renderOvCards();}catch(e){}},
-  play:[{f:'s1a',stage:'.ov-list'},{f:'s1b',point:'#ovToday',stage:'.ov-list'},{f:'s1c',stage:'.ov-list'}]},
- {sel:'.ov-list',bubSide:'bb',title:'Field Notes',body:'House, photo, chip, Send. Same camera everywhere.',
+  play:[{f:'s1a',stage:'welcome'},{f:'s1b',point:'#ovToday',stage:'welcome'},{f:'s1c',stage:'welcome'}]},
+ {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'House, photo, chip, Send. Same camera everywhere.',
   nav:()=>{try{showOverview();renderToday();}catch(e){}},
   play:[
-    {f:'s2a',point:'.ov-field',stage:'.ov-list'},
-    {do:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}},f:'s2b',point:'#sheet .chip',stage:'#sheet'},
-    {f:'s2c',point:'#saveBtn',stage:'#sheet'},
-    {do:function(){try{closeSheet();}catch(e){}},f:'s2d',point:'.ov-field',waitTap:'.ov-field',stage:'.ov-list',intercept:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}}}
+    {f:'s2a',point:'.ov-field',stage:'field'},
+    {do:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}},f:'s2b',point:'#sheet .chip',stage:'sheet'},
+    {f:'s2c',point:'#saveBtn',stage:'sheet'},
+    {do:function(){try{closeSheet();}catch(e){}},f:'s2d',point:'.ov-field',waitTap:'.ov-field',stage:'field',intercept:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}}}
   ]},
- {sel:'.ov-list',bubSide:'bb',title:'Your book',body:'Needs You. Recent Decisions. A\u2013Z.',
+ {sel:'#ovSortRow',bubSide:'tb',title:'Your book',body:'Needs You. Recent Decisions. A\u2013Z.',
   nav:()=>{try{try{closeSheet();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}},
   play:[
-    {f:'s3a',point:'#ovSortRow',stage:'.ov-list'},
-    {do:function(){try{setOvSort('attn');}catch(e){}},f:'s3b',point:'[data-sort=attn]',stage:'.ov-list'},
-    {do:function(){try{setOvSort('recent');}catch(e){}},f:'s3c',point:'[data-sort=recent]',stage:'.ov-list'},
-    {do:function(){try{setOvSort('az');}catch(e){}},f:'s3d',point:'[data-sort=az]',stage:'.ov-list'}
+    {f:'s3a',point:'#ovSortRow',stage:'book'},
+    {do:function(){try{setOvSort('attn');}catch(e){}},f:'s3b',point:'[data-sort=attn]',stage:'book'},
+    {do:function(){try{setOvSort('recent');}catch(e){}},f:'s3c',point:'[data-sort=recent]',stage:'book'},
+    {do:function(){try{setOvSort('az');}catch(e){}},f:'s3d',point:'[data-sort=az]',stage:'book'}
   ]},
- {sel:'.ov-list',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
+ {sel:'#ovCards',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
   nav:()=>{try{try{setOvSort('attn');}catch(e){}showOverview();renderOvCards();}catch(e){}},
   play:[
-    {f:'s4a',point:'#ovCards .allh',stage:'.ov-list'},
-    {f:'s4b',point:'#ovCards .ov-card:not(.allh)',stage:'.ov-list'}
+    {f:'s4a',point:'#ovCards .allh',stage:'book'},
+    {f:'s4b',point:'#ovCards .ov-card:not(.allh)',stage:'book'}
   ]},
  {sel:'#houseBody',bubSide:'tb',title:'The briefing',body:'One house. What still needs you, then the doors.',
   nav:()=>{try{showOverview();const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
@@ -5777,16 +5777,16 @@ const TOUR={team:[
     {f:'s8d',point:'nav .tab[data-v=build]',tab:'build',stage:'site'},
     {f:'s8e',point:'nav .tab[data-v=files]',tab:'files',stage:'site'}
   ]},
- {sel:'#overview',bubSide:'bb',title:'Company',body:'Calendar, invoices, roster, team. The office drawer.',
+ {sel:'#ovCompanyBtn',bubSide:'bb',title:'Company',body:'Calendar, invoices, roster, team. The office drawer.',
   nav:()=>{try{closeHouse();showOverview();}catch(e){}},
   play:[
-    {f:'s9a',point:'#ovCompanyBtn',stage:'#overview'},
-    {do:function(){try{openCompany();}catch(e){}},f:'s9b',point:'#companyBody .set-row',stage:'#companyBody'},
-    {f:'s9c',point:'#companyBody',stage:'#companyBody'}
+    {f:'s9a',point:'#ovCompanyBtn',stage:'company'},
+    {do:function(){try{openCompany();}catch(e){}},f:'s9b',point:'#companyBody .set-row',stage:'company'},
+    {f:'s9c',point:'#companyBody',stage:'company'}
   ]},
- {title:'You\u2019re set',body:'Replay anytime from Settings.',bubSide:'bb',sel:'.ov-list',
+ {title:'You\u2019re set',body:'Replay anytime from Settings.',bubSide:'bb',sel:'#ovToday',
   nav:()=>{try{closeCompany();closeHouse();showOverview();}catch(e){}},
-  play:[{f:'s10a',stage:'.ov-list'},{f:'s10b',stage:'.ov-list'},{f:'s10c',stage:'.ov-list'}]}
+  play:[{f:'s10a',stage:'welcome'},{f:'s10b',stage:'welcome'},{f:'s10c',stage:'welcome'}]}
 ],
 /* Saved 2.262 builder walkthrough. Replay from Settings \u2192 Classic walkthrough. */
 teamLegacy:[
@@ -6136,7 +6136,7 @@ function tourStep(){
       try{if(rect){const cr=tourStageRect(rect);if(cr)rect=cr;}}catch(e){}
       tourPlace(rect,false,(step.after||step.task||step.__dock||step.bubSide)?(step.__dockSide||step.bubSide||true):false);
       if(el&&rect)requestAnimationFrame(()=>setTimeout(()=>{
-        try{const rq=tourStageRect(step.stageRect?step.stageRect():el);if(rq)tourPlace(rq,true,undefined,true);}catch(e){}},90));
+        try{const rq=tourStageRect(stageFn);if(rq)tourPlace(rq,true,undefined,true);}catch(e){}},90));
       if(_tourSteps!==TOUR.team){
         if(el)orbTo(el,{settle:true,rest:true,noscroll:true});else orbHide();
       }else{
@@ -9668,25 +9668,27 @@ function tourSceneRect(name){
     return {top:top,left:left,width:right-left,height:bot-top,right:right,bottom:bot};
   };
   if(name==='home'||name==='welcome'){
-    return join([document.getElementById('ovToday')],'bb');
+    const today=document.getElementById('ovToday');
+    const bits=[];
+    if(today)today.querySelectorAll('.ov-coming, .td-soon, .eyebrow').forEach(function(el){bits.push(el);});
+    const r=join(bits.length?bits:[today],'bb');
+    if(r&&r.height>220){r.height=220;r.bottom=r.top+220;}
+    return r;
   }
   if(name==='book'||name==='houses'){
     const pills=document.getElementById('ovSortRow');
-    try{if(pills)pills.scrollIntoView({block:'start',behavior:'instant'});}catch(e){}
     const keep=[pills];
     const maxBot=innerHeight-160;
     document.querySelectorAll('#ovCards .allh, #ovCards .ov-card').forEach(function(c){
       const r=box(c);
-      if(r&&r.top<maxBot-20&&r.bottom>80)keep.push(c);
+      if(r&&r.top>=72&&r.top<maxBot-20)keep.push(c);
     });
     return join(keep,'tb');
   }
   if(name==='field'){
     const sh=document.getElementById('sheet');
     if(sh&&sh.classList.contains('show'))return join([sh],'tb');
-    const cam=document.querySelector('.ov-list .ov-field, button.ov-field, .ov-field');
-    try{if(cam)cam.scrollIntoView({block:'center',behavior:'instant'});}catch(e){}
-    return join([cam],'bb');
+    return join([document.querySelector('#ovToday .ov-field, .ov-list .ov-field')],'bb');
   }
   if(name==='sheet')return join([document.getElementById('sheet')],'tb');
   if(name==='briefing'||name==='doors'||name==='packet'){
@@ -9704,7 +9706,7 @@ function tourSceneRect(name){
 }
 function tourExpandStage(sel){
   const named={
-    '.ov-list':'home','home':'home','welcome':'home','#overview':'home','#ovToday':'home',
+    '.ov-list':'book','home':'home','welcome':'home','#overview':'home','#ovToday':'home',
     'book':'book','houses':'book','#ovCards':'book','#ovSortRow':'book',
     'field':'field','#sheet':'sheet','sheet':'sheet',
     '#houseBody':'briefing','briefing':'briefing','doors':'briefing','packet':'briefing',

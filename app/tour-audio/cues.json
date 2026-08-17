@@ -3,55 +3,55 @@
   "slides": [
     {
       "id": "welcome",
-      "sel": ".ov-list",
+      "sel": "#ovToday",
       "title": "Glad you're here",
       "body": "I'll walk you around once. Skip anytime.",
       "bubSide": "bb",
       "nav": "home",
       "cues": [
-        { "id": "s1a", "say": "Glad you're here.", "stage": ".ov-list" },
-        { "id": "s1b", "say": "I'll walk you around Site Plumb once. The daily habit. Your book of houses. And where the desk work lives.", "point": "#ovToday", "stage": ".ov-list" },
-        { "id": "s1c", "say": "Skip whenever you like. Nothing here can break.", "stage": ".ov-list" }
+        { "id": "s1a", "say": "Glad you're here.", "stage": "welcome" },
+        { "id": "s1b", "say": "I'll walk you around Site Plumb once. The daily habit. Your book of houses. And where the desk work lives.", "point": "#ovToday", "stage": "welcome" },
+        { "id": "s1c", "say": "Skip whenever you like. Nothing here can break.", "stage": "welcome" }
       ]
     },
     {
       "id": "field",
       "title": "Field Notes",
       "body": "House, photo, chip, Send. Same camera everywhere.",
-      "sel": ".ov-list",
+      "sel": ".ov-field",
       "bubSide": "bb",
       "nav": "field",
       "cues": [
-        { "id": "s2a", "say": "See this camera? That's Field Notes.", "point": ".ov-field", "stage": ".ov-list" },
-        { "id": "s2b", "say": "Out on a job you pick the house, take a picture, tap a chip, and hit Send.", "point": "#sheet .chip", "do": "openField", "stage": "#sheet" },
-        { "id": "s2c", "say": "You can file the trade later, sitting at a desk. Same camera, everywhere you work.", "point": "#saveBtn", "stage": "#sheet" },
-        { "id": "s2d", "say": "Now you. Tap the camera.", "point": ".ov-field", "do": "closeSheet", "waitTap": ".ov-field", "intercept": "openField", "stage": ".ov-list" }
+        { "id": "s2a", "say": "See this camera? That's Field Notes.", "point": ".ov-field", "stage": "field" },
+        { "id": "s2b", "say": "Out on a job you pick the house, take a picture, tap a chip, and hit Send.", "point": "#sheet .chip", "do": "openField", "stage": "sheet" },
+        { "id": "s2c", "say": "You can file the trade later, sitting at a desk. Same camera, everywhere you work.", "point": "#saveBtn", "stage": "sheet" },
+        { "id": "s2d", "say": "Now you. Tap the camera.", "point": ".ov-field", "do": "closeSheet", "waitTap": ".ov-field", "intercept": "openField", "stage": "field" }
       ]
     },
     {
       "id": "book",
       "title": "Your book",
       "body": "Needs You. Recent Decisions. A–Z.",
-      "sel": ".ov-list",
-      "bubSide": "bb",
+      "sel": "#ovSortRow",
+      "bubSide": "tb",
       "nav": "book",
       "cues": [
-        { "id": "s3a", "say": "This is your book.", "point": "#ovSortRow", "stage": ".ov-list" },
-        { "id": "s3b", "say": "Needs You is what opens first. The hottest work sits on top.", "point": "[data-sort=attn]", "do": "sortAttn", "stage": ".ov-list" },
-        { "id": "s3c", "say": "Recent Decisions is the paper trail.", "point": "[data-sort=recent]", "do": "sortRecent", "stage": ".ov-list" },
-        { "id": "s3d", "say": "A to Z is just the street names. Three ways to look at the same houses.", "point": "[data-sort=az]", "do": "sortAz", "stage": ".ov-list" }
+        { "id": "s3a", "say": "This is your book.", "point": "#ovSortRow", "stage": "book" },
+        { "id": "s3b", "say": "Needs You is what opens first. The hottest work sits on top.", "point": "[data-sort=attn]", "do": "sortAttn", "stage": "book" },
+        { "id": "s3c", "say": "Recent Decisions is the paper trail.", "point": "[data-sort=recent]", "do": "sortRecent", "stage": "book" },
+        { "id": "s3d", "say": "A to Z is just the street names. Three ways to look at the same houses.", "point": "[data-sort=az]", "do": "sortAz", "stage": "book" }
       ]
     },
     {
       "id": "houses",
       "title": "The houses",
       "body": "All homes, then each job. Tap for a briefing.",
-      "sel": ".ov-list",
+      "sel": "#ovCards",
       "bubSide": "tb",
       "nav": "houses",
       "cues": [
-        { "id": "s4a", "say": "All homes sits at the top. That's every open item, every house.", "point": "#ovCards .allh", "stage": ".ov-list" },
-        { "id": "s4b", "say": "Each row under it is one job. Tap a house and you get a briefing. You don't have to open the whole site.", "point": "#ovCards .ov-card:not(.allh)", "stage": ".ov-list" }
+        { "id": "s4a", "say": "All homes sits at the top. That's every open item, every house.", "point": "#ovCards .allh", "stage": "book" },
+        { "id": "s4b", "say": "Each row under it is one job. Tap a house and you get a briefing. You don't have to open the whole site.", "point": "#ovCards .ov-card:not(.allh)", "stage": "book" }
       ]
     },
     {
@@ -113,26 +113,26 @@
       "id": "company",
       "title": "Company",
       "body": "Calendar, invoices, roster, team. The office drawer.",
-      "sel": "#overview",
+      "sel": "#ovCompanyBtn",
       "bubSide": "bb",
       "nav": "company",
       "cues": [
-        { "id": "s9a", "say": "And this little briefcase? That's Company.", "point": "#ovCompanyBtn", "stage": "#overview" },
-        { "id": "s9b", "say": "The trades calendar across every house. Invoices. Your standing roster. The team. Add a job.", "point": "#companyBody .set-row", "do": "openCompany", "stage": "#companyBody" },
-        { "id": "s9c", "say": "It's the office drawer, not a house.", "point": "#companyBody", "stage": "#companyBody" }
+        { "id": "s9a", "say": "And this little briefcase? That's Company.", "point": "#ovCompanyBtn", "stage": "company" },
+        { "id": "s9b", "say": "The trades calendar across every house. Invoices. Your standing roster. The team. Add a job.", "point": "#companyBody .set-row", "do": "openCompany", "stage": "company" },
+        { "id": "s9c", "say": "It's the office drawer, not a house.", "point": "#companyBody", "stage": "company" }
       ]
     },
     {
       "id": "done",
       "title": "You're set",
       "body": "Replay anytime from Settings.",
-      "sel": ".ov-list",
+      "sel": "#ovToday",
       "bubSide": "bb",
       "nav": "close",
       "cues": [
-        { "id": "s10a", "say": "You're set.", "stage": ".ov-list" },
-        { "id": "s10b", "say": "Field Notes from the field. The book when you're home. A briefing per house. The packet for the sub.", "stage": ".ov-list" },
-        { "id": "s10c", "say": "Full site and Company when you need the desk. Replay any time from Settings. I'll get out of your way.", "stage": ".ov-list" }
+        { "id": "s10a", "say": "You're set.", "stage": "welcome" },
+        { "id": "s10b", "say": "Field Notes from the field. The book when you're home. A briefing per house. The packet for the sub.", "stage": "welcome" },
+        { "id": "s10c", "say": "Full site and Company when you need the desk. Replay any time from Settings. I'll get out of your way.", "stage": "welcome" }
       ]
     }
   ]
