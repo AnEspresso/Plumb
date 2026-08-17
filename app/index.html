@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.276.0 - Walk plays on tap. Never waits on decode.';
+const PLUMB_VERSION='2.277.0 - Walk: one player. Next clip after Glad you are here.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786936533074;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.276.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786937143147;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.277.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8982,21 +8982,15 @@ function tourBeat(tok){
 function startTeamTour(){
   window._tourQuiet=true;
   try{tourUnlockAudio();tourPrefetch();}catch(e){}
-  try{
-    const kick=new Audio('tour-audio/s1a.mp3');
-    const kp=kick.play();
-    if(kp&&kp.catch)kp.catch(function(){});
-    window._tourKick=kick;
-  }catch(e){}
   try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
   welcomeDone();
   try{closeStart();closeSetup();closeHouse();closeCompany();}catch(e){}
   try{sessionStorage.setItem('plumbTourOffered','1');}catch(e){}
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
-  if(appMode()!=='demo')enterDemo();
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
   try{showOverview();renderToday();renderOvCards();}catch(e){}
   try{startTour('team');}catch(e){}
+  try{if(appMode()!=='demo')enterDemo();}catch(e){}
   try{loadTourCues();}catch(e){}
 }
 function tourNavFn(name){
@@ -9107,8 +9101,9 @@ function tourPlayFile(name){
     if(tourMuted()||!name){tourTrace('skip-mute',name);res();return;}
     try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
     const prev=_tourPlayFin;
-    tourAudioStop();
     if(prev)try{prev('cut');}catch(e){}
+    try{(_tourPlayTimers||[]).forEach(function(id){clearTimeout(id);});_tourPlayTimers=[];}catch(e){}
+    try{if(_tourSrc){_tourSrc.onended=null;_tourSrc.stop();_tourSrc=null;}}catch(e){}
     let settled=false;
     const gen=++_tourPlayGen;
     const timers=[];
@@ -9122,38 +9117,28 @@ function tourPlayFile(name){
     };
     _tourPlayFin=done;
     _tourPlayTimers=timers;
-    const playEl=function(){
-      if(gen!==_tourPlayGen)return;
-      let a=null;
-      if(name==='s1a'&&window._tourKick){
-        a=window._tourKick;window._tourKick=null;
-      }else{
-        a=new Audio('tour-audio/'+name+'.mp3');
-      }
-      _tourAudio=a;
-      a.onended=function(){done('ended');};
-      a.onerror=function(){done('error');};
+    if(!_tourEl){_tourEl=new Audio();_tourEl.preload='auto';}
+    const a=_tourEl;
+    const url='tour-audio/'+name+'.mp3';
+    const same=!!(a.currentSrc&&a.currentSrc.indexOf(name+'.mp3')>=0);
+    a.onended=function(){done('ended');};
+    a.onerror=function(){done('error');};
+    _tourAudio=a;
+    if(same&&!a.paused&&a.currentTime>0.05){
+      tourTrace('play-el',name,'reuse');
+    }else if(same&&(a.ended||(a.paused&&a.currentTime>0.2))){
+      done('ended');
+      return;
+    }else{
+      if(!same){try{a.pause();}catch(e){}a.src=url;}
       tourTrace('play-el',name);
-      if(a.paused){
-        const p=a.play();
-        if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));done('play-fail');});
-      }
-      timers.push(setTimeout(function(){done('timeout');},16000));
-    };
-    if(_tourAC&&_tourBuf[name]&&_tourAC.state==='running'){
-      try{
-        const src=_tourAC.createBufferSource();
-        src.buffer=_tourBuf[name];
-        src.connect(_tourAC.destination);
-        _tourSrc=src;
-        src.onended=function(){done('ended');};
-        src.start();
-        tourTrace('play-ac',name,String(Math.round(_tourBuf[name].duration*10)/10));
-        timers.push(setTimeout(function(){done('timeout');},_tourBuf[name].duration*1000+2500));
-        return;
-      }catch(e){tourTrace('ac-fail',name,String(e&&e.message||e));}
+      const p=a.play();
+      if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));done('play-fail');});
     }
-    playEl();
+    timers.push(setTimeout(function(){
+      try{if(a.paused&&a.currentTime<0.08)done('silence');}catch(e){done('silence');}
+    },900));
+    timers.push(setTimeout(function(){done('timeout');},16000));
   });
 }
 function tourWaitTap(sel,intercept,tok){
@@ -9689,7 +9674,7 @@ function orbTaps(taps,instantFirst){
 function orbHide(){try{const o=_orbEl();if(o){o.classList.remove('show','tap','active');}}catch(e){}}
 function endGrandTour(silent){try{tourEnd();}catch(e){}tourAudioStop();try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
 /* voice: baked MP3s in tour-audio/ when present (Ara, warm). Else the local engine. */
-let _tourAudio=null,_tourPre=null,_tourAC=null,_tourBuf={},_tourSrc=null,_tourTrace=[],_tourPlayTimers=[],_tourPlayGen=0,_tourPlayFin=null;
+let _tourAudio=null,_tourEl=null,_tourPre=null,_tourAC=null,_tourBuf={},_tourSrc=null,_tourTrace=[],_tourPlayTimers=[],_tourPlayGen=0,_tourPlayFin=null;
 function tourTrace(ev,name,extra){
   const row={t:Date.now(),ev:ev,name:name||'',extra:extra||''};
   _tourTrace.push(row);
@@ -9719,7 +9704,8 @@ function tourHudPaint(){
 function tourAudioStop(){
   try{(_tourPlayTimers||[]).forEach(function(id){clearTimeout(id);});_tourPlayTimers=[];}catch(e){}
   try{if(_tourSrc){_tourSrc.onended=null;_tourSrc.stop();_tourSrc=null;}}catch(e){}
-  try{if(_tourAudio){_tourAudio.onended=null;_tourAudio.onerror=null;_tourAudio.pause();_tourAudio=null;}}catch(e){}
+  try{if(_tourEl){_tourEl.onended=null;_tourEl.onerror=null;_tourEl.pause();}}catch(e){}
+  _tourAudio=null;
 }
 function tourUnlockAudio(){
   try{
@@ -9727,10 +9713,10 @@ function tourUnlockAudio(){
     if(AC){_tourAC=_tourAC||new AC();if(_tourAC.resume)_tourAC.resume();}
   }catch(e){}
   try{
-    const a=new Audio('tour-audio/s1a.mp3');
-    a.muted=true;a.volume=0;
-    const p=a.play();
-    if(p&&p.then)p.then(function(){try{a.pause();a.currentTime=0;}catch(e){}}).catch(function(){});
+    if(!_tourEl){_tourEl=new Audio();_tourEl.preload='auto';}
+    _tourEl.src='tour-audio/s1a.mp3';
+    const p=_tourEl.play();
+    if(p&&p.catch)p.catch(function(){});
   }catch(e){}
 }
 function tourPrefetch(){
