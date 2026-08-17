@@ -3072,13 +3072,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.264.0 - Walkthrough voice: natural scripts, better voices.';
+const PLUMB_VERSION='2.265.0 - Friendly walkthrough. Speaks like a person.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786921518775;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.264.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786925489608;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.265.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5634,7 +5634,7 @@ function renderSettings(){
     rows+='<div class="set-hd">This device</div>';
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
-    rows+=SET_GEAR_ROW('How SitePlumb works','Five spots \u2014 Field Notes to Full site','closeSettings();startTour(\'team\')',I.how);
+    rows+=SET_GEAR_ROW('How SitePlumb works','A friendly walk around your book','closeSettings();startTour(\'team\')',I.how);
     rows+=SET_GEAR_ROW('Classic walkthrough','The older Full-site tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
     rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
     if(devAllowed())rows+=SET_GEAR_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()',I.dev);
@@ -5708,14 +5708,16 @@ function jumpToSubs(){try{go('subs');}catch(e){}}
    optional nav() hooks; tap the highlighted control to try it, or Next to skip
    ahead. Role walkthroughs live in TOUR{}. ── */
 const TOUR={team:[
- {title:'Welcome to SitePlumb',body:'Five spots. That is the whole walk. Tap Next, or Skip anytime.',say:'Welcome to Site Plumb. Five spots. That is the whole walk. Tap Next, or Skip any time.',nav:()=>{try{showOverview();renderToday();renderOvCards();}catch(e){}}},
- {sel:'.ov-field',bubSide:'tb',title:'Field Notes',body:'From the field: house, photo, chip, Send. File the trade later at a desk. Same camera everywhere.',say:'Field Notes. From the field: house, photo, a chip, then Send. File the trade later, at a desk. Same camera, everywhere.',nav:()=>{try{showOverview();renderToday();}catch(e){}}},
- {sel:'#ovSortRow',title:'Needs You',body:'Your book. Needs You is first \u2014 time-sensitive on top. Recent Decisions and A\u2013Z are one tap.',say:'Needs You. This is your book. Time-sensitive work sits on top. Recent Decisions and A to Z are one tap away.',nav:()=>{try{showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}}},
- {sel:'#ovCards',title:'The houses',body:'All homes is the header. Each house shows what needs you. Tap one.',say:'The houses. All homes is the header. Each house shows what needs you. Tap one.',nav:()=>{try{showOverview();renderOvCards();}catch(e){}}},
- {sel:'#houseBody .pkt-strip',title:'The briefing',body:'This house, not the whole app. What is still open, then the doors.',say:'The briefing. This house — not the whole app. What is still open, then the doors.',nav:()=>{try{showOverview();const sp=state.projects||[];const pick=sp.find(function(p){return !p.sample;})||sp[0];if(pick&&typeof nyOpenHouse==='function')nyOpenHouse(pick.id);}catch(e){}}},
- {sel:'#houseBody .pkt-open, #houseBody .pkt-strip',title:'The packet',body:'Still open is what the sub sees. File-to puts a Leak or Punch on their trade. They get it live.',say:'The packet. Still open is what the sub sees. File-to puts a leak or a punch on their trade. They get it live.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
- {sel:'#houseBody .hs-door.wide',title:'Full site',body:'Log, Needs You, Build, Files \u2014 same four jobs, same Field Notes camera. Desk work lives here. You can stay on the briefing most days.',say:'Full site. Log, Needs You, Build, and Files. Same four jobs. Same Field Notes camera. Desk work lives here. Most days, you can stay on the briefing.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
- {title:'That\u2019s the walk',body:'Field Notes. The list. The briefing. The packet. Full site when you need it. Replay anytime from Settings.',say:'That is the walk. Field Notes. The list. The briefing. The packet. Full site when you need it. Replay any time from Settings.',nav:()=>{try{closeHouse();showOverview();}catch(e){}}}
+ {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once \u2014 the daily habit, your book of houses, and where the desk work lives. Skip anytime. Nothing here can break.',say:'Hey. Glad you\'re here. | I\'ll walk you around Site Plumb once. The daily habit. Your book of houses. And where the desk work lives. | Skip whenever you like. Nothing here can break.',nav:()=>{try{closeHouse();showOverview();renderToday();renderOvCards();}catch(e){}}},
+ {sel:'.ov-field',bubSide:'tb',title:'Field Notes',body:'This camera is how you keep the record from the field. Pick the house, take a photo, tap a chip, hit Send. File the trade later at a desk. Same camera everywhere.',say:'See this camera? That\'s Field Notes. | Out on a job you pick the house, take a picture, tap a chip, and hit Send. | You can file the trade later, sitting at a desk. Same camera, everywhere you work.',nav:()=>{try{showOverview();renderToday();}catch(e){}}},
+ {sel:'#ovSortRow',title:'Your book',body:'Needs You is the default \u2014 hottest work first. Recent Decisions is the paper trail. A\u2013Z is just the street names. Three cuts of the same book.',say:'This is your book. | Needs You is what opens first. The hottest work sits on top. Recent Decisions is the paper trail. A to Z is just the street names. | Three ways to look at the same houses.',nav:()=>{try{showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}}},
+ {sel:'#ovCards',title:'The houses',body:'All homes is the first card \u2014 every open item, every house. Each row is one job. Tap a house to brief it. You don\u2019t have to open the whole site.',say:'All homes sits at the top. That\'s every open item, every house. | Each row under it is one job. Tap a house and you get a briefing. You don\'t have to open the whole site.',nav:()=>{try{showOverview();renderOvCards();}catch(e){}}},
+ {sel:'#houseBody .pkt-strip, #houseBody',title:'The briefing',body:'One house. What still needs you, then the doors: Field Notes, Schedule, Selections, and Money. Most days this is enough.',say:'This is the briefing. Just this house. | What still needs you is at the top. Then the doors. Field Notes, Schedule, Selections, and Money. | Most days, this is enough.',nav:()=>{try{showOverview();const sp=state.projects||[];const pick=sp.find(function(p){return !p.sample;})||sp[0];if(pick&&typeof nyOpenHouse==='function')nyOpenHouse(pick.id);}catch(e){}}},
+ {sel:'#houseBody .hs-doors',title:'The doors',body:'Schedule is this house on the calendar. Selections are the finishes. Money is what they owe. Field Notes from here already knows the house.',say:'These doors stay on this house. | Schedule is the calendar for just this job. Selections are the finishes. Money is what they owe. | And Field Notes from here already knows which house you\'re on.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
+ {sel:'#houseBody .pkt-open, #houseBody .pkt-strip',title:'The packet',body:'Still open is what your sub sees in their install packet. File a Leak or Punch to a trade at the desk, and it shows up on their phone live.',say:'See what\'s still open? | That\'s what your sub sees in their install packet. File a leak or a punch to a trade at the desk, and it shows up on their phone. Live. No text thread.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
+ {sel:'#houseBody .hs-door.wide',title:'Full site',body:'When you need the whole job: Log, Needs You, Build, and Files. Same four jobs. Same Field Notes camera. Desk work lives here.',say:'Full site is there when you need the whole job. | Log, Needs You, Build, and Files. Same four jobs you already know. Same Field Notes camera. | Desk work lives here. You don\'t have to start here.',nav:()=>{try{const pid=_housePid||((state.projects||[])[0]||{}).id;if(pid&&typeof nyOpenHouse==='function')nyOpenHouse(pid);}catch(e){}}},
+ {sel:'#ovCompanyBtn',title:'Company',body:'The office drawer. Trades calendar across every house, invoices, your standing roster, the team, and add a job.',say:'And this little briefcase? That\'s Company. | The trades calendar across every house. Invoices. Your standing roster. The team. Add a job. | It\'s the office drawer, not a house.',nav:()=>{try{closeHouse();showOverview();}catch(e){}}},
+ {title:'You\u2019re set',body:'Field Notes from the field. The book at home. A briefing per house. The packet for the sub. Full site and Company when you need the desk. Replay anytime from Settings.',say:'You\'re set. | Field Notes from the field. The book when you\'re home. A briefing per house. The packet for the sub. | Full site and Company when you need the desk. Replay any time from Settings. I\'ll get out of your way.',nav:()=>{try{closeHouse();showOverview();}catch(e){}}}
 ],
 /* Saved 2.262 builder walkthrough. Replay from Settings \u2192 Classic walkthrough. */
 teamLegacy:[
@@ -6037,12 +6039,15 @@ function tourStep(){
         if(cs.position==='static')el.style.position='relative';el.style.zIndex='2001';_tourLift=el;
         if(step.tap){_tourTapEl=el;_tourTapFn=()=>{tourNext();};el.addEventListener('click',_tourTapFn,{once:true});}}
       const last=_tourIdx>=_tourSteps.length-1;
+      const isGrand=_tourSteps===TOUR.grand;
+      const lastBtn=last?(step.cta||(isGrand?'Explore demo':'Got it')):'Next';
+      const leftBtn=last?(isGrand&&step.cta?'<button class="tour-next" onclick="tourEnd()">Explore demo</button>':''):'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>';
       bub.innerHTML='<div class="tour-step">'+(_tourIdx+1)+' / '+_tourSteps.length+'</div>'
-        +'<div class="tour-h">'+step.title+'</div><div class="tour-b">'+step.body+'</div>'
-        +'<div class="tour-foot">'+(last?'<button class="tour-next" onclick="tourEnd()">Explore demo</button>':'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>')+'<div>'
+        +'<div class="tour-h">'+esc(step.title||'')+'</div><div class="tour-b">'+esc(step.body||'')+'</div>'
+        +'<div class="tour-foot">'+leftBtn+'<div>'
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
-        +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(last?(step.cta||'Done'):'Next')+'</button></div></div>';
+        +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+esc(lastBtn)+'</button></div></div>';
       if(step.stageRect){try{const r2=step.stageRect();if(r2&&r2.height)rect=r2;window._stageEl=step.stageRect;}catch(e){}}
       else window._stageEl=el||null;
       tlog('ring',(step.sel||'(no stage)')+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
@@ -9352,11 +9357,11 @@ function tourToggleMute(){try{localStorage.setItem('plumbTourMute',tourMuted()?'
   tourMuteRender();}
 function tourMuteRender(){const b=document.getElementById('tourMute');if(b)b.textContent=tourMuted()?'\uD83D\uDD07':'\uD83D\uDD0A';}
 function speakify(t){
-  /* the voice's own script: what LOOKS right and what SOUNDS right differ */
+  /* Written for the ear. Labels stay on screen; this is what gets spoken. */
   return String(t)
     .replace(/SitePlumb/g,'Site Plumb')
     .replace(/A[–\-−]Z/g,'A to Z')
-    .replace(/File-to/g,'File to')
+    .replace(/File-to/g,'file to')
     .replace(/HVAC/g,'H-vac')
     .replace(/\u2713/g,'')
     .replace(/spec\u2019d/gi,'specked')
@@ -9366,9 +9371,23 @@ function speakify(t){
     .replace(/\banytime\b/gi,'any time')
     .replace(/\u2014|\u2013|--/g,'. ')
     .replace(/\u00b7/g,', ')
-    .replace(/\u2019(?=[a-z])/gi,"'")
-    .replace(/[\u2018\u2019\u201c\u201d]/g,'')
+    .replace(/\u2019(?=[a-zA-Z])/g,"'")
+    .replace(/[\u2018\u201c\u201d]/g,'')
     .replace(/\s+/g,' ').trim();
+}
+function tourChunks(clean){
+  const beats=String(clean).split('|').map(function(s){return s.trim();}).filter(Boolean);
+  const out=[];
+  beats.forEach(function(beat,bi){
+    const sents=(beat.match(/[^.!?;:]+[.!?;:]+|[^.!?;:]+$/g)||[beat]).map(function(s){return s.trim();})
+      .filter(function(s){return s.replace(/[^a-z0-9]/gi,'').length>=2;});
+    sents.forEach(function(s,si){
+      const lastInBeat=si===sents.length-1;
+      const kind=(bi===0&&si===0)?'open':(lastInBeat&&bi<beats.length-1)?'beat':'sent';
+      out.push({t:s,kind:kind});
+    });
+  });
+  return out.length?out:[{t:clean,kind:'sent'}];
 }
 function tourSpeak(text){
   try{
@@ -9377,32 +9396,33 @@ function tourSpeak(text){
     try{speechSynthesis.cancel();}catch(e){}
     if(!_tourVoice)tourPickVoice();
     const clean=speakify(text);
-    const parts=(clean.match(/[^.!?;:]+[.!?;:]+|[^.!?;:]+$/g)||[clean]).map(function(s){return s.trim();})
-      .filter(function(s){return s.replace(/[^a-z0-9]/gi,'').length>=2;});
+    const parts=tourChunks(clean);
     const kind=_tourVoiceKind||'stock';
-    const titleRate=kind==='premium'?0.86:(kind==='enhanced'?0.89:0.91);
-    const bodyRate=kind==='premium'?0.90:(kind==='enhanced'?0.92:0.94);
-    const titleGap=kind==='premium'?620:520;
-    const bodyGap=kind==='premium'?340:280;
-    const est=Math.max(1400,clean.split(/\s+/).length*420+parts.length*300);
+    /* Faster + more breaths beats a slow drone. Google especially turns sludge under 0.9. */
+    const openRate=kind==='premium'?0.90:(kind==='enhanced'?0.93:0.96);
+    const bodyRate=kind==='premium'?0.93:(kind==='enhanced'?0.96:0.99);
+    const gapFor=function(k){return k==='open'?420:(k==='beat'?720:280);};
+    const pitches=[0.98,1.0,0.99,1.02,0.97,1.01];
+    const est=Math.max(1600,clean.split(/\s+/).length*360+parts.length*280);
     return new Promise(function(res){
       let done=false;const fin=function(){if(!done){done=true;res();}};
-      setTimeout(fin,est*1.6+1400);
+      setTimeout(fin,est*1.7+1600);
       const speakAt=function(i){
         if(gen!==window._spkGen){fin();return;}
-        if(i>=parts.length){setTimeout(fin,180);return;}
-        const u=new SpeechSynthesisUtterance(parts[i]);
+        if(i>=parts.length){setTimeout(fin,200);return;}
+        const bit=parts[i];
+        const u=new SpeechSynthesisUtterance(bit.t);
         if(_tourVoice)u.voice=_tourVoice;
         u.lang=(_tourVoice&&_tourVoice.lang)||'en-US';
-        u.rate=i===0?titleRate:bodyRate;
-        u.pitch=1;
+        u.rate=i===0?openRate:bodyRate;
+        u.pitch=pitches[i%pitches.length];
         u.volume=1;
-        u.onend=function(){setTimeout(function(){speakAt(i+1);},i===0?titleGap:bodyGap);};
-        u.onerror=function(){setTimeout(function(){speakAt(i+1);},120);};
+        u.onend=function(){setTimeout(function(){speakAt(i+1);},gapFor(bit.kind));};
+        u.onerror=function(){setTimeout(function(){speakAt(i+1);},100);};
         try{speechSynthesis.speak(u);}catch(e){setTimeout(function(){speakAt(i+1);},80);}
       };
       speakAt(0);
-      setTimeout(function(){try{speechSynthesis.resume();}catch(e){}},60);
+      setTimeout(function(){try{speechSynthesis.resume();}catch(e){}},50);
     });
   }catch(e){return Promise.resolve();}
 }
