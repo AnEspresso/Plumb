@@ -3,6 +3,7 @@
   "slides": [
     {
       "id": "welcome",
+      "sel": "#ovToday",
       "title": "Glad you're here",
       "body": "I'll walk you around once. Skip anytime.",
       "bubSide": "bb",

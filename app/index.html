@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.274.0 - Walk ring is the stage. Orb delivers the demo.';
+const PLUMB_VERSION='2.275.0 - Walk: clips finish. Field Notes ring follows the sheet.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786934583903;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.274.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786935861103;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.275.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5721,7 +5721,7 @@ function jumpToSubs(){try{go('subs');}catch(e){}}
    optional nav() hooks; tap the highlighted control to try it, or Next to skip
    ahead. Role walkthroughs live in TOUR{}. ── */
 const TOUR={team:[
- {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',
+ {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',sel:'#ovToday',
   nav:()=>{try{closeHouse();closeCompany();showOverview();renderToday();renderOvCards();}catch(e){}},
   play:[{f:'s1a'},{f:'s1b'},{f:'s1c'}]},
  {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'House, photo, chip, Send. Same camera everywhere.',
@@ -5988,7 +5988,7 @@ function startTourSteps(steps){
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
-function tourEnd(){orbHide();tourAudioStop();try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+function tourEnd(){window._tourQuiet=false;orbHide();tourAudioStop();try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
 function tourNext(){window._tourBack=false;tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
 function tourPrev(){window._tourBack=true;tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
@@ -8956,10 +8956,31 @@ function startGrandTour(){
 }
 function tourDemoHouse(){return (state.projects||[]).find(function(p){return String(p.id)==='p2';})||(state.projects||[])[0]||null;}
 function tourWait(ms,tok){return new Promise(function(r){setTimeout(r,ms||400);});}
+function tourWaitReady(sel,tok,ms){
+  return new Promise(function(res){
+    const t0=Date.now();
+    const tick=function(){
+      if(!tourAlive(tok)){res(null);return;}
+      const el=document.querySelector(sel);
+      if(el){
+        if(sel==='#sheet'&&!el.classList.contains('show')){
+          /* keep waiting */
+        }else{
+          const r=el.getBoundingClientRect();
+          if(r.width>12&&r.height>12){res(el);return;}
+        }
+      }
+      if(Date.now()-t0>(ms||1200)){res(el||null);return;}
+      setTimeout(tick,50);
+    };
+    tick();
+  });
+}
 function tourBeat(tok){
   return Promise.resolve(window._narrDone).catch(function(){}).then(function(){return tourWait(180,tok);});
 }
 function startTeamTour(){
+  window._tourQuiet=true;
   try{tourUnlockAudio();tourPrefetch();}catch(e){}
   try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
   welcomeDone();
@@ -9079,15 +9100,37 @@ function tourPlayFile(name){
   return new Promise(function(res){
     if(tourMuted()||!name){tourTrace('skip-mute',name);res();return;}
     try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
+    const prev=_tourPlayFin;
     tourAudioStop();
+    if(prev)try{prev('cut');}catch(e){}
     let settled=false;
+    const gen=++_tourPlayGen;
+    const timers=[];
     const done=function(why){
-      if(settled)return;settled=true;
+      if(settled||gen!==_tourPlayGen)return;
+      settled=true;
+      if(_tourPlayFin===done)_tourPlayFin=null;
+      timers.forEach(function(id){clearTimeout(id);});
       tourTrace(why||'end',name);
       res();
     };
-    try{
-      if(_tourAC&&_tourAC.state==='running'&&_tourBuf[name]){
+    _tourPlayFin=done;
+    _tourPlayTimers=timers;
+    const playEl=function(){
+      if(gen!==_tourPlayGen)return;
+      const a=new Audio('tour-audio/'+name+'.mp3');
+      _tourAudio=a;
+      a.onended=function(){done('ended');};
+      a.onerror=function(){done('error');};
+      tourTrace('play-el',name);
+      const p=a.play();
+      if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));done('play-fail');});
+      timers.push(setTimeout(function(){done('timeout');},24000));
+    };
+    const playAc=function(){
+      try{
+        if(gen!==_tourPlayGen)return;
+        if(!_tourAC||_tourAC.state!=='running'||!_tourBuf[name]){playEl();return;}
         const src=_tourAC.createBufferSource();
         src.buffer=_tourBuf[name];
         src.connect(_tourAC.destination);
@@ -9095,19 +9138,23 @@ function tourPlayFile(name){
         src.onended=function(){done('ended');};
         src.start();
         tourTrace('play-ac',name,String(Math.round(_tourBuf[name].duration*10)/10));
-        setTimeout(function(){done('timeout');},(_tourBuf[name].duration*1000)+2000);
-        return;
-      }
-    }catch(e){tourTrace('ac-fail',name,String(e&&e.message||e));}
-    const a=new Audio('tour-audio/'+name+'.mp3');
-    _tourAudio=a;
-    a.onended=function(){done('ended');};
-    a.onerror=function(){done('error');};
-    tourTrace('play-el',name);
-    const p=a.play();
-    if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));done('play-fail');});
-    setTimeout(function(){try{if(a.paused&&a.currentTime<0.05){tourTrace('silence',name);done('silence');}}catch(e){done('silence');}},1400);
-    setTimeout(function(){done('timeout');},20000);
+        timers.push(setTimeout(function(){done('timeout');},_tourBuf[name].duration*1000+2500));
+      }catch(e){tourTrace('ac-fail',name,String(e&&e.message||e));playEl();}
+    };
+    if(_tourAC&&_tourBuf[name]){playAc();return;}
+    if(_tourAC){
+      fetch('tour-audio/'+name+'.mp3').then(function(r){return r.arrayBuffer();}).then(function(b){
+        if(gen!==_tourPlayGen||settled)return null;
+        return _tourAC.decodeAudioData(b.slice(0));
+      }).then(function(buf){
+        if(gen!==_tourPlayGen||settled)return;
+        if(!buf){playEl();return;}
+        _tourBuf[name]=buf;
+        playAc();
+      }).catch(function(){if(gen===_tourPlayGen&&!settled)playEl();});
+      return;
+    }
+    playEl();
   });
 }
 function tourWaitTap(sel,intercept,tok){
@@ -9172,6 +9219,8 @@ function tourSeeSnap(cue){
     const sr=spot?spot.getBoundingClientRect():null;
     const covers=[];
     [['camera','.ov-field'],['doors','#houseBody .hs-doors'],['tabs','nav .tabs'],['briefcase','#ovCompanyBtn'],['send','#saveBtn']].forEach(function(pair){
+      if(pair[0]==='tabs'&&document.getElementById('overview')?.classList.contains('show'))return;
+      if(pair[0]==='briefcase'&&(document.getElementById('sheet')?.classList.contains('show')||document.getElementById('houseScrim')?.classList.contains('show')))return;
       const el=document.querySelector(pair[1]);
       if(!tourVisible(el))return;
       const r=el.getBoundingClientRect();
@@ -9217,7 +9266,8 @@ async function tourPlayCues(step,tok){
         else if(c.tab==='files')go('files');
       }catch(e){}
     }
-    await tourWait(c.do||c.tab?520:50,tok);
+    await tourWait(c.do||c.tab?400:40,tok);
+    if(c.stage)await tourWaitReady(c.stage,tok,1400);
     if(!tourAlive(tok))return;
     let el=null;
     if(c.point){
@@ -9233,7 +9283,7 @@ async function tourPlayCues(step,tok){
     try{
       const stageSel=c.stage||null;
       if(stageSel){
-        const st=document.querySelector(stageSel);
+        const st=await tourWaitReady(stageSel,tok,400);
         if(st){
           const r=st.getBoundingClientRect();
           if(r.width&&r.height)tourPlace(r,false,undefined,true);
@@ -9639,7 +9689,7 @@ function orbTaps(taps,instantFirst){
 function orbHide(){try{const o=_orbEl();if(o){o.classList.remove('show','tap','active');}}catch(e){}}
 function endGrandTour(silent){try{tourEnd();}catch(e){}tourAudioStop();try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
 /* voice: baked MP3s in tour-audio/ when present (Ara, warm). Else the local engine. */
-let _tourAudio=null,_tourPre=null,_tourAC=null,_tourBuf={},_tourSrc=null,_tourTrace=[];
+let _tourAudio=null,_tourPre=null,_tourAC=null,_tourBuf={},_tourSrc=null,_tourTrace=[],_tourPlayTimers=[],_tourPlayGen=0,_tourPlayFin=null;
 function tourTrace(ev,name,extra){
   const row={t:Date.now(),ev:ev,name:name||'',extra:extra||''};
   _tourTrace.push(row);
@@ -9667,6 +9717,7 @@ function tourHudPaint(){
   }catch(e){}
 }
 function tourAudioStop(){
+  try{(_tourPlayTimers||[]).forEach(function(id){clearTimeout(id);});_tourPlayTimers=[];}catch(e){}
   try{if(_tourSrc){_tourSrc.onended=null;_tourSrc.stop();_tourSrc=null;}}catch(e){}
   try{if(_tourAudio){_tourAudio.onended=null;_tourAudio.onerror=null;_tourAudio.pause();_tourAudio=null;}}catch(e){}
 }
@@ -14307,7 +14358,7 @@ function openFieldNote(){
   }
   const nl=document.getElementById('sheetNoteLbl');if(nl)nl.textContent='Note · optional';
   const hint=document.getElementById('fieldKindHint');if(hint)hint.hidden=true;
-  setTimeout(function(){try{document.getElementById('file')&&document.getElementById('file').click();}catch(e){}},180);
+  setTimeout(function(){try{if(!window._tourQuiet)document.getElementById('file')&&document.getElementById('file').click();}catch(e){}},180);
 }
 function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDate||todayStr()):null;
   if(!asLog&&!_fieldNote)_fieldNote=false;
