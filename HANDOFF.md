@@ -1,4 +1,4 @@
-**v2.290.0 is live.** After Ara finishes, the next scene starts. 2.289 stays the prior restore.
+**v2.290.0 is live.** After Ara finishes, the next scene starts. 2.289 stays the prior restore. Pages rebuild.
 
 # SitePlumb — handoff (current build v2.290.0)
 
