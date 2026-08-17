@@ -1,6 +1,6 @@
-**v2.293.0 is live.** Ara starts on the tap again. One hello, not two. Freeze retry at 1.8s. 2.292 stays the prior restore.
+**v2.294.0 is live.** Locked-stage walk. Last live-UI walk pinned at 2.293 — see WALK-LIVE-2.293.md and the banner. Studio → Old live walk still runs it.
 
-# SitePlumb — handoff (current build v2.293.0)
+# SitePlumb — handoff (current build v2.294.0)
 
 
 Paste this file into a new chat, attach the artifacts alongside it, and work continues without re-explaining anything.

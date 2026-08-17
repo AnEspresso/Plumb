@@ -118,10 +118,14 @@ const gate = await page.evaluate(() => {
   const plays = all.filter((x) => /^play-/.test(x.ev));
   const fails = all.filter((x) => /fail|silence|error/.test(x.ev));
   const a = window._tourEl;
-  const spot = document.getElementById("tourSpot");
+  const film = document.getElementById("tourFilm");
+  const filmOn = !!(film && film.classList.contains("show"));
+  const spot = document.getElementById(filmOn ? "tfRing" : "tourSpot");
   const sr = spot ? spot.getBoundingClientRect() : null;
-  const orb = document.getElementById("tourOrb");
-  const or = orb && orb.classList.contains("show") ? orb.getBoundingClientRect() : null;
+  const orb = document.getElementById(filmOn ? "tfOrb" : "tourOrb");
+  const or = orb && (orb.classList.contains("show") || orb.classList.contains("on") || parseFloat(getComputedStyle(orb).opacity || "0") > 0.2)
+    ? orb.getBoundingClientRect()
+    : null;
   return {
     plays: plays.map((p) => (p.ev || "") + " " + (p.name || "")),
     fails: fails.map((p) => p.ev),
@@ -130,8 +134,9 @@ const gate = await page.evaluate(() => {
     src: a && a.currentSrc ? a.currentSrc.split("/").pop() : "",
     ringH: sr ? Math.round(sr.height) : 0,
     orb: or ? { x: Math.round(or.left + or.width / 2), y: Math.round(or.top + or.height / 2) } : null,
-    bubble: !!document.getElementById("tourBubble"),
-    idx: typeof _tourIdx === "number" ? _tourIdx : -1,
+    bubble: !!(document.getElementById("tfCard") || document.getElementById("tourBubble")),
+    idx: filmOn && typeof _tfIdx === "number" ? _tfIdx : typeof _tourIdx === "number" ? _tourIdx : -1,
+    film: filmOn,
   };
 });
 const heard =
@@ -160,22 +165,29 @@ let nShot = 0;
 for (let i = 0; i < 700; i++) {
   const snap = await page.evaluate(() => {
     try { if (window.__tourScorePaint) window.__tourScorePaint(); } catch (e) {}
-    const s = _tourSteps && typeof _tourIdx === "number" ? _tourSteps[_tourIdx] : null;
-    const spot = document.getElementById("tourSpot");
-    const bub = document.getElementById("tourBubble");
-    const orb = document.getElementById("tourOrb");
+    const film = document.getElementById("tourFilm");
+    const filmOn = !!(film && film.classList.contains("show"));
+    const s = !filmOn && _tourSteps && typeof _tourIdx === "number" ? _tourSteps[_tourIdx] : null;
+    const spot = document.getElementById(filmOn ? "tfRing" : "tourSpot");
+    const bub = document.getElementById(filmOn ? "tfCard" : "tourBubble");
+    const orb = document.getElementById(filmOn ? "tfOrb" : "tourOrb");
     const sr = spot ? spot.getBoundingClientRect() : null;
     const br = bub ? bub.getBoundingClientRect() : null;
-    const or = orb && orb.classList.contains("show") ? orb.getBoundingClientRect() : null;
+    const orbOn = orb && (orb.classList.contains("show") || orb.classList.contains("on") || parseFloat(getComputedStyle(orb).opacity || "0") > 0.2);
+    const or = orbOn ? orb.getBoundingClientRect() : null;
     const tr = (window.__tourTrace || []).slice(-1)[0] || {};
     const all = window.__tourTrace || [];
     let cover = false;
     if (sr && br && sr.height > 8) {
       cover = br.left < sr.right && br.right > sr.left && br.top < sr.bottom && br.bottom > sr.top;
     }
+    const title = filmOn
+      ? (document.querySelector("#tfCard .tour-h") && document.querySelector("#tfCard .tour-h").textContent) || ""
+      : (s && s.title) || "";
     return {
-      idx: typeof _tourIdx === "number" ? _tourIdx : -1,
-      title: (s && s.title) || "",
+      idx: filmOn && typeof _tfIdx === "number" ? _tfIdx : typeof _tourIdx === "number" ? _tourIdx : -1,
+      title,
+      film: filmOn,
       cue: tr.name || "",
       ev: tr.ev || "",
       extra: tr.extra || "",
@@ -209,6 +221,7 @@ for (let i = 0; i < 700; i++) {
   // Natural end: last slide, no new cue for 8s, or walk gone
   if (snap.idx < 0 && snap.ms > 8000) break;
   if (snap.idx >= 9 && snap.ms - lastChange > 8000) break;
+  if (snap.film === false && lastIdx >= 0 && snap.ms > 5000) break;
   // Safety: if frozen on one slide with no audio for 22s, note and continue watching a bit more then stop that slide only if 40s
   if (snap.ms > 360000) break;
   await page.waitForTimeout(350);
