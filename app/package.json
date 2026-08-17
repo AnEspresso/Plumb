@@ -4,6 +4,9 @@
   "type": "commonjs",
   "scripts": {
     "tour:bake": "python3 ../scripts/bake-tour-voice.py",
-    "tour:record": "node ../scripts/tour-record.mjs"
+    "tour:record": "node ../scripts/tour-record.mjs",
+    "tour:hear": "python3 ../scripts/tour-hear.py",
+    "tour:listen": "node ../scripts/tour-listen.mjs",
+    "tour:see": "node ../scripts/tour-see.mjs"
   }
 }

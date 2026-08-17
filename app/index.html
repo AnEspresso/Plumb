@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.271.0 - Walk: card stays off doors; Full site closes the briefing.';
+const PLUMB_VERSION='2.274.0 - Walk ring is the stage. Orb delivers the demo.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786932880659;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.271.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786934583903;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.274.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5728,9 +5728,9 @@ const TOUR={team:[
   nav:()=>{try{showOverview();renderToday();}catch(e){}},
   play:[
     {f:'s2a',point:'.ov-field'},
-    {do:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}},f:'s2b',point:'#sheet .chip'},
-    {f:'s2c',point:'#saveBtn'},
-    {do:function(){try{closeSheet();}catch(e){}},f:'s2d',point:'.ov-field',waitTap:'.ov-field',intercept:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}}}
+    {do:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}},f:'s2b',point:'#sheet .chip',stage:'#sheet'},
+    {f:'s2c',point:'#saveBtn',stage:'#sheet'},
+    {do:function(){try{closeSheet();}catch(e){}},f:'s2d',point:'.ov-field',waitTap:'.ov-field',stage:'.ov-field',intercept:function(){try{const p=tourDemoHouse();if(p){Data.setActive(p.id);openFieldNote();}}catch(e){}}}
   ]},
  {sel:'#ovSortRow',bubSide:'bb',title:'Your book',body:'Needs You. Recent Decisions. A\u2013Z.',
   nav:()=>{try{try{closeSheet();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}},
@@ -5740,13 +5740,13 @@ const TOUR={team:[
     {do:function(){try{setOvSort('recent');}catch(e){}},f:'s3c',point:'[data-sort=recent]'},
     {do:function(){try{setOvSort('az');}catch(e){}},f:'s3d',point:'[data-sort=az]'}
   ]},
- {sel:'#ovCards .allh',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
+ {sel:'#ovCards',bubSide:'tb',title:'The houses',body:'All homes, then each job. Tap for a briefing.',
   nav:()=>{try{try{setOvSort('attn');}catch(e){}showOverview();renderOvCards();}catch(e){}},
   play:[
     {f:'s4a',point:'#ovCards .allh'},
     {f:'s4b',point:'#ovCards .ov-card:not(.allh)'}
   ]},
- {sel:'#houseBody .pkt-strip',bubSide:'tb',title:'The briefing',body:'One house. What still needs you, then the doors.',
+ {sel:'#houseBody',bubSide:'tb',title:'The briefing',body:'One house. What still needs you, then the doors.',
   nav:()=>{try{showOverview();const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
     {f:'s5a',point:'#houseBody .pkt-strip'},
@@ -5988,7 +5988,7 @@ function startTourSteps(steps){
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
-function tourEnd(){orbHide();tourAudioStop();try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();['tourCatch','tourSpot','tourBubble'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+function tourEnd(){orbHide();tourAudioStop();try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
 function tourNext(){window._tourBack=false;tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
 function tourPrev(){window._tourBack=true;tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
@@ -8960,7 +8960,7 @@ function tourBeat(tok){
   return Promise.resolve(window._narrDone).catch(function(){}).then(function(){return tourWait(180,tok);});
 }
 function startTeamTour(){
-  try{tourAudioProbe();tourUnlockAudio();}catch(e){}
+  try{tourUnlockAudio();tourPrefetch();}catch(e){}
   try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
   welcomeDone();
   try{closeStart();closeSetup();closeHouse();closeCompany();}catch(e){}
@@ -8968,9 +8968,9 @@ function startTeamTour(){
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
   if(appMode()!=='demo')enterDemo();
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
-  Promise.resolve(loadTourCues()).then(function(){
-    setTimeout(function(){try{showOverview();renderToday();renderOvCards();startTour('team');}catch(e){}},400);
-  });
+  try{showOverview();renderToday();renderOvCards();}catch(e){}
+  try{startTour('team');}catch(e){}
+  try{loadTourCues();}catch(e){}
 }
 function tourNavFn(name){
   const map={
@@ -9003,7 +9003,7 @@ function tourFromCues(data){
       title:s.title,body:s.body,sel:s.sel||undefined,bubSide:s.bubSide||undefined,
       nav:tourNavFn(s.nav),
       play:(s.cues||[]).map(function(c){
-        const o={f:c.id,point:c.point};
+        const o={f:c.id,point:c.point,stage:c.stage};
         if(c.do)o.do=tourDoFn(c.do);
         if(c.tab)o.tab=c.tab;
         if(c.waitTap){o.waitTap=c.waitTap;o.intercept=tourDoFn(c.intercept||'openField');}
@@ -9077,19 +9077,37 @@ function tourAvoidCover(el){
 }
 function tourPlayFile(name){
   return new Promise(function(res){
-    if(tourMuted()||!name){res();return;}
+    if(tourMuted()||!name){tourTrace('skip-mute',name);res();return;}
     try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
     tourAudioStop();
+    let settled=false;
+    const done=function(why){
+      if(settled)return;settled=true;
+      tourTrace(why||'end',name);
+      res();
+    };
+    try{
+      if(_tourAC&&_tourAC.state==='running'&&_tourBuf[name]){
+        const src=_tourAC.createBufferSource();
+        src.buffer=_tourBuf[name];
+        src.connect(_tourAC.destination);
+        _tourSrc=src;
+        src.onended=function(){done('ended');};
+        src.start();
+        tourTrace('play-ac',name,String(Math.round(_tourBuf[name].duration*10)/10));
+        setTimeout(function(){done('timeout');},(_tourBuf[name].duration*1000)+2000);
+        return;
+      }
+    }catch(e){tourTrace('ac-fail',name,String(e&&e.message||e));}
     const a=new Audio('tour-audio/'+name+'.mp3');
     _tourAudio=a;
-    let done=false;
-    const fin=function(){if(done)return;done=true;if(_tourAudio===a)_tourAudio=null;res();};
-    a.onended=fin;
-    a.onerror=fin;
+    a.onended=function(){done('ended');};
+    a.onerror=function(){done('error');};
+    tourTrace('play-el',name);
     const p=a.play();
-    if(p&&p.catch)p.catch(fin);
-    setTimeout(function(){try{if(a.paused&&a.currentTime<0.05)fin();}catch(e){fin();}},700);
-    setTimeout(fin,18000);
+    if(p&&p.catch)p.catch(function(err){tourTrace('play-fail',name,String(err&&err.message||err));done('play-fail');});
+    setTimeout(function(){try{if(a.paused&&a.currentTime<0.05){tourTrace('silence',name);done('silence');}}catch(e){done('silence');}},1400);
+    setTimeout(function(){done('timeout');},20000);
   });
 }
 function tourWaitTap(sel,intercept,tok){
@@ -9126,6 +9144,63 @@ function tourWaitTap(sel,intercept,tok){
     poll();
   });
 }
+function tourHits(a,b){
+  return !!(a&&b&&a.width>2&&b.width>2&&a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top);
+}
+function tourVisible(el){
+  try{
+    if(!el)return false;
+    const r=el.getBoundingClientRect();
+    const st=getComputedStyle(el);
+    if(!r.width||!r.height)return false;
+    if(st.display==='none'||st.visibility==='hidden'||Number(st.opacity)===0)return false;
+    if(r.bottom<8||r.top>innerHeight-8)return false;
+    let p=el;
+    while(p&&p!==document.body){
+      const cs=getComputedStyle(p);
+      if(cs.display==='none'||cs.visibility==='hidden')return false;
+      p=p.parentElement;
+    }
+    return true;
+  }catch(e){return false;}
+}
+function tourSeeSnap(cue){
+  try{
+    const bub=document.getElementById('tourBubble');
+    const spot=document.getElementById('tourSpot');
+    const br=bub?bub.getBoundingClientRect():null;
+    const sr=spot?spot.getBoundingClientRect():null;
+    const covers=[];
+    [['camera','.ov-field'],['doors','#houseBody .hs-doors'],['tabs','nav .tabs'],['briefcase','#ovCompanyBtn'],['send','#saveBtn']].forEach(function(pair){
+      const el=document.querySelector(pair[1]);
+      if(!tourVisible(el))return;
+      const r=el.getBoundingClientRect();
+      if(tourHits(br,r))covers.push(pair[0]);
+    });
+    if(tourHits(br,sr))covers.push('ring');
+    const huge=!!(sr&&sr.height>innerHeight*0.78);
+    const miss=!!(cue&&cue.point&&!document.querySelector(cue.point));
+    const row={
+      t:Date.now(),
+      slide:(_tourSteps&&typeof _tourIdx==='number'&&_tourSteps[_tourIdx])?_tourSteps[_tourIdx].title:'',
+      cue:cue&&cue.f||'',
+      point:cue&&cue.point||'',
+      covers:covers,
+      huge:huge,
+      miss:miss,
+      bubTop:br?Math.round(br.top):-1,
+      spotTop:sr?Math.round(sr.top):-1,
+      spotH:sr?Math.round(sr.height):0,
+      sheet:!!document.getElementById('sheet')?.classList.contains('show'),
+      house:!!document.getElementById('houseScrim')?.classList.contains('show'),
+      company:!!document.getElementById('companyScrim')?.classList.contains('show')
+    };
+    window.__tourSee=(window.__tourSee||[]).concat([row]);
+    window.__tourSeeLast=row;
+    try{tourHudPaint();}catch(e){}
+    return row;
+  }catch(e){return null;}
+}
 async function tourPlayCues(step,tok){
   const cues=step.play||[];
   for(let i=0;i<cues.length;i++){
@@ -9150,18 +9225,22 @@ async function tourPlayCues(step,tok){
       if(el){
         try{smoothScrollTo(el,0.28);}catch(e){}
         await orbTo(el,{settle:true,rest:true});
-        try{
-          const r=el.getBoundingClientRect();
-          if(r.width&&r.height&&r.height<innerHeight*0.42){
-            window._stageEl=el;
-            tourPlace(r,false,undefined,true);
-          }
-        }catch(e){}
         tourAvoidCover(el);
       }
     } else {
       try{tourAvoidCover(document.querySelector(step.sel));}catch(e){}
     }
+    try{
+      const stageSel=c.stage||null;
+      if(stageSel){
+        const st=document.querySelector(stageSel);
+        if(st){
+          const r=st.getBoundingClientRect();
+          if(r.width&&r.height)tourPlace(r,false,undefined,true);
+        }
+      }
+    }catch(e){}
+    try{tourSeeSnap(c);}catch(e){}
     if(c.f)await tourPlayFile(c.f);
     if(!tourAlive(tok))return;
     if(c.waitTap)await tourWaitTap(c.waitTap,c.intercept,tok);
@@ -9560,8 +9639,60 @@ function orbTaps(taps,instantFirst){
 function orbHide(){try{const o=_orbEl();if(o){o.classList.remove('show','tap','active');}}catch(e){}}
 function endGrandTour(silent){try{tourEnd();}catch(e){}tourAudioStop();try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
 /* voice: baked MP3s in tour-audio/ when present (Ara, warm). Else the local engine. */
-let _tourAudio=null,_tourPre=null;
-function tourAudioStop(){try{if(_tourAudio){_tourAudio.onended=null;_tourAudio.onerror=null;_tourAudio.pause();_tourAudio=null;}}catch(e){}}
+let _tourAudio=null,_tourPre=null,_tourAC=null,_tourBuf={},_tourSrc=null,_tourTrace=[];
+function tourTrace(ev,name,extra){
+  const row={t:Date.now(),ev:ev,name:name||'',extra:extra||''};
+  _tourTrace.push(row);
+  window.__tourTrace=_tourTrace;
+  try{tourHudPaint();}catch(e){}
+}
+function tourHudPaint(){
+  try{
+    const on=localStorage.getItem('plumbTourHud')==='1'||(_tourSteps===TOUR.team);
+    let el=document.getElementById('tourHud');
+    if(!on){if(el)el.remove();return;}
+    if(!el){
+      el=document.createElement('div');
+      el.id='tourHud';
+      el.setAttribute('style','position:fixed;left:8px;right:8px;top:8px;z-index:3005;font:11px/1.35 ui-monospace,monospace;background:#1c1916;color:#e7dcc6;padding:7px 9px;border-radius:8px;pointer-events:none;');
+      document.body.appendChild(el);
+    }
+    const last=_tourTrace[_tourTrace.length-1]||{};
+    const see=window.__tourSeeLast||{};
+    const s=_tourSteps&&typeof _tourIdx==='number'?_tourSteps[_tourIdx]:null;
+    const misses=_tourTrace.filter(function(x){return /silence|play-fail|error/.test(x.ev);}).length;
+    const vis=(see.covers&&see.covers.length)?'COVER '+see.covers.join('+'):(see.huge?'HUGE RING':(see.miss?'MISS':'see ok'));
+    el.textContent=(s&&s.title||'walk')+' · '+(last.ev||'idle')+' '+(last.name||'')+(last.extra?' '+last.extra:'')+' · '+vis+' · audio misses '+misses;
+    el.style.background=(see.covers&&see.covers.length)||see.huge||see.miss?'#5c2a1a':'#1c1916';
+  }catch(e){}
+}
+function tourAudioStop(){
+  try{if(_tourSrc){_tourSrc.onended=null;_tourSrc.stop();_tourSrc=null;}}catch(e){}
+  try{if(_tourAudio){_tourAudio.onended=null;_tourAudio.onerror=null;_tourAudio.pause();_tourAudio=null;}}catch(e){}
+}
+function tourUnlockAudio(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(AC){_tourAC=_tourAC||new AC();if(_tourAC.resume)_tourAC.resume();}
+  }catch(e){}
+  try{
+    const a=new Audio('tour-audio/s1a.mp3');
+    a.muted=true;a.volume=0;
+    const p=a.play();
+    if(p&&p.then)p.then(function(){try{a.pause();a.currentTime=0;}catch(e){}}).catch(function(){});
+  }catch(e){}
+}
+function tourPrefetch(){
+  const names=[];
+  try{(TOUR.team||[]).forEach(function(s){(s.play||[]).forEach(function(c){if(c.f)names.push(c.f);});});}catch(e){}
+  names.forEach(function(n){
+    if(_tourBuf[n]||!_tourAC)return;
+    fetch('tour-audio/'+n+'.mp3').then(function(r){return r.arrayBuffer();}).then(function(b){
+      if(!_tourAC)return null;
+      return _tourAC.decodeAudioData(b.slice(0));
+    }).then(function(buf){if(buf)_tourBuf[n]=buf;}).catch(function(){});
+  });
+}
 function tourClipUrl(idx){
   try{
     if(typeof TOUR==='undefined'||typeof _tourSteps==='undefined')return '';
