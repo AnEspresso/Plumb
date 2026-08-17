@@ -80,6 +80,14 @@ try {
 if ((heard.heard || []).filter((h) => h.clip === "s1a").length > 1) {
   flags.push({ ms: 0, slide: 1, cue: "s1a", kind: "DOUBLE", detail: "Glad you're here heard more than once in the video" });
 }
+try {
+  if (existsSync(DIR + "/freeze.json")) {
+    const fr = JSON.parse(readFileSync(DIR + "/freeze.json", "utf8"));
+    if (fr.frozen) {
+      flags.push({ ms: 2500, slide: 1, cue: "s1a", kind: "FREEZE", detail: "no Ara 2.5s after start · plays " + ((fr.gate && fr.gate.plays) || []).join(",") });
+    }
+  }
+} catch (e) {}
 const bySlide = {};
 rows.forEach((r) => {
   const k = r.slide;

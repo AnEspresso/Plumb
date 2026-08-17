@@ -1,6 +1,6 @@
-**v2.292.0 is live.** One hello. Full site in front. Field Notes you send. Orb underlines Book / Doors / Full site labels. 2.291 stays the prior restore.
+**v2.293.0 is live.** Ara starts on the tap again. One hello, not two. Freeze retry at 1.8s. 2.292 stays the prior restore.
 
-# SitePlumb — handoff (current build v2.292.0)
+# SitePlumb — handoff (current build v2.293.0)
 
 
 Paste this file into a new chat, attach the artifacts alongside it, and work continues without re-explaining anything.

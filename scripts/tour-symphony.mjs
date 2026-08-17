@@ -112,6 +112,43 @@ await page.evaluate((says) => {
   window.__tourScorePaint();
 }, says);
 
+await page.waitForTimeout(2500);
+const gate = await page.evaluate(() => {
+  const all = window.__tourTrace || [];
+  const plays = all.filter((x) => /^play-/.test(x.ev));
+  const fails = all.filter((x) => /fail|silence|error/.test(x.ev));
+  const a = window._tourEl;
+  const spot = document.getElementById("tourSpot");
+  const sr = spot ? spot.getBoundingClientRect() : null;
+  const orb = document.getElementById("tourOrb");
+  const or = orb && orb.classList.contains("show") ? orb.getBoundingClientRect() : null;
+  return {
+    plays: plays.map((p) => (p.ev || "") + " " + (p.name || "")),
+    fails: fails.map((p) => p.ev),
+    time: a ? a.currentTime : 0,
+    paused: a ? !!a.paused : true,
+    src: a && a.currentSrc ? a.currentSrc.split("/").pop() : "",
+    ringH: sr ? Math.round(sr.height) : 0,
+    orb: or ? { x: Math.round(or.left + or.width / 2), y: Math.round(or.top + or.height / 2) } : null,
+    bubble: !!document.getElementById("tourBubble"),
+    idx: typeof _tourIdx === "number" ? _tourIdx : -1,
+  };
+});
+const heard =
+  gate.plays.some((p) => /^play-(el|ac)/.test(p)) ||
+  (!gate.paused && gate.time > 0.12);
+const frozen = !heard;
+writeFileSync(
+  DIR + "/freeze.json",
+  JSON.stringify({ frozen, heard, gate, at: "t+2.5s" }, null, 2)
+);
+await page.screenshot({ path: DIR + (frozen ? "/FREEZE.png" : "/start-ok.png") });
+if (frozen) {
+  console.log("FREEZE at start — no Ara. ring", gate.ringH, "orb", gate.orb, "plays", gate.plays, "fails", gate.fails);
+} else {
+  console.log("start ok", gate.src || gate.plays[0], "t", Math.round(gate.time * 10) / 10, "ring", gate.ringH);
+}
+
 const frames = [];
 const beats = [];
 const t0 = Date.now();
@@ -173,7 +210,7 @@ for (let i = 0; i < 700; i++) {
   if (snap.idx < 0 && snap.ms > 8000) break;
   if (snap.idx >= 9 && snap.ms - lastChange > 8000) break;
   // Safety: if frozen on one slide with no audio for 22s, note and continue watching a bit more then stop that slide only if 40s
-  if (snap.ms > 240000) break;
+  if (snap.ms > 360000) break;
   await page.waitForTimeout(350);
 }
 
