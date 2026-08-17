@@ -3084,13 +3084,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.270.0 - Walk: tighter ring, bubble stays off the highlight.';
+const PLUMB_VERSION='2.271.0 - Walk: card stays off doors; Full site closes the briefing.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1786931916483;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.270.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1786932880659;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.271.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8992,7 +8992,7 @@ function tourDoFn(name){
     sortRecent:function(){setOvSort('recent');},
     sortAz:function(){setOvSort('az');},
     openCompany:function(){openCompany();},
-    openFull:function(){const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}
+    openFull:function(){try{closeHouse();}catch(e){}const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}
   };
   return map[name];
 }
@@ -9059,9 +9059,12 @@ function tourAvoidCover(el){
   try{
     const bub=document.getElementById('tourBubble');
     if(!bub)return;
+    const sheetOn=!!document.getElementById('sheet')?.classList.contains('show');
+    const houseOn=!!document.getElementById('houseScrim')?.classList.contains('show');
     const sr=el?el.getBoundingClientRect():null;
     const mid=sr?(sr.top+Math.min(sr.height,90)/2):(innerHeight/2);
-    const side=mid<innerHeight*0.52?'bb':'tb';
+    let side=mid<innerHeight*0.52?'bb':'tb';
+    if(sheetOn||houseOn)side='tb';
     bub.dataset.side=side;
     bub.classList.add('tour-bub-dock');
     const bh=bub.offsetHeight;
@@ -9139,7 +9142,7 @@ async function tourPlayCues(step,tok){
         else if(c.tab==='files')go('files');
       }catch(e){}
     }
-    await tourWait(c.do||c.tab?320:40,tok);
+    await tourWait(c.do||c.tab?520:50,tok);
     if(!tourAlive(tok))return;
     let el=null;
     if(c.point){
