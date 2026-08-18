@@ -1102,6 +1102,10 @@ t('new walkthrough is five spots', SRC.indexOf("Glad you")>=0&&SRC.indexOf('team
 t('walk is QA-only', SRC.indexOf('function walkAllowed')>=0&&SRC.indexOf('if(!walkAllowed())return')>=0);
 t('onboard is company then houses', SRC.indexOf('function openOnboard')>=0&&SRC.indexOf('function afterHouseAdded')>=0&&SRC.indexOf('Add another house')>=0);
 t('McCarver lookup is HVAC not excav', $("guessTrade('McCarver Mechanical Heating & Cooling')")==='hvac');
+t('Needs You includes open field issues', SRC.indexOf('nyOpenItem')>=0&&SRC.indexOf('it.issue||it.status')>=0);
+t('Field Notes does not auto-open the camera', SRC.indexOf('function openFieldNote')>=0&&SRC.indexOf("openFieldNote();")>=0&&SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf('.click()')<0);
+t('packet share keeps the link', SRC.indexOf('function pkDoShare')>=0&&SRC.indexOf('Text this link')>=0);
+t('Money sheet has invoiced and received', SRC.indexOf('Invoiced')>=0&&SRC.indexOf('Still out')>=0&&SRC.indexOf('openPayments()')>=0);
 t('website lookup reads the site', SRC.indexOf('function parseSiteFacts')>=0&&SRC.indexOf('function guessTrade')>=0&&SRC.indexOf('function applySiteUrl')>=0);
 t('walkthrough has spoken scripts', SRC.indexOf("f:'s1a'")>=0&&SRC.indexOf('function tourWarmVoice')>=0&&SRC.indexOf('function tourChunks')>=0);
 t('walkthrough motion on demo', SRC.indexOf('function tourDemoHouse')>=0&&SRC.indexOf('data-door="field"')>=0&&SRC.indexOf('data-sort=')>=0);

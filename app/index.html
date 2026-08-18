@@ -2323,7 +2323,7 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="budgetScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4>Budget</h4>
+      <h4>Money</h4>
       <div class="info-body" id="budgetBody"></div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeBudget()">Done</button></div>
     </div>
@@ -3087,13 +3087,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.297.0 - Sub lookup fills what we can prove. Book Walk.';
+const PLUMB_VERSION='2.298.0 - Needs You sees leaks. Money is one sheet.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1787065968296;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.297.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787071063617;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.298.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5482,19 +5482,10 @@ function afterHouseAdded(id,nBefore){
   renderAll();
   const p=(state.projects||[]).find(x=>String(x.id)===String(id));
   const label=(p&&(p.street||p.name))||'The house';
-  if(nBefore===0){
-    showInfo(label+' is on the book',`<p style="margin:0 0 12px;font-size:14px;line-height:1.5">Add the next house now, or go to the book. You can invite the homeowner and your trades whenever you are ready.</p>
-      <button class="b1 b-go" style="width:100%" onclick="closeInfo();openNewSite()">Add another house</button>
-      <button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();showOverview()">Go to the book</button>
-      <button class="la-link" style="display:block;margin:14px auto 0" onclick="closeInfo();openPeopleMode('homeowner')">Invite the homeowner later</button>`);
-    return true;
-  }
-  if(nBefore===1){
-    toast(label+' is on the book');
-    showOverview();
-    return true;
-  }
-  return false;
+  showInfo(label+' is on the book',`<p style="margin:0 0 12px;font-size:14px;line-height:1.5">${esc(label)} is on the same book.</p>
+    <button class="b1 b-go" style="width:100%" onclick="closeInfo();openNewSite()">Add another house</button>
+    <button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();showOverview()">Go to the book</button>`);
+  return true;
 }
 function openStart(){renderStart();document.getElementById('startScrim').classList.add('show');}
 function closeStart(){document.getElementById('startScrim').classList.remove('show');}
@@ -6322,6 +6313,12 @@ function openPeopleMode(mode){peopleMode=mode;renderPeople();document.getElement
 let peopleMode='team';
 function openPeople(){renderPeople();document.getElementById('peopleScrim').classList.add('show');}
 function closePeople(){document.getElementById('peopleScrim').classList.remove('show');try{renderSubs();}catch(e){}}
+function peoplePills(){
+  return '<div class="ov-sortpills" style="margin:0 0 14px">'
+    +'<button class="ov-sortpill'+(peopleMode==='team'?' on':'')+'" onclick="openPeopleMode(\'team\')">Team</button>'
+    +'<button class="ov-sortpill'+(peopleMode==='homeowner'?' on':'')+'" onclick="openPeopleMode(\'homeowner\')">Homeowners</button>'
+    +'<button class="ov-sortpill" onclick="closePeople();openSubsRoster()">Subs</button></div>';
+}
 let _ctNavDir='fwd';
 function renderPeople(__a,__b){
   setTimeout(()=>{try{enhanceSelect('tqWho');}catch(e){}},60);
@@ -6365,7 +6362,7 @@ function __renderPeople(){
   if(peopleMode==='homeowner'){
     if(title)title.textContent='Homeowners';
     const ps=state.projects||[];
-    el.innerHTML='<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Each homeowner gets a portal for their own home: progress photos, their selections, and the decisions you need from them — answered early, installs stay on schedule.</p>'
+    el.innerHTML=peoplePills()+'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Each homeowner gets a portal for their own home: progress photos, their selections, and the decisions you need from them — answered early, installs stay on schedule.</p>'
       +(ps.length?'<div class="lbl" style="margin-top:2px">Portal access by home</div>'+ps.map(p=>{
         const hoInv=(p.invites||[]).find(i=>i.role==='client'&&i.status!=='revoked');
         const joined=hoInv&&hoInv.status==='joined';
@@ -6449,7 +6446,7 @@ function __renderPeople(){
   const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
   const mates=Object.keys(r).filter(uid=>uid!==me);
   const pend=laTeamInvites().filter(i=>i.status==='open');
-  el.innerHTML='<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">Team members get the full builder view of every site, under their own account and role.</p>'
+  el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">People on your team see every house. Invite, share the code, done.</p>'
     +(mates.map(uid=>`<div class="subrow"><div class="si"><div class="n">${esc((r[uid]&&r[uid].name)||'Team member')}</div><div class="d">${esc(RP_ROLES[(r[uid]&&r[uid].rpRole)]||'Team')}</div></div><button class="rm" onclick="removeTeamMember('${uid}')" title="Remove from team">${ICON.trash}</button></div>`).join('')||'<div class="empty" style="padding:10px 0">Just you so far.</div>')
     +pend.map(i=>`<div class="subrow"><div class="si" style="cursor:pointer" onclick="shareInvite('${i.code}')"><div class="n">Open invite${i.setup?' · with setup':''}</div><div class="d">Code ${esc(i.code)} — tap to copy &amp; share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
     +`<button class="add-sub-btn" onclick="createInvite('team')">${PPL_INV_SVG}Invite a team member…</button>`
@@ -6472,12 +6469,9 @@ async function createInvite(role,subId,opts){opts=opts||{};
     const ti=laTeamInvites();ti.push({code,t:Date.now(),status:'open',setup:!!opts.setup});laSaveTeamInvites(ti);
     try{watchClaims();}catch(e){}
     logEvent('inviteCreated','team');
-    showInfo('Team invite code',`<p style="margin:0 0 10px;font-size:14px">Send this to your team member — the <b>Share</b> button includes the directions and a one-tap link:</p>
-      <button class="b1 b-go" style="width:100%;margin-bottom:10px" onclick="shareInvite('${code}')">Share invite\u2026</button>
-      <div class="fld-hint" style="margin:0 2px 4px">Or give them just the code:</div>
-      <div class="code-box" onclick="copyText('${code}')">${code}</div>
-      <div style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:6px">Tap to copy \u2014 or press &amp; hold to select just the code</div>
-      <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0">They open SitePlumb → <b>Live</b> → \u201cI have an invite code\u201d and create their account with their role. They join <b>all</b> of your sites — and new sites include them automatically.${opts.setup?' Because this invite <b>hands off setup</b>, they\u2019ll get the full company setup wizard when they first sign in.':''}</p>`);
+    showInfo('Team invite',`<div class="code-box" onclick="copyText('${code}')">${code}</div>
+      <button class="b1 b-go" style="width:100%;margin-top:12px" onclick="shareInvite('${code}')">Share</button>
+      <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0;text-align:center">SitePlumb \u2192 Live \u2192 I have an invite code.${opts.setup?' They get company setup on first sign-in.':''}</p>`);
     try{renderPeople();}catch(e){}
     return;}
   const p=P();let name='',trade='',subId2='';
@@ -6490,12 +6484,9 @@ async function createInvite(role,subId,opts){opts=opts||{};
   try{watchClaims();}catch(e){}
   logEvent('inviteCreated',role+' · '+(name||'homeowner'));
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}try{shareInvite(code);}catch(e){}return;}
-  showInfo('Invite code',`<p style="margin:0 0 10px;font-size:14px">Send this to <b>${esc(name||'your homeowner')}</b> — <b>Share</b> includes directions and a one-tap link:</p>
-    <button class="b1 b-go" style="width:100%;margin-bottom:10px" onclick="shareInvite('${code}')">Share invite\u2026</button>
-    <div class="fld-hint" style="margin:0 2px 4px">Or give them just the code:</div>
-    <div class="code-box" onclick="copyText('${code}')">${code}</div>
-    <div style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:6px">Tap to copy \u2014 or press &amp; hold to select just the code</div>
-    <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0">They open SitePlumb → <b>Live</b> → \u201cI have an invite code\u201d, create their account, and they\u2019ll join this site automatically once your device confirms it.</p>`);}
+  showInfo('Invite',`<div class="code-box" onclick="copyText('${code}')">${code}</div>
+    <button class="b1 b-go" style="width:100%;margin-top:12px" onclick="shareInvite('${code}')">Share</button>
+    <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0;text-align:center">For ${esc(name||'your homeowner')}. SitePlumb \u2192 Live \u2192 I have an invite code.</p>`);}
 const _claimWatch={};
 function watchClaims(){
   if(!Sync.ready()||appMode()!=='real')return;
@@ -6911,7 +6902,21 @@ function _nyIssues(projs){
       line:'On deck \u00b7 '+(specLabel(o.trade)||o.stage)+' not booked',
       go:`nyBookSub('${o.pid}','${String(o.sub).replace(/'/g,'')}')`});
   });
+  (projs||[]).forEach(function(p){
+    (p.items||[]).forEach(function(it){
+      if(!it.issue||it.status==='closed')return;
+      const kn=(typeof FIELD_KINDS!=='undefined'&&FIELD_KINDS.find(function(k){return k.id===it.fieldKind;}))||null;
+      const kind=kn?kn.n:(it.area||'Open item');
+      issues.push({kind:kind,pid:p.id,site:p.street||p.name||'',trade:'',pri:0,lvl:'warn',ts:it.t||today,
+        line:it.cap||kind,go:`nyOpenItem('${p.id}',${it.id})`});
+    });
+  });
   return issues;
+}
+function nyOpenItem(pid,id){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});
+  if(p)try{Data.setActive(p.id);}catch(e){}
+  try{openRecord(id);}catch(e){}
 }
 function nyOpenHouse(pid){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
@@ -8374,18 +8379,18 @@ function budgetCardHTML(p){
 function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');}
 function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{houseMaybeResume();}catch(e){}}
 function renderBudget(){
-  const p=P();const cs=costSummary(p);const lines=costLines(p);
-  let h=`<div class="bgt-tot">
-    <div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
-    <div><b class="bgt-em ${cs.over?'over':''}">${cs.over?invUsd(-cs.remaining):invUsd(cs.remaining)}</b><span>${cs.over?'Over budget':'Remaining'}</span></div>
-    <div><b>${invUsd(cs.committed)}</b><span>Signed for</span></div>
-    <div><b>${invUsd(cs.spent)}</b><span>Paid</span></div>
-    <div><b>${invUsd(cs.projected)}</b><span>Projected</span></div>
-    <div><b class="bgt-em ${cs.projected-cs.budget>0.005?'over':''}">${cs.projected-cs.budget>0.005?invUsd(cs.projected-cs.budget)+' over':(cs.budget-cs.projected>0.005?invUsd(cs.budget-cs.projected)+' under':'On budget')}</b><span>Tracking</span></div>
+  const p=P();const cs=costSummary(p);const lines=costLines(p);const bill=billingSummary(p);
+  let h=`<div class="bgt-tot" id="bgtTotals">
+    <div><b>${invUsd(cs.budget)}</b><span>Allowance</span></div>
+    <div><b>${invUsd(cs.committed)}</b><span>Committed</span></div>
+    <div><b>${invUsd(cs.spent)}</b><span>Spent</span></div>
+    <div><b>${invUsd(bill.billed)}</b><span>Invoiced</span></div>
+    <div><b>${invUsd(bill.paid)}</b><span>Received</span></div>
+    <div><b class="bgt-em ${bill.out>0.005?'over':''}">${invUsd(Math.max(0,bill.out))}</b><span>Still out</span></div>
   </div>
-  <div class="row2"><button class="b1 b-cancel" style="flex:1" onclick="openCostLine()">+ Budget line</button><button class="b1 b-cancel" style="flex:1" onclick="openCostActual()">+ Log a cost</button></div>
+  <div class="row2"><button class="b1 b-cancel" style="flex:1" onclick="openInvoices()">Invoices</button><button class="b1 b-cancel" style="flex:1" onclick="openPayments()">Payments</button></div>
+  <div class="row2" style="margin-top:8px"><button class="b1 b-cancel" style="flex:1" onclick="openCostLine()">+ Budget line</button><button class="b1 b-cancel" style="flex:1" onclick="openCostActual()">+ Log a cost</button></div>
   <div class="bgt-toggle"><span>Group</span><div class="bgt-mini"><button class="${_costGroup==='stage'?'on':''}" onclick="setCostGroup('stage')">By stage</button><button class="${_costGroup==='trade'?'on':''}" onclick="setCostGroup('trade')">By trade</button></div></div>`;
-  h=h.replace('<div class="bgt-tot">','<div class="bgt-tot" id="bgtTotals">');
   const copyBtn=budgetSources().length?`<button class="la-link" style="display:block;margin:14px auto 0" onclick="openBudgetCopy()">Copy budget lines from another site…</button>`:'';
   const qbBtn=(qbEligible()&&_qbState&&_qbState.connected)?`<button class="la-link" style="display:block;margin:12px auto 0;font-weight:700" onclick="qbExportNow()">Send new costs to QuickBooks</button>`:'';
   const jcBtn=lines.length?`<button class="la-link" style="display:block;margin:14px auto 0;font-weight:700" onclick="openJobCost()">Job cost report</button>`:'';
@@ -12731,9 +12736,19 @@ function renderDay(){
   const bs=calVisibleBookings().filter(b=>spanCovers(b,calDay));
   const av=calVisibleAvail().filter(a=>spanCovers(a,calDay));
   const cf=conflictIds();
-  let h=bs.map(b=>calIsClient()
+  const dayDoubles=bookingConflicts().filter(function(c){
+    return c.kind==='double'&&(c.bs||[]).some(function(b){return spanCovers(b,calDay);});
+  });
+  let h='';
+  if(dayDoubles.length&&!calIsClient()){
+    h+=dayDoubles.map(function(c){
+      const who=String(c.name||'').replace(/'/g,"\\'");
+      return '<div class="day-row" style="border-color:var(--clay);background:rgba(176,80,60,.06)" onclick="openCalCrew(\''+who+'\','+calDay+')"><div style="flex:1"><div class="n" style="color:var(--clay)">Double-booked \u00b7 '+esc(c.name)+'</div><div class="d">'+esc(_dblWhere(c))+'. Tap to see only this crew.</div></div></div>';
+    }).join('');
+  }
+  h+=bs.map(b=>calIsClient()
     ?`<div class="day-row avr"><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${esc(specLabel(b.trade)||'Crew')} crew on site</div><div class="d">${fmtWin(b)}</div></div></div>`
-    :`<div class="day-row" ${calIsSub()?'':`onclick="openBk('${b.p.id}|${b.id}')"`}><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${esc(b.subName)}${cf[b.id]?' <span style=\"color:var(--clay)\">\u26a0</span>':''}<span class="bk-st ${bkStatus(b)}">${BK_STATUS[bkStatus(b)].label}</span></div><div class="d">${esc(b.p.street||b.p.name)} \u00b7 ${esc(specLabel(b.trade)||'')} \u00b7 ${fmtWin(b)}</div>${b.note?`<div class="note">${esc(b.note)}</div>`:''}${calIsSub()?'':bkInviteLine(b)}${calIsSub()?'':`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();sendGuestPacket('${b.p.id}','${b.id}')">Packet link\u2026</button>`}${calIsSub()&&b.subName===(state.session||{}).name&&bkStatus(b)!=='confirmed'?`<div class="row2" style="margin-top:8px"><button class="lpay" onclick="event.stopPropagation();bkConfirm('${b.p.id}','${b.id}')">Confirm</button><button class="lpay" onclick="event.stopPropagation();bkSubModify('${b.p.id}','${b.id}')">Change dates</button><button class="lpay" style="color:var(--clay)" onclick="event.stopPropagation();bkDecline('${b.p.id}','${b.id}')">Can\u2019t make it</button></div>`:''}${calIsSub()&&b.subName===(state.session||{}).name?`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();bkToCalendar('${b.p.id}','${b.id}')">📅 Add to my calendar</button>`:''}</div></div>`).join('');
+    :`<div class="day-row" ${calIsSub()?'':`onclick="openBk('${b.p.id}|${b.id}')"`}><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${esc(b.subName)}${cf[b.id]?' <span style=\"color:var(--clay)\">\u26a0</span>':''}<span class="bk-st ${bkStatus(b)}">${BK_STATUS[bkStatus(b)].label}</span></div><div class="d">${esc(b.p.street||b.p.name)} \u00b7 ${esc(specLabel(b.trade)||'')} \u00b7 ${fmtWin(b)}</div>${b.note?`<div class="note">${esc(b.note)}</div>`:''}${calIsSub()?'':bkInviteLine(b)}${calIsSub()?'':`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();sendGuestPacket('${b.p.id}','${b.id}')">Text this link</button>`}${calIsSub()&&b.subName===(state.session||{}).name&&bkStatus(b)!=='confirmed'?`<div class="row2" style="margin-top:8px"><button class="lpay" onclick="event.stopPropagation();bkConfirm('${b.p.id}','${b.id}')">Confirm</button><button class="lpay" onclick="event.stopPropagation();bkSubModify('${b.p.id}','${b.id}')">Change dates</button><button class="lpay" style="color:var(--clay)" onclick="event.stopPropagation();bkDecline('${b.p.id}','${b.id}')">Can\u2019t make it</button></div>`:''}${calIsSub()&&b.subName===(state.session||{}).name?`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();bkToCalendar('${b.p.id}','${b.id}')">📅 Add to my calendar</button>`:''}</div></div>`).join('');
   h+=av.map(a=>`<div class="day-row avr"><span class="sw" style="background:repeating-linear-gradient(45deg,var(--ink-3) 0 3px,transparent 3px 6px)"></span><div style="flex:1"><div class="n">${esc(a.subName)} \u2014 unavailable</div><div class="d">${fmtWin(a)}${a.note?' \u00b7 '+esc(a.note):''}</div></div>${calIsSub()&&a.subName===(state.session||{}).name?`<button class="lpay" onclick="event.stopPropagation();delAvail('${a.p.id}','${a.id}')">Remove</button>`:''}</div>`).join('');
   if(!bs.length&&!av.length)h+='<div class="empty" style="padding:8px 0">Nothing scheduled this day.</div>';
   if(calIsClient()){ /* read-only: no add, no idle roster */ }
@@ -13493,8 +13508,16 @@ function gpApproveSend(){
 function _sharePacketLink(snap,token){
   const url='https://siteplumb.com/app/?packet='+token;
   const msg='Hi \u2014 '+fmtWin({start:snap.start,end:snap.end})+' at '+snap.site+'. Dates, scope and specs \u2014 one tap to confirm: '+url;
-  if(navigator.share){navigator.share({text:msg}).catch(()=>{_smsOrCopy(msg);});}
-  else _smsOrCopy(msg);
+  window._pkLastShare={url:url,msg:msg,who:snap.subName||'the crew'};
+  showInfo('Text this link',`<p style="margin:0 0 12px;font-size:14px;line-height:1.5">Send this to <b>${esc(snap.subName||'the crew')}</b>. If you cancel the share sheet, the link stays here.</p>
+    <button class="b1 b-go" style="width:100%" onclick="pkDoShare()">Text this link</button>
+    <div class="code-box" style="margin-top:12px" onclick="copyText('${url}')">${url}</div>
+    <div style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:6px">Tap the link to copy</div>`);
+}
+function pkDoShare(){
+  const x=window._pkLastShare;if(!x)return;
+  if(navigator.share){navigator.share({text:x.msg}).catch(function(){});}
+  else _smsOrCopy(x.msg);
 }
 function _smsOrCopy(msg){
   try{location.href='sms:?&body='+encodeURIComponent(msg);}catch(e){}
@@ -14780,7 +14803,6 @@ function openFieldNote(){
   }
   const nl=document.getElementById('sheetNoteLbl');if(nl)nl.textContent='Note · optional';
   const hint=document.getElementById('fieldKindHint');if(hint)hint.hidden=true;
-  setTimeout(function(){try{if(!window._tourQuiet)document.getElementById('file')&&document.getElementById('file').click();}catch(e){}},180);
 }
 function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDate||todayStr()):null;
   if(!asLog&&!_fieldNote)_fieldNote=false;
