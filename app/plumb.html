@@ -517,13 +517,15 @@
   .setup-cards{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
   .start-door{display:flex;gap:13px;align-items:flex-start;text-align:left;width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:15px;padding:14px;margin-bottom:10px;cursor:pointer;font-family:inherit;transition:transform .12s ease,border-color .15s ease;}
   .start-door:active{transform:scale(.985);border-color:var(--oak);}
-  .start-door .sd-ic{font-size:26px;line-height:1;flex:none;margin-top:1px;}
+  .start-door .sd-ic{width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px;}
+  .start-door .sd-ic svg{width:18px;height:18px;stroke:var(--oak);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .start-door .t{font-size:15.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
   .start-door .d{font-size:12.5px;color:var(--ink-3);line-height:1.45;}
   .imp-grid{display:flex;flex-direction:column;gap:8px;}
   .imp-on{display:flex;flex-direction:column;align-items:flex-start;text-align:left;width:100%;border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:12px 13px;cursor:pointer;font-family:inherit;transition:transform .12s ease,border-color .15s ease;}
   .imp-on:active{transform:scale(.985);border-color:var(--oak);}
-  .imp-on .ic{font-size:20px;line-height:1;margin-bottom:6px;}
+  .imp-on .ic{width:32px;height:32px;border-radius:9px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+  .imp-on .ic svg{width:16px;height:16px;stroke:var(--oak);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .imp-on .t{font-size:14px;font-weight:700;color:var(--ink);}
   .imp-on .d{font-size:12px;color:var(--ink-3);margin-top:2px;line-height:1.4;}
   .imp-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4;color:var(--ink-2);margin:2px 0;cursor:pointer;}
@@ -1001,41 +1003,6 @@
   .tour-back{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);border-radius:10px;padding:8px 13px;font-family:inherit;font-size:13px;font-weight:650;cursor:pointer;}
   .tour-next{background:var(--ink);color:var(--paper);border:none;border-radius:10px;padding:8px 15px;font-family:inherit;font-size:13px;font-weight:650;cursor:pointer;}
 .tour-gold{background:var(--oak);color:#15130F;border:none;border-radius:10px;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;}
-#tourFilm{position:fixed;inset:0;z-index:5000;display:none;background:rgba(27,25,22,.72);}
-#tourFilm.show{display:block;}
-.tf-phone{position:absolute;left:50%;top:10%;width:min(360px,calc(100vw - 28px));height:68%;transform:translateX(-50%);background:var(--paper);border-radius:22px;box-shadow:var(--shadow-lift);overflow:hidden;border:1px solid var(--line);}
-.tf-set{position:absolute;inset:0;padding:16px 16px 18px;overflow:hidden;}
-.tf-ring{position:fixed;pointer-events:none;z-index:2402;border-radius:14px;outline:3px solid var(--oak);outline-offset:3px;box-shadow:0 0 0 9999px rgba(27,25,22,.28);transition:left .32s ease,top .32s ease,width .32s ease,height .32s ease;}
-.tf-orb{position:fixed;z-index:2403;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F7F4EF,#C49A6C 55%,#8A6A3E);box-shadow:0 2px 8px rgba(27,25,22,.28);pointer-events:none;opacity:0;}
-.tf-orb.on{opacity:1;}
-.tf-line{position:fixed;z-index:2403;height:3px;border-radius:2px;background:linear-gradient(90deg,#E7DCC6,#C49A6C);pointer-events:none;opacity:0;}
-.tf-card{position:fixed;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 28px));z-index:2404;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px 12px;box-shadow:var(--shadow-lift);}
-.tf-card.bb{bottom:14px;}
-.tf-card.tb{top:12px;}
-.tf-card .tour-h{font-family:'Source Serif 4',Georgia,serif;font-size:18px;font-weight:600;margin:2px 0 6px;}
-.tf-card .tour-b{font-size:13.5px;color:var(--ink-2);line-height:1.45;margin:0 0 10px;}
-.tf-k{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);}
-.tf-brand{font-family:'Fraunces',Georgia,serif;font-size:22px;margin-bottom:14px;}
-.tf-brand i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--oak);margin-right:8px;}
-.tf-block{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
-.tf-eye{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--oak);margin-bottom:6px;}
-.tf-cam{display:block;width:100%;margin-top:16px;border:none;border-radius:16px;padding:14px 12px;background:#1B1916;color:var(--paper);font:650 14px 'Hanken Grotesk',system-ui;letter-spacing:.02em;}
-.tf-pills{display:flex;gap:8px;margin-bottom:12px;}
-.tf-pills span{flex:1;text-align:center;border:1px solid var(--line);border-radius:20px;padding:8px 4px;font-size:11.5px;font-weight:650;background:var(--surface);}
-.tf-pills span.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
-.tf-row{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;background:var(--surface);}
-.tf-row b{display:block;font-size:14px;}
-.tf-row em{font-style:normal;font-size:12px;color:var(--ink-3);}
-.tf-doors{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
-.tf-doors span{border:1px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center;font-size:12.5px;font-weight:650;background:var(--surface);}
-.tf-tabs{display:flex;gap:6px;margin-top:16px;}
-.tf-tabs span{flex:1;text-align:center;padding:10px 4px;border-radius:10px;font-size:11.5px;font-weight:650;color:var(--ink-2);background:var(--surface-2);}
-.tf-tabs span.on{background:var(--ink);color:var(--paper);}
-.tf-chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;}
-.tf-chips span{border:1px solid var(--line);border-radius:20px;padding:6px 10px;font-size:12px;font-weight:650;}
-.tf-chips span.on{background:var(--ink);color:var(--paper);}
-.tf-note{border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--ink-3);min-height:44px;margin:8px 0 12px;}
-.tf-send{width:100%;border:none;border-radius:12px;padding:12px;background:var(--oak);color:#15130F;font:700 14px 'Hanken Grotesk',system-ui;}
 .ov-hero{flex:0 0 auto;text-align:center;min-width:46px;}
   .ov-hero .hn{font-size:26px;font-weight:700;line-height:1;color:var(--sage);}
   .ov-hero.attn .hn{color:var(--clay);}
@@ -2143,7 +2110,7 @@ body.on-tour .tour-card{display:block;}
     <div class="sm-list" id="siteMenuList"></div>
     <button class="sm-new" onclick="openNewSite()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      New site
+      Add a house
     </button>
     <button class="sm-new sm-settings" onclick="closeSiteMenu();openSettings()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -2252,11 +2219,12 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="newSiteScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4>New site</h4>
-      <input id="nsName" placeholder="Project name (e.g. Smith Residence)">
-      <input id="nsState" placeholder="State" list="usStates" autocomplete="off" autocapitalize="characters">
-      <input id="nsCity" placeholder="City" autocomplete="off" list="nsCityList">
-      <input id="nsStreet" placeholder="Street address" autocomplete="off" list="nsStreetList">
+      <h4 id="nsTitle">Add a house</h4>
+      <p id="nsHint" class="ls" style="margin:-4px 0 12px">Street first. A name is optional if the street is the name.</p>
+      <input id="nsStreet" placeholder="Street address" autocomplete="street-address" list="nsStreetList">
+      <input id="nsCity" placeholder="City" autocomplete="address-level2" list="nsCityList">
+      <input id="nsState" placeholder="State" list="usStates" autocomplete="address-level1" autocapitalize="characters">
+      <input id="nsName" placeholder="Name if it isn’t the street (optional)">
       <datalist id="usStates"></datalist>
       <datalist id="nsCityList"></datalist>
       <datalist id="nsStreetList"></datalist>
@@ -2534,7 +2502,6 @@ body.on-tour .tour-card{display:block;}
       <div class="info-body" id="studioBody"></div>
       <div class="row2" style="margin-top:14px">
         <button class="b1" style="flex:1" onclick="closeTourStudio();startTeamTour()">Play all</button>
-        <button class="b1" style="flex:1" onclick="closeTourStudio();startTour('team')">Old live walk</button>
         <button class="b1 b-go" style="flex:1" onclick="closeTourStudio()">Done</button>
       </div>
     </div>
@@ -3120,13 +3087,13 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.294.0 - Walk: a locked stage. Looks like SitePlumb. We time it.';
+const PLUMB_VERSION='2.296.0 - Early access. Public bar hidden. Company then houses.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1787005908220;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.294.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787054837230;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.296.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -3134,6 +3101,10 @@ const DEV_OWNER_HASH='hkjm3d9';
 function _devEmail(){try{return ((laProfile()||{}).email||(state.session&&state.session.auth&&state.session.auth.email)||'').trim().toLowerCase();}catch(e){return '';}}
 function devOwner(){const em=_devEmail();return !!em&&laHash(em)===DEV_OWNER_HASH;}
 function devQa(){return /^pmgottschalkqa(\+[^@]+)?@gmail\.com$/.test(_devEmail());}
+function walkAllowed(){
+  /* Public early-access never sees a walk. QA family + owner only. */
+  return devQa()||devOwner();
+}
 function devCanGrant(){return devOwner()||devQa();}
 function devAllowed(){
   if(devOwner()||devQa())return true;
@@ -4740,6 +4711,11 @@ function ocConfirm(){const f=_ocAction;_ocAction=null;_ocCancel=null;document.ge
 const US_STATES=['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
 function openNewSite(){document.getElementById('nsName').value='';document.getElementById('nsStreet').value='';document.getElementById('nsCity').value='';
   const st=document.getElementById('nsState');if(st)st.value='';
+  const n=(state.projects||[]).length;
+  const t=document.getElementById('nsTitle');const h=document.getElementById('nsHint');
+  if(t)t.textContent=n?('Add house '+(n+1)):'Add the first house';
+  if(h)h.textContent=n?'Street first. It lands on the same book.':'Street first. A name is optional if the street is the name.';
+  const go=document.querySelector('#newSiteScrim .b-go');if(go)go.textContent='Add this house';
   const dl=document.getElementById('usStates');if(dl&&!dl.children.length)dl.innerHTML=US_STATES.map(s=>`<option value="${s}">`).join('');
   // type-ahead from cities/streets already in use across sites
   const cities=[...new Set((state.projects||[]).map(p=>p.city).filter(Boolean))].sort();
@@ -4751,7 +4727,8 @@ function openNewSite(){document.getElementById('nsName').value='';document.getEl
 function closeNewSite(){document.getElementById('newSiteScrim').classList.remove('show');}
 function saveNewSite(){const name=document.getElementById('nsName').value.trim(),street=document.getElementById('nsStreet').value.trim(),city=document.getElementById('nsCity').value.trim(),st=(document.getElementById('nsState')||{value:''}).value.trim().toUpperCase();
   const teardown=!!document.querySelector('#nsTeardown.on');
-  if(!name&&!street){toast('Add a name or street');return;}
+  if(!name&&!street){toast('Add a street or a name');return;}
+  const nBefore=(state.projects||[]).length;
   const id='p'+Date.now().toString(36);
   Data.addProject({id,name:name||street,street:street||name,city,state:st,teardown,inboxToken:genInboxToken(),items:[],logs:[],docs:[],subs:[],stageDone:{},permits:[],inspections:{},selections:[],selNotes:'',payments:[],members:{},memberInfo:{},invites:[],jurisdiction:{city:city||'',state:st,system:'',portalUrl:'',inbox:slug(street||name||id)+'@inbox.plumb.app',feed:[]},nextId:100});
   try{const _np=state.projects.find(x=>x.id===id);if(_np){try{const oid=Org.id();if(oid)_np.org=oid;}catch(e){}const a=ensureMembership(_np);const b=ensureTeam(_np);
@@ -4764,6 +4741,7 @@ function saveNewSite(){const name=document.getElementById('nsName').value.trim()
   logEvent('siteCreated',street||name);closeNewSite();
   Data.setActive(id);                       // make the NEW site active before anything else
   if(_startConverge){renderAll();startConverge();return;}
+  if(afterHouseAdded(id,nBefore))return;
   openSiteFromOverview(id);toast('Site created');}
 
 /* ════════ login + session + overview ════════ */
@@ -4891,10 +4869,10 @@ async function laEnter(p){
     if(appMode()==='real'){
       const noSites=!(state.projects&&state.projects.length);
       const isOwner=!m; // invited subs/clients/team have a member role; owners don't
-      if(isOwner&&noSites&&!localStorage.getItem('plumb.startDone'))setTimeout(()=>{try{openStart();}catch(e){}},450);
+      if(isOwner&&noSites&&!localStorage.getItem('plumb.startDone'))setTimeout(()=>{try{openOnboard();}catch(e){}},450);
       else if((!m||(m.role==='team'&&m.setup))&&!localStorage.getItem('plumb.setupDone'))setTimeout(()=>{try{openSetup();}catch(e){}},450);
       else if(p.rpRole==='owner'&&prefsPending())setTimeout(()=>{try{openSetupReview();}catch(e){}},450);
-      else if(m&&!localStorage.getItem('plumb.orientDone'))setTimeout(()=>{try{const _r=m.role==='client'?'client':(m.role==='team'?'team':'sub');if(_r==='team')startTeamTour();else startTour(_r);}catch(e){}},450);
+      else if(m&&walkAllowed()&&!localStorage.getItem('plumb.orientDone'))setTimeout(()=>{try{const _r=m.role==='client'?'client':(m.role==='team'?'team':'sub');if(_r==='team')startTeamTour();else startTour(_r);}catch(e){}},450);
     }
   }catch(e){}
   if(m&&m.role==='team'&&!state.projects.length)toast('Connecting you to the team — sites appear once a teammate\u2019s device confirms your invite');
@@ -5476,23 +5454,66 @@ function finishSetup(skipped){
    first sub invite, and a nudge toward the other door). Both routes leave them
    with one real site that already holds something useful. */
 function startDone(){try{localStorage.setItem('plumb.startDone','1');}catch(e){}}
+function openOnboard(){
+  startDone();
+  try{welcomeDone();}catch(e){}
+  const company=((orgPrefs()||{}).company||'').trim();
+  if(!company){
+    document.getElementById('startTitle').textContent='Your company';
+    const el=document.getElementById('startBody');
+    if(el)el.innerHTML=`<p style="margin:0 0 12px;color:var(--ink-2);font-size:14px;line-height:1.5">This is the book for every house you run. Name the company first — then we add the first house.</p>
+      <div class="lbl">Company name</div>
+      <input id="obCompany" placeholder="e.g. Hilltop Homes" autocomplete="organization">
+      <button class="b1 b-go" style="width:100%;margin-top:12px" onclick="onboardCompanyNext()">Add the first house</button>
+      <button class="la-link" style="display:block;margin:12px auto 0;color:var(--ink-3)" onclick="closeStart();openImport()">Already building? Bring a job in</button>`;
+    document.getElementById('startScrim').classList.add('show');
+    return;
+  }
+  closeStart();openNewSite();
+}
+function onboardCompanyNext(){
+  const v=((document.getElementById('obCompany')||{}).value||'').trim();
+  if(!v){toast('Name the company');return;}
+  const op=orgPrefs()||{};op.company=v;saveOrgPrefs(op);
+  try{localStorage.setItem('plumb.setupDone','1');}catch(e){}
+  closeStart();openNewSite();
+}
+function afterHouseAdded(id,nBefore){
+  renderAll();
+  const p=(state.projects||[]).find(x=>String(x.id)===String(id));
+  const label=(p&&(p.street||p.name))||'The house';
+  if(nBefore===0){
+    showInfo(label+' is on the book',`<p style="margin:0 0 12px;font-size:14px;line-height:1.5">Add the next house now, or go to the book. You can invite the homeowner and your trades whenever you are ready.</p>
+      <button class="b1 b-go" style="width:100%" onclick="closeInfo();openNewSite()">Add another house</button>
+      <button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();showOverview()">Go to the book</button>
+      <button class="la-link" style="display:block;margin:14px auto 0" onclick="closeInfo();openPeopleMode('homeowner')">Invite the homeowner later</button>`);
+    return true;
+  }
+  if(nBefore===1){
+    toast(label+' is on the book');
+    showOverview();
+    return true;
+  }
+  return false;
+}
 function openStart(){renderStart();document.getElementById('startScrim').classList.add('show');}
 function closeStart(){document.getElementById('startScrim').classList.remove('show');}
 function renderStart(){
   const el=document.getElementById('startBody');if(!el)return;
-  document.getElementById('startTitle').textContent='Welcome to SitePlumb';
+  const has=(state.projects||[]).length>0;
+  document.getElementById('startTitle').textContent=has?'Add a job':'Welcome to SitePlumb';
   el.innerHTML=`
-    <p style="margin:0 0 14px;color:var(--ink-2);font-size:14px;line-height:1.5">Get your company into SitePlumb. Start with one job, or set the book up and add houses as you go.</p>
+    <p style="margin:0 0 14px;color:var(--ink-2);font-size:14px;line-height:1.5">${has?'Another house on the book, or bring one in that is already underway.':'Get your company into SitePlumb. Start with one job, or set the book up and add houses as you go.'}</p>
     <button class="start-door" onclick="startPath('import')">
-      <div class="sd-ic">\u{1F4E5}</div>
+      <div class="sd-ic"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></div>
       <div><div class="t">A job I\u2019m already building</div><div class="d">Bring an in-flight job in \u2014 pull a sub from contacts, forward a permit, drop in site photos.</div></div></button>
     <button class="start-door" onclick="startPath('new')">
-      <div class="sd-ic">\u{1F3D7}\u{FE0F}</div>
-      <div><div class="t">A new build starting soon</div><div class="d">Set it up clean before day one \u2014 site details, your trades, and the homeowner ready to follow along.</div></div></button>
+      <div class="sd-ic"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/><path d="M9 21v-7h6v7"/></svg></div>
+      <div><div class="t">A new build starting soon</div><div class="d">Set it up clean before day one \u2014 street, city, and the house on the book.</div></div></button>
     <button class="start-door" onclick="startPath('book')">
-      <div class="sd-ic">\u{1F3D8}\u{FE0F}</div>
+      <div class="sd-ic"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h5"/></svg></div>
       <div><div class="t">I run several jobs</div><div class="d">Company name, standing roster, then add the houses. Built for a book, not a single site.</div></div></button>
-    <button class="la-link" style="display:block;margin:10px auto 0;color:var(--ink-3)" onclick="startSkip()">I\u2019ll explore on my own</button>`;
+    <button class="la-link" style="display:block;margin:10px auto 0;color:var(--ink-3)" onclick="startSkip()">I\u2019ll do this later</button>`;
 }
 function startSkip(){startDone();closeStart();toast('You can set up a job any time from the + on the home screen');}
 function startPath(kind){
@@ -5544,9 +5565,9 @@ function renderImport(){
     </select>
     <div class="lbl" style="margin-top:2px">${_importEdit?'Add to this job':'Pull in what you already have'}</div>
     <div class="imp-grid">
-      <button class="imp-on" onclick="impContacts()"><div class="ic">\u{1F4F1}</div><div class="t">Add subs${subCount?' \u00b7 '+subCount+' on this job':''}</div><div class="d">From contacts or by hand — add as many as you like</div></button>
-      <button class="imp-on" onclick="impForward()"><div class="ic">\u2709\uFE0F</div><div class="t">Forward permits or email</div><div class="d">Send to this job\u2019s inbox — we file it</div></button>
-      <button class="imp-on" id="impPhotoBtn" onclick="impPhotos()"><div class="ic">\u{1F4F8}</div><div class="t">Drop in site photos${photoCount?' \u00b7 '+photoCount+' on this job':''}</div><div class="d">Pick from your camera roll</div></button>
+      <button class="imp-on" onclick="impContacts()"><div class="ic"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div><div class="t">Add subs${subCount?' \u00b7 '+subCount+' on this job':''}</div><div class="d">From contacts or by hand — add as many as you like</div></button>
+      <button class="imp-on" onclick="impForward()"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg></div><div class="t">Forward permits or email</div><div class="d">Send to this job\u2019s inbox — we file it</div></button>
+      <button class="imp-on" id="impPhotoBtn" onclick="impPhotos()"><div class="ic"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div class="t">Drop in site photos${photoCount?' \u00b7 '+photoCount+' on this job':''}</div><div class="d">Pick from your camera roll</div></button>
     </div>
     <input id="impPhotoInput" type="file" accept="image/*" multiple style="display:none" onchange="impPhotosPicked(this)">
     ${doneBtn}`;
@@ -5682,15 +5703,17 @@ function renderSettings(){
     rows+='<div class="set-hd">This device</div>';
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
-    rows+=SET_GEAR_ROW('How SitePlumb works','A friendly walk around the example book','startTeamTour()',I.how);
-    rows+=SET_GEAR_ROW('Walkthrough studio','Play one beat. Check the orb and the card.','closeSettings();openTourStudio()',I.dev);
-    rows+=SET_GEAR_ROW('Classic walkthrough','The older Full-site tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
+    if(walkAllowed()){
+      rows+=SET_GEAR_ROW('How SitePlumb works','A friendly walk around the example book','startTeamTour()',I.how);
+      rows+=SET_GEAR_ROW('Walkthrough studio','Play one beat. Check the orb and the card.','closeSettings();openTourStudio()',I.dev);
+      rows+=SET_GEAR_ROW('Classic walkthrough','The older Full-site tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
+    }
     rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
     if(devAllowed())rows+=SET_GEAR_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()',I.dev);
   }else{
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     if(role==='subs')rows+=SET_GEAR_ROW('My schedule','Your bookings & blocked time','closeSettings();openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
-    rows+=SET_GEAR_ROW('How SitePlumb works','Take the guided tour','closeSettings();startTour(\''+(role==='client'?'client':'sub')+'\')',I.how);
+    if(walkAllowed())rows+=SET_GEAR_ROW('How SitePlumb works','Take the guided tour','closeSettings();startTour(\''+(role==='client'?'client':'sub')+'\')',I.how);
   }
   rows+='<div class="set-hd">Account</div>';
   const _fbn=(state.feedback||[]).filter(f=>!f.done).length;
@@ -8888,6 +8911,7 @@ function enterDemo(opts){
    Once per session: someone bouncing between roles should not be re-asked. */
 function maybeOfferTour(){
   try{
+    if(!walkAllowed())return;
     if(window._tourQuiet)return;
     if(sessionStorage.getItem('plumbTourOffered')==='1')return;
     sessionStorage.setItem('plumbTourOffered','1');
@@ -8895,6 +8919,7 @@ function maybeOfferTour(){
   }catch(e){}}
 function demoIntroTour(){
   try{document.getElementById('demoIntroScrim').classList.remove('show');}catch(e){}
+  if(!walkAllowed())return;
   try{startGrandTour();}catch(e){}}
 function demoIntroExplore(){
   try{document.getElementById('demoIntroScrim').classList.remove('show');}catch(e){}}
@@ -8965,17 +8990,29 @@ function tourDemoDoc(){try{const p=state.projects.find(x=>String(x.id)==='p2');i
   try{persist();}catch(e){}
   try{renderAll();}catch(e){}
 }catch(e){}}
-function enterDemoGuided(fromSplash){enterDemo();startGrandTour();}
+function enterDemoGuided(fromSplash){if(!walkAllowed()){enterDemo();return;}enterDemo();startGrandTour();}
 
 /* ── Welcome fork: first live sign-in with an empty workspace ── */
 function maybeWelcome(){
   try{
+    if(!walkAllowed())return;
     if(_authActionPending())return;
     if(appMode()!=='real'||!state.session)return;
     if((state.session.role||'hillan')!=='hillan')return;
     if((state.projects||[]).length)return;
     if(localStorage.getItem('plumbWelcomed'))return;
-    document.getElementById('welcomeScrim').classList.add('show');
+    const w=document.getElementById('welcomeScrim');
+    if(!w)return;
+    const tourBtn=w.querySelector('button.b-go');
+    const ls=w.querySelector('.ls');
+    if(walkAllowed()){
+      if(ls)ls.textContent='Your workspace is ready. Want the two-minute walkthrough first?';
+      if(tourBtn)tourBtn.style.display='';
+    }else{
+      if(ls)ls.textContent='Your workspace is ready. Add the first house when you are.';
+      if(tourBtn)tourBtn.style.display='none';
+    }
+    w.classList.add('show');
   }catch(e){}
 }
 function welcomeDone(){try{localStorage.setItem('plumbWelcomed','1');}catch(e){}
@@ -8993,6 +9030,7 @@ function tourGoto(view,seg){
   }catch(e){}
 }
 function startGrandTour(){
+  if(!walkAllowed())return;
   try{tourAudioProbe();}catch(e){}
   welcomeDone();
   try{closeStart();}catch(e){}
@@ -9025,172 +9063,8 @@ function tourWaitReady(sel,tok,ms){
 function tourBeat(tok){
   return Promise.resolve(window._narrDone).catch(function(){}).then(function(){return tourWait(180,tok);});
 }
-let _tfTok=0,_tfIdx=0;
-const TOUR_FILM=[
-  {title:"Glad you're here",body:"I'll walk you around once. Skip anytime.",card:'bb',scene:'home',
-    cues:[{f:'s1a',stage:'coming'},{f:'s1b',stage:'coming',point:'coming',gest:'circle'},{f:'s1c',stage:'coming'}]},
-  {title:'Field Notes',body:'Tap the camera. Chip, a few words, Send.',card:'bb',scene:'home',
-    cues:[
-      {f:'s2a',stage:'cam',point:'cam',gest:'circle',wait:'cam'},
-      {f:'s2b',scene:'sheet',stage:'chip',point:'chip',gest:'circle'},
-      {f:'s2c',stage:'note',point:'note'},
-      {scene:'sheet',stage:'send',point:'send',gest:'circle',wait:'send'}
-    ]},
-  {title:'Your book',body:'Needs You. Recent Decisions. A–Z.',card:'tb',scene:'book',
-    cues:[
-      {f:'s3a',stage:'pills',point:'pills',gest:'circle'},
-      {f:'s3b',stage:'attn',point:'attn',gest:'line'},
-      {f:'s3c',stage:'recent',point:'recent',gest:'line'},
-      {f:'s3d',stage:'az',point:'az',gest:'line'}
-    ]},
-  {title:'The houses',body:'All homes, then each job.',card:'tb',scene:'houses',
-    cues:[{f:'s4a',stage:'allh',point:'allh',gest:'circle'},{f:'s4b',stage:'row',point:'row',gest:'circle'}]},
-  {title:'The briefing',body:'One house. What still needs you, then the doors.',card:'tb',scene:'brief',
-    cues:[{f:'s5a',stage:'brief',point:'open'},{f:'s5b',stage:'open',point:'open',gest:'circle'},{f:'s5c',stage:'doors',point:'doors',gest:'circle'}]},
-  {title:'The doors',body:'Schedule, Selections, Money, Field Notes.',card:'tb',scene:'brief',
-    cues:[
-      {f:'s6a',stage:'doors',point:'doors'},
-      {f:'s6b',stage:'cal',point:'cal',gest:'line'},
-      {f:'s6c',stage:'sel',point:'sel',gest:'line'},
-      {f:'s6d',stage:'money',point:'money',gest:'line'},
-      {f:'s6e',stage:'fieldd',point:'fieldd',gest:'line'}
-    ]},
-  {title:'The packet',body:'Still open is what the sub sees. Live.',card:'tb',scene:'brief',
-    cues:[{f:'s7a',stage:'open',point:'open'},{f:'s7b',stage:'open',point:'open',gest:'circle'}]},
-  {title:'Full site',body:'Log, Needs You, Build, Files.',card:'tb',scene:'site',
-    cues:[
-      {f:'s8a',scene:'brief',stage:'full',point:'full',gest:'circle'},
-      {f:'s8b',scene:'site',stage:'tlog',point:'tlog',gest:'line'},
-      {f:'s8c',stage:'tneed',point:'tneed',gest:'line'},
-      {f:'s8d',stage:'tbuild',point:'tbuild',gest:'line'},
-      {f:'s8e',stage:'tfiles',point:'tfiles',gest:'line'}
-    ]},
-  {title:'Company',body:'The office drawer.',card:'bb',scene:'co',
-    cues:[{f:'s9a',stage:'case',point:'case',gest:'circle'},{f:'s9b',stage:'crows',point:'crows'},{f:'s9c',stage:'crows'}]},
-  {title:"You're set",body:'Replay anytime from Settings.',card:'bb',scene:'home',
-    cues:[{f:'s10a',stage:'coming'},{f:'s10b',stage:'coming',point:'cam'},{f:'s10c',stage:'coming'}]}
-];
-function tfScene(name){
-  if(name==='home')return '<div class="tf-brand"><i></i>SitePlumb</div><div class="tf-k">Today</div><div class="tf-block" data-tf="coming" style="margin-top:8px"><div class="tf-eye">Coming up</div><div style="font-weight:650">Maple · electrician</div><div style="color:var(--ink-3);font-size:13px;margin-top:4px">Thu · 2 hours</div></div><button type="button" class="tf-cam" data-tf="cam">Field Notes</button>';
-  if(name==='sheet')return '<div class="tf-k">Field Notes</div><h3 style="font-family:\'Source Serif 4\',Georgia,serif;font-size:20px;margin:6px 0 8px">Log from the field</h3><div class="tf-chips"><span class="on" data-tf="chip">Note</span><span>Leak</span><span>Damage</span><span>Punch</span></div><div class="tf-note" data-tf="note">Siding looks proud at the corner.</div><button type="button" class="tf-send" data-tf="send">Send</button>';
-  if(name==='book')return '<div class="tf-brand"><i></i>SitePlumb</div><div class="tf-pills" data-tf="pills"><span class="on" data-tf="attn">Needs You</span><span data-tf="recent">Recent</span><span data-tf="az">A–Z</span></div><div class="tf-row"><b>412 Maple</b><em>Leak · needs a call</em></div><div class="tf-row"><b>18 Birch</b><em>Punch at the stair</em></div>';
-  if(name==='houses')return '<div class="tf-pills"><span class="on">Needs You</span><span>Recent</span><span>A–Z</span></div><div class="tf-row" data-tf="allh"><b>All homes</b><em>Every open item</em></div><div class="tf-row" data-tf="row"><b>412 Maple</b><em>Leak · plumber</em></div>';
-  if(name==='brief')return '<div class="tf-k">412 Maple</div><h3 style="font-family:\'Source Serif 4\',Georgia,serif;font-size:20px;margin:6px 0 10px">The briefing</h3><div class="tf-block" data-tf="brief"><div class="tf-eye" data-tf="open">Still open</div><div>Leak at the tub · plumber</div></div><div class="tf-doors" data-tf="doors"><span data-tf="cal">Schedule</span><span data-tf="sel">Selections</span><span data-tf="money">Money</span><span data-tf="fieldd">Field Notes</span></div><div class="tf-row" data-tf="full" style="margin-top:12px;text-align:center"><b>Full site</b></div>';
-  if(name==='site')return '<div class="tf-k">412 Maple</div><h3 style="font-family:\'Source Serif 4\',Georgia,serif;font-size:20px;margin:6px 0 8px">The job</h3><div class="tf-block">Log, Needs You, Build, Files. Desk work.</div><div class="tf-tabs"><span class="on" data-tf="tlog">Log</span><span data-tf="tneed">Needs You</span><span data-tf="tbuild">Build</span><span data-tf="tfiles">Files</span></div>';
-  if(name==='co')return '<div class="tf-brand"><i></i>SitePlumb</div><div class="tf-row" data-tf="case"><b>Company</b><em>The office drawer</em></div><div data-tf="crows"><div class="tf-row"><b>Calendar</b><em>Every house</em></div><div class="tf-row"><b>Invoices</b><em>What they owe</em></div><div class="tf-row"><b>Roster</b><em>Your trades</em></div></div>';
-  return tfScene('home');
-}
-function tfMount(){
-  let f=document.getElementById('tourFilm');
-  if(!f){
-    f=document.createElement('div');
-    f.id='tourFilm';
-    f.innerHTML='<div class="tf-phone"><div class="tf-set" id="tfSet"></div></div><div class="tf-ring" id="tfRing"></div><div class="tf-orb" id="tfOrb"></div><div class="tf-line" id="tfLine"></div><div class="tf-card bb" id="tfCard"></div>';
-    document.body.appendChild(f);
-  }
-  f.classList.add('show');
-}
-function tfEnd(){
-  _tfTok++;
-  try{tourAudioStop();}catch(e){}
-  const f=document.getElementById('tourFilm');
-  if(f)f.classList.remove('show');
-  window._tourQuiet=false;
-  try{localStorage.setItem('plumb.orientDone','1');}catch(e){}
-}
-function tfMark(name){
-  if(!name)return document.getElementById('tfSet');
-  return document.querySelector('#tfSet [data-tf="'+name+'"]')||document.getElementById('tfSet');
-}
-function tfRingTo(name){
-  const el=tfMark(name);if(!el)return;
-  const r=el.getBoundingClientRect();
-  const ring=document.getElementById('tfRing');if(!ring)return;
-  ring.style.left=(r.left-6)+'px';
-  ring.style.top=(r.top-6)+'px';
-  ring.style.width=(r.width+12)+'px';
-  ring.style.height=(r.height+12)+'px';
-}
-function tfOrbTo(name,gest){
-  const el=tfMark(name);if(!el)return;
-  const o=document.getElementById('tfOrb');if(!o)return;
-  const r=el.getBoundingClientRect();
-  o.classList.add('on');
-  if(gest==='line'){
-    const line=document.getElementById('tfLine');
-    const x=r.left+6,y=r.bottom+3,w=Math.max(28,r.width-12);
-    if(line){line.style.left=x+'px';line.style.top=y+'px';line.style.width=w+'px';line.style.opacity='1';}
-    o.style.left=(x+w)+'px';o.style.top=y+'px';
-    setTimeout(function(){if(line)line.style.opacity='0';},900);
-    return;
-  }
-  const cx=r.left+r.width/2,cy=r.top+r.height/2;
-  o.style.left=cx+'px';o.style.top=cy+'px';
-  if(gest==='circle'){
-    const rx=Math.min(r.width/2+10,70),ry=Math.min(r.height/2+8,40);
-    const t0=performance.now();
-    const spin=function(t){
-      const p=Math.min(1,(t-t0)/700);
-      const a=-Math.PI/2+p*2*Math.PI;
-      o.style.left=(cx+Math.cos(a)*rx)+'px';
-      o.style.top=(cy+Math.sin(a)*ry)+'px';
-      if(p<1&&document.getElementById('tourFilm')&&document.getElementById('tourFilm').classList.contains('show'))requestAnimationFrame(spin);
-    };
-    requestAnimationFrame(spin);
-  }
-}
-function tfPaintCard(slide,i,n){
-  const card=document.getElementById('tfCard');if(!card)return;
-  card.className='tf-card '+(slide.card||'bb');
-  const last=i>=n-1;
-  card.innerHTML='<div class="tf-k">'+(i+1)+' / '+n+'</div><div class="tour-h">'+esc(slide.title)+'</div><div class="tour-b">'+esc(slide.body)+'</div><div class="tour-foot"><button class="tour-skip" onclick="tfEnd()">Skip</button><div><button class="tour-next" onclick="tfSkipSlide()">'+(last?'Done':'Next')+'</button></div></div>';
-}
-function tfPaintScene(name){
-  const set=document.getElementById('tfSet');if(!set)return;
-  set.innerHTML=tfScene(name);
-}
-function tfSkipSlide(){_tfSkip=true;}
-let _tfSkip=false;
-function tfWaitTap(name,ms){
-  return new Promise(function(res){
-    const el=tfMark(name);
-    let done=false;
-    const fin=function(){if(done)return;done=true;if(el)el.removeEventListener('click',on);res();};
-    const on=function(){fin();};
-    if(el)el.addEventListener('click',on);
-    setTimeout(fin,ms||8000);
-  });
-}
-async function tfSlide(slide,i,n,tok){
-  _tfSkip=false;
-  tfPaintCard(slide,i,n);
-  tfPaintScene(slide.scene);
-  await tourWait(120);
-  if(tok!==_tfTok)return;
-  tfRingTo((slide.cues[0]&&slide.cues[0].stage)||null);
-  for(let c=0;c<slide.cues.length;c++){
-    if(tok!==_tfTok)return;
-    if(_tfSkip){_tfSkip=false;try{tourAudioStop();}catch(e){}return;}
-    const cue=slide.cues[c];
-    if(cue.scene)tfPaintScene(cue.scene);
-    if(cue.stage)tfRingTo(cue.stage);
-    if(cue.point)tfOrbTo(cue.point,cue.gest||'');
-    const audioP=cue.f?tourPlayFile(cue.f):Promise.resolve();
-    if(cue.wait)await tfWaitTap(cue.wait,8000);
-    await audioP;
-  }
-}
-async function startTourFilm(){
-  _tfTok++;const tok=_tfTok;_tfIdx=0;_tfSkip=false;
-  tfMount();
-  for(let i=0;i<TOUR_FILM.length;i++){
-    if(tok!==_tfTok)return;
-    _tfIdx=i;
-    await tfSlide(TOUR_FILM[i],i,TOUR_FILM.length,tok);
-  }
-  if(tok===_tfTok)tfEnd();
-}
 function startTeamTour(){
+  if(!walkAllowed())return;
   window._tourQuiet=true;
   try{toast('Starting the walk');}catch(e){}
   try{tourUnlockAudio();tourPrefetch();}catch(e){}
@@ -9200,7 +9074,7 @@ function startTeamTour(){
   try{sessionStorage.setItem('plumbTourOffered','1');}catch(e){}
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
-  try{startTourFilm();}catch(e){try{startTour('team');}catch(err){}}
+  try{startTour('team');}catch(e){}
   setTimeout(function(){
     try{
       const all=window.__tourTrace||[];
@@ -9266,6 +9140,7 @@ function loadTourCues(){
   }).catch(function(){return null;});
 }
 function openTourStudio(){
+  if(!walkAllowed())return;
   try{closeSettings();}catch(e){}
   Promise.resolve(loadTourCues()).then(function(){
     renderTourStudio();

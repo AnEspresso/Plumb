@@ -1,8 +1,10 @@
 # Pinned: last live walk (2.293.0)
 
-**What this is.** The last walk that toured the *real* demo UI — measure live cards, open Field Notes, close the house sheet, underline pills. Shipped as **2.293.0**. Zip: `/publish/Plumb-2.293.0.zip`. Branch to restore: run that zip or `startTour('team')` from Walkthrough studio → **Old live walk**. **2.294+** left this path on purpose.
+**Paused 18 Aug 2026 until Grok 4.7.** Peter rejected the 2.294 locked stage (too small, not the real app). Do **not** work the walk until then. Resume on the **live UI** using this file + `/publish/Plumb-2.293.0.zip`. 2.295 removed the locked stage.
 
-**Why we pinned it.** Peter called the live walk a mess after ~20 micro-ships. We stopped patching the gold box on a moving layout and built a locked stage (2.294). This file is how to come back to the live walk without guessing.
+**What this is.** The last walk that toured the *real* demo UI — measure live cards, open Field Notes, close the house sheet, underline pills. Shipped as **2.293.0**. Zip: `/publish/Plumb-2.293.0.zip`. How SitePlumb works calls `startTour('team')` again (2.295).
+
+**Why we pinned it.** Peter called the live walk a mess after ~20 micro-ships. A locked mini-stage (2.294) was the wrong bet. This file is how to come back without guessing.
 
 ---
 

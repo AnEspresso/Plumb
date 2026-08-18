@@ -1,6 +1,6 @@
-**v2.294.0 is live.** Locked-stage walk. Last live-UI walk pinned at 2.293 — see WALK-LIVE-2.293.md and the banner. Studio → Old live walk still runs it.
+**v2.296.0 is live.** Public marketing version bar hidden (`/?lab=1` for zips). New builder: company → first house → add another. Walks QA-only. 2.293 live walk still pinned.
 
-# SitePlumb — handoff (current build v2.294.0)
+# SitePlumb — handoff (current build v2.296.0)
 
 
 Paste this file into a new chat, attach the artifacts alongside it, and work continues without re-explaining anything.

@@ -788,13 +788,15 @@ $('enterDemo()');
 t('excursion runs in demo with banner + builder session', $("appMode()")==='demo'&&$("document.body.classList.contains('on-excursion')")===true&&$("state.session.role")==='hillan'&&$("(state.projects||[]).length")>0);
 $('exitDemo()');$('exitDemoToApp()');
 t('exit lands home: real mode, banner gone, suspend cleared', $("appMode()")==='real'&&$("document.body.classList.contains('on-excursion')")===false&&$("localStorage.getItem('plumbSuspend')")===null);
-// welcome fork fires only for empty live builder accounts, once
-$("localStorage.removeItem('plumbWelcomed')");
+// first-run onboard: company, then first house — not the old welcome walk fork
+$("localStorage.removeItem('plumb.startDone')");
 $("state.session={role:'hillan',name:'Real Me'};state.projects=[];");
-$('maybeWelcome()');
-t('welcome fork shows for a fresh live builder', $("document.getElementById('welcomeScrim').classList.contains('show')")===true);
-$('welcomeDone()');$('maybeWelcome()');
-t('welcome respects the once flag', $("document.getElementById('welcomeScrim').classList.contains('show')")===false);
+$('openOnboard()');
+t('welcome fork shows for a fresh live builder', $("document.getElementById('startScrim').classList.contains('show')")===true&&($("document.getElementById('obCompany')")!==null));
+$("document.getElementById('obCompany').value='Hilltop Homes'");
+$('onboardCompanyNext()');
+t('welcome respects the once flag', $("document.getElementById('startScrim').classList.contains('show')")===false&&$("document.getElementById('newSiteScrim').classList.contains('show')")===true);
+$('closeNewSite()');
 // grand tour: every step navigates, spotlights a real element, and narrates
 $('enterDemo()');$("startTour('grand')");
 await new Promise(r=>setTimeout(r,1650));
@@ -1097,6 +1099,8 @@ t('visual pass clay is not a label', SRC.indexOf('.tag.ho')>=0&&SRC.indexOf('.pk
 t('desk file-to after send', SRC.indexOf('function openFileTo')>=0&&SRC.indexOf('fileToScrim')>=0&&SRC.indexOf('saveFileTo')>=0);
 t('sub hat is not overwritten', SRC.indexOf("have==='sub'")>=0&&SRC.indexOf('function applyLiveRole')>=0);
 t('new walkthrough is five spots', SRC.indexOf("Glad you")>=0&&SRC.indexOf('teamLegacy:[')>=0&&SRC.indexOf('function startTeamTour')>=0&&SRC.indexOf('function tourPlayCues')>=0);
+t('walk is QA-only', SRC.indexOf('function walkAllowed')>=0&&SRC.indexOf('if(!walkAllowed())return')>=0);
+t('onboard is company then houses', SRC.indexOf('function openOnboard')>=0&&SRC.indexOf('function afterHouseAdded')>=0&&SRC.indexOf('Add another house')>=0);
 t('walkthrough has spoken scripts', SRC.indexOf("f:'s1a'")>=0&&SRC.indexOf('function tourWarmVoice')>=0&&SRC.indexOf('function tourChunks')>=0);
 t('walkthrough motion on demo', SRC.indexOf('function tourDemoHouse')>=0&&SRC.indexOf('data-door="field"')>=0&&SRC.indexOf('data-sort=')>=0);
 t('baked walkthrough voice', SRC.indexOf('tour-audio/s2a')>=0||SRC.indexOf("f:'s2a'")>=0);
