@@ -1101,6 +1101,8 @@ t('sub hat is not overwritten', SRC.indexOf("have==='sub'")>=0&&SRC.indexOf('fun
 t('new walkthrough is five spots', SRC.indexOf("Glad you")>=0&&SRC.indexOf('teamLegacy:[')>=0&&SRC.indexOf('function startTeamTour')>=0&&SRC.indexOf('function tourPlayCues')>=0);
 t('walk is QA-only', SRC.indexOf('function walkAllowed')>=0&&SRC.indexOf('if(!walkAllowed())return')>=0);
 t('onboard is company then houses', SRC.indexOf('function openOnboard')>=0&&SRC.indexOf('function afterHouseAdded')>=0&&SRC.indexOf('Add another house')>=0);
+t('McCarver lookup is HVAC not excav', $("guessTrade('McCarver Mechanical Heating & Cooling')")==='hvac');
+t('website lookup reads the site', SRC.indexOf('function parseSiteFacts')>=0&&SRC.indexOf('function guessTrade')>=0&&SRC.indexOf('function applySiteUrl')>=0);
 t('walkthrough has spoken scripts', SRC.indexOf("f:'s1a'")>=0&&SRC.indexOf('function tourWarmVoice')>=0&&SRC.indexOf('function tourChunks')>=0);
 t('walkthrough motion on demo', SRC.indexOf('function tourDemoHouse')>=0&&SRC.indexOf('data-door="field"')>=0&&SRC.indexOf('data-sort=')>=0);
 t('baked walkthrough voice', SRC.indexOf('tour-audio/s2a')>=0||SRC.indexOf("f:'s2a'")>=0);

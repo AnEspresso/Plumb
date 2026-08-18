@@ -1,6 +1,6 @@
-**v2.296.0 is live.** Public marketing version bar hidden (`/?lab=1` for zips). New builder: company → first house → add another. Walks QA-only. 2.293 live walk still pinned.
+**v2.297.0 is live.** Website lookup fills only what it can prove (McCarver → HVAC + phone, not Excavation). **The Book Walk** is the full public QA. 2.296 was early access.
 
-# SitePlumb — handoff (current build v2.296.0)
+# SitePlumb — handoff (current build v2.297.0)
 
 
 Paste this file into a new chat, attach the artifacts alongside it, and work continues without re-explaining anything.
