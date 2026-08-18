@@ -164,7 +164,7 @@ async function tappable(page,sel){
   await page.evaluate(()=>closeLegalDoc());
   t('Done returns to the demo intact', await page.evaluate(()=>document.body.classList.contains('on-excursion')&&!document.getElementById('legalDocScrim').classList.contains('show')));
 
-  const cards=await page.evaluate(()=>{try{demoRole('hillan');}catch(e){}return document.querySelectorAll('#ovCards .ov-card').length;});
+  const cards=await page.evaluate(()=>{try{demoRole('builder');}catch(e){}return document.querySelectorAll('#ovCards .ov-card').length;});
   t('overview renders all ten site cards',cards===10,cards);
   await shot(page,'04-overview');
 
@@ -174,23 +174,23 @@ async function tappable(page,sel){
   await page.evaluate(()=>demoRole('client'));
   t('homeowner chip stays on Orchard Row', await page.evaluate(()=>state.session.site)==='p9');
   await shot(page,'05-homeowner-p9');
-  await page.evaluate(()=>{demoRole('hillan');state.activeId='p2';demoRole('subs');});
+  await page.evaluate(()=>{demoRole('builder');state.activeId='p2';demoRole('subs');});
   t('sub chip on Calderwood is still Clearwater', await page.evaluate(()=>state.session.name)==='Clearwater Plumbing');
-  await page.evaluate(()=>demoRole('hillan'));
+  await page.evaluate(()=>demoRole('builder'));
 
   await page.reload({waitUntil:'load'});
   await new Promise(r=>setTimeout(r,1600));
   t('reload mid-demo resumes the demo', await page.evaluate(()=>document.body.classList.contains('on-excursion')&&appMode()==='demo'));
   t('resume does not re-ask the tour', await page.evaluate(()=>!document.getElementById('demoIntroScrim').classList.contains('show')));
 
-  await page.evaluate(()=>{demoRole('hillan');openSiteFromOverview('p8');});
+  await page.evaluate(()=>{demoRole('builder');openSiteFromOverview('p8');});
   await new Promise(r=>setTimeout(r,300));
   await page.evaluate(()=>openBudget());
   await new Promise(r=>setTimeout(r,300));
   t('Beaumont Park budget shows the amber overrun', await page.evaluate(()=>document.getElementById('budgetBody').innerHTML.includes('5,200 over')));
   await shot(page,'07-p8-budget');
   await page.evaluate(()=>closeBudget());
-  await page.evaluate(()=>{demoRole('hillan');openSiteFromOverview('p8');openBudget();openJobCost();});
+  await page.evaluate(()=>{demoRole('builder');openSiteFromOverview('p8');openBudget();openJobCost();});
   await new Promise(r=>setTimeout(r,300));
   await shot(page,'08-job-cost-report');
   await page.evaluate(()=>{closeJobCost();closeBudget();});
@@ -256,7 +256,7 @@ async function tappable(page,sel){
   await shot(guest,'13-guest-question');
 
   /* ══ ACCESSIBILITY (axe-core): no critical violations allowed ══ */
-  await page.evaluate(()=>{try{demoRole('hillan');showOverview();}catch(e){}});
+  await page.evaluate(()=>{try{demoRole('builder');showOverview();}catch(e){}});
   await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
   const axeOut=await page.evaluate(async()=>{const r=await axe.run(document,{resultTypes:['violations']});
     return r.violations.map(v=>({id:v.id,impact:v.impact,n:v.nodes.length}));});
@@ -269,7 +269,7 @@ async function tappable(page,sel){
   const desk=await prepPage(browser,{mobile:false});
   await desk.goto('http://localhost:'+PORT+'/index.html?demo=1',{waitUntil:'load'});
   await new Promise(r=>setTimeout(r,1600));
-  await desk.evaluate(()=>{try{demoIntroExplore();}catch(e){}demoRole('hillan');state.activeId='p2';openSiteFromOverview('p2');openBudget();});
+  await desk.evaluate(()=>{try{demoIntroExplore();}catch(e){}demoRole('builder');state.activeId='p2';openSiteFromOverview('p2');openBudget();});
   await new Promise(r=>setTimeout(r,300));
   t('desktop budget renders the wide table', await desk.evaluate(()=>isWideBudget()===true&&document.getElementById('budgetBody').innerHTML.includes('bgt-table')));
   await shot(desk,'10-desktop-budget');

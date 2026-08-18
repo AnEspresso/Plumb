@@ -50,7 +50,7 @@ w.$eval("window._simClearChips=function(){['#areaChips','#recAreaChips'].forEach
 const D=w.document;
 const el=id=>D.getElementById(id);
 const setVal=(id,v)=>{const e=el(id);if(!e)throw new Error('no element #'+id);e.value=v;};
-const asBuilder=()=>{$("state.session={role:'hillan',name:'You'}");};
+const asBuilder=()=>{$("state.session={role:'builder',name:'You'}");};
 const asSub=n=>{$("state.session={role:'subs',name:'"+n+"'}");$("subSel=null");};
 const asClient=pid=>{$("state.session={role:'client',site:'"+pid+"'}");};
 const clientHTML=(pid,tab)=>{asClient(pid);$("clientTab='"+(tab||'home')+"'");$('renderClient()');return el('clBody').innerHTML;};
@@ -119,7 +119,7 @@ t('siteRoleFor: falls back to session subs->sub',
 t('siteRoleFor: falls back to session client->client',
   $("state.session={role:'client'};siteRoleFor(null)") === 'client');
 t('siteRoleFor: builder session -> builder',
-  $("state.session={role:'hillan'};siteRoleFor({})") === 'builder');
+  $("state.session={role:'builder'};siteRoleFor({})") === 'builder');
 $("state.session=null");
 
 /* ════ 1b2 · IN-APP PASSWORD RESET SURFACE ════ */
@@ -144,7 +144,7 @@ $("window.__g={gets:0,attached:[],errCbs:{}};"
  +"Sync._gateDelays=[0,15,30];Sync._reArmDelay=40;"
  +"window.__mkdb=denies=>({collection:()=>({doc:()=>({get:()=>{__g.gets++;return (__g.gets>denies)?Promise.resolve({exists:true}):Promise.reject({code:'permission-denied'});},"
  +"collection:sub=>({onSnapshot:(h,e)=>{__g.attached.push(sub);__g.errCbs[sub]=e;return ()=>{};}})})})});"
- +"state.session={role:'hillan',auth:{uid:'uGate'}};true");
+ +"state.session={role:'builder',auth:{uid:'uGate'}};true");
 // (1) gate defers: denied twice, lands on third try
 $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(2);Sync._subSite('gateA');true");
 t('no listeners attach synchronously', $("__g.attached.length")===0);
@@ -783,14 +783,14 @@ t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='functio
 // excursion from a live session: flip out, come home with session + activeId intact
 asBuilder();
 $("localStorage.setItem('plumb.mode','real')");
-$("state.session={role:'hillan',name:'Real Me',auth:{uid:'uTest'}};state.activeId=null;persist&&persist()");
+$("state.session={role:'builder',name:'Real Me',auth:{uid:'uTest'}};state.activeId=null;persist&&persist()");
 $('enterDemo()');
-t('excursion runs in demo with banner + builder session', $("appMode()")==='demo'&&$("document.body.classList.contains('on-excursion')")===true&&$("state.session.role")==='hillan'&&$("(state.projects||[]).length")>0);
+t('excursion runs in demo with banner + builder session', $("appMode()")==='demo'&&$("document.body.classList.contains('on-excursion')")===true&&$("state.session.role")==='builder'&&$("(state.projects||[]).length")>0);
 $('exitDemo()');$('exitDemoToApp()');
 t('exit lands home: real mode, banner gone, suspend cleared', $("appMode()")==='real'&&$("document.body.classList.contains('on-excursion')")===false&&$("localStorage.getItem('plumbSuspend')")===null);
 // first-run onboard: company, then first house — not the old welcome walk fork
 $("localStorage.removeItem('plumb.startDone')");
-$("state.session={role:'hillan',name:'Real Me'};state.projects=[];");
+$("state.session={role:'builder',name:'Real Me'};state.projects=[];");
 $('openOnboard()');
 t('welcome fork shows for a fresh live builder', $("document.getElementById('startScrim').classList.contains('show')")===true&&($("document.getElementById('obCompany')")!==null));
 $("document.getElementById('obCompany').value='Hilltop Homes'");
@@ -819,7 +819,7 @@ const landmarks=[
   ()=>$("state.session.role")==='subs'&&$("document.getElementById('subview').classList.contains('show')")===true,
   ()=>$("state.session.role")==='client'&&$("document.getElementById('clientview').classList.contains('show')")===true&&L_OV()===false,
   ()=>$("state.session.role")==='client'&&$("document.getElementById('clientview').classList.contains('show')")===true,
-  ()=>$("state.session.role")==='hillan'&&L_OV()===true,
+  ()=>$("state.session.role")==='builder'&&L_OV()===true,
 ];
 
 
@@ -866,8 +866,8 @@ $("demoRole('client')");
 t('Homeowner chip: client view full, overview hidden, chip lit', $("state.session.role")==='client'&&$("document.getElementById('clientview').classList.contains('show')")===true&&$("document.getElementById('overview').classList.contains('show')")===false&&$("document.querySelector('.exc-roles button[data-r=client]').classList.contains('on')")===true);
 $("demoRole('subs')");
 t('Sub chip swaps cleanly', $("state.session.role")==='subs'&&$("document.getElementById('subview').classList.contains('show')")===true&&$("document.getElementById('clientview').classList.contains('show')")===false);
-$("demoRole('hillan')");
-t('Builder chip returns home', $("state.session.role")==='hillan'&&$("document.getElementById('overview').classList.contains('show')")===true);
+$("demoRole('builder')");
+t('Builder chip returns home', $("state.session.role")==='builder'&&$("document.getElementById('overview').classList.contains('show')")===true);
 $('exitDemo()');$('exitDemoToApp()');
 // voice layer: guarded everywhere, mute round-trips
 t('speech guarded in jsdom (no speechSynthesis)', await $("Promise.resolve().then(()=>{tourSpeak('hello');return true;})")===true);
@@ -1297,7 +1297,7 @@ t('and shows the once-signed-in note instead', el('legalBody').innerHTML.indexOf
 $('closeLegal()');
 // a genuine device-only account in a live session DOES get the row
 $("localStorage.setItem('plumb.liveAuth',JSON.stringify({provider:'local',email:'d@x.test',name:'D'}))");
-$("state.session={role:'hillan',name:'D',mode:'real'}");
+$("state.session={role:'builder',name:'D',mode:'real'}");
 $('openLegal()');
 t('local-provider account in a live session gets the erase row', el('legalBody').innerHTML.indexOf('Erase this device-only account')>=0);
 $('closeLegal()');
@@ -1326,7 +1326,7 @@ t('migration is a no-op when nothing is left', $('_migrateRealStore()')===false)
 // orphan guard: an account session with no saved profile signs out at boot
 $("localStorage.removeItem('plumb.liveAuth')");
 $("window.__snapS2=JSON.stringify(state.session)");
-$("state.session={role:'hillan',mode:'real',auth:{uid:'ghost'}}");
+$("state.session={role:'builder',mode:'real',auth:{uid:'ghost'}}");
 t('orphan account session cleared at boot', $('_orphanSessionGuard()')===true&&$('state.session')===null);
 $("state.session=JSON.parse(window.__snapS2);delete window.__snapS2");
 t('a healthy session is left alone', $('_orphanSessionGuard()')===false&&$('state.session')!==null);
@@ -1568,7 +1568,7 @@ $("sessionStorage.setItem('plumbInvBarOff','1')");
 t('a dismissed bar stays dismissed for the session', $('maybeInviteBar()')===false);
 $("sessionStorage.removeItem('plumbInvBarOff')");
 $("window.__snapSes=JSON.stringify(state.session)");
-$("state.session={role:'hillan',mode:'real'}");
+$("state.session={role:'builder',mode:'real'}");
 t('no handoff is offered to someone already inside', $('maybeInviteBar()')===false);
 $("state.session=JSON.parse(window.__snapSes);delete window.__snapSes");
 $("localStorage.removeItem('plumbPendingInvite')");

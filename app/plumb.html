@@ -1832,7 +1832,7 @@ body.on-tour .tour-card{display:block;}
         <div class="lh">Sign in</div>
         <div class="ls">Choose how you're joining the site today.</div>
         <div class="role-seg">
-          <button id="role-hillan" class="on" onclick="setRole('hillan')">
+          <button id="role-builder" class="on" onclick="setRole('builder')">
             <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg>
             Builder
           </button>
@@ -2433,7 +2433,7 @@ body.on-tour .tour-card{display:block;}
   <div class="exc-banner" id="excBanner">
     <span class="exc-lbl">Example build</span>
     <span class="exc-roles">
-      <button data-r="hillan" onclick="demoRole('hillan')">Builder</button><button data-r="client" onclick="demoRole('client')">Homeowner</button><button data-r="subs" onclick="demoRole('subs')">Sub</button>
+      <button data-r="builder" onclick="demoRole('builder')">Builder</button><button data-r="client" onclick="demoRole('client')">Homeowner</button><button data-r="subs" onclick="demoRole('subs')">Sub</button>
     </span>
     <button class="exc-exit" onclick="exitDemo()">Exit demo</button>
   </div>
@@ -3087,13 +3087,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.298.0 - Needs You sees leaks. Money is one sheet.';
+const PLUMB_VERSION='2.299.0 - Builder role, no old company names.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
-const APP_VERSION=1787071063617;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.298.0';     /* keep in sync with sw.js CACHE on each deploy */
+function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
+
+const APP_VERSION=1787072379264;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.299.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4193,7 +4195,7 @@ function idbGetDoc(k){return new Promise((res,rej)=>{if(!db)return res(undefined
 function idbDelDoc(k){return new Promise((res)=>{if(!db)return res();const t=db.transaction('docs','readwrite');t.objectStore('docs').delete(k);t.oncomplete=res;t.onerror=res;});}
 
 /* ════════ persistence (metadata) ════════ */
-function persist(){try{localStorage.setItem(storeKey(),JSON.stringify(state));if(typeof queueSync==='function')queueSync();}catch(e){toast('Storage full — try fewer photos');}try{pkPublishSoon();}catch(e){}}
+function persist(){try{if(state.session)state.session.role=normRole(state.session.role);}catch(e){}try{localStorage.setItem(storeKey(),JSON.stringify(state));if(typeof queueSync==='function')queueSync();}catch(e){toast('Storage full — try fewer photos');}try{pkPublishSoon();}catch(e){}}
 
 /* ════════════════════════════════════════════════════════════════════
    DATA ACCESS LAYER  (Phase 0 — the backend seam)
@@ -4253,7 +4255,7 @@ const Data = {
   updateSub(id,patch){ const s=P().subs.find(x=>x.id===id); if(s)Object.assign(s,patch); this.commit(); return s; },
   removeSub(id){ P().subs=P().subs.filter(x=>x.id!==id); this.commit(); },
   /* session (→ Firebase Auth later) */
-  setSession(sess){ state.session=sess; this.commit(); },
+  setSession(sess){ if(sess)sess.role=normRole(sess.role); state.session=sess; this.commit(); },
   /* app meta */
   addFeedback(fb){ state.feedback.unshift(fb); this.commit(); return fb; },
   updateFeedback(id,patch){ const f=state.feedback.find(x=>x.id===id); if(f)Object.assign(f,patch); this.commit(); return f; },
@@ -4274,6 +4276,7 @@ function load(){
     state=base;
   }
   else { state = appMode()==='real' ? emptyState() : sampleState(); }   // real mode starts empty — no samples
+  if(state.session)state.session.role=normRole(state.session.role);
   if(!state.projects)state.projects=[];
   if(!state.projects.length && appMode()!=='real') state=sampleState();
   // Refresh bundled demo data when it is newer than what is stored (demo mode only; never touches real-mode data).
@@ -4752,7 +4755,7 @@ const EMPLOYEES=[
   {name:'Theo Brandt',role:'Estimator'}
 ];
 function subRoster(){const set=new Set();state.projects.forEach(p=>p.subs.forEach(s=>set.add(s.name)));return [...set].sort();}
-let loginRole='hillan';
+let loginRole='builder';
 function setMode(m){
   m=(m==='real')?'real':'demo';
   try{localStorage.setItem('plumb.mode',m);}catch(e){}
@@ -4762,7 +4765,7 @@ function setMode(m){
   try{ Sync.disconnect(); if(fbConfig())Sync.init(); }catch(e){}
   updateLoginMode();
   try{laRenderState();}catch(e){}
-  if(m==='demo'){setRole('hillan');}
+  if(m==='demo'){setRole('builder');}
 }
 function updateLoginMode(){const real=appMode()==='real';
   const dc=document.getElementById('demoControls'),rc=document.getElementById('realControls');
@@ -4771,7 +4774,7 @@ function updateLoginMode(){const real=appMode()==='real';
   if(bd)bd.classList.toggle('on',!real);if(br)br.classList.toggle('on',real);
 }
 function realEnter(){
-  Data.setSession({role:'hillan',name:'Builder',since:Date.now(),mode:'real',owner:true});
+  Data.setSession({role:'builder',name:'Builder',since:Date.now(),mode:'real',owner:true});
   logEvent('login','real · builder');
   routeAfterLogin();
 }
@@ -4842,13 +4845,13 @@ async function laEnter(p){
   const auth={uid:p.uid||null,email:p.email,provider:p.provider};
   const m=p.member;
   if(m&&m.role==='team'){
-    Data.setSession({role:'hillan',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole,member:m});
+    Data.setSession({role:'builder',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole,member:m});
   }else if(m&&m.role==='client'){
     Data.setSession({role:'client',site:m.siteId,name:p.name||p.email,since:Date.now(),mode:'real',auth,member:m});
   }else if(m&&m.role==='sub'){
     Data.setSession({role:'subs',name:m.name||p.name||p.email,since:Date.now(),mode:'real',auth,member:m});
   }else{
-    Data.setSession({role:'hillan',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole});
+    Data.setSession({role:'builder',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole});
   }
   logEvent('login','real · '+p.provider+' · '+(m?m.role:(p.rpRole||'')));
   /* Deterministic rebind: a connection made before this login is bound to the
@@ -5253,7 +5256,7 @@ function closeDelAcct(){document.getElementById('delAcctScrim').classList.remove
    enforce the same boundary server-side. ── */
 function ensureMembership(p){
   const s=state.session||{};
-  if(appMode()!=='real'||s.role!=='hillan'||!s.auth||!s.auth.uid)return false;
+  if(appMode()!=='real'||s.role!=='builder'||!s.auth||!s.auth.uid)return false;
   p.members=p.members||{};p.memberInfo=p.memberInfo||{};
   const have=p.members[s.auth.uid];
   if(have==='sub'||have==='client')return false;
@@ -5304,7 +5307,7 @@ function backfillMemberships(){if(appMode()!=='real')return;let ch=false;(state.
    memberUids onto every live site once, so member-scoped reads/queries work. */
 async function stampMemberUids(){try{
   if(appMode()!=='real'||!Sync.ready())return;
-  const sess=state.session||{};if(sess.role!=='hillan')return;            // builders own membership writes
+  const sess=state.session||{};if(sess.role!=='builder')return;            // builders own membership writes
   const FLAG='plumb.uidstamp.v227.'+((sess.auth&&sess.auth.uid)||Sync.uid||'');if(localStorage.getItem(FLAG))return;
   let okAll=true;
   for(const p of (state.projects||[])){
@@ -5355,7 +5358,7 @@ const PPL_INV_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 function orgPrefs(){try{return JSON.parse(localStorage.getItem('plumb.orgPrefs')||'{}');}catch(e){return{};}}
 function saveOrgPrefs(o){
   try{const sx=state.session||{};
-    if(sx.role==='hillan'){const owner=sx.rpRole==='owner';
+    if(sx.role==='builder'){const owner=sx.rpRole==='owner';
       o._prov={by:sx.name||'',rpRole:sx.rpRole||'',at:Date.now(),approved:owner,approvedBy:owner?(sx.name||''):((o._prov&&o._prov.approved&&o._prov.approvedBy)||'')};
       if(!owner)o._prov.approved=false;}}catch(e){}
   try{localStorage.setItem('plumb.orgPrefs',JSON.stringify(o));}catch(e){}
@@ -5680,7 +5683,7 @@ function renderSettings(){
     dev:'<path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 5l-2 14"/>',
     out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>'};
   let rows='';
-  if(role==='hillan'){
+  if(role==='builder'){
     rows+='<div class="set-hd">Company</div>';
     rows+=SET_GEAR_ROW('Company','Calendar, roster, invoices, team, new job','closeSettings();openCompany()','<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>');
     if(appMode()==='real'){
@@ -5860,9 +5863,9 @@ teamLegacy:[
  {title:'You\u2019re set',body:'That\u2019s your whole view. When a builder invites you to a real job, this is exactly how it\u2019ll look.'}
 ],grand:[
  {title:'Welcome to SitePlumb',body:'Group texts, lost photos, and \u2018did anyone tell the plumber?\u2019 Building runs on scattered information. SitePlumb gathers it into one living record \u2014 the daily story, the schedule, your subs, your homeowner, the money. Let\u2019s walk one example home.',
-  acts:[{do:()=>demoRole('hillan')}]},
+  acts:[{do:()=>demoRole('builder')}]},
  {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the stage you\u2019re in, the percent complete, what\u2019s waiting on you, and who\u2019s next on site. The answer to \u2018how\u2019s it going?\u2019 \u2014 before anyone has to ask.',
-  acts:[{do:()=>demoRole('hillan')},{tap:'#ovCards .ov-card[onclick*="p2"]',do:()=>{openSiteFromOverview('p2');go('log');}}]},
+  acts:[{do:()=>demoRole('builder')},{tap:'#ovCards .ov-card[onclick*="p2"]',do:()=>{openSiteFromOverview('p2');go('log');}}]},
  {sel:'.site-field',bubSide:'tb',title:'Field Notes',body:'This is how you log a photo \u2014 same camera as home. A chip says what it is; file it to a trade later. The day still takes one line below.',
   acts:[{do:()=>tourGoto('log')}],
   task:{payoff:'You just kept the record \u2014 photo filed, day written. Do that once a day, and months later you can prove exactly what happened on site.',
@@ -6009,7 +6012,7 @@ teamLegacy:[
     const pk=document.querySelector('#svPacket');
     if(pk)await tourPing([pk],tok,1200,prev);}},
  {sel:'#ovCards',bubSide:'tb',title:'One honest record',body:'The Daily Log. The Install Packet. One record, live in every hand that touches the build. That\u2019s SitePlumb. Ready to set up your first site?',cta:'Set up my site',
-  acts:[{tap:'.exc-roles button[data-r=hillan]',do:()=>demoRole('hillan')}]}
+  acts:[{tap:'.exc-roles button[data-r=builder]',do:()=>demoRole('builder')}]}
 ],client:[
  {title:'Welcome home',body:'This is your view of the build \u2014 a calm picture of where things stand. Tap the highlights or use Next.',nav:()=>{try{clientGo('home');}catch(e){}}},
  {sel:'.cl-hero',title:'At a glance',body:'How far along, whether you\u2019re on track, and what\u2019s next on site \u2014 the answer to \u201chow\u2019s it going?\u201d without a single text.'},
@@ -6490,7 +6493,7 @@ async function createInvite(role,subId,opts){opts=opts||{};
 const _claimWatch={};
 function watchClaims(){
   if(!Sync.ready()||appMode()!=='real')return;
-  const s=state.session||{};if(s.role!=='hillan')return;
+  const s=state.session||{};if(s.role!=='builder')return;
   const watch=code=>{
     if(_claimWatch[code])return;_claimWatch[code]=true;
     const u=Sync.db.collection('invites').doc(code).collection('claims').onSnapshot(snap=>{
@@ -6541,10 +6544,10 @@ async function redeemInvite(code,prof){
     return {code,siteId:String(inv.siteId||''),role,trade:inv.trade||'',name:inv.name||'',setup:!!inv.setup};
   }catch(e){laErr('Couldn\u2019t redeem the invite: '+((e&&e.message)||'error'));return false;}
 }
-function setRole(r){loginRole=r;['hillan','subs','client'].forEach(x=>{const b=document.getElementById('role-'+x);if(b)b.classList.toggle('on',x===r);});populateLoginSelect();}
+function setRole(r){r=normRole(r);loginRole=r;['builder','subs','client'].forEach(x=>{const b=document.getElementById('role-'+x);if(b)b.classList.toggle('on',x===r);});populateLoginSelect();}
 function populateLoginSelect(){
   const sel=document.getElementById('loginSelect');
-  if(loginRole==='hillan'){sel.innerHTML='<option value="" disabled selected>Select employee…</option>'+EMPLOYEES.map(e=>`<option value="${esc(e.name)}">${esc(e.name)} · ${esc(e.role)}</option>`).join('');}
+  if(loginRole==='builder'){sel.innerHTML='<option value="" disabled selected>Select employee…</option>'+EMPLOYEES.map(e=>`<option value="${esc(e.name)}">${esc(e.name)} · ${esc(e.role)}</option>`).join('');}
   else if(loginRole==='client'){sel.innerHTML='<option value="" disabled selected>Select your home…</option>'+state.projects.map(p=>`<option value="${p.id}">${esc(p.street||p.name)}${p.city?' · '+esc(p.city):''}</option>`).join('');}
   else{const subs=subRoster();sel.innerHTML='<option value="" disabled selected>Select subcontractor…</option>'+subs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');}
 }
@@ -6566,7 +6569,7 @@ function routeAfterLogin(){document.getElementById('login').classList.add('hide'
 function logout(){Data.setSession(null);logEvent('logout','');setChrome(true);
   _keepScrollY.home=0;_keepScrollY.house=0;_keepScrollY.packet=0;_keepScrollY.site=0;_ovSort='attn';
   document.getElementById('overview').classList.remove('show');document.getElementById('subview').classList.remove('show');document.getElementById('clientview').classList.remove('show');
-  document.getElementById('login').classList.remove('hide');setRole('hillan');document.getElementById('loginSelect').selectedIndex=0;}
+  document.getElementById('login').classList.remove('hide');setRole('builder');document.getElementById('loginSelect').selectedIndex=0;}
 function showOverview(){_ovAnimateTs=Date.now();document.getElementById('overview').classList.add('show');document.getElementById('backBtn').classList.remove('show');renderOverview();applyScroll('home');}
 function backToOverview(){if(_navStack.length){navPop();return;}showOverview();}
 const _keepScrollY={home:0,house:0,packet:0,site:0};
@@ -7027,7 +7030,7 @@ function renderHouse(){
 }
 function houseHTML(p){
   const sess=state.session||{};
-  const isBuilder=sess.role==='hillan';
+  const isBuilder=sess.role==='builder';
   const isClient=sess.role==='client';
   const issues=_nyIssues([p]).filter(function(x){return String(x.pid)===String(p.id)&&!x.cross;});
   issues.sort(function(a,b){return (a.pri-b.pri)||((b.ts||0)-(a.ts||0));});
@@ -7253,7 +7256,7 @@ function renderOvCards(){
     </div>`;
   }).join('');
   const empty=(!projs.length)
-    ?((state.session&&state.session.role==='hillan')
+    ?((state.session&&state.session.role==='builder')
       ?`<div class="empty">No houses on the book yet.</div><button class="ov-newbtn" onclick="openNewSite()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add the first house</button>`
       :`<div class="empty">No sites assigned to you yet.</div>`)
     :(_ovSort==='attn'&&!list.length)
@@ -7436,7 +7439,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
                 persistLocalOnly();rerenderCurrent();toast('A site was removed from your access');}
               return;}
           }
-          else if(sess.role&&sess.role!=='hillan')return;                        // legacy live doc w/o members: builders only
+          else if(sess.role&&sess.role!=='builder')return;                        // legacy live doc w/o members: builders only
         }
         const meta=d.meta||d.data;
         if(meta&&d.updatedBy!==this.deviceId){
@@ -7607,8 +7610,8 @@ const Notify={
   /* who should hear it, given this session */
   _audMatch(aud,p){
     const sx=state.session||{};
-    if(aud==='builder')return sx.role==='hillan';
-    if(aud==='biller'){if(sx.role!=='hillan')return false;const set=billersOf(p);return set.length?set.includes(sx.name):true;}
+    if(aud==='builder')return sx.role==='builder';
+    if(aud==='biller'){if(sx.role!=='builder')return false;const set=billersOf(p);return set.length?set.includes(sx.name):true;}
     if(aud==='client')return sx.role==='client'&&String(sx.site||'')===String(p.id);
     if(aud.indexOf('sub:')===0)return sx.role==='subs'&&sx.name===aud.slice(4);
     if(aud.indexOf('trade:')===0){if(sx.role!=='subs')return false;
@@ -7663,7 +7666,7 @@ const Notify={
         if(d.days>2)return;
         const gaps=tradeSpecGaps(p,sb.specialty);if(!gaps.length)return;
         const body=gaps.length+' answer'+(gaps.length===1?'':'s')+' still missing · '+d.label.toLowerCase();
-        if(sx.role==='hillan')this.push('swB:'+p.id+':'+sb.id+':'+day,'Specs '+(d.overdue?'overdue':'due soon')+' — '+site,sb.name+' · '+body,{pid:p.id,view:'schedule'});
+        if(sx.role==='builder')this.push('swB:'+p.id+':'+sb.id+':'+day,'Specs '+(d.overdue?'overdue':'due soon')+' — '+site,sb.name+' · '+body,{pid:p.id,view:'schedule'});
         if(sx.role==='subs'&&sx.name===sb.name)this.push('swS:'+p.id+':'+sb.id+':'+day,'Your specs '+(d.overdue?'are overdue':'are due soon')+' — '+site,body,{pid:p.id,view:'schedule'});});
       (p.invoices||[]).forEach(i=>{if(invOverdue(i)&&this._audMatch('biller',p))this.push('inv:'+i.id+':overdue','Invoice overdue — '+site,i.no+' · '+invUsd(i.total)+' — past due '+i.due,{pid:p.id,view:'invoices',id:i.id});});
       if(sx.role==='client'&&String(sx.site||'')===String(p.id)){
@@ -7703,7 +7706,7 @@ function notifRoutable(n){
   if(!n||!n.nav||!n.nav.pid)return false;
   if(!(state.projects||[]).some(x=>String(x.id)===String(n.nav.pid)))return false;
   const sx=state.session||{};
-  if(sx.role==='hillan')return true;
+  if(sx.role==='builder')return true;
   if(sx.role==='client'&&String(sx.site||'')===String(n.nav.pid))return true;
   if(sx.role==='subs'&&subProjects().some(p=>String(p.id)===String(n.nav.pid)))return true;
   return false;                                        // unmatched audience / unknown role
@@ -7713,7 +7716,7 @@ function notifGo(i){
   closeInfo();
   if(!notifRoutable(n))return;
   const sx=state.session||{};
-  if(sx.role==='hillan'){
+  if(sx.role==='builder'){
     openSiteFromOverview(nav.pid);
     if(nav.view==='invoices')openInvoices();
     else if(nav.view){try{go(nav.view);}catch(e){}}
@@ -7803,7 +7806,7 @@ function openNotifyCenter(){
   else if(perm==='denied')permRow='<div class="pkt-banner warn"><b>Blocked.</b> Enable notifications for SitePlumb in your device settings, then come back.</div>';
   else permRow='<button class="b1 b-go" style="width:100%" onclick="Notify.enable().then(()=>openNotifyCenter())">Turn on notifications</button>';
   showInfo('Notifications',permRow
-    +(((state.session||{}).role==='hillan')?`<div class="subrow" style="cursor:pointer;margin-top:14px" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Billing alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span style="color:var(--ink-3);font-size:17px;padding-left:6px;flex:0 0 auto">›</span></div>`:'')
+    +(((state.session||{}).role==='builder')?`<div class="subrow" style="cursor:pointer;margin-top:14px" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Billing alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span style="color:var(--ink-3);font-size:17px;padding-left:6px;flex:0 0 auto">›</span></div>`:'')
     +'<div class="lbl" style="margin-top:14px">Recent</div>'
     +(noticeRecentHTML())
     +'<p style="margin:10px 0 0;color:var(--ink-3);font-size:12px">Heads-up while SitePlumb is open or in the background. Lock-screen push with the app fully closed needs the one-time server setup in the push guide.</p>');}
@@ -7818,7 +7821,7 @@ const Org={
   _at(){try{return +(localStorage.getItem('plumb.orgAt')||0);}catch(e){return 0;}},
   _setAt(t){try{localStorage.setItem('plumb.orgAt',String(t));}catch(e){}},
   touch(){this._setAt(Date.now());this.schedule();},
-  _isBuilder(){const sx=state.session||{};return appMode()==='real'&&sx.role==='hillan'&&Sync.ready();},
+  _isBuilder(){const sx=state.session||{};return appMode()==='real'&&sx.role==='builder'&&Sync.ready();},
   init(){
     if(appMode()!=='real'||!Sync.ready())return;
     this._tries=0;this._boot();},
@@ -8832,7 +8835,7 @@ function maybeInstallGate(){
 function igInstall(){try{if(deferredPrompt){deferredPrompt.prompt();}}catch(e){}}
 /* ── QuickBooks client plumbing (Live builders with cloud sync) ── */
 let _qbState=null;
-function qbEligible(){try{return appMode()==='real'&&Sync.ready()&&state.session&&state.session.role==='hillan';}catch(e){return false;}}
+function qbEligible(){try{return appMode()==='real'&&Sync.ready()&&state.session&&state.session.role==='builder';}catch(e){return false;}}
 async function qbRefreshStatus(){
   if(!qbEligible()){_qbState=null;qbRenderLine();return;}
   try{_qbState=await fnCall('qbStatus',{});}catch(e){_qbState=null;}
@@ -8896,7 +8899,7 @@ function enterDemo(opts){
      visit still persist for that visit; the next entry starts fresh. */
   state=sampleState();
   if(!opts.skipPersist)try{persist();}catch(e){}
-  Data.setSession({role:'hillan',name:'Demo Builder'});
+  Data.setSession({role:'builder',name:'Demo Builder'});
   state.activeId=state.activeId||((state.projects[0]||{}).id)||null;
   try{const p2=(state.projects||[]).find(p=>String(p.id)==='p2');
     if(p2){if(Array.isArray(p2.items))p2.items=p2.items.filter(it=>!it.tour);
@@ -8956,6 +8959,7 @@ function exitDemoToApp(){
   }
 }
 function demoRole(r){
+  r=normRole(r);
   try{closeBudget();}catch(e){}
   try{document.getElementById('infoScrim').classList.remove('show');}catch(e){}
   try{document.getElementById('overview').classList.remove('show');}catch(e){}
@@ -8971,11 +8975,11 @@ function demoRole(r){
     const roster=pr.subs||[];
     const pick=roster.find(x=>x.specialty==='plumb')||roster.find(x=>x.cleared)||roster[0]||{};
     Data.setSession({role:'subs',name:pick.name||'Clearwater Plumbing'});showSubView();try{openSubSite(sid);}catch(e){}}
-  else{Data.setSession({role:'hillan',name:'Demo Builder'});renderAll();showOverview();}
+  else{Data.setSession({role:'builder',name:'Demo Builder'});renderAll();showOverview();}
   excRoles();
 }
 function excRoles(){
-  try{const r=(state.session&&state.session.role)||'hillan';
+  try{const r=(state.session&&state.session.role)||'builder';
     document.querySelectorAll('.exc-roles button').forEach(b=>b.classList.toggle('on',b.dataset.r===r));}catch(e){}
 }
 /* Tour performances: real demo-data changes, idempotent, tagged 'tour' */
@@ -9003,7 +9007,7 @@ function maybeWelcome(){
     if(!walkAllowed())return;
     if(_authActionPending())return;
     if(appMode()!=='real'||!state.session)return;
-    if((state.session.role||'hillan')!=='hillan')return;
+    if((state.session.role||'builder')!=='builder')return;
     if((state.projects||[]).length)return;
     if(localStorage.getItem('plumbWelcomed'))return;
     const w=document.getElementById('welcomeScrim');
@@ -9026,7 +9030,7 @@ function welcomeDone(){try{localStorage.setItem('plumbWelcomed','1');}catch(e){}
 /* ── The grand tour rides the legacy spotlight engine as role 'grand'. ── */
 function tourGoto(view,seg){
   try{
-    demoRole('hillan');                       // builder hat, overview shown, modals closed
+    demoRole('builder');                       // builder hat, overview shown, modals closed
     openSiteFromOverview('p2');               // step into the example home
     if(view)go(view);
     if(seg==='schedule'||seg==='permits'||seg==='subs')buildSeg(seg,document.querySelector('[data-b='+seg+']'));
@@ -13252,7 +13256,7 @@ function packetHTML(p,tradeId){
   const availDocs=allDocs.filter(function(d){return !docInPacket(p,tradeId,d);});
   const openItems=(p.items||[]).filter(function(it){return it.crew===tl&&it.issue&&it.status==='open';});
   const team=Object.keys(p.members||{}).filter(function(uid){return p.members[uid]==='builder'&&p.memberInfo&&p.memberInfo[uid]&&p.memberInfo[uid].name;});
-  const sess=state.session||{};const isBuilder=sess.role==='hillan';const isClient=sess.role==='client';
+  const sess=state.session||{};const isBuilder=sess.role==='builder';const isClient=sess.role==='client';
   const sb=(sess.role==='subs'&&sess.name&&(p.subs||[]).find(function(x){return x.name===sess.name;}))||(p.subs||[]).find(function(x){return x.specialty===tradeId;});
   const due=dueState(sb&&sb.specsDue);
   _pktCtx={pid:p.id,trade:tradeId};
@@ -14032,7 +14036,7 @@ function _pkStamp(p,b,g){
     const next=JSON.stringify(r?{status:r.status,start:r.start||null,end:r.end||null,note:r.note||'',t:r.t||0}:null)+'|'+qOpen+'|'+JSON.stringify(qs);
     if(cur!==next){updateBooking(p,b.id,{pkResp:r?{status:r.status,start:r.start||null,end:r.end||null,note:r.note||'',t:r.t||0}:null,pkQOpen:qOpen,pkQs:qs,pkStamp:Date.now()});try{renderOvCards();}catch(e){}
       try{
-        if((state.session||{}).role==='hillan'&&typeof Notify!=='undefined'){
+        if((state.session||{}).role==='builder'&&typeof Notify!=='undefined'){
           const site=p.street||p.name||'site';const who=b.subName||'A sub';
           if(r&&r.status==='confirmed'&&(!b.pkResp||b.pkResp.status!=='confirmed'))
             Notify.push('pkok:'+b.id+':'+(r.t||Date.now()),who+' confirmed \u2014 '+site,'Dates work',{pid:p.id,view:'schedule'},'builder');
@@ -14867,7 +14871,7 @@ async function save(){
     Data.addItem(rec);logEvent('fieldNote','#'+rec.id+' · '+kind.n);
     try{renderFeed();}catch(e){}try{renderSiteSummary();}catch(e){}try{renderToday();renderOvCards();}catch(e){}
     closeSheet();toast(kind.issue?(kind.n+' logged — needs you'):(kind.n+' sent'));
-    if((state.session||{}).role==='hillan')setTimeout(function(){try{openFileTo(rec.id);}catch(e){}},380);
+    if((state.session||{}).role==='builder')setTimeout(function(){try{openFileTo(rec.id);}catch(e){}},380);
     return;
   }
   if(!cap&&!pendingPhotoId){closeSheet();return;}
@@ -15293,7 +15297,7 @@ async function devSelfTest(){
   updateHeader();
   renderAll();
   updateFabBadge();
-  setRole('hillan');
+  setRole('builder');
   try{if(!state.session&&appMode()!=='real'&&!localStorage.getItem('plumbSuspend'))setMode('real');}catch(e){}
   updateLoginMode();
   setChrome(true);
