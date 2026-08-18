@@ -905,6 +905,10 @@
   .ov-field::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 18% 0%, rgba(231,220,198,.1), transparent 46%),radial-gradient(130% 90% at 92% 8%, rgba(176,137,90,.22), transparent 52%);}
   .ov-field .cam{position:relative;width:136px;height:84px;display:block;}
   .ov-field:active{transform:scale(.975);}
+  .ov-people{display:block;width:100%;margin:0 0 14px;border:1.5px solid var(--line);background:var(--surface);color:inherit;border-radius:14px;padding:12px 14px;text-align:left;font:inherit;cursor:pointer;box-shadow:var(--shadow);}
+  .ov-people:active{transform:scale(.98);}
+  .ov-people .n{font-weight:650;font-size:14.5px;letter-spacing:.01em;}
+  .ov-people .d{color:var(--ink-3);font-size:12.5px;margin-top:3px;line-height:1.35;}
   #logPickScrim h4{color:var(--ink);letter-spacing:.06em;margin:0 0 8px;font-size:20px;}
   #logPickScrim .fn-tag{text-align:center;font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-weight:400;font-size:14.5px;line-height:1.35;color:#B0895A;margin:0 0 16px;}
   #logPickScrim .fn-ask{font-size:13px;font-weight:650;color:var(--ink);letter-spacing:.01em;margin:0 0 10px;text-align:left;}
@@ -3087,14 +3091,14 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.299.0 - Builder role, no old company names.';
+const PLUMB_VERSION='2.300.0 - First hour: invite after the house.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787072379264;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1787073482115;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.299.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
@@ -5485,9 +5489,15 @@ function afterHouseAdded(id,nBefore){
   renderAll();
   const p=(state.projects||[]).find(x=>String(x.id)===String(id));
   const label=(p&&(p.street||p.name))||'The house';
-  showInfo(label+' is on the book',`<p style="margin:0 0 12px;font-size:14px;line-height:1.5">${esc(label)} is on the same book.</p>
-    <button class="b1 b-go" style="width:100%" onclick="closeInfo();openNewSite()">Add another house</button>
-    <button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();showOverview()">Go to the book</button>`);
+  try{Data.setActive(id);}catch(e){}
+  const first=!nBefore;
+  const ho=p&&(p.invites||[]).some(function(i){return i.role==='client'&&i.status!=='revoked';});
+  let b='<p style="margin:0 0 12px;font-size:14px;line-height:1.5">'+esc(label)+(first?' is on the book. Invite the people who live here and the crews who will build it.':' is on the same book.')+'</p>';
+  if(!ho)b+='<button class="b1 b-go" style="width:100%" onclick="closeInfo();inviteHomeownerFor(\''+id+'\')">Invite the homeowner</button>';
+  b+='<button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();openSiteFromOverview(\''+id+'\');setTimeout(function(){try{openAddSub();}catch(e){}},80)">Add a crew</button>';
+  b+='<button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();openNewSite()">Add another house</button>';
+  b+='<button class="la-link" style="display:block;margin:12px auto 0;color:var(--ink-3)" onclick="closeInfo();showOverview()">Go to the book</button>';
+  showInfo(label+' is on the book',b);
   return true;
 }
 function openStart(){renderStart();document.getElementById('startScrim').classList.add('show');}
@@ -7092,6 +7102,21 @@ function renderToday(){
     if(soon.length>3)h+=`<button type="button" class="td-morebtn" onclick="event.stopPropagation();toggleSoon()">`+(_soonOpen?'Show less':('+'+(soon.length-3)+' more this week'))+`</button>`;
     h+='</div>';
   }
+  try{
+    const sx=state.session||{};
+    if(appMode()==='real'&&sx.role==='builder'){
+      const team=(typeof laTeamInvites==='function'?laTeamInvites():[]).some(function(i){return i.status!=='revoked';});
+      const ho=projs.some(function(p){return (p.invites||[]).some(function(i){return i.role==='client'&&i.status!=='revoked';});});
+      const crew=projs.some(function(p){return (p.subs||[]).length;});
+      if(!team||!ho||!crew){
+        const miss=[];
+        if(!team)miss.push('your team');
+        if(!ho)miss.push('the homeowner');
+        if(!crew)miss.push('a crew');
+        h+='<button type="button" class="ov-people" onclick="event.stopPropagation();openPeople()"><div class="n">Invite your people</div><div class="d">Still need '+esc(miss.join(', ').replace(/, ([^,]*)$/, ' and $1'))+'.</div></button>';
+      }
+    }
+  }catch(e){}
   el.innerHTML=h;if(keep){const n=document.getElementById('nyQText');if(n){n.value=keep.v;try{n.focus();n.selectionStart=n.selectionEnd=keep.s;}catch(e){}}}
 }
 let _ovMonth=null;
