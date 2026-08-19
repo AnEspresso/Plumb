@@ -3109,15 +3109,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.303.0 - After a sub hit, Save. People is three buttons. Second house stays short.';
+const PLUMB_VERSION='2.304.0 - Lock-screen test dings this phone.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787165400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.303.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787167800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.304.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -7762,15 +7762,37 @@ const Notify={
   vapid(){try{return localStorage.getItem('plumb.fcm.vapid')||PLUMB_VAPID||'';}catch(e){return PLUMB_VAPID||'';}},
   async captureToken(){
     try{
-      if(this.permission()!=='granted'||!this.vapid())return;
-      if(typeof firebase==='undefined'||!firebase.messaging||!Sync.ready())return;
-      const reg=await navigator.serviceWorker.getRegistration();if(!reg)return;
+      if(this.permission()!=='granted'||!this.vapid())return '';
+      if(typeof firebase==='undefined'||!firebase.messaging||!Sync.ready())return '';
+      let reg=null;
+      try{reg=await navigator.serviceWorker.ready;}catch(e){}
+      if(!reg){try{reg=await navigator.serviceWorker.getRegistration();}catch(e){}}
+      if(!reg)return '';
       const tok=await firebase.messaging().getToken({vapidKey:this.vapid(),serviceWorkerRegistration:reg});
-      if(!tok)return;
-      const uid=(state.session&&state.session.auth&&state.session.auth.uid)||Sync.uid;if(!uid)return;
-      await Sync.db.collection('users').doc(uid).set({fcm:{[tok]:Date.now()}},{merge:true});
+      if(!tok)return '';
+      this._tok=tok;this.listenForeground();
+      const uid=(state.session&&state.session.auth&&state.session.auth.uid)||Sync.uid;
+      if(uid){try{await Sync.db.collection('users').doc(uid).set({fcm:{[tok]:Date.now()}},{merge:true});}catch(e){}}
       console.log('[SitePlumb] FCM token registered');
-    }catch(e){console.warn('[SitePlumb] fcm token',e);}}
+      return tok;
+    }catch(e){console.warn('[SitePlumb] fcm token',e);return '';}},
+  listenForeground(){
+    if(this._fg)return;this._fg=true;
+    try{
+      firebase.messaging().onMessage(function(payload){
+        const n=(payload&&payload.notification)||{};
+        const d=(payload&&payload.data)||{};
+        const title=n.title||d.title||'SitePlumb';
+        const body=n.body||d.body||'';
+        try{Notify.push(d.key||('fg:'+Date.now()),title,body);}catch(e){}
+        try{
+          navigator.serviceWorker.getRegistration().then(function(r){
+            if(r&&r.showNotification)r.showNotification(title,{body:body,icon:'https://siteplumb.com/icon-192.png',badge:'https://siteplumb.com/icon-192.png',tag:d.key||'fg'});
+          });
+        }catch(e){}
+      });
+    }catch(e){}
+  },
 };
 /* Map a notice key to the screen that holds its subject, so a tap on the
    notice opens the right place. Builder routes through the site tabs; the
@@ -8984,10 +9006,21 @@ function pushRenderLine(){
     +' <button class="la-link" onclick="pushTest()">Send a test</button>';
 }
 async function pushTest(){
-  try{await Notify.captureToken();}catch(e){}
+  let tok='';
+  try{tok=await Notify.captureToken()||Notify._tok||'';}catch(e){}
   try{
-    const r=await fnCall('notifyTest',{});
-    toast((r&&r.sent)?'Test sent — check the lock screen':'No token yet — tap Turn on, then try again');
+    const reg=await navigator.serviceWorker.getRegistration();
+    if(reg&&reg.showNotification){
+      await reg.showNotification('SitePlumb test',{
+        body:'This phone can show notices. Lock it for the cloud one.',
+        icon:'https://siteplumb.com/icon-192.png',badge:'https://siteplumb.com/icon-192.png',tag:'test-local'
+      });
+    }
+  }catch(e){}
+  if(!tok){toast('No token yet — tap Turn on, then try again');return;}
+  try{
+    const r=await fnCall('notifyTest',{token:tok});
+    toast((r&&r.sent)?'Sent to this phone — lock it now':'Cloud did not accept this phone — try Turn on again');
   }catch(e){toast('Could not send a test');}
 }
 async function qbConnect(){

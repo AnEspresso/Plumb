@@ -51,14 +51,32 @@ async function tokensFor(db, uids) {
   return [...new Set(toks)];
 }
 
-async function sendPush(admin, tokens, notice) {
-  if (!tokens.length || !notice) return { sent: 0 };
-  const r = await admin.messaging().sendEachForMulticast({
+function pushMessage(tokens, notice) {
+  const title = String((notice && notice.title) || 'SitePlumb');
+  const body = String((notice && notice.body) || '');
+  const key = String((notice && notice.key) || '');
+  return {
     tokens,
-    notification: { title: notice.title, body: notice.body },
-    data: { title: notice.title, body: notice.body, key: notice.key || '' },
-  });
+    data: { title: title, body: body, key: key },
+    webpush: {
+      headers: { Urgency: 'high', TTL: '86400' },
+      notification: {
+        title: title,
+        body: body,
+        icon: 'https://siteplumb.com/icon-192.png',
+        badge: 'https://siteplumb.com/icon-192.png',
+        tag: key || 'plumb',
+        renotify: true,
+      },
+      fcmOptions: { link: 'https://siteplumb.com/app/' },
+    },
+  };
+}
+
+async function sendPush(admin, tokens, notice) {
+  if (!tokens.length || !notice) return { sent: 0, failed: 0 };
+  const r = await admin.messaging().sendEachForMulticast(pushMessage(tokens, notice));
   return { sent: r.successCount || 0, failed: r.failureCount || 0 };
 }
 
-module.exports = { builderUids, packetNotice, tokensFor, sendPush };
+module.exports = { builderUids, packetNotice, tokensFor, sendPush, pushMessage };

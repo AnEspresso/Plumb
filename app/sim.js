@@ -1107,6 +1107,9 @@ t('trade picker starts empty not excav', SRC.indexOf('function fillSubSpec')>=0&
 t('People invite is three buttons', SRC.indexOf("peopleMode==='invite'")>=0&&SRC.indexOf('function inviteHomeownerFlow')>=0&&SRC.indexOf('Three buttons. Code. Share. Done.')>=0);
 t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Go to the book')>=0);
 t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter')>=0&&SRC.split('function openNotifyCenter')[1].split('const Org=')[0].indexOf('Send a test')>=0&&SRC.indexOf('function pushTest')>=0);
+t('push test targets this phone', SRC.indexOf("fnCall('notifyTest',{token:tok})")>=0&&SRC.indexOf('listenForeground')>=0);
+t('Notify object is closed', SRC.split('listenForeground(){')[1].split('function navFor')[0].indexOf('};')>=0);
+t('push test refuses leftover tokens', SRC.indexOf("if(!tok){toast('No token yet")>=0);
 t('Needs You includes open field issues', SRC.indexOf('nyOpenItem')>=0&&SRC.indexOf('it.issue||it.status')>=0);
 t('Field Notes does not auto-open the camera', SRC.indexOf('function openFieldNote')>=0&&SRC.indexOf("openFieldNote();")>=0&&SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf('.click()')<0);
 t('Field Notes drop waits', SRC.indexOf('function dropPickPhoto')>=0&&SRC.indexOf('function _fnArmDrop')>=0&&SRC.indexOf('_fnSheetOrder(true)')>=0);

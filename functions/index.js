@@ -209,11 +209,23 @@ exports.onPacketReply = onDocumentWritten('packets/{token}', async (event) => {
 exports.notifyTest = onRequest(async (req, res) => {
   if (cors(req, res)) return;
   const user = await requireUser(req, res); if (!user) return;
-  const r = await deliver([user.uid], {
+  const b = body(req) || {};
+  const notice = {
     key: 'test:' + Date.now(),
     title: 'SitePlumb test',
-    body: 'Lock-screen push is on for this login.',
-  });
-  res.json({ result: { ok: true, sent: r.sent || 0 } });
+    body: 'Lock-screen push is on for this phone.',
+  };
+  let tokens = [];
+  if (b.token && String(b.token).length > 20) {
+    tokens = [String(b.token)];
+    try {
+      await db.collection('users').doc(user.uid).set({ fcm: { [tokens[0]]: Date.now() }, t: Date.now() }, { merge: true });
+    } catch (e) {}
+  } else {
+    res.json({ result: { ok: true, sent: 0, failed: 0, reason: 'no-token' } });
+    return;
+  }
+  const r = await push.sendPush(admin, tokens, notice);
+  res.json({ result: { ok: true, sent: r.sent || 0, failed: r.failed || 0 } });
 });
 

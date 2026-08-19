@@ -1,6 +1,6 @@
 /* Plumb service worker — caches the app shell for offline use.
    Bump CACHE when you ship a new build so clients update. */
-const CACHE = 'plumb-v2.303.0';
+const CACHE = 'plumb-v2.304.0';
 const SHELL = [
   './',
   'index.html',
@@ -108,9 +108,28 @@ try{
     const n=(payload&&payload.notification)||{};
     const d=(payload&&payload.data)||{};
     self.registration.showNotification(n.title||d.title||'SitePlumb',{
-      body:n.body||d.body||'',icon:'/icon-192.png',badge:'/icon-192.png',tag:d.key||undefined});
+      body:n.body||d.body||'',icon:'https://siteplumb.com/icon-192.png',badge:'https://siteplumb.com/icon-192.png',tag:d.key||undefined});
   });
 }catch(e){/* push SDK unavailable — caching unaffected */}
+
+self.addEventListener('push',function(event){
+  event.waitUntil((async function(){
+    let title='SitePlumb',body='',tag='plumb';
+    try{
+      const p=event.data?event.data.json():{};
+      const n=p.notification||{};
+      const d=p.data||{};
+      title=n.title||d.title||title;
+      body=n.body||d.body||body;
+      tag=d.key||n.tag||tag;
+    }catch(e){
+      try{body=(event.data&&event.data.text())||'';}catch(e2){}
+    }
+    return self.registration.showNotification(title,{
+      body:body,icon:'https://siteplumb.com/icon-192.png',badge:'https://siteplumb.com/icon-192.png',tag:tag,renotify:true
+    });
+  })());
+});
 
 /* Tapping a notification focuses an open Plumb window, or opens one. */
 self.addEventListener('notificationclick', e => {
