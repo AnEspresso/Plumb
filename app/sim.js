@@ -1110,6 +1110,7 @@ t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter'
 t('push test targets this phone', SRC.indexOf("fnCall('notifyTest',{token:tok})")>=0&&SRC.indexOf('listenForeground')>=0);
 t('Notify object is closed', SRC.split('listenForeground(){')[1].split('function navFor')[0].indexOf('};')>=0);
 t('push test refuses leftover tokens', SRC.indexOf("if(!tok){toast('No token yet")>=0);
+t('push test is one cloud ding', SRC.split('async function pushTest')[1].split('async function qbConnect')[0].indexOf('showNotification')<0);
 t('Needs You includes open field issues', SRC.indexOf('nyOpenItem')>=0&&SRC.indexOf('it.issue||it.status')>=0);
 t('Field Notes does not auto-open the camera', SRC.indexOf('function openFieldNote')>=0&&SRC.indexOf("openFieldNote();")>=0&&SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf('.click()')<0);
 t('Field Notes drop waits', SRC.indexOf('function dropPickPhoto')>=0&&SRC.indexOf('function _fnArmDrop')>=0&&SRC.indexOf('_fnSheetOrder(true)')>=0);

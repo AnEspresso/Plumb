@@ -1,6 +1,6 @@
 /* Plumb service worker — caches the app shell for offline use.
    Bump CACHE when you ship a new build so clients update. */
-const CACHE = 'plumb-v2.304.0';
+const CACHE = 'plumb-v2.305.0';
 const SHELL = [
   './',
   'index.html',
@@ -91,8 +91,20 @@ self.addEventListener('fetch', e => {
 
 /* ── Step 8 layer 2: background push (FCM). Fully guarded — if the SDK can't
    load (offline install, no network) the cache logic above is unaffected.
-   Fires only once the server function is deployed and sending. Config mirrors
-   PLUMB_FIREBASE_CONFIG in plumb.html (public by design). ── */
+   Config mirrors PLUMB_FIREBASE_CONFIG in plumb.html (public by design).
+   One showNotification per tag per couple of seconds — iOS will otherwise
+   stack the OS auto-display and this handler as two lock-screen cards. ── */
+const ICON = 'https://siteplumb.com/icon-192.png';
+const _shown = new Map();
+function showOnce(title, opts){
+  const tag = String((opts && opts.tag) || title || 'plumb');
+  const now = Date.now();
+  const prev = _shown.get(tag) || 0;
+  if (now - prev < 2500) return Promise.resolve();
+  _shown.set(tag, now);
+  return self.registration.showNotification(title, opts);
+}
+
 try{
   importScripts('https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js',
                 'https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js');
@@ -106,27 +118,32 @@ try{
   });
   firebase.messaging().onBackgroundMessage(function(payload){
     const n=(payload&&payload.notification)||{};
+    if(n.title||n.body)return; /* OS already painted the notification payload */
     const d=(payload&&payload.data)||{};
-    self.registration.showNotification(n.title||d.title||'SitePlumb',{
-      body:n.body||d.body||'',icon:'https://siteplumb.com/icon-192.png',badge:'https://siteplumb.com/icon-192.png',tag:d.key||undefined});
+    return showOnce(d.title||'SitePlumb',{
+      body:d.body||'',icon:ICON,badge:ICON,tag:d.key||'plumb'});
   });
 }catch(e){/* push SDK unavailable — caching unaffected */}
 
 self.addEventListener('push',function(event){
   event.waitUntil((async function(){
-    let title='SitePlumb',body='',tag='plumb';
+    let title='SitePlumb',body='',tag='plumb',hasNote=false;
     try{
       const p=event.data?event.data.json():{};
       const n=p.notification||{};
       const d=p.data||{};
+      hasNote=!!(n.title||n.body);
       title=n.title||d.title||title;
       body=n.body||d.body||body;
       tag=d.key||n.tag||tag;
     }catch(e){
       try{body=(event.data&&event.data.text())||'';}catch(e2){}
     }
-    return self.registration.showNotification(title,{
-      body:body,icon:'https://siteplumb.com/icon-192.png',badge:'https://siteplumb.com/icon-192.png',tag:tag,renotify:true
+    /* Notification payloads are displayed by the OS. Showing again stacks two
+       lock-screen cards on iPhone. Data-only still needs us to paint. */
+    if(hasNote)return;
+    return showOnce(title,{
+      body:body,icon:ICON,badge:ICON,tag:tag,renotify:true
     });
   })());
 });

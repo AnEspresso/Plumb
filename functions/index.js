@@ -211,7 +211,7 @@ exports.notifyTest = onRequest(async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
   const b = body(req) || {};
   const notice = {
-    key: 'test:' + Date.now(),
+    key: 'plumb-test',
     title: 'SitePlumb test',
     body: 'Lock-screen push is on for this phone.',
   };

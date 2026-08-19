@@ -3109,15 +3109,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.304.0 - Lock-screen test dings this phone.';
+const PLUMB_VERSION='2.305.0 - One lock-screen test, not two.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787167800000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.304.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787170500000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.305.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9008,15 +9008,6 @@ function pushRenderLine(){
 async function pushTest(){
   let tok='';
   try{tok=await Notify.captureToken()||Notify._tok||'';}catch(e){}
-  try{
-    const reg=await navigator.serviceWorker.getRegistration();
-    if(reg&&reg.showNotification){
-      await reg.showNotification('SitePlumb test',{
-        body:'This phone can show notices. Lock it for the cloud one.',
-        icon:'https://siteplumb.com/icon-192.png',badge:'https://siteplumb.com/icon-192.png',tag:'test-local'
-      });
-    }
-  }catch(e){}
   if(!tok){toast('No token yet — tap Turn on, then try again');return;}
   try{
     const r=await fnCall('notifyTest',{token:tok});
