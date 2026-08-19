@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<!--
+  ─────────────────────────────────────────────────────────────────────────
+  NAME IS A VARIABLE. Trademark clearance is still open, so every visible
+  instance of the product name is wrapped in <b class="wm">…</b> and every
+  domain reference sits in one place. To rename:
+      1. Find/replace  SitePlumb  ->  NewName      (only inside class="wm")
+      2. Find/replace  siteplumb.com  ->  newdomain.com
+      3. Swap the two <title> tags and og:site_name below
+  Nothing else encodes the name. No image contains it.
+  ─────────────────────────────────────────────────────────────────────────
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>
+/* An installed copy that still launches at the site root belongs in the app.
+   This runs before the stylesheet so the redirect happens before first paint -
+   a home-screen launch must never flash the sales page. */
+try{
+  var q=new URLSearchParams(location.search||'');
+  var mode=q.get('mode')||'';
+  var code=(q.get('oobCode')||'').trim();
+  if(code&&(mode==='resetPassword'||mode==='verifyEmail'||mode==='recoverEmail'||mode==='signIn'))
+    location.replace('/app/'+location.search+location.hash);
+  else if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true)
+    location.replace('/app/');
+}catch(e){}
+</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SitePlumb — the book for every house you run</title>
+<meta name="description" content="The book for every house you run. Needs You, Field Notes from the mud, live packets for crews, and a homeowner portal that ends the what-is-happening texts.">
+<link rel="canonical" href="https://siteplumb.com/pitch-a.html">
+<meta name="theme-color" content="#F2EEE6">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SitePlumb">
+<meta property="og:title" content="SitePlumb — the book for every house you run">
+<meta property="og:description" content="Needs You. Field Notes. Live packets. The homeowner already saw the photo.">
+<meta property="og:url" content="https://siteplumb.com/">
+<meta property="og:image" content="https://siteplumb.com/icon-512.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SitePlumb — the book for every house you run">
+<meta name="twitter:description" content="Built on a real custom home. Works with no signal.">
+<meta name="twitter:image" content="https://siteplumb.com/icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9,700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Hanken+Grotesk:wght@400..700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="/pitch-a.html">
+      <span class="dot"></span>
+      <b class="wm">SitePlumb</b>
+      <span class="tag">true to the build</span>
+    </a>
+    <a class="lnk hide-s" href="#book">The book</a>
+    <a class="lnk hide-s" href="#day">A day on site</a>
+    <a class="lnk hide-s" href="/homeowners.html">For homeowners</a>
+    <a class="lnk hide-s" href="/switch.html">Leaving CoConstruct</a>
+    <a class="btn sm" href="/app/">Start your book</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="grid-bg"></div>
+  <div class="wrap hero-in">
+    <div>
+      <p class="eyebrow">For custom home builders</p>
+      <h1>The job is in your head.<br>Put it in <em>the book</em>.</h1>
+      <p class="lede">
+        <span class="gold">Needs You</span> tells you who is waiting.
+        Field Notes files the photo before your phone is back in your pocket.
+        The homeowner already saw it. The crew already has the packet.
+      </p>
+      <div class="hero-cta">
+        <a class="btn" href="/app/?demo=1">Open the example build</a>
+        <a class="btn ghost" href="/app/">Start your book</a>
+      </div>
+      <p class="hero-note">No account to look around. On the phone in a minute. Works with no signal.</p>
+    </div>
+    <div class="hero-art">
+<!-- SIGNATURE: the house draws itself in build order as you scroll. -->
+      <svg id="house" viewBox="0 0 300 250" role="img" fill="none"
+           stroke="#1B1916" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+           aria-label="A line drawing of a two-story house with a covered porch assembling itself in build order.">
+        <!-- architect guide lines: part of the paper, not the build -->
+        <line class="guide" x1="150" y1="12" x2="150" y2="234" stroke="#B0895A" stroke-width="1" opacity=".28" stroke-dasharray="3 4"/>
+        <line class="guide" x1="22" y1="228" x2="278" y2="228" stroke="#B0895A" stroke-width="1" opacity=".28" stroke-dasharray="3 4"/>
+        <!-- stage 0: ground -->
+        <line class="ln" data-stage="0" x1="28" y1="228" x2="272" y2="228" stroke="#B0895A" stroke-width="2"/>
+        <!-- stage 1: foundation slab -->
+        <line class="ln" data-stage="1" x1="64" y1="223" x2="236" y2="223" stroke="#B0895A" stroke-width="2.4"/>
+        <!-- stage 2: framing - corners and floor band -->
+        <line class="ln" data-stage="2" x1="72" y1="228" x2="72" y2="92"/>
+        <line class="ln" data-stage="2" x1="228" y1="228" x2="228" y2="92"/>
+        <line class="ln" data-stage="2" x1="72" y1="146" x2="228" y2="146"/>
+        <!-- stage 3: roofs - main gable, chimney, seams, then the porch structure -->
+        <polyline class="ln" data-stage="3" points="60,96 150,30 240,96" stroke-width="2.2"/>
+        <polyline class="ln" data-stage="3" points="66,93 150,36 234,93" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="3" x1="66" y1="92" x2="234" y2="92"/>
+        <line class="ln" data-stage="3" x1="60" y1="96" x2="72" y2="92" stroke-width="1.1"/>
+        <line class="ln" data-stage="3" x1="240" y1="96" x2="228" y2="92" stroke-width="1.1"/>
+        <polyline class="ln" data-stage="3" points="198,40 198,62 208,66 208,40" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="3" x1="196" y1="40" x2="210" y2="40" stroke="#9A7544" stroke-width="1.4"/>
+        <line class="ln" data-stage="3" x1="96" y1="69" x2="86" y2="92" stroke="#7C6A4A" stroke-width=".8"/>
+        <line class="ln" data-stage="3" x1="116" y1="54" x2="108" y2="92" stroke="#7C6A4A" stroke-width=".8"/>
+        <line class="ln" data-stage="3" x1="184" y1="54" x2="192" y2="92" stroke="#7C6A4A" stroke-width=".8"/>
+        <line class="ln" data-stage="3" x1="204" y1="69" x2="214" y2="92" stroke="#7C6A4A" stroke-width=".8"/>
+        <line class="ln" data-stage="3" x1="72" y1="146" x2="54" y2="158" stroke-width="1.3"/>
+        <line class="ln" data-stage="3" x1="228" y1="146" x2="246" y2="158" stroke-width="1.3"/>
+        <line class="ln" data-stage="3" x1="54" y1="158" x2="246" y2="158" stroke-width="1.8"/>
+        <line class="ln" data-stage="3" x1="66" y1="162" x2="66" y2="224" stroke-width="1.5"/>
+        <line class="ln" data-stage="3" x1="118" y1="162" x2="118" y2="224" stroke-width="1.5"/>
+        <line class="ln" data-stage="3" x1="182" y1="162" x2="182" y2="224" stroke-width="1.5"/>
+        <line class="ln" data-stage="3" x1="234" y1="162" x2="234" y2="224" stroke-width="1.5"/>
+        <line class="ln" data-stage="3" x1="58" y1="224" x2="242" y2="224" stroke-width="1.4"/>
+        <line class="ln" data-stage="3" x1="50" y1="228" x2="250" y2="228" stroke="#9A7544" stroke-width="1.1"/>
+        <!-- stage 4: windows and doors - gable, second floor, entry, first floor -->
+        <rect class="ln" data-stage="4" x="140" y="56" width="20" height="32"/>
+        <rect class="ln" data-stage="4" x="136" y="52" width="28" height="40" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="136" y1="90" x2="164" y2="90" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="150" y1="56" x2="150" y2="88" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="140" y1="72" x2="160" y2="72" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="90" y="106" width="28" height="30"/>
+        <rect class="ln" data-stage="4" x="86" y="102" width="36" height="38" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="86" y1="138" x2="122" y2="138" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="104" y1="106" x2="104" y2="136" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="90" y1="121" x2="118" y2="121" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="182" y="106" width="28" height="30"/>
+        <rect class="ln" data-stage="4" x="178" y="102" width="36" height="38" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="178" y1="138" x2="214" y2="138" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="196" y1="106" x2="196" y2="136" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="182" y1="121" x2="210" y2="121" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="130" y="164" width="40" height="60" stroke="#9A7544" stroke-width="1.3"/>
+        <rect class="ln" data-stage="4" x="135" y="170" width="30" height="54" stroke-width="1.5"/>
+        <rect class="ln" data-stage="4" x="140" y="177" width="20" height="18" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="140" y="199" width="20" height="21" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="80" y="172" width="26" height="42"/>
+        <rect class="ln" data-stage="4" x="76" y="168" width="34" height="50" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="76" y1="216" x2="110" y2="216" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="93" y1="172" x2="93" y2="214" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="80" y1="193" x2="106" y2="193" stroke-width=".7"/>
+        <rect class="ln" data-stage="4" x="194" y="172" width="26" height="42"/>
+        <rect class="ln" data-stage="4" x="190" y="168" width="34" height="50" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="190" y1="216" x2="224" y2="216" stroke="#9A7544" stroke-width="1.1"/>
+        <line class="ln" data-stage="4" x1="207" y1="172" x2="207" y2="214" stroke-width=".7"/>
+        <line class="ln" data-stage="4" x1="194" y1="193" x2="220" y2="193" stroke-width=".7"/>
+        <!-- stage 5: siding and trim - battens, corner boards, porch fascia -->
+        <line class="ln" data-stage="5" x1="134" y1="92" x2="134" y2="146" stroke="#7C6A4A" stroke-width=".7"/>
+        <line class="ln" data-stage="5" x1="142" y1="92" x2="142" y2="146" stroke="#7C6A4A" stroke-width=".7"/>
+        <line class="ln" data-stage="5" x1="158" y1="92" x2="158" y2="146" stroke="#7C6A4A" stroke-width=".7"/>
+        <line class="ln" data-stage="5" x1="166" y1="92" x2="166" y2="146" stroke="#7C6A4A" stroke-width=".7"/>
+        <line class="ln" data-stage="5" x1="76" y1="92" x2="76" y2="146" stroke="#9A7544" stroke-width="1"/>
+        <line class="ln" data-stage="5" x1="224" y1="92" x2="224" y2="146" stroke="#9A7544" stroke-width="1"/>
+        <line class="ln" data-stage="5" x1="56" y1="162" x2="244" y2="162" stroke="#9A7544" stroke-width="1"/>
+        <line class="ln" data-stage="5" x1="64" y1="162" x2="236" y2="162" stroke="#7C6A4A" stroke-width=".7"/>
+      </svg>
+            <div class="stage-read" id="stageRead">Ground line</div>
+    </div>
+  </div>
+</section>
+
+<section class="s tint" id="problem">
+  <div class="wrap">
+    <p class="eyebrow rv">What actually goes wrong</p>
+    <h2 class="rv">The build is fine. The paper trail is the problem.</h2>
+    <p class="sub rv">
+      Nobody loses a custom home over framing. They lose it over
+      <span class="gold">a leak nobody logged</span>,
+      <span class="gold">a plumber booked on two lots</span>, and
+      <span class="gold">a tile nobody can prove they approved</span>.
+    </p>
+    <div class="quotes">
+      <div class="q rv">
+        <p>“Four hundred photos. I could not tell you which house they belong to.”</p>
+        <div class="who">The camera roll</div>
+      </div>
+      <div class="q rv">
+        <p>“Any update?” — every afternoon, from a client who just wants to see the house.</p>
+        <div class="who">The text thread</div>
+      </div>
+      <div class="q rv">
+        <p>“He’s on Whitaker Tuesday. He’s also on Calderwood Tuesday.”</p>
+        <div class="who">The double-book</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="book">
+  <div class="wrap">
+    <p class="eyebrow rv">The book</p>
+    <h2 class="rv">One home screen. The houses that need you first.</h2>
+    <p class="sub rv">
+      Not a dashboard of charts. <span class="gold">Needs You</span> sorts by
+      what is time-sensitive — a leak, a double-book, a decision waiting.
+      Recent decisions and A–Z are one tap away. On a laptop, the month
+      calendar sits beside the list.
+    </p>
+    <div class="phones">
+      <div class="phone rv">
+        <div class="wm-row"><span class="w">SitePlumb</span><span class="who">Builder</span></div>
+        <div class="cam">FIELD NOTES</div>
+        <div class="pills"><span class="on">Needs You</span><span>Recent decisions</span><span>A–Z</span></div>
+        <div class="cardx"><div class="hot">Leak · today</div><div class="nm">288 Calderwood Ln</div><div class="d">Water at the basement wall. Photo filed.</div></div>
+        <div class="cardx"><div class="hot oak">Double-book · Tue</div><div class="nm">Whitaker + Calderwood</div><div class="d">Northwind HVAC on both lots Aug 19.</div></div>
+      </div>
+      <div class="phone rv">
+        <div class="wm-row"><span class="w">288 Calderwood</span><span class="who">Briefing</span></div>
+        <div class="cardx"><div class="nm">Field Notes</div><div class="d">Log photos and notes from the field.</div></div>
+        <div class="doors"><i>Schedule</i><i>Selections</i><i>Money</i><i>Full site</i></div>
+      </div>
+      <div class="phone rv">
+        <div class="wm-row"><span class="w">Invite your people</span><span class="who">First hour</span></div>
+        <div class="cardx"><div class="nm">Still need the homeowner and a crew.</div><div class="d">One code each. They get their own door — never your margins.</div></div>
+        <div class="send">Invite the homeowner</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s tint" id="hour">
+  <div class="wrap">
+    <p class="eyebrow rv">The first hour</p>
+    <h2 class="rv">A company. A house. The people.</h2>
+    <p class="sub rv">Name the company, add the first street, invite who lives there and who builds it. <span class="gold">That is the whole onboarding.</span></p>
+    <div class="hour">
+      <div class="h rv"><div class="n">1</div><h3>Your company</h3><p>One name. This is the book for every house you run — not a single job.</p></div>
+      <div class="h rv"><div class="n">2</div><h3>The first house</h3><p>Street first. A name is optional. It lands on the book immediately.</p></div>
+      <div class="h rv"><div class="n">3</div><h3>Invite people</h3><p>Homeowner, a crew, your PM. Each gets a code. Each sees only their part.</p></div>
+      <div class="h rv"><div class="n">4</div><h3>Add another</h3><p>Or go to the book. Needs You is empty until something actually needs you.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="views">
+  <div class="wrap">
+    <p class="eyebrow rv">One job, three doors</p>
+    <h2 class="rv">Everyone sees their own part. Nobody sees your margins.</h2>
+    <p class="sub rv">
+      One site, three sign-ins. Not a permissions screen you configure —
+      it’s the whole design. <span class="gold">Crews never see money.
+      Homeowners see only what you share.</span>
+    </p>
+    <div class="views">
+      <div class="view rv">
+        <div class="role">Builder</div>
+        <h3>The book</h3>
+        <p>Every house. Needs You, the calendar, selections, money, the lot.</p>
+        <ul>
+          <li>Field Notes from the mud — house, photo, chip, send</li>
+          <li>Double-books named with the other street and the dates</li>
+          <li>Selections, invoices, QuickBooks when you want it</li>
+          <li>A packet that updates live after you send the link</li>
+        </ul>
+      </div>
+      <div class="view rv">
+        <div class="role">Homeowner</div>
+        <h3>Their house</h3>
+        <p>Progress, their selections, and the decisions you need from them.</p>
+        <ul>
+          <li>Photos you chose to share, nothing you didn’t</li>
+          <li>Selections with a one-tap answer, dated</li>
+          <li>Who’s on site this week — trade, not names</li>
+          <li>Invoices and what’s outstanding</li>
+        </ul>
+      </div>
+      <div class="view rv">
+        <div class="role">Subcontractor</div>
+        <h3>Their packet</h3>
+        <p>Their trade, their dates, their spec. A link. It stays current.</p>
+        <ul>
+          <li>Confirm or suggest different dates</li>
+          <li>Install specs and the finishes that affect them</li>
+          <li>New notes land on the same link — no new text thread</li>
+          <li>Never sees pricing, contracts, or other crews</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s tint" id="day">
+  <div class="wrap">
+    <p class="eyebrow rv">A day on site</p>
+    <h2 class="rv">Three taps, standing in the mud.</h2>
+    <p class="sub rv">
+      If it’s slower than the walk back to your truck, it won’t get used.
+      <span class="gold">So it isn’t.</span>
+    </p>
+    <div class="day">
+      <div class="step rv">
+        <div class="shot">
+          <div class="phone">
+            <div class="wm-row"><span class="w">Field Notes</span><span class="who">288 Calderwood</span></div>
+            <div class="cam">FIELD NOTES</div>
+            <div class="chips"><b class="on">Leak</b><b>Damage</b><b>Punch</b><b>Note</b></div>
+            <div class="cardx"><div class="d">Water at the basement wall, south corner.</div></div>
+            <div class="send">Send</div>
+          </div>
+          <div class="cap">Field Notes · house, chip, send</div>
+        </div>
+        <div>
+          <p class="when">7:40am</p>
+          <h3>Photograph the thing, not the paperwork</h3>
+          <p>Tap the camera on the home screen. Pick the house. Chip it Leak.
+             <span class="gold">Needs You has it before your phone is back in your pocket.</span></p>
+        </div>
+      </div>
+      <div class="step rv">
+        <div class="shot">
+          <div class="phone">
+            <div class="wm-row"><span class="w">Packet</span><span class="who">Northwind HVAC</span></div>
+            <div class="cardx"><div class="nm">HVAC rough-in</div><div class="d">Aug 19 – Aug 21 · 288 Calderwood Ln</div></div>
+            <div class="pkt"><div class="k">Text this link</div><div class="u">They confirm or suggest dates. If you add a photo later, the same link updates.</div></div>
+            <div class="send">Text this link</div>
+          </div>
+          <div class="cap">Packet · one link, live</div>
+        </div>
+        <div>
+          <p class="when">10:15am</p>
+          <h3>The crew gets a packet, not a thread</h3>
+          <p>Review it, then text the link. They confirm the dates.
+             <span class="gold">Add a photo after you send — they see it on the same link.</span></p>
+        </div>
+      </div>
+      <div class="step rv">
+        <div class="shot">
+          <div class="phone">
+            <div class="wm-row"><span class="w">Calderwood</span><span class="who">Homeowner</span></div>
+            <div class="cardx"><div class="hot">Needs you</div><div class="nm">Range — ordered</div><div class="d">Black 48" · Kitchen · waiting on you for the hood.</div></div>
+            <div class="cardx"><div class="oak hot" style="color:var(--oak)">Today</div><div class="nm">HVAC on site</div><div class="d">Crew day. No names, no notes.</div></div>
+          </div>
+          <div class="cap">Homeowner · their house only</div>
+        </div>
+        <div>
+          <p class="when">4:00pm</p>
+          <h3>Your client already knows</h3>
+          <p>The leak photo and the hood decision are already on their portal.
+             <span class="gold">The “any update?” text never gets sent.</span></p>
+        </div>
+      </div>
+      <div class="step rv">
+        <div class="shot">
+          <div class="phone">
+            <div class="wm-row"><span class="w">Money</span><span class="who">288 Calderwood</span></div>
+            <div class="money"><div><b>$842k</b><s>budget</s></div><div><b>$610k</b><s>committed</s></div><div><b>$402k</b><s>spent</s></div></div>
+            <div class="cardx"><div class="nm">INV-014 sent</div><div class="d">Selections — August · $2,400</div></div>
+            <div class="send">Export to QuickBooks</div>
+          </div>
+          <div class="cap">Money · one sheet</div>
+        </div>
+        <div>
+          <p class="when">6:30pm, at the kitchen table</p>
+          <h3>What you signed versus what you’ve paid</h3>
+          <p>Budget, committed, spent, invoices — one sheet.
+             <span class="gold">Paid costs export to QuickBooks when you want them to.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="depth">
+  <div class="wrap">
+    <p class="eyebrow rv">Where custom builds actually go wrong</p>
+    <h2 class="rv">Selections, money, and the calendar — treated seriously.</h2>
+    <p class="sub rv">The three things a spec builder can shrug off and a custom builder cannot.</p>
+    <div class="split">
+      <div class="card rv">
+        <h3>Selections</h3>
+        <p>Every finish with its allowance, real price, and upcharge.
+           <span class="gold">One-tap approval, dated.</span> Install specs
+           ride along in the packet to the crew who needs them.</p>
+        <p class="fine">Answered early, installs stay on schedule.</p>
+      </div>
+      <div class="card rv">
+        <h3>The calendar</h3>
+        <p>Book a crew on a house. If they are already on another lot,
+           <span class="gold">the day names both streets and the dates.</span>
+           Tap it and you see the overlap.</p>
+        <p class="fine">On a laptop the month sits next to the house list.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s ink" id="offline">
+  <div class="wrap offline">
+    <div>
+      <p class="eyebrow rv">Built for a basement with no bars</p>
+      <h2 class="rv">It works with no signal. Not “mostly”.</h2>
+      <p class="sub rv">
+        Everything saves to the phone first and syncs when there’s signal.
+        <span class="gold">Log twenty items in a poured basement</span> —
+        it catches up on its own.
+      </p>
+      <div class="pill-row rv">
+        <span class="pill on">Synced · live</span>
+        <span class="pill">Offline · saved here</span>
+        <span class="pill">Saving…</span>
+      </div>
+    </div>
+    <div class="card rv">
+      <h3>This was tested the hard way</h3>
+      <p>During development a live sync incident wiped a site’s records. Every
+         device still held its own copy, and the whole job republished itself
+         on reconnect. Nothing was lost.</p>
+      <p class="fine">That wasn’t a feature demo. It was a bad afternoon the design happened to survive.</p>
+    </div>
+  </div>
+</section>
+
+<section class="s tint" id="origin">
+  <div class="wrap origin">
+    <div>
+      <p class="eyebrow rv">Why it’s different</p>
+      <blockquote class="rv">
+        I watched a very good builder run my build — and realized how much
+        <em>one person is expected to hold in his head</em>.
+      </blockquote>
+    </div>
+    <div class="body">
+      <p class="rv">A custom build is a logistics problem wearing a hard hat,
+        coordinated from memory, a phone, and a truck cab.
+        <span class="gold">The craft was never the hard part. The information is.</span></p>
+      <p class="rv"><b class="wm">SitePlumb</b> was written during that build.
+        <span class="gold">The homeowner experience isn’t a module bolted on — it’s where this started</span>,
+        and the builder side grew around what a builder actually juggles.</p>
+      <p class="rv">That’s also why Field Notes is
+        <span class="gold">three taps</span>. Anything slower doesn’t survive a real jobsite.</p>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="limits">
+  <div class="wrap">
+    <p class="eyebrow rv">Read this before you get excited</p>
+    <h2 class="rv">Who this isn’t for, yet.</h2>
+    <p class="sub rv">You’ll find this out in week one anyway. Better you hear it here.</p>
+    <div class="limits">
+      <div class="limit rv">
+        <h4>Estimating and takeoff <span>not built</span></h4>
+        <p>There’s no bid or proposal side. If you buy software mainly to win work, this isn’t it yet. Budgets start once you’ve got the job.</p>
+      </div>
+      <div class="limit rv">
+        <h4>Crew time tracking <span>not built</span></h4>
+        <p>No timesheets, no clock-in, no payroll hours. Plenty of tools do this well and they’re cheap.</p>
+      </div>
+      <div class="limit rv">
+        <h4>Crews still need chasing <span>be realistic</span></h4>
+        <p>The packet is narrow and useful. Some crews will still ignore it and answer their phone instead. That’s the trade, not the software.</p>
+      </div>
+      <div class="limit rv">
+        <h4>One person builds it <span>early</span></h4>
+        <p>Support is me, and I answer. That means fast fixes and honest answers, and it also means no 24-hour call centre.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s tint" id="partner">
+  <div class="wrap">
+    <div class="cta-box rv">
+      <p class="eyebrow">Early access</p>
+      <h2>A handful of custom builders. Blunt feedback. Fast fixes.</h2>
+      <p>
+        <span class="gold">Free while we work together.</span>
+        Two to twenty custom homes and an opinion — that’s the whole requirement.
+        We’ll name the company, add the first house, and invite your people in the first hour.
+      </p>
+      <div class="mailrow">
+        <a class="btn" href="mailto:hello@siteplumb.com?subject=Early%20access">Email me</a>
+        <a class="btn ghost" href="/app/?demo=1">Look around first</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <a class="brand" href="/" style="margin-right:0">
+      <span class="dot"></span><b class="wm">SitePlumb</b>
+    </a>
+    <a href="/app/">Open the app</a>
+    <a href="/homeowners.html">For homeowners</a>
+    <a href="/switch.html">Leaving CoConstruct</a>
+    <a href="/app/privacy.html">Privacy</a>
+    <a href="/app/terms.html">Terms</a>
+    <a href="/">Tuesday — the live door</a>
+    <span class="sp">© 2026</span>
+  </div>
+</footer>
+
+<script>
+/* The standalone redirect moved to the top of <head> so it fires before paint. */
+
+/* nav hairline once you leave the hero */
+(function(){
+  var nav=document.getElementById('nav');
+  var onScroll=function(){nav.classList.toggle('stuck',window.scrollY>10);};
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+})();
+
+/* reveal */
+(function(){
+  var els=[].slice.call(document.querySelectorAll('.rv'));
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in');});return;}
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}
+    });
+  },{rootMargin:'0px 0px -12% 0px',threshold:.08});
+  els.forEach(function(e,i){e.style.transitionDelay=(Math.min(i%3,2)*70)+'ms';io.observe(e);});
+})();
+
+/* ── SIGNATURE: the house draws itself in build order ──
+   One continuous movement on load, ground through trim in about four seconds,
+   with the stage caption reading along underneath. Scroll is not involved:
+   the old two-movement design handed off from the intro ease to a scroll
+   formula whose head start made the drawing freeze and then jump. A single
+   timeline cannot jump. Fails safe to fully drawn, exactly as before. */
+(function(){
+  var svg=document.getElementById('house');if(!svg)return;
+  var read=document.getElementById('stageRead');
+  var NAMES=['Ground line','Foundation','Framing','Roof','Windows & doors','Siding & trim'];
+  var STAGES=6,TOTAL=4200;
+  var paths=[].slice.call(svg.querySelectorAll('.ln'));
+  function measure(p){
+    try{ if(typeof p.getTotalLength==='function'){var L=p.getTotalLength();if(L>0)return L;} }catch(e){}
+    return 0;
+  }
+  var lens=paths.map(measure);
+  var done=false;
+  function finish(){                       /* the safe end state, always reachable */
+    done=true;
+    paths.forEach(function(p){p.style.strokeDasharray='none';p.style.strokeDashoffset=0;});
+    if(read)read.textContent='Finished';
+  }
+  var reduce=false;
+  try{reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  if(reduce||!paths.length||lens.some(function(L){return !L;})){finish();return;}
+
+  /* Stage windows are weighted by how many strokes each stage holds (with a
+     floor so the ground line is not a blink), so the hand moves at one speed
+     whether it is laying a slab or glazing five windows. Inside a window the
+     strokes stagger and overlap; every stroke is scheduled to land by the end
+     of the timeline, so completion is exact and nothing snaps at the finish. */
+  var byStage=[];for(var s=0;s<STAGES;s++)byStage.push([]);
+  paths.forEach(function(p,i){
+    var st=Math.max(0,Math.min(STAGES-1,+(p.getAttribute('data-stage')||0)));
+    byStage[st].push(i);
+  });
+  var weights=byStage.map(function(l){return Math.max(4,l.length);});
+  var wsum=weights.reduce(function(a,b){return a+b;},0);
+  var bounds=[0];
+  weights.forEach(function(w,s){bounds.push(bounds[s]+w/wsum);});
+  var start=new Array(paths.length),dur=new Array(paths.length);
+  byStage.forEach(function(list,s){
+    var w0=bounds[s],span=bounds[s+1]-w0,step=span/Math.max(1,list.length);
+    list.forEach(function(idx,k){
+      start[idx]=w0+k*step;
+      dur[idx]=Math.min(Math.max(.05,step*2.2+.04),Math.max(.001,1-start[idx]));
+    });
+  });
+  paths.forEach(function(p,i){p.style.strokeDasharray=lens[i];p.style.strokeDashoffset=lens[i];});
+  function easeOut(x){return 1-Math.pow(1-x,2.2);}
+  var t0=null;
+  function frame(ts){
+    if(done)return;
+    if(!t0)t0=ts;
+    var T=Math.min(1,(ts-t0)/TOTAL);
+    for(var i=0;i<paths.length;i++){
+      var local=(T-start[i])/dur[i];
+      if(local<=0)continue;
+      if(local>1)local=1;
+      paths[i].style.strokeDashoffset=lens[i]*(1-easeOut(local));
+    }
+    if(read){
+      var idx=0;
+      for(var s2=0;s2<STAGES;s2++){if(T>=bounds[s2])idx=s2;}
+      read.textContent=T>=1?'Finished':NAMES[idx];
+    }
+    if(T<1)requestAnimationFrame(frame);else finish();
+  }
+  requestAnimationFrame(frame);
+  setTimeout(function(){if(!done)finish();},TOTAL+1200);
+})();
+</script>
+</body>
+</html>
