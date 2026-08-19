@@ -1102,6 +1102,11 @@ t('new walkthrough is five spots', SRC.indexOf("Glad you")>=0&&SRC.indexOf('team
 t('walk is QA-only', SRC.indexOf('function walkAllowed')>=0&&SRC.indexOf('if(!walkAllowed())return')>=0);
 t('onboard is company then houses', SRC.indexOf('function openOnboard')>=0&&SRC.indexOf('function afterHouseAdded')>=0&&SRC.indexOf('Add another house')>=0);
 t('McCarver lookup is HVAC not excav', $("guessTrade('McCarver Mechanical Heating & Cooling')")==='hvac');
+t('after a sub hit Save is next', SRC.indexOf('function subAfterHit')>=0&&SRC.indexOf('function fillSubSpec')>=0&&SRC.indexOf('id="subHit"')>=0);
+t('trade picker starts empty not excav', SRC.indexOf('function fillSubSpec')>=0&&SRC.indexOf('<option value="">Trade</option>')>=0);
+t('People invite is three buttons', SRC.indexOf("peopleMode==='invite'")>=0&&SRC.indexOf('function inviteHomeownerFlow')>=0&&SRC.indexOf('Three buttons. Code. Share. Done.')>=0);
+t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Go to the book')>=0);
+t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter')>=0&&SRC.split('function openNotifyCenter')[1].split('const Org=')[0].indexOf('Send a test')>=0&&SRC.indexOf('function pushTest')>=0);
 t('Needs You includes open field issues', SRC.indexOf('nyOpenItem')>=0&&SRC.indexOf('it.issue||it.status')>=0);
 t('Field Notes does not auto-open the camera', SRC.indexOf('function openFieldNote')>=0&&SRC.indexOf("openFieldNote();")>=0&&SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf('.click()')<0);
 t('Field Notes drop waits', SRC.indexOf('function dropPickPhoto')>=0&&SRC.indexOf('function _fnArmDrop')>=0&&SRC.indexOf('_fnSheetOrder(true)')>=0);

@@ -1,6 +1,6 @@
 /* Plumb service worker — caches the app shell for offline use.
    Bump CACHE when you ship a new build so clients update. */
-const CACHE = 'plumb-v2.302.0';
+const CACHE = 'plumb-v2.303.0';
 const SHELL = [
   './',
   'index.html',
@@ -107,8 +107,8 @@ try{
   firebase.messaging().onBackgroundMessage(function(payload){
     const n=(payload&&payload.notification)||{};
     const d=(payload&&payload.data)||{};
-    self.registration.showNotification(n.title||d.title||'Plumb',{
-      body:n.body||d.body||'',icon:'icon192.png',badge:'icon192.png',tag:d.key||undefined});
+    self.registration.showNotification(n.title||d.title||'SitePlumb',{
+      body:n.body||d.body||'',icon:'/icon-192.png',badge:'/icon-192.png',tag:d.key||undefined});
   });
 }catch(e){/* push SDK unavailable — caching unaffected */}
 

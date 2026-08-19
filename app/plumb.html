@@ -543,6 +543,14 @@
   .qf-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:9px 4px;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink-2);transition:border-color .15s ease,transform .12s ease;}
   .qf-btn:active{transform:scale(.96);border-color:var(--oak);}
   .qf-btn svg{width:18px;height:18px;color:var(--oak);}
+  .pmodal-scrim.info-own .row2{display:none;}
+  .sub-hit{display:none;border:1px solid var(--oak);background:rgba(176,137,90,.08);border-radius:12px;padding:11px 13px;margin:0 0 12px;}
+  .sub-hit.on{display:block;}
+  .sub-hit .n{font-size:14px;font-weight:700;color:var(--ink);}
+  .sub-hit .d{font-size:12.5px;color:var(--ink-3);margin-top:2px;line-height:1.4;}
+  #subMoreBtn{display:none;width:100%;margin:2px 0 10px;color:var(--ink-3);}
+  .ppl-three{display:flex;flex-direction:column;gap:8px;margin:0 0 14px;}
+  .ppl-three .b1{width:100%;margin:0;}
   .setup-card{border:1.5px solid var(--line);border-radius:13px;padding:12px 13px;cursor:pointer;}
   .setup-card.on{border-color:var(--oak);background:var(--surface-2);}
   .setup-card .n{font-weight:700;font-size:14.5px;}
@@ -2567,7 +2575,7 @@ body.on-tour .tour-card{display:block;}
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="infoTitle">Heads up</h4>
       <div class="info-body" id="infoBody"></div>
-      <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeInfo()">Got it</button></div>
+      <div class="row2" id="infoFoot" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeInfo()">Got it</button></div>
     </div>
   </div>
 
@@ -2935,6 +2943,7 @@ body.on-tour .tour-card{display:block;}
   <div class="pmodal-scrim" id="subScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="subModalTitle">Add subcontractor</h4>
+      <div id="subHit" class="sub-hit"></div>
       <div class="qf-row" id="subQuickFill">
         <button class="qf-btn qf-contacts" onclick="subFromContacts()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Contacts</button>
         <button class="qf-btn" onclick="subScanCard()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><path d="M13 10h6M13 14h4"/></svg>Scan card</button>
@@ -2950,7 +2959,8 @@ body.on-tour .tour-card{display:block;}
       <input id="subWebsite" placeholder="Website (optional)" inputmode="url" autocapitalize="off" autocomplete="off">
       <input id="subLicense" placeholder="License # (optional)" autocomplete="off">
       <textarea id="subNotes" placeholder="Notes (optional)" rows="2" style="resize:none"></textarea>
-      <div class="row2"><button class="b1 b-cancel" onclick="closeAddSub()">Cancel</button><button class="b1 b-go" onclick="saveSub()">Save</button></div>
+      <div class="row2"><button class="b1 b-cancel" onclick="closeAddSub()">Cancel</button><button class="b1 b-go" id="subSaveBtn" onclick="saveSub()">Save</button></div>
+      <button type="button" class="la-link" id="subMoreBtn" onclick="subShowMore()">More details</button>
     </div>
   </div>
 
@@ -3099,15 +3109,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.302.0 - Day shouts overlap. Field Notes stays. Money one sheet.';
+const PLUMB_VERSION='2.303.0 - After a sub hit, Save. People is three buttons. Second house stays short.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787163010083;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.302.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787165400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.303.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4377,8 +4387,8 @@ function toastAction(msg,label,fn,ms){const t=document.getElementById('toast');t
   t.innerHTML='<span></span><button class="ua">'+esc(label)+'</button>';t.querySelector('span').textContent=msg;
   t.querySelector('.ua').onclick=()=>{clearTimeout(t._t);t.classList.remove('show');fn();};
   t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>{t.classList.remove('show');},ms||4500);}
-function showInfo(title,bodyHTML){document.getElementById('infoTitle').textContent=title;document.getElementById('infoBody').innerHTML=bodyHTML;document.getElementById('infoScrim').classList.add('show');}
-function closeInfo(){document.getElementById('infoScrim').classList.remove('show');try{houseMaybeResume();}catch(e){}}
+function showInfo(title,bodyHTML,own){document.getElementById('infoTitle').textContent=title;document.getElementById('infoBody').innerHTML=bodyHTML;const sc=document.getElementById('infoScrim');sc.classList.toggle('info-own',!!own);sc.classList.add('show');}
+function closeInfo(){const sc=document.getElementById('infoScrim');sc.classList.remove('show','info-own');try{houseMaybeResume();}catch(e){}}
 
 /* Sheets stack. Opening a child never tears the parent down. Closing one hides only itself.
    Page changes (a site, permits) remember how to come back via Back. */
@@ -5499,13 +5509,18 @@ function afterHouseAdded(id,nBefore){
   const label=(p&&(p.street||p.name))||'The house';
   try{Data.setActive(id);}catch(e){}
   const first=!nBefore;
-  const ho=p&&(p.invites||[]).some(function(i){return i.role==='client'&&i.status!=='revoked';});
   let b='<p style="margin:0 0 12px;font-size:14px;line-height:1.5">'+esc(label)+(first?' is on the book. Invite the people who live here and the crews who will build it.':' is on the same book.')+'</p>';
-  if(!ho)b+='<button class="b1 b-go" style="width:100%" onclick="closeInfo();inviteHomeownerFor(\''+id+'\')">Invite the homeowner</button>';
-  b+='<button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();openSiteFromOverview(\''+id+'\');setTimeout(function(){try{openAddSub();}catch(e){}},80)">Add a crew</button>';
-  b+='<button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();openNewSite()">Add another house</button>';
-  b+='<button class="la-link" style="display:block;margin:12px auto 0;color:var(--ink-3)" onclick="closeInfo();showOverview()">Go to the book</button>';
-  showInfo(label+' is on the book',b);
+  if(first){
+    const ho=p&&(p.invites||[]).some(function(i){return i.role==='client'&&i.status!=='revoked';});
+    if(!ho)b+='<button class="b1 b-go" style="width:100%" onclick="closeInfo();inviteHomeownerFor(\''+id+'\')">Invite the homeowner</button>';
+    b+='<button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();openSiteFromOverview(\''+id+'\');setTimeout(function(){try{openAddSub();}catch(e){}},80)">Add a crew</button>';
+    b+='<button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();openNewSite()">Add another house</button>';
+    b+='<button class="la-link" style="display:block;margin:12px auto 0;color:var(--ink-3)" onclick="closeInfo();showOverview()">Go to the book</button>';
+  }else{
+    b+='<button class="b1 b-go" style="width:100%" onclick="closeInfo();openNewSite()">Add another house</button>';
+    b+='<button class="b1 b-cancel" style="width:100%;margin-top:8px" onclick="closeInfo();showOverview()">Go to the book</button>';
+  }
+  showInfo(label+' is on the book',b,true);
   return true;
 }
 function openStart(){renderStart();document.getElementById('startScrim').classList.add('show');}
@@ -6331,11 +6346,12 @@ function ctDelete(id){
     if(op.customLevel===id)op.customLevel='semi';
     saveOrgPrefs(op);if(_ctDraft&&_ctDraft.id===id){_ctDraft=null;_ctEditing=false;}renderPeople();}});}
 function openPeopleMode(mode){peopleMode=mode;renderPeople();document.getElementById('peopleScrim').classList.add('show');}
-let peopleMode='team';
-function openPeople(){renderPeople();document.getElementById('peopleScrim').classList.add('show');}
+let peopleMode='invite';
+function openPeople(){peopleMode='invite';renderPeople();document.getElementById('peopleScrim').classList.add('show');}
 function closePeople(){document.getElementById('peopleScrim').classList.remove('show');try{renderSubs();}catch(e){}}
 function peoplePills(){
   return '<div class="ov-sortpills" style="margin:0 0 14px">'
+    +'<button class="ov-sortpill'+(peopleMode==='invite'?' on':'')+'" onclick="openPeopleMode(\'invite\')">Invite</button>'
     +'<button class="ov-sortpill'+(peopleMode==='team'?' on':'')+'" onclick="openPeopleMode(\'team\')">Team</button>'
     +'<button class="ov-sortpill'+(peopleMode==='homeowner'?' on':'')+'" onclick="openPeopleMode(\'homeowner\')">Homeowners</button>'
     +'<button class="ov-sortpill" onclick="closePeople();openSubsRoster()">Subs</button></div>';
@@ -6380,6 +6396,21 @@ function __renderPeople(){
   const el=document.getElementById('peopleBody');if(!el)return;
   const title=document.getElementById('peopleTitle');
   if(appMode()!=='real'){if(title)title.textContent='Live mode only';el.innerHTML='<div class="empty">This manages your real company in Live mode. The demo uses sample roles instead.</div>';return;}
+  if(peopleMode==='invite'||!peopleMode){
+    if(title)title.textContent='People';
+    const just=_inviteJust;
+    let h=peoplePills()+'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Three buttons. Code. Share. Done.</p>';
+    h+='<div class="ppl-three">';
+    h+='<button class="b1 b-go" onclick="createInvite(\'team\')">Team</button>';
+    h+='<button class="b1 b-cancel" onclick="inviteHomeownerFlow()">Homeowner</button>';
+    h+='<button class="b1 b-cancel" onclick="inviteSubFlow()">Sub</button>';
+    h+='</div>';
+    if(just&&just.code){
+      h+='<div class="code-box" onclick="copyText(\''+just.code+'\')">'+just.code+'</div>';
+      h+='<button class="b1 b-go" style="width:100%;margin-top:12px" onclick="shareInvite(\''+just.code+'\')">Share</button>';
+      h+='<p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0;text-align:center">'+esc(just.who||'Invite')+'</p>';
+    }
+    el.innerHTML=h;return;}
   if(peopleMode==='homeowner'){
     if(title)title.textContent='Homeowners';
     const ps=state.projects||[];
@@ -6479,6 +6510,15 @@ async function revokeInvite(code){
   const ti=laTeamInvites();ti.forEach(i=>{if(i.code===code)i.status='revoked';});laSaveTeamInvites(ti);
   logEvent('inviteRevoked','team');toast('Invite revoked');
   try{renderPeople();}catch(e){}try{if(document.getElementById('setupScrim').classList.contains('show'))renderSetup();}catch(e){}}});}
+let _inviteJust=null;
+function showInviteCode(code,who){
+  _inviteJust={code:code,who:who||'Invite'};
+  const ppl=document.getElementById('peopleScrim');
+  if(ppl&&ppl.classList.contains('show')){peopleMode='invite';try{renderPeople();}catch(e){}return;}
+  showInfo('Invite','<div class="code-box" onclick="copyText(\''+code+'\')">'+code+'</div>'
+    +'<button class="b1 b-go" style="width:100%;margin-top:12px" onclick="shareInvite(\''+code+'\')">Share</button>'
+    +'<p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0;text-align:center">'+esc(who||'Invite')+'</p>',true);
+}
 function genInviteCode(){return 'PB-'+Math.random().toString(36).slice(2,6).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase();}
 async function createInvite(role,subId,opts){opts=opts||{};
   if(appMode()!=='real'){toast('Invites work in Live mode');return;}
@@ -6490,10 +6530,7 @@ async function createInvite(role,subId,opts){opts=opts||{};
     const ti=laTeamInvites();ti.push({code,t:Date.now(),status:'open',setup:!!opts.setup});laSaveTeamInvites(ti);
     try{watchClaims();}catch(e){}
     logEvent('inviteCreated','team');
-    showInfo('Team invite',`<div class="code-box" onclick="copyText('${code}')">${code}</div>
-      <button class="b1 b-go" style="width:100%;margin-top:12px" onclick="shareInvite('${code}')">Share</button>
-      <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0;text-align:center">SitePlumb \u2192 Live \u2192 I have an invite code.${opts.setup?' They get company setup on first sign-in.':''}</p>`);
-    try{renderPeople();}catch(e){}
+    showInviteCode(code,opts.setup?'Team · they get company setup':'Team');
     return;}
   const p=P();let name='',trade='',subId2='';
   if(role==='sub'){const s=p.subs.find(x=>x.id===subId);if(!s)return;name=s.name;trade=s.specialty;subId2=String(s.id);
@@ -6505,9 +6542,7 @@ async function createInvite(role,subId,opts){opts=opts||{};
   try{watchClaims();}catch(e){}
   logEvent('inviteCreated',role+' · '+(name||'homeowner'));
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}try{shareInvite(code);}catch(e){}return;}
-  showInfo('Invite',`<div class="code-box" onclick="copyText('${code}')">${code}</div>
-    <button class="b1 b-go" style="width:100%;margin-top:12px" onclick="shareInvite('${code}')">Share</button>
-    <p style="color:var(--ink-3);font-size:12.5px;margin:12px 0 0;text-align:center">For ${esc(name||'your homeowner')}. SitePlumb \u2192 Live \u2192 I have an invite code.</p>`);}
+  showInviteCode(code,name||'Homeowner');}
 const _claimWatch={};
 function watchClaims(){
   if(!Sync.ready()||appMode()!=='real')return;
@@ -6643,6 +6678,16 @@ function subsOnSite(){
 /* #1: invite a sub to SitePlumb from the roster screen. Codes are per-site, so this
    walks site → sub, skipping subs who already have a live invite, then hands off
    to the same createInvite('sub') used on the sub row. */
+function inviteHomeownerFlow(){
+  if(appMode()!=='real'){toast('Invites work in Live mode');return;}
+  const ps=state.projects||[];
+  if(!ps.length){toast('Add a house first');return;}
+  const open=ps.filter(p=>!(p.invites||[]).some(i=>i.role==='client'&&i.status!=='revoked'));
+  const list=open.length?open:ps;
+  if(list.length===1){inviteHomeownerFor(list[0].id);return;}
+  openPick({title:'Homeowner — which house?',
+    options:list.map(p=>({id:p.id,label:p.street||p.name,sub:p.city||''})),
+    onPick:id=>inviteHomeownerFor(id)});}
 function inviteSubFlow(){
   if(appMode()!=='real'){toast('Invites work in Live mode');return;}
   const ps=state.projects||[];
@@ -7633,9 +7678,10 @@ const Notify={
     const a=this.list();a.unshift({key,title,body,t:Date.now(),nav:nav||null,aud:aud||null});this._save(a);
     if(this.permission()==='granted'){
       try{
+        const ic='/icon-192.png';
         if(typeof navigator!=='undefined'&&navigator.serviceWorker&&navigator.serviceWorker.getRegistration){
           navigator.serviceWorker.getRegistration().then(r=>{
-            if(r&&r.showNotification)r.showNotification(title,{body,icon:'icon192.png',badge:'icon192.png',tag:key});
+            if(r&&r.showNotification)r.showNotification(title,{body,icon:ic,badge:ic,tag:key});
             else new Notification(title,{body,tag:key});
           }).catch(()=>{try{new Notification(title,{body,tag:key});}catch(e){}});
         }else new Notification(title,{body,tag:key});
@@ -7837,14 +7883,16 @@ function openNotifyCenter(){
   const stand=(typeof matchMedia!=='undefined')&&matchMedia('(display-mode: standalone)').matches;
   let permRow='';
   if(perm==='unsupported')permRow='<div class="pkt-banner warn">This browser can\u2019t show notifications.'+((/iPhone|iPad/.test(typeof navigator!=='undefined'?navigator.userAgent:'')&&!stand)?' On iPhone, add SitePlumb to your Home Screen first (Share → Add to Home Screen), then enable here.':'')+'</div>';
-  else if(perm==='granted')permRow='<div class="pkt-banner ok"><b>Notifications on.</b> You\u2019ll hear about what\u2019s yours — issues, deadlines, invoices, site-ready.</div>';
+  else if(perm==='granted'){try{Notify.captureToken();}catch(e){}
+    permRow='<div class="pkt-banner ok"><b>Notifications on.</b> Issues, deadlines, invoices, and packet replies.</div>'
+      +'<button class="b1 b-go" style="width:100%;margin-top:10px" onclick="pushTest()">Send a test</button>';}
   else if(perm==='denied')permRow='<div class="pkt-banner warn"><b>Blocked.</b> Enable notifications for SitePlumb in your device settings, then come back.</div>';
   else permRow='<button class="b1 b-go" style="width:100%" onclick="Notify.enable().then(()=>openNotifyCenter())">Turn on notifications</button>';
   showInfo('Notifications',permRow
     +(((state.session||{}).role==='builder')?`<div class="subrow" style="cursor:pointer;margin-top:14px" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Billing alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span style="color:var(--ink-3);font-size:17px;padding-left:6px;flex:0 0 auto">›</span></div>`:'')
     +'<div class="lbl" style="margin-top:14px">Recent</div>'
     +(noticeRecentHTML())
-    +'<p style="margin:10px 0 0;color:var(--ink-3);font-size:12px">Heads-up while SitePlumb is open or in the background. Lock-screen push with the app fully closed needs the one-time server setup in the push guide.</p>');}
+    +'<p style="margin:10px 0 0;color:var(--ink-3);font-size:12px">On iPhone this has to be the Home Screen app, not Safari. A test dings this phone.</p>');}
 /* ── Org settings doc: orgs/{orgId} holds company truth — setup prefs, the
    team invite list, and an org members map. The id travels on site meta, so
    teammates discover it through the sites they already sync. Prefs are
@@ -8936,10 +8984,11 @@ function pushRenderLine(){
     +' <button class="la-link" onclick="pushTest()">Send a test</button>';
 }
 async function pushTest(){
+  try{await Notify.captureToken();}catch(e){}
   try{
     const r=await fnCall('notifyTest',{});
     toast((r&&r.sent)?'Test sent — check the lock screen':'No token yet — tap Turn on, then try again');
-  }catch(e){toast('Test needs the push function deployed');}
+  }catch(e){toast('Could not send a test');}
 }
 async function qbConnect(){
   try{const r=await fnCall('qbConnect',{});window.open(r.url,'_blank','noopener');toast('Finish connecting in the QuickBooks window');}
@@ -11674,7 +11723,7 @@ function addPermit(){openPrompt({title:'Add permit',placeholder:'Permit name (e.
 /* ── searchable select: a custom bottom-sheet picker that fronts a native <select> ──
    The <select> stays in the DOM (hidden) as the source of truth, so every existing
    .value read / onchange handler keeps working untouched. */
-const SS_FIELDS={crewSelect:{t:'Assign to',search:true},recCrew:{t:'Assigned to',search:true},selCat:{t:'Trade section'},recArea:{t:'Area'},selRoomSel:{t:'Room / location'},docType:{t:'Document type'},docTrade:{t:'For trade'},selStatus:{t:'Status',search:false},jSystem:{t:'Permit system',search:false},subSpec:{t:'Trade'},inspEditSel:{t:'Status',search:false},
+const SS_FIELDS={crewSelect:{t:'Assign to',search:true},recCrew:{t:'Assigned to',search:true},selCat:{t:'Trade section'},recArea:{t:'Area'},selRoomSel:{t:'Room / location'},docType:{t:'Document type'},docTrade:{t:'For trade'},selStatus:{t:'Status',search:false},jSystem:{t:'Permit system',search:false},subSpec:{t:'Trade',search:true},inspEditSel:{t:'Status',search:false},
   loginSelect:{t:'Who are you today?',search:false},laRole:{t:'Your role',search:false},suRosterTrade:{t:'Trade'},tqWho:{t:'Who decides',search:false},logFilter:{t:'Show',search:false}};
 function ssCfg(id){const c=SS_FIELDS[id];return (c&&typeof c==='object')?c:{t:c};}
 function ssTitleOf(id){if(ssCfg(id).t)return ssCfg(id).t;try{const el=document.getElementById(id);if(el&&el.dataset&&el.dataset.ssTitle)return el.dataset.ssTitle;}catch(e){}return 'Choose';}
@@ -11932,10 +11981,43 @@ let _editSubId=null;
 /* Add to the company roster using the same rich add-sub modal (with quick-fill).
    On save, saveSub() routes to the company roster instead of the active site. */
 let _rosterMode=false;
+function fillSubSpec(selected){
+  const sel=document.getElementById('subSpec');if(!sel)return;
+  sel.innerHTML='<option value="">Trade</option>'+SPECIALTIES.slice().sort(function(a,b){return a.label.localeCompare(b.label);}).map(s=>'<option value="'+s.id+'">'+s.label+'</option>').join('');
+  sel.value=selected||'';
+  try{ssSync('subSpec');}catch(e){}}
+function subResetForm(){
+  ['subName','subPhone','subContact','subEmail','subAddress','subWebsite','subLicense','subNotes'].forEach(function(id){
+    const el=document.getElementById(id);if(!el)return;el.value='';el.style.display='';});
+  const hit=document.getElementById('subHit');if(hit){hit.classList.remove('on');hit.innerHTML='';}
+  const more=document.getElementById('subMoreBtn');if(more)more.style.display='none';
+  const qf=document.getElementById('subQuickFill');if(qf)qf.style.display='';
+  const modal=document.querySelector('#subScrim .pmodal');if(modal)modal.classList.remove('sub-ready');
+  fillSubSpec('');
+}
+function subAfterHit(){
+  try{ssSync('subSpec');}catch(e){}
+  const name=((document.getElementById('subName')||{}).value||'').trim();
+  const spec=document.getElementById('subSpec');
+  const trade=spec&&spec.value?specLabel(spec.value):'';
+  const phone=((document.getElementById('subPhone')||{}).value||'').trim();
+  const bits=[trade,phone].filter(Boolean);
+  const hit=document.getElementById('subHit');
+  if(hit){hit.classList.add('on');hit.innerHTML='<div class="n">'+(name?esc(name):'Filled')+'</div><div class="d">'+(bits.length?esc(bits.join(' · '))+' — Save if this is right.':'Check the fields, then Save.')+'</div>';}
+  ['subContact','subEmail','subAddress','subWebsite','subLicense','subNotes'].forEach(function(id){
+    const el=document.getElementById(id);if(el)el.style.display='none';});
+  const qf=document.getElementById('subQuickFill');if(qf)qf.style.display='none';
+  const more=document.getElementById('subMoreBtn');if(more)more.style.display='';
+  const save=document.getElementById('subSaveBtn');if(save)save.textContent='Save';
+}
+function subShowMore(){
+  ['subContact','subEmail','subAddress','subWebsite','subLicense','subNotes'].forEach(function(id){
+    const el=document.getElementById(id);if(el)el.style.display='';});
+  const more=document.getElementById('subMoreBtn');if(more)more.style.display='none';
+}
 function openRosterAdd(){openAddSub();_rosterMode=true;document.getElementById('subModalTitle').textContent='Add subcontractor to roster';syncQuickFill();}
 function openAddSub(){_editSubId=null;_rosterMode=false;
-  ['subName','subPhone','subContact','subEmail','subAddress','subWebsite','subLicense','subNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('subSpec').innerHTML='<option value="">Trade</option>'+SPECIALTIES.slice().sort(function(a,b){return a.label.localeCompare(b.label);}).map(s=>`<option value="${s.id}">${s.label}</option>`).join('');
+  subResetForm();
   document.getElementById('subModalTitle').textContent='Add subcontractor';
   syncQuickFill();
   document.getElementById('subScrim').classList.add('show');}
@@ -11946,9 +12028,9 @@ function syncQuickFill(){
   if(c)c.style.display=(navigator.contacts&&navigator.contacts.select)?'':'none';
 }
 function openEditSub(id){const p=P();const s=p&&(p.subs||[]).find(x=>x.id===id);if(!s)return;_editSubId=id;
-  document.getElementById('subSpec').innerHTML=SPECIALTIES.map(x=>`<option value="${x.id}">${x.label}</option>`).join('');
+  subResetForm();
   const set=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};
-  set('subName',s.name);document.getElementById('subSpec').value=s.specialty||'';
+  set('subName',s.name);fillSubSpec(s.specialty||'');
   set('subContact',s.contact);set('subPhone',s.phone);set('subEmail',s.email);set('subAddress',s.address);set('subWebsite',s.website);set('subLicense',s.license);set('subNotes',s.notes);
   document.getElementById('subModalTitle').textContent='Edit subcontractor';
   syncQuickFill();
@@ -12085,6 +12167,8 @@ function parseCardText(text){
   const spec=document.getElementById('subSpec');
   if(spec&&trade)spec.value=trade;
   if(trade)filled.push('trade');
+  try{ssSync('subSpec');}catch(e){}
+  if(filled.length)try{subAfterHit();}catch(e){}
   return filled.length?filled.join(', '):'';
 }
 async function enrichFromName(q){
@@ -12166,36 +12250,26 @@ function parseSiteFacts(text,url){
 async function fetchSiteText(url){
   if(!url)return '';
   if(!/^https?:\/\//i.test(url))url='https://'+url.replace(/^\/\//,'');
-  const tryOne=async function(u){
-    const c=new AbortController();const t=setTimeout(function(){c.abort();},10000);
+  const tryOne=async function(u,ms){
+    const c=new AbortController();const t=setTimeout(function(){c.abort();},ms||7000);
     try{
       const r=await fetch(u,{signal:c.signal,mode:'cors'});
       clearTimeout(t);
-      if(r&&r.ok)return await r.text();
+      if(r&&r.ok){const txt=await r.text();if(txt&&txt.length>80)return txt;}
     }catch(e){clearTimeout(t);}
     return '';
   };
   const proxies=[
-    url,
     'https://r.jina.ai/'+url,
+    url,
     'https://api.allorigins.win/raw?url='+encodeURIComponent(url)
   ];
   let html='';
-  for(let i=0;i<proxies.length;i++){
-    html=await tryOne(proxies[i]);
-    if(html&&html.length>80)break;
-  }
-  if(!html)return '';
-  const extra=[];
-  const paths=['/contact','/contact-us','/about','/about-us'];
-  const host=url.replace(/\/$/,'');
-  for(let i=0;i<paths.length;i++){
-    if(new RegExp(paths[i].replace('/','\\/')+'\\b','i').test(html)){
-      const more=await tryOne('https://r.jina.ai/'+host+paths[i]);
-      if(more)extra.push(more);
-    }
-  }
-  return html+(extra.length?'\n'+extra.join('\n'):'');
+  await Promise.all(proxies.map(async function(u){
+    const t=await tryOne(u,7000);
+    if(t&&t.length>(html?html.length:80))html=t;
+  }));
+  return html||'';
 }
 function applyCompanyHit(c,soft){
   const set=soft?_qfSet:_qfForce;
@@ -12211,6 +12285,7 @@ function applyCompanyHit(c,soft){
   const spec=document.getElementById('subSpec');
   const trade=c.trade||guessTrade([c.name,c.title,c.types,c.sub,u].filter(Boolean).join(' '));
   if(spec&&trade)spec.value=trade;
+  try{ssSync('subSpec');}catch(e){}
   const bits=[];
   if((c.name||c.title))bits.push('name');if(trade)bits.push('trade');if(u)bits.push('website');
   if(c.phone)bits.push('phone');if(c.email)bits.push('email');if(c.address)bits.push('address');
@@ -12259,10 +12334,11 @@ async function webCompanyPick(q){
       onOk:(u)=>{ if(u&&u.trim()) applySiteUrl(u.trim()); }});
     return;
   }
+  if(list.length===1){window._webPickList=list;webCompanyChose(0);return;}
   let sc=document.getElementById('webPickScrim');
   if(!sc){
     sc=document.createElement('div');sc.id='webPickScrim';sc.className='pmodal-scrim';
-    sc.innerHTML='<div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div><h4>Which one?</h4><div id="webPickBody" style="max-height:46vh;overflow:auto"></div><div style="margin-top:10px"><button class="b1 b-cancel" style="width:100%" onclick="document.getElementById("webPickScrim").classList.remove("show")">None of these</button></div></div>';
+    sc.innerHTML='<div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div><h4>Which one?</h4><div id="webPickBody" style="max-height:46vh;overflow:auto"></div><div style="margin-top:10px"><button class="b1 b-cancel" style="width:100%" onclick="document.getElementById(\'webPickScrim\').classList.remove(\'show\')">None of these</button></div></div>';
     document.body.appendChild(sc);
   }
   document.getElementById('webPickBody').innerHTML=list.slice(0,6).map((c,k)=>
@@ -12272,17 +12348,31 @@ async function webCompanyPick(q){
   window._webPickList=list;
   sc.classList.add('show');
 }
+function hostAsName(url){
+  try{
+    const h=new URL(/^https?:/i.test(url)?url:('https://'+url)).hostname.replace(/^www\./,'');
+    const stem=(h.split('.')[0]||'').replace(/[-_]+/g,' ');
+    return stem.replace(/\b\w/g,function(c){return c.toUpperCase();});
+  }catch(e){return '';}
+}
 async function applySiteUrl(url){
   if(!url)return;
   if(!/^https?:\/\//i.test(url))url='https://'+url.replace(/^\/\//,'');
   _qfForce('subWebsite',url);
+  const hint=hostAsName(url);
+  if(hint)_qfSet('subName',hint);
+  const t0=guessTrade(url+' '+hint);
+  const spec=document.getElementById('subSpec');
+  if(spec&&t0&&!spec.value)spec.value=t0;
+  try{ssSync('subSpec');}catch(e){}
   toast('Reading their site…');
   const html=await fetchSiteText(url);
   const facts=parseSiteFacts(html,url);
   facts.url=url;
   if(!facts.name&&facts.title)facts.name=facts.title;
-  const bits=applyCompanyHit(facts,true);
-  toast(bits.length?('Filled '+bits.join(', ')+' — check before you save'):'Couldn’t prove more than the website — type the rest');
+  const bits=applyCompanyHit(facts,false);
+  try{subAfterHit();}catch(e){}
+  toast(bits.length?('Filled '+bits.join(', ')+' — Save if this is right'):(hint?'Name from the site — add what is missing':'Could not prove more than the website — type the rest'));
 }
 async function webCompanyChose(k){
   const c=(window._webPickList||[])[k];if(!c)return;
