@@ -667,6 +667,8 @@
   .cal-day:active{transform:scale(.96);}
   .cal-day.out{opacity:.38;}
   .cal-day.today{border-color:var(--oak);box-shadow:0 0 0 1px var(--oak) inset;}
+  .cal-day.dbl{border-color:var(--clay);background:rgba(176,80,60,.08);}
+  .cal-day.dbl .dn{color:var(--clay);}
   .cal-day .dn{font-size:11.5px;font-weight:600;color:var(--ink-2);padding-left:2px;}
   .cal-day.today .dn{color:var(--oak);}
   .cal-bars{display:flex;flex-direction:column;gap:2px;margin-top:3px;}
@@ -1199,7 +1201,7 @@
     margin:34px 0 8px;padding:14px;cursor:pointer;-webkit-user-select:none;user-select:none;}
   /* password gate + feedback form (shared paper modal) */
   #promptScrim,#webPickScrim{z-index:96 !important;}
-  #specScrim,#docScrim,#recScrim,#pktLogScrim,#readyScrim,#bkScrim,#dayScrim,#idleScrim{z-index:96;}
+  #specScrim,#docScrim,#recScrim,#pktLogScrim,#readyScrim,#bkScrim,#dayScrim,#idleScrim,#invScrim,#payScrim{z-index:96;}
 .pmodal-scrim{position:absolute;inset:0;z-index:90;background:rgba(20,18,14,.55);backdrop-filter:blur(6px);
     display:none;align-items:center;justify-content:center;padding:24px;}
   .pmodal-scrim.show{display:flex;}
@@ -2035,7 +2037,7 @@ body.on-tour .tour-card{display:block;}
           <div class="gp-cal-acts"><button type="button" class="gp-cal-reset" onclick="bkCalReset()">Reset</button>
           <button type="button" class="gp-cal-ok" onclick="bkCalDone()" aria-label="Use these dates">✓</button></div></div>
         <input id="bkNote" placeholder="Note for sub — gate code, scope…" style="font-size:13.5px">
-        <div class="bk-alerts" id="bkAlerts"><div id="bkPacket"></div><div id="bkGuest"></div><div id="bkSendLink"></div></div>
+        <div class="bk-alerts" id="bkAlerts"><div id="bkOverlap"></div><div id="bkPacket"></div><div id="bkGuest"></div><div id="bkSendLink"></div></div>
         <button class="b1 b-go" style="width:100%;margin-top:10px" id="bkSave" onclick="bkSave()">Save</button>
         <button class="add-sub-btn" style="margin-top:8px;display:none;color:var(--clay)" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
       </div>
@@ -2865,7 +2867,7 @@ body.on-tour .tour-card{display:block;}
     <div class="grip-hit" onclick="closeSheet()"><div class="grip"></div></div>
     <h3 id="sheetTitle">New entry</h3>
     <div class="sub" id="sheetSub">Photo first — everything else is optional.</div>
-    <div class="photo-drop" id="drop" onclick="var e=document.getElementById('file');e&amp;&amp;e.click()">
+    <div class="photo-drop" id="drop" onclick="dropPickPhoto()">
       <div class="ph" id="dropPh">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>
         <div class="t">Take or choose a photo</div>
@@ -3097,15 +3099,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.301.0 - Line Field Notes. Bigger type.';
+const PLUMB_VERSION='2.302.0 - Day shouts overlap. Field Notes stays. Money one sheet.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787162109299;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.301.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787163010083;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.302.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -7020,6 +7022,8 @@ function houseGoMoney(){
 }
 function openLogPick(){
   saveScroll('home');
+  const hs=document.getElementById('houseScrim');
+  if(hs&&hs.classList.contains('show')&&_housePid){logPickHouse(_housePid);return;}
   const ps=(visibleProjects()||[]).slice().sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
   if(!ps.length){toast('Add a house first');return;}
   if(ps.length===1){logPickHouse(ps[0].id);return;}
@@ -7079,7 +7083,7 @@ function houseHTML(p){
     h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
   h+='<div class="hs-doors">';
-  if(!isClient)h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">Photo or a note</div></button>';
+  if(!isClient)h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">A note, or a photo</div></button>';
   h+='<button class="hs-door" data-door="cal" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
   h+='<button class="hs-door" data-door="sel" onclick="houseGoSite(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
   if(isBuilder)h+='<button class="hs-door" data-door="money" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
@@ -8422,14 +8426,14 @@ function renderBudget(){
     <div><b>${invUsd(bill.paid)}</b><span>Received</span></div>
     <div><b class="bgt-em ${bill.out>0.005?'over':''}">${invUsd(Math.max(0,bill.out))}</b><span>Still out</span></div>
   </div>
-  <div class="row2"><button class="b1 b-cancel" style="flex:1" onclick="openInvoices()">Invoices</button><button class="b1 b-cancel" style="flex:1" onclick="openPayments()">Payments</button></div>
-  <div class="row2" style="margin-top:8px"><button class="b1 b-cancel" style="flex:1" onclick="openCostLine()">+ Budget line</button><button class="b1 b-cancel" style="flex:1" onclick="openCostActual()">+ Log a cost</button></div>
+  <div class="row2"><button class="b1 b-cancel" style="flex:1" onclick="openCostLine()">+ Budget line</button><button class="b1 b-cancel" style="flex:1" onclick="openCostActual()">+ Log a cost</button></div>
+  <div class="row2" style="margin-top:8px"><button class="b1 b-cancel" style="flex:1" onclick="moneyNewInvoice()">+ Invoice</button><button class="b1 b-cancel" style="flex:1" onclick="moneyNewPayment()">+ Payment</button></div>
   <div class="bgt-toggle"><span>Group</span><div class="bgt-mini"><button class="${_costGroup==='stage'?'on':''}" onclick="setCostGroup('stage')">By stage</button><button class="${_costGroup==='trade'?'on':''}" onclick="setCostGroup('trade')">By trade</button></div></div>`;
   const copyBtn=budgetSources().length?`<button class="la-link" style="display:block;margin:14px auto 0" onclick="openBudgetCopy()">Copy budget lines from another site…</button>`:'';
   const qbBtn=(qbEligible()&&_qbState&&_qbState.connected)?`<button class="la-link" style="display:block;margin:12px auto 0;font-weight:700" onclick="qbExportNow()">Send new costs to QuickBooks</button>`:'';
   const jcBtn=lines.length?`<button class="la-link" style="display:block;margin:14px auto 0;font-weight:700" onclick="openJobCost()">Job cost report</button>`:'';
   const exportBtn=jcBtn+qbBtn+copyBtn+`<button class="la-link" style="display:block;margin:10px auto 2px" onclick="exportCosts()">Download costs for your accountant (.csv)</button>`;
-  if(isWideBudget()){document.getElementById('budgetBody').innerHTML=h+budgetTableHTML(p)+exportBtn;return;}
+  if(isWideBudget()){document.getElementById('budgetBody').innerHTML=h+budgetTableHTML(p)+moneyBillHTML(p)+exportBtn;return;}
   if(!lines.length)h+=`<div class="empty">No budget lines yet. Add one \u2014 or copy another site\u2019s budget below \u2014 to start tracking this build\u2019s money.</div>`;
   const groups=[];
   if(_costGroup==='stage'){STAGES.forEach(s=>groups.push({key:s.id,label:s.name}));}
@@ -8452,8 +8456,50 @@ function renderBudget(){
     h+=`<div class="bgt-grp" style="color:var(--clay)">Not assigned to a line</div>`;
     un.forEach(a=>{h+=`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${qbBadge(a)}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`;});
   }
-  document.getElementById('budgetBody').innerHTML=h+exportBtn;
+  document.getElementById('budgetBody').innerHTML=h+moneyBillHTML(p)+exportBtn;
 }
+function moneyBillHTML(p){
+  const invs=(p.invoices||[]).slice().reverse();
+  const pmts=(p.payments||[]);
+  const stLbl={draft:'Draft',sent:'Sent',approved:'Approved',partial:'Partial',overdue:'Past due',paid:'Paid',void:'Void'};
+  let h='';
+  if(invs.length){
+    h+='<div class="bgt-grp">Invoices</div>';
+    invs.forEach(function(inv){
+      const st=invState(inv);
+      h+='<div class="bgt-row" onclick="moneyOpenInvoice(\''+String(inv.id).replace(/'/g,'')+'\')">'
+        +'<div class="bgt-l"><b>'+(inv.no?esc(inv.no)+' \u00b7 ':'')+esc(inv.title||'Invoice')+'</b>'
+        +'<i>'+(inv.items||[]).length+' line'+((inv.items||[]).length===1?'':'s')+' \u00b7 '+invUsd(inv.total)
+        +(st==='draft'?' \u00b7 draft':st==='overdue'?' \u00b7 past due':'')+'</i></div>'
+        +'<div class="bgt-chip'+(st==='overdue'?' over':'')+'">'+(stLbl[st]||st)+'</div></div>';
+    });
+  }
+  if(pmts.length){
+    h+='<div class="bgt-grp">Payments received</div>';
+    pmts.forEach(function(x){
+      h+='<div class="bgt-act" onclick="moneyNewPayment()"><span>'+esc(x.label||'Payment')+'</span><i>'+invUsd(x.amount)+(x.date?' \u00b7 '+esc(fmtLogDate(x.date)):'')+'</i></div>';
+    });
+  }
+  const invPays=[];
+  (p.invoices||[]).filter(function(v){return v&&v.status!=='void';}).forEach(function(v){
+    (v.payments||[]).forEach(function(pm){invPays.push({label:(pm.note||'Payment')+' \u00b7 '+(v.no||v.title||''),amount:Number(pm.amount)||0,date:pm.date});});
+  });
+  if(invPays.length){
+    h+='<div class="bgt-grp">On invoices</div>';
+    invPays.forEach(function(x){
+      h+='<div class="bgt-act" style="opacity:.85"><span>'+esc(x.label)+'</span><i>'+invUsd(x.amount)+(x.date?' \u00b7 '+esc(fmtLogDate(x.date)):'')+'</i></div>';
+    });
+  }
+  return h;
+}
+function moneyNewInvoice(){invCompose();document.getElementById('invScrim').classList.add('show');}
+function moneyOpenInvoice(id){
+  const p=P();const inv=(p.invoices||[]).find(function(v){return String(v.id)===String(id);});
+  if(!inv)return;
+  if(invState(inv)==='draft'){invCompose(id);document.getElementById('invScrim').classList.add('show');}
+  else openInvoiceDetail(p.id,id,'builder');
+}
+function moneyNewPayment(){openPayments();}
 function _costSel(elId,list,val,none){
   const el=document.getElementById(elId);
   el.innerHTML=`<option value="">${none}</option>`+list.map(o=>`<option value="${esc(String(o.id))}"${String(val||'')===String(o.id)?' selected':''}>${esc(String(o.label||o.name||''))}</option>`).join('');
@@ -10941,7 +10987,7 @@ function invoicesFromSettings(){
   openPick({title:'Invoices \u2014 which site?',
     options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.invoices||[]).length?(p.invoices.length+' invoice'+(p.invoices.length===1?'':'s')):'No invoices yet')+(p.city?' \u00b7 '+p.city:'')})),
     onPick:id=>{Data.setActive(id);try{renderAll();updateHeader();}catch(e){}openInvoices();}});}
-function closeInvoices(){document.getElementById('invScrim').classList.remove('show');}
+function closeInvoices(){document.getElementById('invScrim').classList.remove('show');try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}
 function invCompose(editId){
   if(editId){const p=P();const inv=(p.invoices||[]).find(v=>v.id===editId);
     if(inv){const picks={};let exL='',exA='';
@@ -10995,7 +11041,7 @@ function invSave(asDraft){
     inv.status='sent';inv.t=Date.now();inv.sentBy=sess.name||'';
     persist();logEvent('invoiceSent',inv.no+' · '+invUsd(total));toast(inv.no+' sent — '+invUsd(total));
   }
-  _invDraft=null;invMode='list';renderInvoices();try{renderSelections();}catch(e){}try{if(document.getElementById('clientview').classList.contains('show'))renderClient();}catch(e){}}
+  _invDraft=null;invMode='list';renderInvoices();try{renderSelections();}catch(e){}try{if(document.getElementById('clientview').classList.contains('show'))renderClient();}catch(e){}try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}
 function invDeleteDraft(invId){
   const p=P();const inv=(p.invoices||[]).find(v=>v.id===invId);if(!inv)return;
   confirmDelete({title:'Delete draft?',body:esc(inv.title)+'<br><br>This draft was never sent. Its selections return to “Not yet invoiced.”',onConfirm:()=>{
@@ -11288,7 +11334,7 @@ function renderInvoices(){
     :'<div class="empty" style="padding:8px 0">No invoices yet — bill the homeowner for selection upcharges right here.</div>')
     +`<button class="add-sub-btn" style="margin-top:10px" onclick="invCompose()">New invoice…</button>`;}
 function openPayments(){renderPaymentsList();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';document.getElementById('payDate').value=todayStr();document.getElementById('payScrim').classList.add('show');}
-function closePayments(){document.getElementById('payScrim').classList.remove('show');}
+function closePayments(){document.getElementById('payScrim').classList.remove('show');try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}
 function paymentsListHTML(p){const pmts=(p.payments||[]);const loose=pmts.reduce((a,x)=>a+(Number(x.amount)||0),0);
   const invPays=[];(p.invoices||[]).filter(v=>v&&v.status!=='void').forEach(v=>(v.payments||[]).forEach(pm=>invPays.push({label:(pm.note||'Payment')+'\u2002\u00b7\u2002'+(v.no||''),date:pm.date,amount:Number(pm.amount)||0})));
   const invPaid=invPays.reduce((a,x)=>a+x.amount,0);
@@ -11301,7 +11347,7 @@ function renderPaymentsList(){const el=document.getElementById('payList');if(el)
 function addPayment(){const label=document.getElementById('payLabel').value.trim();let amt=document.getElementById('payAmount').value.trim();amt=Number(amt.replace(/[^0-9.]/g,''));
   if(!amt||isNaN(amt)){toast('Enter an amount');return;}
   Data.addPayment({id:'pm'+Date.now().toString(36),label:label||'Payment',amount:amt,date:document.getElementById('payDate').value||todayStr()});
-  logEvent('paymentAdded',label+' $'+amt);renderPaymentsList();renderSelections();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';toast('Payment recorded');}
+  logEvent('paymentAdded',label+' $'+amt);renderPaymentsList();renderSelections();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}toast('Payment recorded');}
 function removePayment(id){const p=(P().payments||[]).find(x=>x.id===id);if(!p)return;
   confirmDelete({title:'Remove payment?',body:esc(p.label||'Payment')+' \u00b7 $'+(Number(p.amount)||0).toLocaleString()+'<br><br>The amount outstanding will recalculate.',onConfirm:()=>{
   Data.removePayment(id);try{renderPaymentsList();}catch(e){}try{renderInvoices();}catch(e){}renderSelections();toast('Payment removed');}});}
@@ -12436,6 +12482,17 @@ function _dblWhere(dbl){
   }
   return (dbl.name||'This crew')+' is on '+parts.join(' and ');
 }
+function _alsoOnDay(b,ts){
+  const bits=[];
+  allBookings().forEach(function(x){
+    if(!x||x.subName!==b.subName||x.id===b.id)return;
+    if(!spanCovers(x,ts))return;
+    const s=(x.p&&(x.p.street||x.p.name))||'';
+    if(s&&bits.indexOf(s)<0)bits.push(s);
+  });
+  if(!bits.length)return '';
+  return '<div class="d" style="color:var(--clay);margin-top:3px">Also on '+esc(bits.join(' and '))+' that day</div>';
+}
 function conflictIds(){const ids={};bookingConflicts().forEach(c=>{if(c.bs)c.bs.forEach(b=>ids[b.id]=1);if(c.a)ids[c.a.id]=1;});return ids;}
 /* auto-suggest: trades on deck at each site with a sub aboard but no future booking */
 function calSuggestions(){
@@ -12716,15 +12773,30 @@ function renderCal(){
       +'</div>';
   }
   const conf=calIsClient()?[]:bookingConflicts().filter(c=>(!calCrewFilter||c.name===calCrewFilter)&&calMine(c.bs?c.bs[0]:c.a));
-  const banner=conf.length?`<div class="pkt-banner warn" style="margin:0 2px 12px">${conf.slice(0,3).map(c=>c.kind==='double'
-      ?('<b>'+esc(c.name)+'</b> needs '+c.sites.length+' crews (has '+c.cap+') on '+fmtDue(c.day)+' \u2014 '+[...new Set(c.sites)].map(esc).join(' & '))
-      :('<b>'+esc(c.name)+'</b> is booked over time they marked unavailable')).join(' \u00b7 ')}${conf.length>3?' \u00b7 +'+(conf.length-3)+' more':''}</div>`:'';
+  const banner=conf.length?'<div style="margin:0 2px 12px">'+conf.slice(0,3).map(function(c){
+      if(c.kind==='double'){
+        const who=String(c.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const streets=[...new Set(c.sites||[])].map(esc).join(' and ');
+        return '<div class="pkt-banner warn" style="margin:0 0 8px;cursor:pointer" onclick="closeDay();openCalCrew(\''+who+'\','+Number(c.day)+')"><b>'+esc(c.name)+'</b> is double-booked '+fmtDue(c.day)+' \u2014 '+streets+'. Tap to see only this crew.</div>';
+      }
+      return '<div class="pkt-banner warn" style="margin:0 0 8px"><b>'+esc(c.name)+'</b> is booked over time they marked unavailable</div>';
+    }).join('')+(conf.length>3?'<div class="pkt-banner warn">+'+(conf.length-3)+' more</div>':'')+'</div>':'';
   const risks=calIsClient()?[]:rainRisks();
   const wxBanner=risks.length?`<div class="pkt-banner warn" style="margin:0 2px 12px;background:rgba(126,147,168,.14);color:var(--ink-2)">\ud83c\udf27 ${risks.map(r=>'<b>'+esc(specLabel(r.b.trade))+'</b> at '+esc(r.b.p.street||r.b.p.name)+' \u2014 rain likely '+fmtDue(r.day)).join(' \u00b7 ')}</div>`:'';
   const moveBanner=_calMove?`<div class="pkt-banner ok" style="margin:0 2px 12px">Moving <b>${esc(_calMove.b.subName)}</b> (${Math.round((_calMove.b.end-_calMove.b.start)/86400000)+1}d) \u2014 tap the new start day. <button class="lpay" onclick="calMoveCancel()" style="margin-left:6px">Cancel</button></div>`:'';
   if(!calIsClient()){[...new Map((state.projects||[]).filter(p=>p.city).map(p=>[(p.city||'')+'|'+(p.state||''),p])).values()].slice(0,3).forEach(p=>Weather.ensure(p.city,p.state));}
   const wxCity=(fp&&fp.city)||((state.projects||[])[0]||{}).city||'';
   const wxState=(fp&&fp.state)||((state.projects||[])[0]||{}).state||'';
+  const dblDays={};
+  if(!calIsClient())bookingConflicts().forEach(function(c){
+    if(c.kind!=='double')return;
+    if(calCrewFilter&&c.name!==calCrewFilter)return;
+    (c.bs||[]).forEach(function(b){
+      if(!calMine(b))return;
+      let d=dayStart(b.start), last=dayStart(b.end||b.start);
+      for(;d<=last;d+=86400000)dblDays[dayKey(d)]=1;
+    });
+  });
   let grid='';
   for(let i=0;i<42;i++){
     const ts=gridStart+i*86400000;const d=new Date(ts);
@@ -12738,7 +12810,7 @@ function renderCal(){
       +dayAv.slice(0,1).map(()=>'<div class="cal-bar av"></div>').join('');
     const more=(dayBs.length>3)?`<div class="cal-more">+${dayBs.length-3}</div>`:'';
     const wx=Weather.get(wxCity,wxState,ts);const wxI=wx?`<span class="cal-wx${Weather.rainy(wx)?' rain':''}">${Weather.icon(wx)}</span>`:'';
-    grid+=`<div class="cal-day${out?' out':''}${k===todayK?' today':''}${_calMove?' mv':''}" onclick="${_calMove?`calMoveTo(${ts})`:`openDay(${ts})`}"${calIsClient()?'':` onpointerdown="calPressStart(event,${ts})" onpointerup="calPressEnd()" onpointercancel="calPressEnd()"`}><div class="dn">${d.getDate()}${wxI}</div><div class="cal-bars">${bars}</div>${more}</div>`;
+    grid+=`<div class="cal-day${out?' out':''}${k===todayK?' today':''}${dblDays[k]?' dbl':''}${_calMove?' mv':''}" onclick="${_calMove?`calMoveTo(${ts})`:`openDay(${ts})`}"${calIsClient()?'':` onpointerdown="calPressStart(event,${ts})" onpointerup="calPressEnd()" onpointercancel="calPressEnd()"`}><div class="dn">${d.getDate()}${wxI}</div><div class="cal-bars">${bars}</div>${more}</div>`;
   }
   const monthBs=bs.filter(b=>b.end>=new Date(y,m,1).getTime()&&b.start<=new Date(y,m+1,0).getTime());
   const byName={};monthBs.forEach(b=>{const days=Math.round((b.end-b.start)/86400000)+1;byName[b.subName]=byName[b.subName]||{trade:b.trade,days:0};byName[b.subName].days+=days;});
@@ -12768,22 +12840,31 @@ function closeDay(){document.getElementById('dayScrim').classList.remove('show')
 function renderDay(){
   const t=document.getElementById('dayTitle'),el=document.getElementById('dayBody');if(!el)return;
   t.textContent=new Date(calDay).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
-  const bs=calVisibleBookings().filter(b=>spanCovers(b,calDay));
+  let bs=calVisibleBookings().filter(b=>spanCovers(b,calDay));
   const av=calVisibleAvail().filter(a=>spanCovers(a,calDay));
   const cf=conflictIds();
   const dayDoubles=bookingConflicts().filter(function(c){
     return c.kind==='double'&&(c.bs||[]).some(function(b){return spanCovers(b,calDay);});
   });
+  if(!calIsClient()){
+    dayDoubles.forEach(function(c){
+      (c.bs||[]).forEach(function(b){
+        if(!spanCovers(b,calDay))return;
+        if(bs.some(function(x){return x.id===b.id;}))return;
+        bs=bs.concat([b]);
+      });
+    });
+  }
   let h='';
   if(dayDoubles.length&&!calIsClient()){
     h+=dayDoubles.map(function(c){
-      const who=String(c.name||'').replace(/'/g,"\\'");
-      return '<div class="day-row" style="border-color:var(--clay);background:rgba(176,80,60,.06)" onclick="openCalCrew(\''+who+'\','+calDay+')"><div style="flex:1"><div class="n" style="color:var(--clay)">Double-booked \u00b7 '+esc(c.name)+'</div><div class="d">'+esc(_dblWhere(c))+'. Tap to see only this crew.</div></div></div>';
+      const who=String(c.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return '<div class="day-row" style="border-color:var(--clay);background:rgba(176,80,60,.06)" onclick="closeDay();openCalCrew(\''+who+'\','+calDay+')"><div style="flex:1"><div class="n" style="color:var(--clay)">Double-booked \u00b7 '+esc(c.name)+'</div><div class="d">'+esc(_dblWhere(c))+'. Tap to see only this crew.</div></div></div>';
     }).join('');
   }
   h+=bs.map(b=>calIsClient()
     ?`<div class="day-row avr"><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${esc(specLabel(b.trade)||'Crew')} crew on site</div><div class="d">${fmtWin(b)}</div></div></div>`
-    :`<div class="day-row" ${calIsSub()?'':`onclick="openBk('${b.p.id}|${b.id}')"`}><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${esc(b.subName)}${cf[b.id]?' <span style=\"color:var(--clay)\">\u26a0</span>':''}<span class="bk-st ${bkStatus(b)}">${BK_STATUS[bkStatus(b)].label}</span></div><div class="d">${esc(b.p.street||b.p.name)} \u00b7 ${esc(specLabel(b.trade)||'')} \u00b7 ${fmtWin(b)}</div>${b.note?`<div class="note">${esc(b.note)}</div>`:''}${calIsSub()?'':bkInviteLine(b)}${calIsSub()?'':`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();sendGuestPacket('${b.p.id}','${b.id}')">Text this link</button>`}${calIsSub()&&b.subName===(state.session||{}).name&&bkStatus(b)!=='confirmed'?`<div class="row2" style="margin-top:8px"><button class="lpay" onclick="event.stopPropagation();bkConfirm('${b.p.id}','${b.id}')">Confirm</button><button class="lpay" onclick="event.stopPropagation();bkSubModify('${b.p.id}','${b.id}')">Change dates</button><button class="lpay" style="color:var(--clay)" onclick="event.stopPropagation();bkDecline('${b.p.id}','${b.id}')">Can\u2019t make it</button></div>`:''}${calIsSub()&&b.subName===(state.session||{}).name?`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();bkToCalendar('${b.p.id}','${b.id}')">📅 Add to my calendar</button>`:''}</div></div>`).join('');
+    :`<div class="day-row" ${calIsSub()?'':`onclick="openBk('${b.p.id}|${b.id}')"`}><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${esc(b.subName)}${cf[b.id]?' <span style=\"color:var(--clay)\">\u26a0</span>':''}<span class="bk-st ${bkStatus(b)}">${BK_STATUS[bkStatus(b)].label}</span></div><div class="d">${esc(b.p.street||b.p.name)} \u00b7 ${esc(specLabel(b.trade)||'')} \u00b7 ${fmtWin(b)}</div>${cf[b.id]?_alsoOnDay(b,calDay):''}${b.note?`<div class="note">${esc(b.note)}</div>`:''}${calIsSub()?'':bkInviteLine(b)}${calIsSub()?'':`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();sendGuestPacket('${b.p.id}','${b.id}')">Text this link</button>`}${calIsSub()&&b.subName===(state.session||{}).name&&bkStatus(b)!=='confirmed'?`<div class="row2" style="margin-top:8px"><button class="lpay" onclick="event.stopPropagation();bkConfirm('${b.p.id}','${b.id}')">Confirm</button><button class="lpay" onclick="event.stopPropagation();bkSubModify('${b.p.id}','${b.id}')">Change dates</button><button class="lpay" style="color:var(--clay)" onclick="event.stopPropagation();bkDecline('${b.p.id}','${b.id}')">Can\u2019t make it</button></div>`:''}${calIsSub()&&b.subName===(state.session||{}).name?`<button class="lpay" style="margin-top:8px" onclick="event.stopPropagation();bkToCalendar('${b.p.id}','${b.id}')">📅 Add to my calendar</button>`:''}</div></div>`).join('');
   h+=av.map(a=>`<div class="day-row avr"><span class="sw" style="background:repeating-linear-gradient(45deg,var(--ink-3) 0 3px,transparent 3px 6px)"></span><div style="flex:1"><div class="n">${esc(a.subName)} \u2014 unavailable</div><div class="d">${fmtWin(a)}${a.note?' \u00b7 '+esc(a.note):''}</div></div>${calIsSub()&&a.subName===(state.session||{}).name?`<button class="lpay" onclick="event.stopPropagation();delAvail('${a.p.id}','${a.id}')">Remove</button>`:''}</div>`).join('');
   if(!bs.length&&!av.length)h+='<div class="empty" style="padding:8px 0">Nothing scheduled this day.</div>';
   if(calIsClient()){ /* read-only: no add, no idle roster */ }
@@ -12823,8 +12904,9 @@ function delAvail(pid,id){const p=state.projects.find(x=>String(x.id)===String(p
 let _bkLead='';
 const BK_LEAD={wait:'Waiting on them',blocked:'They are blocked',declined:'They declined',double:'Double-booked',change:'Date change'};
 function bkLeadOrder(){
-  const a=document.getElementById('bkAlerts'),g=document.getElementById('bkGuest'),pk=document.getElementById('bkPacket'),s=document.getElementById('bkSendLink');
+  const a=document.getElementById('bkAlerts'),g=document.getElementById('bkGuest'),pk=document.getElementById('bkPacket'),s=document.getElementById('bkSendLink'),ov=document.getElementById('bkOverlap');
   if(!a||!g||!pk)return;
+  if(ov)a.appendChild(ov);
   if(_bkLead){a.appendChild(g);a.appendChild(pk);}
   else {a.appendChild(pk);a.appendChild(g);}
   if(s)a.appendChild(s);
@@ -12864,25 +12946,49 @@ function openBk(ref,defTs){
   }
   document.getElementById('bkSiteLbl').textContent=calIsSub()?'Saved under site':'Site';
   subSel.style.display='none';   // native select is the hidden source of truth; bkSubBtn is the visible picker
-  siteSel.onchange=()=>{bkFillSubs(siteSel.value);bkRenderPacket();};
-  bkSyncBtns();bkRenderPacket();bkLeadOrder();_bkCalHide();
+  siteSel.onchange=()=>{bkFillSubs(siteSel.value);bkRenderPacket();bkRenderOverlap();};
+  bkSyncBtns();bkRenderPacket();bkRenderOverlap();bkLeadOrder();_bkCalHide();
   document.getElementById('bkScrim').classList.add('show');}
 function bkFillSubs(pid){
   const p=state.projects.find(x=>String(x.id)===String(pid));
   const subSel=document.getElementById('bkSub');
   subSel.innerHTML=((p&&p.subs)||[]).map(sb=>`<option value="${esc(sb.name)}" data-trade="${sb.specialty}">${esc(sb.name)} \u2014 ${esc(specLabel(sb.specialty))}</option>`).join('')||'<option value="">No subs on this site yet</option>';
   bkSyncBtns();bkRenderPacket();}
+function bkRenderOverlap(){
+  const box=document.getElementById('bkOverlap');if(!box)return;
+  if(calIsSub()||_bkSubMod){box.innerHTML='';return;}
+  const name=(document.getElementById('bkSub')||{}).value||'';
+  const sv=(document.getElementById('bkStart')||{}).value||'';
+  const ev=(document.getElementById('bkEnd')||{}).value||sv;
+  const pid=(document.getElementById('bkSite')||{}).value||'';
+  if(!name||!sv){box.innerHTML='';return;}
+  const start=Date.parse(sv+'T12:00:00'), end=Date.parse(ev+'T12:00:00');
+  if(isNaN(start)||isNaN(end)){box.innerHTML='';return;}
+  const others=[];
+  allBookings().forEach(function(b){
+    if(b.subName!==name)return;
+    if(_bkEdit&&String(b.id)===String(_bkEdit.bid))return;
+    if(String(b.p&&b.p.id)===String(pid))return;
+    if(b.end<start||b.start>end)return;
+    const site=(b.p&&(b.p.street||b.p.name))||'';
+    const line=(site?site+' \u00b7 ':'')+fmtWin({start:b.start,end:b.end||b.start});
+    if(line&&others.indexOf(line)<0)others.push(line);
+  });
+  if(!others.length){box.innerHTML='';return;}
+  const street=(others[0].split(' \u00b7 ')[0])||'another house';
+  box.innerHTML='<div class="bk-pkt warn"><div class="bk-pkt-t">Also on '+esc(street)+' that day</div><div class="bk-pkt-d">'+esc(name)+' is already booked: '+others.map(esc).join(' \u00b7 ')+'. Saving this will double-book them unless they have another crew.</div></div>';
+}
 /* Packet shortcut + verify-before-scheduling. Reads the trade of the currently
    selected sub and shows whether that trade's install packet is ready (specs
    complete + both sign-offs). Open the packet straight from here. */
 function bkSelTrade(){const subSel=document.getElementById('bkSub');const o=subSel&&subSel.selectedOptions&&subSel.selectedOptions[0];return o?o.getAttribute('data-trade'):null;}
 function bkRenderPacket(){
   const box=document.getElementById('bkPacket');if(!box)return;
-  if(calIsSub()){box.innerHTML='';return;}                 // subs blocking their own time: no packet step
+  if(calIsSub()){box.innerHTML='';try{bkRenderOverlap();}catch(e){}return;}
   const pid=document.getElementById('bkSite').value;
   const p=state.projects.find(x=>String(x.id)===String(pid));
   const trade=bkSelTrade();
-  if(!p||!trade){box.innerHTML='';return;}
+  if(!p||!trade){box.innerHTML='';try{bkRenderOverlap();}catch(e){}return;}
   const ready=packetReady(p,trade);
   const gaps=tradeSpecGaps(p,trade).length;
   const signed=packetSignedBoth(p,trade);
@@ -12895,7 +13001,8 @@ function bkRenderPacket(){
       </div>
       ${ready?'<div class="bk-pkt-d">Specs complete and signed off \u2014 good to schedule.</div>':`<div class="bk-pkt-d">${esc(why||'Review the specs before scheduling')}</div>`}
       <button class="bk-pkt-btn" onclick="bkOpenPacket()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9zM9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 11h6M9 15h6"/></svg>${ready?'View install packet':'Review the packet'}</button>
-    </div>`;}
+    </div>`;
+  try{bkRenderOverlap();}catch(e){}}
 function bkOpenPacket(){
   const pid=document.getElementById('bkSite').value;const trade=bkSelTrade();
   if(!pid||!trade){toast('Pick a subcontractor first');return;}
@@ -12933,7 +13040,7 @@ function bkPickSub(){
         const o=document.createElement('option');o.value=id;o.setAttribute('data-trade',(r&&r.trade)||'');
         o.textContent=id+((r&&r.trade)?' — '+(specLabel(r.trade)||''):'');subSel.appendChild(o);
       }
-      subSel.value=id;bkSyncBtns();bkRenderPacket();
+      subSel.value=id;bkSyncBtns();bkRenderPacket();bkRenderOverlap();
     }});}
 /* Scheduling a company that isn't on this site yet adds them to the site's
    roster (so they're bookable) — separate from inviting them to connect. */
@@ -12978,6 +13085,7 @@ function bkPickDay(iso){
   else if(iso<st.value){en.value=st.value;st.value=iso;}
   else en.value=iso;
   bkRenderCal();
+  try{bkRenderOverlap();}catch(e){}
 }
 function bkRenderCal(){
   const mount=document.getElementById('bkCalMount');if(!mount)return;
@@ -12991,6 +13099,7 @@ function bkCalDone(){
   if(!st||!st.value){toast('Pick a start date');return;}
   const en=document.getElementById('bkEnd');if(en&&!en.value)en.value=st.value;
   _bkCalHide();
+  try{bkRenderOverlap();}catch(e){}
 }
 function bkSave(){
   const start=Date.parse(document.getElementById('bkStart').value+'T12:00:00');
@@ -13438,6 +13547,17 @@ const PK_PERMIT={elec:'Electrical Permit',plumb:'Plumbing Permit',hvac:'Mechanic
 const PK_INSP_LBL={site:'Site / pre-construction',foundation:'Foundation',roughin:'Rough-in',
   rough_plumb:'Rough plumbing',rough_elec:'Rough electrical',rough_mech:'Rough mechanical',
   insulation:'Insulation',final_mep:'Final mechanical',final:'Final'};
+function _subPhoneOf(name,p){
+  name=String(name||'');
+  let ph='';
+  const take=function(s){if(s&&String(s.name)===name&&s.phone){ph=String(s.phone);return true;}return false;};
+  ((p&&p.subs)||[]).some(take);
+  if(ph)return ph;
+  (state.projects||[]).some(function(x){return ((x.subs||[])).some(take);});
+  if(ph)return ph;
+  ((orgPrefs()||{}).subRoster||[]).some(function(r){return take(r);});
+  return ph;
+}
 function packetSnapshot(p,b){
   const trade=b.trade||'';
   const sels=tradeSelections(p,trade).map(sel=>{
@@ -13458,6 +13578,7 @@ function packetSnapshot(p,b){
     site:String(p.street||p.name||'')+((p.city)?(' \u00b7 '+p.city):''),
     builder:String(sess.name||'Your builder'),
     sub:String(b.subName||''),trade:trade,tradeLabel:specLabel(trade),
+    phone:_subPhoneOf(b.subName,p),
     start:b.start,end:b.end,note:String(b.note||''),
     specs:sels,docs:docs,siteId:String(p.id),bookingId:String(b.id),resp:null,q:[],
     ctx:(function(){
@@ -13543,8 +13664,14 @@ function gpApproveSend(){
 function _sharePacketLink(snap,token){
   const url='https://siteplumb.com/app/?packet='+token;
   const msg='Hi \u2014 '+fmtWin({start:snap.start,end:snap.end})+' at '+snap.site+'. Dates, scope and specs \u2014 one tap to confirm: '+url;
-  window._pkLastShare={url:url,msg:msg,who:snap.subName||'the crew'};
-  showInfo('Text this link',`<p style="margin:0 0 12px;font-size:14px;line-height:1.5">Send this to <b>${esc(snap.subName||'the crew')}</b>. If you cancel the share sheet, the link stays here.</p>
+  const phone=_subPhoneOf(snap.sub,null)||snap.phone||'';
+  window._pkLastShare={url:url,msg:msg,who:snap.subName||snap.sub||'the crew',phone:phone};
+  const who=esc(snap.subName||snap.sub||'the crew');
+  const num=phone
+    ?('<div style="font-size:16px;font-weight:650;margin:0 0 10px">'+esc(phone)+'</div>')
+    :('<div style="font-size:13px;color:var(--ink-3);margin:0 0 10px">No phone on file for '+who+' \u2014 the link stays here to copy.</div>');
+  showInfo('Text this link',`<p style="margin:0 0 8px;font-size:14px;line-height:1.5">Send this to <b>${who}</b>. If you cancel the share sheet, the link stays here.</p>
+    ${num}
     <button class="b1 b-go" style="width:100%" onclick="pkDoShare()">Text this link</button>
     <div class="code-box" style="margin-top:12px" onclick="copyText('${url}')">${url}</div>
     <div style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:6px">Tap the link to copy</div>`);
@@ -13552,10 +13679,13 @@ function _sharePacketLink(snap,token){
 function pkDoShare(){
   const x=window._pkLastShare;if(!x)return;
   if(navigator.share){navigator.share({text:x.msg}).catch(function(){});}
-  else _smsOrCopy(x.msg);
+  else _smsOrCopy(x.msg,x.phone);
 }
-function _smsOrCopy(msg){
-  try{location.href='sms:?&body='+encodeURIComponent(msg);}catch(e){}
+function _smsOrCopy(msg,phone){
+  try{
+    const to=String(phone||'').replace(/[^\d+]/g,'');
+    location.href='sms:'+(to||'')+'?&body='+encodeURIComponent(msg);
+  }catch(e){}
   try{navigator.clipboard&&navigator.clipboard.writeText(msg).then(()=>toast('Message copied \u2014 paste it into a text'));}catch(e){}
 }
 function openGuestPreview(snap){window.__packetFixture=snap;renderGuestPacket('preview');}
@@ -13659,8 +13789,8 @@ function _gpRender(){
     h+='<div class="gp-updated"><div class="gp-u-what">'+esc(ch.what||'Packet updated')+'</div>'
       +(when?('<div class="gp-u-when">'+esc(when)+'</div>'):'')+'</div>';
   }
-  if(preview&&_gpPendingSend)h+='<div class="gp-preview">Review before it sends \u2014 this is exactly what '+esc(g.sub)+' will see.</div>'
-    +'<button class="gp-btn go" style="margin-bottom:10px" onclick="gpApproveSend()">Approve \u0026 text the link\u2026</button>';
+  if(preview&&_gpPendingSend)h+='<div class="gp-preview">Review before it sends \u2014 this is exactly what '+esc(g.sub)+' will see'+(g.phone?(' at '+esc(g.phone)):'')+'.</div>'
+    +'<button class="gp-btn go" style="margin-bottom:10px" onclick="gpApproveSend()">Text this link</button>';
   else if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your sub receives by text. Nothing was sent.</div>';
   h+='<div class="gp-site">'+esc(g.site)+'</div>';
   h+='<div class="gp-sub">'+esc(g.tradeLabel)+' \u00b7 for '+esc(g.sub)+' \u00b7 from '+esc(g.builder)+'</div>';
@@ -14823,7 +14953,7 @@ function openFieldNote(){
   openSheet(false);
   const p=P()||{};
   document.getElementById('sheetTitle').textContent='Field Notes';
-  document.getElementById('sheetSub').textContent='Log photos and notes from the field'+(p.street?(' \u2014 '+(p.street||p.name)):'')+'.';
+  document.getElementById('sheetSub').textContent='A chip and a few words. Photo if you have one'+(p.street?(' \u2014 '+(p.street||p.name)):'')+'.';
   document.getElementById('saveBtn').textContent='Send';
   ['sheetAssignLbl','crewSelect','crewSelect__ss','sheetShareRow','flag'].forEach(function(id){
     const el=id==='flag'?document.getElementById('flag')&&document.getElementById('flag').closest('.flagrow'):document.getElementById(id);
@@ -14836,10 +14966,15 @@ function openFieldNote(){
     fc.style.display='';
     fc.innerHTML=FIELD_KINDS.map(function(k){return '<button type="button" class="chip'+(_fieldKind===k.id?' on':'')+'" data-k="'+k.id+'" onclick="pickFieldKind(\''+k.id+'\')">'+esc(k.n)+'</button>';}).join('');
   }
-  const nl=document.getElementById('sheetNoteLbl');if(nl)nl.textContent='Note · optional';
+  const nl=document.getElementById('sheetNoteLbl');if(nl)nl.textContent='Note \u00b7 optional';
   const hint=document.getElementById('fieldKindHint');if(hint)hint.hidden=true;
+  const dt=document.querySelector('#drop .t');if(dt)dt.textContent='Photo \u00b7 optional';
+  _fnSheetOrder(true);
+  _fnArmDrop();
 }
 function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDate||todayStr()):null;
+  if(asLog)_fieldNote=false;
+  try{_fnSheetOrder(false);}catch(e){}
   if(!asLog&&!_fieldNote)_fieldNote=false;
   const isSub=(state.session||{}).role==='subs';
   document.getElementById('sheetTitle').textContent=isSub?'Post an update':(asLog?'Daily log entry':'New entry');
@@ -14877,10 +15012,47 @@ function rebuildDrop(dropId,phId,phInner,inputId,onchange){
   /* NEVER set capture here. It is a hard camera-only instruction on iOS, and
      this rebuild runs on every sheet close - which silently undid the fix. */
   inp.hidden=true;inp.onchange=onchange;drop.appendChild(inp);}
-function resetSheet(){pendingPhotoId=null;_fieldNote=false;_fieldKind='note';document.getElementById('caption').value='';document.getElementById('flag').classList.remove('on');document.getElementById('shareToggle').classList.remove('on');
+let _fnDropArmed=true;
+function dropPickPhoto(){
+  if(!_fnDropArmed)return;
+  const e=document.getElementById('file');if(e)e.click();
+}
+function _fnArmDrop(){
+  _fnDropArmed=false;
+  const drop=document.getElementById('drop');
+  if(drop)drop.style.pointerEvents='none';
+  clearTimeout(window._fnDropReady);
+  window._fnDropReady=setTimeout(function(){
+    _fnDropArmed=true;
+    const d=document.getElementById('drop');
+    if(d)d.style.pointerEvents='';
+  },480);
+}
+function _fnSheetOrder(noteFirst){
+  const sheet=document.getElementById('sheet');
+  const drop=document.getElementById('drop');
+  const fl=document.getElementById('fieldKindLbl');
+  const fc=document.getElementById('fieldKindChips');
+  const fh=document.getElementById('fieldKindHint');
+  const nl=document.getElementById('sheetNoteLbl');
+  const cap=document.getElementById('caption');
+  if(!sheet||!drop||!fl||!nl||!cap)return;
+  if(noteFirst){
+    sheet.insertBefore(fl, drop);
+    if(fc)sheet.insertBefore(fc, drop);
+    if(fh)sheet.insertBefore(fh, drop);
+    sheet.insertBefore(nl, drop);
+    sheet.insertBefore(cap, drop);
+  }else{
+    sheet.insertBefore(drop, fl);
+  }
+}
+function resetSheet(){pendingPhotoId=null;_fieldNote=false;_fieldKind='note';_fnDropArmed=true;clearTimeout(window._fnDropReady);document.getElementById('caption').value='';document.getElementById('flag').classList.remove('on');document.getElementById('shareToggle').classList.remove('on');
   document.querySelectorAll('.sheet .chip').forEach(c=>{c.classList.remove('on');c.disabled=false;});
-  syncAreaExclusivity(document.getElementById('areaChips'));   // lock is a property - clearing classes does not lift it
+  syncAreaExclusivity(document.getElementById('areaChips'));
   const cs=document.getElementById('crewSelect');if(cs)cs.selectedIndex=0;
+  _fnSheetOrder(false);
+  const drop=document.getElementById('drop');if(drop)drop.style.pointerEvents='';
   rebuildDrop('drop','dropPh',DROP_CAM_SVG+'<div class="t">Take or choose a photo</div>','file',onPhoto);}
 function onPhoto(e){handlePhotoFile(e.target.files[0]);}
 async function handlePhotoFile(f){if(!f)return;toast('Saving photo…');
