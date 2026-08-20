@@ -338,11 +338,11 @@
 
 
   /* ───── developer panel ───── */
-  .devpanel{position:absolute;inset:0;z-index:80;background:#15130F;color:#E9E3D7;display:none;flex-direction:column;
+  .devpanel{position:absolute;inset:0;z-index:140;background:#15130F;color:#E9E3D7;display:none;flex-direction:column;
     font-feature-settings:"tnum";}
   .devpanel.show{display:flex;animation:rise .35s;}
-  /* owner-only floating Workbench launcher — reachable from any screen (e.g. when the nav is stranded) */
-  #devDot{position:fixed;left:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:70;width:34px;height:34px;border-radius:50%;
+  /* owner-only floating Workbench launcher — above sheets so census can run on People, etc. */
+  #devDot{position:fixed;left:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:139;width:34px;height:34px;border-radius:50%;
     border:1px solid rgba(233,227,215,.25);background:rgba(21,19,15,.82);color:#E9E3D7;font-size:14px;line-height:1;
     display:none;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.22);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
   #devDot.show{display:flex;}
@@ -3127,15 +3127,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.310.0 - Desk home and 44px pills.';
+const PLUMB_VERSION='2.311.0 - Workbench sits above sheets.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787229600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.310.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787232000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.311.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -15494,7 +15494,7 @@ function devSaveVapid(){const v=(document.getElementById('vapidInput')||{value:'
   try{if(v)localStorage.setItem('plumb.fcm.vapid',v);else localStorage.removeItem('plumb.fcm.vapid');}catch(e){}
   toast(v?'Push key saved — registering device':'Push key cleared');
   if(v)Notify.captureToken();}
-async function openDev(){try{qbRefreshStatus();}catch(e){}try{pushRenderLine();}catch(e){}if(!devAllowed()){toast('Workbench is limited to the owner account');return;}if(!_lastLayoutSnap||Date.now()-_snapAt>1500){try{_lastLayoutSnap=buildLayoutSnap();}catch(e){}}document.getElementById('devpanel').classList.add('show');try{renderDevGrants();}catch(e){}try{renderDevErrors();}catch(e){}try{const ai=document.getElementById('appCheckInput');if(ai)ai.value=appCheckKey()||'';const vi=document.getElementById('vapidInput');if(vi)vi.value=Notify.vapid();renderLocalState();renderEventLog();renderFeedbackList();devSyncStatusText();}catch(e){}try{await refreshDev();}catch(e){}}
+async function openDev(){try{qbRefreshStatus();}catch(e){}try{pushRenderLine();}catch(e){}if(!devAllowed()){toast('Workbench is limited to the owner account');return;}if(!_lastLayoutSnap||Date.now()-_snapAt>1500){try{_lastLayoutSnap=buildLayoutSnap();}catch(e){}}document.getElementById('devpanel').classList.add('show');try{renderDevGrants();}catch(e){}try{renderDevErrors();}catch(e){}try{const ai=document.getElementById('appCheckInput');if(ai)ai.value=appCheckKey()||'';const vi=document.getElementById('vapidInput');if(vi)vi.value=Notify.vapid();renderLocalState();renderEventLog();renderFeedbackList();devSyncStatusText();}catch(e){}try{await refreshDev();}catch(e){}try{devRunCensus();}catch(e){}}
 function devSyncStatusText(){const el=document.getElementById('devSyncStatus');if(!el)return;const cfg=fbConfig();
   if(Sync.on){el.innerHTML='<b style="color:#9ED3AB">● Live</b> · project <code>'+esc((cfg&&cfg.projectId)||'')+'</code> · this device <code>'+esc(Sync.deviceId||'')+'</code>'+((Sync.authKind==='account'&&Sync.uid)?(' \u00b7 account <code>'+esc(Sync.uid.slice(0,8)+'\u2026')+'</code>'):(' \u00b7 <b style="color:#C8785F">no account \u2014 sign in</b>'));}
   else if(cfg){el.innerHTML='Config saved, not connected'+(Sync.err?' — '+esc(Sync.err):'')+'. Tap Connect.';}
