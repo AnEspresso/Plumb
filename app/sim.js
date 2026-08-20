@@ -1105,6 +1105,8 @@ t('McCarver lookup is HVAC not excav', $("guessTrade('McCarver Mechanical Heatin
 t('after a sub hit Save is next', SRC.indexOf('function subAfterHit')>=0&&SRC.indexOf('function fillSubSpec')>=0&&SRC.indexOf('id="subHit"')>=0);
 t('trade picker starts empty not excav', SRC.indexOf('function fillSubSpec')>=0&&SRC.indexOf('<option value="">Trade</option>')>=0);
 t('People invite is three buttons', SRC.indexOf("peopleMode==='invite'")>=0&&SRC.indexOf('function inviteHomeownerFlow')>=0&&SRC.indexOf('Three buttons. Code. Share. Done.')>=0);
+t('People is one sheet', SRC.indexOf('function peoplePills')>=0&&SRC.indexOf("peopleMode==='subs'")>=0&&SRC.split('function peoplePills')[1].split('function renderPeople')[0].indexOf('ppl-invite')>=0&&SRC.indexOf("openPeopleMode('subs')")>=0);
+t('Company opens People', SRC.indexOf("SET_GEAR_ROW('People'")>=0&&SRC.split('function renderCompany')[1].split('function renderSettings')[0].indexOf('openPeopleMode')>=0);
 t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Go to the book')>=0);
 t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter')>=0&&SRC.split('function openNotifyCenter')[1].split('const Org=')[0].indexOf('Send a test')>=0&&SRC.indexOf('function pushTest')>=0);
 t('push test targets this phone', SRC.indexOf("fnCall('notifyTest',{token:tok})")>=0&&SRC.indexOf('listenForeground')>=0);

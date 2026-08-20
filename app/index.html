@@ -551,6 +551,13 @@
   #subMoreBtn{display:none;width:100%;margin:2px 0 10px;color:var(--ink-3);}
   .ppl-three{display:flex;flex-direction:column;gap:8px;margin:0 0 14px;}
   .ppl-three .b1{width:100%;margin:0;}
+  .ppl-nav{margin:0 0 14px;}
+  .ppl-dirs{display:flex;flex-wrap:nowrap;gap:6px;margin:0 0 8px;}
+  .ppl-dirs .ov-sortpill{flex:1;min-width:0;text-align:center;padding:6px 8px;}
+  .ppl-invite{display:block;width:100%;margin:0;padding:11px 14px;border:1.5px dashed var(--oak);background:transparent;color:var(--oak);border-radius:12px;font:inherit;font-size:15px;font-weight:650;cursor:pointer;letter-spacing:.01em;}
+  .ppl-invite.on{background:var(--ink);color:var(--paper);border-style:solid;border-color:var(--ink);}
+  .ppl-quiet{margin:8px 0 0;color:var(--ink-3);font-size:12px;line-height:1.45;}
+  .ppl-quiet button{background:none;border:0;padding:0;font:inherit;font-size:12px;font-weight:650;color:var(--oak);cursor:pointer;}
   .setup-card{border:1.5px solid var(--line);border-radius:13px;padding:12px 13px;cursor:pointer;}
   .setup-card.on{border-color:var(--oak);background:var(--surface-2);}
   .setup-card .n{font-weight:700;font-size:14.5px;}
@@ -2546,7 +2553,7 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="peopleScrim">
     <div class="pmodal" id="peopleModal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4 id="peopleTitle">Team</h4>
+      <h4 id="peopleTitle">People</h4>
       <div class="info-body" id="peopleBody"></div>
       <div class="row2" id="peopleFoot" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closePeople()">Done</button></div>
     </div>
@@ -3109,15 +3116,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.305.0 - One lock-screen test, not two.';
+const PLUMB_VERSION='2.306.0 - People is one sheet.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787170500000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.305.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787175600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.306.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5686,7 +5693,7 @@ function startConverge(){
       : '';
   showInfo('You\u2019re rolling',`<p style="margin:0 0 12px;font-size:14px;line-height:1.55"><b>${esc((p&&(p.street||p.name))||'Your job')}</b> is in SitePlumb. Two quick moves make it pay off right away:</p>
     <button class="add-sub-btn" onclick="closeInfo();openPeopleMode('homeowner')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V21H3z"/><path d="M9 21v-6h6v6"/></svg>Invite the homeowner \u2014 stop the \u201cwhat\u2019s happening?\u201d texts</button>
-    <button class="add-sub-btn" style="margin-top:8px" onclick="closeInfo();openSubsRoster()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite the sub coming this week</button>
+    <button class="add-sub-btn" style="margin-top:8px" onclick="closeInfo();openPeopleMode('subs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite the sub coming this week</button>
     ${otherBtn}
     <p style="color:var(--ink-3);font-size:12.5px;margin:14px 0 0">Everything else fills in as you go — log a photo, set a stage, add a selection whenever it comes up.</p>`);
 }
@@ -5699,10 +5706,9 @@ function renderCompany(){
   const el=document.getElementById('companyBody');if(!el)return;
   let rows='';
   rows+=SET_GEAR_ROW('Trades Calendar','Crew schedule across every job','closeCompany();openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
-  rows+=SET_GEAR_ROW('Subcontractors','Your roster across all sites','closeCompany();subsFromOverview()','<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/>');
-  rows+=SET_GEAR_ROW('Invoices','Bill homeowners &amp; track payments','closeCompany();invoicesFromSettings()','<path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2zM9 8h6M9 12h6"/>');
+  rows+=SET_GEAR_ROW('People','Team, homeowners, and crews','closeCompany();openPeopleMode(\'team\')','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>');
+  rows+=SET_GEAR_ROW('Invoices','Bill homeowners & track payments','closeCompany();invoicesFromSettings()','<path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2zM9 8h6M9 12h6"/>');
   rows+=SET_GEAR_ROW('Add a job','New build, or bring an existing one in','closeCompany();openStart()','<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>');
-  rows+=SET_GEAR_ROW('Team','Your company \u2014 every site, under each login','closeCompany();openPeopleMode(\'team\')','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>');
   el.innerHTML=rows;}
 function renderSettings(){
   const el=document.getElementById('settingsBody');if(!el)return;
@@ -5718,7 +5724,7 @@ function renderSettings(){
   let rows='';
   if(role==='builder'){
     rows+='<div class="set-hd">Company</div>';
-    rows+=SET_GEAR_ROW('Company','Calendar, roster, invoices, team, new job','closeSettings();openCompany()','<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>');
+    rows+=SET_GEAR_ROW('Company','People, calendar, invoices, new job','closeSettings();openCompany()','<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>');
     if(appMode()==='real'){
       rows+=SET_GEAR_ROW('Homeowners','Portal access & calendars, every home','closeSettings();openPeopleMode(\'homeowner\')',I.home);
       rows+=SET_GEAR_ROW('Selection templates','Build style & install spec sheets','closeSettings();openPeopleMode(\'templates\')',I.tmpl);
@@ -6350,11 +6356,10 @@ let peopleMode='invite';
 function openPeople(){peopleMode='invite';renderPeople();document.getElementById('peopleScrim').classList.add('show');}
 function closePeople(){document.getElementById('peopleScrim').classList.remove('show');try{renderSubs();}catch(e){}}
 function peoplePills(){
-  return '<div class="ov-sortpills" style="margin:0 0 14px">'
-    +'<button class="ov-sortpill'+(peopleMode==='invite'?' on':'')+'" onclick="openPeopleMode(\'invite\')">Invite</button>'
-    +'<button class="ov-sortpill'+(peopleMode==='team'?' on':'')+'" onclick="openPeopleMode(\'team\')">Team</button>'
-    +'<button class="ov-sortpill'+(peopleMode==='homeowner'?' on':'')+'" onclick="openPeopleMode(\'homeowner\')">Homeowners</button>'
-    +'<button class="ov-sortpill" onclick="closePeople();openSubsRoster()">Subs</button></div>';
+  const pill=function(id,lab){return '<button type="button" class="ov-sortpill'+(peopleMode===id?' on':'')+'" onclick="openPeopleMode(\''+id+'\')">'+lab+'</button>';};
+  return '<div class="ppl-nav"><div class="ov-sortpills ppl-dirs">'
+    +pill('team','Team')+pill('homeowner','Homeowners')+pill('subs','Subs')
+    +'</div><button type="button" class="ppl-invite'+(peopleMode==='invite'?' on':'')+'" onclick="openPeopleMode(\'invite\')">Invite</button></div>';
 }
 let _ctNavDir='fwd';
 function renderPeople(__a,__b){
@@ -6412,7 +6417,7 @@ function __renderPeople(){
     }
     el.innerHTML=h;return;}
   if(peopleMode==='homeowner'){
-    if(title)title.textContent='Homeowners';
+    if(title)title.textContent='People';
     const ps=state.projects||[];
     el.innerHTML=peoplePills()+'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Each homeowner gets a portal for their own home: progress photos, their selections, and the decisions you need from them — answered early, installs stay on schedule.</p>'
       +(ps.length?'<div class="lbl" style="margin-top:2px">Portal access by home</div>'+ps.map(p=>{
@@ -6494,16 +6499,31 @@ function __renderPeople(){
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;flex:.8"><input type="checkbox" id="tqReq" style="width:auto;margin:0">Required</label></div>
         <button class="add-sub-btn" style="margin-top:12px" onclick="${addHandler}">Add question</button>`;
     return;}
-  if(title)title.textContent='Team';
+  if(peopleMode==='subs'){
+    if(title)title.textContent='People';
+    const op=orgPrefs();const all=op.subRoster||[];
+    const q=((document.getElementById('pplRosterSearch')||{}).value||'').trim().toLowerCase();
+    const hits=all.map(function(r,i){return {r:r,i:i};}).filter(function(x){return !q||((x.r.name+' '+(((SPECIALTIES.find(function(tr){return tr.id===x.r.trade;})||{}).label)||'')).toLowerCase().indexOf(q)>=0);});
+    const list=hits.map(function(x){
+      const tr=SPECIALTIES.find(function(s){return s.id===x.r.trade;});const col=(TRADE_COLORS[x.r.trade]||{}).bg||'var(--oak)';
+      return '<div class="subrow"><div class="si"><div class="n">'+esc(x.r.name)+'</div><div class="d"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+col+';margin-right:5px;vertical-align:-1px"></span>'+esc((tr||{}).label||'General')+'</div></div><button class="rm" onclick="rosterDrop('+x.i+')" title="Remove from roster">'+ICON.trash+'</button></div>';
+    }).join('')||('<div class="empty" style="padding:8px 0">'+(q?'No one matches.':'No subs yet — add the trades you work with.')+'</div>');
+    el.innerHTML=peoplePills()
+      +'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Your company roster. Every new house starts with these crews.</p>'
+      +(all.length>=10?'<input id="pplRosterSearch" placeholder="Search crews" autocapitalize="off" autocomplete="off" oninput="renderPeople()" value="'+esc(q)+'" style="margin-bottom:8px">':'')
+      +list
+      +'<button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a sub</button>'
+      +'<p class="ppl-quiet">Live access is per house. <button type="button" onclick="inviteSubFlow()">Invite a sub</button> · <button type="button" onclick="subsOnSite()">Manage on a house</button></p>';
+    return;}
+  if(title)title.textContent='People';
   const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
   const mates=Object.keys(r).filter(uid=>uid!==me);
   const pend=laTeamInvites().filter(i=>i.status==='open');
   el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">People on your team see every house. Invite, share the code, done.</p>'
     +(mates.map(uid=>`<div class="subrow"><div class="si"><div class="n">${esc((r[uid]&&r[uid].name)||'Team member')}</div><div class="d">${esc(RP_ROLES[(r[uid]&&r[uid].rpRole)]||'Team')}</div></div><button class="rm" onclick="removeTeamMember('${uid}')" title="Remove from team">${ICON.trash}</button></div>`).join('')||'<div class="empty" style="padding:10px 0">Just you so far.</div>')
     +pend.map(i=>`<div class="subrow"><div class="si" style="cursor:pointer" onclick="shareInvite('${i.code}')"><div class="n">Open invite${i.setup?' · with setup':''}</div><div class="d">Code ${esc(i.code)} — tap to copy &amp; share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
-    +`<button class="add-sub-btn" onclick="createInvite('team')">${PPL_INV_SVG}Invite a team member…</button>`
-    +`<button class="add-sub-btn" onclick="createInvite('team',null,{setup:true})">${PPL_INV_SVG}Invite &amp; hand off setup…</button>`
-    +'<p style="margin:6px 0 0;color:var(--ink-3);font-size:12px">Hand off setup when someone else should answer the company questions — they get the full setup wizard on first sign-in.</p>';}
+    +`<button class="add-sub-btn" onclick="createInvite('team')">${PPL_INV_SVG}Invite a teammate</button>`
+    +'<p class="ppl-quiet">Hand off company setup to someone else. <button type="button" onclick="createInvite(\'team\',null,{setup:true})">Invite with setup</button></p>';}
 async function revokeInvite(code){
   confirmDelete({title:'Revoke invite?',body:'The code stops working immediately. Anyone who hasn\u2019t joined yet won\u2019t be able to.',onConfirm:async()=>{
   try{if(Sync.ready())await Sync.db.collection('invites').doc(code).set({revoked:true,revokedAt:Date.now()},{merge:true});}catch(e){toast('Couldn\u2019t reach the cloud — try again');return;}
@@ -6648,15 +6668,19 @@ function applyScroll(which){
 function subsFromOverview(){openSubsRoster();}
 /* company-wide subcontractor roster — seeds every new site */
 function openSubsRoster(){
-  document.getElementById('rosterScrim').classList.add('show');
-  document.getElementById('rosterSearch').value='';
-  renderRoster();}
-function closeSubsRoster(){document.getElementById('rosterScrim').classList.remove('show');}
+  try{document.getElementById('rosterScrim').classList.remove('show');}catch(e){}
+  openPeopleMode('subs');}
+function closeSubsRoster(){try{document.getElementById('rosterScrim').classList.remove('show');}catch(e){}}
 function rosterDrop(i){
   const op=orgPrefs();const r=(op.subRoster||[])[i];if(!r)return;
   confirmDelete({title:'Remove from roster?',body:'Removes <b>'+esc(r.name)+'</b> from the company roster. Sites they\u2019re already on keep them.',onConfirm:()=>{
   op.subRoster.splice(i,1);saveOrgPrefs(op);renderRoster();}});}
 function renderRoster(){
+  try{
+    const ppl=document.getElementById('peopleScrim');
+    if(ppl&&ppl.classList.contains('show')){peopleMode='subs';renderPeople();return;}
+  }catch(e){}
+  const list=document.getElementById('rosterList');if(!list)return;
   const op=orgPrefs();const all=op.subRoster||[];
   const q=(document.getElementById('rosterSearch').value||'').trim().toLowerCase();
   document.getElementById('rosterSearch').style.display=all.length>=10?'':'none';
