@@ -1111,6 +1111,12 @@ t('Invite types are outline', SRC.split("if(peopleMode==='invite'")[1].split('if
 t('Invite on that page is a heading', SRC.split("if(peopleMode==='invite'")[1].split('if(just&&just.code)')[0].indexOf('ppl-invite-h')>=0);
 t('Homeowners pill stays on one row', SRC.indexOf('.ppl-nav .ppl-dirs.ov-sortpills')>=0&&SRC.split('.ppl-nav .ppl-dirs.ov-sortpills')[1].split('}')[0].indexOf('nowrap')>=0&&SRC.split('.ppl-nav .ppl-dirs .ov-sortpill')[1].split('}')[0].indexOf('nowrap')>=0);
 t('Company opens People', SRC.indexOf("SET_GEAR_ROW('People'")>=0&&SRC.split('function renderCompany')[1].split('function renderSettings')[0].indexOf('openPeopleMode')>=0);
+t('Settings has no Homeowners row', SRC.split('function renderSettings')[1].split('function openEditSites')[0].indexOf("SET_GEAR_ROW('Homeowners'")<0);
+t('Send a test is dashed', SRC.indexOf("onclick=\"pushTest()\">Send a test")>=0&&SRC.split("onclick=\"pushTest()\">Send a test")[0].slice(-60).indexOf('add-sub-btn')>=0);
+t('info sheet Done outlines when body has a black action', SRC.split('function showInfo')[1].split('function closeInfo')[0].indexOf('hasGo')>=0);
+t('invoice compose hides Done', SRC.split('function renderInvoices')[1].slice(0,900).indexOf("foot.style.display='none'")>=0);
+t('Field Notes chips start outline', SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf("class=\"chip\"+")>=0||SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf("class=\"chip\"")>=0);
+t('Scan and Website are dashed', SRC.indexOf('.qf-btn')>=0&&SRC.split('.qf-btn{')[1].split('}')[0].indexOf('dashed')>=0);
 t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Go to the book')>=0);
 t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter')>=0&&SRC.split('function openNotifyCenter')[1].split('const Org=')[0].indexOf('Send a test')>=0&&SRC.indexOf('function pushTest')>=0);
 t('push test targets this phone', SRC.indexOf("fnCall('notifyTest',{token:tok})")>=0&&SRC.indexOf('listenForeground')>=0);

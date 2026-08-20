@@ -540,8 +540,8 @@
   .mr-item .d{font-size:11.5px;color:var(--ink-3);margin-top:1px;}
   .code-box{font-family:ui-monospace,Menlo,monospace;font-size:24px;letter-spacing:.08em;text-align:center;background:var(--surface-2);border-radius:12px;padding:14px;cursor:pointer;-webkit-user-select:all;user-select:all;}
   .qf-row{display:flex;gap:7px;margin-bottom:11px;}
-  .qf-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:9px 4px;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink-2);transition:border-color .15s ease,transform .12s ease;}
-  .qf-btn:active{transform:scale(.96);border-color:var(--oak);}
+  .qf-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:1.5px dashed var(--oak);background:transparent;color:var(--oak);border-radius:11px;padding:9px 4px;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;transition:border-color .15s ease,transform .12s ease;}
+  .qf-btn:active{transform:scale(.96);background:var(--surface-2);}
   .qf-btn svg{width:18px;height:18px;color:var(--oak);}
   .pmodal-scrim.info-own .row2{display:none;}
   .sub-hit{display:none;border:1px solid var(--oak);background:rgba(176,137,90,.08);border-radius:12px;padding:11px 13px;margin:0 0 12px;}
@@ -3116,15 +3116,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.307.0 - Invite stays dashed.';
+const PLUMB_VERSION='2.308.0 - One black action per sheet.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787217600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.307.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787222400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.308.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4394,7 +4394,17 @@ function toastAction(msg,label,fn,ms){const t=document.getElementById('toast');t
   t.innerHTML='<span></span><button class="ua">'+esc(label)+'</button>';t.querySelector('span').textContent=msg;
   t.querySelector('.ua').onclick=()=>{clearTimeout(t._t);t.classList.remove('show');fn();};
   t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>{t.classList.remove('show');},ms||4500);}
-function showInfo(title,bodyHTML,own){document.getElementById('infoTitle').textContent=title;document.getElementById('infoBody').innerHTML=bodyHTML;const sc=document.getElementById('infoScrim');sc.classList.toggle('info-own',!!own);sc.classList.add('show');}
+function showInfo(title,bodyHTML,own){
+  document.getElementById('infoTitle').textContent=title;document.getElementById('infoBody').innerHTML=bodyHTML;
+  const sc=document.getElementById('infoScrim');sc.classList.toggle('info-own',!!own);sc.classList.add('show');
+  try{
+    const foot=document.getElementById('infoFoot');
+    if(foot&&!own){
+      const hasGo=!!document.querySelector('#infoBody .b-go');
+      foot.innerHTML='<button class="b1 '+(hasGo?'b-cancel':'b-go')+'" style="flex:1" onclick="closeInfo()">'+(hasGo?'Done':'Got it')+'</button>';
+    }
+  }catch(e){}
+}
 function closeInfo(){const sc=document.getElementById('infoScrim');sc.classList.remove('show','info-own');try{houseMaybeResume();}catch(e){}}
 
 /* Sheets stack. Opening a child never tears the parent down. Closing one hides only itself.
@@ -5726,7 +5736,6 @@ function renderSettings(){
     rows+='<div class="set-hd">Company</div>';
     rows+=SET_GEAR_ROW('Company','People, calendar, invoices, new job','closeSettings();openCompany()','<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>');
     if(appMode()==='real'){
-      rows+=SET_GEAR_ROW('Homeowners','Portal access & calendars, every home','closeSettings();openPeopleMode(\'homeowner\')',I.home);
       rows+=SET_GEAR_ROW('Selection templates','Build style & install spec sheets','closeSettings();openPeopleMode(\'templates\')',I.tmpl);
       rows+=SET_GEAR_ROW('First-time setup','Re-run the setup questions','closeSettings();openSetup()',I.wiz);
       if(sess.rpRole==='owner'&&prefsPending())rows+=SET_GEAR_ROW('Review setup','Choices made by '+esc((orgPrefs()._prov||{}).by||'a team member')+' need your OK','closeSettings();openSetupReview()',I.wiz);
@@ -7934,7 +7943,7 @@ function openNotifyCenter(){
   if(perm==='unsupported')permRow='<div class="pkt-banner warn">This browser can\u2019t show notifications.'+((/iPhone|iPad/.test(typeof navigator!=='undefined'?navigator.userAgent:'')&&!stand)?' On iPhone, add SitePlumb to your Home Screen first (Share → Add to Home Screen), then enable here.':'')+'</div>';
   else if(perm==='granted'){try{Notify.captureToken();}catch(e){}
     permRow='<div class="pkt-banner ok"><b>Notifications on.</b> Issues, deadlines, invoices, and packet replies.</div>'
-      +'<button class="b1 b-go" style="width:100%;margin-top:10px" onclick="pushTest()">Send a test</button>';}
+      +'<button class="add-sub-btn" style="margin-top:10px" onclick="pushTest()">Send a test</button>';}
   else if(perm==='denied')permRow='<div class="pkt-banner warn"><b>Blocked.</b> Enable notifications for SitePlumb in your device settings, then come back.</div>';
   else permRow='<button class="b1 b-go" style="width:100%" onclick="Notify.enable().then(()=>openNotifyCenter())">Turn on notifications</button>';
   showInfo('Notifications',permRow
@@ -11204,7 +11213,7 @@ function invDetailHTML(p,inv,viewer){
     h+=`<div class="lbl" style="margin-top:14px">Credit or charge</div>
       <div class="setup-roster-row"><input id="invAdjLabel" placeholder="Reason (e.g. countertop overcharge)"><input id="invAdjAmt" inputmode="numeric" placeholder="Amount" style="flex:.55"></div>
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="b1 b-go" style="flex:1" onclick="invAddAdjustment('${p.id}','${inv.id}',-1)">Add credit</button>
+        <button class="lpay" style="flex:1" onclick="invAddAdjustment('${p.id}','${inv.id}',-1)">Add credit</button>
         <button class="lpay" style="flex:1" onclick="invAddAdjustment('${p.id}','${inv.id}',1)">Add charge</button></div>
       <p style="margin:6px 2px 0;color:var(--ink-3);font-size:11.5px">A credit lowers the balance (a credit note); a charge adds to it. The homeowner is notified the invoice changed.</p>`;
   }
@@ -11372,6 +11381,14 @@ function closePrintPreview(){
 function renderInvoices(){
   const el=document.getElementById('invBody');if(!el)return;
   try{const _t=document.getElementById('invTitle');if(_t)_t.textContent=(invMode==='owner'?'Billing alerts':'Billing');}catch(e){}
+  try{
+    const foot=document.querySelector('#invScrim .row2');
+    if(foot){
+      if(invMode==='compose'){foot.style.display='none';}
+      else if(invMode==='payments'){foot.style.display='';foot.innerHTML='<button class="b1 b-cancel" style="flex:1" onclick="closeInvoices()">Done</button>';}
+      else{foot.style.display='';foot.innerHTML='<button class="b1 b-go" style="flex:1" onclick="closeInvoices()">Done</button>';}
+    }
+  }catch(e){}
   const p=P();
   if(invMode==='compose'){
     const un=composeSelections(p);
@@ -15105,7 +15122,7 @@ function openFieldNote(){
   const fc=document.getElementById('fieldKindChips');
   if(fc){
     fc.style.display='';
-    fc.innerHTML=FIELD_KINDS.map(function(k){return '<button type="button" class="chip'+(_fieldKind===k.id?' on':'')+'" data-k="'+k.id+'" onclick="pickFieldKind(\''+k.id+'\')">'+esc(k.n)+'</button>';}).join('');
+    fc.innerHTML=FIELD_KINDS.map(function(k){return '<button type="button" class="chip" data-k="'+k.id+'" onclick="pickFieldKind(\''+k.id+'\')">'+esc(k.n)+'</button>';}).join('');
   }
   const nl=document.getElementById('sheetNoteLbl');if(nl)nl.textContent='Note \u00b7 optional';
   const hint=document.getElementById('fieldKindHint');if(hint)hint.hidden=true;
