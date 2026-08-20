@@ -28,7 +28,7 @@ const OUT = path.join(ROOT, "screenshots", "pixel-tight");
 const PORT = 8138;
 const BLESS = process.argv.includes("--bless");
 const SURFACES = [
-  { id: "home", run: "try{closeStart();closeSetup();demoIntroExplore&&demoIntroExplore();demoRole('builder');showOverview();renderToday();renderOvCards();}catch(e){}" },
+  { id: "home", run: "try{closeStart();closeSetup();demoIntroExplore&&demoIntroExplore();demoRole('builder');showOverview();renderToday();renderOvWeek();renderOvCards();}catch(e){}" },
   { id: "house", run: "try{demoRole('builder');nyOpenHouse((state.projects[0]||{}).id);}catch(e){}" },
   { id: "people", run: "try{appMode=function(){return 'real';};openPeopleMode('team');}catch(e){}" },
   { id: "add-sub", run: "try{openAddSub();}catch(e){}" },

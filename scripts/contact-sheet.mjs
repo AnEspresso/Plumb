@@ -28,7 +28,7 @@ const VIEWS = [
 ];
 
 const STEPS = [
-  { id: "home", run: `try{closeStart();closeSetup();demoIntroExplore&&demoIntroExplore();demoRole('hillan');showOverview();renderToday();renderOvCards();}catch(e){}` },
+  { id: "home", run: `try{closeStart();closeSetup();demoIntroExplore&&demoIntroExplore();demoRole('builder');showOverview();renderToday();renderOvWeek();renderOvCards();}catch(e){}` },
   { id: "inbox", run: `try{openNyInbox();}catch(e){}` },
   { id: "house", run: `try{closePkLog();nyOpenHouse((state.projects[0]||{}).id);}catch(e){}` },
   { id: "calendar", run: `try{closeHouse();houseGoCal?houseGoCal():openCal();}catch(e){}` },

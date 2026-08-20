@@ -17,7 +17,7 @@ const OUT = path.join(ROOT, "screenshots", "sheet-contract");
 const PORT = 8137;
 
 const SURFACES = [
-  { id: "home", skipBlack: true, run: "try{closeStart();closeSetup();demoIntroExplore&&demoIntroExplore();demoRole('builder');showOverview();renderToday();renderOvCards();}catch(e){}" },
+  { id: "home", skipBlack: true, run: "try{closeStart();closeSetup();demoIntroExplore&&demoIntroExplore();demoRole('builder');showOverview();renderToday();renderOvWeek();renderOvCards();}catch(e){}" },
   { id: "company", run: "try{openCompany();}catch(e){}" },
   { id: "people-team", run: "try{appMode=function(){return 'real';};openPeopleMode('team');}catch(e){}" },
   { id: "people-invite", run: "try{appMode=function(){return 'real';};openPeopleMode('invite');}catch(e){}" },
