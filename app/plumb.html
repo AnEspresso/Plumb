@@ -552,10 +552,8 @@
   .ppl-three{display:flex;flex-direction:column;gap:8px;margin:0 0 14px;}
   .ppl-three .b1{width:100%;margin:0;}
   .ppl-nav{margin:0 0 14px;}
-  .ppl-dirs{display:flex;flex-wrap:nowrap;gap:6px;margin:0 0 8px;}
-  .ppl-dirs .ov-sortpill{flex:1;min-width:0;text-align:center;padding:6px 8px;}
-  .ppl-invite{display:block;width:100%;margin:0;padding:11px 14px;border:1.5px dashed var(--oak);background:transparent;color:var(--oak);border-radius:12px;font:inherit;font-size:15px;font-weight:650;cursor:pointer;letter-spacing:.01em;}
-  .ppl-invite.on{background:var(--ink);color:var(--paper);border-style:solid;border-color:var(--ink);}
+  .ppl-invite{display:block;width:100%;margin:8px 0 0;padding:11px 14px;border:1.5px dashed var(--oak);background:transparent;color:var(--oak);border-radius:12px;font:inherit;font-size:15px;font-weight:650;cursor:pointer;letter-spacing:.01em;}
+  .ppl-invite-h{margin:4px 0 8px;text-align:center;font-size:15px;font-weight:650;color:var(--oak);letter-spacing:.01em;pointer-events:none;}
   .ppl-quiet{margin:8px 0 0;color:var(--ink-3);font-size:12px;line-height:1.45;}
   .ppl-quiet button{background:none;border:0;padding:0;font:inherit;font-size:12px;font-weight:650;color:var(--oak);cursor:pointer;}
   .setup-card{border:1.5px solid var(--line);border-radius:13px;padding:12px 13px;cursor:pointer;}
@@ -939,6 +937,8 @@
   .ov-sortpill{font-size:14px;font-weight:650;letter-spacing:.01em;border:1px solid var(--line);background:var(--surface);color:var(--ink-3);border-radius:20px;padding:6px 13px;cursor:pointer;font-family:inherit;transition:all .12s ease;}
   .ov-sortpill.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
   .ov-sortpill:active{transform:scale(.96);}
+  .ppl-nav .ppl-dirs.ov-sortpills{display:flex;flex-wrap:nowrap;flex:none;gap:6px;margin:0;min-width:0;width:100%;}
+  .ppl-nav .ppl-dirs .ov-sortpill{flex:1 1 0;min-width:0;white-space:nowrap;text-align:center;padding:6px 6px;font-size:13px;letter-spacing:0;}
   .ov-summary{display:flex;align-items:center;gap:8px;margin:2px 2px 14px;font-size:13px;font-weight:600;color:var(--ink-3);}
   .ovt-count{color:var(--ink-2);}
   .ovt-sep{color:var(--ink-3);opacity:.6;}
@@ -3116,15 +3116,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.306.0 - People is one sheet.';
+const PLUMB_VERSION='2.307.0 - Invite stays dashed.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787175600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.306.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787217600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.307.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6357,9 +6357,11 @@ function openPeople(){peopleMode='invite';renderPeople();document.getElementById
 function closePeople(){document.getElementById('peopleScrim').classList.remove('show');try{renderSubs();}catch(e){}}
 function peoplePills(){
   const pill=function(id,lab){return '<button type="button" class="ov-sortpill'+(peopleMode===id?' on':'')+'" onclick="openPeopleMode(\''+id+'\')">'+lab+'</button>';};
-  return '<div class="ppl-nav"><div class="ov-sortpills ppl-dirs">'
+  let h='<div class="ppl-nav"><div class="ov-sortpills ppl-dirs">'
     +pill('team','Team')+pill('homeowner','Homeowners')+pill('subs','Subs')
-    +'</div><button type="button" class="ppl-invite'+(peopleMode==='invite'?' on':'')+'" onclick="openPeopleMode(\'invite\')">Invite</button></div>';
+    +'</div>';
+  if(peopleMode!=='invite') h+='<button type="button" class="ppl-invite" onclick="openPeopleMode(\'invite\')">Invite</button>';
+  return h+'</div>';
 }
 let _ctNavDir='fwd';
 function renderPeople(__a,__b){
@@ -6404,9 +6406,10 @@ function __renderPeople(){
   if(peopleMode==='invite'||!peopleMode){
     if(title)title.textContent='People';
     const just=_inviteJust;
-    let h=peoplePills()+'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Three buttons. Code. Share. Done.</p>';
+    let h=peoplePills()+'<div class="ppl-invite-h">Invite</div>'
+      +'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Who is this code for?</p>';
     h+='<div class="ppl-three">';
-    h+='<button class="b1 b-go" onclick="createInvite(\'team\')">Team</button>';
+    h+='<button class="b1 b-cancel" onclick="createInvite(\'team\')">Team</button>';
     h+='<button class="b1 b-cancel" onclick="inviteHomeownerFlow()">Homeowner</button>';
     h+='<button class="b1 b-cancel" onclick="inviteSubFlow()">Sub</button>';
     h+='</div>';

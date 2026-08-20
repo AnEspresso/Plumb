@@ -1104,8 +1104,12 @@ t('onboard is company then houses', SRC.indexOf('function openOnboard')>=0&&SRC.
 t('McCarver lookup is HVAC not excav', $("guessTrade('McCarver Mechanical Heating & Cooling')")==='hvac');
 t('after a sub hit Save is next', SRC.indexOf('function subAfterHit')>=0&&SRC.indexOf('function fillSubSpec')>=0&&SRC.indexOf('id="subHit"')>=0);
 t('trade picker starts empty not excav', SRC.indexOf('function fillSubSpec')>=0&&SRC.indexOf('<option value="">Trade</option>')>=0);
-t('People invite is three buttons', SRC.indexOf("peopleMode==='invite'")>=0&&SRC.indexOf('function inviteHomeownerFlow')>=0&&SRC.indexOf('Three buttons. Code. Share. Done.')>=0);
+t('People invite is three buttons', SRC.indexOf("peopleMode==='invite'")>=0&&SRC.indexOf('function inviteHomeownerFlow')>=0&&SRC.indexOf('Who is this code for?')>=0);
 t('People is one sheet', SRC.indexOf('function peoplePills')>=0&&SRC.indexOf("peopleMode==='subs'")>=0&&SRC.split('function peoplePills')[1].split('function renderPeople')[0].indexOf('ppl-invite')>=0&&SRC.indexOf("openPeopleMode('subs')")>=0);
+t('Invite is not a black slab', SRC.split('function peoplePills')[1].split('let _ctNavDir')[0].indexOf("peopleMode==='invite'?' on'")<0);
+t('Invite types are outline', SRC.split("if(peopleMode==='invite'")[1].split('if(just&&just.code)')[0].indexOf('b1 b-go')<0);
+t('Invite on that page is a heading', SRC.split("if(peopleMode==='invite'")[1].split('if(just&&just.code)')[0].indexOf('ppl-invite-h')>=0);
+t('Homeowners pill stays on one row', SRC.indexOf('.ppl-nav .ppl-dirs.ov-sortpills')>=0&&SRC.split('.ppl-nav .ppl-dirs.ov-sortpills')[1].split('}')[0].indexOf('nowrap')>=0&&SRC.split('.ppl-nav .ppl-dirs .ov-sortpill')[1].split('}')[0].indexOf('nowrap')>=0);
 t('Company opens People', SRC.indexOf("SET_GEAR_ROW('People'")>=0&&SRC.split('function renderCompany')[1].split('function renderSettings')[0].indexOf('openPeopleMode')>=0);
 t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Go to the book')>=0);
 t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter')>=0&&SRC.split('function openNotifyCenter')[1].split('const Org=')[0].indexOf('Send a test')>=0&&SRC.indexOf('function pushTest')>=0);
