@@ -3031,6 +3031,10 @@ body.on-tour .tour-card{display:block;}
       <div class="row2" style="margin-top:8px"><button class="lpay" style="flex:1" onclick="devCopyBugReport()">Copy bug report</button><button class="lpay" onclick="devClearErrors()">Clear</button></div>
       <div class="la-hint" style="margin:8px 0 6px">Layout snapshot captures the on-screen size/position of the shell, main, nav and overview cards — taken the moment you opened the Workbench. Use it for layout bugs (stranded nav, cut-off cards).</div>
       <div class="row2"><button class="lpay" style="flex:1" onclick="devCopyLayout()">Copy layout snapshot</button></div>
+      <div class="dev-sec">Sheet contract</div>
+      <div class="la-hint" style="margin:0 0 6px">One black action. Pills on one line. No sideways overflow. Same check the ship ritual runs.</div>
+      <pre class="mono" id="censusOut">Open a sheet, then run census.</pre>
+      <div class="row2" style="margin-top:8px"><button class="lpay" style="flex:1" onclick="devRunCensus()">Run census</button><button class="lpay" onclick="devCopyCensus()">Copy</button></div>
       <button class="dev-btn" onclick="devSaveVapid()"><span><span>Save push key</span><span class="d">Stores the VAPID key &amp; registers this device for push</span></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></span></button>
       <button class="dev-btn" onclick="devSaveAppCheck()"><span><span>Save App Check key</span><span class="d">Stores the site key &amp; reconnects with App Check on</span></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 1 4 4v3h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h1V7a4 4 0 0 1 4-4Z"/></svg></span></button>
       <button class="dev-btn" onclick="devPushAll()"><span><span>Push all sites now</span><span class="d">Force-upload local data to the cloud</span></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M5 12l7-7 7 7"/></svg></span></button>
@@ -3116,15 +3120,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.308.0 - One black action per sheet.';
+const PLUMB_VERSION='2.309.0 - Sheet contract in the ship ritual.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787222400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.308.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787226000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.309.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8161,6 +8165,55 @@ function buildLayoutSnap(){
   try{L.push('');L.push(scrollChain());}catch(e){}
   return L.join('\\n');}
 function devCopyLayout(){const txt=_lastLayoutSnap||buildLayoutSnap();try{navigator.clipboard.writeText(txt).then(()=>toast('Layout snapshot copied — paste to Claude'),()=>toast('Couldn’t copy'));}catch(e){toast('Couldn’t copy');}return txt;}
+function _inkRgb(c){const m=String(c||'').match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([0-9.]+))?/);return m?[+m[1],+m[2],+m[3],m[4]==null?1:Number(m[4])]:null;}
+function _isInkFill(el){
+  if(!el||el.disabled)return false;
+  const cs=getComputedStyle(el);
+  if(cs.display==='none'||cs.visibility==='hidden'||Number(cs.opacity)===0)return false;
+  const r=el.getBoundingClientRect();if(r.width<8||r.height<8)return false;
+  if(el.classList.contains('b-go'))return true;
+  const rgb=_inkRgb(cs.backgroundColor);if(!rgb||rgb[3]===0)return false;
+  return rgb[0]<45&&rgb[1]<45&&rgb[2]<45;
+}
+function sheetContract(){
+  const shown=[...document.querySelectorAll('.pmodal-scrim.show, .ss-scrim.show')];
+  const sheetEl=document.getElementById('sheet');
+  const sheetOn=!!(sheetEl&&sheetEl.classList.contains('show'));
+  let host=shown.length?shown[shown.length-1]:null;
+  if(sheetOn)host=sheetEl;
+  const box=host?(host.querySelector('.pmodal')||host):document.querySelector('#overview.show')||document.documentElement;
+  const titleEl=host&&(host.querySelector('h4,h3,h2')||document.getElementById('sheetTitle'));
+  const title=((titleEl&&titleEl.textContent)||'').trim();
+  const scope=box||document.body;
+  const actionBlacks=[];const small=[];
+  [...scope.querySelectorAll('button')].forEach(b=>{
+    const cs=getComputedStyle(b);if(cs.display==='none'||b.disabled)return;
+    const r=b.getBoundingClientRect();if(r.width<8||r.height<8)return;
+    const t=(b.textContent||'').replace(/\s+/g,' ').trim().slice(0,40);
+    const picker=b.classList.contains('ov-sortpill')||b.classList.contains('chip')||b.classList.contains('qf-btn')||b.classList.contains('add-sub-btn')||b.classList.contains('ppl-invite')||b.classList.contains('la-link')||b.classList.contains('set-row')||b.classList.contains('lpay')||!!b.closest('.seg');
+    if(!picker&&_isInkFill(b))actionBlacks.push(t||b.id||'button');
+    if((b.classList.contains('b1')||b.classList.contains('add-sub-btn')||b.classList.contains('ov-sortpill'))&&r.height>0&&r.height<40)
+      small.push((t||'btn')+' '+Math.round(r.height)+'px');
+  });
+  const wrap=[...scope.querySelectorAll('.ov-sortpill')].filter(p=>p.scrollHeight>p.clientHeight+3).map(p=>(p.textContent||'').trim());
+  const overflow=(scope.scrollWidth>scope.clientWidth+3)||(document.documentElement.scrollWidth>document.documentElement.clientWidth+6);
+  const ok=actionBlacks.length<=1&&wrap.length===0&&!overflow;
+  return {ok,title,host:host?(host.id||'') :'home',blacks:actionBlacks,wrap,overflow,small:small.slice(0,8)};
+}
+function sheetCensusText(){
+  const c=sheetContract();
+  return ['PLUMB SHEET CENSUS · v'+((typeof PLUMB_VERSION!=='undefined'?PLUMB_VERSION:'').split(' ')[0]),
+    'when '+new Date().toISOString(),
+    'host '+(c.host||'-')+' · title '+(c.title||'-'),
+    'black actions: '+(c.blacks.length?c.blacks.join(' | '):'(none)'),
+    'pill wrap: '+(c.wrap.length?c.wrap.join(' | '):'none'),
+    'overflow: '+(c.overflow?'YES':'no'),
+    'small targets: '+(c.small.length?c.small.join(' | '):'none'),
+    c.ok?'PASS':'FAIL'].join('\n');
+}
+let _lastCensus='';
+function devRunCensus(){let txt='';try{txt=sheetCensusText();_lastCensus=txt;}catch(e){txt='Census failed';}const el=document.getElementById('censusOut');if(el)el.textContent=txt;}
+function devCopyCensus(){const txt=_lastCensus||sheetCensusText();try{navigator.clipboard.writeText(txt).then(()=>toast('Census copied'),()=>toast('Could not copy'));}catch(e){toast('Could not copy');}}
 function toggleDevDot(){try{const d=document.getElementById('devDot');if(d)d.classList.toggle('show',devAllowed());}catch(e){}}
 function renderDevErrors(){
   const el=document.getElementById('errList');if(!el)return;

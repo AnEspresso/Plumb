@@ -1117,6 +1117,8 @@ t('info sheet Done outlines when body has a black action', SRC.split('function s
 t('invoice compose hides Done', SRC.split('function renderInvoices')[1].slice(0,900).indexOf("foot.style.display='none'")>=0);
 t('Field Notes chips start outline', SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf("class=\"chip\"+")>=0||SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf("class=\"chip\"")>=0);
 t('Scan and Website are dashed', SRC.indexOf('.qf-btn')>=0&&SRC.split('.qf-btn{')[1].split('}')[0].indexOf('dashed')>=0);
+t('sheet contract exists', SRC.indexOf('function sheetContract')>=0&&SRC.indexOf('function sheetCensusText')>=0&&SRC.indexOf('devRunCensus')>=0);
+t('sheet contract ignores picker pills', SRC.split('function sheetContract')[1].slice(0,1200).indexOf('ov-sortpill')>=0&&SRC.split('function sheetContract')[1].slice(0,1200).indexOf('actionBlacks')>=0);
 t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Go to the book')>=0);
 t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter')>=0&&SRC.split('function openNotifyCenter')[1].split('const Org=')[0].indexOf('Send a test')>=0&&SRC.indexOf('function pushTest')>=0);
 t('push test targets this phone', SRC.indexOf("fnCall('notifyTest',{token:tok})")>=0&&SRC.indexOf('listenForeground')>=0);
