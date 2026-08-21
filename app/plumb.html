@@ -944,6 +944,14 @@
     .ppl-nav .ppl-dirs .ov-sortpill{min-height:44px;padding:10px 8px;}
     .chip{min-height:44px;padding:10px 14px;}
   }
+  .ppl-gate{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;width:100%;padding:12px 0;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:inherit;text-align:left;cursor:pointer;}
+  .ppl-gate .si{flex:1;min-width:0;}
+  .ppl-gate .n{font-weight:650;font-size:15px;}
+  .ppl-gate .d{color:var(--ink-3);font-size:12.5px;margin-top:2px;line-height:1.35;}
+  .ppl-gate .kn{flex:none;width:46px;height:28px;border-radius:999px;background:var(--line);position:relative;transition:background .15s;}
+  .ppl-gate .kn i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--surface);box-shadow:0 1px 4px rgba(27,25,22,.2);transition:left .15s;}
+  .ppl-gate.on .kn{background:var(--ink);}
+  .ppl-gate.on .kn i{left:21px;}
   .ov-summary{display:flex;align-items:center;gap:8px;margin:2px 2px 14px;font-size:13px;font-weight:600;color:var(--ink-3);}
   .ovt-count{color:var(--ink-2);}
   .ovt-sep{color:var(--ink-3);opacity:.6;}
@@ -3127,15 +3135,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.311.0 - Workbench sits above sheets.';
+const PLUMB_VERSION='2.312.0 - Office seats with a confirm if you grant extra.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787232000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.311.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787320000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.312.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4762,7 +4770,7 @@ function openConfirm(o){
 function ocCancel(){const f=_ocCancel;_ocAction=null;_ocCancel=null;document.getElementById('confirmScrim').classList.remove('show');if(typeof f==='function')try{f();}catch(e){console.warn('openConfirm cancel failed',e);}}
 function ocConfirm(){const f=_ocAction;_ocAction=null;_ocCancel=null;document.getElementById('confirmScrim').classList.remove('show');if(typeof f==='function')try{f();}catch(e){console.warn('openConfirm action failed',e);}}
 const US_STATES=['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
-function openNewSite(){document.getElementById('nsName').value='';document.getElementById('nsStreet').value='';document.getElementById('nsCity').value='';
+function openNewSite(){if(!canGate('jobs')){toast('Adding a house is off for this seat');return;}document.getElementById('nsName').value='';document.getElementById('nsStreet').value='';document.getElementById('nsCity').value='';
   const st=document.getElementById('nsState');if(st)st.value='';
   const n=(state.projects||[]).length;
   const t=document.getElementById('nsTitle');const h=document.getElementById('nsHint');
@@ -4833,6 +4841,160 @@ function realEnter(){
    account. Identity only for now — Live data stays local until Step 3
    (granular writes) lands, then users/{uid} + org scoping attach here. */
 const RP_ROLES={owner:'Owner / General contractor',pm:'Project manager',superintendent:'Superintendent',office:'Office / Selections coordinator'};
+const GATE_KEYS=[
+  {id:'field',n:'Field Notes',d:'Camera, notes, and punch on site'},
+  {id:'schedule',n:'Schedule',d:'Crew calendar across jobs'},
+  {id:'selections',n:'Selections',d:'Finishes, specs, homeowner choices'},
+  {id:'site',n:'Full site',d:'Log, Needs You, files'},
+  {id:'jobs',n:'Add a house',d:'Put a new job on the book'},
+  {id:'moneyJob',n:'Job money',d:'What this house cost, and billed the buyer'},
+  {id:'moneyCo',n:'Company money',d:'Every invoice, and QuickBooks'},
+  {id:'people',n:'People',d:'Invite the team, homeowners, and crews'}
+];
+const ROLE_MACROS={
+  owner:{field:1,schedule:1,selections:1,site:1,jobs:1,moneyJob:1,moneyCo:1,people:1},
+  pm:{field:1,schedule:1,selections:1,site:1,jobs:1,moneyJob:1,moneyCo:0,people:1},
+  superintendent:{field:1,schedule:1,selections:1,site:1,jobs:0,moneyJob:0,moneyCo:0,people:0},
+  office:{field:1,schedule:1,selections:1,site:1,jobs:0,moneyJob:0,moneyCo:0,people:1}
+};
+function gateOn(g,k){return !!(g&&g[k]);}
+function roleMacro(role){
+  role=ROLE_MACROS[role]?role:'pm';
+  const base=Object.assign({},ROLE_MACROS[role]);
+  try{
+    const over=((orgPrefs()||{}).roleMacros||{})[role];
+    if(over)GATE_KEYS.forEach(function(g){if(over[g.id]===0||over[g.id]===1||over[g.id]===false||over[g.id]===true)base[g.id]=over[g.id]?1:0;});
+  }catch(e){}
+  return base;
+}
+function gatesExtra(draft,base){return GATE_KEYS.filter(function(g){return gateOn(draft,g.id)&&!gateOn(base,g.id);}).map(function(g){return g.n;});}
+function gatesMissing(draft,base){return GATE_KEYS.filter(function(g){return !gateOn(draft,g.id)&&gateOn(base,g.id);}).map(function(g){return g.n;});}
+function isOrgOwner(){
+  try{
+    const s=state.session||{};
+    if(s.role!=='builder')return false;
+    if(s.owner===true)return true;
+    if(s.rpRole==='owner')return true;
+    if(!s.member)return true;
+  }catch(e){}
+  return false;
+}
+function liveGates(){
+  try{
+    const s=state.session||{};
+    if(s.gates)return s.gates;
+    const uid=(s.auth&&s.auth.uid)||'';
+    if(uid){
+      const p=(state.projects||[]).find(function(x){return x.memberInfo&&x.memberInfo[uid]&&x.memberInfo[uid].gates;});
+      if(p)return p.memberInfo[uid].gates;
+    }
+    return roleMacro(s.rpRole||'pm');
+  }catch(e){return roleMacro('pm');}
+}
+function canGate(k){
+  try{
+    const s=state.session||{};
+    if(s.role!=='builder')return false;
+    if(isOrgOwner())return true;
+    const g=liveGates();
+    if(!g)return k!=='moneyJob'&&k!=='moneyCo';
+    return !!g[k];
+  }catch(e){return k!=='moneyJob'&&k!=='moneyCo';}
+}
+let _teamInv=null;
+function openTeamInvite(opts){
+  opts=opts||{};
+  const role=opts.rpRole||'pm';
+  _teamInv={rpRole:role,gates:Object.assign({},roleMacro(role)),setup:!!opts.setup,uid:opts.uid||null,kind:opts.kind||'invite'};
+  peopleMode='teaminvite';
+  renderPeople();
+  document.getElementById('peopleScrim').classList.add('show');
+}
+function openRoleMacro(role){
+  _teamInv={rpRole:role,gates:Object.assign({},roleMacro(role)),kind:'macro'};
+  peopleMode='teaminvite';
+  renderPeople();
+  document.getElementById('peopleScrim').classList.add('show');
+}
+function openPersonGates(uid){
+  const r=teamRoster()||{};
+  const info=r[uid]||{};
+  const role=info.rpRole||'pm';
+  const g=info.gates?Object.assign({},roleMacro(role),info.gates):roleMacro(role);
+  _teamInv={rpRole:role,gates:g,uid:uid,kind:'person',name:info.name||''};
+  peopleMode='teaminvite';
+  renderPeople();
+}
+function teamInvPick(role){
+  if(!_teamInv)return;
+  _teamInv.rpRole=role;
+  if(_teamInv.kind!=='person')_teamInv.gates=Object.assign({},roleMacro(role));
+  renderPeople();
+}
+function teamInvToggle(k){
+  if(!_teamInv||!_teamInv.gates)return;
+  _teamInv.gates[k]=_teamInv.gates[k]?0:1;
+  renderPeople();
+}
+function teamInvWarnBody(){
+  const d=_teamInv||{};
+  const base=ROLE_MACROS[d.rpRole]||ROLE_MACROS.pm;
+  const extra=gatesExtra(d.gates,base);
+  const miss=gatesMissing(d.gates,base);
+  const who=RP_ROLES[d.rpRole]||'this role';
+  let b='<p style="margin:0 0 10px">The <b>'+esc(who)+'</b> template does not match what you picked.</p>';
+  if(extra.length)b+='<p style="margin:0 0 10px">They will also see <b>'+esc(extra.join(', '))+'</b>.</p>';
+  if(miss.length)b+='<p style="margin:0 0 10px">They will not see <b>'+esc(miss.join(', '))+'</b>.</p>';
+  b+='<p style="margin:0;color:var(--ink-3);font-size:13px">Confirm you want this seat to work this way.</p>';
+  return b;
+}
+function teamInvCommit(){
+  const d=_teamInv;if(!d)return;
+  const base=ROLE_MACROS[d.rpRole]||ROLE_MACROS.pm;
+  const drifted=gatesExtra(d.gates,base).length||gatesMissing(d.gates,base).length;
+  const go=function(){if(d.kind==='macro')saveRoleMacro();else if(d.kind==='person')savePersonGates();else mintTeamInvite();};
+  if(drifted){
+    openConfirm({title:'This is not the template',body:teamInvWarnBody(),okLabel:'Confirm',onConfirm:go});
+    return;
+  }
+  go();
+}
+function saveRoleMacro(){
+  const d=_teamInv;if(!d)return;
+  const op=orgPrefs()||{};
+  op.roleMacros=op.roleMacros||{};
+  op.roleMacros[d.rpRole]=Object.assign({},d.gates);
+  saveOrgPrefs(op);
+  toast((RP_ROLES[d.rpRole]||'Role')+' template saved');
+  peopleMode='roles';_teamInv=null;renderPeople();
+}
+function savePersonGates(){
+  const d=_teamInv;if(!d||!d.uid)return;
+  let ch=false;
+  (state.projects||[]).forEach(function(p){
+    p.memberInfo=p.memberInfo||{};
+    const cur=p.memberInfo[d.uid]||{};
+    p.memberInfo[d.uid]=Object.assign({},cur,{rpRole:d.rpRole,gates:Object.assign({},d.gates)});
+    ch=true;
+  });
+  if(ch){persist();try{Sync.pushAll();}catch(e){}}
+  toast('Seat updated');
+  peopleMode='team';_teamInv=null;renderPeople();
+}
+async function mintTeamInvite(){
+  const d=_teamInv;if(!d)return;
+  if(appMode()!=='real'){toast('Invites work in Live mode');return;}
+  if(!Sync.ready()){toast('Connect sync first (workbench)');return;}
+  const code=genInviteCode();
+  const payload={code,role:'team',siteId:'',name:'',trade:'',setup:!!d.setup,mode:'live',createdBy:Sync.uid||'',t:Date.now(),rpRole:d.rpRole,gates:Object.assign({},d.gates)};
+  try{await Sync.db.collection('invites').doc(code).set(payload);}
+  catch(e){toast('Could not create invite — check connection');return;}
+  const ti=laTeamInvites();ti.push({code,t:Date.now(),status:'open',setup:!!d.setup,rpRole:d.rpRole,gates:Object.assign({},d.gates)});laSaveTeamInvites(ti);
+  try{watchClaims();}catch(e){}
+  logEvent('inviteCreated','team · '+(d.rpRole||''));
+  _teamInv=null;
+  showInviteCode(code,(d.setup?'Team · they get company setup':'Team')+' · '+(RP_ROLES[d.rpRole]||''));
+}
 let laMode='signin';
 function laProfile(){try{return JSON.parse(localStorage.getItem('plumb.liveAuth')||'null');}catch(e){return null;}}
 function laSaveProfile(p){
@@ -4895,13 +5057,13 @@ async function laEnter(p){
   const auth={uid:p.uid||null,email:p.email,provider:p.provider};
   const m=p.member;
   if(m&&m.role==='team'){
-    Data.setSession({role:'builder',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole,member:m});
+    Data.setSession({role:'builder',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole,member:m,gates:p.gates||(m&&m.gates)||null});
   }else if(m&&m.role==='client'){
     Data.setSession({role:'client',site:m.siteId,name:p.name||p.email,since:Date.now(),mode:'real',auth,member:m});
   }else if(m&&m.role==='sub'){
     Data.setSession({role:'subs',name:m.name||p.name||p.email,since:Date.now(),mode:'real',auth,member:m});
   }else{
-    Data.setSession({role:'builder',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole});
+    Data.setSession({role:'builder',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole,gates:p.gates||null});
   }
   logEvent('login','real · '+p.provider+' · '+(m?m.role:(p.rpRole||'')));
   /* Deterministic rebind: a connection made before this login is bound to the
@@ -4958,7 +5120,7 @@ async function liveAuthSubmit(){
       }
       const prof={provider:'firebase',uid:cred.user.uid,email,emailVerified:!!cred.user.emailVerified,name:laMode==='signup'?name:(cred.user.displayName||email),rpRole:laMode==='signup'?rpRole:( (laProfile()&&laProfile().email===email&&laProfile().rpRole)||rpRole)};
       const invCode=(document.getElementById('laInvite')||{value:''}).value.trim();
-      if(invCode){const m=await redeemInvite(invCode,prof);if(m===false)return;if(m){prof.member=m;_invClearHandoff();}}
+      if(invCode){const m=await redeemInvite(invCode,prof);if(m===false)return;if(m){prof.member=m;if(m.rpRole)prof.rpRole=m.rpRole;if(m.gates)prof.gates=m.gates;_invClearHandoff();}}
       else{const old=laProfile();if(old&&old.email===email&&old.member)prof.member=old.member;}
       laSaveProfile(prof);laEnter(prof);
       if(laMode==='signup')try{_evAfterSignup(email);}catch(e){}
@@ -5469,7 +5631,7 @@ function __renderSetup(){
     const pend=laTeamInvites().filter(i=>i.status==='open');
     const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
     const mates=Object.keys(r).filter(uid=>uid!==me);
-    b.innerHTML=`<p style="margin:0 0 10px">People on your team see every house \u2014 same book as you. Invite a PM, a superintendent, or the office. They sign in with their own email.</p>`
+    b.innerHTML=`<p style="margin:0 0 10px">People on your team see the book. Each seat is a template — PM, superintendent, office — and you can change a door. Confirm warns you if it is not the default.</p>`
       +mates.map(uid=>`<div class="subrow"><div class="si"><div class="n">${esc((r[uid]&&r[uid].name)||'Team member')}</div><div class="d">${esc(RP_ROLES[(r[uid]&&r[uid].rpRole)]||'Team')}</div></div><span class="cleared">On the team</span></div>`).join('')
       +pend.map(i=>`<div class="subrow"><div class="si" style="cursor:pointer" onclick="shareInvite('${i.code}')"><div class="n">Open invite</div><div class="d">Code ${esc(i.code)} — tap to copy &amp; share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
       +`<button class="add-sub-btn" onclick="createInvite('team')">${PPL_INV_SVG}Create a team invite code…</button>
@@ -5726,11 +5888,11 @@ function closeCompany(){document.getElementById('companyScrim').classList.remove
 function renderCompany(){
   const el=document.getElementById('companyBody');if(!el)return;
   let rows='';
-  rows+=SET_GEAR_ROW('Trades Calendar','Crew schedule across every job','closeCompany();openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
-  rows+=SET_GEAR_ROW('People','Team, homeowners, and crews','closeCompany();openPeopleMode(\'team\')','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>');
-  rows+=SET_GEAR_ROW('Invoices','Bill homeowners & track payments','closeCompany();invoicesFromSettings()','<path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2zM9 8h6M9 12h6"/>');
-  rows+=SET_GEAR_ROW('Add a job','New build, or bring an existing one in','closeCompany();openStart()','<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>');
-  el.innerHTML=rows;}
+  if(canGate('schedule'))rows+=SET_GEAR_ROW('Trades Calendar','Crew schedule across every job','closeCompany();openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
+  if(canGate('people'))rows+=SET_GEAR_ROW('People','Team, homeowners, and crews','closeCompany();openPeopleMode(\'team\')','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 1 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>');
+  if(canGate('moneyCo'))rows+=SET_GEAR_ROW('Invoices','Bill homeowners & track payments','closeCompany();invoicesFromSettings()','<path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2zM9 8h6M9 12h6"/>');
+  if(canGate('jobs'))rows+=SET_GEAR_ROW('Add a job','New build, or bring an existing one in','closeCompany();openStart()','<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>');
+  el.innerHTML=rows||'<div class="empty">Nothing here for this seat.</div>';}
 function renderSettings(){
   const el=document.getElementById('settingsBody');if(!el)return;
   const sess=state.session||{};const role=sess.role||'';
@@ -5747,8 +5909,10 @@ function renderSettings(){
     rows+='<div class="set-hd">Company</div>';
     rows+=SET_GEAR_ROW('Company','People, calendar, invoices, new job','closeSettings();openCompany()','<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>');
     if(appMode()==='real'){
-      rows+=SET_GEAR_ROW('Selection templates','Build style & install spec sheets','closeSettings();openPeopleMode(\'templates\')',I.tmpl);
-      rows+=SET_GEAR_ROW('First-time setup','Re-run the setup questions','closeSettings();openSetup()',I.wiz);
+      if(isOrgOwner()){
+        rows+=SET_GEAR_ROW('Selection templates','Build style & install spec sheets','closeSettings();openPeopleMode(\'templates\')',I.tmpl);
+        rows+=SET_GEAR_ROW('First-time setup','Re-run the setup questions','closeSettings();openSetup()',I.wiz);
+      }
       if(sess.rpRole==='owner'&&prefsPending())rows+=SET_GEAR_ROW('Review setup','Choices made by '+esc((orgPrefs()._prov||{}).by||'a team member')+' need your OK','closeSettings();openSetupReview()',I.wiz);
     }else{
       rows+='<div class="empty" style="padding:8px 0 12px">Homeowner portals and templates manage your real company — switch to <b>Live</b> to use them.</div>';
@@ -6371,16 +6535,20 @@ function ctDelete(id){
     op.customTemplates=(op.customTemplates||[]).filter(x=>x.id!==id);
     if(op.customLevel===id)op.customLevel='semi';
     saveOrgPrefs(op);if(_ctDraft&&_ctDraft.id===id){_ctDraft=null;_ctEditing=false;}renderPeople();}});}
-function openPeopleMode(mode){peopleMode=mode;renderPeople();document.getElementById('peopleScrim').classList.add('show');}
+function openPeopleMode(mode){
+  if(mode==='templates'||mode==='tmplcat'){if(!isOrgOwner()){toast('Templates are owner only');return;}}
+  else if(!(canGate('people')||isOrgOwner())){toast('People is off for this seat');return;}
+  peopleMode=mode;renderPeople();document.getElementById('peopleScrim').classList.add('show');
+}
 let peopleMode='invite';
-function openPeople(){peopleMode='invite';renderPeople();document.getElementById('peopleScrim').classList.add('show');}
+function openPeople(){if(!(canGate('people')||isOrgOwner())){toast('People is off for this seat');return;}peopleMode='invite';renderPeople();document.getElementById('peopleScrim').classList.add('show');}
 function closePeople(){document.getElementById('peopleScrim').classList.remove('show');try{renderSubs();}catch(e){}}
 function peoplePills(){
   const pill=function(id,lab){return '<button type="button" class="ov-sortpill'+(peopleMode===id?' on':'')+'" onclick="openPeopleMode(\''+id+'\')">'+lab+'</button>';};
   let h='<div class="ppl-nav"><div class="ov-sortpills ppl-dirs">'
     +pill('team','Team')+pill('homeowner','Homeowners')+pill('subs','Subs')
     +'</div>';
-  if(peopleMode!=='invite') h+='<button type="button" class="ppl-invite" onclick="openPeopleMode(\'invite\')">Invite</button>';
+  if(peopleMode!=='invite'&&peopleMode!=='teaminvite'&&peopleMode!=='roles') h+='<button type="button" class="ppl-invite" onclick="openPeopleMode(\'invite\')">Invite</button>';
   return h+'</div>';
 }
 let _ctNavDir='fwd';
@@ -6412,6 +6580,10 @@ function renderPeople(__a,__b){
         foot.style.display='';foot.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;width:100%">'+_pg+'<button class="b1 b-cancel" style="flex:1;margin:0" onclick="ctBackToCategories()">← Back to Categories</button></div>';
       } else if(peopleMode==='templates'&&_ctEditing){
         foot.style.display='none';   // the in-body "Done" is the single done here
+      } else if(peopleMode==='teaminvite'){
+        foot.style.display='';foot.innerHTML='<button class="b1 b-cancel" style="flex:1" onclick="peopleMode=(_teamInv&&_teamInv.kind===\'macro\')?\'roles\':\'team\';_teamInv=null;renderPeople()">Back</button><button class="b1 b-go" style="flex:1" onclick="teamInvCommit()">Confirm</button>';
+      } else if(peopleMode==='roles'){
+        foot.style.display='';foot.innerHTML='<button class="b1 b-go" style="flex:1" onclick="openPeopleMode(\'team\')">Done</button>';
       } else {
         foot.style.display='';foot.innerHTML='<button class="b1 b-go" style="flex:1" onclick="closePeople()">Done</button>';
       }
@@ -6423,6 +6595,34 @@ function __renderPeople(){
   const el=document.getElementById('peopleBody');if(!el)return;
   const title=document.getElementById('peopleTitle');
   if(appMode()!=='real'){if(title)title.textContent='Live mode only';el.innerHTML='<div class="empty">This manages your real company in Live mode. The demo uses sample roles instead.</div>';return;}
+  if(peopleMode==='roles'){
+    if(title)title.textContent='People';
+    el.innerHTML=peoplePills()+'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Four seats. These are the defaults. Change a seat any time — Confirm warns you if it is not the template.</p>'
+      +['owner','pm','superintendent','office'].map(function(id){
+        const g=roleMacro(id);const on=GATE_KEYS.filter(function(k){return g[k.id];}).map(function(k){return k.n;}).join(' · ');
+        return '<button type="button" class="subrow" style="width:100%;text-align:left" onclick="openRoleMacro(\''+id+'\')"><div class="si"><div class="n">'+esc(RP_ROLES[id])+'</div><div class="d">'+esc(on)+'</div></div><span class="td-chev">\u203a</span></button>';
+      }).join('');
+    return;
+  }
+  if(peopleMode==='teaminvite'&&_teamInv){
+    const d=_teamInv;
+    if(title)title.textContent='People';
+    const hdg=d.kind==='macro'?'Template':(d.kind==='person'?(d.name||'This seat'):'Invite a teammate');
+    let h=peoplePills()+'<div class="ppl-invite-h">'+esc(hdg)+'</div>'
+      +'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">'+(d.kind==='macro'?'Defaults for this seat. Changing them does not move people already on the team.':'Pick the seat, then change a door if you need to.')+'</p>';
+    h+='<div class="ov-sortpills" style="flex-wrap:wrap;margin-bottom:8px">';
+    ['pm','superintendent','office','owner'].forEach(function(id){
+      if(d.kind!=='macro'&&id==='owner'&&false)return;
+      h+='<button type="button" class="ov-sortpill'+(d.rpRole===id?' on':'')+'" onclick="teamInvPick(\''+id+'\')">'+esc(id==='superintendent'?'Super':(id==='pm'?'PM':(id==='office'?'Office':'Owner')))+'</button>';
+    });
+    h+='</div>';
+    GATE_KEYS.forEach(function(g){
+      const on=gateOn(d.gates,g.id);
+      h+='<button type="button" class="ppl-gate'+(on?' on':'')+'" onclick="teamInvToggle(\''+g.id+'\')"><div class="si"><div class="n">'+esc(g.n)+'</div><div class="d">'+esc(g.d)+'</div></div><span class="kn" aria-hidden="true"><i></i></span></button>';
+    });
+    el.innerHTML=h;
+    return;
+  }
   if(peopleMode==='invite'||!peopleMode){
     if(title)title.textContent='People';
     const just=_inviteJust;
@@ -6542,11 +6742,12 @@ function __renderPeople(){
   const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
   const mates=Object.keys(r).filter(uid=>uid!==me);
   const pend=laTeamInvites().filter(i=>i.status==='open');
-  el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">People on your team see every house. Invite, share the code, done.</p>'
-    +(mates.map(uid=>`<div class="subrow"><div class="si"><div class="n">${esc((r[uid]&&r[uid].name)||'Team member')}</div><div class="d">${esc(RP_ROLES[(r[uid]&&r[uid].rpRole)]||'Team')}</div></div><button class="rm" onclick="removeTeamMember('${uid}')" title="Remove from team">${ICON.trash}</button></div>`).join('')||'<div class="empty" style="padding:10px 0">Just you so far.</div>')
+  el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">People on your team see the book. Each seat has a template you can change.</p>'
+    +(mates.map(uid=>`<div class="subrow" onclick="openPersonGates('${uid}')"><div class="si"><div class="n">${esc((r[uid]&&r[uid].name)||'Team member')}</div><div class="d">${esc(RP_ROLES[(r[uid]&&r[uid].rpRole)]||'Team')}</div></div><button class="rm" onclick="event.stopPropagation();removeTeamMember('${uid}')" title="Remove from team">${ICON.trash}</button></div>`).join('')||'<div class="empty" style="padding:10px 0">Just you so far.</div>')
     +pend.map(i=>`<div class="subrow"><div class="si" style="cursor:pointer" onclick="shareInvite('${i.code}')"><div class="n">Open invite${i.setup?' · with setup':''}</div><div class="d">Code ${esc(i.code)} — tap to copy &amp; share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
-    +`<button class="add-sub-btn" onclick="createInvite('team')">${PPL_INV_SVG}Invite a teammate</button>`
-    +'<p class="ppl-quiet">Hand off company setup to someone else. <button type="button" onclick="createInvite(\'team\',null,{setup:true})">Invite with setup</button></p>';}
+    +(canGate('people')||isOrgOwner()?`<button class="add-sub-btn" onclick="openTeamInvite({})">${PPL_INV_SVG}Invite a teammate</button>`:'')
+    +'<p class="ppl-quiet">Office templates. <button type="button" onclick="openPeopleMode(\'roles\')">Review the four seats</button></p>'
+    +(isOrgOwner()?'<p class="ppl-quiet">Hand off company setup to someone else. <button type="button" onclick="openTeamInvite({setup:true})">Invite with setup</button></p>':'');}
 async function revokeInvite(code){
   confirmDelete({title:'Revoke invite?',body:'The code stops working immediately. Anyone who hasn\u2019t joined yet won\u2019t be able to.',onConfirm:async()=>{
   try{if(Sync.ready())await Sync.db.collection('invites').doc(code).set({revoked:true,revokedAt:Date.now()},{merge:true});}catch(e){toast('Couldn\u2019t reach the cloud — try again');return;}
@@ -6567,13 +6768,12 @@ async function createInvite(role,subId,opts){opts=opts||{};
   if(appMode()!=='real'){toast('Invites work in Live mode');return;}
   if(!Sync.ready()){toast('Connect sync first (workbench)');return;}
   if(role==='team'){
-    const code=genInviteCode();
-    try{await Sync.db.collection('invites').doc(code).set({code,role:'team',siteId:'',name:'',trade:'',setup:!!opts.setup,mode:'live',createdBy:Sync.uid||'',t:Date.now()});}
-    catch(e){toast('Couldn\u2019t create invite — check connection');return;}
-    const ti=laTeamInvites();ti.push({code,t:Date.now(),status:'open',setup:!!opts.setup});laSaveTeamInvites(ti);
-    try{watchClaims();}catch(e){}
-    logEvent('inviteCreated','team');
-    showInviteCode(code,opts.setup?'Team · they get company setup':'Team');
+    if(opts.confirmed){
+      _teamInv={rpRole:opts.rpRole||'pm',gates:opts.gates||Object.assign({},roleMacro(opts.rpRole||'pm')),setup:!!opts.setup,kind:'invite'};
+      await mintTeamInvite();
+      return;
+    }
+    openTeamInvite(opts);
     return;}
   const p=P();let name='',trade='',subId2='';
   if(role==='sub'){const s=p.subs.find(x=>x.id===subId);if(!s)return;name=s.name;trade=s.specialty;subId2=String(s.id);
@@ -6606,7 +6806,7 @@ function approveClaim(code,uid,c){
     (state.projects||[]).forEach(p=>{
       p.members=p.members||{};p.memberInfo=p.memberInfo||{};
       if(p.members[uid]!=='builder'){p.members[uid]='builder';
-        p.memberInfo[uid]={name:c.name||'',rpRole:c.rpRole||'',email:c.email||''};ch=true;}
+        p.memberInfo[uid]={name:c.name||'',rpRole:tinv.rpRole||c.rpRole||'',email:c.email||'',gates:tinv.gates||c.gates||null};ch=true;}
       if(ensureMembership(p))ch=true;     // legacy sites: make sure I'm stamped too before pushing a members map
       if(ensureTeam(p))ch=true;});        // ...and the rest of the roster
     tinv.status='joined';tinv.uid=uid;tinv.name=c.name||'';laSaveTeamInvites(ti);
@@ -6637,7 +6837,7 @@ async function redeemInvite(code,prof){
     if(inv.revoked){laErr('That invite was revoked by your builder — ask them for a new code.');return false;}
     await db.collection('invites').doc(code).collection('claims').doc(prof.uid).set({name:prof.name||'',email:prof.email||'',rpRole:prof.rpRole||'',t:Date.now()});
     const role=inv.role==='client'?'client':(inv.role==='team'?'team':'sub');
-    return {code,siteId:String(inv.siteId||''),role,trade:inv.trade||'',name:inv.name||'',setup:!!inv.setup};
+    return {code,siteId:String(inv.siteId||''),role,trade:inv.trade||'',name:inv.name||'',setup:!!inv.setup,rpRole:inv.rpRole||'',gates:inv.gates||null};
   }catch(e){laErr('Couldn\u2019t redeem the invite: '+((e&&e.message)||'error'));return false;}
 }
 function setRole(r){r=normRole(r);loginRole=r;['builder','subs','client'].forEach(x=>{const b=document.getElementById('role-'+x);if(b)b.classList.toggle('on',x===r);});populateLoginSelect();}
@@ -7110,9 +7310,11 @@ function houseGoCal(){
   });
 }
 function houseGoMoney(){
+  if(!canGate('moneyJob')){toast('Job money is off for this seat');return;}
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openBudget();});
 }
 function openLogPick(){
+  if(!canGate('field')){toast('Field Notes is off for this seat');return;}
   saveScroll('home');
   const hs=document.getElementById('houseScrim');
   if(hs&&hs.classList.contains('show')&&_housePid){logPickHouse(_housePid);return;}
@@ -7155,7 +7357,7 @@ function houseHTML(p){
   }else{
     stripSt=n?(n+' still '+(n===1?'needs':'need')+' you'):'All clear on this house';
     if(deck)meta.push('On deck \u00b7 '+(deck.name||specLabel(deck.trade)||''));
-    if(isBuilder&&money&&money.indexOf('No money')<0)meta.push(money);
+    if(isBuilder&&canGate('moneyJob')&&money&&money.indexOf('No money')<0)meta.push(money);
   }
   let h='<div class="pkt-strip '+(n?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   if(issues.length){
@@ -7175,11 +7377,11 @@ function houseHTML(p){
     h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
   h+='<div class="hs-doors">';
-  if(!isClient)h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">A note, or a photo</div></button>';
-  h+='<button class="hs-door" data-door="cal" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
-  h+='<button class="hs-door" data-door="sel" onclick="houseGoSite(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
-  if(isBuilder)h+='<button class="hs-door" data-door="money" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
-  if(!isClient)h+='<button class="hs-door wide" data-door="full" onclick="houseGoSite(\'log\')"><div class="k">Full site</div><div class="m">Log, Needs You, Build, Files</div></button>';
+  if(!isClient&&canGate('field'))h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">A note, or a photo</div></button>';
+  if(canGate('schedule')||isClient)h+='<button class="hs-door" data-door="cal" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
+  if(canGate('selections')||isClient)h+='<button class="hs-door" data-door="sel" onclick="houseGoSite(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
+  if(isBuilder&&canGate('moneyJob'))h+='<button class="hs-door" data-door="money" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
+  if(!isClient&&canGate('site'))h+='<button class="hs-door wide" data-door="full" onclick="houseGoSite(\'log\')"><div class="k">Full site</div><div class="m">Log, Needs You, Build, Files</div></button>';
   h+='</div>';
   return h;
 }
@@ -7196,7 +7398,7 @@ function renderToday(){
     if(b.start<today||b.start>today+7*864e5)return;
     soon.push({p:p,b:b,trade:tdTradeOf(p,b)});});});
   soon.sort(function(a,b){return a.b.start-b.b.start;});
-  let h='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#B0895A" stroke-width="1.7"/><path d="M52 20V15h24v5" fill="none" stroke="#B0895A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#1B1916" stroke-width="1.55"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#1B1916" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="1.8"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg></button>';
+  let h=canGate('field')?('<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#B0895A" stroke-width="1.7"/><path d="M52 20V15h24v5" fill="none" stroke="#B0895A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#1B1916" stroke-width="1.55"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#1B1916" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="1.8"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg></button>'):'';
   if(soon.length){
     h+='<div class="ov-coming"><div class="eyebrow">Coming up</div>';
     const shown=_soonOpen?soon:soon.slice(0,3);
@@ -7206,7 +7408,7 @@ function renderToday(){
   }
   try{
     const sx=state.session||{};
-    if(appMode()==='real'&&sx.role==='builder'){
+    if(appMode()==='real'&&sx.role==='builder'&&canGate('people')){
       const team=(typeof laTeamInvites==='function'?laTeamInvites():[]).some(function(i){return i.status!=='revoked';});
       const ho=projs.some(function(p){return (p.invites||[]).some(function(i){return i.role==='client'&&i.status!=='revoked';});});
       const crew=projs.some(function(p){return (p.subs||[]).length;});
@@ -9079,7 +9281,7 @@ function maybeInstallGate(){
 function igInstall(){try{if(deferredPrompt){deferredPrompt.prompt();}}catch(e){}}
 /* ── QuickBooks client plumbing (Live builders with cloud sync) ── */
 let _qbState=null;
-function qbEligible(){try{return appMode()==='real'&&Sync.ready()&&state.session&&state.session.role==='builder';}catch(e){return false;}}
+function qbEligible(){try{return appMode()==='real'&&Sync.ready()&&state.session&&state.session.role==='builder'&&canGate('moneyCo');}catch(e){return false;}}
 async function qbRefreshStatus(){
   if(!qbEligible()){_qbState=null;qbRenderLine();return;}
   try{_qbState=await fnCall('qbStatus',{});}catch(e){_qbState=null;}
@@ -11150,7 +11352,7 @@ function invNeedsOK(inv){if(!inv||inv.status==='approved')return false;const st=
 function unbilledSelections(p){return (p.selections||[]).filter(x=>Number(x.price)&&SEL_STATUS.indexOf(x.status)>=1&&!x.invoicedIn);}
 function composeSelections(p){const editId=(_invDraft&&_invDraft.editId)||null;return (p.selections||[]).filter(x=>Number(x.price)&&SEL_STATUS.indexOf(x.status)>=1&&(!x.invoicedIn||x.invoicedIn===editId));}
 let invMode='list',_invDraft=null;
-function openInvoices(){invMode='list';renderInvoices();document.getElementById('invScrim').classList.add('show');}
+function openInvoices(){if(!canGate('moneyCo')){toast('Company money is off for this seat');return;}invMode='list';renderInvoices();document.getElementById('invScrim').classList.add('show');}
 function invoicesFromSettings(){
   const ps=state.projects||[];
   if(ps.length<=1){openInvoices();return;}
