@@ -857,7 +857,7 @@ body.lab #shipBar{display:block!important}
     <div class="power">
       <div class="pw rv">
         <h3>Evenings</h3>
-        <p>She already has the photo. You stop answering “any update?” texts. Hours back every week.</p>
+        <p>The homeowner already has the photo. You stop answering “any update?” texts. Hours back every week.</p>
       </div>
       <div class="pw rv">
         <h3>Packet</h3>
@@ -876,8 +876,8 @@ body.lab #shipBar{display:block!important}
         <p>Budget, committed, spent, invoices. Overspend shows. Paid costs export to QuickBooks.</p>
       </div>
       <div class="pw rv">
-        <h3>Doors</h3>
-        <p>Three logins. She sees her house. The crew sees their scope. Your project manager sees the book. Nobody but you sees what you pay.</p>
+        <h3>Roles</h3>
+        <p>Three logins. The homeowner sees the house. The crew sees their jobs. The project manager sees the book, not the invoices.</p>
       </div>
     </div>
   </div>
@@ -911,14 +911,14 @@ body.lab #shipBar{display:block!important}
             <div class="pills"><span class="on">Needs You</span><span>Recent decisions</span><span>A–Z</span></div>
             <div class="cardx"><div class="hot">Leak · just now</div><div class="nm">288 Calderwood Ln</div><div class="d">Water at the basement wall. Photo filed.</div></div>
             <div class="cardx"><div class="oak hot" style="color:var(--oak)">Double-book · Tue</div><div class="nm">HVAC on two lots</div><div class="d">Calderwood 8–12 · Maple 9–2</div></div>
-            <div class="cardx"><div class="hot" style="color:var(--oak)">Waiting on her</div><div class="nm">Kitchen hood</div><div class="d">Allowance $2,400. One tap.</div></div>
+            <div class="cardx"><div class="hot" style="color:var(--oak)">Waiting</div><div class="nm">Kitchen hood</div><div class="d">Allowance $2,400. One tap.</div></div>
           </div>
         </div>
         <div class="frame" data-i="3">
           <div class="phone" style="box-shadow:none;border:0;max-width:none;padding:8px 4px">
             <div class="wm-row"><span class="w">Calderwood</span><span class="who">Homeowner</span></div>
-            <div class="cardx"><div class="hot">Today</div><div class="nm">A photo from the field</div><div class="d">Basement wall, south corner. Already on her phone.</div></div>
-            <div class="cardx"><div class="oak hot" style="color:var(--oak)">Waiting</div><div class="nm">Kitchen hood</div><div class="d">One tap when she decides.</div></div>
+            <div class="cardx"><div class="hot">Today</div><div class="nm">A photo from the field</div><div class="d">Basement wall, south corner. Already on the homeowner’s phone.</div></div>
+            <div class="cardx"><div class="oak hot" style="color:var(--oak)">Waiting</div><div class="nm">Kitchen hood</div><div class="d">One tap to decide.</div></div>
             <div class="cardx"><div class="d">Tile · approved Mar 12</div></div>
           </div>
         </div>
@@ -926,7 +926,7 @@ body.lab #shipBar{display:block!important}
     </div>
     <div class="film-copy">
       <p class="beat" id="filmBeat">7:40am · the field</p>
-      <h2 id="filmH">He photographs the leak.</h2>
+      <h2 id="filmH">Photograph the leak.</h2>
       <p id="filmP">On the jobsite, not the office. Field Notes is the camera on the home screen. House, photo, send. Filed to that house.</p>
       <div class="film-nav">
         <button type="button" class="film-next" id="filmPrev">Back</button>
@@ -949,7 +949,7 @@ body.lab #shipBar{display:block!important}
     <div class="hour">
       <div class="h rv"><div class="n">1</div><h3>Your company</h3><p>Your name. The book is for every house you run.</p></div>
       <div class="h rv"><div class="n">2</div><h3>The first house</h3><p>Street first. It lands in the book immediately.</p></div>
-      <div class="h rv"><div class="n">3</div><h3>Invite people</h3><p>Homeowner, a crew, your project manager. Each gets a login. Never your money.</p></div>
+      <div class="h rv"><div class="n">3</div><h3>Invite people</h3><p>Homeowner, a crew, your project manager. Each gets a role. Invoices stay with you.</p></div>
       <div class="h rv"><div class="n">4</div><h3>Open the book</h3><p><span class="gold">Needs You</span> stays empty until something actually needs you.</p></div>
     </div>
   </div>
@@ -1029,10 +1029,10 @@ body.lab #shipBar{display:block!important}
 })();
 (function(){
   var copy=[
-    {beat:'7:40am · the field', h:'He photographs the leak.', p:'On the jobsite, not the office. Field Notes is the camera on the home screen. House, photo, send. Filed to that house.'},
-    {beat:'7:41am · send', h:'Leak. A line. Send.', p:'A chip is a one-tap label — Leak, Damage, Punch, Note. Needs You has it before the phone is in his pocket.'},
-    {beat:'7:41am · the book', h:'The house that needs him is first.', p:'The book is this app: every house in one place. A leak on Calderwood sits at the top because it is time-sensitive.'},
-    {beat:'7:42am · her phone', h:'She already has the photo.', p:'The homeowner opens her login and the picture is there. The “any update?” text is never written.'}
+    {beat:'7:40am · the field', h:'Photograph the leak.', p:'On the jobsite, not the office. Field Notes is the camera on the home screen. House, photo, send. Filed to that house.'},
+    {beat:'7:41am · send', h:'Leak. A line. Send.', p:'A chip is a one-tap label — Leak, Damage, Punch, Note. Needs You has it before the phone is back in a pocket.'},
+    {beat:'7:41am · the book', h:'The house that needs you is first.', p:'The book is this app: every house in one place. A leak on Calderwood sits at the top because it is time-sensitive.'},
+    {beat:'7:42am · the homeowner', h:'The photo is already there.', p:'The homeowner opens the login and the picture is there. The “any update?” text is never written.'}
   ];
   var i=0, t=null;
   var frames=[].slice.call(document.querySelectorAll('.frame'));
