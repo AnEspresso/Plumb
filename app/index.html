@@ -3135,15 +3135,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.312.0 - Office seats with a confirm if you grant extra.';
+const PLUMB_VERSION='2.313.0 - Roles, not seats.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787320000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.312.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787323600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.313.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4770,7 +4770,7 @@ function openConfirm(o){
 function ocCancel(){const f=_ocCancel;_ocAction=null;_ocCancel=null;document.getElementById('confirmScrim').classList.remove('show');if(typeof f==='function')try{f();}catch(e){console.warn('openConfirm cancel failed',e);}}
 function ocConfirm(){const f=_ocAction;_ocAction=null;_ocCancel=null;document.getElementById('confirmScrim').classList.remove('show');if(typeof f==='function')try{f();}catch(e){console.warn('openConfirm action failed',e);}}
 const US_STATES=['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
-function openNewSite(){if(!canGate('jobs')){toast('Adding a house is off for this seat');return;}document.getElementById('nsName').value='';document.getElementById('nsStreet').value='';document.getElementById('nsCity').value='';
+function openNewSite(){if(!canGate('jobs')){toast('Adding a house is off for this role');return;}document.getElementById('nsName').value='';document.getElementById('nsStreet').value='';document.getElementById('nsCity').value='';
   const st=document.getElementById('nsState');if(st)st.value='';
   const n=(state.projects||[]).length;
   const t=document.getElementById('nsTitle');const h=document.getElementById('nsHint');
@@ -4846,9 +4846,9 @@ const GATE_KEYS=[
   {id:'schedule',n:'Schedule',d:'Crew calendar across jobs'},
   {id:'selections',n:'Selections',d:'Finishes, specs, homeowner choices'},
   {id:'site',n:'Full site',d:'Log, Needs You, files'},
-  {id:'jobs',n:'Add a house',d:'Put a new job on the book'},
-  {id:'moneyJob',n:'Job money',d:'What this house cost, and billed the buyer'},
-  {id:'moneyCo',n:'Company money',d:'Every invoice, and QuickBooks'},
+  {id:'jobs',n:'Add a house',d:'Put a new job on the company'},
+  {id:'moneyJob',n:'Job costs',d:'What this house cost, and what you billed the buyer'},
+  {id:'moneyCo',n:'Invoices',d:'Every invoice, and QuickBooks'},
   {id:'people',n:'People',d:'Invite the team, homeowners, and crews'}
 ];
 const ROLE_MACROS={
@@ -4945,7 +4945,7 @@ function teamInvWarnBody(){
   let b='<p style="margin:0 0 10px">The <b>'+esc(who)+'</b> template does not match what you picked.</p>';
   if(extra.length)b+='<p style="margin:0 0 10px">They will also see <b>'+esc(extra.join(', '))+'</b>.</p>';
   if(miss.length)b+='<p style="margin:0 0 10px">They will not see <b>'+esc(miss.join(', '))+'</b>.</p>';
-  b+='<p style="margin:0;color:var(--ink-3);font-size:13px">Confirm you want this seat to work this way.</p>';
+  b+='<p style="margin:0;color:var(--ink-3);font-size:13px">Confirm you want this role to work this way.</p>';
   return b;
 }
 function teamInvCommit(){
@@ -4978,7 +4978,7 @@ function savePersonGates(){
     ch=true;
   });
   if(ch){persist();try{Sync.pushAll();}catch(e){}}
-  toast('Seat updated');
+  toast('Role updated');
   peopleMode='team';_teamInv=null;renderPeople();
 }
 async function mintTeamInvite(){
@@ -5631,7 +5631,7 @@ function __renderSetup(){
     const pend=laTeamInvites().filter(i=>i.status==='open');
     const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
     const mates=Object.keys(r).filter(uid=>uid!==me);
-    b.innerHTML=`<p style="margin:0 0 10px">People on your team see the book. Each seat is a template — PM, superintendent, office — and you can change a door. Confirm warns you if it is not the default.</p>`
+    b.innerHTML=`<p style="margin:0 0 10px">People on your team see every house. Each role is a template — PM, superintendent, office — and you can change what they see. Confirm warns you if it is not the default.</p>`
       +mates.map(uid=>`<div class="subrow"><div class="si"><div class="n">${esc((r[uid]&&r[uid].name)||'Team member')}</div><div class="d">${esc(RP_ROLES[(r[uid]&&r[uid].rpRole)]||'Team')}</div></div><span class="cleared">On the team</span></div>`).join('')
       +pend.map(i=>`<div class="subrow"><div class="si" style="cursor:pointer" onclick="shareInvite('${i.code}')"><div class="n">Open invite</div><div class="d">Code ${esc(i.code)} — tap to copy &amp; share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
       +`<button class="add-sub-btn" onclick="createInvite('team')">${PPL_INV_SVG}Create a team invite code…</button>
@@ -5892,7 +5892,7 @@ function renderCompany(){
   if(canGate('people'))rows+=SET_GEAR_ROW('People','Team, homeowners, and crews','closeCompany();openPeopleMode(\'team\')','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 1 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>');
   if(canGate('moneyCo'))rows+=SET_GEAR_ROW('Invoices','Bill homeowners & track payments','closeCompany();invoicesFromSettings()','<path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2zM9 8h6M9 12h6"/>');
   if(canGate('jobs'))rows+=SET_GEAR_ROW('Add a job','New build, or bring an existing one in','closeCompany();openStart()','<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>');
-  el.innerHTML=rows||'<div class="empty">Nothing here for this seat.</div>';}
+  el.innerHTML=rows||'<div class="empty">Nothing here for this role.</div>';}
 function renderSettings(){
   const el=document.getElementById('settingsBody');if(!el)return;
   const sess=state.session||{};const role=sess.role||'';
@@ -6537,11 +6537,11 @@ function ctDelete(id){
     saveOrgPrefs(op);if(_ctDraft&&_ctDraft.id===id){_ctDraft=null;_ctEditing=false;}renderPeople();}});}
 function openPeopleMode(mode){
   if(mode==='templates'||mode==='tmplcat'){if(!isOrgOwner()){toast('Templates are owner only');return;}}
-  else if(!(canGate('people')||isOrgOwner())){toast('People is off for this seat');return;}
+  else if(!(canGate('people')||isOrgOwner())){toast('People is off for this role');return;}
   peopleMode=mode;renderPeople();document.getElementById('peopleScrim').classList.add('show');
 }
 let peopleMode='invite';
-function openPeople(){if(!(canGate('people')||isOrgOwner())){toast('People is off for this seat');return;}peopleMode='invite';renderPeople();document.getElementById('peopleScrim').classList.add('show');}
+function openPeople(){if(!(canGate('people')||isOrgOwner())){toast('People is off for this role');return;}peopleMode='invite';renderPeople();document.getElementById('peopleScrim').classList.add('show');}
 function closePeople(){document.getElementById('peopleScrim').classList.remove('show');try{renderSubs();}catch(e){}}
 function peoplePills(){
   const pill=function(id,lab){return '<button type="button" class="ov-sortpill'+(peopleMode===id?' on':'')+'" onclick="openPeopleMode(\''+id+'\')">'+lab+'</button>';};
@@ -6597,7 +6597,7 @@ function __renderPeople(){
   if(appMode()!=='real'){if(title)title.textContent='Live mode only';el.innerHTML='<div class="empty">This manages your real company in Live mode. The demo uses sample roles instead.</div>';return;}
   if(peopleMode==='roles'){
     if(title)title.textContent='People';
-    el.innerHTML=peoplePills()+'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Four seats. These are the defaults. Change a seat any time — Confirm warns you if it is not the template.</p>'
+    el.innerHTML=peoplePills()+'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Four roles. These are the defaults. Change a role any time — Confirm warns you if it is not the template.</p>'
       +['owner','pm','superintendent','office'].map(function(id){
         const g=roleMacro(id);const on=GATE_KEYS.filter(function(k){return g[k.id];}).map(function(k){return k.n;}).join(' · ');
         return '<button type="button" class="subrow" style="width:100%;text-align:left" onclick="openRoleMacro(\''+id+'\')"><div class="si"><div class="n">'+esc(RP_ROLES[id])+'</div><div class="d">'+esc(on)+'</div></div><span class="td-chev">\u203a</span></button>';
@@ -6607,9 +6607,9 @@ function __renderPeople(){
   if(peopleMode==='teaminvite'&&_teamInv){
     const d=_teamInv;
     if(title)title.textContent='People';
-    const hdg=d.kind==='macro'?'Template':(d.kind==='person'?(d.name||'This seat'):'Invite a teammate');
+    const hdg=d.kind==='macro'?'Template':(d.kind==='person'?(d.name||'This person'):'Invite a teammate');
     let h=peoplePills()+'<div class="ppl-invite-h">'+esc(hdg)+'</div>'
-      +'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">'+(d.kind==='macro'?'Defaults for this seat. Changing them does not move people already on the team.':'Pick the seat, then change a door if you need to.')+'</p>';
+      +'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">'+(d.kind==='macro'?'Defaults for this role. Changing them does not move people already on the team.':'Pick the role, then change what they can see if you need to.')+'</p>';
     h+='<div class="ov-sortpills" style="flex-wrap:wrap;margin-bottom:8px">';
     ['pm','superintendent','office','owner'].forEach(function(id){
       if(d.kind!=='macro'&&id==='owner'&&false)return;
@@ -6742,11 +6742,11 @@ function __renderPeople(){
   const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
   const mates=Object.keys(r).filter(uid=>uid!==me);
   const pend=laTeamInvites().filter(i=>i.status==='open');
-  el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">People on your team see the book. Each seat has a template you can change.</p>'
+  el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">People on your team see every house. Each role has a template you can change.</p>'
     +(mates.map(uid=>`<div class="subrow" onclick="openPersonGates('${uid}')"><div class="si"><div class="n">${esc((r[uid]&&r[uid].name)||'Team member')}</div><div class="d">${esc(RP_ROLES[(r[uid]&&r[uid].rpRole)]||'Team')}</div></div><button class="rm" onclick="event.stopPropagation();removeTeamMember('${uid}')" title="Remove from team">${ICON.trash}</button></div>`).join('')||'<div class="empty" style="padding:10px 0">Just you so far.</div>')
     +pend.map(i=>`<div class="subrow"><div class="si" style="cursor:pointer" onclick="shareInvite('${i.code}')"><div class="n">Open invite${i.setup?' · with setup':''}</div><div class="d">Code ${esc(i.code)} — tap to copy &amp; share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
     +(canGate('people')||isOrgOwner()?`<button class="add-sub-btn" onclick="openTeamInvite({})">${PPL_INV_SVG}Invite a teammate</button>`:'')
-    +'<p class="ppl-quiet">Office templates. <button type="button" onclick="openPeopleMode(\'roles\')">Review the four seats</button></p>'
+    +'<p class="ppl-quiet">Office templates. <button type="button" onclick="openPeopleMode(\'roles\')">Review the four roles</button></p>'
     +(isOrgOwner()?'<p class="ppl-quiet">Hand off company setup to someone else. <button type="button" onclick="openTeamInvite({setup:true})">Invite with setup</button></p>':'');}
 async function revokeInvite(code){
   confirmDelete({title:'Revoke invite?',body:'The code stops working immediately. Anyone who hasn\u2019t joined yet won\u2019t be able to.',onConfirm:async()=>{
@@ -7310,11 +7310,11 @@ function houseGoCal(){
   });
 }
 function houseGoMoney(){
-  if(!canGate('moneyJob')){toast('Job money is off for this seat');return;}
+  if(!canGate('moneyJob')){toast('Job costs are off for this role');return;}
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openBudget();});
 }
 function openLogPick(){
-  if(!canGate('field')){toast('Field Notes is off for this seat');return;}
+  if(!canGate('field')){toast('Field Notes is off for this role');return;}
   saveScroll('home');
   const hs=document.getElementById('houseScrim');
   if(hs&&hs.classList.contains('show')&&_housePid){logPickHouse(_housePid);return;}
@@ -11352,7 +11352,7 @@ function invNeedsOK(inv){if(!inv||inv.status==='approved')return false;const st=
 function unbilledSelections(p){return (p.selections||[]).filter(x=>Number(x.price)&&SEL_STATUS.indexOf(x.status)>=1&&!x.invoicedIn);}
 function composeSelections(p){const editId=(_invDraft&&_invDraft.editId)||null;return (p.selections||[]).filter(x=>Number(x.price)&&SEL_STATUS.indexOf(x.status)>=1&&(!x.invoicedIn||x.invoicedIn===editId));}
 let invMode='list',_invDraft=null;
-function openInvoices(){if(!canGate('moneyCo')){toast('Company money is off for this seat');return;}invMode='list';renderInvoices();document.getElementById('invScrim').classList.add('show');}
+function openInvoices(){if(!canGate('moneyCo')){toast('Invoices are off for this role');return;}invMode='list';renderInvoices();document.getElementById('invScrim').classList.add('show');}
 function invoicesFromSettings(){
   const ps=state.projects||[];
   if(ps.length<=1){openInvoices();return;}
