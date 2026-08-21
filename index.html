@@ -147,7 +147,7 @@ h1 em{font-style:italic;font-weight:400;color:var(--oak);}
 }
 
 /* ── generic section rhythm ── */
-section.s{padding:72px 0;position:relative;}
+section.s{padding:56px 0;position:relative;}
 section.s.tint{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
 section.s.ink{background:var(--ink);color:var(--surface-2);border:0;}
 section.s.ink .eyebrow{color:var(--oak-soft);}
@@ -157,7 +157,7 @@ h2{font-size:clamp(28px,3.7vw,42px);line-height:1.14;margin:0 0 18px;}
 .gold{color:var(--oak);font-weight:600;}
 section.s.ink .gold{color:var(--oak-soft);}
 section.s.ink .sub{color:rgba(246,241,231,.72);}
-@media(max-width:720px){section.s,.film-wrap{padding:48px 0;}}
+@media(max-width:720px){section.s{padding:40px 0;}.film-wrap{padding:32px 0 0;}}
 
 /* ── quote block: the problem in a builder's words ── */
 .quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
@@ -316,6 +316,7 @@ h1 em:not(.coin),.origin blockquote,.origin blockquote em,.q p,.brand .tag{font-
   background:#1B1916;color:#E7DCC6;border-radius:16px;letter-spacing:.16em;
   font-family:'Source Serif 4',Georgia,serif;font-size:9px;font-weight:600;
 }
+.film .phone .cam{height:56px;margin:2px auto 8px;}
 .phone .pills{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap;}
 .phone .pills span{
   font-size:10.5px;font-weight:650;padding:5px 9px;border-radius:999px;
@@ -346,13 +347,13 @@ h1 em:not(.coin),.origin blockquote,.origin blockquote em,.q p,.brand .tag{font-
 @media(max-width:860px){.phones{grid-template-columns:1fr;justify-items:center;}.phone{max-width:300px;}}
 
 /* first hour strip */
-.hour{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.hour{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 .hour .h{
-  border:1px solid var(--line);border-radius:var(--r);padding:20px 18px;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r);padding:16px 16px;background:var(--surface);
   box-shadow:var(--shadow);
 }
-.hour .n{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--oak);margin:0 0 8px;}
-.hour h3{font-size:18px;margin:0 0 6px;}
+.hour h3{font-size:18px;margin:0 0 6px;line-height:1.25;}
+.hour h3 .n{font-size:inherit;font-weight:700;letter-spacing:0;text-transform:none;color:var(--oak);margin:0;}
 .hour p{margin:0;font-size:14.5px;color:var(--ink-2);}
 @media(max-width:860px){.hour{grid-template-columns:1fr 1fr;}}
 @media(max-width:560px){.hour{grid-template-columns:1fr;}}
@@ -389,20 +390,20 @@ body.b{background:var(--paper);}
 }
 .still-house #house{width:100%;max-width:520px;height:auto;display:block;overflow:visible;}
 
-.film-wrap{padding:72px 0;}
+.film-wrap{padding:56px 0 0;}
 .film{
-  display:grid;grid-template-columns:280px 1fr;gap:36px;align-items:start;
+  display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start;
   max-width:920px;
 }
 .film-stage{
-  position:relative;width:280px;height:auto;flex-shrink:0;border-radius:32px;
-  background:#1B1916;padding:10px;box-shadow:var(--shadow-lift);
+  position:relative;width:280px;height:auto;flex-shrink:0;border-radius:28px;
+  background:#1B1916;padding:8px;box-shadow:var(--shadow-lift);
 }
 .film-glass{
-  height:auto;border-radius:24px;background:var(--paper);overflow:hidden;position:relative;
+  height:auto;border-radius:22px;background:var(--paper);overflow:hidden;position:relative;
 }
 .frame{
-  position:absolute;inset:0;padding:16px 14px;opacity:0;pointer-events:none;
+  position:absolute;inset:0;padding:10px 10px 12px;opacity:0;pointer-events:none;
   transition:opacity .35s ease;
 }
 .frame.on{position:relative;inset:auto;opacity:1;pointer-events:auto;}
@@ -410,13 +411,13 @@ body.b{background:var(--paper);}
   display:flex;flex-direction:column;gap:0;
 }
 .film-copy .beat{
-  font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--oak);margin:0 0 8px;
+  font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--oak);margin:0 0 6px;
 }
-.film-copy h2{font-size:clamp(26px,3vw,36px);margin:0 0 10px;line-height:1.15;}
+.film-copy h2{font-size:clamp(26px,3vw,36px);margin:0 0 8px;line-height:1.15;}
 .film-copy p{
-  margin:0 0 16px;color:var(--ink-2);font-size:17.5px;max-width:36ch;
+  margin:0 0 12px;color:var(--ink-2);font-size:17.5px;max-width:36ch;
 }
-.film-nav{display:flex;align-items:center;gap:16px;margin-top:4px;}
+.film-nav{display:flex;align-items:center;gap:16px;margin-top:0;}
 .dots{display:flex;gap:8px;}
 .dots button{
   width:28px;height:8px;border:0;border-radius:4px;background:var(--line);padding:0;cursor:pointer;
@@ -430,9 +431,9 @@ body.b{background:var(--paper);}
 @media(max-width:820px){
   .still-house{max-width:100%;}
   .still-house #house{max-width:340px;}
-  .film{grid-template-columns:1fr;gap:22px;justify-items:center;}
-  .film-stage{order:2;height:auto;width:280px;}
-  .film-copy{order:1;height:auto;width:100%;text-align:center;}
+  .film{grid-template-columns:1fr;gap:14px;justify-items:center;}
+  .film-stage{order:1;height:auto;width:280px;}
+  .film-copy{order:2;height:auto;width:100%;text-align:center;}
   .film-copy p{margin-left:auto;margin-right:auto;}
   .film-nav{justify-content:center;}
 }
@@ -943,10 +944,10 @@ body.lab #shipBar{display:block!important}
   <div class="wrap">
     <h2 class="rv">The first hour — assisted setup (through Zoom).</h2>
     <div class="hour">
-      <div class="h rv"><div class="n">1</div><h3>Your company</h3><p>Your name. The book is for every house you run.</p></div>
-      <div class="h rv"><div class="n">2</div><h3>The first house</h3><p>Street first. It lands in the book immediately.</p></div>
-      <div class="h rv"><div class="n">3</div><h3>Invite people</h3><p>The homeowner, a crew, the project manager. Each gets a role. Invoices stay with you.</p></div>
-      <div class="h rv"><div class="n">4</div><h3>Open the book</h3><p><span class="gold">Needs You</span> stays empty until something actually needs you.</p></div>
+      <div class="h rv"><h3><span class="n">1</span> — Your company</h3><p>Your name. The book is for every house you run.</p></div>
+      <div class="h rv"><h3><span class="n">2</span> — The first house</h3><p>Street first. It lands in the book immediately.</p></div>
+      <div class="h rv"><h3><span class="n">3</span> — Invite people</h3><p>The homeowner, a crew, the project manager. Each gets a role. Invoices stay with you.</p></div>
+      <div class="h rv"><h3><span class="n">4</span> — Open the book</h3><p><span class="gold">Needs You</span> stays empty until something actually needs you.</p></div>
     </div>
   </div>
 </section>
