@@ -278,11 +278,24 @@ section.s.ink .card .fine{color:rgba(246,241,231,.5);}
 @media(max-width:720px){.cta-box{padding:34px 22px;}}
 
 /* ── footer ── */
-footer{border-top:1px solid var(--line);padding:44px 0 60px;color:var(--ink-3);font-size:14px;}
-.foot{display:flex;flex-wrap:wrap;gap:20px 34px;align-items:baseline;}
-footer a{text-decoration:none;color:var(--ink-2);}
-footer a:hover{color:var(--ink);}
-.foot .sp{margin-left:auto;}
+footer{border-top:1px solid var(--line);padding:36px 0 48px;color:var(--ink-3);font-size:14px;}
+.site-foot{text-align:center;}
+.foot-pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 28px;}
+.foot-pills a{
+  font-size:13px;font-weight:650;text-decoration:none;color:var(--ink-2);
+  padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+}
+.foot-pills a:hover{color:var(--ink);border-color:var(--oak);}
+.foot-pills a[aria-current="page"]{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.foot-legal{
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px 16px;
+  max-width:460px;margin:0 auto;
+}
+.foot-legal .priv{justify-self:end;text-align:right;text-decoration:none;color:var(--ink-2);}
+.foot-legal .terms{justify-self:start;text-decoration:none;color:var(--ink-2);}
+.foot-legal .brand{justify-self:center;margin:0;}
+.foot-legal a:hover{color:var(--ink);}
+.foot-copy{margin:10px 0 0;font-size:13px;color:var(--ink-3);text-align:center;}
 
 /* ── reveal on scroll ── */
 .rv{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s cubic-bezier(.22,.9,.3,1);}
@@ -466,7 +479,7 @@ h2 + .lock{margin-top:-8px;}
 
 
 </style>
-<link rel="stylesheet" href="site.css?v=film10">
+<link rel="stylesheet" href="site.css?v=foot1">
 </head>
 <body class="b">
 <div id="shipBar">
@@ -992,15 +1005,19 @@ body.lab #shipBar{display:block!important}
 </section>
 
 <footer>
-  <div class="wrap foot">
-    <a class="brand" href="/" style="margin-right:0"><span class="dot"></span><b class="wm">SitePlumb</b></a>
-    <a href="/app/?demo=1">See Calderwood</a>
-    <a href="/homeowners.html">For homeowners</a>
-    <a href="/switch.html">Leaving CoConstruct</a>
-    <a href="/pitch-a.html">The longer pitch</a>
-    <a href="/app/privacy.html">Privacy</a>
-    <a href="/app/terms.html">Terms</a>
-    <span class="sp">© 2026 · SitePlumb LLC</span>
+  <div class="wrap site-foot">
+    <nav class="foot-pills" aria-label="Site">
+      <a href="/" aria-current="page">Home</a>
+      <a href="/homeowners.html">For homeowners</a>
+      <a href="/switch.html">Leaving CoConstruct</a>
+      <a href="/pitch-a.html">The longer pitch</a>
+    </nav>
+    <div class="foot-legal">
+      <a class="priv" href="/app/privacy.html">Privacy</a>
+      <a class="brand" href="/"><span class="dot"></span><b class="wm">SitePlumb</b></a>
+      <a class="terms" href="/app/terms.html">Terms</a>
+    </div>
+    <p class="foot-copy">© 2026</p>
   </div>
 </footer>
 
