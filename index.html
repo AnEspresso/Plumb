@@ -467,7 +467,7 @@ h2 + .lock{margin-top:-8px;}
 
 
 </style>
-<link rel="stylesheet" href="site.css?v=voice8">
+<link rel="stylesheet" href="site.css?v=film1">
 </head>
 <body class="b">
 <div id="shipBar">
@@ -927,14 +927,9 @@ body.lab #shipBar{display:block!important}
       <h2 id="filmH">Photograph the leak.</h2>
       <p id="filmP">On the jobsite, not the office. Field Notes is the camera on the home screen. House, photo, send. Filed to that house.</p>
       <div class="film-nav">
-        <button type="button" class="film-next" id="filmPrev">Back</button>
-        <div class="dots" id="filmDots">
-          <button type="button" class="on" data-i="0" aria-label="Slide 1"></button>
-          <button type="button" data-i="1" aria-label="Slide 2"></button>
-          <button type="button" data-i="2" aria-label="Slide 3"></button>
-          <button type="button" data-i="3" aria-label="Slide 4"></button>
-        </div>
-        <button type="button" class="film-next" id="filmNext">Next</button>
+        <button type="button" class="btn ghost film-next" id="filmPrev">Back</button>
+        <span class="film-count" id="filmCount">1 of 4</span>
+        <button type="button" class="btn film-next" id="filmNext">Next</button>
       </div>
     </div>
   </div>
@@ -1033,31 +1028,30 @@ body.lab #shipBar{display:block!important}
   ];
   var i=0, t=null;
   var frames=[].slice.call(document.querySelectorAll('.frame'));
-  var dots=[].slice.call(document.querySelectorAll('#filmDots button'));
   var beat=document.getElementById('filmBeat');
   var hh=document.getElementById('filmH');
   var pp=document.getElementById('filmP');
   var next=document.getElementById('filmNext');
   var prev=document.getElementById('filmPrev');
+  var count=document.getElementById('filmCount');
   function holdMs(item){
     var w=(item.beat+' '+item.h+' '+item.p).split(/\s+/).filter(Boolean).length;
-    /* ~120 words/min — below-average reader — plus a beat to look at the phone */
-    return Math.max(22000, Math.round(w*550)+8000);
+    /* ~238 wpm — average US silent reading — plus 2s to look at the phone */
+    return Math.max(5000, Math.round(w*252)+2000);
   }
   function show(n){
     i=(n+copy.length)%copy.length;
     frames.forEach(function(f){f.classList.toggle('on', +f.getAttribute('data-i')===i);});
-    dots.forEach(function(d){d.classList.toggle('on', +d.getAttribute('data-i')===i);});
     beat.textContent=copy[i].beat;
     hh.textContent=copy[i].h;
     pp.textContent=copy[i].p;
+    if(count) count.textContent=(i+1)+' of '+copy.length;
     if(next) next.textContent = i===copy.length-1 ? 'Start over' : 'Next';
   }
   function arm(){
     if(t) clearTimeout(t);
     t=setTimeout(function(){ show(i+1); arm(); }, holdMs(copy[i]));
   }
-  dots.forEach(function(d){d.addEventListener('click', function(){ show(+d.getAttribute('data-i')); arm(); });});
   if(next) next.addEventListener('click', function(){ show(i+1); arm(); });
   if(prev) prev.addEventListener('click', function(){ show(i-1); arm(); });
   var reduce=false;
