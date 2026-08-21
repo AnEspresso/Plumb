@@ -1123,7 +1123,10 @@ t('Workbench sits above sheets', SRC.split('.devpanel{')[1].slice(0,120).indexOf
 t('four office roles exist', SRC.indexOf('const ROLE_MACROS=')>=0&&SRC.indexOf('superintendent:{')>=0&&SRC.indexOf('moneyCo:0')>=0);
 t('PM does not get company money by default', /pm:\{[^}]*moneyCo:0/.test(SRC));
 t('confirm warns when a role is not the template', SRC.indexOf('This is not the template')>=0&&SRC.indexOf('function teamInvCommit')>=0&&SRC.indexOf('function canGate')>=0);
-t('user-facing copy says role not seat', SRC.indexOf('this seat')<0&&SRC.indexOf('Four roles')>=0);
+t('user-facing copy says role not seat', SRC.indexOf('this seat')<0&&SRC.indexOf('Defaults for each role')>=0);
+t('role rows are not link-blue', SRC.indexOf('button.subrow')>=0&&SRC.split('button.subrow{')[1].slice(0,80).indexOf('color:inherit')>=0);
+t('Team pill stays on for roles', SRC.indexOf("peopleMode==='team'||peopleMode==='roles'")>=0);
+t('role list uses a short line', SRC.indexOf('Everything except invoices')>=0&&SRC.indexOf('function roleSummary')>=0);
 t('sheet contract exists', SRC.indexOf('function sheetContract')>=0&&SRC.indexOf('function sheetCensusText')>=0&&SRC.indexOf('devRunCensus')>=0);
 t('sheet contract ignores picker pills', SRC.split('function sheetContract')[1].slice(0,1200).indexOf('ov-sortpill')>=0&&SRC.split('function sheetContract')[1].slice(0,1200).indexOf('actionBlacks')>=0);
 t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Go to the book')>=0);

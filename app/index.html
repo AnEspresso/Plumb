@@ -1347,8 +1347,9 @@
   .spec-head .nm{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink-2);text-transform:uppercase;}
   .ondeck{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--oak);background:rgba(176,137,90,.12);border:1px solid rgba(176,137,90,.3);padding:2px 8px;border-radius:20px;}
   .subrow{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:7px;box-shadow:var(--shadow);}
+  button.subrow{color:inherit;font:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;text-align:left;}
   .subrow .si{flex:1;min-width:0;}
-  .subrow .si .n{font-size:14.5px;font-weight:600;letter-spacing:-.01em;}
+  .subrow .si .n{font-size:14.5px;font-weight:600;letter-spacing:-.01em;color:var(--ink);}
   .subrow .si .d{font-size:11.5px;color:var(--ink-3);margin-top:1px;}
   .subrow .cleared{font-size:10.5px;font-weight:700;color:var(--sage);background:rgba(111,123,88,.13);padding:3px 8px;border-radius:20px;}
   .subrow .rm{border:none;background:transparent;color:var(--ink-3);cursor:pointer;padding:4px;}
@@ -3135,15 +3136,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.313.0 - Roles, not seats.';
+const PLUMB_VERSION='2.314.0 - People roles look like the rest of the book.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787323600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.313.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.314.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6544,12 +6545,21 @@ let peopleMode='invite';
 function openPeople(){if(!(canGate('people')||isOrgOwner())){toast('People is off for this role');return;}peopleMode='invite';renderPeople();document.getElementById('peopleScrim').classList.add('show');}
 function closePeople(){document.getElementById('peopleScrim').classList.remove('show');try{renderSubs();}catch(e){}}
 function peoplePills(){
-  const pill=function(id,lab){return '<button type="button" class="ov-sortpill'+(peopleMode===id?' on':'')+'" onclick="openPeopleMode(\''+id+'\')">'+lab+'</button>';};
+  const onTeam=peopleMode==='team'||peopleMode==='roles'||peopleMode==='teaminvite';
+  const pill=function(id,lab){const on=id==='team'?onTeam:(peopleMode===id);return '<button type="button" class="ov-sortpill'+(on?' on':'')+'" onclick="openPeopleMode(\''+id+'\')">'+lab+'</button>';};
   let h='<div class="ppl-nav"><div class="ov-sortpills ppl-dirs">'
     +pill('team','Team')+pill('homeowner','Homeowners')+pill('subs','Subs')
     +'</div>';
   if(peopleMode!=='invite'&&peopleMode!=='teaminvite'&&peopleMode!=='roles') h+='<button type="button" class="ppl-invite" onclick="openPeopleMode(\'invite\')">Invite</button>';
   return h+'</div>';
+}
+function roleSummary(id){
+  if(id==='owner')return 'Everything';
+  if(id==='pm')return 'Everything except invoices';
+  if(id==='superintendent')return 'Field Notes, schedule, and the site';
+  if(id==='office')return 'Selections, people, and the site';
+  const g=roleMacro(id);
+  return GATE_KEYS.filter(function(k){return g[k.id];}).map(function(k){return k.n;}).join(' · ');
 }
 let _ctNavDir='fwd';
 function renderPeople(__a,__b){
@@ -6597,10 +6607,9 @@ function __renderPeople(){
   if(appMode()!=='real'){if(title)title.textContent='Live mode only';el.innerHTML='<div class="empty">This manages your real company in Live mode. The demo uses sample roles instead.</div>';return;}
   if(peopleMode==='roles'){
     if(title)title.textContent='People';
-    el.innerHTML=peoplePills()+'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Four roles. These are the defaults. Change a role any time — Confirm warns you if it is not the template.</p>'
+    el.innerHTML=peoplePills()+'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Defaults for each role. Tap one to change it.</p>'
       +['owner','pm','superintendent','office'].map(function(id){
-        const g=roleMacro(id);const on=GATE_KEYS.filter(function(k){return g[k.id];}).map(function(k){return k.n;}).join(' · ');
-        return '<button type="button" class="subrow" style="width:100%;text-align:left" onclick="openRoleMacro(\''+id+'\')"><div class="si"><div class="n">'+esc(RP_ROLES[id])+'</div><div class="d">'+esc(on)+'</div></div><span class="td-chev">\u203a</span></button>';
+        return '<button type="button" class="subrow" style="width:100%" onclick="openRoleMacro(\''+id+'\')"><div class="si"><div class="n">'+esc(RP_ROLES[id])+'</div><div class="d">'+esc(roleSummary(id))+'</div></div><span class="td-chev">\u203a</span></button>';
       }).join('');
     return;
   }
@@ -6740,13 +6749,19 @@ function __renderPeople(){
     return;}
   if(title)title.textContent='People';
   const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
-  const mates=Object.keys(r).filter(uid=>uid!==me);
+  const uids=Object.keys(r);
   const pend=laTeamInvites().filter(i=>i.status==='open');
-  el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">People on your team see every house. Each role has a template you can change.</p>'
-    +(mates.map(uid=>`<div class="subrow" onclick="openPersonGates('${uid}')"><div class="si"><div class="n">${esc((r[uid]&&r[uid].name)||'Team member')}</div><div class="d">${esc(RP_ROLES[(r[uid]&&r[uid].rpRole)]||'Team')}</div></div><button class="rm" onclick="event.stopPropagation();removeTeamMember('${uid}')" title="Remove from team">${ICON.trash}</button></div>`).join('')||'<div class="empty" style="padding:10px 0">Just you so far.</div>')
-    +pend.map(i=>`<div class="subrow"><div class="si" style="cursor:pointer" onclick="shareInvite('${i.code}')"><div class="n">Open invite${i.setup?' · with setup':''}</div><div class="d">Code ${esc(i.code)} — tap to copy &amp; share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
+  el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">They see every house. Tap a person to change their role.</p>'
+    +(uids.map(function(uid){
+      const info=r[uid]||{};
+      const mine=!!(me&&uid===me);
+      const owner=(info.rpRole||'')==='owner';
+      const trash=(!mine&&!owner)?'<button class="rm" onclick="event.stopPropagation();removeTeamMember(\''+uid+'\')" title="Remove from team">'+ICON.trash+'</button>':'';
+      return '<div class="subrow" onclick="openPersonGates(\''+uid+'\')"><div class="si"><div class="n">'+esc(info.name||(mine?'You':'Team member'))+(mine?' <span style="color:var(--ink-3);font-weight:500">(you)</span>':'')+'</div><div class="d">'+esc(RP_ROLES[info.rpRole]||'Team')+'</div></div>'+trash+'</div>';
+    }).join('')||'<div class="empty" style="padding:10px 0">Just you so far.</div>')
+    +pend.map(i=>`<div class="subrow"><div class="si" style="cursor:pointer" onclick="shareInvite('${i.code}')"><div class="n">Open invite${i.setup?' · with setup':''}${i.rpRole?' · '+esc((RP_ROLES[i.rpRole]||'').split(' / ')[0]):''}</div><div class="d">Code ${esc(i.code)} — tap to copy & share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
     +(canGate('people')||isOrgOwner()?`<button class="add-sub-btn" onclick="openTeamInvite({})">${PPL_INV_SVG}Invite a teammate</button>`:'')
-    +'<p class="ppl-quiet">Office templates. <button type="button" onclick="openPeopleMode(\'roles\')">Review the four roles</button></p>'
+    +'<p class="ppl-quiet"><button type="button" onclick="openPeopleMode(\'roles\')">Review the four roles</button></p>'
     +(isOrgOwner()?'<p class="ppl-quiet">Hand off company setup to someone else. <button type="button" onclick="openTeamInvite({setup:true})">Invite with setup</button></p>':'');}
 async function revokeInvite(code){
   confirmDelete({title:'Revoke invite?',body:'The code stops working immediately. Anyone who hasn\u2019t joined yet won\u2019t be able to.',onConfirm:async()=>{
