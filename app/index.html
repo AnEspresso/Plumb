@@ -1665,6 +1665,8 @@
 .exc-roles button.on{background:var(--oak);color:#15130F;}
 .exc-exit{background:rgba(231,220,198,.14);border:1px solid rgba(231,220,198,.3);color:#E7DCC6;
   border-radius:999px;padding:4px 13px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+.exc-reset{background:none;border:1px solid rgba(231,220,198,.3);color:#E7DCC6;
+  border-radius:999px;padding:4px 13px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
 body.on-excursion .exc-banner{display:flex;}
 /* overlays are absolute inside .device, so the WHOLE device steps down for the banner */
 body.on-excursion .device{margin-top:calc(env(safe-area-inset-top,0px) + 44px);height:calc(100dvh - env(safe-area-inset-top,0px) - 44px);}
@@ -2478,6 +2480,7 @@ body.on-tour .tour-card{display:block;}
     <span class="exc-roles">
       <button data-r="builder" onclick="demoRole('builder')">Builder</button><button data-r="client" onclick="demoRole('client')">Homeowner</button><button data-r="subs" onclick="demoRole('subs')">Sub</button>
     </span>
+    <button class="exc-reset" onclick="resetDemo()">Start over</button>
     <button class="exc-exit" onclick="exitDemo()">Exit demo</button>
   </div>
 
@@ -3136,7 +3139,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.314.0 - People roles look like the rest of the book.';
+const PLUMB_VERSION='2.315.0 - Start over puts the example build back at the start.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3144,7 +3147,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.314.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.315.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9369,6 +9372,7 @@ function enterDemo(opts){
     if(p2){if(Array.isArray(p2.items))p2.items=p2.items.filter(it=>!it.tour);
       if(Array.isArray(p2.docs))p2.docs=p2.docs.filter(d=>!d.tour);}}catch(e){}
   document.body.classList.add('on-excursion');
+  _keepScrollY.home=0;_keepScrollY.house=0;_keepScrollY.packet=0;_keepScrollY.site=0;
   /* Zero install chrome during a demo. The nudge timer arms at page load and
      can fire AFTER the demo starts - an Add to Home Screen sheet sliding over
      the example build reads as a glitch, and it interrupted exactly the person
@@ -9377,7 +9381,18 @@ function enterDemo(opts){
   ['installScrim','installGate','invBar'].forEach(id=>{try{const el=document.getElementById(id);if(el){el.classList.remove('show');}}catch(e){}});
   document.getElementById('login').classList.add('hide');setChrome(false);
   renderAll();showOverview();excRoles();
-  maybeOfferTour();
+  if(!opts.skipTour) maybeOfferTour();
+}
+function resetDemo(){
+  try{endGrandTour(true);}catch(e){}
+  try{document.getElementById('demoIntroScrim').classList.remove('show');}catch(e){}
+  try{document.getElementById('exitDemoScrim').classList.remove('show');}catch(e){}
+  ['closeHouse','closePeople','closeSheet','closeSettings','closeSchedule','closeInfo','closeCompany','closeInvoices','closeDay','closeEditSites'].forEach(function(fn){try{if(typeof window[fn]==='function')window[fn]();}catch(e){}});
+  try{document.getElementById('clientview').classList.remove('show');}catch(e){}
+  try{document.getElementById('subview').classList.remove('show');}catch(e){}
+  _keepScrollY.home=0;_keepScrollY.house=0;_keepScrollY.packet=0;_keepScrollY.site=0;
+  enterDemo({skipTour:true});
+  toast('Example build — from the start.');
 }
 /* Arriving in the demo offers the guided walkthrough rather than imposing it.
    Once per session: someone bouncing between roles should not be re-asked. */
