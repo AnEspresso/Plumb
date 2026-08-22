@@ -1061,9 +1061,10 @@
   .ov-empty .empty{font-family:'Source Serif 4',Georgia,serif;font-size:18px;font-weight:600;color:var(--ink);padding:0 0 14px;letter-spacing:-.015em;}
   .ov-empty .ov-newbtn{max-width:260px;margin:0 auto;}
   .ob-air .ov-empty-house{width:140px;height:116px;margin:0 auto 12px;}
-  .back-btn{border:none;background:transparent;cursor:pointer;color:var(--ink-2);padding:4px 8px 4px 0;margin:-2px 0;display:none;align-items:center;}
+  .back-btn{border:none;background:transparent;cursor:pointer;color:var(--ink);padding:6px 10px 6px 0;margin:-2px 8px 0 0;display:none;align-items:center;gap:2px;
+    font-family:inherit;font-size:15px;font-weight:650;}
   .back-btn.show{display:flex;}
-  .back-btn svg{width:22px;height:22px;}
+  .back-btn svg{width:20px;height:20px;flex:none;}
 
   /* ───── sync status pill ───── */
   .syncpill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--ink-3);
@@ -1656,20 +1657,21 @@
 .cal-door svg{width:16px;height:16px;flex:none;color:var(--oak)}
 .cal-door .bgt-chev{margin-left:auto}
 .exc-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:210;background:#3E3427;color:#E7DCC6;
-  font-size:13px;font-weight:600;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px;
-  align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
-.exc-lbl{opacity:.85;}
-.exc-roles{display:inline-flex;background:rgba(231,220,198,.10);border:1px solid rgba(231,220,198,.22);border-radius:999px;padding:2px;}
+  font-size:13px;font-weight:600;padding:8px 10px;
+  align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;}
+.exc-lbl{opacity:.85;white-space:nowrap;flex:none;}
+.exc-roles{display:inline-flex;background:rgba(231,220,198,.10);border:1px solid rgba(231,220,198,.22);border-radius:999px;padding:2px;flex:none;}
 .exc-roles button{background:none;border:none;border-radius:999px;color:rgba(231,220,198,.75);
-  font-family:inherit;font-size:12px;font-weight:700;padding:4px 13px;cursor:pointer;}
+  font-family:inherit;font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer;}
 .exc-roles button.on{background:var(--oak);color:#15130F;}
-.exc-exit{background:rgba(231,220,198,.14);border:1px solid rgba(231,220,198,.3);color:#E7DCC6;
-  border-radius:999px;padding:4px 13px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
-.exc-reset{background:none;border:1px solid rgba(231,220,198,.3);color:#E7DCC6;
-  border-radius:999px;padding:4px 13px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+.exc-exit,.exc-reset{background:rgba(231,220,198,.14);border:1px solid rgba(231,220,198,.3);color:#E7DCC6;
+  border-radius:999px;padding:4px 11px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex:none;}
+.exc-reset{background:none;}
+.exc-actions{display:flex;gap:6px;flex:none;}
 body.on-excursion .exc-banner{display:flex;}
-/* overlays are absolute inside .device, so the WHOLE device steps down for the banner */
-body.on-excursion .device{margin-top:calc(env(safe-area-inset-top,0px) + 44px);height:calc(100dvh - env(safe-area-inset-top,0px) - 44px);}
+body.on-excursion .device{margin-top:52px;height:calc(100dvh - 52px);}
+body.on-excursion header{padding-top:12px;}
+@media(max-width:420px){.exc-lbl{display:none;}}
 /* Role views own the full window whenever shown — demo AND production, identical. */
 @media(min-width:900px){
   #clientview,#subview{left:0;}
@@ -2133,8 +2135,8 @@ body.on-tour .tour-card{display:block;}
 
 
   <header>
-    <button class="back-btn" id="backBtn" onclick="backToOverview()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-    <div class="brand" id="brand">
+    <button class="back-btn" id="backBtn" onclick="backToOverview()" aria-label="All homes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span>Homes</span></button>
+    <div class="brand" id="brand" onclick="if(document.getElementById('backBtn').classList.contains('show'))backToOverview()">
       <div class="wordmark"><span class="dot"></span>SitePlumb</div>
       <div class="tagline">true to the build</div>
     </div>
@@ -2480,8 +2482,10 @@ body.on-tour .tour-card{display:block;}
     <span class="exc-roles">
       <button data-r="builder" onclick="demoRole('builder')">Builder</button><button data-r="client" onclick="demoRole('client')">Homeowner</button><button data-r="subs" onclick="demoRole('subs')">Sub</button>
     </span>
-    <button class="exc-reset" onclick="resetDemo()">Start over</button>
-    <button class="exc-exit" onclick="exitDemo()">Exit demo</button>
+    <span class="exc-actions">
+      <button class="exc-reset" onclick="resetDemo()">Start over</button>
+      <button class="exc-exit" onclick="exitDemo()">Exit</button>
+    </span>
   </div>
 
   <div id="tourOrb"></div>
@@ -3139,7 +3143,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.315.0 - Start over puts the example build back at the start.';
+const PLUMB_VERSION='2.316.0 - Homes takes you out of Full site. Demo bar stays on one line.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3147,7 +3151,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.315.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.316.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6885,7 +6889,11 @@ function logout(){Data.setSession(null);logEvent('logout','');setChrome(true);
   document.getElementById('overview').classList.remove('show');document.getElementById('subview').classList.remove('show');document.getElementById('clientview').classList.remove('show');
   document.getElementById('login').classList.remove('hide');setRole('builder');document.getElementById('loginSelect').selectedIndex=0;}
 function showOverview(){_ovAnimateTs=Date.now();document.getElementById('overview').classList.add('show');document.getElementById('backBtn').classList.remove('show');renderOverview();applyScroll('home');}
-function backToOverview(){if(_navStack.length){navPop();return;}showOverview();}
+function backToOverview(){
+  _navStack.length=0;
+  try{closeHouse();}catch(e){}
+  showOverview();
+}
 const _keepScrollY={home:0,house:0,packet:0,site:0};
 const _holdModalScroll=new Set();
 let _houseResumeScroll=false;
@@ -7311,7 +7319,6 @@ function houseGoSite(view){
   const hs=document.getElementById('houseScrim');if(hs)hs.classList.remove('show');
   _houseResume=null;
   _keepScrollY.site=0;
-  navPush(function(){showOverview();nyOpenHouse(pid);});
   openSiteFromOverview(pid);
   if(view==='selections'){
     try{go('selections');decSeg('selections');}catch(e){}
