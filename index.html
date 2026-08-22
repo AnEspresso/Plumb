@@ -275,9 +275,8 @@ section.s.ink .card .fine{color:rgba(246,241,231,.5);}
 .cta-box p{color:var(--ink-2);max-width:52ch;margin:0 auto 26px;font-size:17px;}
 .mailrow{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
 .mailrow .btn{padding:14px 24px;}
-.more-line{margin:22px 0 0;text-align:center;}
-.more-line a{font-size:14px;font-weight:650;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line);}
-.more-line a:hover{color:var(--ink);border-color:var(--oak);}
+.more-pills{margin:24px 0 0;}
+.cta-box .more-pills a{background:var(--paper);}
 @media(max-width:720px){.cta-box{padding:34px 22px;}}
 
 /* ── footer ── */
@@ -485,7 +484,7 @@ h2 + .lock{margin-top:-8px;}
 
 
 </style>
-<link rel="stylesheet" href="site.css?v=long1">
+<link rel="stylesheet" href="site.css?v=how1">
 </head>
 <body class="b">
 <div id="shipBar">
@@ -1004,7 +1003,9 @@ body.lab #shipBar{display:block!important}
         <a class="btn" href="mailto:hello@siteplumb.com?subject=Zoom%20onboarding">Email me</a>
         <a class="btn ghost" href="/app/?demo=1">See Calderwood first</a>
       </div>
-      <p class="more-line"><a href="/pitch-a.html">The long version</a></p>
+      <nav class="foot-pills more-pills" aria-label="How it works">
+        <a href="/pitch-a.html">How it works</a>
+      </nav>
     </div>
   </div>
 </section>
@@ -1042,7 +1043,7 @@ body.lab #shipBar{display:block!important}
 (function(){
   var copy=[
     {beat:'7:40am · the field', h:'Photograph the leak.', p:'On the jobsite, not the office. Field Notes is the camera on the home screen. House, photo, send. Filed to that house.'},
-    {beat:'7:41am · send', h:'Leak. A line. Send.', p:'A chip is a one-tap label — Leak, Damage, Punch, Note. Needs You has it before the phone is back in a pocket.'},
+    {beat:'7:41am · send', h:'Leak. A line. Send.', p:'Tap Leak, Damage, Punch, or Note, then send. Needs You shows the Field Note to the builder right away.'},
     {beat:'7:41am · the book', h:'The house that needs you is first.', p:'The book is this app: every house in one place. A leak on Calderwood sits at the top because it is time-sensitive.'},
     {beat:'7:42am · the homeowner', h:'The photo is already there.', p:'The homeowner opens the app and the picture is there. The “any update?” text is never written.'}
   ];
