@@ -1194,7 +1194,7 @@ t('rooms on the house are doors not a second inbox', $("String(houseHTML)").inde
 t('money is one sentence', $("String(houseMoneyLine)").indexOf('Contracted')>=0&&$("String(houseMoneyLine)").indexOf('billed')>=0);
 t('settings leads with company', $("String(renderSettings)").indexOf("set-hd\">Company")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
-t('a room from the briefing comes back to the house', $("String(houseGoSite)").indexOf('navPush')>=0&&$("String(houseGoSite)").indexOf('nyOpenHouse')>=0);
+t('a room from Full site goes to the book, not the briefing', $("String(houseGoSite)").indexOf('openSiteFromOverview')>=0&&$("String(houseGoSite)").indexOf('nyOpenHouse')<0);
 t('a packet from the house hides the briefing then comes back', (function(){
   asBuilder();
   $('enterDemo()');
