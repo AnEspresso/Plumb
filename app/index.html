@@ -2912,7 +2912,7 @@ body.on-tour .tour-card{display:block;}
       </div>
       <input type="file" id="file" accept="image/*" hidden onchange="onPhoto(event)">
     </div>
-    <div class="field-lbl" id="fieldKindLbl" style="display:none">What is it? <button type="button" class="fn-i" onclick="toggleFieldHint(event)" aria-label="What these chips mean">i</button></div>
+    <div class="field-lbl" id="fieldKindLbl" style="display:none">What is it? <button type="button" class="fn-i" onclick="toggleFieldHint(event)" aria-label="What these labels mean">i</button></div>
     <div class="chips" id="fieldKindChips" style="display:none"></div>
     <div class="fn-hint" id="fieldKindHint" hidden>
       <div><b>Note</b> House record. Not an open item.</div>
@@ -3143,7 +3143,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.317.0 - Homes leaves Full site. Packet Back still pops the stack.';
+const PLUMB_VERSION='2.318.0 - Field Notes get a label, not a chip.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3151,7 +3151,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.317.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.318.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6097,7 +6097,7 @@ teamLegacy:[
   acts:[{do:()=>demoRole('builder')}]},
  {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the stage you\u2019re in, the percent complete, what\u2019s waiting on you, and who\u2019s next on site. The answer to \u2018how\u2019s it going?\u2019 \u2014 before anyone has to ask.',
   acts:[{do:()=>demoRole('builder')},{tap:'#ovCards .ov-card[onclick*="p2"]',do:()=>{openSiteFromOverview('p2');go('log');}}]},
- {sel:'.site-field',bubSide:'tb',title:'Field Notes',body:'This is how you log a photo \u2014 same camera as home. A chip says what it is; file it to a trade later. The day still takes one line below.',
+ {sel:'.site-field',bubSide:'tb',title:'Field Notes',body:'This is how you log a photo \u2014 same camera as home. Tap Leak, Damage, Punch, or Note. File it to a trade later. The day still takes one line below.',
   acts:[{do:()=>tourGoto('log')}],
   task:{payoff:'You just kept the record \u2014 photo filed, day written. Do that once a day, and months later you can prove exactly what happened on site.',
     steps:[
@@ -15411,7 +15411,7 @@ function openFieldNote(){
   openSheet(false);
   const p=P()||{};
   document.getElementById('sheetTitle').textContent='Field Notes';
-  document.getElementById('sheetSub').textContent='A chip and a few words. Photo if you have one'+(p.street?(' \u2014 '+(p.street||p.name)):'')+'.';
+  document.getElementById('sheetSub').textContent='A label and a few words. Photo if you have one'+(p.street?(' \u2014 '+(p.street||p.name)):'')+'.';
   document.getElementById('saveBtn').textContent='Send';
   ['sheetAssignLbl','crewSelect','crewSelect__ss','sheetShareRow','flag'].forEach(function(id){
     const el=id==='flag'?document.getElementById('flag')&&document.getElementById('flag').closest('.flagrow'):document.getElementById(id);

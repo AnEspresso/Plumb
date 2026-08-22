@@ -1094,7 +1094,7 @@ t('All homes is a header not a clone', $("String(allNyPreview)").indexOf('slice(
 t('desktop week pane exists', $("document.getElementById('ovWeek')")&&SRC.indexOf('renderOvWeek')>=0);
 t('desktop split at 1100', SRC.indexOf('min-width:1100px')>=0&&SRC.indexOf('ov-week')>=0);
 t('field notes three taps', SRC.indexOf('function openFieldNote')>=0&&SRC.indexOf('FIELD_KINDS')>=0&&SRC.indexOf("saveBtn').textContent='Send'")>=0);
-t('field chip meanings tap i', SRC.indexOf('toggleFieldHint')>=0&&SRC.indexOf('fieldKindHint')>=0);
+t('field label meanings tap i', SRC.indexOf('toggleFieldHint')>=0&&SRC.indexOf('fieldKindHint')>=0);
 t('visual pass clay is not a label', SRC.indexOf('.tag.ho')>=0&&SRC.indexOf('.pkt-ho{')>=0&&SRC.indexOf('toggle.on{background:var(--ink)')>=0);
 t('desk file-to after send', SRC.indexOf('function openFileTo')>=0&&SRC.indexOf('fileToScrim')>=0&&SRC.indexOf('saveFileTo')>=0);
 t('sub hat is not overwritten', SRC.indexOf("have==='sub'")>=0&&SRC.indexOf('function applyLiveRole')>=0);
