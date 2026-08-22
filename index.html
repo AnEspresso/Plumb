@@ -147,7 +147,7 @@ h1 em{font-style:italic;font-weight:400;color:var(--oak);}
 }
 
 /* ── generic section rhythm ── */
-section.s{padding:56px 0;position:relative;}
+section.s,.film-wrap{padding:96px 0;position:relative;}
 section.s.tint{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
 section.s.ink{background:var(--ink);color:var(--surface-2);border:0;}
 section.s.ink .eyebrow{color:var(--oak-soft);}
@@ -157,7 +157,7 @@ h2{font-size:clamp(28px,3.7vw,42px);line-height:1.14;margin:0 0 18px;}
 .gold{color:var(--oak);font-weight:600;}
 section.s.ink .gold{color:var(--oak-soft);}
 section.s.ink .sub{color:rgba(246,241,231,.72);}
-@media(max-width:720px){section.s,.film-wrap{padding:40px 0;}}
+@media(max-width:720px){section.s,.film-wrap{padding:64px 0;}}
 
 /* ── quote block: the problem in a builder's words ── */
 .quotes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
@@ -406,7 +406,7 @@ body.b{background:var(--paper);}
 }
 .still-house #house{width:100%;max-width:520px;height:auto;display:block;overflow:visible;}
 
-.film-wrap{padding:56px 0;}
+.film-wrap{padding:96px 0;background:var(--paper);}
 .film{
   display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start;
   max-width:920px;
@@ -460,7 +460,7 @@ body.b{background:var(--paper);}
   border-radius:0 var(--r-sm) var(--r-sm) 0;max-width:62ch;
 }
 .b-switch p{margin:0;color:var(--ink-2);font-size:16.5px;}
-.b-sit{padding:80px 0 100px;}
+.b-sit{padding:96px 0;}
 
 /* what it does to the company */
 .power{border-top:1px solid var(--line);max-width:70ch;}
@@ -482,7 +482,7 @@ h2 + .lock{margin-top:-8px;}
 
 
 </style>
-<link rel="stylesheet" href="site.css?v=film11">
+<link rel="stylesheet" href="site.css?v=stripe1">
 </head>
 <body class="b">
 <div id="shipBar">
@@ -948,7 +948,7 @@ body.lab #shipBar{display:block!important}
   </div>
 </section>
 
-<section class="s" id="hour">
+<section class="s tint" id="hour">
   <div class="wrap">
     <h2 class="rv">The first hour — assisted setup (via Zoom video call).</h2>
     <div class="hour">
@@ -960,7 +960,7 @@ body.lab #shipBar{display:block!important}
   </div>
 </section>
 
-<section class="s tint">
+<section class="s">
   <div class="wrap">
     <p class="eyebrow rv">If you are leaving CoConstruct</p>
     <h2 class="rv">We are smaller. That is the point.</h2>
@@ -970,7 +970,7 @@ body.lab #shipBar{display:block!important}
   </div>
 </section>
 
-<section class="s" id="limits">
+<section class="s tint" id="limits">
   <div class="wrap">
     <p class="eyebrow rv">Read this first</p>
     <h2 class="rv">Who this isn’t for.</h2>
@@ -991,7 +991,7 @@ body.lab #shipBar{display:block!important}
   </div>
 </section>
 
-<section class="s tint b-sit" id="partner">
+<section class="s" id="partner">
   <div class="wrap">
     <div class="cta-box rv">
       <p class="eyebrow">The offer</p>
