@@ -943,7 +943,10 @@
     .ov-sortpill{min-height:44px;padding:10px 14px;}
     .ppl-nav .ppl-dirs .ov-sortpill{min-height:44px;padding:10px 8px;}
     .chip{min-height:44px;padding:10px 14px;}
+    #fieldKindChips .chip{padding:10px 4px;}
   }
+  #fieldKindChips{flex-wrap:nowrap;gap:5px;}
+  #fieldKindChips .chip{flex:1 1 0;min-width:0;padding:8px 4px;font-size:13px;text-align:center;white-space:nowrap;}
   .ppl-gate{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;width:100%;padding:12px 0;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:inherit;text-align:left;cursor:pointer;}
   .ppl-gate .si{flex:1;min-width:0;}
   .ppl-gate .n{font-weight:650;font-size:15px;}
@@ -3143,7 +3146,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.318.0 - Field Notes get a label, not a chip.';
+const PLUMB_VERSION='2.319.0 - Field Note labels stay on one line.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3151,7 +3154,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.318.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.319.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
