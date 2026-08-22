@@ -416,12 +416,12 @@ body.b{background:var(--paper);}
   background:#1B1916;padding:8px;box-shadow:var(--shadow-lift);
 }
 .film-glass{
-  height:auto;border-radius:22px;background:var(--paper);overflow:hidden;position:relative;
+  display:grid;border-radius:22px;background:var(--paper);overflow:hidden;position:relative;
 }
 .frame{
-  display:none;padding:8px 8px 10px;
+  grid-area:1/1;padding:8px 8px 10px;opacity:0;visibility:hidden;pointer-events:none;z-index:0;
 }
-.frame.on{display:block;}
+.frame.on{opacity:1;visibility:visible;pointer-events:auto;z-index:1;}
 .film-copy{
   display:flex;flex-direction:column;gap:0;
 }
@@ -482,7 +482,7 @@ h2 + .lock{margin-top:-8px;}
 
 
 </style>
-<link rel="stylesheet" href="site.css?v=book1">
+<link rel="stylesheet" href="site.css?v=film11">
 </head>
 <body class="b">
 <div id="shipBar">
@@ -1051,6 +1051,21 @@ body.lab #shipBar{display:block!important}
   var next=document.getElementById('filmNext');
   var prev=document.getElementById('filmPrev');
   var count=document.getElementById('filmCount');
+  function pinCopy(){
+    if(!beat||!hh||!pp)return;
+    beat.style.minHeight='';hh.style.minHeight='';pp.style.minHeight='';
+    var mb=0,mh=0,mp=0,n=i;
+    copy.forEach(function(c){
+      beat.textContent=c.beat;hh.textContent=c.h;pp.textContent=c.p;
+      mb=Math.max(mb,beat.offsetHeight);
+      mh=Math.max(mh,hh.offsetHeight);
+      mp=Math.max(mp,pp.offsetHeight);
+    });
+    beat.style.minHeight=mb+'px';
+    hh.style.minHeight=mh+'px';
+    pp.style.minHeight=mp+'px';
+    beat.textContent=copy[n].beat;hh.textContent=copy[n].h;pp.textContent=copy[n].p;
+  }
   function holdMs(item){
     var w=(item.beat+' '+item.h+' '+item.p).split(/\s+/).filter(Boolean).length;
     /* 200 wpm — average US adult silent reading — plus 1s to look at the phone */
@@ -1073,6 +1088,9 @@ body.lab #shipBar{display:block!important}
   if(prev) prev.addEventListener('click', function(){ show(i-1); arm(); });
   var reduce=false;
   try{reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  pinCopy();
+  show(0);
+  addEventListener('resize',function(){pinCopy();},{passive:true});
   if(!reduce) arm();
 })();
 /* ── SIGNATURE: the house draws itself in build order ──

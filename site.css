@@ -362,10 +362,12 @@ body.b{background:var(--paper);}
   background:#1B1916;padding:8px;box-shadow:var(--shadow-lift);
 }
 .film-glass{
-  height:auto;border-radius:22px;background:var(--paper);overflow:hidden;position:relative;
+  display:grid;border-radius:22px;background:var(--paper);overflow:hidden;position:relative;
 }
-.frame{display:none;padding:8px 8px 10px;}
-.frame.on{display:block;}
+.frame{
+  grid-area:1/1;padding:8px 8px 10px;opacity:0;visibility:hidden;pointer-events:none;z-index:0;
+}
+.frame.on{opacity:1;visibility:visible;pointer-events:auto;z-index:1;}
 .film-copy{display:flex;flex-direction:column;}
 .film-copy .beat{
   font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--oak);margin:0 0 4px;
