@@ -340,7 +340,10 @@ body.b{background:var(--paper);}
 .b-hero .grid-bg{opacity:.35;}
 .b-hero-in{position:relative;max-width:720px;}
 .b-hero h1{font-size:clamp(40px,6.2vw,72px);line-height:1.02;margin:0 0 10px;}
-.b-hero h1 .coin{font-style:italic;}
+.b-hero h1.wm{
+  font-family:'Fraunces',Georgia,serif;font-weight:700;font-style:normal;color:var(--ink);
+  letter-spacing:-.015em;
+}
 .b-hero .lede{font-size:19px;max-width:42ch;margin:0 0 28px;}
 .b-hero .hero-cta .btn.ghost{border:0;padding-left:8px;}
 .still-house{
