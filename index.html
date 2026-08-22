@@ -173,7 +173,7 @@ section.s.ink .sub{color:rgba(246,241,231,.72);}
 @media(max-width:860px){.quotes{grid-template-columns:1fr;}}
 
 /* ── three views ── */
-.views{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.views{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
 .view{
   border:1px solid var(--line);border-radius:var(--r);padding:28px 26px;background:var(--surface);
   box-shadow:var(--shadow);
@@ -275,6 +275,9 @@ section.s.ink .card .fine{color:rgba(246,241,231,.5);}
 .cta-box p{color:var(--ink-2);max-width:52ch;margin:0 auto 26px;font-size:17px;}
 .mailrow{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
 .mailrow .btn{padding:14px 24px;}
+.more-line{margin:22px 0 0;text-align:center;}
+.more-line a{font-size:14px;font-weight:650;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line);}
+.more-line a:hover{color:var(--ink);border-color:var(--oak);}
 @media(max-width:720px){.cta-box{padding:34px 22px;}}
 
 /* ── footer ── */
@@ -482,7 +485,7 @@ h2 + .lock{margin-top:-8px;}
 
 
 </style>
-<link rel="stylesheet" href="site.css?v=stripe1">
+<link rel="stylesheet" href="site.css?v=long1">
 </head>
 <body class="b">
 <div id="shipBar">
@@ -1001,6 +1004,7 @@ body.lab #shipBar{display:block!important}
         <a class="btn" href="mailto:hello@siteplumb.com?subject=Zoom%20onboarding">Email me</a>
         <a class="btn ghost" href="/app/?demo=1">See Calderwood first</a>
       </div>
+      <p class="more-line"><a href="/pitch-a.html">The long version</a></p>
     </div>
   </div>
 </section>
@@ -1011,7 +1015,6 @@ body.lab #shipBar{display:block!important}
       <a href="/" aria-current="page">Home</a>
       <a href="/homeowners.html">For homeowners</a>
       <a href="/switch.html">Leaving CoConstruct</a>
-      <a href="/pitch-a.html">The longer pitch</a>
     </nav>
     <div class="foot-legal">
       <a class="priv" href="/app/privacy.html">Privacy</a>
