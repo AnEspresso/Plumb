@@ -692,7 +692,7 @@ t('cleanup', $("state.activeId==='p4'&&costLines(P()).length===0")===true);
 /* ════ 14g · UX POLISH SWEEP (one vocabulary, doors where hands expect them) ════ */
 S('ux polish');
 asBuilder();$("state.activeId='p2'");$('renderBuild()');
-t('Billing card is the Budget twin', ['To collect','Awaiting OK','Billed','Paid','View billing'].every(s=>el('billingCard').innerHTML.includes(s)));
+t('Invoice card is the Budget twin', ['To collect','Awaiting OK','Billed','Paid','View invoices'].every(s=>el('billingCard').innerHTML.includes(s)));
 t('Billing card math (out=net-paid on p2)', el('billingCard').innerHTML.includes($("invUsd(billingSummary(P()).out)")));
 t('calendar door atop Schedule pane', el('buildSchedule').innerHTML.includes('Trades calendar for this site'));
 $("calSiteFilter=String(state.activeId);openCal()");

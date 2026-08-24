@@ -1933,7 +1933,7 @@ body.on-tour .tour-card{display:block;}
             <div class="la-fld" id="laRoleRow" style="display:none">
               <select id="laRole">
                 <option value="owner">Owner / General contractor</option>
-                <option value="pm">Project manager</option>
+                <option value="pm">Project Manager</option>
                 <option value="superintendent">Superintendent</option>
                 <option value="office">Office / Selections coordinator</option>
               </select>
@@ -1995,7 +1995,7 @@ body.on-tour .tour-card{display:block;}
         <div class="wm"><span class="dot"></span><span id="calHdrT">Trades Calendar</span></div>
         <div class="who" id="calWho">All sites</div>
       </div>
-      <button class="ov-logout" onclick="closeCal()">Done</button>
+      <button class="ov-logout" id="calDoneBtn" onclick="closeCal()">Done</button>
     </div>
     <div class="sv-body" id="calBody"></div>
   </div>
@@ -2384,7 +2384,7 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="invScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4 id="invTitle">Billing</h4>
+      <h4 id="invTitle">Invoices</h4>
       <div class="info-body" id="invBody"></div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeInvoices()">Done</button></div>
     </div>
@@ -2394,7 +2394,7 @@ body.on-tour .tour-card{display:block;}
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4>Money</h4>
       <div class="info-body" id="budgetBody"></div>
-      <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeBudget()">Done</button></div>
+      <div class="row2" style="margin-top:14px"><button class="b1 b-go" id="budgetDoneBtn" style="flex:1" onclick="closeBudget()">Done</button></div>
     </div>
   </div>
 
@@ -2957,7 +2957,7 @@ body.on-tour .tour-card{display:block;}
       <div class="toggle" id="shareToggle" onclick="this.classList.toggle('on')"></div>
     </div>
     <div class="row2" style="margin-top:6px">
-      <button class="b1 b-cancel" onclick="closeSheet()">Cancel</button>
+      <button class="b1 b-cancel" id="sheetCancelBtn" onclick="closeSheet()">Cancel</button>
       <button class="b1 b-go" id="saveBtn" onclick="save()">Add to log</button>
     </div>
   </div>
@@ -3165,7 +3165,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.320.0 - One house, one page. Full site is a restore.';
+const PLUMB_VERSION='2.321.0 - House, invoices, label, Project Manager.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3173,7 +3173,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.320.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.321.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4879,7 +4879,7 @@ function realEnter(){
    Firebase Auth when a config is present; otherwise an honest device-only
    account. Identity only for now — Live data stays local until Step 3
    (granular writes) lands, then users/{uid} + org scoping attach here. */
-const RP_ROLES={owner:'Owner / General contractor',pm:'Project manager',superintendent:'Superintendent',office:'Office / Selections coordinator'};
+const RP_ROLES={owner:'Owner / General contractor',pm:'Project Manager',superintendent:'Superintendent',office:'Office / Selections coordinator'};
 const GATE_KEYS=[
   {id:'field',n:'Field Notes',d:'Camera, notes, and punch on site'},
   {id:'schedule',n:'Schedule',d:'Crew calendar across jobs'},
@@ -5670,7 +5670,7 @@ function __renderSetup(){
     const pend=laTeamInvites().filter(i=>i.status==='open');
     const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
     const mates=Object.keys(r).filter(uid=>uid!==me);
-    b.innerHTML=`<p style="margin:0 0 10px">People on your team see every house. Each role is a template — PM, superintendent, office — and you can change what they see. Confirm warns you if it is not the default.</p>`
+    b.innerHTML=`<p style="margin:0 0 10px">People on your team see every house. Each role is a template: Project Manager, superintendent, office. You can change what that person sees. Confirm warns you if it is not the default.</p>`
       +mates.map(uid=>`<div class="subrow"><div class="si"><div class="n">${esc((r[uid]&&r[uid].name)||'Team member')}</div><div class="d">${esc(RP_ROLES[(r[uid]&&r[uid].rpRole)]||'Team')}</div></div><span class="cleared">On the team</span></div>`).join('')
       +pend.map(i=>`<div class="subrow"><div class="si" style="cursor:pointer" onclick="shareInvite('${i.code}')"><div class="n">Open invite</div><div class="d">Code ${esc(i.code)} — tap to copy &amp; share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
       +`<button class="add-sub-btn" onclick="createInvite('team')">${PPL_INV_SVG}Create a team invite code…</button>
@@ -5962,7 +5962,7 @@ function renderSettings(){
     if(walkAllowed()){
       rows+=SET_GEAR_ROW('How SitePlumb works','A friendly walk around the example book','startTeamTour()',I.how);
       rows+=SET_GEAR_ROW('Walkthrough studio','Play one beat. Check the orb and the card.','closeSettings();openTourStudio()',I.dev);
-      rows+=SET_GEAR_ROW('Classic walkthrough','The older Full-site tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
+      rows+=SET_GEAR_ROW('Classic walkthrough','The older house tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
     }
     rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
     if(devAllowed())rows+=SET_GEAR_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()',I.dev);
@@ -6039,7 +6039,7 @@ const TOUR={team:[
  {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',sel:'#ovToday',
   nav:()=>{try{closeHouse();closeCompany();showOverview();renderToday();renderOvCards();}catch(e){}},
   play:[{f:'s1a',stage:'welcome'},{f:'s1b',point:'#ovToday',stage:'welcome'},{f:'s1c',stage:'welcome'}]},
- {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'Tap the camera. Chip, a few words, Send.',
+ {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'Tap the camera. Pick a label, a few words, Send.',
   nav:()=>{try{showOverview();renderToday();}catch(e){}},
   play:[
     {f:'s2a',point:'.ov-field',stage:'field',waitTap:'.ov-field',waitMs:30000,intercept:function(){try{const p=tourDemoHouse();if(p)Data.setActive(p.id);openFieldNote();}catch(e){}}},
@@ -6217,13 +6217,13 @@ teamLegacy:[
   }},
 {sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build sits 800 dollars from budget with one line over \u2014 and every cost can flow straight into QuickBooks.',
   acts:[{do:()=>tourGoto('build','subs')},{tap:'#budgetCard .overall',do:()=>{try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}try{openBudget();}catch(e){}}}]},
- {sel:'#billingCard',bubSide:'tb',title:'Homeowner billing',body:'The other side of the money \u2014 upgrades, credits, and invoices the homeowner approves with one tap. The ledger below always knows where every dollar stands.',
+ {sel:'#billingCard',bubSide:'tb',title:'Homeowner invoices',body:'The other side of the money \u2014 upgrades, credits, and invoices the homeowner approves with one tap. The ledger below always knows where every dollar stands.',
   acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .pmodal .b-go',do:()=>{try{closeBudget();}catch(e){}}}],
   task:{payoff:'What they owe, what they\u2019ve paid, what\u2019s waiting on them \u2014 always current. Never another spreadsheet.',
     steps:[
       {t:()=>document.querySelector('#billingCard [onclick]')||document.getElementById('billingCard'),
-       say:'Tap the billing card to open the homeowner ledger.',
-       hint:'The Homeowner billing card \u2014 tap it.',
+       say:'Tap the invoice card to open what the homeowner owes.',
+       hint:'The homeowner invoice card. Tap it.',
        done:()=>{try{return document.getElementById('invScrim').classList.contains('show');}catch(e){return false;}}},
       {t:'#invScrim .pmodal .b-go',stage:'#invScrim .pmodal',say:'That\u2019s the running ledger \u2014 press Done when you\u2019ve had a look.',
        hint:'The Done button closes it.',
@@ -6660,7 +6660,7 @@ function __renderPeople(){
     h+='<div class="ov-sortpills" style="flex-wrap:wrap;margin-bottom:8px">';
     ['pm','superintendent','office','owner'].forEach(function(id){
       if(d.kind!=='macro'&&id==='owner'&&false)return;
-      h+='<button type="button" class="ov-sortpill'+(d.rpRole===id?' on':'')+'" onclick="teamInvPick(\''+id+'\')">'+esc(id==='superintendent'?'Super':(id==='pm'?'PM':(id==='office'?'Office':'Owner')))+'</button>';
+      h+='<button type="button" class="ov-sortpill'+(d.rpRole===id?' on':'')+'" onclick="teamInvPick(\''+id+'\')">'+esc(id==='superintendent'?'Super':(id==='pm'?'Project Manager':(id==='office'?'Office':'Owner')))+'</button>';
     });
     h+='</div>';
     GATE_KEYS.forEach(function(g){
@@ -7340,6 +7340,11 @@ function houseMoneyLine(p){
       return (cs.over?'Over budget · ':'On budget · ')+invUsd(Math.abs(cs.remaining))+(cs.over?' over':' left');
   }catch(e){}
   return 'No money on this job yet';
+}
+function fromTheHouse(){return !!(_houseResume||(typeof houseStillOpen==='function'&&houseStillOpen()));}
+function labelHouseBack(el, fallback){
+  if(!el)return;
+  el.textContent=fromTheHouse()?'House':(fallback||'Done');
 }
 function logFromHouse(){
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openFieldNote();});
@@ -8288,7 +8293,7 @@ function openNotifyCenter(){
   else if(perm==='denied')permRow='<div class="pkt-banner warn"><b>Blocked.</b> Enable notifications for SitePlumb in your device settings, then come back.</div>';
   else permRow='<button class="b1 b-go" style="width:100%" onclick="Notify.enable().then(()=>openNotifyCenter())">Turn on notifications</button>';
   showInfo('Notifications',permRow
-    +(((state.session||{}).role==='builder')?`<div class="subrow" style="cursor:pointer;margin-top:14px" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Billing alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span style="color:var(--ink-3);font-size:17px;padding-left:6px;flex:0 0 auto">›</span></div>`:'')
+    +(((state.session||{}).role==='builder')?`<div class="subrow" style="cursor:pointer;margin-top:14px" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span style="color:var(--ink-3);font-size:17px;padding-left:6px;flex:0 0 auto">›</span></div>`:'')
     +'<div class="lbl" style="margin-top:14px">Recent</div>'
     +(noticeRecentHTML())
     +'<p style="margin:10px 0 0;color:var(--ink-3);font-size:12px">On iPhone this has to be the Home Screen app, not Safari. A test dings this phone.</p>');}
@@ -8874,7 +8879,7 @@ function billingCardHTML(p){
   const b=billingSummary(p);
   if(!(b.net>0)&&!(p.invoices||[]).length)
     return `<div class="overall bgt-tap" onclick="openInvoices()">
-        <div class="top"><span class="lbl">No homeowner billing on this site yet — invoices live here</span><span class="bgt-chev">›</span></div></div>`;
+        <div class="top"><span class="lbl">No homeowner invoices on this house yet. Invoices live here</span><span class="bgt-chev">›</span></div></div>`;
   const okN=(p.invoices||[]).filter(invNeedsOK).length;
   const pct=b.net>0?Math.min(100,Math.round(b.paid/b.net*100)):0;
   return `<div class="overall bgt-tap" onclick="openInvoices()">
@@ -8885,7 +8890,7 @@ function billingCardHTML(p){
         <div><b>${invUsd(b.paid)}</b><span>Paid</span></div>
       </div>
       <div class="pbar"><i style="width:${pct}%"></i></div>
-      <div class="bgt-open">View billing<span class="bgt-chev">›</span></div>
+      <div class="bgt-open">View invoices<span class="bgt-chev">›</span></div>
     </div>`;
 }
 function budgetCardHTML(p){
@@ -8910,7 +8915,7 @@ function budgetCardHTML(p){
 }
 
 
-function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');}
+function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');try{labelHouseBack(document.getElementById('budgetDoneBtn'),'Done');}catch(e){}}
 function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{houseMaybeResume();}catch(e){}}
 function renderBudget(){
   const p=P();const cs=costSummary(p);const lines=costLines(p);const bill=billingSummary(p);
@@ -11573,7 +11578,7 @@ function billingAssignees(){
 }
 function billersOf(p){if(p&&Array.isArray(p.billers))return p.billers;if(p&&p.billingOwner)return [p.billingOwner];return [];}
 function toggleBiller(i){const p=P();const name=_billAssignees[i];if(!name)return;const set=billersOf(p).slice();const k=set.indexOf(name);if(k>=0)set.splice(k,1);else set.push(name);p.billers=set;delete p.billingOwner;persist();renderInvoices();}
-function clearBillers(){const p=P();p.billers=[];delete p.billingOwner;persist();renderInvoices();toast('Billing alerts go to the whole team');}
+function clearBillers(){const p=P();p.billers=[];delete p.billingOwner;persist();renderInvoices();toast('Invoice alerts go to the whole team');}
 function openBillingPicker(){invMode='owner';renderInvoices();const sc=document.getElementById('invScrim');if(sc)sc.classList.add('show');}
 function billersSummaryLine(){try{const p=P();if(!p)return 'Choose who gets invoice & overdue alerts';const set=billersOf(p);const site=p.street||p.name||'this site';return (set.length?(set.length<=2?set.join(', '):set.length+' people'):'Whole team')+' · '+site;}catch(e){return 'Choose who gets invoice & overdue alerts';}}
 function invStatusChip(st){const lbl={draft:'Draft',sent:'Sent',approved:'Approved',partial:'Partial',overdue:'Overdue',paid:'Paid',void:'Void'}[st]||st;return `<span class="inv-chip ${st}">${lbl}</span>`;}
@@ -11784,7 +11789,7 @@ function closePrintPreview(){
 }
 function renderInvoices(){
   const el=document.getElementById('invBody');if(!el)return;
-  try{const _t=document.getElementById('invTitle');if(_t)_t.textContent=(invMode==='owner'?'Billing alerts':'Billing');}catch(e){}
+  try{const _t=document.getElementById('invTitle');if(_t)_t.textContent=(invMode==='owner'?'Invoice alerts':'Invoices');}catch(e){}
   try{
     const foot=document.querySelector('#invScrim .row2');
     if(foot){
@@ -11817,9 +11822,9 @@ function renderInvoices(){
     return;}
   if(invMode==='owner'){
     _billAssignees=billingAssignees();const set=billersOf(p);
-    const who=set.length?(set.length+' '+(set.length===1?'person gets':'people get')+' billing alerts'):'Everyone on the builder side gets billing alerts';
+    const who=set.length?(set.length+' '+(set.length===1?'person gets':'people get')+' invoice alerts'):'Everyone on the builder side gets invoice alerts';
     const row=(i,name,on)=>`<div class="subrow" style="cursor:pointer" onclick="toggleBiller(${i})"><div class="si"><div class="n">${on?'☑':'☐'} ${esc(name)}</div><div class="d">${on?'Gets invoice & overdue alerts':'Tap to add'}</div></div></div>`;
-    el.innerHTML=`<div class="lbl" style="margin-bottom:6px">Who gets billing alerts?</div>`
+    el.innerHTML=`<div class="lbl" style="margin-bottom:6px">Who gets invoice alerts?</div>`
       +`<p style="font-size:12.5px;color:var(--ink-3);margin:0 0 10px;line-height:1.5">Approval and overdue alerts for ${esc(p.street||p.name||'this site')} go to the people you check. Check no one to alert the whole builder side. Everyone can still view and edit invoices.</p>`
       +`<div style="font-size:13px;color:var(--oak);font-weight:600;margin:0 0 10px">${who}</div>`
       +_billAssignees.map((n,i)=>row(i,n,set.includes(n))).join('')
@@ -11849,7 +11854,7 @@ function renderInvoices(){
       <div class="lr out"><span>Balance due on invoices</span><b class="${bs.balanceDue>0?'up':''}">${invUsd(bs.balanceDue)}</b></div>
     </div>`:'');
   const _bset=billersOf(p);const _bsub=_bset.length?(_bset.length<=2?_bset.join(', '):_bset.length+' teammates')+' get alerts':'Whole team gets alerts';
-  const ownerRow=`<div class="subrow" style="cursor:pointer;margin-bottom:10px" onclick="invMode='owner';renderInvoices()"><div class="si"><div class="n">Billing alerts</div><div class="d">${esc(_bsub)}</div></div><span class="ed">Change</span></div>`;
+  const ownerRow=`<div class="subrow" style="cursor:pointer;margin-bottom:10px" onclick="invMode='owner';renderInvoices()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(_bsub)}</div></div><span class="ed">Change</span></div>`;
   el.innerHTML=seg+summary+ownerRow+(list.length?list.map(inv=>{const st=invState(inv);const bal=invBalance(inv);
     return `<div class="subrow" style="cursor:pointer${st==='void'?';opacity:.6':''}" onclick="${st==='draft'?`invCompose('${inv.id}')`:`openInvoiceDetail('${p.id}','${inv.id}','builder')`}"><div class="si"><div class="n">${inv.no?esc(inv.no)+' · ':''}${esc(inv.title)}</div><div class="d">${inv.items.length} line${inv.items.length===1?'':'s'} · ${invUsd(inv.total)}${st==='partial'?' · '+invUsd(bal)+' left':''}${st==='draft'?' · not sent yet':st==='overdue'?' · <b style="color:var(--clay)">past due '+esc(inv.due)+'</b>':(inv.due&&st!=='paid'&&st!=='void'?' · due '+esc(inv.due):'')}</div></div>${invStatusChip(st)}</div>`;}).join('')
     :'<div class="empty" style="padding:8px 0">No invoices yet — bill the homeowner for selection upcharges right here.</div>')
@@ -13282,7 +13287,8 @@ function openCal(keepCrew){
   saveScroll('home');
   if(!keepCrew)calCrewFilter='';
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
-  document.getElementById('calview').classList.add('show');renderCal();}
+  document.getElementById('calview').classList.add('show');renderCal();
+  try{labelHouseBack(document.getElementById('calDoneBtn'),'Done');}catch(e){}}
 function openCalCrew(name,ts){
   calCrewFilter=String(name||'');
   calSiteFilter='all';
@@ -15533,6 +15539,7 @@ function openFieldNote(){
   const dt=document.querySelector('#drop .t');if(dt)dt.textContent='Photo \u00b7 optional';
   _fnSheetOrder(true);
   _fnArmDrop();
+  try{labelHouseBack(document.getElementById('sheetCancelBtn'),'Cancel');}catch(e){}
 }
 function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDate||todayStr()):null;
   if(asLog)_fieldNote=false;
@@ -15553,7 +15560,8 @@ function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDa
   syncAreaExclusivity(document.getElementById('areaChips'));
   const _sc=document.getElementById('scrim'),_sh=document.getElementById('sheet');
   if(document.querySelector('.pmodal-scrim.show')){_sc.style.zIndex='130';_sh.style.zIndex='131';}else{_sc.style.zIndex='';_sh.style.zIndex='';}
-  _sc.classList.add('show');_sh.classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('caption')));}
+  _sc.classList.add('show');_sh.classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('caption')));
+  try{labelHouseBack(document.getElementById('sheetCancelBtn'),'Cancel');}catch(e){}}
 function _impAfterSave(){
   if((window._impQueue||[]).length){setTimeout(_impNext,260);}
   else if(window._impTotal){toast('All '+window._impTotal+' photos filed');window._impTotal=0;}
@@ -15615,6 +15623,7 @@ function resetSheet(){pendingPhotoId=null;_fieldNote=false;_fieldKind='note';_fn
   const cs=document.getElementById('crewSelect');if(cs)cs.selectedIndex=0;
   _fnSheetOrder(false);
   const drop=document.getElementById('drop');if(drop)drop.style.pointerEvents='';
+  try{const b=document.getElementById('sheetCancelBtn');if(b)b.textContent='Cancel';}catch(e){}
   rebuildDrop('drop','dropPh',DROP_CAM_SVG+'<div class="t">Take or choose a photo</div>','file',onPhoto);}
 function onPhoto(e){handlePhotoFile(e.target.files[0]);}
 async function handlePhotoFile(f){if(!f)return;toast('Saving photo…');

@@ -17,13 +17,13 @@
     {
       "id": "field",
       "title": "Field Notes",
-      "body": "House, photo, chip, Send. Same camera everywhere.",
+      "body": "House, photo, a label, Send. Same camera everywhere.",
       "sel": ".ov-field",
       "bubSide": "bb",
       "nav": "field",
       "cues": [
         { "id": "s2a", "say": "See this camera? That's Field Notes.", "point": ".ov-field", "stage": "field" },
-        { "id": "s2b", "say": "Out on a job you pick the house, take a picture, tap a chip, and hit Send.", "point": "#sheet .chip", "do": "openField", "stage": "sheet" },
+        { "id": "s2b", "say": "Out on a job the builder picks the house, takes a picture, taps a label, and hits Send.", "point": "#sheet .chip", "do": "openField", "stage": "sheet" },
         { "id": "s2c", "say": "You can file the trade later, sitting at a desk. Same camera, everywhere you work.", "point": "#saveBtn", "stage": "sheet" },
         { "id": "s2d", "say": "Now you. Tap the camera.", "point": ".ov-field", "do": "closeSheet", "waitTap": ".ov-field", "intercept": "openField", "stage": "field" }
       ]
@@ -78,7 +78,7 @@
         { "id": "s6a", "say": "These doors stay on this house.", "point": "#houseBody .hs-doors", "stage": "#houseBody" },
         { "id": "s6b", "say": "Schedule is the calendar for just this job.", "point": "#houseBody [data-door=cal]", "stage": "#houseBody" },
         { "id": "s6c", "say": "Selections are the finishes.", "point": "#houseBody [data-door=sel]", "stage": "#houseBody" },
-        { "id": "s6d", "say": "Money is what they owe.", "point": "#houseBody [data-door=money]", "stage": "#houseBody" },
+        { "id": "s6d", "say": "Money is what the homeowner owes.", "point": "#houseBody [data-door=money]", "stage": "#houseBody" },
         { "id": "s6e", "say": "And Field Notes from here already knows which house you're on.", "point": "#houseBody [data-door=field]", "stage": "#houseBody" }
       ]
     },
@@ -95,18 +95,18 @@
       ]
     },
     {
-      "id": "full",
-      "title": "Full site",
-      "body": "Log, Needs You, Build, Files. Desk work.",
+      "id": "desk",
+      "title": "The rest of this house",
+      "body": "Progress, log, photos, permits, crews. Desk work.",
       "sel": "#houseBody",
       "bubSide": "tb",
       "nav": "briefing",
       "cues": [
-        { "id": "s8a", "say": "Full site is there when you need the whole job.", "point": "[data-door=full]", "stage": "#houseBody" },
-        { "id": "s8b", "say": "Log.", "point": "nav .tab[data-v=log]", "do": "openFull", "tab": "log", "stage": "site" },
-        { "id": "s8c", "say": "Needs You.", "point": "nav .tab[data-v=decisions]", "tab": "decisions", "stage": "site" },
-        { "id": "s8d", "say": "Build.", "point": "nav .tab[data-v=build]", "tab": "build", "stage": "site" },
-        { "id": "s8e", "say": "And Files. Same four jobs you already know. Same Field Notes camera. Desk work lives here. You don't have to start here.", "point": "nav .tab[data-v=files]", "tab": "files", "stage": "site" }
+        { "id": "s8a", "say": "The rest of this house is here when you need the whole job.", "point": "#houseBody .hs-band", "stage": "#houseBody" },
+        { "id": "s8b", "say": "Progress.", "point": "#houseBody [data-door=progress]", "stage": "#houseBody" },
+        { "id": "s8c", "say": "Daily log.", "point": "#houseBody [data-door=log]", "stage": "#houseBody" },
+        { "id": "s8d", "say": "Photos.", "point": "#houseBody [data-door=photos]", "stage": "#houseBody" },
+        { "id": "s8e", "say": "Permits, documents, crews. Desk work lives on this street. You don't have to start here.", "point": "#houseBody [data-door=permits]", "stage": "#houseBody" }
       ]
     },
     {
@@ -132,7 +132,7 @@
       "cues": [
         { "id": "s10a", "say": "You're set.", "stage": "welcome" },
         { "id": "s10b", "say": "Field Notes from the field. The book when you're home. A briefing per house. The packet for the sub.", "stage": "welcome" },
-        { "id": "s10c", "say": "Full site and Company when you need the desk. Replay any time from Settings. I'll get out of your way.", "stage": "welcome" }
+        { "id": "s10c", "say": "The rest of this house, and Company, when you need the desk. Replay any time from Settings. I'll get out of your way.", "stage": "welcome" }
       ]
     }
   ]
