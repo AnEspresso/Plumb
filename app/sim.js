@@ -1194,6 +1194,7 @@ t('rooms on the house are doors not a second inbox', $("String(houseHTML)").inde
 t('money is one sentence', $("String(houseMoneyLine)").indexOf('Contracted')>=0&&$("String(houseMoneyLine)").indexOf('billed')>=0);
 t('settings leads with company', $("String(renderSettings)").indexOf("set-hd\">Company")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
+t('house doors stay two across', $("document.documentElement.innerHTML").indexOf('hs-doors{grid-template-columns:repeat(3')<0&&$("String(houseHTML)").indexOf('hs-door wide')>=0);
 t('a desk room comes back to the house', $("String(backToHouse)").indexOf('nyOpenHouse')>=0&&$("String(houseGoDesk)").indexOf('_houseResume')>=0&&$("String(houseGoDesk)").indexOf('on-house-desk')>=0);
 t('desk opens the site before it hides the house', $("String(houseGoDesk)").indexOf('openSiteFromOverview')<$("String(houseGoDesk)").indexOf("hs.classList.remove('show')"));
 t('daily log on the house hides the extra camera', $("document.documentElement.innerHTML").indexOf('on-house-desk #view-log .site-field')>=0);
