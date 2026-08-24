@@ -2648,7 +2648,7 @@ body.on-tour .tour-card{display:block;}
         <button type="button" data-s="open" onclick="pickRecStatus(this)">Open</button>
         <button type="button" data-s="done" onclick="pickRecStatus(this)">Closed</button>
       </div>
-      <div class="flagrow" style="margin:0 0 4px"><div class="l"><div class="t">Share with homeowner</div><div class="s">Show on their progress view</div></div><div class="toggle" id="recShare" onclick="this.classList.toggle('on')"></div></div>
+      <div class="flagrow" style="margin:0 0 4px"><div class="l"><div class="t">Share with homeowner</div><div class="s">Show on the homeowner’s progress view</div></div><div class="toggle" id="recShare" onclick="this.classList.toggle('on')"></div></div>
       <div class="row2" style="margin-top:10px"><button class="b1 b-cancel" onclick="closeRecord()">Cancel</button><button class="b1 b-go" onclick="saveRecord()">Save</button></div>
       <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:1.5px solid var(--line);color:var(--ink-2);font-weight:600;font-size:13px;cursor:pointer" onclick="openFileTo(editingRecId)">File to a trade…</button>
       <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:none;color:var(--clay);font-weight:600;font-size:13px;cursor:pointer" onclick="deleteRecord()">Delete this entry</button>
@@ -2953,7 +2953,7 @@ body.on-tour .tour-card{display:block;}
       <div class="toggle" id="flag" onclick="this.classList.toggle('on')"></div>
     </div>
     <div class="flagrow" id="sheetShareRow" style="margin-top:9px">
-      <div class="l"><div class="t">Share with homeowner</div><div class="s">Off by default — show on their progress view</div></div>
+      <div class="l"><div class="t">Share with homeowner</div><div class="s">Off by default. Show on the homeowner’s progress view</div></div>
       <div class="toggle" id="shareToggle" onclick="this.classList.toggle('on')"></div>
     </div>
     <div class="row2" style="margin-top:6px">
@@ -3165,7 +3165,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.321.0 - House, invoices, label, Project Manager.';
+const PLUMB_VERSION='2.322.0 - Name the person. Demo hats leave the house.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3173,7 +3173,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.321.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.322.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4982,8 +4982,8 @@ function teamInvWarnBody(){
   const miss=gatesMissing(d.gates,base);
   const who=RP_ROLES[d.rpRole]||'this role';
   let b='<p style="margin:0 0 10px">The <b>'+esc(who)+'</b> template does not match what you picked.</p>';
-  if(extra.length)b+='<p style="margin:0 0 10px">They will also see <b>'+esc(extra.join(', '))+'</b>.</p>';
-  if(miss.length)b+='<p style="margin:0 0 10px">They will not see <b>'+esc(miss.join(', '))+'</b>.</p>';
+  if(extra.length)b+='<p style="margin:0 0 10px">This person will also see <b>'+esc(extra.join(', '))+'</b>.</p>';
+  if(miss.length)b+='<p style="margin:0 0 10px">This person will not see <b>'+esc(miss.join(', '))+'</b>.</p>';
   b+='<p style="margin:0;color:var(--ink-3);font-size:13px">Confirm you want this role to work this way.</p>';
   return b;
 }
@@ -5589,7 +5589,7 @@ function removeTeamMember(uid){
 function removeHomeownerMember(){
   const p=P();const inv=(p.invites||[]).find(i=>i.role==='client'&&i.status!=='revoked');
   const uid=inv&&inv.uid;
-  confirmDelete({title:'Remove homeowner access?',body:'They lose the portal for <b>'+esc(p.street||p.name)+'</b> the next time their device syncs.',onConfirm:()=>{
+  confirmDelete({title:'Remove homeowner access?',body:'The homeowner loses the portal for <b>'+esc(p.street||p.name)+'</b> the next time that phone syncs.',onConfirm:()=>{
   if(uid&&p.members&&p.members[uid]){delete p.members[uid];if(p.memberInfo)delete p.memberInfo[uid];}
   if(inv)inv.status='revoked';
   persist();try{Sync.pushAll();}catch(e){}logEvent('memberRemoved','client');toast('Homeowner access removed');
@@ -5665,7 +5665,7 @@ function __renderSetup(){
       <div class="lbl">Company name</div>
       <input id="suCompany" placeholder="e.g. Hilltop Homes" value="${esc(setupDraft.company||'')}">
       ${appMode()==='real'?`<button class="add-sub-btn" style="margin-top:14px" onclick="createInvite('team',null,{setup:true})">${PPL_INV_SVG}Someone else should answer these? Invite &amp; hand off setup…</button>
-      <p style="margin:6px 0 0;color:var(--ink-3);font-size:12px">They get this wizard on their first sign-in — you can close it now.</p>`:''}`;}
+      <p style="margin:6px 0 0;color:var(--ink-3);font-size:12px">That teammate gets this wizard on first sign-in. You can close it now.</p>`:''}`;}
   else if(setupStep===1){t.textContent='Your team';
     const pend=laTeamInvites().filter(i=>i.status==='open');
     const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
@@ -6219,7 +6219,7 @@ teamLegacy:[
   acts:[{do:()=>tourGoto('build','subs')},{tap:'#budgetCard .overall',do:()=>{try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}try{openBudget();}catch(e){}}}]},
  {sel:'#billingCard',bubSide:'tb',title:'Homeowner invoices',body:'The other side of the money \u2014 upgrades, credits, and invoices the homeowner approves with one tap. The ledger below always knows where every dollar stands.',
   acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .pmodal .b-go',do:()=>{try{closeBudget();}catch(e){}}}],
-  task:{payoff:'What they owe, what they\u2019ve paid, what\u2019s waiting on them \u2014 always current. Never another spreadsheet.',
+  task:{payoff:'What the homeowner owes, what the homeowner has paid, what is waiting on the homeowner. Always current. Never another spreadsheet.',
     steps:[
       {t:()=>document.querySelector('#billingCard [onclick]')||document.getElementById('billingCard'),
        say:'Tap the invoice card to open what the homeowner owes.',
@@ -6234,7 +6234,7 @@ teamLegacy:[
   after:async(tok)=>{await tourPing([...document.querySelectorAll('#filesPhotos .day-group')].slice(0,2),tok,800,document.querySelector('#filesPhotos .searchbar'));}},
  {sel:'#filesDocs',bubSide:'tb',title:'The Install Packet',body:'This is where the Install Packet is born \u2014 attach a document to a trade, and every cleared sub carries it in their pocket, kept current.',
   acts:[{do:()=>tourGoto('files','photos')},{tap:'[data-fl=docs]',do:()=>{try{filesSeg('docs',document.querySelector('[data-fl=docs]'));}catch(e){}}}],
-  task:{payoff:'Attached to Plumbing \u2014 and already in every cleared plumber\u2019s packet. Exactly what they need, and nothing that isn\u2019t theirs.',
+  task:{payoff:'Attached to Plumbing \u2014 and already in every cleared plumber\u2019s packet. Exactly what the crew needs, and nothing that isn\u2019t the crew\u2019s.',
     steps:[
       {t:'#filesDocs .add-sub-btn',say:'Press Add document \u2014 I\u2019ll hand you a fixture spec to attach.',
        hint:'The add button at the top of Documents.',
@@ -6254,7 +6254,7 @@ teamLegacy:[
        hint:'The Done button.',
        done:()=>{try{return !document.getElementById('infoScrim').classList.contains('show');}catch(e){return false;}}}
     ]}},
-{sel:'.cl-hero',stageRect:()=>unionRect('.cl-hero','[id^=cldec]'),bubSide:'bb',title:'What homeowners see',body:'This is their view of the same build \u2014 progress, decisions waiting on them, what to pay. Nothing to install, nothing to teach: you send one link.',
+{sel:'.cl-hero',stageRect:()=>unionRect('.cl-hero','[id^=cldec]'),bubSide:'bb',title:'What homeowners see',body:'This is the homeowner’s view of the same build: progress, decisions waiting on the homeowner, what to pay. Nothing to install, nothing to teach: you send one link.',
   acts:[{tap:'.exc-roles button[data-r=client]',do:()=>demoRole('client')}],
   after:async(tok)=>{
     await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
@@ -6656,7 +6656,7 @@ function __renderPeople(){
     if(title)title.textContent='People';
     const hdg=d.kind==='macro'?'Template':(d.kind==='person'?(d.name||'This person'):'Invite a teammate');
     let h=peoplePills()+'<div class="ppl-invite-h">'+esc(hdg)+'</div>'
-      +'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">'+(d.kind==='macro'?'Defaults for this role. Changing them does not move people already on the team.':'Pick the role, then change what they can see if you need to.')+'</p>';
+      +'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">'+(d.kind==='macro'?'Defaults for this role. Changing them does not move people already on the team.':'Pick the role, then change what this person can see if you need to.')+'</p>';
     h+='<div class="ov-sortpills" style="flex-wrap:wrap;margin-bottom:8px">';
     ['pm','superintendent','office','owner'].forEach(function(id){
       if(d.kind!=='macro'&&id==='owner'&&false)return;
@@ -6789,7 +6789,7 @@ function __renderPeople(){
   const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
   const uids=Object.keys(r);
   const pend=laTeamInvites().filter(i=>i.status==='open');
-  el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">They see every house. Tap a person to change their role.</p>'
+  el.innerHTML=peoplePills()+'<p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">The team sees every house. Tap a person to change that person’s role.</p>'
     +(uids.map(function(uid){
       const info=r[uid]||{};
       const mine=!!(me&&uid===me);
@@ -7216,11 +7216,11 @@ function _nyIssues(projs){
           line:(b.subName||'The crew')+' asked a question',go:`nyOpenAsk('${p.id}','${b.id}',${qi<0?0:qi})`});
       }
       if(_nyDeclined(b,today)){
-        issues.push({kind:'They declined',pid:p.id,site:site,trade:trade,bid:b.id,pri:0,lvl:'warn',ts:b.t||b.start,
+        issues.push({kind:'The crew declined',pid:p.id,site:site,trade:trade,bid:b.id,pri:0,lvl:'warn',ts:b.t||b.start,
           line:(b.subName||'The crew')+' declined',go:`openBk('${p.id}|${b.id}','declined')`});
       }
       if(_nyWaiting(b)&&(b.end||b.start)>=today){
-        issues.push({kind:'Waiting on them',pid:p.id,site:site,trade:trade,bid:b.id,pri:2,lvl:'msg',ts:b.pkSent||b.start,
+        issues.push({kind:'Waiting on this crew',pid:p.id,site:site,trade:trade,bid:b.id,pri:2,lvl:'msg',ts:b.pkSent||b.start,
           line:'Waiting on '+(b.subName||'the crew'),go:`openBk('${p.id}|${b.id}','wait')`});
       }
       if(_nySiteNotReady(p,b,today)){
@@ -9555,6 +9555,8 @@ function exitDemoToApp(){
 }
 function demoRole(r){
   r=normRole(r);
+  try{exitHouseDesk();}catch(e){}
+  try{closeHouse();}catch(e){}
   try{closeBudget();}catch(e){}
   try{document.getElementById('infoScrim').classList.remove('show');}catch(e){}
   try{document.getElementById('overview').classList.remove('show');}catch(e){}
@@ -13176,7 +13178,7 @@ function bkInviteLine(b){
   const inv=(p.invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,sub)&&i.status!=='revoked');
   if(inv&&inv.status==='joined')return '';
   if(inv)return `<div class="bk-invite" onclick="event.stopPropagation();shareInvite('${esc(inv.code)}')">Not joined yet \u00b7 code <b>${esc(inv.code)}</b> \u2014 tap to share again</div>`;
-  return `<div class="bk-invite warn" onclick="event.stopPropagation();bkInviteSub('${p.id}','${sub.id}')">Not in SitePlumb \u2014 tap to invite so they get this booking</div>`;}
+  return `<div class="bk-invite warn" onclick="event.stopPropagation();bkInviteSub('${p.id}','${sub.id}')">Not in SitePlumb. Tap to invite so this crew gets this booking</div>`;}
 function bkInviteSub(pid,subId){if(String(P().id)!==String(pid))Data.setActive(pid);createInvite('sub',subId);}
 const BK_STATUS={pending:{label:'Awaiting reply',cls:'pd'},confirmed:{label:'Confirmed',cls:''},declined:{label:'Can\u2019t make it',cls:'dc'},modified:{label:'New dates proposed',cls:'md'}};
 function bkSetStatus(p,id,st){const b=(p.bookings||[]).find(x=>x.id===id);if(!b)return;b.status=st;persist();
@@ -13323,7 +13325,7 @@ function renderCal(){
   const who=document.getElementById('calWho');
   const fp=calSiteFilter==='all'?null:state.projects.find(x=>String(x.id)===String(calSiteFilter));
   try{document.getElementById('calHdrT').textContent=calCrewFilter?calCrewFilter:(calIsSub()?'My schedule':(calIsClient()?'Site calendar':'Trades Calendar'));}catch(e){}
-  if(who)who.textContent=calCrewFilter?('Every house they are on \u2014 overlap is marked')
+  if(who)who.textContent=calCrewFilter?('Every house this crew is on. Overlap is marked')
     :calIsClient()?('Your build \u2014 '+esc((clientProj()||{}).street||(clientProj()||{}).name||''))
     :calIsSub()?('Your schedule \u2014 '+((state.session||{}).name||'')):(fp?(fp.street||fp.name):'All sites');
   const y=calMonth.getFullYear(),m=calMonth.getMonth();
@@ -13470,7 +13472,7 @@ function bkSubModify(pid,id){
   document.getElementById('bkScrim').classList.add('show');}
 function delAvail(pid,id){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;deleteAvail(p,id);renderDay();renderCal();}
 let _bkLead='';
-const BK_LEAD={wait:'Waiting on them',blocked:'They are blocked',declined:'They declined',double:'Double-booked',change:'Date change'};
+const BK_LEAD={wait:'Waiting on this crew',blocked:'This crew is blocked',declined:'The crew declined',double:'Double-booked',change:'Date change'};
 function bkLeadOrder(){
   const a=document.getElementById('bkAlerts'),g=document.getElementById('bkGuest'),pk=document.getElementById('bkPacket'),s=document.getElementById('bkSendLink'),ov=document.getElementById('bkOverlap');
   if(!a||!g||!pk)return;
@@ -13951,7 +13953,7 @@ function pktAsk(p,tradeId){
   });
   if(sb){
     const inv=(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
-    if(!inv)out.push({title:'Invite '+sb.name,meta:'So they see this live',go:`invitePacketSub('${p.id}','${sb.id}')`});
+    if(!inv)out.push({title:'Invite '+sb.name,meta:'So this crew sees this live',go:`invitePacketSub('${p.id}','${sb.id}')`});
   }
   return out;
 }
@@ -14627,15 +14629,15 @@ function _bkBriefHTML(p,b){
   const lead=_bkLead||'';
   const show=function(k){return !lead||lead===k;};
   if(show('declined')&&(b.status||'')==='declined'){
-    return box('They declined',(b.subName||'This crew')+' turned down '+fmtWin({start:b.start,end:b.end||b.start})+'. Pick new dates or another crew.');
+    return box('The crew declined',(b.subName||'This crew')+' turned down '+fmtWin({start:b.start,end:b.end||b.start})+'. Pick new dates or another crew.');
   }
   if(show('wait')&&_nyWaiting(b)){
     const days=Math.max(1,Math.floor((Date.now()-b.pkSent)/864e5));
-    return box('Waiting on them','Asked them to confirm '+fmtWin({start:b.start,end:b.end||b.start})+'. Sent '+days+' day'+(days===1?'':'s')+' ago. No reply yet.','Ask them again',"sendGuestPacket('"+String(p.id)+"','"+String(b.id)+"')");
+    return box('Waiting on this crew','Asked this crew to confirm '+fmtWin({start:b.start,end:b.end||b.start})+'. Sent '+days+' day'+(days===1?'':'s')+' ago. No reply yet.','Ask this crew again',"sendGuestPacket('"+String(p.id)+"','"+String(b.id)+"')");
   }
   const blocked=bookingConflicts().some(function(c){return c.kind==='blocked'&&c.a&&String(c.a.id)===String(b.id);});
   if(show('blocked')&&blocked){
-    return box('They are blocked',(b.subName||'This crew')+' marked '+fmtWin({start:b.start,end:b.end||b.start})+' unavailable. Pick new dates.');
+    return box('This crew is blocked',(b.subName||'This crew')+' marked '+fmtWin({start:b.start,end:b.end||b.start})+' unavailable. Pick new dates.');
   }
   const dbl=bookingConflicts().filter(function(c){return c.kind==='double'&&(c.bs||[]).some(function(x){return String(x.id)===String(b.id);});})[0];
   if(show('double')&&dbl){
@@ -14655,7 +14657,7 @@ function _bkGuestStatusHTML(p,b,g){
     return '<div style="margin-top:10px;padding:14px 14px 12px;border:1px solid rgba(176,137,90,.32);border-radius:14px;background:rgba(176,137,90,.08)">'
       +'<div class="gp-sub" style="margin:0 0 4px">On the calendar</div>'
       +'<div style="font-weight:650">'+esc(fmtWin({start:b.start,end:b.end||b.start}))+'</div>'
-      +'<div class="gp-sub" style="margin:10px 0 4px">They asked</div>'
+      +'<div class="gp-sub" style="margin:10px 0 4px">This crew asked</div>'
       +'<div style="font-weight:700;letter-spacing:-.01em">'+(r.start?esc(fmtWin({start:r.start,end:r.end||r.start})):'new dates')+'</div>'
       +(r.note?'<div class="gp-sub" style="margin:6px 0 0">\u201c'+esc(r.note)+'\u201d</div>':'')
       +(r.start?'<button class="gp-btn go" style="margin:12px 0 0" onclick="nyReviewDates(\''+String(p.id)+'\',\''+String(b.id)+'\','+r.start+','+(r.end||r.start)+')">Confirm these dates</button>':'')
@@ -14870,8 +14872,8 @@ function pkOfferTellThem(){
   const when=pkWhen(n.t);
   openConfirm({
     title:'Tell '+(n.sub||'them')+'?',
-    body:esc(n.what)+' \u00b7 '+esc(when)+'. Same link. Optional text so they know to open it.',
-    okLabel:'Text them',
+    body:esc(n.what)+' \u00b7 '+esc(when)+'. Same link. Optional text so this crew knows to open it.',
+    okLabel:'Text this crew',
     cancelLabel:'Not now',
     onConfirm:function(){
       const hold=_pkPubNotify;_pkPubNotify=null;
@@ -15014,8 +15016,8 @@ function inbTabLabel(t){
     'On deck, not booked':'On deck',
     'Homeowner wrote you':'Homeowner',
     'Site not ready':'Not ready',
-    'Waiting on them':'Waiting',
-    'They declined':'Declined',
+    'Waiting on this crew':'Waiting',
+    'The crew declined':'Declined',
     'They\u2019re blocked':'Blocked',
     'Spec still open':'Specs',
     'Double-booked':'Overlap',
@@ -15080,8 +15082,8 @@ function nyOpenHomeowner(pid,rid){
   const kind=it.kind==='idea'?'Idea':'Concern';
   document.getElementById('nyAskTitle').textContent='Homeowner';
   document.getElementById('nyAskWho').textContent=(p.street||p.name||'')+' \u00b7 '+kind+(it.area?(' \u00b7 '+areaText(it.area)):'');
-  document.getElementById('nyAskQ').textContent=it.cap?('\u201c'+it.cap+'\u201d'):'They wrote you.';
-  const ta=document.getElementById('nyAskText');ta.value=it.reply||'';ta.placeholder='Your answer \u2014 they see this';
+  document.getElementById('nyAskQ').textContent=it.cap?('\u201c'+it.cap+'\u201d'):'The homeowner wrote you.';
+  const ta=document.getElementById('nyAskText');ta.value=it.reply||'';ta.placeholder='Your answer. The homeowner sees this';
   document.getElementById('nyAskScrim').classList.add('show');
   setTimeout(function(){try{ta.focus();}catch(e){}},80);
 }
@@ -15108,7 +15110,7 @@ function nyOpenAsk(pid,bid,qi){
   document.getElementById('nyAskTitle').textContent='Question';
   document.getElementById('nyAskText').placeholder='Your answer';
   document.getElementById('nyAskWho').textContent=(b.subName||'Crew')+' \u00b7 '+(p.street||p.name||'');
-  document.getElementById('nyAskQ').textContent=q.text?('\u201c'+q.text+'\u201d'):'They asked a question.';
+  document.getElementById('nyAskQ').textContent=q.text?('\u201c'+q.text+'\u201d'):'This crew asked a question.';
   document.getElementById('nyAskText').value='';
   document.getElementById('nyAskScrim').classList.add('show');
   setTimeout(function(){try{document.getElementById('nyAskText').focus();}catch(e){}},80);

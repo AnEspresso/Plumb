@@ -1057,7 +1057,7 @@ t('removing a booking clears its Needs You card', (function(){
 })());
 t('leaving the calendar redraws Needs You', $("String(closeCal)").indexOf('renderToday')>=0);
 t('Needs You names the kind of work', $("String(_nyIssues)").indexOf('Date change')>=0&&$("String(_nyIssues)").indexOf('Question')>=0);
-t('Needs You covers the six new kinds', $("String(_nyIssues)").indexOf('They declined')>=0&&$("String(_nyIssues)").indexOf('Waiting on them')>=0&&$("String(_nyIssues)").indexOf('Site not ready')>=0&&$("String(_nyIssues)").indexOf('Homeowner wrote you')>=0&&$("String(_nyIssues)").indexOf('On deck, not booked')>=0&&$("String(_nyOnDeck)").indexOf('prevDone')>=0);
+t('Needs You covers the six new kinds', $("String(_nyIssues)").indexOf('The crew declined')>=0&&$("String(_nyIssues)").indexOf('Waiting on this crew')>=0&&$("String(_nyIssues)").indexOf('Site not ready')>=0&&$("String(_nyIssues)").indexOf('Homeowner wrote you')>=0&&$("String(_nyIssues)").indexOf('On deck, not booked')>=0&&$("String(_nyOnDeck)").indexOf('prevDone')>=0);
 t('Show all and Recent decisions are separate actions', $("String(renderOvCards)").indexOf('openPkLog')>=0&&$("String(renderToday)").indexOf('toggleSoon')>=0);
 t('untagged site files stay out of a trade packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Construction Contract.pdf'})")===false);
 t('a trade-tagged plan is in that packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Plumbing Rough-In Plan.pdf',trade:'plumb'})")===true);
@@ -1211,9 +1211,9 @@ t('still-open on the house shows three then all', $("String(houseHTML)").indexOf
 t('selections from the house opens finishes', $("String(houseGoDesk)").indexOf("decSeg('selections')")>=0&&$("String(houseHTML)").indexOf('data-door="sel"')>=0);
 t('closing the house does not pop the page stack', $("String(closeHouse)").indexOf('navPop')<0);
 t('Needs You does not open the calendar', $("String(_nyIssues)").indexOf('openCalOn')<0);
-t('a blocked crew opens the booking', $("String(_nyIssues)").indexOf("is blocked")>=0&&$("String(_nyIssues)").indexOf('openBk')>=0&&$("String(_bkBriefHTML)").indexOf('They are blocked')>=0);
+t('a blocked crew opens the booking', $("String(_nyIssues)").indexOf("is blocked")>=0&&$("String(_nyIssues)").indexOf('openBk')>=0&&$("String(_bkBriefHTML)").indexOf('This crew is blocked')>=0);
 t('a homeowner note opens a reply', $("String(_nyIssues)").indexOf('nyOpenHomeowner')>=0&&$("typeof nyOpenHomeowner")==='function'&&$("String(nyHoSend)").indexOf('reply')>=0);
-t('waiting shows ask them again', $("String(_bkBriefHTML)").indexOf('Ask them again')>=0&&$("String(bkRenderGuestRow)").indexOf('_bkBriefHTML')>=0);
+t('waiting shows ask this crew again', $("String(_bkBriefHTML)").indexOf('Ask this crew again')>=0&&$("String(bkRenderGuestRow)").indexOf('_bkBriefHTML')>=0);
 t('the tapped reason leads the booking', $("String(_nyIssues)").indexOf("openBk('${p.id}|${b.id}','wait')")>=0&&$("String(openBk)").indexOf('_bkLead')>=0&&$("String(bkLeadOrder)").indexOf('appendChild')>=0);
 t('booking alerts have a gap', $("!!document.getElementById('bkAlerts')")===true&&$("document.documentElement.innerHTML").indexOf('.bk-alerts{display:flex;flex-direction:column;gap:12px')>=0);
 t('the packet link sits after the review', $("!!document.getElementById('bkSendLink')")===true&&$("String(bkRenderGuestRow)").indexOf('sendGuestPacket')<0&&$("String(bkRenderSendLink)").indexOf('sendGuestPacket')>=0);
