@@ -1195,6 +1195,19 @@ t('money is one sentence', $("String(houseMoneyLine)").indexOf('Contracted')>=0&
 t('settings leads with company', $("String(renderSettings)").indexOf("set-hd\">Company")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
 t('a desk room comes back to the house', $("String(backToHouse)").indexOf('nyOpenHouse')>=0&&$("String(houseGoDesk)").indexOf('_houseResume')>=0&&$("String(houseGoDesk)").indexOf('on-house-desk')>=0);
+t('desk opens the site before it hides the house', $("String(houseGoDesk)").indexOf('openSiteFromOverview')<$("String(houseGoDesk)").indexOf("hs.classList.remove('show')"));
+t('daily log on the house hides the extra camera', $("document.documentElement.innerHTML").indexOf('on-house-desk #view-log .site-field')>=0);
+t('permits from a scrolled house stay on the desk', (function(){
+  asBuilder();$('enterDemo()');$('showOverview()');$('nyOpenHouse("p2")');
+  const body=el('houseBody');if(body)body.scrollTop=400;
+  $('houseGoDesk("permits")');
+  const desk=$("document.body.getAttribute('data-desk')")==='permits';
+  const bookOff=!$("document.getElementById('overview').classList.contains('show')");
+  const houseOff=!$("document.getElementById('houseScrim').classList.contains('show')");
+  const pane=$("document.getElementById('view-build').classList.contains('active')");
+  $('backToHouse()');$('closeHouse()');
+  return desk&&bookOff&&houseOff&&pane;
+})());
 t('a packet from the house hides the briefing then comes back', (function(){
   asBuilder();
   $('enterDemo()');

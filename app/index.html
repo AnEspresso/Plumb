@@ -637,7 +637,10 @@
   body[data-desk="docs"] #view-files .seg-top,
   body[data-desk="selections"] #view-decisions .seg-top,
   body[data-desk="items"] #view-decisions .seg-top{display:none;}
-  #houseScrim .pmodal{max-width:380px;}
+  #houseScrim .pmodal{max-width:380px;display:flex;flex-direction:column;max-height:88vh;overflow:hidden;}
+  #houseScrim #houseBody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #houseScrim .row2{flex:none;}
+  body.on-house-desk #view-log .site-field{display:none !important;}
   .set-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:16px 2px 4px;}
   .set-hd:first-child{margin-top:2px;}
   .st-note{font-size:13px;color:var(--ink-3);line-height:1.4;padding:4px 2px 10px;}
@@ -3165,7 +3168,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.322.0 - Name the person. Demo hats leave the house.';
+const PLUMB_VERSION='2.323.0 - Hide log camera on the house. Permits stays on the house.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3173,7 +3176,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.322.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.323.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6931,7 +6934,7 @@ const _holdModalScroll=new Set();
 let _houseResumeScroll=false;
 function scrollEl(which){
   if(which==='home')return document.querySelector('.ov-body');
-  if(which==='house')return document.querySelector('#houseScrim .pmodal');
+  if(which==='house')return document.getElementById('houseBody')||document.querySelector('#houseScrim .pmodal');
   if(which==='packet')return document.querySelector('#infoScrim .pmodal');
   if(which==='site')return document.getElementById('main');
   return null;
@@ -7382,15 +7385,16 @@ function backToHouse(){
 }
 function houseGoDesk(view){
   const pid=_housePid;if(!pid)return;
+  try{if(window.event)window.event.stopPropagation();}catch(e){}
   const map={log:'log',progress:'build',permits:'permits',crews:'subs',photos:'photos',docs:'docs',items:'issues',selections:'selections'};
   const dest=map[view]||view||'log';
   saveScroll('house');
   _houseResumeScroll=true;
-  const hs=document.getElementById('houseScrim');if(hs)hs.classList.remove('show');
   _houseResume=pid;
   _keepScrollY.site=0;
   _deskView=view||'log';
-  openSiteFromOverview(pid);
+  try{openSiteFromOverview(pid);}catch(e){try{nyOpenHouse(pid);}catch(e2){}return;}
+  const hs=document.getElementById('houseScrim');if(hs)hs.classList.remove('show');
   document.body.classList.add('on-house-desk');
   document.body.setAttribute('data-desk',_deskView);
   setBackHouse();
