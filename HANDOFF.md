@@ -1,6 +1,12 @@
-**v2.297.0 is live.** Website lookup fills only what it can prove (McCarver → HVAC + phone, not Excavation). **The Book Walk** is the full public QA. 2.296 was early access.
+**v2.322.0 is live.** House back, invoices not billing, name the person. Full site restore is `restore/2.319.0-full-site/`.
 
-# SitePlumb — handoff (current build v2.297.0)
+**PIN — tour voice, do not skip:** On-screen copy and `app/tour-audio/cues.json` already say **label** (not chip), **the rest of this house** (not Full site), and name the person. The **mp3 files were not re-recorded**. Ara still speaks the old lines if the tour plays audio. Stale clips: `s2b` (chip), `s6d` (what they owe), `s8a`–`s8e` (Full site / Log / Needs You / Build / Files), `s10c` (Full site and Company). When we come back to the tour: `python3 scripts/bake-tour-voice.py` (rebuilds only changed lines from cues.json). Do not ship a walk until voice matches cues.
+
+**Pinned — before the homebuilder touches a real job:** Create *their* owner login (not the QA book) and sit with them for the first hour: company → first house → invite PM / homeowner / first crew. Public face 16/16.
+
+**PIN — before the real homebuilder uses it:** sit with them for the first hour on a **clean owner login** (not QA). Company → first house → invite their PM / homeowner / first crew. Same first hour we walked. Do not skip this.
+
+# SitePlumb — handoff (current build v2.322.0)
 
 
 Paste this file into a new chat, attach the artifacts alongside it, and work continues without re-explaining anything.
@@ -15,7 +21,7 @@ A single-file PWA for residential construction project management — it connect
 - **Repo:** `AnEspresso/Plumb` — app files in `app/`, marketing site at repo root, CI at `.github/workflows/qa.yml`
 - **Backend:** Firebase project `plumb-467a0` (Blaze), Firestore + Auth + Storage, compat SDK 10.12.5, App Check enforced
 - **Architecture:** `index.html` is the canonical single file; `plumb.html` is a **byte-identical parity copy** (both must always match)
-- **Roles:** builder (`hillan`), subcontractor (`subs`), homeowner/client (`client`)
+- **Roles:** builder (`builder`), subcontractor (`subs`), homeowner/client (`client`)
 
 ---
 

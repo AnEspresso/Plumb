@@ -38,3 +38,7 @@ No door named Full site. No door named Billing. Money says Money. Invoices is a 
 - Do not invent a fifth information architecture.
 
 Report: pass / fail per door, leftover words, and anything that traps you off the house.
+
+## PIN — tour voice (not this pass)
+
+`cues.json` is already the new script. The mp3s are not. Do not bless a tour walk until `python3 scripts/bake-tour-voice.py` has rebuilt `s2b`, `s6d`, `s8a`–`s8e`, `s10c`. Desk and ink: skip the spoken tour until then.
