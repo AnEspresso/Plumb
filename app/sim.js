@@ -1185,16 +1185,16 @@ t('the house briefing lists every still-open fact', (function(){
 })());
 t('a house from the list opens the briefing', $("String(renderOvCards)").indexOf('nyOpenHouse')>=0&&$("String(renderOvCards)").indexOf("onclick=\"openSiteFromOverview")<0);
 t('home has a field door to log a photo', $("String(renderToday)").indexOf('openLogPick')>=0&&$("String(renderToday)").indexOf('Field Notes')>=0&&$("typeof openLogPick")==='function'&&$("String(openLogPick)").indexOf('logPickHouse')>=0);
-t('the briefing keeps log schedule selections money and the full site', (function(){
+t('the briefing keeps field schedule selections money and the desk', (function(){
   const s=$("String(houseHTML)");
-  return s.indexOf('logFromHouse')>=0&&s.indexOf('houseGoCal')>=0&&s.indexOf('houseGoMoney')>=0&&s.indexOf('houseGoSite')>=0&&s.indexOf('Full site')>=0&&s.indexOf('hs-doors')>=0;
+  return s.indexOf('logFromHouse')>=0&&s.indexOf('houseGoCal')>=0&&s.indexOf('houseGoMoney')>=0&&s.indexOf('houseGoDesk')>=0&&s.indexOf('Progress')>=0&&s.indexOf('Daily log')>=0&&s.indexOf('Full site')<0&&s.indexOf('hs-doors')>=0;
 })());
 t('the house briefing does not repeat the street', $("String(houseHTML)").indexOf('This job')<0&&$("String(houseHTML)").indexOf('pkt-head')<0);
 t('rooms on the house are doors not a second inbox', $("String(houseHTML)").indexOf('hs-doors')>=0&&$("String(houseHTML)").indexOf("Read and close old lines")<0&&$("String(houseHTML)").indexOf("This house</div>")<0);
 t('money is one sentence', $("String(houseMoneyLine)").indexOf('Contracted')>=0&&$("String(houseMoneyLine)").indexOf('billed')>=0);
 t('settings leads with company', $("String(renderSettings)").indexOf("set-hd\">Company")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
-t('a room from Full site goes to the book, not the briefing', $("String(houseGoSite)").indexOf('openSiteFromOverview')>=0&&$("String(houseGoSite)").indexOf('nyOpenHouse')<0);
+t('a desk room comes back to the house', $("String(backToHouse)").indexOf('nyOpenHouse')>=0&&$("String(houseGoDesk)").indexOf('_houseResume')>=0&&$("String(houseGoDesk)").indexOf('on-house-desk')>=0);
 t('a packet from the house hides the briefing then comes back', (function(){
   asBuilder();
   $('enterDemo()');
@@ -1208,7 +1208,7 @@ t('a packet from the house hides the briefing then comes back', (function(){
   return hidden===true&&back===true;
 })());
 t('still-open on the house shows three then all', $("String(houseHTML)").indexOf('toggleHouseOpen')>=0&&$("String(houseHTML)").indexOf('houseGoFact')>=0&&$("String(houseHTML)").indexOf('Show all')>=0);
-t('selections from the house opens finishes', $("String(houseGoSite)").indexOf("decSeg('selections')")>=0&&$("String(houseGoSite)").indexOf("go('selections')")>=0);
+t('selections from the house opens finishes', $("String(houseGoDesk)").indexOf("decSeg('selections')")>=0&&$("String(houseHTML)").indexOf('data-door="sel"')>=0);
 t('closing the house does not pop the page stack', $("String(closeHouse)").indexOf('navPop')<0);
 t('Needs You does not open the calendar', $("String(_nyIssues)").indexOf('openCalOn')<0);
 t('a blocked crew opens the booking', $("String(_nyIssues)").indexOf("is blocked")>=0&&$("String(_nyIssues)").indexOf('openBk')>=0&&$("String(_bkBriefHTML)").indexOf('They are blocked')>=0);

@@ -623,6 +623,21 @@
   .hs-door .k{font-size:13.5px;font-weight:650;letter-spacing:-.01em;}
   .hs-door .m{font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.3;font-weight:500;}
   .hs-door.wide{grid-column:1/-1;}
+  .hs-band{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:14px 2px 8px;}
+  .hs-title-btn{cursor:pointer;}
+  body.on-house-desk nav{display:none !important;}
+  body.on-house-desk #hdrSync{display:none;}
+  body.on-house-desk main{padding-bottom:28px;}
+  body.on-house-desk #budgetCard,body.on-house-desk #billingCard{display:none;}
+  body.on-house-desk #filesPhotos > .add-sub-btn{display:none;}
+  body[data-desk="progress"] #view-build .seg-top,
+  body[data-desk="permits"] #view-build .seg-top,
+  body[data-desk="crews"] #view-build .seg-top,
+  body[data-desk="photos"] #view-files .seg-top,
+  body[data-desk="docs"] #view-files .seg-top,
+  body[data-desk="selections"] #view-decisions .seg-top,
+  body[data-desk="items"] #view-decisions .seg-top{display:none;}
+  #houseScrim .pmodal{max-width:380px;}
   .set-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:16px 2px 4px;}
   .set-hd:first-child{margin-top:2px;}
   .st-note{font-size:13px;color:var(--ink-3);line-height:1.4;padding:4px 2px 10px;}
@@ -1188,6 +1203,10 @@
     .jc-nums{grid-template-columns:repeat(5,1fr);}
     /* ── overview is site-agnostic: the site tabs rail hides there ── */
     body:has(.overview.show) nav{display:none;}
+    body.on-house-desk nav{display:none !important;}
+    body.on-house-desk header{margin-left:0;}
+    body.on-house-desk main{padding-left:0;padding-bottom:44px;}
+    body.on-house-desk .overview{left:0;}
     body:has(.overview.show) .overview{left:0;}
     /* ── sync status lives in the rail foot; the header pill is gone on desktop ── */
     .hdr-sync{display:none;}
@@ -2587,7 +2606,7 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="houseScrim" style="z-index:88">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4 id="houseTitle">This job</h4>
+      <h4 id="houseTitle" class="hs-title-btn" onclick="houseSwitchStreet()">This job</h4>
       <div id="houseSub" class="hs-sub"></div>
       <div class="info-body" id="houseBody"></div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeHouse()">Done</button></div>
@@ -3146,7 +3165,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.319.0 - Field Note labels stay on one line.';
+const PLUMB_VERSION='2.320.0 - One house, one page. Full site is a restore.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3154,7 +3173,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.319.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.320.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4730,7 +4749,8 @@ function toggleSiteMenu(){const open=document.getElementById('siteMenu').classLi
 function openSiteMenu(){document.getElementById('siteSearch').value='';renderSiteMenu();
   document.getElementById('siteMenuScrim').classList.add('show');document.getElementById('siteMenu').classList.add('show');
   document.getElementById('siteBtn').classList.add('open');setTimeout(()=>document.getElementById('siteSearch').focus(),120);}
-function closeSiteMenu(){document.getElementById('siteMenuScrim').classList.remove('show');document.getElementById('siteMenu').classList.remove('show');document.getElementById('siteBtn').classList.remove('open');}
+function closeSiteMenu(){document.getElementById('siteMenuScrim').classList.remove('show');document.getElementById('siteMenu').classList.remove('show');document.getElementById('siteBtn').classList.remove('open');
+  try{document.getElementById('siteMenuScrim').style.zIndex='';document.getElementById('siteMenu').style.zIndex='';}catch(e){}}
 function renderSiteMenu(){
   const q=(document.getElementById('siteSearch').value||'').toLowerCase();
   const list=state.projects.filter(p=>(p.street||'').toLowerCase().includes(q)||(p.name||'').toLowerCase().includes(q));
@@ -4746,6 +4766,14 @@ function renderSiteMenu(){
 }
 function setActiveProject(id){if(id===state.activeId){closeSiteMenu();return;}Data.setActive(id);updateHeader();closeSiteMenu();
   issueFilter='open';document.querySelectorAll('.seg button').forEach((b,i)=>b.classList.toggle('on',i===0));
+  const desk=_deskView;
+  if(document.body.classList.contains('on-house-desk')&&desk){
+    _housePid=String(id);_houseResume=String(id);
+    houseGoDesk(desk);toast('Switched to '+(P().street||P().name));return;
+  }
+  if(houseStillOpen()||_houseResume){
+    nyOpenHouse(id);toast('Switched to '+(P().street||P().name));return;
+  }
   renderAll();logEvent('siteSwitch',P().street);toast('Switched to '+(P().street||P().name));}
 /* Reusable type-DELETE confirm. confirmDelete({title, body, onConfirm}) replaces
    the OS confirm() for destructive actions — the user must type DELETE to arm the
@@ -4856,7 +4884,7 @@ const GATE_KEYS=[
   {id:'field',n:'Field Notes',d:'Camera, notes, and punch on site'},
   {id:'schedule',n:'Schedule',d:'Crew calendar across jobs'},
   {id:'selections',n:'Selections',d:'Finishes, specs, homeowner choices'},
-  {id:'site',n:'Full site',d:'Log, Needs You, files'},
+  {id:'site',n:'This house',d:'Log, photos, permits, progress, and crews on this street'},
   {id:'jobs',n:'Add a house',d:'Put a new job on the company'},
   {id:'moneyJob',n:'Job costs',d:'What this house cost, and what you billed the buyer'},
   {id:'moneyCo',n:'Invoices',d:'Every invoice, and QuickBooks'},
@@ -6055,14 +6083,14 @@ const TOUR={team:[
     {f:'s7a',point:'#houseBody .pkt-or',stage:'#houseBody'},
     {f:'s7b',point:'#houseBody .pkt-or',stage:'#houseBody'}
   ]},
- {sel:'#houseBody',bubSide:'tb',title:'Full site',body:'Log, Needs You, Build, Files. Desk work.',
+ {sel:'#houseBody',bubSide:'tb',title:'The rest of this house',body:'Progress, log, photos, documents, permits, crews. Desk work, same street.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
-    {f:'s8a',point:'[data-door=full]',stage:'#houseBody'},
-    {do:function(){try{closeHouse();const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}catch(e){}},f:'s8b',point:'nav .tab[data-v=log]',tab:'log',stage:'site',line:true},
-    {f:'s8c',point:'nav .tab[data-v=decisions]',tab:'decisions',stage:'site',line:true},
-    {f:'s8d',point:'nav .tab[data-v=build]',tab:'build',stage:'site',line:true},
-    {f:'s8e',point:'nav .tab[data-v=files]',tab:'files',stage:'site',line:true}
+    {f:'s8a',point:'#houseBody .hs-band',stage:'#houseBody'},
+    {f:'s8b',point:'#houseBody [data-door=progress]',stage:'#houseBody'},
+    {f:'s8c',point:'#houseBody [data-door=log]',stage:'#houseBody'},
+    {f:'s8d',point:'#houseBody [data-door=photos]',stage:'#houseBody'},
+    {f:'s8e',point:'#houseBody [data-door=permits]',stage:'#houseBody'}
   ]},
  {sel:'#ovCompanyBtn',bubSide:'bb',title:'Company',body:'Calendar, invoices, roster, team. The office drawer.',
   nav:()=>{try{closeHouse();showOverview();}catch(e){}},
@@ -6891,9 +6919,10 @@ function logout(){Data.setSession(null);logEvent('logout','');setChrome(true);
   _keepScrollY.home=0;_keepScrollY.house=0;_keepScrollY.packet=0;_keepScrollY.site=0;_ovSort='attn';
   document.getElementById('overview').classList.remove('show');document.getElementById('subview').classList.remove('show');document.getElementById('clientview').classList.remove('show');
   document.getElementById('login').classList.remove('hide');setRole('builder');document.getElementById('loginSelect').selectedIndex=0;}
-function showOverview(){_ovAnimateTs=Date.now();document.getElementById('overview').classList.add('show');document.getElementById('backBtn').classList.remove('show');renderOverview();applyScroll('home');}
+function showOverview(){_ovAnimateTs=Date.now();try{exitHouseDesk();}catch(e){}document.getElementById('overview').classList.add('show');document.getElementById('backBtn').classList.remove('show');renderOverview();applyScroll('home');}
 function backToOverview(){
   if(_navStack.length){navPop();return;}
+  try{exitHouseDesk();}catch(e){}
   try{closeHouse();}catch(e){}
   showOverview();
 }
@@ -7315,20 +7344,68 @@ function houseMoneyLine(p){
 function logFromHouse(){
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openFieldNote();});
 }
-function houseGoSite(view){
+let _deskView=null;
+function setBackHouse(){
+  const b=document.getElementById('backBtn');if(!b)return;
+  b.onclick=backToHouse;
+  b.setAttribute('aria-label','This house');
+  const sp=b.querySelector('span');if(sp)sp.textContent='House';
+  b.classList.add('show');
+  const brand=document.getElementById('brand');
+  if(brand)brand.onclick=function(){if(document.getElementById('backBtn').classList.contains('show'))backToHouse();};
+}
+function setBackHomes(){
+  const b=document.getElementById('backBtn');if(!b)return;
+  b.onclick=backToOverview;
+  b.setAttribute('aria-label','All homes');
+  const sp=b.querySelector('span');if(sp)sp.textContent='Homes';
+  const brand=document.getElementById('brand');
+  if(brand)brand.onclick=function(){if(document.getElementById('backBtn').classList.contains('show'))backToOverview();};
+}
+function exitHouseDesk(){
+  document.body.classList.remove('on-house-desk');
+  document.body.removeAttribute('data-desk');
+  _deskView=null;
+  setBackHomes();
+}
+function backToHouse(){
+  const pid=_houseResume||state.activeId;
+  exitHouseDesk();
+  document.getElementById('overview').classList.add('show');
+  document.getElementById('backBtn').classList.remove('show');
+  if(pid)nyOpenHouse(pid);
+}
+function houseGoDesk(view){
   const pid=_housePid;if(!pid)return;
+  const map={log:'log',progress:'build',permits:'permits',crews:'subs',photos:'photos',docs:'docs',items:'issues',selections:'selections'};
+  const dest=map[view]||view||'log';
   saveScroll('house');
   _houseResumeScroll=true;
   const hs=document.getElementById('houseScrim');if(hs)hs.classList.remove('show');
-  _houseResume=null;
+  _houseResume=pid;
   _keepScrollY.site=0;
+  _deskView=view||'log';
   openSiteFromOverview(pid);
-  if(view==='selections'){
-    try{go('selections');decSeg('selections');}catch(e){}
+  document.body.classList.add('on-house-desk');
+  document.body.setAttribute('data-desk',_deskView);
+  setBackHouse();
+  try{go(dest);}catch(e){}
+  if(view==='selections'||dest==='selections'){
+    try{decSeg('selections');}catch(e){}
     setTimeout(function(){try{go('selections');decSeg('selections');}catch(e){}},200);
-  }else if(view&&view!=='log'){
-    setTimeout(function(){try{go(view);}catch(e){}},180);
   }
+}
+function houseGoSite(view){
+  if(view==='selections')houseGoDesk('selections');
+  else houseGoDesk(view==='log'?'log':view);
+}
+function houseSwitchStreet(){
+  try{
+    const sc=document.getElementById('siteMenuScrim'),m=document.getElementById('siteMenu');
+    if(sc)sc.style.zIndex='130';
+    if(m)m.style.zIndex='131';
+  }catch(e){}
+  openSiteMenu();
 }
 function houseGoCal(){
   houseLeave(function(){
@@ -7366,8 +7443,12 @@ function renderHouse(){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(_housePid);});
   const ttl=document.getElementById('houseTitle');const sub=document.getElementById('houseSub');const body=document.getElementById('houseBody');
   if(!p||!body)return;
-  if(ttl)ttl.textContent=p.street||p.name||'This house';
-  if(sub){sub.textContent=p.city||'';sub.style.display=p.city?'':'none';}
+  if(ttl){ttl.textContent=p.street||p.name||'This house';}
+  if(sub){
+    let line=p.city||'';
+    try{const wx=(document.getElementById('siteWx')||{}).textContent||'';if(wx&&line)line+=' · '+wx;else if(wx)line=wx;}catch(e){}
+    sub.textContent=line;sub.style.display=line?'':'none';
+  }
   body.innerHTML=houseHTML(p);
 }
 function houseHTML(p){
@@ -7385,6 +7466,14 @@ function houseHTML(p){
   }else{
     stripSt=n?(n+' still '+(n===1?'needs':'need')+' you'):'All clear on this house';
     if(deck)meta.push('On deck \u00b7 '+(deck.name||specLabel(deck.trade)||''));
+    try{
+      const today=dayStart(Date.now());
+      const next=(p.bookings||[]).filter(function(b){return (b.status||'confirmed')!=='declined'&&b.end>=today;}).sort(function(a,b){return a.start-b.start;})[0];
+      if(next){
+        const dfmt=function(ts){return new Date(ts).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});};
+        meta.push((next.subName||next.trade||'Crew')+' \u00b7 '+(next.start<=today?'today':dfmt(next.start)));
+      }
+    }catch(e){}
     if(isBuilder&&canGate('moneyJob')&&money&&money.indexOf('No money')<0)meta.push(money);
   }
   let h='<div class="pkt-strip '+(n?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
@@ -7407,10 +7496,20 @@ function houseHTML(p){
   h+='<div class="hs-doors">';
   if(!isClient&&canGate('field'))h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">A note, or a photo</div></button>';
   if(canGate('schedule')||isClient)h+='<button class="hs-door" data-door="cal" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
-  if(canGate('selections')||isClient)h+='<button class="hs-door" data-door="sel" onclick="houseGoSite(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
+  if(canGate('selections')||isClient)h+='<button class="hs-door" data-door="sel" onclick="houseGoDesk(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
   if(isBuilder&&canGate('moneyJob'))h+='<button class="hs-door" data-door="money" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
-  if(!isClient&&canGate('site'))h+='<button class="hs-door wide" data-door="full" onclick="houseGoSite(\'log\')"><div class="k">Full site</div><div class="m">Log, Needs You, Build, Files</div></button>';
   h+='</div>';
+  if(!isClient&&canGate('site')){
+    h+='<div class="hs-band">The rest of this house</div><div class="hs-doors">';
+    h+='<button class="hs-door" data-door="progress" onclick="houseGoDesk(\'progress\')"><div class="k">Progress</div><div class="m">Stages and inspections</div></button>';
+    h+='<button class="hs-door" data-door="log" onclick="houseGoDesk(\'log\')"><div class="k">Daily log</div><div class="m">Who was here</div></button>';
+    h+='<button class="hs-door" data-door="photos" onclick="houseGoDesk(\'photos\')"><div class="k">Photos</div><div class="m">The roll</div></button>';
+    h+='<button class="hs-door" data-door="docs" onclick="houseGoDesk(\'docs\')"><div class="k">Documents</div><div class="m">Drawings and PDFs</div></button>';
+    h+='<button class="hs-door" data-door="permits" onclick="houseGoDesk(\'permits\')"><div class="k">Permits</div><div class="m">This town</div></button>';
+    h+='<button class="hs-door" data-door="crews" onclick="houseGoDesk(\'crews\')"><div class="k">Crews on this house</div><div class="m">Packet and roster</div></button>';
+    h+='<button class="hs-door wide" data-door="items" onclick="houseGoDesk(\'items\')"><div class="k">Open items</div><div class="m">Open and closed</div></button>';
+    h+='</div>';
+  }
   return h;
 }
 function renderToday(){
@@ -8860,6 +8959,8 @@ function moneyBillHTML(p){
   const pmts=(p.payments||[]);
   const stLbl={draft:'Draft',sent:'Sent',approved:'Approved',partial:'Partial',overdue:'Past due',paid:'Paid',void:'Void'};
   let h='';
+  if(typeof canGate==='function'&&canGate('moneyCo'))
+    h+='<button class="set-row" style="margin:12px 0 4px" onclick="openInvoices()"><div style="flex:1"><div>Invoices</div><div class="sr-d">This house \u2014 drafts, sent, paid</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M9 6l6 6-6 6"/></svg></button>';
   if(invs.length){
     h+='<div class="bgt-grp">Invoices</div>';
     invs.forEach(function(inv){
@@ -9607,7 +9708,7 @@ function tourDoFn(name){
     sortRecent:function(){setOvSort('recent');},
     sortAz:function(){setOvSort('az');},
     openCompany:function(){openCompany();},
-    openFull:function(){try{closeHouse();}catch(e){}const p=tourDemoHouse();if(p){openSiteFromOverview(p.id);go('log');}}
+    openFull:function(){const p=tourDemoHouse();if(p){nyOpenHouse(p.id);setTimeout(function(){try{houseGoDesk('log');}catch(e){}},80);}}
   };
   return map[name];
 }
