@@ -64,7 +64,7 @@
       "cues": [
         { "id": "s5a", "say": "This is the briefing. Just this house.", "point": "#houseBody .pkt-strip", "stage": "briefing" },
         { "id": "s5b", "say": "What still needs you is at the top.", "point": "#houseBody .pkt-open, #houseBody .pkt-strip", "stage": "briefing" },
-        { "id": "s5c", "say": "Then the doors. Field Notes, Schedule, Selections, and Money. Most days, this is enough.", "point": "#houseBody .hs-doors", "stage": "briefing" }
+        { "id": "s5c", "say": "Then the doors. Field Notes, Schedule, Selections, and Money. Most days, this is enough.", "point": "#houseBody .pkt-open, #houseBody .pkt-strip", "stage": "briefing" }
       ]
     },
     {

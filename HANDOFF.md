@@ -1,4 +1,4 @@
-**v2.329.0 is live.** Tour HUD off. Gold box on the right thing. Card stays on screen.
+**v2.330.0 is live.** Gold box frames the landmark (does not grow into the next card). Company stays open until Next. Done stays out of the gold box.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 
