@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.337.0 - Tour does not vanish. HUD off. Camera tap frames the Field Notes sheet.';
+const PLUMB_VERSION='2.338.0 - Tour does not vanish on an update reload. Card is on screen from the first beat.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.337.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.338.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6303,7 +6303,27 @@ function startTourSteps(steps){
     document.body.appendChild(c);document.body.appendChild(s);document.body.appendChild(b);
   }
   try{const h=document.getElementById('tourHud');if(h)h.remove();}catch(e){}
+  try{tourWatchDom();}catch(e){}
   tourStep();}
+function tourWatchDom(){
+  if(window.__tourDomObs)return;
+  try{
+    const obs=new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        (m.removedNodes||[]).forEach(function(n){
+          if(!n||(n.id!=='tourCatch'&&n.id!=='tourBubble'&&n.id!=='tourSpot'))return;
+          if(window.__tourKill&&window.__tourKill.why&&window.__tourKill.why.indexOf('dom-remove')!==0)return;
+          const row={t:Date.now(),why:'dom-remove:'+n.id,idx:_tourIdx,hold:!!window._tourHoldNext};
+          window.__tourKill=row;
+          tlog('dom-remove',n.id);
+          try{sessionStorage.setItem('plumbTourWhy',JSON.stringify({kill:row,log:(window._tourLog||[]).slice(-40)}));}catch(e){}
+        });
+      });
+    });
+    obs.observe(document.body,{childList:true});
+    window.__tourDomObs=obs;
+  }catch(e){}
+}
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
@@ -6318,10 +6338,23 @@ function tourEnd(why){
   const kill=function(){['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});};
   if(window._tourHoldEnd){window._tourHoldEnd=false;setTimeout(kill,80);}
   else kill();
-  try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
+  try{localStorage.setItem('plumb.orientDone','1');}catch(e){}
+  try{if(window.__tourReloadWaiting){window.__tourReloadWaiting=false;setTimeout(function(){location.reload();},400);}}catch(e){}}
 function tourWhy(){
-  try{return JSON.parse(sessionStorage.getItem('plumbTourWhy')||'null')||window.__tourKill||{note:'still walking',idx:_tourIdx,hold:!!window._tourHoldNext,catch:!!document.getElementById('tourCatch')};}
-  catch(e){return window.__tourKill||{err:String(e)};}
+  try{
+    const stored=JSON.parse(sessionStorage.getItem('plumbTourWhy')||'null');
+    if(stored&&stored.kill)return stored;
+  }catch(e){}
+  return {
+    note:document.getElementById('tourCatch')?'still walking':'ui gone, end never ran',
+    idx:_tourIdx,
+    hold:!!window._tourHoldNext,
+    catch:!!document.getElementById('tourCatch'),
+    bubble:!!document.getElementById('tourBubble'),
+    spot:!!document.getElementById('tourSpot'),
+    log:(window._tourLog||[]).slice(-40),
+    kill:window.__tourKill||null
+  };
 }
 function tourGotIt(e){try{if(e){e.preventDefault();e.stopPropagation();}}catch(x){}window._tourHoldEnd=true;tourEnd('got-it');}
 function tourNext(){try{tourHoldAudio();}catch(e){}window._tourBack=false;tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd('past-end');return;}tourStep();}
@@ -6394,7 +6427,7 @@ function tourStep(){
      position glides once at placement (LAW 4). */
   try{
     const bubE=document.getElementById('tourBubble');
-    if(bubE&&_tourSteps===TOUR.grand){
+    if(bubE){
       const lastE=_tourIdx>=_tourSteps.length-1;
       bubE.classList.remove('tour-do');
       bubE.innerHTML='<div class="tour-step">'+(_tourIdx+1)+' / '+_tourSteps.length+'</div>'
@@ -9505,6 +9538,7 @@ try{window.addEventListener('message',ev=>{if(ev&&ev.data==='qb-connected'){toas
 function onExcursion(){try{return !!localStorage.getItem('plumbSuspend');}catch(e){return false;}}
 function enterDemo(opts){
   opts=opts||{};
+  if(document.getElementById('tourCatch'))return;
   try{if(!localStorage.getItem('plumbSuspend'))localStorage.setItem('plumbSuspend', state.session?'1':'splash');}catch(e){}
   try{sessionStorage.setItem('plumbDemoLive','1');}catch(e){}
   setMode('demo');
@@ -16299,6 +16333,10 @@ if('serviceWorker' in navigator){
   var reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', function(){
     if(reloading || !hadController) return;   // skip the first-install claim
+    if(document.getElementById('tourCatch')){  // never wipe a live walk
+      window.__tourReloadWaiting=true;
+      return;
+    }
     reloading = true; location.reload();
   });
   /* Drag & drop intake — the sheet's capture zone and the start photo card accept files. */
