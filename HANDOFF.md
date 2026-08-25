@@ -1,4 +1,4 @@
-**v2.324.0 is live.** House doors stay two across. Full site restore is `restore/2.319.0-full-site/`.
+**v2.326.0 is live.** Replay the tour in Settings (demo + QA). On the job heading. s8b speaks Progress.
 
 **PIN — laptop QA, two-across doors:** Peter did not have a laptop when 2.324.0 shipped. On a Mac/PC, open Calderwood. On the job must be a 2×2 (Field Notes · Schedule / Selections · Money). Open items full width. Money must not sit alone. Phone already two-across.
 

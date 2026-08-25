@@ -103,9 +103,9 @@
       "nav": "briefing",
       "cues": [
         { "id": "s8a", "say": "The rest of this house is here when you need the whole job.", "point": "#houseBody .hs-band", "stage": "#houseBody" },
-        { "id": "s8b", "say": "Progress.", "point": "#houseBody [data-door=progress]", "stage": "#houseBody" },
-        { "id": "s8c", "say": "Daily log.", "point": "#houseBody [data-door=log]", "stage": "#houseBody" },
-        { "id": "s8d", "say": "Photos.", "point": "#houseBody [data-door=photos]", "stage": "#houseBody" },
+        { "id": "s8b", "say": "Progress. Stages and inspections.", "point": "#houseBody [data-door=progress]", "stage": "#houseBody" },
+        { "id": "s8c", "say": "Daily log. Who was here.", "point": "#houseBody [data-door=log]", "stage": "#houseBody" },
+        { "id": "s8d", "say": "Photos. The roll.", "point": "#houseBody [data-door=photos]", "stage": "#houseBody" },
         { "id": "s8e", "say": "Permits, documents, crews. Desk work lives on this street. You don't have to start here.", "point": "#houseBody [data-door=permits]", "stage": "#houseBody" }
       ]
     },
