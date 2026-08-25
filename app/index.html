@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.330.0 - Gold box frames the landmark. Company stays open. Done stays out.';
+const PLUMB_VERSION='2.331.0 - Tour starts on the same tap. Voice does not freeze after Glad you are here.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.330.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.331.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9658,9 +9658,8 @@ function startGrandTour(){
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
   try{sessionStorage.setItem('plumbTourOffered','1');}catch(e){}
   if(appMode()!=='demo')enterDemo();
-  Promise.resolve(loadTourCues()).then(function(){
-    try{startTour('team');}catch(e){}
-  });
+  try{startTour('team');}catch(e){}
+  Promise.resolve(loadTourCues()).catch(function(){});
 }
 function tourDemoHouse(){return (state.projects||[]).find(function(p){return String(p.id)==='p2';})||(state.projects||[])[0]||null;}
 function tourWait(ms,tok){return new Promise(function(r){setTimeout(r,ms||400);});}
@@ -10555,7 +10554,11 @@ async function tourPoint(sels,tok,dwell,opts){
     const el=typeof s==='string'?document.querySelector(s):s;
     if(!el)continue;
     const r0=el.getBoundingClientRect();
-    if(r0.top<70||r0.bottom>innerHeight-90){              /* scroll only when the target is out of frame */
+    if(r0.height>innerHeight*0.42){
+      try{orbTo(el,{settle:true,rest:true,noscroll:true});}catch(e){}
+      continue;
+    }
+    if(r0.top<70||r0.bottom>innerHeight-90){
       smoothScrollTo(el,0.36);
       await awaitSettle(el);
       if(!tourAlive(tok))return;

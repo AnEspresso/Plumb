@@ -1,4 +1,4 @@
-**v2.330.0 is live.** Gold box frames the landmark (does not grow into the next card). Company stays open until Next. Done stays out of the gold box.
+**v2.331.0 is live.** Tour starts on the Replay tap (iPhone no longer waits on cues.json). Gold box still 2.330.0.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 
