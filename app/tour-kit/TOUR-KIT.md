@@ -136,9 +136,15 @@ Return: a patch to `tourSceneRect` / `tourStageRect` / `tourAvoidCover` / cue `s
 
 You are SitePlumb desk. Do not change code. Hard-refresh the live app. Example build, Builder. Settings → Replay the tour.
 
-First: does she say more than “Glad you're here”? Do s1b and s1c play? Does Next work on a phone? If freeze, STOP and report. Do not walk 16 slides.
+FIRST — VOICE (2.335.0+): this is a voiceover, not a playlist.
+- Slide 1 must play s1a, s1b, s1c. Then wait for Next.
+- Every later slide has its clips. Slide 2 says Now you. Tap the camera.
+- After each line: a short breath. Fail slam. Fail a hole longer than about one second. Fail last word cut off. Fail only s1a. Fail silent slides 2-10.
+- Next starts the new slide's first line promptly.
+Fill: slide | clips heard | breath natural/slam/hole | last word cut | notes
 
-If voice is alive, run the gold / card / orb census: one still per slide after the box settles. Table: slide | landmark | gold PASS/FAIL | card PASS/FAIL | orb PASS/FAIL. Quote leftover words (Full site, Billing, chip, sub). Do not change code.
+Then gold / card / orb census. One still per slide after the box settles. Quote leftover words. Do not change code.
+If slide 1 is only s1a, STOP.
 
 ---
 
