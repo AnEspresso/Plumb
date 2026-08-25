@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.331.0 - Tour starts on the same tap. Voice does not freeze after Glad you are here.';
+const PLUMB_VERSION='2.332.0 - Slide 1 does not hang. Tour kit for GrokBots.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.331.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.332.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6039,7 +6039,7 @@ function jumpToSubs(){try{go('subs');}catch(e){}}
 const TOUR={team:[
  {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',sel:'#ovToday',
   nav:()=>{try{closeHouse();closeCompany();showOverview();renderToday();renderOvCards();}catch(e){}},
-  play:[{f:'s1a',stage:'welcome'},{f:'s1b',point:'#ovToday',stage:'welcome'},{f:'s1c',stage:'welcome'}]},
+  play:[{f:'s1a',stage:'welcome'},{f:'s1b',stage:'welcome'},{f:'s1c',stage:'welcome'}]},
  {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'House, photo, a label, Send. Same camera everywhere.',
   nav:()=>{try{showOverview();renderToday();try{closeSheet();}catch(e){}}catch(e){}},
   play:[
@@ -10040,11 +10040,11 @@ async function tourPlayCues(step,tok){
     if(c.line&&c.point){
       try{await tourUnderline(c.point,tok);}catch(e){}
     }else if(c.point){
-      try{orbTo(c.point,{settle:true,rest:true});}catch(e){}
-      try{tourPoint(String(c.point).split(',').map(function(s){return s.trim();}),tok,80);}catch(e){}
+      try{orbTo(c.point,{settle:true,rest:true,noscroll:true});}catch(e){}
+      try{await Promise.race([tourPoint(String(c.point).split(',').map(function(s){return s.trim();}),tok,80),tourWait(1600,tok)]);}catch(e){}
     }
     try{tourSeeSnap(c);}catch(e){}
-    await audioP;
+    await Promise.race([audioP,tourWait(8000,tok)]);
     if(!tourAlive(tok))return;
     if(c.waitTap)await tourWaitTap(c.waitTap,c.intercept,tok,c.waitMs);
     try{if(c.doAfter)c.doAfter();}catch(e){}
