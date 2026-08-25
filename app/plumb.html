@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.336.0 - Tour waits for Next. Voice does not run ahead of the card.';
+const PLUMB_VERSION='2.337.0 - Tour does not vanish. HUD off. Camera tap frames the Field Notes sheet.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.336.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.337.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6302,17 +6302,29 @@ function startTourSteps(steps){
     const b=document.createElement('div');b.id='tourBubble';b.className='tour-bubble';b.style.opacity='1';
     document.body.appendChild(c);document.body.appendChild(s);document.body.appendChild(b);
   }
+  try{const h=document.getElementById('tourHud');if(h)h.remove();}catch(e){}
   tourStep();}
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
-function tourEnd(){window._tourQuiet=false;window._tourHoldNext=false;orbHide();tourAudioStop();try{window._tourQuiet=false;}catch(e){}try{const ln=document.getElementById('tourLine');if(ln)ln.remove();}catch(e){}try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();
+function tourEnd(why){
+  try{
+    const row={t:Date.now(),why:String(why||'plain'),idx:_tourIdx,title:((_tourSteps||[])[_tourIdx]||{}).title||'',hold:!!window._tourHoldNext,catch:!!document.getElementById('tourCatch')};
+    window.__tourKill=row;
+    tlog('end', row.why+' @'+(row.idx+1)+' '+row.title);
+    try{sessionStorage.setItem('plumbTourWhy', JSON.stringify({kill:row,log:(window._tourLog||[]).slice(-60),trace:(window.__tourTrace||[]).slice(-30)}));}catch(e){}
+  }catch(e){}
+  window._tourQuiet=false;window._tourHoldNext=false;orbHide();tourAudioStop();try{window._tourQuiet=false;}catch(e){}try{const ln=document.getElementById('tourLine');if(ln)ln.remove();}catch(e){}try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();
   const kill=function(){['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});};
   if(window._tourHoldEnd){window._tourHoldEnd=false;setTimeout(kill,80);}
   else kill();
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
-function tourGotIt(e){try{if(e){e.preventDefault();e.stopPropagation();}}catch(x){}window._tourHoldEnd=true;tourEnd();}
-function tourNext(){try{tourHoldAudio();}catch(e){}window._tourBack=false;tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
+function tourWhy(){
+  try{return JSON.parse(sessionStorage.getItem('plumbTourWhy')||'null')||window.__tourKill||{note:'still walking',idx:_tourIdx,hold:!!window._tourHoldNext,catch:!!document.getElementById('tourCatch')};}
+  catch(e){return window.__tourKill||{err:String(e)};}
+}
+function tourGotIt(e){try{if(e){e.preventDefault();e.stopPropagation();}}catch(x){}window._tourHoldEnd=true;tourEnd('got-it');}
+function tourNext(){try{tourHoldAudio();}catch(e){}window._tourBack=false;tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd('past-end');return;}tourStep();}
 function tourPrev(){try{tourHoldAudio();}catch(e){}window._tourBack=true;tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
 function tourPlace(rect,instant,dock,skipBub){
   const spot=document.getElementById('tourSpot'),bub=document.getElementById('tourBubble');if(!spot||!bub)return;
@@ -6367,7 +6379,7 @@ function tourPlace(rect,instant,dock,skipBub){
   bub.style.top=top+'px';bub.style.left=left+'px';}
 function tourStep(){
   try{const _s=_tourSteps[_tourIdx];if(_s)tourNarrate(_s,_tourIdx);}catch(e){}
-  const step=_tourSteps[_tourIdx];if(!step){tourEnd();return;}
+  const step=_tourSteps[_tourIdx];if(!step){tourEnd('no-step');return;}
   try{const _b0=document.getElementById('tourBubble');if(_b0)_b0.style.opacity='1';}catch(e){}
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
@@ -6388,7 +6400,7 @@ function tourStep(){
       bubE.innerHTML='<div class="tour-step">'+(_tourIdx+1)+' / '+_tourSteps.length+'</div>'
         +'<div class="tour-h">'+esc(step.title||'')+'</div>'
         +'<div class="tour-b">'+esc(step.body||'')+'</div>'
-        +'<div class="tour-foot">'+(lastE?'<button class="tour-next" onclick="tourEnd()">Explore demo</button>':'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>')+'<div>'
+        +'<div class="tour-foot">'+(lastE?'<button class="tour-next" onclick="tourEnd(\'explore\')">Explore demo</button>':'<button class="tour-skip" onclick="event.stopPropagation();tourEnd(\'skip\')">Skip tour</button>')+'<div>'
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourMuteToggle()">'+(tourMuted()?'\ud83d\udd07':'\ud83d\udd0a')+'</button>'
         +'<button class="'+(lastE&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(lastE&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(lastE?(step.cta||'Done'):'Next')+'</button></div></div>';
@@ -6452,7 +6464,7 @@ function tourStep(){
       const last=_tourIdx>=_tourSteps.length-1;
       const isGrand=_tourSteps===TOUR.grand;
       const lastBtn=last?(step.cta||(isGrand?'Explore demo':'Got it')):'Next';
-      const leftBtn=last?(isGrand&&step.cta?'<button class="tour-next" onclick="tourEnd()">Explore demo</button>':''):'<button class="tour-skip" onclick="tourEnd()">Skip tour</button>';
+      const leftBtn=last?(isGrand&&step.cta?'<button class="tour-next" onclick="tourEnd(\'explore\')">Explore demo</button>':''):'<button class="tour-skip" onclick="event.stopPropagation();tourEnd(\'skip\')">Skip tour</button>';
       bub.innerHTML='<div class="tour-step">'+(_tourIdx+1)+' / '+_tourSteps.length+'</div>'
         +'<div class="tour-h">'+esc(step.title||'')+'</div><div class="tour-b">'+esc(step.body||'')+'</div>'
         +'<div class="tour-foot">'+leftBtn+'<div>'
@@ -9918,6 +9930,16 @@ function tourPlayFile(name){
     wait();
   });
 }
+function tourOnFieldOpen(){
+  const sheet=document.getElementById('sheet');
+  if(!sheet||!sheet.classList.contains('show'))return;
+  let r=sheet.getBoundingClientRect();
+  try{const cr=tourStageRect(sheet);if(cr&&cr.height>24)r=cr;}catch(e){}
+  window._stageEl=sheet;
+  window._tourStageKey='fieldSheet';
+  tourPlace(r,false,'tb');
+  try{tlog('field-sheet','gold on Field Notes sheet, card top');}catch(e){}
+}
 function tourWaitTap(sel,intercept,tok,ms){
   return new Promise(function(res){
     const el=document.querySelector(sel);
@@ -10056,7 +10078,10 @@ async function tourPlayCues(step,tok){
     try{tourSeeSnap(c);}catch(e){}
     await Promise.race([audioP,tourWait(20000,tok)]);
     if(!tourAlive(tok))return;
-    if(c.waitTap)await tourWaitTap(c.waitTap,c.intercept,tok,c.waitMs);
+    if(c.waitTap){
+      await tourWaitTap(c.waitTap,c.intercept,tok,c.waitMs);
+      try{await tourWait(240,tok);tourOnFieldOpen();}catch(e){}
+    }
     try{if(c.doAfter)c.doAfter();}catch(e){}
     if(i<cues.length-1){
       await tourWait(tourBreathMs(c,cues[i+1]),tok);
@@ -10663,7 +10688,7 @@ function orbTaps(taps,instantFirst){
   return p;
 }
 function orbHide(){try{const o=_orbEl();if(o){o.classList.remove('show','tap','active');}}catch(e){}}
-function endGrandTour(silent){try{tourEnd();}catch(e){}tourAudioStop();try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
+function endGrandTour(silent){try{tourEnd(silent?'end-grand-silent':'end-grand');}catch(e){}tourAudioStop();try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
 /* voice: baked MP3s in tour-audio/ when present (Ara, warm). Else the local engine. */
 let _tourAudio=null,_tourEl=null,_tourPre=null,_tourAC=null,_tourBuf={},_tourSrc=null,_tourTrace=[],_tourPlayTimers=[],_tourPlayGen=0,_tourPlayFin=null,_tourHum=null;
 function tourTrace(ev,name,extra){
@@ -10674,7 +10699,7 @@ function tourTrace(ev,name,extra){
 }
 function tourHudPaint(){
   try{
-    const on=localStorage.getItem('plumbTourHud')==='1';
+    const on=/\btourHud=1\b/.test(location.search||'');
     let el=document.getElementById('tourHud');
     if(!on){if(el)el.remove();return;}
     if(!el){

@@ -1,4 +1,4 @@
-**v2.336.0 is live.** Tour waits for Next. Voice does not run ahead of the card. Voiceover breath still 2.335.0.
+**v2.337.0 is live.** Tour does not vanish. HUD off unless `?tourHud=1`. Camera tap frames the Field Notes sheet; card moves to the top. If the walk dies, `tourWhy()` / `sessionStorage.plumbTourWhy` says why.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 

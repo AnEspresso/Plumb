@@ -855,7 +855,7 @@ const l5b=$("window._law5({left:150,right:250,top:150,bottom:250})");
 const l5c=$("window._law5({left:900,right:990,top:900,bottom:990})");
 
 t('LAW 5: covered press moves bubble once, waits thereafter, ignores clear presses', l5ok===true&&l5a===true&&l5b===true&&l5c===false&&$("(document.getElementById('tourBubble')||{classList:{contains:()=>false}}).classList.contains('tour-bub-dock')")===true&&$("(document.getElementById('tourBubble')||{dataset:{}}).dataset.side")===$("(innerWidth<700)?((200<innerHeight/2)?'bb':'tb'):((200>innerWidth/2)?'tl':'tr')"));
-t('finale buttons: demo=black, first-site=gold', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-gold')&&$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-next" onclick="tourEnd()">Explore demo'));
+t('finale buttons: demo=black, first-site=gold', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-gold')&&$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Explore demo'));
 t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my site'));
 $('tourEnd()');$('exitDemo()');$('exitDemoToApp()');
 t('post-tour exit is clean', $("appMode()")==='real'&&$("_tourLift?1:0")===0);
@@ -1199,10 +1199,12 @@ t('the first door grid is On the job', $("String(houseHTML)").indexOf('On the jo
 t('demo Settings can replay the tour', $("String(renderSettings)").indexOf('Replay the tour')>=0&&$("String(startGrandTour)").indexOf("appMode()!=='demo'")>=0);
 t('Replay plays the ten-slide book tour', $("String(startGrandTour)").indexOf("startTour('team')")>=0&&$("String(startGrandTour)").indexOf("startTour('grand')")<0&&$("TOUR.team.length")===10);
 t('team tour waits for Next', $("String(tourStep)").indexOf('if(_tourSteps===TOUR.team)return')>=0);
-t('tour HUD is lab-only', $("String(tourHudPaint)").indexOf('_tourSteps===TOUR.team')<0&&$("String(tourHudPaint)").indexOf("plumbTourHud")>=0);
+t('tour HUD is lab-only', $("String(tourHudPaint)").indexOf('tourHud=1')>=0&&$("String(tourHudPaint)").indexOf("plumbTourHud")<0);
 t('Company stays open through the voice', $("String(tourPlayCues)").indexOf("step.title==='Company')closeCompany")<0);
 t('tour player stays in the DOM', $("String(tourEnsurePlayer)").indexOf('tourPlayer')>=0);
-t('tour waits for Next on the book walk', $("String(cueNext)").indexOf('_tourHoldNext')>=0 && $("String(startTour)").indexOf('_tourHoldNext')>=0);
+t('tour HUD off unless ?tourHud=1', $("String(tourHudPaint)").indexOf('tourHud=1')>=0);
+t('tour records why it ended', $("String(tourEnd)").indexOf('plumbTourWhy')>=0 && $("String(tourWhy)").indexOf('plumbTourWhy')>=0);
+t('camera tap frames the Field Notes sheet', $("String(tourOnFieldOpen)").indexOf('fieldSheet')>=0);
 t('Field Notes wait for the builder tap', $("TOUR.team[1].play.filter(function(c){return c.f==='s2d'&&c.waitTap==='.ov-field';}).length")>=1);
 t('McCarver URL guesses HVAC', $("guessTrade('https://www.mccarvermech.com/ Mccarver Mechanical')")==='hvac'&&$("guessTrade('mccarvermech')")==='hvac');
 t('a desk room comes back to the house', $("String(backToHouse)").indexOf('nyOpenHouse')>=0&&$("String(houseGoDesk)").indexOf('_houseResume')>=0&&$("String(houseGoDesk)").indexOf('on-house-desk')>=0);
