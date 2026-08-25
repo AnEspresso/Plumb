@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.335.0 - Tour voice breathes between lines like a voiceover.';
+const PLUMB_VERSION='2.336.0 - Tour waits for Next. Voice does not run ahead of the card.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.335.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.336.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6287,6 +6287,7 @@ teamLegacy:[
 ]};
 let _tourSteps=[],_tourIdx=0,_tourLift=null,_tourLiftPrev=null,_tourTapEl=null,_tourTapFn=null;
 function startTour(role){
+  window._tourHoldNext=(role==='team'||!role);
   startTourSteps(TOUR[role]||TOUR.team);
 }
 function startTourSteps(steps){
@@ -6305,7 +6306,7 @@ function startTourSteps(steps){
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
-function tourEnd(){window._tourQuiet=false;orbHide();tourAudioStop();try{window._tourQuiet=false;}catch(e){}try{const ln=document.getElementById('tourLine');if(ln)ln.remove();}catch(e){}try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();
+function tourEnd(){window._tourQuiet=false;window._tourHoldNext=false;orbHide();tourAudioStop();try{window._tourQuiet=false;}catch(e){}try{const ln=document.getElementById('tourLine');if(ln)ln.remove();}catch(e){}try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();
   const kill=function(){['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});};
   if(window._tourHoldEnd){window._tourHoldEnd=false;setTimeout(kill,80);}
   else kill();
@@ -6477,6 +6478,7 @@ function tourStep(){
   },(step.nav||step.acts)?240:0);
   if(step.play){
     Promise.resolve(tourPlayCues(step,_tok)).then(function(){
+      if(window._tourHoldNext)return;
       if(_tourSteps===TOUR.team)return;
       if(tourAlive(_tok))cueNext(_tok);
     }).catch(function(){});
@@ -9655,6 +9657,7 @@ function tourGoto(view,seg){
 function startGrandTour(){
   if(!walkAllowed()&&appMode()!=='demo')return;
   window._tourQuiet=true;
+  window._tourHoldNext=true;
   try{tourUnlockAudio();tourPrefetch();}catch(e){}
   try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
   try{welcomeDone();}catch(e){}
@@ -9743,6 +9746,7 @@ function tourDoFn(name){
 }
 function tourFromCues(data){
   if(!data||!data.slides)return;
+  if(document.getElementById('tourCatch'))return;
   TOUR.team=data.slides.map(function(s){
     return {
       title:s.title,body:s.body,sel:s.sel||undefined,bubSide:s.bubSide||undefined,
@@ -10254,6 +10258,7 @@ function readBeat(text,base){
   return Math.min(3200,700+w*175);                          /* silent readers get reading time */
 }
 async function cueNext(tok){
+  if(window._tourHoldNext)return;
   if(!tourAlive(tok))return;
   tourNext();
 }
