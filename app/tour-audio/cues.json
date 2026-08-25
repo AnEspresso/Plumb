@@ -50,8 +50,8 @@
       "bubSide": "tb",
       "nav": "houses",
       "cues": [
-        { "id": "s4a", "say": "All homes sits at the top. That's every open item, every house.", "point": "#ovCards .allh", "stage": "book" },
-        { "id": "s4b", "say": "Each row under it is one job. Tap a house and you get a briefing. You don't have to open the whole site.", "point": "#ovCards .ov-card:not(.allh)", "stage": "book" }
+        { "id": "s4a", "say": "All homes sits at the top. That's every open item, every house.", "point": "#ovCards .allh", "stage": "houses" },
+        { "id": "s4b", "say": "Each row under it is one job. Tap a house and you get a briefing. You don't have to open the whole site.", "point": "#ovCards .ov-card:not(.allh)", "stage": "houses" }
       ]
     },
     {
@@ -62,9 +62,9 @@
       "bubSide": "tb",
       "nav": "briefing",
       "cues": [
-        { "id": "s5a", "say": "This is the briefing. Just this house.", "point": "#houseBody .pkt-strip", "stage": "#houseBody" },
-        { "id": "s5b", "say": "What still needs you is at the top.", "point": "#houseBody .pkt-open, #houseBody .pkt-strip", "stage": "#houseBody" },
-        { "id": "s5c", "say": "Then the doors. Field Notes, Schedule, Selections, and Money. Most days, this is enough.", "point": "#houseBody .hs-doors", "stage": "#houseBody" }
+        { "id": "s5a", "say": "This is the briefing. Just this house.", "point": "#houseBody .pkt-strip", "stage": "briefing" },
+        { "id": "s5b", "say": "What still needs you is at the top.", "point": "#houseBody .pkt-open, #houseBody .pkt-strip", "stage": "briefing" },
+        { "id": "s5c", "say": "Then the doors. Field Notes, Schedule, Selections, and Money. Most days, this is enough.", "point": "#houseBody .hs-doors", "stage": "briefing" }
       ]
     },
     {
@@ -102,7 +102,7 @@
       "bubSide": "tb",
       "nav": "briefing",
       "cues": [
-        { "id": "s8a", "say": "The rest of this house is here when you need the whole job.", "point": "#houseBody .hs-band", "stage": "desk" },
+        { "id": "s8a", "say": "The rest of this house is here when you need the whole job.", "point": "#houseBody [data-band=rest]", "stage": "desk" },
         { "id": "s8b", "say": "Progress. Stages and inspections.", "point": "#houseBody [data-door=progress]", "stage": "desk" },
         { "id": "s8c", "say": "Daily log. Who was here.", "point": "#houseBody [data-door=log]", "stage": "desk" },
         { "id": "s8d", "say": "Photos. The roll.", "point": "#houseBody [data-door=photos]", "stage": "desk" },

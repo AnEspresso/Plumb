@@ -1,4 +1,6 @@
-**v2.328.0 is live.** Tour waits for Next. Camera waits for a tap. Slide 7 says crew. Got it ends on Coming up.
+**v2.329.0 is live.** Tour HUD off. Gold box on the right thing. Card stays on screen.
+
+**PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 
 **PIN — laptop QA, two-across doors:** Peter did not have a laptop when 2.324.0 shipped. On a Mac/PC, open Calderwood. On the job must be a 2×2 (Field Notes · Schedule / Selections · Money). Open items full width. Money must not sit alone. Phone already two-across.
 

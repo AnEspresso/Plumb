@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.328.0 - Tour waits for Next. Camera waits for you. Crew not sub.';
+const PLUMB_VERSION='2.329.0 - Tour HUD off. Gold box on the right thing. Card stays on screen.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.328.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.329.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6065,33 +6065,33 @@ const TOUR={team:[
  {sel:'#houseBody',bubSide:'tb',title:'The briefing',body:'One house. What still needs you, then the doors.',
   nav:()=>{try{showOverview();const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
-    {f:'s5a',point:'#houseBody .pkt-strip',stage:'#houseBody'},
-    {f:'s5b',point:'#houseBody .pkt-open, #houseBody .pkt-strip',stage:'#houseBody'},
-    {f:'s5c',point:'#houseBody .hs-doors',stage:'#houseBody'}
+    {f:'s5a',point:'#houseBody .pkt-strip',stage:'briefing'},
+    {f:'s5b',point:'#houseBody .pkt-open, #houseBody .pkt-strip',stage:'briefing'},
+    {f:'s5c',point:'#houseBody .hs-doors',stage:'briefing'}
   ]},
  {sel:'#houseBody',bubSide:'tb',title:'The doors',body:'Schedule, Selections, Money, Field Notes \u2014 this house only.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
-    {f:'s6a',point:'#houseBody .hs-doors',stage:'#houseBody'},
-    {f:'s6b',point:'#houseBody [data-door=cal]',stage:'#houseBody',line:true},
-    {f:'s6c',point:'#houseBody [data-door=sel]',stage:'#houseBody',line:true},
-    {f:'s6d',point:'#houseBody [data-door=money]',stage:'#houseBody',line:true},
-    {f:'s6e',point:'#houseBody [data-door=field]',stage:'#houseBody',line:true}
+    {f:'s6a',point:'#houseBody [data-door=cal]',stage:'doors'},
+    {f:'s6b',point:'#houseBody [data-door=cal]',stage:'doors',line:true},
+    {f:'s6c',point:'#houseBody [data-door=sel]',stage:'doors',line:true},
+    {f:'s6d',point:'#houseBody [data-door=money]',stage:'doors',line:true},
+    {f:'s6e',point:'#houseBody [data-door=field]',stage:'doors',line:true}
   ]},
  {sel:'#houseBody',bubSide:'tb',title:'The packet',body:'Still open is what the crew sees. Live.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
-    {f:'s7a',point:'#houseBody .pkt-or',stage:'#houseBody'},
-    {f:'s7b',point:'#houseBody .pkt-or',stage:'#houseBody'}
+    {f:'s7a',point:'#houseBody .pkt-or',stage:'packet'},
+    {f:'s7b',point:'#houseBody .pkt-or',stage:'packet'}
   ]},
  {sel:'#houseBody',bubSide:'tb',title:'The rest of this house',body:'Progress, log, photos, documents, permits, crews. Desk work, same street.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
-    {f:'s8a',point:'#houseBody .hs-band',stage:'#houseBody'},
-    {f:'s8b',point:'#houseBody [data-door=progress]',stage:'#houseBody'},
-    {f:'s8c',point:'#houseBody [data-door=log]',stage:'#houseBody'},
-    {f:'s8d',point:'#houseBody [data-door=photos]',stage:'#houseBody'},
-    {f:'s8e',point:'#houseBody [data-door=permits]',stage:'#houseBody'}
+    {f:'s8a',point:'#houseBody [data-band=rest]',stage:'desk'},
+    {f:'s8b',point:'#houseBody [data-door=progress]',stage:'desk'},
+    {f:'s8c',point:'#houseBody [data-door=log]',stage:'desk'},
+    {f:'s8d',point:'#houseBody [data-door=photos]',stage:'desk'},
+    {f:'s8e',point:'#houseBody [data-door=permits]',stage:'desk'}
   ]},
  {sel:'#ovCompanyBtn',bubSide:'bb',title:'Company',body:'Calendar, invoices, roster, team. The office drawer.',
   nav:()=>{try{closeHouse();showOverview();}catch(e){}},
@@ -6341,11 +6341,14 @@ function tourPlace(rect,instant,dock,skipBub){
       if(!bub.querySelector('.tour-gold')){bub.style.width='300px';}
       else{bub.style.width='';bub.style.maxWidth='';}
       const bw2=bub.getBoundingClientRect().width||bw;
+      let ban=0;
+      try{const b=document.getElementById('excBanner');if(b&&b.offsetParent)ban=Math.round(b.getBoundingClientRect().bottom);}catch(e){}
+      const safe=Math.max(14,ban+8);
       if(bub.querySelector('.tour-gold')&&bub.dataset.side!=='tl'){
-        bub.style.right='14px';bub.style.left='';bub.style.top='14px';return;   /* right-anchored: width can never overflow */
+        bub.style.right='14px';bub.style.left='';bub.style.top=safe+'px';return;
       }
       bub.style.right='';
-      top=14;left=(bub.dataset.side==='tl')?14:(vw-bw2-14);
+      top=safe;left=(bub.dataset.side==='tl')?14:(vw-bw2-14);
     }
   }   /* action slides: the bubble owns the least important place — chosen to avoid that slide's action */
   else if(rect&&vw<700){                                 /* LAW 6 on phones: EVERY slide's bubble takes the least-overlap band */
@@ -6433,7 +6436,7 @@ function tourStep(){
     (el&&!huge?awaitSettle(el):Promise.resolve()).then(()=>{
       if(_tok!==_gtTok)return;
       const bub=document.getElementById('tourBubble');if(!bub)return;
-      const stageFn=tourExpandStage(step.sel);
+      const stageFn=tourExpandStage((step.play&&step.play[0]&&step.play[0].stage)||step.sel);
       let rect=null;
       try{rect=tourStageRect(typeof stageFn==='function'?stageFn:el);}catch(e){rect=el?el.getBoundingClientRect():null;}
       if(!rect&&el)rect=el.getBoundingClientRect();
@@ -7507,14 +7510,14 @@ function houseHTML(p){
     const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
     h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
-  h+='<div class="hs-band">On the job</div><div class="hs-doors">';
+  h+='<div class="hs-band" data-band="job">On the job</div><div class="hs-doors">';
   if(!isClient&&canGate('field'))h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">A note, or a photo</div></button>';
   if(canGate('schedule')||isClient)h+='<button class="hs-door" data-door="cal" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
   if(canGate('selections')||isClient)h+='<button class="hs-door" data-door="sel" onclick="houseGoDesk(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
   if(isBuilder&&canGate('moneyJob'))h+='<button class="hs-door" data-door="money" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
   h+='</div>';
   if(!isClient&&canGate('site')){
-    h+='<div class="hs-band">The rest of this house</div><div class="hs-doors">';
+    h+='<div class="hs-band" data-band="rest">The rest of this house</div><div class="hs-doors">';
     h+='<button class="hs-door" data-door="progress" onclick="houseGoDesk(\'progress\')"><div class="k">Progress</div><div class="m">Stages and inspections</div></button>';
     h+='<button class="hs-door" data-door="log" onclick="houseGoDesk(\'log\')"><div class="k">Daily log</div><div class="m">Who was here</div></button>';
     h+='<button class="hs-door" data-door="photos" onclick="houseGoDesk(\'photos\')"><div class="k">Photos</div><div class="m">The roll</div></button>';
@@ -9823,8 +9826,11 @@ function tourAvoidCover(el){
     const bw=Math.min(innerWidth-24, wide?innerWidth-24:420);
     bub.style.left=((innerWidth-bw)/2)+'px';
     bub.style.right='';
-    const top=side==='tb'?12:Math.max(12,innerHeight-bh-20);
-    bub.style.top=top+'px';
+    let ban=0;
+    try{const b=document.getElementById('excBanner');if(b&&b.offsetParent)ban=Math.round(b.getBoundingClientRect().bottom);}catch(e){}
+    const safe=Math.max(12,ban+8);
+    const top=side==='tb'?safe:Math.max(safe,innerHeight-bh-20);
+    bub.style.top=Math.min(top,Math.max(safe,innerHeight-bh-12))+'px';
   }catch(e){}
 }
 function tourPlayFile(name){
@@ -10348,6 +10354,25 @@ function tourStageRect(src){
   if(h<72)h=72;
   return {top:top,left:left,width:w,height:h,right:left+w,bottom:top+h};
 }
+function snapUncut(r,root){
+  if(!r)return r;
+  try{
+    const kids=(root&&root.querySelectorAll)?root.querySelectorAll('.hs-door, .pkt-ask, .set-row, .ov-card, .ov-sortpill'):[];
+    for(let i=0;i<kids.length;i++){
+      const kr=kids[i].getBoundingClientRect();
+      if(kr.height<22||kr.width<22)continue;
+      if(r.bottom>kr.top+10&&r.bottom<kr.bottom-10){
+        r.bottom=kr.top-6;r.height=r.bottom-r.top;
+      }
+      if(r.top>kr.top+10&&r.top<kr.bottom-10){
+        r.top=kr.bottom+6;r.height=r.bottom-r.top;
+      }
+    }
+  }catch(e){}
+  if(r.height<48){r.height=48;r.bottom=r.top+48;}
+  r.right=r.left+r.width;r.bottom=r.top+r.height;
+  return r;
+}
 function tourSceneRect(name){
   const box=function(el){
     if(!el)return null;
@@ -10364,16 +10389,16 @@ function tourSceneRect(name){
     let left=Math.min.apply(null,rs.map(function(r){return r.left;}))-8;
     let right=Math.max.apply(null,rs.map(function(r){return r.right;}))+8;
     let bot=Math.max.apply(null,rs.map(function(r){return r.bottom;}))+8;
-    top=Math.max(56,top);
+    top=Math.max(8,top);
     left=Math.max(8,left);
     right=Math.min(innerWidth-8,right);
     bot=Math.min(innerHeight-8,bot);
     const bub=document.getElementById('tourBubble');
     const dock=(side||(bub&&bub.dataset.side)||'bb');
-    const band=Math.round(Math.max(176,((bub&&bub.offsetHeight)||156)+32));
-    if(dock==='tb')top=Math.max(top,band);
-    else bot=Math.min(bot,innerHeight-band);
-    if(bot-top<80)bot=Math.min(innerHeight-8,top+80);
+    const band=Math.round(Math.max(120,((bub&&bub.offsetHeight)||156)+16));
+    if(dock==='tb')top=Math.max(top,Math.min(bot-56,band));
+    else bot=Math.min(bot,Math.max(top+56,innerHeight-band));
+    if(bot<top+48)bot=Math.min(innerHeight-8,top+48);
     return {top:top,left:left,width:right-left,height:bot-top,right:right,bottom:bot};
   };
   if(name==='home'||name==='welcome'){
@@ -10385,13 +10410,13 @@ function tourSceneRect(name){
     return r;
   }
   if(name==='book'){
-    const pills=document.getElementById('ovSortRow');
+    const pills=document.querySelector('#ovSortRow .ov-sortpills')||document.getElementById('ovSortRow');
     const r=join([pills],'tb');
     const next=document.querySelector('#ovCards .allh')||document.getElementById('ovCards');
     if(r&&next){
       try{
-        const nt=next.getBoundingClientRect().top-6;
-        if(r.bottom>nt){r.bottom=nt;r.height=Math.max(72,nt-r.top);}
+        const nt=next.getBoundingClientRect().top-8;
+        if(r.bottom>nt){r.bottom=nt;r.height=Math.max(48,nt-r.top);}
       }catch(e){}
     }
     return r;
@@ -10408,26 +10433,26 @@ function tourSceneRect(name){
   }
   if(name==='sheet')return join([document.getElementById('sheet')],'tb');
   if(name==='briefing'){
-    return join([
-      document.querySelector('#houseBody .pkt-strip'),
-      document.querySelector('#houseBody .pkt-open')||document.querySelector('#houseBody .pkt-ask')
-    ],'tb');
+    const strip=document.querySelector('#houseBody .pkt-strip');
+    const first=document.querySelector('#houseBody .pkt-ask');
+    const r=join([strip,first],'tb');
+    return snapUncut(r,document.getElementById('houseBody'));
   }
   if(name==='doors'){
-    const job=document.querySelector('#houseBody .hs-doors');
-    const band=document.querySelector('#houseBody .hs-band');
-    return join([band&&/on the job/i.test(band.textContent||'')?band:null,job].filter(Boolean),'tb');
+    const job=document.querySelector('#houseBody [data-band=job]')||document.querySelector('#houseBody .hs-band');
+    const grid=document.querySelector('#houseBody .hs-doors');
+    try{if(grid)grid.scrollIntoView({block:'nearest',inline:'nearest'});}catch(e){}
+    return join([job,grid],'tb');
   }
   if(name==='packet'){
-    return join([
-      document.querySelector('#houseBody .pkt-open')||document.querySelector('#houseBody .pkt-or'),
-      document.querySelector('#houseBody .pkt-strip')
-    ],'tb');
+    const head=document.querySelector('#houseBody .pkt-or')||document.querySelector('#houseBody .pkt-open');
+    const first=document.querySelector('#houseBody .pkt-ask');
+    return join([head,first],'tb');
   }
   if(name==='desk'||name==='rest'){
-    const bands=[].slice.call(document.querySelectorAll('#houseBody .hs-band'));
-    const rest=bands.filter(function(b){return /rest of this house/i.test(b.textContent||'');})[0]||bands[1];
+    const rest=document.querySelector('#houseBody [data-band=rest]');
     const grids=[].slice.call(document.querySelectorAll('#houseBody .hs-doors'));
+    try{if(rest)rest.scrollIntoView({block:'center',inline:'nearest'});}catch(e){}
     return join([rest,grids[1]||grids[0]],'tb');
   }
   if(name==='site'){
@@ -10435,7 +10460,11 @@ function tourSceneRect(name){
   }
   if(name==='company'){
     const scr=document.getElementById('companyScrim');
-    if(scr&&scr.classList.contains('show'))return join([document.getElementById('companyBody')],'tb');
+    if(scr&&scr.classList.contains('show')){
+      const body=document.getElementById('companyBody');
+      const rows=[].slice.call((body&&body.querySelectorAll('.set-row'))||[]).slice(0,4);
+      return snapUncut(join(rows.length?rows:[body],'tb'),body);
+    }
     return join([document.getElementById('ovCompanyBtn'),document.querySelector('.ov-head')],'bb');
   }
   return null;
@@ -10443,7 +10472,7 @@ function tourSceneRect(name){
 function tourExpandStage(sel){
   const named={
     '.ov-list':'book','home':'home','welcome':'home','#overview':'home','#ovToday':'home',
-    'book':'book','houses':'book','#ovCards':'book','#ovSortRow':'book',
+    'book':'book','houses':'houses','#ovCards':'houses','#ovSortRow':'book',
     'field':'field','#sheet':'sheet','sheet':'sheet',
     '#houseBody':'briefing','briefing':'briefing','doors':'doors','packet':'packet',
     'desk':'desk','rest':'desk','#houseBody .hs-band':'desk','#houseBody .hs-doors':'doors',
@@ -10607,7 +10636,7 @@ function tourTrace(ev,name,extra){
 }
 function tourHudPaint(){
   try{
-    const on=localStorage.getItem('plumbTourHud')==='1'||(_tourSteps===TOUR.team);
+    const on=localStorage.getItem('plumbTourHud')==='1';
     let el=document.getElementById('tourHud');
     if(!on){if(el)el.remove();return;}
     if(!el){
