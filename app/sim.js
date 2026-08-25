@@ -1198,6 +1198,8 @@ t('house doors stay two across', $("document.documentElement.innerHTML").indexOf
 t('the first door grid is On the job', $("String(houseHTML)").indexOf('On the job')>=0&&$("String(houseHTML)").indexOf('The rest of this house')>=0);
 t('demo Settings can replay the tour', $("String(renderSettings)").indexOf('Replay the tour')>=0&&$("String(startGrandTour)").indexOf("appMode()!=='demo'")>=0);
 t('Replay plays the ten-slide book tour', $("String(startGrandTour)").indexOf("startTour('team')")>=0&&$("String(startGrandTour)").indexOf("startTour('grand')")<0&&$("TOUR.team.length")===10);
+t('team tour waits for Next', $("String(tourStep)").indexOf('if(_tourSteps===TOUR.team)return')>=0);
+t('Field Notes wait for the builder tap', $("TOUR.team[1].play.filter(function(c){return c.f==='s2d'&&c.waitTap==='.ov-field';}).length")>=1);
 t('McCarver URL guesses HVAC', $("guessTrade('https://www.mccarvermech.com/ Mccarver Mechanical')")==='hvac'&&$("guessTrade('mccarvermech')")==='hvac');
 t('a desk room comes back to the house', $("String(backToHouse)").indexOf('nyOpenHouse')>=0&&$("String(houseGoDesk)").indexOf('_houseResume')>=0&&$("String(houseGoDesk)").indexOf('on-house-desk')>=0);
 t('desk opens the site before it hides the house', $("String(houseGoDesk)").indexOf('openSiteFromOverview')<$("String(houseGoDesk)").indexOf("hs.classList.remove('show')"));

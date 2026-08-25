@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.327.0 - Replay plays the ten-slide book tour.';
+const PLUMB_VERSION='2.328.0 - Tour waits for Next. Camera waits for you. Crew not sub.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.327.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.328.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6040,13 +6040,13 @@ const TOUR={team:[
  {title:'Glad you\u2019re here',body:'I\u2019ll walk you around once. Skip anytime.',bubSide:'bb',sel:'#ovToday',
   nav:()=>{try{closeHouse();closeCompany();showOverview();renderToday();renderOvCards();}catch(e){}},
   play:[{f:'s1a',stage:'welcome'},{f:'s1b',point:'#ovToday',stage:'welcome'},{f:'s1c',stage:'welcome'}]},
- {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'Tap the camera. Pick a label, a few words, Send.',
-  nav:()=>{try{showOverview();renderToday();}catch(e){}},
+ {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'House, photo, a label, Send. Same camera everywhere.',
+  nav:()=>{try{showOverview();renderToday();try{closeSheet();}catch(e){}}catch(e){}},
   play:[
-    {f:'s2a',point:'.ov-field',stage:'field',waitTap:'.ov-field',waitMs:30000,intercept:function(){try{const p=tourDemoHouse();if(p)Data.setActive(p.id);openFieldNote();}catch(e){}}},
-    {f:'s2b',point:'#fieldKindChips .chip',stage:'sheet'},
-    {f:'s2c',point:'#caption',stage:'sheet'},
-    {f:'s2d',point:'#saveBtn',stage:'sheet',waitTap:'#saveBtn',waitMs:50000,intercept:function(){try{const t=document.getElementById('caption');if(t&&!String(t.value||'').trim())t.value='Siding looks proud at the corner.';save();}catch(e){}}}
+    {f:'s2a',point:'.ov-field',stage:'field'},
+    {f:'s2b',point:'.ov-field',stage:'field'},
+    {f:'s2c',point:'.ov-field',stage:'field'},
+    {f:'s2d',point:'.ov-field',stage:'field',waitTap:'.ov-field',waitMs:30000,intercept:function(){try{const p=tourDemoHouse();if(p)Data.setActive(p.id);openFieldNote();}catch(e){}}}
   ]},
  {sel:'#ovSortRow',bubSide:'tb',title:'Your book',body:'Needs You. Recent Decisions. A\u2013Z.',
   nav:()=>{try{try{closeSheet();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}},
@@ -6078,7 +6078,7 @@ const TOUR={team:[
     {f:'s6d',point:'#houseBody [data-door=money]',stage:'#houseBody',line:true},
     {f:'s6e',point:'#houseBody [data-door=field]',stage:'#houseBody',line:true}
   ]},
- {sel:'#houseBody',bubSide:'tb',title:'The packet',body:'Still open is what the sub sees. Live.',
+ {sel:'#houseBody',bubSide:'tb',title:'The packet',body:'Still open is what the crew sees. Live.',
   nav:()=>{try{const p=tourDemoHouse();if(p)nyOpenHouse(p.id);}catch(e){}},
   play:[
     {f:'s7a',point:'#houseBody .pkt-or',stage:'#houseBody'},
@@ -6305,8 +6305,12 @@ function startTourSteps(steps){
 function tourUnlift(){
   if(_tourLift){_tourLift.style.position=_tourLiftPrev.pos;_tourLift.style.zIndex=_tourLiftPrev.z;_tourLift=null;}
   if(_tourTapEl&&_tourTapFn){_tourTapEl.removeEventListener('click',_tourTapFn);_tourTapEl=null;_tourTapFn=null;}}
-function tourEnd(){window._tourQuiet=false;orbHide();tourAudioStop();try{window._tourQuiet=false;}catch(e){}try{const ln=document.getElementById('tourLine');if(ln)ln.remove();}catch(e){}try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+function tourEnd(){window._tourQuiet=false;orbHide();tourAudioStop();try{window._tourQuiet=false;}catch(e){}try{const ln=document.getElementById('tourLine');if(ln)ln.remove();}catch(e){}try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();
+  const kill=function(){['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});};
+  if(window._tourHoldEnd){window._tourHoldEnd=false;setTimeout(kill,80);}
+  else kill();
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}}
+function tourGotIt(e){try{if(e){e.preventDefault();e.stopPropagation();}}catch(x){}window._tourHoldEnd=true;tourEnd();}
 function tourNext(){window._tourBack=false;tourUnlift();_tourIdx++;if(_tourIdx>=_tourSteps.length){tourEnd();return;}tourStep();}
 function tourPrev(){window._tourBack=true;tourUnlift();_tourIdx=Math.max(0,_tourIdx-1);tourStep();}
 function tourPlace(rect,instant,dock,skipBub){
@@ -6445,7 +6449,7 @@ function tourStep(){
         +'<div class="tour-foot">'+leftBtn+'<div>'
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
         +'<button class="tour-mute-mini" onclick="tourToggleMute();this.textContent=tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586)">'+(tourMuted()?String.fromCharCode(55357,56583):String.fromCharCode(55357,56586))+'</button>'
-        +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+esc(lastBtn)+'</button></div></div>';
+        +'<button class="'+(last&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(last?(step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourGotIt(event)'):'tourNext()')+'">'+esc(lastBtn)+'</button></div></div>';
       if(step.stageRect){try{const r2=step.stageRect();if(r2&&r2.height)rect=r2;window._stageEl=step.stageRect;}catch(e){}}
       else window._stageEl=typeof stageFn==='function'?stageFn:el;
       tlog('ring',(step.sel||'(no stage)')+' @'+(rect?Math.round(rect.top)+'/'+Math.round(rect.height):'-'));
@@ -6464,7 +6468,10 @@ function tourStep(){
     });
   },(step.nav||step.acts)?240:0);
   if(step.play){
-    Promise.resolve(tourPlayCues(step,_tok)).then(function(){if(tourAlive(_tok))cueNext(_tok);}).catch(function(){});
+    Promise.resolve(tourPlayCues(step,_tok)).then(function(){
+      if(_tourSteps===TOUR.team)return;
+      if(tourAlive(_tok))cueNext(_tok);
+    }).catch(function(){});
   }
   else if(step.task){
     const doneAll=step.__done||step.task.steps.every(s2=>{try{return s2.done&&s2.done();}catch(e){return false;}});
@@ -9926,7 +9933,6 @@ function tourWaitTap(sel,intercept,tok,ms){
     orbTo(el,{settle:true,rest:true});
     setTimeout(function(){
       if(done||!tourAlive(tok))return;
-      try{if(intercept)intercept();}catch(e){}
       finish();
     },ms||24000);
     if(typeof sel==='string'&&sel.indexOf('ov-field')>=0){
@@ -10379,7 +10385,16 @@ function tourSceneRect(name){
     return r;
   }
   if(name==='book'){
-    return join([document.getElementById('ovSortRow')],'tb');
+    const pills=document.getElementById('ovSortRow');
+    const r=join([pills],'tb');
+    const next=document.querySelector('#ovCards .allh')||document.getElementById('ovCards');
+    if(r&&next){
+      try{
+        const nt=next.getBoundingClientRect().top-6;
+        if(r.bottom>nt){r.bottom=nt;r.height=Math.max(72,nt-r.top);}
+      }catch(e){}
+    }
+    return r;
   }
   if(name==='houses'){
     const pills=document.getElementById('ovSortRow');
@@ -10392,8 +10407,28 @@ function tourSceneRect(name){
     return join([document.querySelector('#ovToday .ov-field, .ov-list .ov-field')],'bb');
   }
   if(name==='sheet')return join([document.getElementById('sheet')],'tb');
-  if(name==='briefing'||name==='doors'||name==='packet'){
-    return join([document.getElementById('houseBody')],'tb');
+  if(name==='briefing'){
+    return join([
+      document.querySelector('#houseBody .pkt-strip'),
+      document.querySelector('#houseBody .pkt-open')||document.querySelector('#houseBody .pkt-ask')
+    ],'tb');
+  }
+  if(name==='doors'){
+    const job=document.querySelector('#houseBody .hs-doors');
+    const band=document.querySelector('#houseBody .hs-band');
+    return join([band&&/on the job/i.test(band.textContent||'')?band:null,job].filter(Boolean),'tb');
+  }
+  if(name==='packet'){
+    return join([
+      document.querySelector('#houseBody .pkt-open')||document.querySelector('#houseBody .pkt-or'),
+      document.querySelector('#houseBody .pkt-strip')
+    ],'tb');
+  }
+  if(name==='desk'||name==='rest'){
+    const bands=[].slice.call(document.querySelectorAll('#houseBody .hs-band'));
+    const rest=bands.filter(function(b){return /rest of this house/i.test(b.textContent||'');})[0]||bands[1];
+    const grids=[].slice.call(document.querySelectorAll('#houseBody .hs-doors'));
+    return join([rest,grids[1]||grids[0]],'tb');
   }
   if(name==='site'){
     return join([document.querySelector('main'),document.querySelector('nav')],'tb');
@@ -10410,7 +10445,8 @@ function tourExpandStage(sel){
     '.ov-list':'book','home':'home','welcome':'home','#overview':'home','#ovToday':'home',
     'book':'book','houses':'book','#ovCards':'book','#ovSortRow':'book',
     'field':'field','#sheet':'sheet','sheet':'sheet',
-    '#houseBody':'briefing','briefing':'briefing','doors':'briefing','packet':'briefing',
+    '#houseBody':'briefing','briefing':'briefing','doors':'doors','packet':'packet',
+    'desk':'desk','rest':'desk','#houseBody .hs-band':'desk','#houseBody .hs-doors':'doors',
     'site':'site','nav':'site',
     '#companyBody':'company','company':'company','#ovCompanyBtn':'company'
   };

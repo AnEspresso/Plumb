@@ -1,4 +1,4 @@
-**v2.327.0 is live.** Replay plays the ten-slide book tour (not the old 16-slide Full site walk).
+**v2.328.0 is live.** Tour waits for Next. Camera waits for a tap. Slide 7 says crew. Got it ends on Coming up.
 
 **PIN — laptop QA, two-across doors:** Peter did not have a laptop when 2.324.0 shipped. On a Mac/PC, open Calderwood. On the job must be a 2×2 (Field Notes · Schedule / Selections · Money). Open items full width. Money must not sit alone. Phone already two-across.
 
