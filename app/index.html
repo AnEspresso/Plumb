@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.324.0 - House doors stay two across.';
+const PLUMB_VERSION='2.325.0 - Tour voice rebaked. McCarver lookup fills HVAC.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.324.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.325.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -12661,7 +12661,7 @@ async function enrichFromName(q){
 function guessTrade(blob){
   const t=String(blob||'').toLowerCase();
   const rules=[
-    ['hvac',/hvac|heating|cooling|furnace|boiler|heat.?pump|air.?cond|mini.?split|mechanical heating|mechanical cooling/],
+    ['hvac',/hvac|heating|cooling|furnace|boiler|heat.?pump|air.?cond|mini.?split|mechanical heating|mechanical cooling|mech(?:anical)?/],
     ['plumb',/\bplumb|pipe.?fit|drain|sewer line|water.?heat|gas.?fitt/],
     ['elec',/\belectri/],
     ['roofing',/\broof/],
@@ -12705,7 +12705,7 @@ function parseSiteFacts(text,url){
   const host=(function(){try{return new URL(url).hostname.replace(/^www\./,'');}catch(e){return '';}})();
   const phones=[];
   t.replace(/(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}/g,function(m){phones.push(fmtPhone(m));return m;});
-  t.replace(/tel:\+?1?[-.\s]?(\d{10})/gi,function(_,d){phones.push(fmtPhone(d));return _;});
+  t.replace(/tel:\+?1?[-.\s]*(\d{10})/gi,function(_,d){phones.push(fmtPhone(d));return _;});
   const emails=[...t.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map(m=>m[0]).filter(function(e){
     if(/example\.|sentry\.|wixpress|cloudflare|schema\.org|github|google|facebook|sentry/i.test(e))return false;
     if(host&&e.toLowerCase().indexOf(host.split('.').slice(-2).join('.'))>=0)return true;
@@ -12830,7 +12830,7 @@ async function webCompanyPick(q){
 function hostAsName(url){
   try{
     const h=new URL(/^https?:/i.test(url)?url:('https://'+url)).hostname.replace(/^www\./,'');
-    const stem=(h.split('.')[0]||'').replace(/[-_]+/g,' ');
+    const stem=(h.split('.')[0]||'').replace(/[-_]+/g,' ').replace(/mech$/i,' Mechanical');
     return stem.replace(/\b\w/g,function(c){return c.toUpperCase();});
   }catch(e){return '';}
 }
@@ -12840,11 +12840,22 @@ async function applySiteUrl(url){
   _qfForce('subWebsite',url);
   const hint=hostAsName(url);
   if(hint)_qfSet('subName',hint);
-  const t0=guessTrade(url+' '+hint);
+  const t0=guessTrade(url+' '+hint+' '+(document.getElementById('subName')||{}).value);
   const spec=document.getElementById('subSpec');
-  if(spec&&t0&&!spec.value)spec.value=t0;
+  if(spec&&t0)spec.value=t0;
   try{ssSync('subSpec');}catch(e){}
   toast('Reading their site…');
+  try{
+    const q=((document.getElementById('subName')||{}).value||hint||'').trim();
+    if(q){
+      const list=await findCompanies(q);
+      const hit=(list||[]).find(function(c){
+        const blob=((c.name||'')+' '+(c.domain||'')+' '+(c.url||'')).toLowerCase();
+        return blob.indexOf(q.toLowerCase().split(' ')[0])>=0;
+      })||(list&&list[0]);
+      if(hit)applyCompanyHit(hit,true);
+    }
+  }catch(e){}
   const html=await fetchSiteText(url);
   const facts=parseSiteFacts(html,url);
   facts.url=url;
@@ -14644,6 +14655,8 @@ function _bkBriefHTML(p,b){
     const nm=String(dbl.name||b.subName||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return box('Double-booked',_dblWhere(dbl)+'. Overlap '+fmtDue(dbl.day)+'. Move this booking or add a crew.','See their calendar',"openCalCrew('"+nm+"',"+Number(dbl.day||b.start)+")");
   }
+  const also=_alsoOnDay(Object.assign({p:p},b), b.start);
+  if(also) return also;
   return '';
 }
 function _bkGuestStatusHTML(p,b,g){
@@ -14870,10 +14883,12 @@ function pkOfferTellThem(){
     if(sc&&sc.classList.contains('show'))return;
   }catch(e){}
   const when=pkWhen(n.t);
+  const phone=_subPhoneOf(n.sub,null)||'';
+  const num=phone?esc(phone)+'. ':'';
   openConfirm({
-    title:'Tell '+(n.sub||'them')+'?',
-    body:esc(n.what)+' \u00b7 '+esc(when)+'. Same link. Optional text so this crew knows to open it.',
-    okLabel:'Text this crew',
+    title:'Text this link',
+    body:esc(n.what)+' \u00b7 '+esc(when)+'. '+num+'Same link. Optional text so this crew knows to open it.',
+    okLabel:'Text this link',
     cancelLabel:'Not now',
     onConfirm:function(){
       const hold=_pkPubNotify;_pkPubNotify=null;

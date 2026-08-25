@@ -1,12 +1,18 @@
-**v2.322.0 is live.** House back, invoices not billing, name the person. Full site restore is `restore/2.319.0-full-site/`.
+**v2.324.0 is live.** House doors stay two across. Full site restore is `restore/2.319.0-full-site/`.
 
-**PIN — tour voice, do not skip:** On-screen copy and `app/tour-audio/cues.json` already say **label** (not chip), **the rest of this house** (not Full site), and name the person. The **mp3 files were not re-recorded**. Ara still speaks the old lines if the tour plays audio. Stale clips: `s2b` (chip), `s6d` (what they owe), `s8a`–`s8e` (Full site / Log / Needs You / Build / Files), `s10c` (Full site and Company). When we come back to the tour: `python3 scripts/bake-tour-voice.py` (rebuilds only changed lines from cues.json). Do not ship a walk until voice matches cues.
+**PIN — laptop QA, two-across doors:** Peter did not have a laptop when 2.324.0 shipped. On a Mac/PC, open Calderwood. On the job must be a 2×2 (Field Notes · Schedule / Selections · Money). Open items full width. Money must not sit alone. Phone already two-across.
+
+**PIN — tour voice, do not skip:** On-screen copy and `app/tour-audio/cues.json` already say **label** (not chip), **the rest of this house** (not Full site), and name the person. Rebake: `python3 scripts/bake-tour-voice.py`. Stale until rebaked: `s2b`, `s6d`, `s8a`–`s8e`, `s10c`. Do not ship a walk until voice matches cues.
+
+**PIN — tour voice:** Rebaked in 2.325.0 from cues.json (s2b, s6d, s8a–s8e, s10c). Walk the spoken tour on a phone after hard-refresh before blessing it.
+
+**PIN — leftovers still open:** Homeowner and crew shells (same language as the builder house — dedicated pass). Long forms: add-a-sub after a hit is Save; book-a-day other house is on the brief; packet already says Text this link. McCarver lookup fixed in 2.325.0 — re-run ink to confirm phone.
 
 **Pinned — before the homebuilder touches a real job:** Create *their* owner login (not the QA book) and sit with them for the first hour: company → first house → invite PM / homeowner / first crew. Public face 16/16.
 
 **PIN — before the real homebuilder uses it:** sit with them for the first hour on a **clean owner login** (not QA). Company → first house → invite their PM / homeowner / first crew. Same first hour we walked. Do not skip this.
 
-# SitePlumb — handoff (current build v2.322.0)
+# SitePlumb — handoff (current build v2.324.0)
 
 
 Paste this file into a new chat, attach the artifacts alongside it, and work continues without re-explaining anything.
