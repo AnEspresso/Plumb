@@ -1,4 +1,4 @@
-**v2.332.0 is live.** Slide 1 does not hang on Coming up. Tour kit for GrokBots: `app/tour-kit/TOUR-KIT.md` + `cues.json`. Three bots only (Words, Ink, Desk). This chat ships.
+**v2.333.0 is live.** Tour voice no longer dies when the example-build class is missing. One Tour GrokBot, not three: `app/tour-kit/ONE-BOT.md`.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 
