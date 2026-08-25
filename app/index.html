@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.334.0 - Tour voice plays every clip. Audio stays unlocked.';
+const PLUMB_VERSION='2.335.0 - Tour voice breathes between lines like a voiceover.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.334.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.335.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9897,7 +9897,7 @@ function tourPlayFile(name){
       timers.push(setInterval(function(){
         if(settled)return;
         try{
-          if(a.ended||(a.duration&&a.currentTime>=a.duration-0.12)){done('ended');return;}
+          if(a.ended||(a.duration&&a.currentTime>=a.duration-0.02)){done('ended');return;}
         }catch(e){}
       },400));
       timers.push(setTimeout(function(){done('timeout');},14000));
@@ -10008,6 +10008,13 @@ function tourSeeSnap(cue){
     return row;
   }catch(e){return null;}
 }
+function tourBreathMs(cur,next){
+  if(!cur)return 200;
+  if(next&&next.waitTap)return 560;
+  const id=cur.f||'';
+  if(id==='s1a'||id==='s10a'||id==='s7a'||id==='s2a')return 420;
+  return 340;
+}
 async function tourPlayCues(step,tok){
   const cues=step.play||[];
   for(let i=0;i<cues.length;i++){
@@ -10026,28 +10033,30 @@ async function tourPlayCues(step,tok){
         else if(c.tab==='files')go('files');
       }catch(e){}
     }
-    await tourWait(c.do||c.tab?280:20,tok);
     const rawStage=c.stage||step.sel||null;
     if(!tourAlive(tok))return;
     const stageSel=tourExpandStage(rawStage);
     const stageKey=typeof rawStage==='string'?rawStage:(step.sel||'');
     if(stageSel&&stageKey!==window._tourStageKey){
       window._tourStageKey=stageKey;
-      try{await Promise.race([ringStage(stageSel,tok),tourWait(400,tok)]);}catch(e){}
+      try{ringStage(stageSel,tok);}catch(e){}
     }else if(stageSel){
       try{stageReglue();}catch(e){}
     }
     if(c.line&&c.point){
-      try{await tourUnderline(c.point,tok);}catch(e){}
+      try{tourUnderline(c.point,tok);}catch(e){}
     }else if(c.point){
       try{orbTo(c.point,{settle:true,rest:true,noscroll:true});}catch(e){}
-      try{await Promise.race([tourPoint(String(c.point).split(',').map(function(s){return s.trim();}),tok,80),tourWait(1600,tok)]);}catch(e){}
+      try{tourPoint(String(c.point).split(',').map(function(s){return s.trim();}),tok,80);}catch(e){}
     }
     try{tourSeeSnap(c);}catch(e){}
-    await Promise.race([audioP,tourWait(8000,tok)]);
+    await Promise.race([audioP,tourWait(20000,tok)]);
     if(!tourAlive(tok))return;
     if(c.waitTap)await tourWaitTap(c.waitTap,c.intercept,tok,c.waitMs);
     try{if(c.doAfter)c.doAfter();}catch(e){}
+    if(i<cues.length-1){
+      await tourWait(tourBreathMs(c,cues[i+1]),tok);
+    }
   }
   try{setOvSort('attn');}catch(e){}
 }

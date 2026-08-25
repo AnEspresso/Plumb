@@ -1,4 +1,4 @@
-**v2.334.0 is live.** Tour voice plays every clip. Audio stays unlocked (no more s1a-only). One Tour GrokBot: `app/tour-kit/ONE-BOT.md`.
+**v2.335.0 is live.** Tour voice breathes between lines (voiceover timing). Audio stays unlocked from 2.334.0.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 
