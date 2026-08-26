@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.340.0 - Next stays on the slide you tapped. Replay is the only restart.';
+const PLUMB_VERSION='2.341.0 - Tour flight recorder. GrokBot can copy tourDiag() after a vanish.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.340.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.341.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6292,6 +6292,7 @@ function replayTour(e){
   window._tourReplay=true;
   window._tourHoldNext=true;
   window._tourQuiet=true;
+  tourTapePush('replay','btn');
   setTimeout(function(){
     try{
       if(appMode()!=='demo'&&!onExcursion())enterDemo({skipTour:true});
@@ -6302,6 +6303,7 @@ function replayTour(e){
 }
 function startTour(role){
   window._tourHoldNext=(role==='team'||!role||window._tourReplay);
+  tourTapePush('startTour',String(role||'team')+' idx='+_tourIdx);
   startTourSteps(TOUR[role]||TOUR.team);
 }
 function tourEnsureShell(){
@@ -6365,20 +6367,75 @@ function tourEnd(why){
   else kill();
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}
   try{if(window.__tourReloadWaiting){window.__tourReloadWaiting=false;setTimeout(function(){location.reload();},400);}}catch(e){}}
+function tourTapePush(ev,d){
+  try{
+    const row={t:Date.now(),ev:String(ev||''),d:String(d==null?'':d).slice(0,140)};
+    window._tourLog=window._tourLog||[];
+    window._tourLog.push(row);
+    if(window._tourLog.length>200)window._tourLog.splice(0,80);
+    let tape=[];
+    try{tape=JSON.parse(sessionStorage.getItem('plumbTourTape')||'[]');}catch(e){}
+    tape.push(row);
+    if(tape.length>80)tape=tape.slice(-80);
+    sessionStorage.setItem('plumbTourTape',JSON.stringify(tape));
+  }catch(e){}
+}
+function tourArm(){
+  if(window.__tourArmed)return;
+  window.__tourArmed=true;
+  tourTapePush('arm', (typeof PLUMB_VERSION==='string'?PLUMB_VERSION:'')+' nav='+tourNavType());
+  ['pagehide','beforeunload','freeze'].forEach(function(ev){
+    try{window.addEventListener(ev,function(){tourTapePush(ev,'hold='+!!window._tourHoldNext+' catch='+!!document.getElementById('tourCatch'));});}catch(e){}
+  });
+  try{window.addEventListener('pageshow',function(e){tourTapePush('pageshow',e&&e.persisted?'bfcache':'fresh');});}catch(e){}
+  try{document.addEventListener('visibilitychange',function(){tourTapePush('vis',document.visibilityState);});}catch(e){}
+  try{window.addEventListener('unhandledrejection',function(e){tourTapePush('reject',String((e&&e.reason)||'').slice(0,140));});}catch(e){}
+  try{window.addEventListener('error',function(e){tourTapePush('error',String((e&&e.message)||e||'').slice(0,140));});}catch(e){}
+  try{document.addEventListener('play',function(e){const el=e.target;if(!el||el.tagName!=='AUDIO')return;tourTapePush('audio-play',String(el.getAttribute('src')||el.src||'').slice(-40));},true);}catch(e){}
+}
+function tourNavType(){
+  try{const n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];return n&&n.type?n.type:'';}catch(e){return '';}
+}
+function tourDiag(){
+  let tape=[],why=null,live=null;
+  try{tape=JSON.parse(sessionStorage.getItem('plumbTourTape')||'[]');}catch(e){}
+  try{why=JSON.parse(sessionStorage.getItem('plumbTourWhy')||'null');}catch(e){}
+  try{live=JSON.parse(sessionStorage.getItem('plumbTourLive')||'null');}catch(e){}
+  return {
+    ver:typeof PLUMB_VERSION==='string'?PLUMB_VERSION:'',
+    when:new Date().toISOString(),
+    nav:tourNavType(),
+    vis:document.visibilityState,
+    hold:!!window._tourHoldNext,
+    idx:typeof _tourIdx==='number'?_tourIdx:null,
+    catch:!!document.getElementById('tourCatch'),
+    bubble:!!document.getElementById('tourBubble'),
+    spot:!!document.getElementById('tourSpot'),
+    sw:!!(navigator.serviceWorker&&navigator.serviceWorker.controller),
+    reloadWaiting:!!window.__tourReloadWaiting,
+    kill:window.__tourKill||null,
+    live:live,
+    why:why,
+    tape:tape
+  };
+}
 function tourWhy(){
   try{
     const stored=JSON.parse(sessionStorage.getItem('plumbTourWhy')||'null');
     if(stored&&stored.kill)return stored;
   }catch(e){}
+  const diag=tourDiag();
   return {
-    note:document.getElementById('tourCatch')?'still walking':'ui gone, end never ran',
-    idx:_tourIdx,
-    hold:!!window._tourHoldNext,
-    catch:!!document.getElementById('tourCatch'),
-    bubble:!!document.getElementById('tourBubble'),
-    spot:!!document.getElementById('tourSpot'),
+    note:diag.catch?'still walking':'ui gone, end never ran',
+    idx:diag.idx,
+    hold:diag.hold,
+    catch:diag.catch,
+    bubble:diag.bubble,
+    spot:diag.spot,
     log:(window._tourLog||[]).slice(-40),
-    kill:window.__tourKill||null
+    tape:(diag.tape||[]).slice(-40),
+    kill:window.__tourKill||null,
+    nav:diag.nav
   };
 }
 function tourGotIt(e){try{if(e){e.preventDefault();e.stopPropagation();}}catch(x){}window._tourHoldEnd=true;tourEnd('got-it');}
@@ -9730,6 +9787,7 @@ function startGrandTour(){
   if(!walkAllowed()&&appMode()!=='demo'&&!onExcursion())return;
   window._tourQuiet=true;
   window._tourHoldNext=true;
+  tourTapePush('startGrand','replay='+!!window._tourReplay+' catch='+!!document.getElementById('tourCatch'));
   try{sessionStorage.removeItem('plumbTourWhy');}catch(e){}
   try{tourUnlockAudio();tourPrefetch();}catch(e){}
   try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
@@ -10287,10 +10345,7 @@ function awaitSpotRest(){
 }
 /* \u2550\u2550 TOUR FLIGHT RECORDER: the device's truth, pasteable \u2550\u2550 */
 window._tourLog=window._tourLog||[];
-function tlog(ev,d){try{window._tourLog=window._tourLog||[];window._tourLog.push({t:Date.now(),ev,d:String(d||'').slice(0,90)});
-  if(window._tourLog.length>400)window._tourLog.splice(0,100);
-  try{sessionStorage.setItem('plumbTourLive',JSON.stringify({idx:_tourIdx,t:Date.now(),hold:!!window._tourHoldNext,last:ev}));}catch(e){}
-}catch(e){}}
+function tlog(ev,d){tourTapePush(ev,d);}
 /* \u2550\u2550 THE HANDS-ON ENGINE (LAW 7): the user does the work \u2550\u2550 */
 window._tourInvite=null;window._taskCtl=null;
 function holeOpen(el){
@@ -16357,8 +16412,7 @@ async function devSelfTest(){
     try{enterDemo();}catch(e){}
   }
   if(typeof window!=='undefined'){window.addEventListener('load',()=>{try{Sync.init();}catch(e){}});setTimeout(()=>{try{if(!Sync.on)Sync.init();}catch(e){}},1200);}
-  try{window.addEventListener('pagehide',function(){try{if(window._tourHoldNext)tlog('pagehide','');}catch(e){}});}catch(e){}
-  try{tourResumeIfNeeded();}catch(e){}
+  try{tourArm();}catch(e){}
 })();
 </script>
 <script>
@@ -16369,8 +16423,10 @@ if('serviceWorker' in navigator){
     if(reloading || !hadController) return;   // skip the first-install claim
     if(document.getElementById('tourCatch')){  // never wipe a live walk
       window.__tourReloadWaiting=true;
+      try{if(typeof tourTapePush==='function')tourTapePush('sw-wait','controllerchange while walking');}catch(e){}
       return;
     }
+    try{if(typeof tourTapePush==='function')tourTapePush('sw-reload','controllerchange');}catch(e){}
     reloading = true; location.reload();
   });
   /* Drag & drop intake — the sheet's capture zone and the start photo card accept files. */
