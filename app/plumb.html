@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.338.0 - Tour does not vanish on an update reload. Card is on screen from the first beat.';
+const PLUMB_VERSION='2.339.0 - Replay starts the tour. The walk stays up if the page blinks.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.338.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.339.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5958,8 +5958,8 @@ function renderSettings(){
     rows+='<div class="set-hd">This device</div>';
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
-    if(walkAllowed()||appMode()==='demo'){
-      rows+=SET_GEAR_ROW('Replay the tour','A walk around this book','closeSettings();startGrandTour()',I.how);
+    if(walkAllowed()||appMode()==='demo'||onExcursion()){
+      rows+='<button type="button" class="b1 b-go" style="width:100%;margin:8px 0 12px" onclick="replayTour(event)">Replay the tour</button>';
     }
     if(walkAllowed()){
       rows+=SET_GEAR_ROW('Walkthrough studio','Play one beat. Check the orb and the card.','closeSettings();openTourStudio()',I.dev);
@@ -6286,9 +6286,21 @@ teamLegacy:[
  {title:'That\u2019s it',body:'No app to learn \u2014 just open it whenever you want to see how your home is coming along.'}
 ]};
 let _tourSteps=[],_tourIdx=0,_tourLift=null,_tourLiftPrev=null,_tourTapEl=null,_tourTapFn=null;
+function replayTour(e){
+  try{if(e){e.preventDefault();e.stopPropagation();}}catch(x){}
+  try{closeSettings();}catch(x){}
+  setTimeout(function(){try{startGrandTour();}catch(err){}},40);
+}
 function startTour(role){
   window._tourHoldNext=(role==='team'||!role);
   startTourSteps(TOUR[role]||TOUR.team);
+}
+function tourEnsureShell(){
+  if(document.getElementById('tourCatch'))return;
+  const c=document.createElement('div');c.id='tourCatch';c.className='tour-catch';
+  const s=document.createElement('div');s.id='tourSpot';s.className='tour-spot';
+  const b=document.createElement('div');b.id='tourBubble';b.className='tour-bubble';b.style.opacity='1';
+  document.body.appendChild(c);document.body.appendChild(s);document.body.appendChild(b);
 }
 function startTourSteps(steps){
   window._tourStageKey='';
@@ -6296,15 +6308,27 @@ function startTourSteps(steps){
   try{document.getElementById('installGate').classList.remove('show');}catch(e){}
   _tourSteps=steps||TOUR.team;_tourIdx=0;window._tourBack=false;try{_tourSteps.forEach(s=>{delete s.__done;});}catch(e){}
   try{tourWarmVoice();}catch(e){}
-  if(!document.getElementById('tourCatch')){
-    const c=document.createElement('div');c.id='tourCatch';c.className='tour-catch';
-    const s=document.createElement('div');s.id='tourSpot';s.className='tour-spot';
-    const b=document.createElement('div');b.id='tourBubble';b.className='tour-bubble';b.style.opacity='1';
-    document.body.appendChild(c);document.body.appendChild(s);document.body.appendChild(b);
-  }
+  tourEnsureShell();
   try{const h=document.getElementById('tourHud');if(h)h.remove();}catch(e){}
   try{tourWatchDom();}catch(e){}
+  try{tourKeepAlive();}catch(e){}
   tourStep();}
+function tourKeepAlive(){
+  if(window.__tourKeepOn)return;
+  window.__tourKeepOn=true;
+  const tick=function(){
+    if(!window._tourHoldNext){window.__tourKeepOn=false;return;}
+    try{
+      if(!document.getElementById('tourCatch')||!document.getElementById('tourBubble')){
+        tlog('keep-alive','shell missing');
+        tourEnsureShell();
+        tourStep();
+      }
+    }catch(e){}
+    setTimeout(tick,280);
+  };
+  setTimeout(tick,280);
+}
 function tourWatchDom(){
   if(window.__tourDomObs)return;
   try{
@@ -6312,6 +6336,17 @@ function tourWatchDom(){
       muts.forEach(function(m){
         (m.removedNodes||[]).forEach(function(n){
           if(!n||(n.id!=='tourCatch'&&n.id!=='tourBubble'&&n.id!=='tourSpot'))return;
+          if(window._tourHoldNext&&(n.id==='tourCatch'||n.id==='tourBubble')){
+            tlog('resurrect',n.id);
+            setTimeout(function(){
+              if(!window._tourHoldNext)return;
+              if(!document.getElementById('tourCatch')||!document.getElementById('tourBubble')){
+                tourEnsureShell();
+                try{tourStep();}catch(e){}
+              }
+            },0);
+            return;
+          }
           if(window.__tourKill&&window.__tourKill.why&&window.__tourKill.why.indexOf('dom-remove')!==0)return;
           const row={t:Date.now(),why:'dom-remove:'+n.id,idx:_tourIdx,hold:!!window._tourHoldNext};
           window.__tourKill=row;
@@ -6335,6 +6370,7 @@ function tourEnd(why){
     try{sessionStorage.setItem('plumbTourWhy', JSON.stringify({kill:row,log:(window._tourLog||[]).slice(-60),trace:(window.__tourTrace||[]).slice(-30)}));}catch(e){}
   }catch(e){}
   window._tourQuiet=false;window._tourHoldNext=false;orbHide();tourAudioStop();try{window._tourQuiet=false;}catch(e){}try{const ln=document.getElementById('tourLine');if(ln)ln.remove();}catch(e){}try{window._spkGen=(window._spkGen||0)+1;}catch(e){}try{taskCleanup();}catch(e){}tourUnlift();
+  try{sessionStorage.removeItem('plumbTourLive');}catch(e){}
   const kill=function(){['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});};
   if(window._tourHoldEnd){window._tourHoldEnd=false;setTimeout(kill,80);}
   else kill();
@@ -9701,9 +9737,10 @@ function tourGoto(view,seg){
   }catch(e){}
 }
 function startGrandTour(){
-  if(!walkAllowed()&&appMode()!=='demo')return;
+  if(!walkAllowed()&&appMode()!=='demo'&&!onExcursion())return;
   window._tourQuiet=true;
   window._tourHoldNext=true;
+  try{sessionStorage.removeItem('plumbTourWhy');}catch(e){}
   try{tourUnlockAudio();tourPrefetch();}catch(e){}
   try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
   try{welcomeDone();}catch(e){}
@@ -9711,9 +9748,19 @@ function startGrandTour(){
   try{document.querySelectorAll('.pmodal-scrim.show').forEach(s=>s.classList.remove('show'));}catch(e){}
   try{document.getElementById('demoIntroScrim')?.classList.remove('show');}catch(e){}
   try{sessionStorage.setItem('plumbTourOffered','1');}catch(e){}
-  if(appMode()!=='demo')enterDemo();
+  if(appMode()!=='demo'){
+    try{enterDemo({skipTour:true});}catch(e){}
+  }
   try{startTour('team');}catch(e){}
   Promise.resolve(loadTourCues()).catch(function(){});
+}
+function tourResumeIfNeeded(){
+  try{
+    const live=JSON.parse(sessionStorage.getItem('plumbTourLive')||'null');
+    if(!live||Date.now()-live.t>30000)return;
+    if(document.getElementById('tourCatch'))return;
+    setTimeout(function(){try{startGrandTour();}catch(e){}},80);
+  }catch(e){}
 }
 function tourDemoHouse(){return (state.projects||[]).find(function(p){return String(p.id)==='p2';})||(state.projects||[])[0]||null;}
 function tourWait(ms,tok){return new Promise(function(r){setTimeout(r,ms||400);});}
@@ -10256,9 +10303,11 @@ function awaitSpotRest(){
   });
 }
 /* \u2550\u2550 TOUR FLIGHT RECORDER: the device's truth, pasteable \u2550\u2550 */
-window._tourLog=[];
-function tlog(ev,d){try{window._tourLog.push({t:Date.now(),ev,d:String(d||'').slice(0,90)});
-  if(window._tourLog.length>400)window._tourLog.splice(0,100);}catch(e){}}
+window._tourLog=window._tourLog||[];
+function tlog(ev,d){try{window._tourLog=window._tourLog||[];window._tourLog.push({t:Date.now(),ev,d:String(d||'').slice(0,90)});
+  if(window._tourLog.length>400)window._tourLog.splice(0,100);
+  try{sessionStorage.setItem('plumbTourLive',JSON.stringify({idx:_tourIdx,t:Date.now(),hold:!!window._tourHoldNext,last:ev}));}catch(e){}
+}catch(e){}}
 /* \u2550\u2550 THE HANDS-ON ENGINE (LAW 7): the user does the work \u2550\u2550 */
 window._tourInvite=null;window._taskCtl=null;
 function holeOpen(el){
@@ -16325,6 +16374,8 @@ async function devSelfTest(){
     try{enterDemo();}catch(e){}
   }
   if(typeof window!=='undefined'){window.addEventListener('load',()=>{try{Sync.init();}catch(e){}});setTimeout(()=>{try{if(!Sync.on)Sync.init();}catch(e){}},1200);}
+  try{window.addEventListener('pagehide',function(){try{if(window._tourHoldNext)tlog('pagehide','');}catch(e){}});}catch(e){}
+  try{tourResumeIfNeeded();}catch(e){}
 })();
 </script>
 <script>
