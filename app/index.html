@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.343.0 - Voice plays on Silent. Gold is the whole book on Glad you are here.';
+const PLUMB_VERSION='2.344.0 - Tour speaks with the ringer on Silent.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.343.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.344.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9999,6 +9999,7 @@ function tourPlayFile(name){
     let acOn=false;
     const startAc=function(){
       if(acOn||!_tourAC||!_tourBuf[name])return false;
+      try{tourArmPlayback();}catch(e){}
       try{if(_tourAC.state!=='running'&&_tourAC.resume)_tourAC.resume();}catch(e){}
       try{
         tourHoldAudio();
@@ -10015,6 +10016,7 @@ function tourPlayFile(name){
       }catch(e){tourTrace('ac-fail',name,String(e&&e.message||e));return false;}
     };
     const startEl=function(){
+      try{tourArmPlayback();}catch(e){}
       const a=tourEnsurePlayer();
       const url='tour-audio/'+name+'.mp3';
       a.onended=function(){done('ended');};
@@ -10880,8 +10882,12 @@ function tourEnsurePlayer(){
   _tourEl=a;
   return a;
 }
+function tourArmPlayback(){
+  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
+}
 function tourHoldAudio(){
   try{
+    tourArmPlayback();
     const AC=window.AudioContext||window.webkitAudioContext;
     if(AC){
       _tourAC=_tourAC||new AC();
@@ -10898,6 +10904,7 @@ function tourHoldAudio(){
   }catch(e){}
 }
 function tourUnlockAudio(){
+  try{tourArmPlayback();}catch(e){}
   try{
     tourEnsurePlayer();
     tourHoldAudio();
@@ -10910,15 +10917,7 @@ function tourUnlockAudio(){
       s.buffer=z;s.connect(_tourAC.destination);s.start();
     }
   }catch(e){}
-  try{
-    const a=tourEnsurePlayer();
-    a.muted=true;
-    if(!a.src)a.src='tour-audio/s1a.mp3';
-    const p=a.play();
-    if(p&&p.then)p.then(function(){try{a.pause();a.muted=false;a.currentTime=0;}catch(e){}}).catch(function(){try{a.muted=false;}catch(e){}});
-    else try{a.muted=false;}catch(e){}
-  }catch(e){}
-  try{tourTrace('unlock','ac');}catch(e){}
+  try{tourTrace('unlock','playback');}catch(e){}
 }
 function tourPrefetch(){
   try{

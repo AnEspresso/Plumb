@@ -1208,7 +1208,7 @@ t('camera tap frames the Field Notes sheet', $("String(tourOnFieldOpen)").indexO
 t('Replay starts the tour from Settings', $("String(replayTour)").indexOf('startTour')>=0);
 t('Replay starts voice on the tap', $("String(replayTour)").indexOf('setTimeout')<0 && $("String(replayTour)").indexOf('tourUnlockAudio')>=0);
 t('Glad you are here stages the book', $("String(tourSceneRect)").indexOf('ovSortRow')>=0);
-t('team voice prefers WebAudio', $("String(tourPlayFile)").indexOf('_tourSteps===TOUR.team')>=0);
+t('tour speaks on Silent', $("String(tourArmPlayback)").indexOf('audioSession')>=0 && $("String(tourUnlockAudio)").indexOf('muted=true')<0);
 t('Field Notes wait for the builder tap', $("TOUR.team[1].play.filter(function(c){return c.f==='s2d'&&c.waitTap==='.ov-field';}).length")>=1);
 t('McCarver URL guesses HVAC', $("guessTrade('https://www.mccarvermech.com/ Mccarver Mechanical')")==='hvac'&&$("guessTrade('mccarvermech')")==='hvac');
 t('a desk room comes back to the house', $("String(backToHouse)").indexOf('nyOpenHouse')>=0&&$("String(houseGoDesk)").indexOf('_houseResume')>=0&&$("String(houseGoDesk)").indexOf('on-house-desk')>=0);
