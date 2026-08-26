@@ -1,4 +1,4 @@
-**v2.346.0 is live.** Labels tappable. Gold locked on the book (3–4), rest of house (8), and whole-book welcome on phone and wide. GrokBot Phase A runs iPhone / Android / Mac / PC.
+**v2.346.1 is live.** Same as 2.346.0. Retriggered GitHub Pages.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 
