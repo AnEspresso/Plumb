@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.342.0 - Voice starts on the tap. Gold is the whole Coming up card.';
+const PLUMB_VERSION='2.343.0 - Voice plays on Silent. Gold is the whole book on Glad you are here.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.342.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.343.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5919,7 +5919,7 @@ function startConverge(){
     <p style="color:var(--ink-3);font-size:12.5px;margin:14px 0 0">Everything else fills in as you go — log a photo, set a stage, add a selection whenever it comes up.</p>`);
 }
 const SET_GEAR_ROW=(label,desc,onclick,icon)=>`<button class="set-row" onclick="${onclick}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg><div style="flex:1"><div>${label}</div>${desc?`<div class="sr-d">${desc}</div>`:''}</div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:13px;height:13px"><path d="M9 6l6 6-6 6"/></svg></button>`;
-function openSettings(){try{tourPrefetch();}catch(e){}saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
+function openSettings(){try{tourPrefetch();tourUnlockAudio();}catch(e){}saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
 function closeSettings(){document.getElementById('settingsScrim').classList.remove('show');}
 function openCompany(){saveScroll('home');renderCompany();document.getElementById('companyScrim').classList.add('show');}
 function closeCompany(){document.getElementById('companyScrim').classList.remove('show');}
@@ -10039,9 +10039,24 @@ function tourPlayFile(name){
       },400));
       timers.push(setTimeout(function(){done('timeout');},14000));
     };
-    const go=function(){if(startAc())return;startEl();};
+    const go=function(){
+      if(startAc())return;
+      const team=(typeof TOUR!=='undefined'&&_tourSteps===TOUR.team);
+      if(team){
+        try{tourPrefetch();}catch(e){}
+        const t0=Date.now();
+        const wait=function(){
+          if(settled)return;
+          if(startAc())return;
+          if(Date.now()-t0>5000){startEl();return;}
+          timers.push(setTimeout(wait,50));
+        };
+        wait();
+        return;
+      }
+      startEl();
+    };
     go();
-    if(!_tourBuf[name])try{tourPrefetch();}catch(e){}
   });
 }
 function tourOnFieldOpen(){
@@ -10574,8 +10589,26 @@ function tourSceneRect(name){
     return r.height>=32?r:null;
   };
   if(name==='home'||name==='welcome'){
-    const card=document.querySelector('#ovToday .ov-coming')||document.querySelector('.ov-coming');
-    return join([card],'bb');
+    const r=join([
+      document.getElementById('ovToday'),
+      document.getElementById('ovSortRow'),
+      document.getElementById('ovCards')
+    ]);
+    if(!r)return join([document.querySelector('.ov-coming')]);
+    try{
+      const bub=document.getElementById('tourBubble');
+      if(bub){
+        const bt=bub.getBoundingClientRect().top-16;
+        if(r.bottom>bt){r.bottom=bt;r.height=Math.max(80,bt-r.top);}
+      }
+      const ban=document.getElementById('excBanner');
+      if(ban&&ban.offsetParent){
+        const bb=ban.getBoundingClientRect().bottom+8;
+        if(r.top<bb){r.height-=(bb-r.top);r.top=bb;}
+      }
+      r.right=r.left+r.width;r.bottom=r.top+r.height;
+    }catch(e){}
+    return r;
   }
   if(name==='book'){
     const pills=document.querySelector('#ovSortRow .ov-sortpills')||document.getElementById('ovSortRow');
