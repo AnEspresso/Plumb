@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.345.0 - Tour gold stays put. Field Notes demo. Rest of house and Company are whole.';
+const PLUMB_VERSION='2.346.0 - Labels tappable. Gold locked on the book, rest of house, and whole-book welcome.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.345.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.346.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6500,6 +6500,12 @@ function tourStep(){
   tlog('slide',(_tourIdx+1)+' '+(step.title||''));
   try{tourHoldAudio();}catch(e){}
   window._tourCueAudio=null;
+  window._tourBubSide=step.bubSide||'';
+  try{
+    const st=step.play&&step.play[0]&&step.play[0].stage;
+    if((st==='welcome'||st==='home')&&innerWidth>=700)window._tourBubSide='tb';
+    if(st==='book'||st==='houses'||st==='desk'||st==='rest'||st==='sheet')window._tourBubSide=window._tourBubSide||'tb';
+  }catch(e){}
   if(step.play&&step.play[0]&&step.play[0].f){
     try{window._tourCueAudio=tourPlayFile(step.play[0].f);}catch(e){}
   }
@@ -9954,7 +9960,10 @@ function tourAvoidCover(el){
     const sheetOn=!!document.getElementById('sheet')?.classList.contains('show');
     const houseOn=!!document.getElementById('houseScrim')?.classList.contains('show');
     let side;
-    if(sheetOn||houseOn)side=topBand>=botBand?'tb':'bb';
+    const locked=(_tourSteps===TOUR.team)&&(window._tourBubSide==='tb'||window._tourBubSide==='bb');
+    if(locked)side=window._tourBubSide;
+    else if(sheetOn)side='tb';
+    else if(houseOn)side=topBand>=botBand?'tb':'bb';
     else if(topBand>=bh+8&&topBand>=botBand)side='tb';
     else if(botBand>=bh+8)side='bb';
     else side=topBand>=botBand?'tb':'bb';
@@ -10092,15 +10101,21 @@ async function tourFieldDemo(tok){
   }
   if(!tourAlive(tok))return;
   try{tourOnFieldOpen();}catch(e){}
-  const chip=document.querySelector('#fieldKindChips .chip[data-k="note"]')||document.querySelector('#fieldKindChips .chip');
-  if(!chip)return;
+  await tourWait(280,tok);
+  const row=document.getElementById('fieldKindChips');
+  const chip=(row&&row.querySelector('.chip[data-k="note"]'))||(row&&row.querySelector('.chip'));
+  if(!row)return;
+  try{
+    const c=document.getElementById('tourCatch');
+    if(c)c.style.pointerEvents='none';
+  }catch(e){}
   if(bub){
     const b=bub.querySelector('.tour-b');
     if(b)b.textContent='Tap a label \u2014 Note, Leak, Damage, Decision, or Punch.';
   }
-  await tourWaitTap('#fieldKindChips .chip',function(ev){
+  await tourWaitTap('#fieldKindChips',function(ev){
     try{
-      const hit=(ev&&ev.target&&ev.target.closest)?ev.target.closest('.chip'):null;
+      const hit=(ev&&ev.target&&ev.target.closest)?ev.target.closest('.chip'):chip;
       pickFieldKind((hit&&hit.getAttribute('data-k'))||'note');
     }catch(e){}
   },tok,30000);
@@ -10400,7 +10415,15 @@ function tlog(ev,d){tourTapePush(ev,d);}
 window._tourInvite=null;window._taskCtl=null;
 function holeOpen(el){
   holeClose();
+  if(!el||!el.getBoundingClientRect){
+    const c=document.getElementById('tourCatch');if(c)c.style.pointerEvents='none';
+    return;
+  }
   const r=el.getBoundingClientRect(),pad=8;
+  if(!r.width||r.height<16){
+    const c=document.getElementById('tourCatch');if(c)c.style.pointerEvents='none';
+    return;
+  }
   const t=Math.max(0,r.top-pad),l=Math.max(0,r.left-pad),
         b=Math.min(innerHeight,r.bottom+pad),ri=Math.min(innerWidth,r.right+pad);
   const mk=(css)=>{const d=document.createElement('div');d.className='tc-p';d.style.cssText=css;document.body.appendChild(d);return d;};
@@ -10638,9 +10661,15 @@ function tourSceneRect(name){
     if(!r)return join([document.querySelector('.ov-coming')]);
     try{
       const bub=document.getElementById('tourBubble');
+      const wide=innerWidth>=700;
       if(bub){
-        const bt=bub.getBoundingClientRect().top-16;
-        if(r.bottom>bt){r.bottom=bt;r.height=Math.max(80,bt-r.top);}
+        if(wide||(bub.dataset.side==='tb')){
+          const bb=bub.getBoundingClientRect().bottom+12;
+          if(r.top<bb){r.height-=(bb-r.top);r.top=bb;}
+        }else{
+          const bt=bub.getBoundingClientRect().top-16;
+          if(r.bottom>bt){r.bottom=bt;r.height=Math.max(80,bt-r.top);}
+        }
       }
       const ban=document.getElementById('excBanner');
       if(ban&&ban.offsetParent){
@@ -10711,9 +10740,33 @@ function tourSceneRect(name){
   }
   if(name==='desk'||name==='rest'){
     const rest=document.querySelector('#houseBody [data-band=rest]');
-    const grid=rest&&rest.nextElementSibling;
-    try{if(rest)rest.scrollIntoView({block:'start',inline:'nearest'});}catch(e){}
-    return clipHouse(join([rest,grid]));
+    const grid=rest?rest.nextElementSibling:null;
+    const body=document.getElementById('houseBody');
+    try{
+      if(body&&rest)body.scrollTop=Math.max(0,rest.offsetTop-8);
+      else if(rest)rest.scrollIntoView({block:'start',inline:'nearest'});
+    }catch(e){}
+    const r=join([rest,grid]);
+    if(!r)return clipHouse(join([rest]));
+    try{
+      const title=document.getElementById('houseTitle');
+      if(title&&document.getElementById('houseScrim')?.classList.contains('show')){
+        const tb=title.getBoundingClientRect().bottom+6;
+        if(r.top<tb){r.height-=(tb-r.top);r.top=tb;}
+      }
+      const done=document.querySelector('#houseScrim button[onclick="closeHouse()"]');
+      if(done){
+        const dt=done.getBoundingClientRect().top-10;
+        if(r.bottom>dt){r.bottom=dt;r.height=Math.max(48,dt-r.top);}
+      }
+      const bub=document.getElementById('tourBubble');
+      if(bub&&(bub.dataset.side==='tb'||window._tourBubSide==='tb')){
+        const bb=bub.getBoundingClientRect().bottom+10;
+        if(r.top<bb){r.height-=(bb-r.top);r.top=bb;}
+      }
+      r.right=r.left+r.width;r.bottom=r.top+r.height;
+    }catch(e){}
+    return r;
   }
   if(name==='site'){
     return join([document.querySelector('main'),document.querySelector('nav')],'tb');
@@ -10831,7 +10884,8 @@ async function tourUnderline(sel,tok){
   const el=typeof sel==='string'?document.querySelector(sel):sel;
   if(!el||!tourAlive(tok))return;
   let r=el.getBoundingClientRect();
-  if(r.top<70||r.bottom>innerHeight-90){
+  const lock=window._tourStageKey==='book'||window._tourStageKey==='houses'||window._tourStageKey==='welcome'||window._tourStageKey==='home'||window._tourStageKey==='desk'||window._tourStageKey==='rest';
+  if(!lock&&(r.top<70||r.bottom>innerHeight-90)){
     smoothScrollTo(el,0.32);
     await awaitSettle(el);
     if(!tourAlive(tok))return;
