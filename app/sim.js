@@ -1208,7 +1208,8 @@ t('camera tap frames the Field Notes sheet', $("String(tourOnFieldOpen)").indexO
 t('Replay starts the tour from Settings', $("String(replayTour)").indexOf('startTour')>=0);
 t('Replay starts voice on the tap', $("String(replayTour)").indexOf('setTimeout')<0 && $("String(replayTour)").indexOf('tourUnlockAudio')>=0);
 t('Glad you are here stages the book', $("String(tourSceneRect)").indexOf('ovSortRow')>=0);
-t('Field Notes demo types then waits for a label', $("String(tourFieldDemo)").indexOf('waste lines')>=0 && $("String(tourFieldDemo)").indexOf('fieldKindChips')>=0);
+t('tour camera opens Field Notes not the house picker', $("String(openLogPick)").indexOf('tourOpenFieldNote')>=0 && $("String(tourOpenFieldNote)").indexOf('288')<0 && $("String(tourOpenFieldNote)").indexOf("classList.add('show')")>=0);
+t('tour closes Field Notes when leaving the slide', $("String(tourCloseFieldNote)").indexOf('closeLogPick')>=0 && $("String(tourStep)").indexOf('tourCloseFieldNote')>=0);
 t('rest of house gold is that band only', $("String(tourSceneRect)").indexOf('nextElementSibling')>=0);
 t('company gold is the whole modal', $("String(tourSceneRect)").indexOf("scr.querySelector('.pmodal')")>=0);
 t('tour honors locked card side', $("String(tourAvoidCover)").indexOf('_tourBubSide')>=0);

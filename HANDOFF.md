@@ -1,4 +1,4 @@
-**v2.346.1 is live.** Same as 2.346.0. Retriggered GitHub Pages.
+**v2.347.0 is live.** Tour camera opens 288 Calderwood Field Notes. House picker never stays. Labels on screen.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 

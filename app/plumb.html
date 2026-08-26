@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.346.1 - Labels tappable. Gold locked on the book, rest of house, and whole-book welcome.';
+const PLUMB_VERSION='2.347.0 - Tour camera opens Calderwood Field Notes. Picker never stays.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.346.1';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.347.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6041,15 +6041,15 @@ const TOUR={team:[
   nav:()=>{try{closeHouse();closeCompany();showOverview();renderToday();renderOvCards();}catch(e){}},
   play:[{f:'s1a',stage:'welcome',point:'.ov-coming',still:true},{f:'s1b',stage:'welcome',point:'.ov-coming',still:true},{f:'s1c',stage:'welcome',point:'.ov-coming',still:true}]},
  {sel:'.ov-field',bubSide:'bb',title:'Field Notes',body:'House, photo, a label, Send. Same camera everywhere.',
-  nav:()=>{try{showOverview();renderToday();try{closeSheet();}catch(e){}}catch(e){}},
+  nav:()=>{try{showOverview();renderToday();try{closeSheet();}catch(e){}try{closeLogPick();}catch(e){}}catch(e){}},
   play:[
     {f:'s2a',point:'.ov-field',stage:'field'},
     {f:'s2b',point:'.ov-field',stage:'field'},
     {f:'s2c',point:'.ov-field',stage:'field'},
-    {f:'s2d',point:'.ov-field',stage:'field',waitTap:'.ov-field',waitMs:30000,intercept:function(){try{const p=tourDemoHouse();if(p)Data.setActive(p.id);openFieldNote();}catch(e){}},doAfter:function(tok){return tourFieldDemo(tok);}}
+    {f:'s2d',point:'.ov-field',stage:'field',waitTap:'.ov-field',waitMs:30000,intercept:function(){try{tourOpenFieldNote();}catch(e){}},doAfter:function(tok){return tourFieldDemo(tok);}}
   ]},
  {sel:'#ovSortRow',bubSide:'tb',title:'Your book',body:'Needs You. Recent Decisions. A\u2013Z.',
-  nav:()=>{try{try{closeSheet();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}},
+  nav:()=>{try{try{closeSheet();}catch(e){}try{closeLogPick();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}},
   play:[
     {f:'s3a',point:'#ovSortRow',stage:'book',line:true},
     {do:function(){try{setOvSort('attn');}catch(e){}},f:'s3b',point:'[data-sort=attn]',stage:'book',line:true},
@@ -6364,6 +6364,7 @@ function tourEnd(why){
   const kill=function(){['tourCatch','tourSpot','tourBubble','tourHud'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});};
   if(window._tourHoldEnd){window._tourHoldEnd=false;setTimeout(kill,80);}
   else kill();
+  try{tourCloseFieldNote();}catch(e){}
   try{localStorage.setItem('plumb.orientDone','1');}catch(e){}
   try{if(window.__tourReloadWaiting){window.__tourReloadWaiting=false;setTimeout(function(){location.reload();},400);}}catch(e){}}
 function tourTapePush(ev,d){
@@ -6498,6 +6499,10 @@ function tourStep(){
   const spot0=document.getElementById('tourSpot');if((step.nav||step.acts)&&spot0)spot0.style.opacity='0';  // screen-change steps: crossfade the ring rather than glide it across
   _gtTok++;const _tok=_gtTok;                              // cancel any running after-sequence
   tlog('slide',(_tourIdx+1)+' '+(step.title||''));
+  try{
+    const field=step.play&&step.play.some(function(c){return c.waitTap&&String(c.waitTap).indexOf('ov-field')>=0;});
+    if(!field)tourCloseFieldNote();
+  }catch(e){}
   try{tourHoldAudio();}catch(e){}
   window._tourCueAudio=null;
   window._tourBubSide=step.bubSide||'';
@@ -7574,6 +7579,10 @@ function houseGoMoney(){
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openBudget();});
 }
 function openLogPick(){
+  if(document.getElementById('tourCatch')||window._tourHoldNext){
+    try{tourOpenFieldNote();}catch(e){}
+    return;
+  }
   if(!canGate('field')){toast('Field Notes is off for this role');return;}
   saveScroll('home');
   const hs=document.getElementById('houseScrim');
@@ -9808,6 +9817,32 @@ function startGrandTour(){
 }
 function tourResumeIfNeeded(){ /* auto-restart removed — it rewound the walk to 1/10 */ }
 function tourDemoHouse(){return (state.projects||[]).find(function(p){return String(p.id)==='p2';})||(state.projects||[])[0]||null;}
+function tourOpenFieldNote(){
+  try{closeLogPick();}catch(e){}
+  try{
+    const p=tourDemoHouse();
+    if(p)Data.setActive(p.id);
+  }catch(e){}
+  try{openFieldNote();}catch(e){}
+  try{
+    const sh=document.getElementById('sheet');
+    const sc=document.getElementById('scrim');
+    if(sh){sh.classList.add('show');sh.style.zIndex='2002';}
+    if(sc){sc.classList.add('show');sc.style.zIndex='2001';sc.style.pointerEvents='none';}
+  }catch(e){}
+  try{tourOnFieldOpen();}catch(e){}
+  try{tlog('field-open','sheet='+!!(document.getElementById('sheet')&&document.getElementById('sheet').classList.contains('show')));}catch(e){}
+}
+function tourCloseFieldNote(){
+  try{closeLogPick();}catch(e){}
+  try{closeSheet();}catch(e){}
+  try{
+    const sh=document.getElementById('sheet');
+    const sc=document.getElementById('scrim');
+    if(sh)sh.style.zIndex='';
+    if(sc){sc.style.zIndex='';sc.style.pointerEvents='';}
+  }catch(e){}
+}
 function tourWait(ms,tok){return new Promise(function(r){setTimeout(r,ms||400);});}
 function tourWaitReady(sel,tok,ms){
   return new Promise(function(res){
@@ -10081,6 +10116,24 @@ function tourOnFieldOpen(){
   try{tlog('field-sheet','gold on whole Field Notes sheet');}catch(e){}
 }
 async function tourFieldDemo(tok){
+  try{tourOpenFieldNote();}catch(e){}
+  let ready=false;
+  for(let i=0;i<30;i++){
+    if(!tourAlive(tok))return;
+    try{
+      const pick=document.getElementById('logPickScrim');
+      if(pick&&pick.classList.contains('show'))closeLogPick();
+    }catch(e){}
+    const sh=document.getElementById('sheet');
+    const row=document.getElementById('fieldKindChips');
+    const r=row&&row.getBoundingClientRect();
+    if(sh&&sh.classList.contains('show')&&r&&r.width>40&&r.height>12&&r.top>=0&&r.bottom<=innerHeight+8){
+      ready=true;break;
+    }
+    if(i===3||i===12)try{tourOpenFieldNote();}catch(e){}
+    await tourWait(80,tok);
+  }
+  if(!ready)try{tourOpenFieldNote();}catch(e){}
   try{tourOnFieldOpen();}catch(e){}
   const bub=document.getElementById('tourBubble');
   if(bub){
@@ -10153,7 +10206,17 @@ function tourWaitTap(sel,intercept,tok,ms){
     if(typeof sel==='string'&&sel.indexOf('ov-field')>=0){
       const poll=function(){
         if(done||!tourAlive(tok))return;
-        try{if(document.getElementById('sheet')&&document.getElementById('sheet').classList.contains('show'))finish();}catch(e){}
+        try{
+          const pick=document.getElementById('logPickScrim');
+          if(pick&&pick.classList.contains('show')){
+            try{tourOpenFieldNote();}catch(e){}
+          }
+          if(document.getElementById('sheet')&&document.getElementById('sheet').classList.contains('show')){
+            try{if(intercept)intercept({target:el});}catch(e){}
+            finish();
+            return;
+          }
+        }catch(e){}
         if(!done)setTimeout(poll,200);
       };
       poll();
