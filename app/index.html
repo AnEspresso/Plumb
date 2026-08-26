@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.339.0 - Replay starts the tour. The walk stays up if the page blinks.';
+const PLUMB_VERSION='2.340.0 - Next stays on the slide you tapped. Replay is the only restart.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.339.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.340.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5959,7 +5959,7 @@ function renderSettings(){
     rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
     rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
     if(walkAllowed()||appMode()==='demo'||onExcursion()){
-      rows+='<button type="button" class="b1 b-go" style="width:100%;margin:8px 0 12px" onclick="replayTour(event)">Replay the tour</button>';
+      rows+='<button type="button" id="replayTourBtn" class="b1 b-go" style="width:100%;margin:8px 0 12px" onclick="replayTour(event)">Replay the tour</button>';
     }
     if(walkAllowed()){
       rows+=SET_GEAR_ROW('Walkthrough studio','Play one beat. Check the orb and the card.','closeSettings();openTourStudio()',I.dev);
@@ -6289,10 +6289,19 @@ let _tourSteps=[],_tourIdx=0,_tourLift=null,_tourLiftPrev=null,_tourTapEl=null,_
 function replayTour(e){
   try{if(e){e.preventDefault();e.stopPropagation();}}catch(x){}
   try{closeSettings();}catch(x){}
-  setTimeout(function(){try{startGrandTour();}catch(err){}},40);
+  window._tourReplay=true;
+  window._tourHoldNext=true;
+  window._tourQuiet=true;
+  setTimeout(function(){
+    try{
+      if(appMode()!=='demo'&&!onExcursion())enterDemo({skipTour:true});
+      startTour('team');
+    }catch(err){try{startGrandTour();}catch(e2){}}
+    window._tourReplay=false;
+  },40);
 }
 function startTour(role){
-  window._tourHoldNext=(role==='team'||!role);
+  window._tourHoldNext=(role==='team'||!role||window._tourReplay);
   startTourSteps(TOUR[role]||TOUR.team);
 }
 function tourEnsureShell(){
@@ -6311,24 +6320,7 @@ function startTourSteps(steps){
   tourEnsureShell();
   try{const h=document.getElementById('tourHud');if(h)h.remove();}catch(e){}
   try{tourWatchDom();}catch(e){}
-  try{tourKeepAlive();}catch(e){}
   tourStep();}
-function tourKeepAlive(){
-  if(window.__tourKeepOn)return;
-  window.__tourKeepOn=true;
-  const tick=function(){
-    if(!window._tourHoldNext){window.__tourKeepOn=false;return;}
-    try{
-      if(!document.getElementById('tourCatch')||!document.getElementById('tourBubble')){
-        tlog('keep-alive','shell missing');
-        tourEnsureShell();
-        tourStep();
-      }
-    }catch(e){}
-    setTimeout(tick,280);
-  };
-  setTimeout(tick,280);
-}
 function tourWatchDom(){
   if(window.__tourDomObs)return;
   try{
@@ -6337,13 +6329,10 @@ function tourWatchDom(){
         (m.removedNodes||[]).forEach(function(n){
           if(!n||(n.id!=='tourCatch'&&n.id!=='tourBubble'&&n.id!=='tourSpot'))return;
           if(window._tourHoldNext&&(n.id==='tourCatch'||n.id==='tourBubble')){
-            tlog('resurrect',n.id);
+            tlog('shell-gone',n.id);
             setTimeout(function(){
               if(!window._tourHoldNext)return;
-              if(!document.getElementById('tourCatch')||!document.getElementById('tourBubble')){
-                tourEnsureShell();
-                try{tourStep();}catch(e){}
-              }
+              tourEnsureShell();
             },0);
             return;
           }
@@ -9737,6 +9726,7 @@ function tourGoto(view,seg){
   }catch(e){}
 }
 function startGrandTour(){
+  if(document.getElementById('tourCatch')&&window._tourHoldNext&&!window._tourReplay)return;
   if(!walkAllowed()&&appMode()!=='demo'&&!onExcursion())return;
   window._tourQuiet=true;
   window._tourHoldNext=true;
@@ -9754,14 +9744,7 @@ function startGrandTour(){
   try{startTour('team');}catch(e){}
   Promise.resolve(loadTourCues()).catch(function(){});
 }
-function tourResumeIfNeeded(){
-  try{
-    const live=JSON.parse(sessionStorage.getItem('plumbTourLive')||'null');
-    if(!live||Date.now()-live.t>30000)return;
-    if(document.getElementById('tourCatch'))return;
-    setTimeout(function(){try{startGrandTour();}catch(e){}},80);
-  }catch(e){}
-}
+function tourResumeIfNeeded(){ /* auto-restart removed — it rewound the walk to 1/10 */ }
 function tourDemoHouse(){return (state.projects||[]).find(function(p){return String(p.id)==='p2';})||(state.projects||[])[0]||null;}
 function tourWait(ms,tok){return new Promise(function(r){setTimeout(r,ms||400);});}
 function tourWaitReady(sel,tok,ms){

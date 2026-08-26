@@ -1,4 +1,4 @@
-**v2.339.0 is live.** Replay is a real button and starts the tour. The walk puts itself back if the page blinks or the card is deleted.
+**v2.340.0 is live.** Next stays on the slide you tapped. Replay is the only restart.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 
