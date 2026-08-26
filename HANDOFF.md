@@ -1,4 +1,4 @@
-**v2.341.0 is live.** Tour flight recorder. After a vanish, `copy(JSON.stringify(tourDiag(), null, 2))` survives a reload.
+**v2.342.0 is live.** Voice starts on the Replay tap (iPhone). Gold is the whole Coming up card, not the camera.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 

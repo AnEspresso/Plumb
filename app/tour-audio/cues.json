@@ -3,15 +3,15 @@
   "slides": [
     {
       "id": "welcome",
-      "sel": "#ovToday",
+      "sel": ".ov-coming",
       "title": "Glad you're here",
       "body": "I'll walk you around once. Skip anytime.",
       "bubSide": "bb",
       "nav": "home",
       "cues": [
-        { "id": "s1a", "say": "Glad you're here.", "stage": "welcome" },
-        { "id": "s1b", "say": "I'll walk you around Site Plumb once. The daily habit. Your book of houses. And where the desk work lives.", "stage": "welcome" },
-        { "id": "s1c", "say": "Skip whenever you like. Nothing here can break.", "stage": "welcome" }
+        { "id": "s1a", "say": "Glad you're here.", "stage": "welcome", "point": ".ov-coming" },
+        { "id": "s1b", "say": "I'll walk you around Site Plumb once. The daily habit. Your book of houses. And where the desk work lives.", "stage": "welcome", "point": ".ov-coming" },
+        { "id": "s1c", "say": "Skip whenever you like. Nothing here can break.", "stage": "welcome", "point": ".ov-coming" }
       ]
     },
     {
@@ -126,13 +126,13 @@
       "id": "done",
       "title": "You're set",
       "body": "Replay anytime from Settings.",
-      "sel": "#ovToday",
+      "sel": ".ov-coming",
       "bubSide": "bb",
       "nav": "close",
       "cues": [
-        { "id": "s10a", "say": "You're set.", "stage": "welcome" },
-        { "id": "s10b", "say": "Field Notes from the field. The book when you're home. A briefing per house. The packet for the crew.", "stage": "welcome" },
-        { "id": "s10c", "say": "The rest of this house, and Company, when you need the desk. Replay any time from Settings. I'll get out of your way.", "stage": "welcome" }
+        { "id": "s10a", "say": "You're set.", "stage": "welcome", "point": ".ov-coming" },
+        { "id": "s10b", "say": "Field Notes from the field. The book when you're home. A briefing per house. The packet for the crew.", "stage": "welcome", "point": ".ov-coming" },
+        { "id": "s10c", "say": "The rest of this house, and Company, when you need the desk. Replay any time from Settings. I'll get out of your way.", "stage": "welcome", "point": ".ov-coming" }
       ]
     }
   ]
