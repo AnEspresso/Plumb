@@ -1,4 +1,4 @@
-**v2.344.0 is live.** Tour sets iPhone audio session to playback so Silent does not mute the walk.
+**v2.345.0 is live.** Tour gold stays put. Field Notes demo types a line then waits for a label. Rest of house and Company are whole.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 
