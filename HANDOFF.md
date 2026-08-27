@@ -1,4 +1,7 @@
+**v2.349.0 is live.** Ink 1-7: homeowner Schedule is House and shows crews. To pay sits on Selections. Crew packet is House. Search crews. McCarver shows results or nothing found. Money is 8th-grade. Save-fail toast names the house list.
+
 **v2.347.0 is live.** Spoken tour four-screen Phase A passed. **PIN — tour: leave it.** Do not recut, rebake, or Continue to Phase B unless Peter says a sentence is wrong after watching it on his phone.
+
 
 **v2.348.0 is live.** Homeowner and crew use the same house briefing as the builder (Still open, On the job, The rest of this house). Add a crew / Save / other house on the brief. **Tour stays pinned.**
 

@@ -2013,7 +2013,7 @@ body.on-tour .tour-card{display:block;}
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4>Subcontractors</h4>
       <p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">Your company roster. Every new site starts with these subs — add the crews you use again and again.</p>
-      <input id="rosterSearch" placeholder="Search subcontractors…" autocapitalize="off" autocomplete="off" oninput="renderRoster()" style="margin-bottom:8px;display:none">
+      <input id="rosterSearch" placeholder="Search crews…" autocapitalize="off" autocomplete="off" oninput="renderRoster()" style="margin-bottom:8px;display:none">
       <div id="rosterList"></div>
       <button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add new sub</button>
       <div id="rosterCount" style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:8px"></div>
@@ -2141,7 +2141,7 @@ body.on-tour .tour-card{display:block;}
   <div class="pmodal-scrim" id="concernScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4>Raise a concern</h4>
-      <div class="info-body" style="margin-bottom:12px">Send a photo and note to your builder. It lands on their items list so it doesn’t get lost.</div>
+      <div class="info-body" style="margin-bottom:12px">Send a photo and note to your builder. Your builder sees it in Needs You so it does not get lost.</div>
       <div class="photo-drop" id="cDrop" onclick="var e=document.getElementById('cFile');e&amp;&amp;e.click()" style="margin-bottom:11px">
         <div class="ph" id="cDropPh">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>
@@ -2501,7 +2501,7 @@ body.on-tour .tour-card{display:block;}
   <div class="exc-banner" id="excBanner">
     <span class="exc-lbl">Example build</span>
     <span class="exc-roles">
-      <button data-r="builder" onclick="demoRole('builder')">Builder</button><button data-r="client" onclick="demoRole('client')">Homeowner</button><button data-r="subs" onclick="demoRole('subs')">Sub</button>
+      <button data-r="builder" onclick="demoRole('builder')">Builder</button><button data-r="client" onclick="demoRole('client')">Homeowner</button><button data-r="subs" onclick="demoRole('subs')">Crew</button>
     </span>
     <span class="exc-actions">
       <button class="exc-reset" onclick="resetDemo()">Start over</button>
@@ -2898,7 +2898,7 @@ body.on-tour .tour-card{display:block;}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Add a crew
         </button>
-        <input id="subSearch" class="permit-search" placeholder="Search subcontractors…" oninput="onSubSearch(this.value)">
+        <input id="subSearch" class="permit-search" placeholder="Search crews…" oninput="onSubSearch(this.value)">
         <div id="subList"></div>
       </div>
     </section>
@@ -3164,15 +3164,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.348.0 - Homeowner and crew use the same house briefing as the builder.';
+const PLUMB_VERSION='2.349.0 - Homeowner Schedule is House and shows crews. To pay sits on Selections. Crew packet is House.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.348.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787868901199;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.349.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4272,7 +4272,13 @@ function idbGetDoc(k){return new Promise((res,rej)=>{if(!db)return res(undefined
 function idbDelDoc(k){return new Promise((res)=>{if(!db)return res();const t=db.transaction('docs','readwrite');t.objectStore('docs').delete(k);t.oncomplete=res;t.onerror=res;});}
 
 /* ════════ persistence (metadata) ════════ */
-function persist(){try{if(state.session)state.session.role=normRole(state.session.role);}catch(e){}try{localStorage.setItem(storeKey(),JSON.stringify(state));if(typeof queueSync==='function')queueSync();}catch(e){toast('Storage full — try fewer photos');}try{pkPublishSoon();}catch(e){}}
+let _lastPersist='',_lastPersistKey='';
+function persist(){try{if(state.session)state.session.role=normRole(state.session.role);}catch(e){}try{
+    const raw=JSON.stringify(state,function(k,v){if(typeof v==='string'&&v.length>32&&v.slice(0,11)==='data:image')return '';return v;});
+    const k=storeKey();
+    if(raw===_lastPersist&&k===_lastPersistKey){try{pkPublishSoon();}catch(e2){}return;}
+    localStorage.setItem(k,raw);_lastPersist=raw;_lastPersistKey=k;if(typeof queueSync==='function')queueSync();
+  }catch(e){toast('Could not save. This phone is out of space. The house list is too big for this device.');}try{pkPublishSoon();}catch(e){}}
 
 /* ════════════════════════════════════════════════════════════════════
    DATA ACCESS LAYER  (Phase 0 — the backend seam)
@@ -7455,7 +7461,7 @@ function nyOpenHouse(pid){
   document.getElementById('houseScrim').classList.add('show');
   if(keep)applyScroll('house');
 }
-let _housePid=null,_houseCalPeek=false,_houseResume=null,_houseOpenAll=false,_houseFacts=[];
+let _housePid=null,_houseCalPeek=false,_clientCalPeek=false,_houseResume=null,_houseOpenAll=false,_houseFacts=[];
 function houseStillOpen(){const el=document.getElementById('houseScrim');return !!(el&&el.classList.contains('show')&&_housePid);}
 function refreshHouse(){if(!houseStillOpen())return;renderHouse();}
 function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');_housePid=null;_houseResume=null;_houseResumeScroll=false;_keepScrollY.house=0;try{renderToday();}catch(e){}applyScroll('home');}
@@ -8766,7 +8772,7 @@ function renderSubView(){
   const p=projs.find(x=>x.id===subSel)||projs[0];if(!p){subSel=null;return renderSubView();}
   const tr=subTradeFor(p);
   if(nav)nav.style.display='none';
-  const backHouse=(subTab==='selections'||subTab==='docs');
+  const backHouse=(subTab==='selections'||subTab==='docs'||subTab==='packet');
   const head=`<button class="sv-back" onclick="${backHouse?'subGo(\'todo\')':'subBackToList()'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>${backHouse?'House':'Your sites'}</button>
    <div class="eyebrow" style="margin-top:4px">${esc(p.street||p.name)}</div>`;
   if(subTab==='selections'){
@@ -8774,6 +8780,10 @@ function renderSubView(){
     body.innerHTML=head+`<div class="eyebrow">Selections on your scope</div>`+
       (mySels.length?mySels.map(s=>{return `<div class="sel-row"><div class="si" style="cursor:default"><div class="it">${esc(s.item||'(unspecified)')}</div><div class="ct">${esc(s.cat||'')}${s.room&&s.room!=='—'?' · '+esc(s.room):''}</div>${selTimelineRO(s)}${specReadoutHTML(s)}</div></div>`;}).join('')
         :`<div class="empty">No selections fall under your scope (${esc(tr.label)}) yet.</div>`);
+    setSync(syncStatus);return;
+  }
+  if(subTab==='packet'){
+    body.innerHTML=head+packetHTML(p,tr.id);
     setSync(syncStatus);return;
   }
   const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open');
@@ -9023,7 +9033,7 @@ function jobCostCsv(p){
     const revTxt=revs.map(x=>{const d=x.t?new Date(x.t):null;
       const ds=d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';
       return ds+' '+invUsd(x.from)+' to '+invUsd(x.to)+(x.note?' ('+x.note+')':'');}).join('; ');
-    const notes=[r.paidOver?'paid over signed':'',r.expect>0?'projection set by builder':''].filter(Boolean).join('; ');
+    const notes=[r.paidOver?'paid more than signed':'',r.expect>0?'projection set by builder':''].filter(Boolean).join('; ');
     rows.push([l.label||'',l.trade?specLabel(l.trade):'',l.stage?stageName(l.stage):'',orig,r.budget,revTxt,r.committed,r.spent,r.projected,
       Math.round((r.projected-r.budget)*100)/100,notes]);});
   const cs=costSummary(p);
@@ -9143,7 +9153,7 @@ function renderBudget(){
     h+=`<div class="bgt-grp">${esc(g.label)}</div>`;
     gl.forEach(l=>{const r=costLineRollup(p,l.id);
       h+=`<div class="bgt-row" onclick="openCostLine('${esc(String(l.id))}')">
-        <div class="bgt-l"><b>${esc(l.label||'Untitled')}</b><i>${invUsd(r.exposure)} of ${invUsd(r.budget)} spoken for${r.paidOver?' <b style="color:var(--clay)">· paid over signed</b>':''}${r.expect>0?' <b style="color:var(--ink-3)">· expecting '+invUsd(r.expect)+'</b>':''}</i></div>
+        <div class="bgt-l"><b>${esc(l.label||'Untitled')}</b><i>${invUsd(r.exposure)} used of ${invUsd(r.budget)} budget${r.paidOver?' <b style="color:var(--clay)">· paid more than signed</b>':''}${r.expect>0?' <b style="color:var(--ink-3)">· expecting '+invUsd(r.expect)+'</b>':''}</i></div>
         <div class="bgt-chip ${r.over?'over':''}">${r.over?invUsd(-r.remaining)+' over':invUsd(r.remaining)+' remaining'}</div>
       </div>`;});
   });
@@ -9228,7 +9238,7 @@ function openCostLine(id){
     const cons=costContracts(p,l.id);
     if(cons.length){ah+='<div class="bgt-grp">Contracts on this line</div>'+cons.map(c=>{
       const s=contractSigned(c),pd=contractPaid(p,c.id),left=s-pd;
-      const chip=pd-s>0.005?`<b style="color:var(--clay)">${invUsd(pd-s)} paid over signed</b>`:(left>0.005?invUsd(left)+' left to pay':'paid in full');
+      const chip=pd-s>0.005?`<b style="color:var(--clay)">${invUsd(pd-s)} paid more than signed</b>`:(left>0.005?invUsd(left)+' left to pay':'paid in full');
       return `<div class="bgt-act" onclick="closeCostLine();openCostActual('${esc(String(c.id))}')"><span>${esc(c.payee||'Contract')}${qbBadge(c)}${(c.adds||[]).length?' <i style="opacity:.7">+'+(c.adds||[]).length+' change'+((c.adds||[]).length===1?'':'s')+'</i>':''}</span><i>signed ${invUsd(s)} · paid ${invUsd(pd)} · ${chip}</i></div>`;}).join('');}
     const pays=costActuals(p,l.id).filter(a=>a.kind==='spent');
     if(pays.length){ah+='<div class="bgt-grp">Payments on this line</div>'+pays.map(a=>`<div class="bgt-act" onclick="closeCostLine();openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Payment')}${qbBadge(a)}${a.note?' · '+esc(a.note):''}</span><i>paid ${invUsd(a.amount)}${esc(towardLabel(p,a))}</i></div>`).join('');}
@@ -11396,9 +11406,8 @@ function renderClient(){
       });
     }
     h+='<div class="hs-band">On the job</div><div class="hs-doors">';
-    h+='<button class="hs-door" onclick="openCal()"><div class="k">Schedule</div><div class="m">Crews on this house</div></button>';
-    h+='<button class="hs-door" onclick="clientGo(\'specs\')"><div class="k">Selections</div><div class="m">Your finishes</div></button>';
-    h+='<button class="hs-door" onclick="clientGo(\'specs\')"><div class="k">To pay</div><div class="m">'+usd(Math.max(0,led.out))+' still open</div></button>';
+    h+='<button class="hs-door" onclick="openClientCal()"><div class="k">Schedule</div><div class="m">Crews on this house</div></button>';
+    h+='<button class="hs-door" onclick="clientGo(\'specs\')"><div class="k">Selections</div><div class="m">Your finishes'+(led.out>0.005?(' \u00b7 '+usd(Math.max(0,led.out))+' still to pay'):'')+'</div></button>';
     h+='</div>';
     h+='<div class="hs-band">The rest of this house</div><div class="hs-doors">';
     h+='<button class="hs-door" onclick="clientGo(\'progress\')"><div class="k">Updates</div><div class="m">Photos and notes your builder shares</div></button>';
@@ -13337,14 +13346,14 @@ function subFromWebsite(){
     onOk:(q)=>{ if(q&&q.trim()) webCompanyPick(q.trim()); }});
 }
 async function webCompanyPick(q){
-  toast('Looking up “'+q+'”…');
-  const list=await findCompanies(q);
+  toast('Looking up \u201c'+q+'\u201d\u2026');
+  let list=[];
+  try{list=await findCompanies(q);}catch(e){list=[];}
   if(!list.length){
-    openPrompt({title:'Their website',body:'Couldn’t find “'+q+'” online — paste their site instead. We’ll read it and fill what we can.',placeholder:'https://…',inputmode:'url',okLabel:'Read site',
+    openPrompt({title:'Nothing found',body:'Could not find \u201c'+q+'\u201d online. Paste their website and we will fill what we can. Or Cancel and type the rest.',placeholder:'https://\u2026',inputmode:'url',okLabel:'Read site',
       onOk:(u)=>{ if(u&&u.trim()) applySiteUrl(u.trim()); }});
     return;
   }
-  if(list.length===1){window._webPickList=list;webCompanyChose(0);return;}
   let sc=document.getElementById('webPickScrim');
   if(!sc){
     sc=document.createElement('div');sc.id='webPickScrim';sc.className='pmodal-scrim';
@@ -13354,7 +13363,7 @@ async function webCompanyPick(q){
   document.getElementById('webPickBody').innerHTML=list.slice(0,6).map((c,k)=>
     '<button class="qf-btn" style="width:100%;justify-content:flex-start;gap:10px;margin:4px 0" onclick="webCompanyChose('+k+')">'
     +(c.logo?'<img src="'+c.logo+'" style="width:22px;height:22px;border-radius:5px" onerror="this.style.display="none"">':'')
-    +'<span style="text-align:left"><b>'+esc(c.name||'')+'</b><br><span style="color:var(--ink-3);font-size:12px">'+esc(c.domain||c.sub||'')+'</span></span></button>').join('');
+    +'<span style="text-align:left"><b>'+esc(c.name||'')+'</b><br><span style="color:var(--ink-3);font-size:12px">'+esc([c.phone,c.address,c.domain||c.sub].filter(Boolean).join(' \u00b7 ')||'Name only \u2014 add phone and address if you have them')+'</span></span></button>').join('');
   window._webPickList=list;
   sc.classList.add('show');
 }
@@ -13398,10 +13407,11 @@ async function applySiteUrl(url){
 async function webCompanyChose(k){
   const c=(window._webPickList||[])[k];if(!c)return;
   document.getElementById('webPickScrim').classList.remove('show');
-  applyCompanyHit(c,false);
+  const bits=applyCompanyHit(c,false);
+  if(bits.indexOf('phone')<0&&bits.indexOf('address')<0)toast('Found the name. Add phone and address if you have them.');
+  else toast('Filled '+bits.join(', ')+' \u2014 Save if this is right');
   const u=c.url||(c.domain?('https://'+c.domain):'');
   if(u)await applySiteUrl(u);
-  else toast('Name filled — add the website if you have it');
 }
 function saveSub(){const name=document.getElementById('subName').value.trim();if(!name){toast('Enter a name');return;}
   const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
@@ -13820,7 +13830,7 @@ function idleBook(name){
   bkSyncBtns();bkRenderPacket();}
 function calMine(b){return !calIsSub()||b.subName===(state.session||{}).name;}
 function calVisibleBookings(){
-  if(calIsClient()){const sid=(state.session||{}).site;return allBookings().filter(b=>String(b.p.id)===String(sid)&&b.p.hoCal);}
+  if(calIsClient()){const sid=(state.session||{}).site||((clientProj()||{}).id);return allBookings().filter(b=>String(b.p.id)===String(sid));}
   if(calCrewFilter)return allBookings().filter(b=>b.subName===calCrewFilter);
   return allBookings().filter(b=>calMine(b)&&(calSiteFilter==='all'||String(b.p.id)===String(calSiteFilter)));}
 function calVisibleAvail(){
@@ -13830,9 +13840,20 @@ function calVisibleAvail(){
 function openCal(keepCrew){
   saveScroll('home');
   if(!keepCrew)calCrewFilter='';
+  if(calIsClient()){
+    const p=clientProj();
+    if(p){try{Data.setActive(p.id);}catch(e){}calSiteFilter=String(p.id);}
+    _clientCalPeek=true;
+  }
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   document.getElementById('calview').classList.add('show');renderCal();
-  try{labelHouseBack(document.getElementById('calDoneBtn'),'Done');}catch(e){}}
+  try{labelHouseBack(document.getElementById('calDoneBtn'),(calIsClient()||fromTheHouse())?'House':'Done');}catch(e){}}
+function openClientCal(){
+  const p=clientProj();
+  if(p){try{Data.setActive(p.id);}catch(e){}calSiteFilter=String(p.id);}
+  _clientCalPeek=true;
+  openCal();
+}
 function openCalCrew(name,ts){
   calCrewFilter=String(name||'');
   calSiteFilter='all';
@@ -13856,6 +13877,7 @@ function closeCal(){
   try{renderOvCards();}catch(e){}
   if(_bkCalPeek){_bkCalPeek=false;const bk=document.getElementById('bkScrim');if(bk)bk.classList.add('show');}
   else if(_houseCalPeek){_houseCalPeek=false;navPop();}
+  else if(_clientCalPeek){_clientCalPeek=false;try{if(typeof clientGo==='function')clientGo('home');}catch(e){}}
   else {try{houseMaybeResume();}catch(e){}}
 }
 function calNav(d){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+d,1);renderCal();}
@@ -13933,8 +13955,9 @@ function renderCal(){
       :`<span class="li"${calIsSub()?'':` style="cursor:pointer" onclick="calCrews('${esc(n)}')"`}><span class="sw" style="background:${tradeColor(byName[n].trade)}"></span>${esc(n)} \u00b7 ${byName[n].days}d${crewsOf(n)>1?' \u00b7 '+crewsOf(n)+' crews':''}</span>`).join('')
     +(idle.length?`<span class="li idle" style="cursor:pointer" onclick="openIdle()"><span class="sw"></span>${idle.length} idle this month \u2014 see who</span>`:'')
     +(calIsSub()?'<span class="li idle"><span class="sw" style="background:repeating-linear-gradient(45deg,var(--ink-3) 0 3px,transparent 3px 6px)"></span>Striped = time you\u2019ve blocked</span>'
-      :(calIsClient()?'':'<span class="li idle"><span class="sw" style="opacity:.4;background:var(--ink-3)"></span>Faded = awaiting the sub\u2019s reply</span>'))
+      :(calIsClient()?'':'<span class="li idle"><span class="sw" style="opacity:.4;background:var(--ink-3)"></span>Faded = awaiting the crew reply</span>'))
     +'</div>';
+  const emptyMonth=(calIsClient()&&!monthBs.length)?'<div class="empty" style="margin:12px 2px 0">No crews on the calendar this month.</div>':'';
   const suggHTML='';
   const subCrewBtn=calIsSub()?`<button class="add-sub-btn" style="margin:8px 2px 0" onclick="calMyCrews()">My crews: ${crewsOf((state.session||{}).name||'')} \u2014 change\u2026</button>`:'';
   const exportBtn=calIsClient()?'':`<button class="add-sub-btn" style="margin:8px 2px 0" onclick="calExport()">Add to calendar app (.ics)\u2026</button>`;
@@ -13942,11 +13965,11 @@ function renderCal(){
   const addBtn=calIsClient()?''
     :(calIsSub()
     ?`<button class="add-sub-btn" style="margin:12px 2px 0" onclick="openBk(null,Date.now())">Block time off (working elsewhere)\u2026</button>`
-    :`<button class="add-sub-btn" style="margin:12px 2px 0" onclick="openBk(null,Date.now())">Schedule a subcontractor\u2026</button>`);
+    :`<button class="add-sub-btn" style="margin:12px 2px 0" onclick="openBk(null,Date.now())">Book a crew\u2026</button>`);
   el.innerHTML='<div class="cal-wrap"><div class="cal-main">'+chips+moveBanner+banner+wxBanner
     +`<div class="cal-nav"><div class="m">${calMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</div><div class="btns"><button onclick="calNav(-1)">\u2039</button><button class="today" onclick="calToday()">Today</button><button onclick="calNav(1)">\u203a</button></div></div>`
     +'<div class="cal-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>'
-    +'<div class="cal-grid">'+grid+'</div></div><div class="cal-side">'+legend+suggHTML+addBtn+subCrewBtn+exportBtn+hoBtn+'</div></div>';}
+    +'<div class="cal-grid">'+grid+'</div>'+emptyMonth+'</div><div class="cal-side">'+legend+suggHTML+addBtn+subCrewBtn+exportBtn+hoBtn+'</div></div>';}
 function openDay(ts){calDay=ts;renderDay();document.getElementById('dayScrim').classList.add('show');}
 function closeDay(){document.getElementById('dayScrim').classList.remove('show');}
 function renderDay(){
@@ -14589,7 +14612,7 @@ function packetHTML(p,tradeId){
   if(isBuilder){
     if(availDocs.length){
       h+=`<div class="eyebrow" style="margin-top:16px">Available \u2014 not in this packet</div>`;
-      h+=`<div class="pkt-foot" style="margin-bottom:8px">Untagged site files stay here until you add them. They do not go to the sub.</div>`;
+      h+=`<div class="pkt-foot" style="margin-bottom:8px">Untagged site files stay here until you add them. They do not go to the crew.</div>`;
       availDocs.forEach(function(d){
         h+=`<div class="pkt-doc quiet" style="cursor:default"><span class="n">${esc(d.n)}</span><span class="t">${d.trade?esc(specLabel(d.trade)):'Site file'}${d.fileId||d.fileUrl?'':' \u00b7 no file yet'}</span>
           <span class="pkt-vis" onclick="event.stopPropagation();toggleDocInPacket('${esc(tradeId)}','${String(d.n).replace(/'/g,'\\\'')}')">Add to packet</span></div>`;
@@ -15737,7 +15760,8 @@ function bkAcceptChange(pid,bid,start,end){
 }
 function openSubPacket(projId,tradeId){const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   logEvent('packetViewed','sub · '+specLabel(tradeId));
-  showInfo('Your install packet',packetHTML(p,tradeId));}
+  subSel=String(projId);subTab='packet';try{Data.setActive(projId);}catch(e){}
+  renderSubView();const b=document.getElementById('svBody');if(b)b.scrollTop=0;}
 function openClientPacket(tradeId){const p=clientProj();if(!p)return;
   logEvent('packetViewed','homeowner · '+specLabel(tradeId));
   showInfo(specLabel(tradeId)+' packet',packetHTML(p,tradeId));}
@@ -16095,7 +16119,7 @@ function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDa
   if(!asLog&&!_fieldNote)_fieldNote=false;
   const isSub=(state.session||{}).role==='subs';
   document.getElementById('sheetTitle').textContent=isSub?'Post an update':(asLog?'Daily log entry':'New entry');
-  document.getElementById('sheetSub').textContent=isSub?'Photo first — your builder sees this on their feed.':(asLog?(editingLogDate===todayStr()?'Crew, conditions, what got done.':'Editing '+fmtLogDate(editingLogDate)+'.'):'Photo first — everything else is optional.');
+  document.getElementById('sheetSub').textContent=isSub?'Photo first \u2014 your builder sees this in Needs You.':(asLog?(editingLogDate===todayStr()?'Crew, conditions, what got done.':'Editing '+fmtLogDate(editingLogDate)+'.'):'Photo first \u2014 everything else is optional.');
   document.getElementById('saveBtn').textContent=isSub?'Send to builder':(asLog?'Save entry':'Add to log');
   ['sheetAssignLbl','crewSelect','crewSelect__ss','sheetShareRow'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isSub?'none':'';});
   {const fl=document.getElementById('flag');const fr=fl&&fl.closest('.flagrow');if(fr)fr.style.display=isSub?'none':'';}

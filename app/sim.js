@@ -707,9 +707,20 @@ t('issues header matches segment vocabulary', el('view-decisions').innerHTML.inc
 // homeowner side
 $("state.activeId='p2'");
 const CH=clientHTML('p2','home');
-t('homeowner sees To pay, not Outstanding', CH.includes('To pay')&&!CH.includes('Outstanding'));
+t('homeowner sees still to pay on Selections, not a fake To pay door', CH.includes('Selections')&&CH.includes('still to pay')&&!CH.includes('>To pay<')&&!/<div class="k">To pay<\/div>/.test(CH)&&!CH.includes('Outstanding'));
+t('homeowner Schedule opens House calendar', CH.includes('openClientCal()')&&CH.includes('Crews on this house'));
 t('homeowner stats are tappable doors', CH.includes('hs-door')&&CH.includes('On the job')&&CH.includes('Selections'));
 t('Share an idea sits beside Raise a concern', CH.includes('Raise a concern')&&CH.includes('Share an idea'));
+// 2.349 · Ink 1-7
+t('demo bar chip says Crew', (D.querySelector('.exc-roles button[data-r="subs"]')||{}).textContent==='Crew');
+t('search placeholder is crews', $("document.getElementById('subSearch').placeholder")==='Search crews…');
+t('client calendar is not gated on hoCal', $("String(calVisibleBookings).indexOf('hoCal')")<0);
+t('crew packet is a House door', $("String(openSubPacket).indexOf(\"subTab='packet'\")")>=0);
+t('McCarver shows results or nothing found', $("String(webCompanyPick).indexOf('Nothing found')")>=0&&$("String(webCompanyPick).indexOf('list.length===1')")<0);
+t('money copy dropped spoken for', $("String(renderBudget).indexOf('spoken for')")<0);
+t('packet copy names the crew', $("String(packetHTML).indexOf('go to the sub')")<0);
+t('save-fail toast names the house list', $("String(persist).indexOf('house list is too big')")>=0);
+// sub side
 // sub side
 t('sub docs drop the technical fine print', !subSiteHTML('Clearwater Plumbing','p2').includes('no file yet'));
 asBuilder();$("state.activeId='p2'");
