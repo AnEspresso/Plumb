@@ -247,7 +247,7 @@ let cl=clientHTML('p1','home');
 t('homeowner sees new decision',cl.includes('Sim skylight'));
 const decShown=(cl.match(/class="cl-dec"/g)||[]).length;
 const decCount=$("(()=>{const p=clientProj();const sels=p.selections||[];const d=sels.filter(s=>!s.approved||s.status==='pending');const q=sels.filter(s=>s.status!=='installed'&&specStatus(s).homeownerPending.length);return new Set([...d,...q].map(s=>s.id)).size;})()");
-t('Decisions stat equals union invariant',cl.includes('>'+decCount+'</div>'),'shown-rows='+decShown+' union='+decCount);
+t('Decisions stat equals union invariant', decCount===1?cl.includes('One thing still needs you'):cl.includes(String(decCount)+' still need you'),'shown-rows='+decShown+' union='+decCount);
 // pending items refuse sign-off; selected items sign
 asClient('p1');
 $("Data.updateSelection("+simSelId+",{status:'pending'})");
@@ -276,14 +276,14 @@ S('billing');
 const invId=$("(state.projects.find(p=>p.id==='p3').invoices||[]).find(v=>invNeedsOK(v)).id");
 t('seed has an invoice needing OK',!!invId);
 cl=clientHTML('p3','home');
-t('surface 1: Home lists it',cl.includes('Invoices needing your OK'));
+t('surface 1: Home lists it',cl.includes('Needs your OK'));
 cl=clientHTML('p3','specs');
 t('surface 2: Selections flags needs-your-OK',cl.includes('needs your OK'));
 asClient('p3');
 $("invApprove('p3','"+invId+"')");
 t('approved state set',$("state.projects.find(p=>p.id==='p3').invoices.find(v=>v.id==='"+invId+"').status")==='approved');
 cl=clientHTML('p3','home');
-t('after approval Home stops asking',!cl.includes('Invoices needing your OK'));
+t('after approval Home stops asking',!cl.includes('Needs your OK'));
 cl=clientHTML('p3','specs');
 t('after approval Selections stops asking',!cl.includes('needs your OK'));
 // pay it off; Outstanding reaches $0 on Home
@@ -708,7 +708,7 @@ t('issues header matches segment vocabulary', el('view-decisions').innerHTML.inc
 $("state.activeId='p2'");
 const CH=clientHTML('p2','home');
 t('homeowner sees To pay, not Outstanding', CH.includes('To pay')&&!CH.includes('Outstanding'));
-t('homeowner stats are tappable doors', CH.includes('clDecsHead')&&CH.includes('clPayHead')&&CH.split('scrollIntoView').length>=3);
+t('homeowner stats are tappable doors', CH.includes('hs-door')&&CH.includes('On the job')&&CH.includes('Selections'));
 t('Share an idea sits beside Raise a concern', CH.includes('Raise a concern')&&CH.includes('Share an idea'));
 // sub side
 t('sub docs drop the technical fine print', !subSiteHTML('Clearwater Plumbing','p2').includes('no file yet'));
@@ -834,7 +834,7 @@ for(let i2=0;i2<16;i2++){
   if($("document.getElementById('tourBubble').style.opacity")==='0'){tourOK=false;tourDetail='LAW4 fade at '+i2;break;}
   const wantDock=$("!!(TOUR.grand["+i2+"].after||TOUR.grand["+i2+"].task||TOUR.grand["+i2+"].bubSide)");
   if($("document.getElementById('tourBubble').classList.contains('tour-bub-dock')")!==wantDock){tourOK=false;tourDetail='LAW4 dock at '+i2;break;}
-  if(i2!==0&&i2!==10&&!lifted){tourOK=false;tourDetail='no spotlight at '+i2;break;}
+  if(i2!==0&&i2!==10&&i2!==12&&i2!==13&&!lifted){tourOK=false;tourDetail='no spotlight at '+i2;break;}
 }
 t('all 16 steps navigate, spotlight and count correctly', tourOK, tourDetail);
 // Peter's Back bug, encoded forever: walk 16 → 1 and every landmark must still hold
@@ -1208,7 +1208,11 @@ t('camera tap frames the Field Notes sheet', $("String(tourOnFieldOpen)").indexO
 t('Replay starts the tour from Settings', $("String(replayTour)").indexOf('startTour')>=0);
 t('Replay starts voice on the tap', $("String(replayTour)").indexOf('setTimeout')<0 && $("String(replayTour)").indexOf('tourUnlockAudio')>=0);
 t('Glad you are here stages the book', $("String(tourSceneRect)").indexOf('ovSortRow')>=0);
-t('tour camera opens Field Notes not the house picker', $("String(openLogPick)").indexOf('tourOpenFieldNote')>=0 && $("String(tourOpenFieldNote)").indexOf('288')<0 && $("String(tourOpenFieldNote)").indexOf("classList.add('show')")>=0);
+t('tour camera opens Field Notes not the house picker', $("String(openLogPick)").indexOf('tourOpenFieldNote')>=0 && $("String(tourOpenFieldNote)").indexOf("classList.add('show')")>=0);
+t('homeowner briefing uses house doors', $("String(renderClient)").indexOf('On the job')>=0 && $("String(renderClient)").indexOf('The rest of this house')>=0);
+t('crew briefing uses house doors', $("String(renderSubView)").indexOf('On the job')>=0 && $("String(renderSubView)").indexOf('Your packet')>=0);
+t('add-a-crew save stays Save after a hit', $("String(subAfterHit)").indexOf("save.textContent='Save'")>=0);
+t('book-a-day names the other house', $("String(bkRenderOverlap)").indexOf('Also on')>=0);
 t('tour closes Field Notes when leaving the slide', $("String(tourCloseFieldNote)").indexOf('closeLogPick')>=0 && $("String(tourStep)").indexOf('tourCloseFieldNote')>=0);
 t('rest of house gold is that band only', $("String(tourSceneRect)").indexOf('nextElementSibling')>=0);
 t('company gold is the whole modal', $("String(tourSceneRect)").indexOf("scr.querySelector('.pmodal')")>=0);

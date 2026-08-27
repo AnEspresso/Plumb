@@ -2104,7 +2104,7 @@ body.on-tour .tour-card{display:block;}
     <div class="sv-head">
       <div>
         <div class="wm"><span class="dot"></span>SitePlumb</div>
-        <div class="who" id="svWho">Subcontractor</div>
+        <div class="who" id="svWho">Crew</div>
       </div>
       <div class="hdr-actions"><button class="ov-logout" style="padding:8px 10px" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="ov-logout" onclick="logout()">Sign out</button></div>
     </div>
@@ -2127,7 +2127,7 @@ body.on-tour .tour-card{display:block;}
       <div class="hdr-actions"><button class="ov-logout" style="padding:8px 10px" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="ov-logout" onclick="logout()">Sign out</button></div>
     </div>
     <div class="sv-body" id="clBody"></div>
-    <div class="cl-nav">
+    <div class="cl-nav" style="display:none">
       <div class="tabs">
         <button class="tab on" id="cltab-home" onclick="clientGo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg><span>Home</span></button>
         <button class="tab" id="cltab-progress" onclick="clientGo('progress')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="11" r="2"/><path d="m3 17 5-4 4 3 3-2 6 5"/></svg><span>Updates</span></button>
@@ -2896,7 +2896,7 @@ body.on-tour .tour-card{display:block;}
       <div id="buildSubs" class="build-pane" style="display:none">
         <button class="add-sub-btn" onclick="openAddSub()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          Add subcontractor
+          Add a crew
         </button>
         <input id="subSearch" class="permit-search" placeholder="Search subcontractors…" oninput="onSubSearch(this.value)">
         <div id="subList"></div>
@@ -2993,7 +2993,7 @@ body.on-tour .tour-card{display:block;}
   <!-- add subcontractor -->
   <div class="pmodal-scrim" id="subScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4 id="subModalTitle">Add subcontractor</h4>
+      <h4 id="subModalTitle">Add a crew</h4>
       <div id="subHit" class="sub-hit"></div>
       <div class="qf-row" id="subQuickFill">
         <button class="qf-btn qf-contacts" onclick="subFromContacts()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Contacts</button>
@@ -3164,7 +3164,7 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.347.0 - Tour camera opens Calderwood Field Notes. Picker never stays.';
+const PLUMB_VERSION='2.348.0 - Homeowner and crew use the same house briefing as the builder.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3172,7 +3172,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1787324400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.347.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.348.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8750,7 +8750,7 @@ function showSubView(){subSel=null;subTab='todo';document.getElementById('subvie
 function subProjects(){const n=state.session?state.session.name:'';return state.projects.filter(p=>p.subs.some(s=>s.name===n));}
 function subTradeFor(p){const n=state.session.name;const s=p.subs.find(x=>x.name===n);return s?{id:s.specialty,label:specLabel(s.specialty),cleared:s.cleared}:{id:'general',label:'General',cleared:null};}
 function renderSubView(){
-  const who=state.session;document.getElementById('svWho').textContent=who?who.name+' · Subcontractor':'Subcontractor';
+  const who=state.session;document.getElementById('svWho').textContent=who?who.name+' · Crew':'Crew';
   const body=document.getElementById('svBody');const projs=subProjects();const nav=document.getElementById('subNav');
   if(!subSel){
     if(nav)nav.style.display='none';
@@ -8765,8 +8765,9 @@ function renderSubView(){
   }
   const p=projs.find(x=>x.id===subSel)||projs[0];if(!p){subSel=null;return renderSubView();}
   const tr=subTradeFor(p);
-  if(nav){nav.style.display='';['todo','selections'].forEach(t=>{const b=document.getElementById('subtab-'+t);if(b)b.classList.toggle('on',t===subTab);});}
-  const head=`<button class="sv-back" onclick="subBackToList()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Your sites</button>
+  if(nav)nav.style.display='none';
+  const backHouse=(subTab==='selections'||subTab==='docs');
+  const head=`<button class="sv-back" onclick="${backHouse?'subGo(\'todo\')':'subBackToList()'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>${backHouse?'House':'Your sites'}</button>
    <div class="eyebrow" style="margin-top:4px">${esc(p.street||p.name)}</div>`;
   if(subTab==='selections'){
     const myCats=SUB_SEL_CATS[tr.id]||[];const mySels=(p.selections||[]).filter(s=>myCats.includes(s.cat));
@@ -8776,23 +8777,58 @@ function renderSubView(){
     setSync(syncStatus);return;
   }
   const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open');
-  const recent=p.items.filter(it=>it.crew===tr.label&&!open.some(o=>o.id===it.id)).sort((a,b)=>b.t-a.t).slice(0,6);  // recent = other activity; open items already shown above
+  const recent=p.items.filter(it=>it.crew===tr.label&&!open.some(o=>o.id===it.id)).sort((a,b)=>b.t-a.t).slice(0,6);
   const myDocs=(p.docs||[]).filter(d=>(d.trade===tr.id||!d.trade)&&docAudSub(d)&&docInPacket(p,tr.id,d));
-  const docIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/></svg>';
-  const docsHTML=myDocs.length?('<div class="eyebrow">Documents for your scope</div><div class="feed">'+myDocs.map(d=>`<div class="doc" onclick="openDocFile('${p.id}','${esc(d.fileId||'')}','${esc(d.fileUrl||'')}')"><div class="fi">${docIcon}</div><div class="info"><div class="n">${esc(d.n)}${d.trade?`<span class="doc-trade">${esc(specLabel(d.trade))}</span>`:'<span class="doc-trade gen">Shared</span>'}</div><div class="m">${esc(d.m||'')}${d.fileId?' · tap to open':''}</div></div></div>`).join('')+'</div>'):'';
   const _svMyName=(state.session||{}).name||'';
   const _svToday=dayStart(Date.now());
   const _svBookings=(p.bookings||[]).filter(b=>b.subName===_svMyName&&(b.status||'confirmed')!=='declined'&&b.end>=_svToday).sort((a,b)=>a.start-b.start);
-  const _svSchedHTML='<div class="eyebrow">Your schedule</div>'+(_svBookings.length?_svBookings.map(b=>{const _st=bkStatus(b);const _needs=(_st==='pending'||_st==='modified');return `<div class="day-row" style="cursor:default"><span class="sw" style="background:${tradeColor(b.trade)}"></span><div style="flex:1"><div class="n">${fmtWin(b)}<span class="bk-st ${_st}">${BK_STATUS[_st].label}</span></div>${b.note?`<div class="note">${esc(b.note)}</div>`:''}${_needs?`<div class="row2" style="margin-top:8px"><button class="lpay" onclick="svBkConfirm('${p.id}','${b.id}')">Confirm</button><button class="lpay" onclick="svBkModify('${p.id}','${b.id}')">Change dates</button><button class="lpay" style="color:var(--clay)" onclick="svBkDecline('${p.id}','${b.id}')">Can\u2019t make it</button></div>`:''}</div></div>`;}).join(''):'<div class="td-clear">No dates booked yet \u2014 your builder will schedule you here.</div>');
-  body.innerHTML=head+`
-   <div class="sv-banner ${tr.cleared?'go':''}"><div class="bt"><span class="d"></span>${tr.cleared?'Cleared to start':'Awaiting go-ahead'}</div>
-     <div class="bs">${tr.cleared?'Your builder marked '+esc(tr.label)+' ready to go '+timeAgo(tr.cleared)+'. Your dates are below.':'You will be notified here when the site is ready for your '+esc(tr.label)+' work.'}</div></div>
-   ${_svSchedHTML}
-   <button class="sv-cap" id="svPacket" style="background:var(--surface-2);color:var(--ink)" onclick="openSubPacket('${p.id}','${tr.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9zM9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 11h6M9 15h6"/></svg>Your install packet</button>
-   <button class="sv-cap" id="svUpdate" onclick="subCapture('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>Post an update</button>
-   <div class="eyebrow">Your open items</div>
-   <div class="feed">${open.length?open.map(it=>`<div class="item"><div class="thumb">${thumbHTML(it)}</div><div class="body"><div class="cap">${esc(it.cap)}</div><div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}<span class="when">${timeAgo(it.t)}</span></div></div><button onclick="closeSubItem('${p.id}',${it.id})" title="Mark done" style="align-self:center;border:none;background:transparent;cursor:pointer;color:var(--sage)"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/></svg></button></div>`).join(''):`<div class="empty">No open items on your scope.</div>`}</div>
-   ${recent.length?'<div class="eyebrow">Recent on your scope</div><div class="feed">'+recent.map(it=>`<div class="item"><div class="thumb">${thumbHTML(it)}</div><div class="body"><div class="cap">${esc(it.cap)}</div><div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div></div>${(it.issue&&it.status!=='open')?`<button onclick="reopenSubItem('${p.id}',${it.id})" title="Reopen" style="align-self:center;border:none;background:transparent;cursor:pointer"><svg viewBox="0 0 24 24" width="26" height="26" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="var(--sage)" stroke="var(--sage)"/><path d="M8.5 12l2.5 2.5L16 9" fill="none" stroke="var(--surface)"/></svg></button>`:''}</div>`).join('')+'</div>':''}${docsHTML}`;
+  const needConfirm=_svBookings.filter(function(b){const st=bkStatus(b);return st==='pending'||st==='modified';});
+  const stripSt=open.length?(open.length+' still '+(open.length===1?'needs':'need')+' you'):(tr.cleared?'Cleared to start':'Waiting for the go-ahead');
+  const meta=[];
+  if(tr.cleared)meta.push('Your builder marked '+tr.label+' ready '+timeAgo(tr.cleared));
+  else meta.push('You will see a notice here when this house is ready for '+tr.label);
+  if(_svBookings[0])meta.push('Next on this house · '+fmtWin(_svBookings[0]));
+  let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
+  const facts=[];
+  needConfirm.forEach(function(b){facts.push({k:fmtWin(b),m:'Confirm, change dates, or say you cannot make it',go:'svBkConfirm(\''+p.id+'\',\''+b.id+'\')'});});
+  open.forEach(function(it){facts.push({k:it.cap||'Open item',m:areaText(it.area)||tr.label,go:''});});
+  if(facts.length){
+    h+='<div class="pkt-open"><div class="h">Still open</div>';
+    facts.forEach(function(it){
+      h+='<div class="pkt-or"'+(it.go?(' onclick="'+it.go+'"'):'')+'><div><div class="k">'+esc(it.k)+'</div>'+(it.m?('<div class="m">'+esc(it.m)+'</div>'):'')+'</div><span class="td-chev">\u203a</span></div>';
+    });
+    h+='</div>';
+  }
+  h+='<div class="hs-band">On the job</div><div class="hs-doors">';
+  h+='<button class="hs-door" onclick="subCapture(\''+p.id+'\')"><div class="k">Field Notes</div><div class="m">Post an update</div></button>';
+  h+='<button class="hs-door" onclick="subGo(\'selections\')"><div class="k">Selections</div><div class="m">Finishes on your scope</div></button>';
+  h+='</div>';
+  h+='<div class="hs-band">The rest of this house</div><div class="hs-doors">';
+  h+='<button class="hs-door" onclick="openSubPacket(\''+p.id+'\',\''+tr.id+'\')"><div class="k">Your packet</div><div class="m">Install specs and drawings</div></button>';
+  h+='<button class="hs-door" onclick="subGo(\'docs\')"><div class="k">Documents</div><div class="m">What you need on site</div></button>';
+  h+='</div>';
+  if(_svBookings.length){
+    h+='<div class="eyebrow">Your dates</div>'+_svBookings.map(function(b){
+      const st=bkStatus(b);const needs=(st==='pending'||st==='modified');
+      return '<div class="day-row" style="cursor:default"><span class="sw" style="background:'+tradeColor(b.trade)+'"></span><div style="flex:1"><div class="n">'+fmtWin(b)+'<span class="bk-st '+st+'">'+BK_STATUS[st].label+'</span></div>'+(b.note?('<div class="note">'+esc(b.note)+'</div>'):'')+(needs?'<div class="row2" style="margin-top:8px"><button class="lpay" onclick="svBkConfirm(\''+p.id+'\',\''+b.id+'\')">Confirm</button><button class="lpay" onclick="svBkModify(\''+p.id+'\',\''+b.id+'\')">Change dates</button><button class="lpay" style="color:var(--clay)" onclick="svBkDecline(\''+p.id+'\',\''+b.id+'\')">Can\u2019t make it</button></div>':'')+'</div></div>';
+    }).join('');
+  }
+  if(open.length){
+    h+='<div class="eyebrow">Your open items</div><div class="feed">'+open.map(function(it){
+      return '<div class="item"><div class="thumb">'+thumbHTML(it)+'</div><div class="body"><div class="cap">'+esc(it.cap)+'</div><div class="meta"><span class="tag area">'+esc(areaText(it.area))+'</span>'+(it.client?'<span class="tag ho">Homeowner</span>':'')+'<span class="when">'+timeAgo(it.t)+'</span></div></div><button onclick="closeSubItem(\''+p.id+'\','+it.id+')" title="Mark done" style="align-self:center;border:none;background:transparent;cursor:pointer;color:var(--sage)"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/></svg></button></div>';
+    }).join('')+'</div>';
+  }
+  if(recent.length){
+    h+='<div class="eyebrow">Recent on your scope</div><div class="feed">'+recent.map(function(it){
+      return '<div class="item"><div class="thumb">'+thumbHTML(it)+'</div><div class="body"><div class="cap">'+esc(it.cap)+'</div><div class="meta"><span class="tag area">'+esc(areaText(it.area))+'</span>'+(it.client?'<span class="tag ho">Homeowner</span>':'')+(it.issue?('<span class="status '+it.status+'"><span class="d"></span>'+(it.status==='open'?'Open':'Closed')+'</span>'):'')+'<span class="when">'+timeAgo(it.t)+'</span></div></div>'+((it.issue&&it.status!=='open')?('<button onclick="reopenSubItem(\''+p.id+'\','+it.id+')" title="Reopen" style="align-self:center;border:none;background:transparent;cursor:pointer"><svg viewBox="0 0 24 24" width="26" height="26" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="var(--sage)" stroke="var(--sage)"/><path d="M8.5 12l2.5 2.5L16 9" fill="none" stroke="var(--surface)"/></svg></button>'):'')+'</div>';
+    }).join('')+'</div>';
+  }
+  if(subTab==='docs'){
+    const docIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/></svg>';
+    body.innerHTML=head+'<div class="eyebrow">Documents for your scope</div>'+(myDocs.length?('<div class="feed">'+myDocs.map(function(d){return '<div class="doc" onclick="openDocFile(\''+p.id+'\',\''+esc(d.fileId||'')+'\',\''+esc(d.fileUrl||'')+'\')"><div class="fi">'+docIcon+'</div><div class="info"><div class="n">'+esc(d.n)+(d.trade?('<span class="doc-trade">'+esc(specLabel(d.trade))+'</span>'):'<span class="doc-trade gen">Shared</span>')+'</div><div class="m">'+esc(d.m||'')+(d.fileId?' · tap to open':'')+'</div></div></div>';}).join('')+'</div>'):'<div class="empty">No documents on your scope yet.</div>');
+    setSync(syncStatus);return;
+  }
+  body.innerHTML=h;
   setSync(syncStatus);
 }
 function subGo(t){subTab=t;renderSubView();const b=document.getElementById('svBody');if(b)b.scrollTop=0;}
@@ -11325,17 +11361,33 @@ function renderClient(){
   const decisionCount=new Set([...decisions,...openQs].map(s=>s.id)).size;
   const T=clientTab;let h='';
   h+=`<div style="margin:0 0 12px"><span class="syncpill"><span class="sd"></span>On this device</span></div>`;
+  const houseBack='<button class="sv-back" onclick="clientGo(\'home\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>House</button>';
 
   if(T==='home'){
-    h+=`<div class="cl-hero"><div class="eyebrow">Your home</div><div class="addr">${esc(p.street||p.name)}</div>
-        <div class="cl-track ${track.cls}">${esc(track.txt)}</div>
-        <div class="nx">Now building: <b>${esc(stageName)}</b><br>${next}</div></div>`;
-    if(p.hoCal)h+=`<button class="cal-sugg" style="margin:0 0 12px" onclick="openCal()">\ud83d\uddd3 <b>Site calendar</b> — see which crews are on site and when</button>`;
-    h+=`<div class="cl-stats">
-        <div class="cl-stat ${decisionCount?'attn':''}" style="cursor:pointer" onclick="try{document.getElementById('clDecsHead').scrollIntoView({behavior:'smooth'});}catch(e){}"><div class="k">Decisions</div><div class="v">${decisionCount}</div></div>
-        <div class="cl-stat ${led.out>0?'attn':''}" style="cursor:pointer" onclick="try{document.getElementById('clPayHead').scrollIntoView({behavior:'smooth'});}catch(e){}"><div class="k">To pay</div><div class="v">${led.out<0?'−':''}${usd(led.out)}</div></div>
-      </div>`;
-    h+=`<div class="row2" style="gap:10px;margin-bottom:20px"><button class="cl-concern" onclick="openConcern()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Raise a concern</button><button class="cl-concern" onclick="openIdea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Share an idea</button></div>`;
+    const stripSt=decisionCount?(decisionCount===1?'One thing still needs you':(decisionCount+' still need you')):'All clear on this house';
+    const meta=[];
+    meta.push(p.street||p.name||'Your house');
+    if(stageName)meta.push('Now building \u00b7 '+stageName);
+    if(nb)meta.push((nbTrade?specLabel(nbTrade):'Crew')+' \u00b7 '+_fmtD(nb.start));
+    meta.push('Still to pay \u00b7 '+usd(led.out));
+    h+='<div class="pkt-strip '+(decisionCount?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div><div class="meta">'+esc(track.txt)+(meta.length?('<br>'+meta.map(esc).join('<br>')):'')+'</div></div>';
+    const facts=[];
+    decisions.forEach(function(s){
+      facts.push({k:s.item||'A finish to sign off',m:(s.cat||'')+(s.room&&s.room!=='—'?' \u00b7 '+s.room:''),go:'clientGo(\'specs\')'});
+    });
+    openQs.forEach(function(s){
+      facts.push({k:(s.item||'A finish')+' needs your answer',m:'Selections',go:'clientGo(\'specs\')'});
+    });
+    (p.invoices||[]).filter(invNeedsOK).forEach(function(inv){
+      facts.push({k:inv.no+' \u00b7 '+inv.title,m:'Needs your OK',go:'openInvoiceDetail(\''+p.id+'\',\''+inv.id+'\',\'client\')'});
+    });
+    if(facts.length){
+      h+='<div class="pkt-open"><div class="h">Still open</div>';
+      facts.forEach(function(it){
+        h+='<div class="pkt-or" onclick="'+it.go+'"><div><div class="k">'+esc(it.k)+'</div>'+(it.m?('<div class="m">'+esc(it.m)+'</div>'):'')+'</div><span class="td-chev">\u203a</span></div>';
+      });
+      h+='</div>';
+    }
     const hoMine=(p.items||[]).filter(function(it){return it.client;});
     if(hoMine.length){
       h+='<div class="eyebrow">You wrote us</div>';
@@ -11343,25 +11395,20 @@ function renderClient(){
         h+='<div class="cl-dec"><div class="di"><div class="dt">'+esc(it.cap)+'</div>'+(it.reply?('<div class="ds">Your builder \u00b7 '+esc(it.reply)+'</div>'):'<div class="ds">Sent \u00b7 waiting on your builder</div>')+'</div></div>';
       });
     }
-    h+=`<div class="eyebrow" id="clDecsHead">Decisions needed</div>`;
-    /* deadline chips: each pending decision shows when the trade needs it */
-    if(decisions.length){h+=decisions.map(s=>{
-      const m=selMoney(s.price);const cls=Number(s.price)>0?'up':Number(s.price)<0?'cr':'';
-      const awaitingPick=s.status==='pending';
-      const _dl=dueState(selDeadline(p,s));
-      return `<div class="cl-dec" id="cldec-${s.id}"><div class="di"><div class="dt">${esc(s.item||'(option)')}${m&&m!=='Std'?` <span class="price ${cls}">${m}</span>`:''}${_dl?`<span class="ho-due">${_dl.overdue?'Past due':'by '+fmtDue(_dl.ts)}</span>`:''}</div>
-        <div class="ds">${esc(s.cat||'')}${s.room&&s.room!=='—'?' · '+esc(s.room):''}${awaitingPick?' · choosing options with your builder':''}</div></div>
-        ${awaitingPick?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})">Sign off</button>`}</div>`;}).join('');
-    }
-    if(openQs.length){h+=`<div class="cl-dec" style="cursor:pointer" onclick="clientGo('specs')"><div class="di"><div class="dt">${openQs.length} install question${openQs.length===1?'':'s'} need${openQs.length===1?'s':''} your answers</div><div class="ds">Tap to answer in Selections</div></div><span class="cl-info">Answer →</span></div>`;}
-    if(!decisions.length&&!openQs.length){h+=`<div class="empty">You're all caught up — nothing waiting on you.</div>`;}
-    const sentInv=(p.invoices||[]).filter(invNeedsOK);
-    if(sentInv.length){
-      h+=`<div class="eyebrow" id="clPayHead" style="margin-top:18px">Invoices needing your OK</div>`;
-      h+=sentInv.map(inv=>`<div class="subrow" style="cursor:pointer" onclick="openInvoiceDetail('${p.id}','${inv.id}','client')"><div class="si"><div class="n">${esc(inv.no)} · ${esc(inv.title)}</div><div class="d">${invUsd(inv.total)}${inv.due?(invOverdue(inv)?' · <b style=\"color:var(--clay)\">past due '+esc(inv.due)+'</b>':' · due '+esc(inv.due)):''}</div></div>${invStatusChip(invState(inv))}</div>`).join('');}
+    h+='<div class="hs-band">On the job</div><div class="hs-doors">';
+    h+='<button class="hs-door" onclick="openCal()"><div class="k">Schedule</div><div class="m">Crews on this house</div></button>';
+    h+='<button class="hs-door" onclick="clientGo(\'specs\')"><div class="k">Selections</div><div class="m">Your finishes</div></button>';
+    h+='<button class="hs-door" onclick="clientGo(\'specs\')"><div class="k">To pay</div><div class="m">'+usd(Math.max(0,led.out))+' still open</div></button>';
+    h+='</div>';
+    h+='<div class="hs-band">The rest of this house</div><div class="hs-doors">';
+    h+='<button class="hs-door" onclick="clientGo(\'progress\')"><div class="k">Updates</div><div class="m">Photos and notes your builder shares</div></button>';
+    h+='<button class="hs-door" onclick="clientGo(\'docs\')"><div class="k">Documents</div><div class="m">Drawings and PDFs</div></button>';
+    h+='</div>';
+    h+='<div class="row2" style="gap:10px;margin:16px 0 8px"><button class="cl-concern" onclick="openConcern()">Raise a concern</button><button class="cl-concern" onclick="openIdea()">Share an idea</button></div>';
   }
 
   else if(T==='progress'){
+    h+=houseBack;
     const logT=d=>{const a=(d||'').split('-').map(Number);return a.length===3?new Date(a[0],a[1]-1,a[2]).getTime():0;};
     const sharedRecs=(p.items||[]).filter(it=>(!it.sample||state.showSamples)&&it.share).map(it=>({t:it.t||0,kind:'rec',it}));
     const sharedLogs=(p.logs||[]).filter(l=>l.share).map(l=>({t:l.t||logT(l.date),kind:'log',l}));
@@ -11374,18 +11421,19 @@ function renderClient(){
   }
 
   else if(T==='specs'){
+    h+=houseBack;
     h+=`<button class="cl-concern" onclick="openIdea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg>Share an idea, inspiration, or quote</button>`;
     // packets whose specs are confirmed and awaiting the homeowner's sign-off
     const signTrades=[...new Set((p.subs||[]).map(sb=>sb.specialty))].filter(tr=>{
       const has=tradeSelections(p,tr).length>0;const so=packetSignoff(p,tr);
       return has&&tradeSpecGaps(p,tr).length===0&&!(so.homeowner&&so.homeowner.at);});
     if(signTrades.length){
-      h+=`<div class="cl-needs"><div class="cn-h">✍️ Install packets to approve</div><div class="cn-sub">Specs are set — review each and sign off so your builder can release it to the trade.</div>`+
+      h+=`<div class="cl-needs"><div class="cn-h">Install packets to approve</div><div class="cn-sub">Specs are set. Review each and sign off so your builder can send it to the crew.</div>`+
         signTrades.map(tr=>`<div class="cn-item" style="cursor:pointer" onclick="openClientPacket('${tr}')"><div class="cn-t">${esc(specLabel(tr))} install packet <span class="cn-c">tap to review &amp; sign</span></div></div>`).join('')+`</div>`;
     }
     const needs=sels.filter(s=>s.status!=='installed'&&specStatus(s).homeownerPending.length);
     if(needs.length){
-      h+=`<div class="cl-needs"><div class="cn-h">⚑ Decisions needed before install</div><div class="cn-sub">Your builder needs these confirmed so the trades aren't guessing on site.</div>`+
+      h+=`<div class="cl-needs"><div class="cn-h">Decisions needed before install</div><div class="cn-sub">Your builder needs these confirmed so the crew is not guessing on site.</div>`+
         needs.map(s=>{const hp=specStatus(s).homeownerPending;
           return `<div class="cn-item" id="cldec-${s.id}"><div class="cn-t">${esc(s.item||'(selection)')} <span class="cn-c">${esc(s.cat||'')}${s.room&&s.room!=='—'?' · '+esc(s.room):''}</span></div>`+
             hp.map(x=>`<div class="cn-fld"><label>${esc(x.label)}</label><input data-sid="${s.id}" data-key="${x.key}" placeholder="Your choice…"></div>`).join('')+
@@ -11403,7 +11451,7 @@ function renderClient(){
           ?`<div class="lr"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>
             ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
             ${loose>0.005?`<div class="lr"><span>Credit on account</span><b class="cr">−${usd(loose)}</b></div>`:''}
-            <div class="lr out"><span>Amount outstanding</span><b class="${bs.out<0?'cr':''}">${bs.out<0?'−':''}${usd(bs.out)}</b></div>`
+            <div class="lr out"><span>Still to pay</span><b class="${bs.out<0?'cr':''}">${bs.out<0?'−':''}${usd(bs.out)}</b></div>`
           :`<div class="lr out"><span>Balance due</span><b class="${bs.balanceDue>0?'':'cr'}">${usd(bs.balanceDue)}</b></div>`}
       </div>`;
     const invs=(p.invoices||[]).filter(i=>{const s=invState(i);return s!=='void'&&s!=='draft';}).slice().reverse();
@@ -11430,6 +11478,7 @@ function renderClient(){
   }
 
   else if(T==='docs'){
+    h+=houseBack;
     h+=`<div class="eyebrow">Documents</div>`;
     h+=(p.docs||[]).filter(docAudClient).map(d=>`<div class="doc" onclick="openDocFile('${p.id}','${esc(d.fileId||'')}','${esc(d.fileUrl||'')}')"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/></svg></div><div class="info"><div class="n">${esc(d.n)}</div><div class="m">${esc(d.m)}</div></div><div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>`).join('')||`<div class="empty">No documents shared yet.</div>`;
   }
@@ -12976,10 +13025,10 @@ function subShowMore(){
     const el=document.getElementById(id);if(el)el.style.display='';});
   const more=document.getElementById('subMoreBtn');if(more)more.style.display='none';
 }
-function openRosterAdd(){openAddSub();_rosterMode=true;document.getElementById('subModalTitle').textContent='Add subcontractor to roster';syncQuickFill();}
+function openRosterAdd(){openAddSub();_rosterMode=true;document.getElementById('subModalTitle').textContent='Add a crew to the roster';syncQuickFill();}
 function openAddSub(){_editSubId=null;_rosterMode=false;
   subResetForm();
-  document.getElementById('subModalTitle').textContent='Add subcontractor';
+  document.getElementById('subModalTitle').textContent='Add a crew';
   syncQuickFill();
   document.getElementById('subScrim').classList.add('show');}
 /* The Contacts picker only exists on some browsers (notably NOT iOS Safari).
@@ -12993,7 +13042,7 @@ function openEditSub(id){const p=P();const s=p&&(p.subs||[]).find(x=>x.id===id);
   const set=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};
   set('subName',s.name);fillSubSpec(s.specialty||'');
   set('subContact',s.contact);set('subPhone',s.phone);set('subEmail',s.email);set('subAddress',s.address);set('subWebsite',s.website);set('subLicense',s.license);set('subNotes',s.notes);
-  document.getElementById('subModalTitle').textContent='Edit subcontractor';
+  document.getElementById('subModalTitle').textContent='Edit crew';
   syncQuickFill();
   document.getElementById('subScrim').classList.add('show');}
 function closeAddSub(){document.getElementById('subScrim').classList.remove('show');}
@@ -13365,7 +13414,7 @@ function saveSub(){const name=document.getElementById('subName').value.trim();if
     saveOrgPrefs(op);logEvent('rosterAdd',name);_rosterMode=false;closeAddSub();renderRoster();toast('Added to roster');return;
   }
   if(_editSubId){Data.updateSub(_editSubId,patch);try{Sync.pushAll();}catch(e){}logEvent('subEdited',name);_editSubId=null;closeAddSub();renderBuild();toast('Saved');}
-  else{Data.addSub({id:'s'+Date.now().toString(36),...patch,cleared:null});logEvent('subAdded',name);renderBuild();closeAddSub();toast('Subcontractor added');}
+  else{Data.addSub({id:'s'+Date.now().toString(36),...patch,cleared:null});logEvent('subAdded',name);renderBuild();closeAddSub();toast('Crew added');}
   // If this was launched from the "bring in a job" import flow, refresh it so the
   // running roster count updates and the flow stays open to add more.
   try{if(document.getElementById('startScrim').classList.contains('show')&&_importSiteId)renderImport();}catch(e){}}
@@ -13995,7 +14044,7 @@ function openBk(ref,defTs){
     document.getElementById('bkNote').value=b.note||'';
     del.style.display='';
   }else{
-    title.textContent=calIsSub()?'Block time off':'Schedule a subcontractor';
+    title.textContent=calIsSub()?'Block time off':'Book a crew';
     siteSel.disabled=false;subSel.disabled=false;
     if(calSiteFilter!=='all')siteSel.value=String(calSiteFilter);
     if(calIsSub()){
@@ -14005,7 +14054,7 @@ function openBk(ref,defTs){
     bkFillSubs(siteSel.value);
     const d=_gpISO(defTs||Date.now());
     document.getElementById('bkStart').value=d;document.getElementById('bkEnd').value=d;
-    const _bn=document.getElementById('bkNote');_bn.value='';_bn.placeholder=calIsSub()?'Note for your builder (optional)…':'Note for sub — gate code, scope…';del.style.display='none';
+    const _bn=document.getElementById('bkNote');_bn.value='';_bn.placeholder=calIsSub()?'Note for your builder (optional)\u2026':'Note for the crew \u2014 gate code, scope\u2026';del.style.display='none';
   }
   document.getElementById('bkSiteLbl').textContent=calIsSub()?'Saved under site':'Site';
   subSel.style.display='none';   // native select is the hidden source of truth; bkSubBtn is the visible picker
@@ -14015,7 +14064,7 @@ function openBk(ref,defTs){
 function bkFillSubs(pid){
   const p=state.projects.find(x=>String(x.id)===String(pid));
   const subSel=document.getElementById('bkSub');
-  subSel.innerHTML=((p&&p.subs)||[]).map(sb=>`<option value="${esc(sb.name)}" data-trade="${sb.specialty}">${esc(sb.name)} \u2014 ${esc(specLabel(sb.specialty))}</option>`).join('')||'<option value="">No subs on this site yet</option>';
+  subSel.innerHTML=((p&&p.subs)||[]).map(sb=>`<option value="${esc(sb.name)}" data-trade="${sb.specialty}">${esc(sb.name)} \u2014 ${esc(specLabel(sb.specialty))}</option>`).join('')||'<option value="">No crew on this house yet</option>';
   bkSyncBtns();bkRenderPacket();}
 function bkRenderOverlap(){
   const box=document.getElementById('bkOverlap');if(!box)return;

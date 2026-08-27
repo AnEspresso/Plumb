@@ -1,4 +1,12 @@
-**v2.347.0 is live.** Tour camera opens 288 Calderwood Field Notes. House picker never stays. Labels on screen.
+**v2.347.0 is live.** Spoken tour four-screen Phase A passed. **PIN — tour: leave it.** Do not recut, rebake, or Continue to Phase B unless Peter says a sentence is wrong after watching it on his phone.
+
+**v2.348.0 is live.** Homeowner and crew use the same house briefing as the builder (Still open, On the job, The rest of this house). Add a crew / Save / other house on the brief. **Tour stays pinned.**
+
+**PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
+
+**PIN — laptop QA, two-across doors:** On a Mac/PC, open Calderwood. On the job must be a 2×2 (Field Notes · Schedule / Selections · Money). Open items full width. Money must not sit alone. Phone already two-across. GrokBot can virtualize Mac 1440×900 and PC 1920×1080 for this. Lock-screen push still needs a real computer (`firebase login:ci`).
+
+**PIN — leftovers still open:** Long forms after this shell pass. McCarver lookup fixed in 2.325.0 — re-run ink to confirm phone.
 
 **PIN — Coming up row:** Tap `Framing · 288 Calderwood Ln` on Coming up opens **Edit booking**, not the house briefing. Leave it. Coming up is the calendar. Open the house from All homes. Do not mix two jobs on one row until a builder hits it.
 
