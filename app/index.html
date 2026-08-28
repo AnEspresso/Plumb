@@ -854,7 +854,7 @@
   .cl-dec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:9px;display:flex;align-items:center;gap:12px;}
   .cl-dec .di{flex:1;min-width:0;}
   .cl-dec .dt{font-size:14px;font-weight:600;line-height:1.25;}
-  .cl-dec .ds{font-size:11.5px;color:var(--ink-3);margin-top:3px;}
+  .cl-dec .ds{font-size:14px;color:var(--ink);margin-top:3px;line-height:1.35;font-weight:500;}
   .cl-dec .price{font-size:11.5px;font-weight:700;}
   .cl-dec .price.up{color:var(--oak);}.cl-dec .price.cr{color:var(--sage);}
   .cl-sign{flex:0 0 auto;border:1px solid var(--oak);background:transparent;color:var(--oak);border-radius:11px;padding:9px 13px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
@@ -1061,7 +1061,7 @@
 .ov-hero{flex:0 0 auto;text-align:center;min-width:46px;}
   .ov-hero .hn{font-size:26px;font-weight:700;line-height:1;color:var(--sage);}
   .ov-hero.attn .hn{color:var(--clay);}
-  .ov-hero .hl{font-size:12px;font-weight:600;letter-spacing:.03em;color:var(--ink-3);margin-top:3px;}
+  .ov-hero .hl{font-size:14px;font-weight:650;letter-spacing:.02em;color:var(--ink);margin-top:4px;line-height:1.2;}
   .ov-hero.tap{cursor:pointer;border-radius:12px;transition:opacity .15s;}
   .ov-hero.tap:active{opacity:.55;}
   .ov-sig{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
@@ -3167,15 +3167,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.353.0 - House doors, bands, Still open, Coming up: 16px dark type.';
+const PLUMB_VERSION='2.354.0 - Empty search says No house matches. Card need you is 14px dark.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787931841556;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.353.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787937105026;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.354.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -7950,7 +7950,7 @@ function renderOvCards(){
   if(_ovSort==='attn'&&!q)finished=[];
   else finished.sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
   let head='';
-  if(projs.length){
+  if(projs.length&&!q){
     if(_ovSort==='recent'){
       const prev=allPkPreview();
       head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openPkLog()"><div class="ct"><div><div class="st">All houses</div><div class="nm">${esc(prev.line)}</div>${prev.hot?`<div class="ov-allhot">${esc(prev.hot)}</div>`:''}</div><span class="td-chev">\u203a</span></div></div>`;
@@ -7980,9 +7980,11 @@ function renderOvCards(){
     ?((state.session&&state.session.role==='builder')
       ?`<div class="ov-empty"><svg class="ov-empty-house" viewBox="0 0 300 250" fill="none" stroke="#1B1916" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="28" y1="228" x2="272" y2="228" stroke="#B0895A" stroke-width="2"/><line x1="64" y1="223" x2="236" y2="223" stroke="#B0895A" stroke-width="2.4"/><line x1="72" y1="228" x2="72" y2="92"/><line x1="228" y1="228" x2="228" y2="92"/><line x1="72" y1="146" x2="228" y2="146"/><polyline points="60,96 150,30 240,96" stroke-width="2.2"/><line x1="66" y1="92" x2="234" y2="92"/><line x1="54" y1="158" x2="246" y2="158" stroke-width="1.8"/><rect x="135" y="170" width="30" height="54" stroke-width="1.5"/><rect x="90" y="106" width="28" height="30"/><rect x="182" y="106" width="28" height="30"/></svg><div class="empty">The book is empty.</div><button class="ov-newbtn" onclick="openNewSite()">Add the first house</button></div>`
       :`<div class="empty">No sites assigned to you yet.</div>`)
+    :(q&&!list.length&&!finished.length)
+    ?'<div class="empty">No house matches.</div>'
     :(_ovSort==='attn'&&!list.length&&!finished.length)
     ?'<div class="td-clear">All clear.</div>'
-    :((!list.length&&!finished.length)?(`<div class="empty">${q?'No house matches.':'No sites match.'}</div>`):'');
+    :((!list.length&&!finished.length)?'<div class="empty">No sites match.</div>':'');
   cards.innerHTML=head+body+fin+empty;
   if(_sc)_sc.scrollTop=_keepScroll;
 }

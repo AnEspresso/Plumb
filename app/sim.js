@@ -1097,7 +1097,7 @@ t('Needs You is one card per house', (function(){
   return n===1;
 })());
 t('Attention uses Needs You language', $("String(renderOvCards)").indexOf('needs you')>=0&&$("String(renderOvCards)").indexOf("_ovSort==='attn'")>=0&&$("SORTLABELS.attn")==='Needs You');
-t('empty company does not show All homes', $("String(renderOvCards)").indexOf('if(projs.length)')>=0&&$("String(renderOvCards)").indexOf('The book is empty')>=0);
+t('empty company does not show All homes', $("String(renderOvCards)").indexOf('if(projs.length&&!q)')>=0&&$("String(renderOvCards)").indexOf('The book is empty')>=0);
 t('empty book hides field notes', $("String(renderToday)").indexOf('if(!projs.length)')>=0);
 t('empty book hides houses header', $("String(renderOverview)").indexOf("hd.style.display=projs.length")>=0);
 t('Needs You opens an inbox', $("String(renderOvCards)").indexOf('All homes')>=0&&$("String(renderOvCards)").indexOf('openNyInbox')>=0&&$("String(inbTabLabel)").indexOf('Needs you')>=0);
@@ -1236,6 +1236,8 @@ t('quiet finished house can ask', $("String(maybeAskDoneHouse)").indexOf('Nothin
 t('house card kind sits above the fact', $("String(nyCardBits)").indexOf('ov-k')>=0&&$("String(nyCardBits)").indexOf('ov-l')>=0&&$("String(nyCardBits)").indexOf('still need you')<0);
 t('decision card kind sits above the fact', $("String(pkCardBits)").indexOf('ov-k')>=0&&$("String(pkCardBits)").indexOf('pkKind')>=0);
 t('house doors and Coming up are 16px dark', $("document.documentElement.innerHTML.indexOf('.hs-door .k{font-size:16px')>=0&&document.documentElement.innerHTML.indexOf('.td-soontx{flex:1;font-size:16px;color:var(--ink)')>=0&&document.documentElement.innerHTML.indexOf('.pkt-or .k{font-weight:650;font-size:16px')>=0")===true);
+t('empty search says No house matches before All clear', $("String(renderOvCards)").indexOf("q&&!list.length&&!finished.length")>=0&&$("String(renderOvCards)").indexOf('No house matches')<$("String(renderOvCards)").indexOf('All clear'));
+t('card need you is 14px dark', $("document.documentElement.innerHTML.indexOf('.ov-hero .hl{font-size:14px')>=0&&document.documentElement.innerHTML.indexOf('.ov-hero .hl{font-size:14px;font-weight:650;letter-spacing:.02em;color:var(--ink)')>=0")===true);
 t('tour closes Field Notes when leaving the slide', $("String(tourCloseFieldNote)").indexOf('closeLogPick')>=0 && $("String(tourStep)").indexOf('tourCloseFieldNote')>=0);
 t('rest of house gold is that band only', $("String(tourSceneRect)").indexOf('nextElementSibling')>=0);
 t('company gold is the whole modal', $("String(tourSceneRect)").indexOf("scr.querySelector('.pmodal')")>=0);
