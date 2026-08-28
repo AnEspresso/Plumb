@@ -920,10 +920,13 @@
   .td-morebtn{display:block;width:100%;text-align:left;margin:10px 0 2px;font-family:inherit;font-size:14px;font-weight:700;color:var(--oak);background:none;border:none;cursor:pointer;padding:12px 2px;min-height:44px;letter-spacing:.01em;}
   .td-morebtn:active{opacity:.55;}
   .td-histbtn{display:none;}
-  .ov-decs{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);}
-  .ov-dec{font-size:14.5px;color:var(--ink-2);line-height:1.4;padding:8px 0;min-height:36px;cursor:pointer;}
+  .ov-decs{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);}
+  .ov-dec{padding:11px 0;min-height:44px;cursor:pointer;}
+  .ov-dec + .ov-dec{border-top:1px solid var(--line);}
   .ov-dec:active{opacity:.6;}
-  .ov-dec.more{color:var(--oak);font-weight:650;}
+  .ov-dec .ov-k{font-size:13px;font-weight:700;color:var(--ink);letter-spacing:.02em;line-height:1.25;margin:0 0 4px;}
+  .ov-dec .ov-l{font-size:16px;font-weight:500;color:var(--ink);line-height:1.35;}
+  .ov-dec.more{color:var(--oak);font-weight:650;font-size:15px;min-height:44px;display:flex;align-items:center;}
   .ov-card.allh{border:none;background:transparent;box-shadow:none;border-radius:0;border-bottom:1px solid var(--line);padding:4px 2px 14px;margin:0 0 14px;}
   .ov-card.allh .st{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);}
   .ov-card.allh .nm{font-family:'Source Serif 4',Georgia,serif;font-size:18px;font-weight:600;color:var(--ink);margin-top:4px;letter-spacing:-.015em;line-height:1.3;}
@@ -3164,15 +3167,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.351.0 - Done with this house. Find a street. Finished houses stay off Needs You.';
+const PLUMB_VERSION='2.352.0 - House cards: kind on its own line, 16px fact, no second count.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787924564907;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.351.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787930393663;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.352.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -7871,10 +7874,14 @@ function nySorted(list){return (list||[]).slice().sort(function(a,b){return (a.p
 function nyForHouse(p){return nySorted(_nyIssues([p]).filter(function(x){return !x.cross&&String(x.pid)===String(p.id);}));}
 function pkCardBits(p){
   const rows=pkRowsFor(p.id);
-  if(!rows.length)return '<div class="ov-decs"><div class="ov-dec">Nothing decided yet</div></div>';
+  if(!rows.length)return '<div class="ov-decs"><div class="ov-dec"><div class="ov-l">Nothing decided yet</div></div></div>';
   const shown=rows.slice(0,2);
   let h='<div class="ov-decs">';
-  shown.forEach(function(r){h+='<div class="ov-dec" onclick="event.stopPropagation();openPkLog(\''+String(p.id).replace(/'/g,'')+'\')">'+esc(pkLine(r))+(r.t?(' \u00b7 '+esc(timeAgo(r.t))):'')+'</div>';});
+  shown.forEach(function(r){
+    const d=String(r.detail||'').trim();
+    const when=r.t?timeAgo(r.t):'';
+    h+='<div class="ov-dec" onclick="event.stopPropagation();openPkLog(\''+String(p.id).replace(/'/g,'')+'\')"><div class="ov-k">'+esc(pkKind(r))+'</div><div class="ov-l">'+esc(d||when||'On this house')+'</div></div>';
+  });
   if(rows.length>2)h+='<div class="ov-dec more" onclick="event.stopPropagation();openPkLog(\''+String(p.id).replace(/'/g,'')+'\')">All '+rows.length+' on this house</div>';
   return h+'</div>';
 }
@@ -7883,11 +7890,10 @@ function nyCardBits(p){
   const whis=_siteWhisper(p);
   if(!issues.length){
     if(!whis)return '';
-    return '<div class="ov-decs"><div class="ov-dec">'+esc(whis.text)+'</div></div>';
+    return '<div class="ov-decs"><div class="ov-dec"><div class="ov-l">'+esc(whis.text)+'</div></div></div>';
   }
   let h='<div class="ov-decs">';
-  issues.slice(0,2).forEach(function(it){h+='<div class="ov-dec">'+esc(it.kind)+' \u00b7 '+esc(it.line)+'</div>';});
-  if(issues.length>2)h+='<div class="ov-dec more">'+issues.length+' still need you</div>';
+  issues.slice(0,2).forEach(function(it){h+='<div class="ov-dec"><div class="ov-k">'+esc(it.kind)+'</div><div class="ov-l">'+esc(it.line)+'</div></div>';});
   return h+'</div>';
 }
 function allNyPreview(){

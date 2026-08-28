@@ -1,4 +1,40 @@
+**v2.352.0 is live.** House cards: kind on its own line, 16px fact, no second count.
+
+**PIN — Spanish on the crew packet (and Field Notes labels), not a language menu.** US custom shops: English office, Spanish field. Do not add a Settings globe. Do not translate the whole app. When a crew cannot read the packet: Spanish on the packet + Field Notes labels only. After the first sit, not before Ink.
+
 **v2.351.0 is live.** Done with this house. Find a street. Finished houses leave Needs You and Coming up, stay on All homes. Photos for finished houses load when you open the house. Quiet finished house asks once.
+
+**PIN — production ramp (2026-08-28). Do not rewrite the book for this.**
+
+The app can take **one** custom office if we sit the first hour. It is not a silent launch to ten shops. Production home building (Hyphen / 200 lots) is a different product — do not ramp there.
+
+Before the first real login (not code unless named):
+- Sit a **clean Live login** with that builder. Calderwood is not their company. People / invites / empty book only exist in Live.
+- Prove **lock-screen push** on a real phone (`firebase login:ci` on a computer). In-app toast is not a lock screen.
+- Watch one **invite land** (PM, homeowner, or first crew) on their phone.
+- No CoConstruct / spreadsheet import. House one is Add a house. House five from an old list is a stall — **CSV / paste streets only if they stall.**
+- No builder-owned **download my book**. Trust issue if they ask what happens if SitePlumb dies. Before shop two.
+
+First 90 days (do not invent until they hit it):
+- Builder house is a phone card on Mac/PC; homeowner/crew go full page. Pick one look after the sit.
+- Fat plan sets can fill a phone. Photos already shrink; finished houses skip boot. Cloud-first docs later.
+- Warranty vs Done with this house: Orchard left Needs You with a nail-pop. **Warranty band only if they ask.**
+- Money / QuickBooks: sit with their bookkeeper. Do not rebuild Money.
+- Estimator stays pinned.
+- Roles: confirm on the sit. Warning if they open Money to the PM.
+
+At 5–20 companies (SitePlumb the business, not the house briefing):
+- A price (even “free this year”) and a way to turn a shop off.
+- Private “this company last saved / last invite” so Peter knows they did not bounce.
+- Support = one text. Same-day: can’t log in, invite didn’t land, house missing.
+- One-page “your data, your houses” for a paid shop.
+- One Firebase project is fine. Do not split infrastructure.
+
+Not inadequacies — leave them:
+- Coming up opens a booking. Book camera asks which house. People is Live-only in the example. Tour. One 1.3 MB file. Not Procore.
+
+Ramp order: (1) first hour sit + one invite on a real phone (2) laptop day = lock-screen push (3) import only if they stall at house 3+ (4) price + download my book before shop two (5) never: production ERP, estimator, recut tour, split the app.
+
 
 **v2.350.0 is live.** Book a crew names the other house. Homeowner Updates has a post. Packet Text this link works in the example.
 
