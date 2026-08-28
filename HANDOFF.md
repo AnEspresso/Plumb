@@ -1,4 +1,13 @@
+**v2.350.0 is live.** Book a crew names the other house. Homeowner Updates has a post. Packet Text this link works in the example.
+
+**PIN for later (Ink leftovers, not this pass):**
+- People is Live-only in the example. First hour is a new Live login.
+- Coming up opens a booking, not the house. Leave it. Coming up is the calendar.
+- Book camera from the book asks which house. Correct.
+- Builder house is a phone card on Mac/PC. Homeowner and crew go full page. Pick one look after the first builder sit.
+
 **v2.349.0 is live.** Ink 1-7: homeowner Schedule is House and shows crews. To pay sits on Selections. Crew packet is House. Search crews. McCarver shows results or nothing found. Money is 8th-grade. Save-fail toast names the house list.
+
 
 **v2.347.0 is live.** Spoken tour four-screen Phase A passed. **PIN — tour: leave it.** Do not recut, rebake, or Continue to Phase B unless Peter says a sentence is wrong after watching it on his phone.
 

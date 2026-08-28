@@ -186,7 +186,7 @@ t('client attaches only its five colls', $("__g.attached.join()")==='items,bk,se
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
-t('SEED_VERSION 16',$('SEED_VERSION')===16);
+t('SEED_VERSION 18',$('SEED_VERSION')===18);
 t('10 seed sites',$('state.projects.length')===10);
 t('no boot errors',w.__thrown.length===0,w.__thrown[0]);
 
@@ -1223,7 +1223,9 @@ t('tour camera opens Field Notes not the house picker', $("String(openLogPick)")
 t('homeowner briefing uses house doors', $("String(renderClient)").indexOf('On the job')>=0 && $("String(renderClient)").indexOf('The rest of this house')>=0);
 t('crew briefing uses house doors', $("String(renderSubView)").indexOf('On the job')>=0 && $("String(renderSubView)").indexOf('Your packet')>=0);
 t('add-a-crew save stays Save after a hit', $("String(subAfterHit)").indexOf("save.textContent='Save'")>=0);
-t('book-a-day names the other house', $("String(bkRenderOverlap)").indexOf('Also on')>=0);
+t('book-a-day names the other house even when days do not overlap', $("String(bkRenderOverlap)").indexOf('Also on')>=0&&$("String(bkRenderOverlap)").indexOf('Not the same days')>=0);
+t('homeowner Updates has a shared post on Calderwood', $("!!(state.projects.find(x=>x.id==='p2').items.some(it=>it.share)&&state.projects.find(x=>x.id==='p2').logs.some(l=>l.share))")===true);
+t('packet Text this link is on the builder packet', $("String(packetHTML)").indexOf('Text this link')>=0&&$("String(sendGuestPacket)").indexOf('_gpPendingSend')>=0&&$("String(gpApproveSend)").indexOf('Texts send in Live mode')>=0);
 t('tour closes Field Notes when leaving the slide', $("String(tourCloseFieldNote)").indexOf('closeLogPick')>=0 && $("String(tourStep)").indexOf('tourCloseFieldNote')>=0);
 t('rest of house gold is that band only', $("String(tourSceneRect)").indexOf('nextElementSibling')>=0);
 t('company gold is the whole modal', $("String(tourSceneRect)").indexOf("scr.querySelector('.pmodal')")>=0);

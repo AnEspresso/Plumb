@@ -2080,19 +2080,19 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="bkScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4 id="bkTitle">Schedule a subcontractor</h4>
+      <h4 id="bkTitle">Book a crew</h4>
       <div class="info-body">
         <div class="lbl" id="bkSiteLbl">Site</div>
         <select id="bkSite" style="display:none"></select>
         <select id="bkSub" style="display:none"></select>
         <button class="pick-btn" id="bkSiteBtn" onclick="bkPickSite()"><span id="bkSiteBtnT">Site</span><span class="chev">›</span></button>
-        <button class="pick-btn" id="bkSubBtn" onclick="bkPickSub()"><span id="bkSubBtnT">Subcontractor</span><span class="chev">›</span></button>
+        <button class="pick-btn" id="bkSubBtn" onclick="bkPickSub()"><span id="bkSubBtnT">Crew</span><span class="chev">›</span></button>
         <button type="button" class="pick-btn" id="bkRangeBtn" onclick="bkCalToggle()"><span id="bkRangeLabel">Choose dates</span><span class="chev">›</span></button>
         <input type="hidden" id="bkStart"><input type="hidden" id="bkEnd">
         <div class="bk-cal" id="bkCal"><div id="bkCalMount"></div>
           <div class="gp-cal-acts"><button type="button" class="gp-cal-reset" onclick="bkCalReset()">Reset</button>
           <button type="button" class="gp-cal-ok" onclick="bkCalDone()" aria-label="Use these dates">✓</button></div></div>
-        <input id="bkNote" placeholder="Note for sub — gate code, scope…" style="font-size:13.5px">
+        <input id="bkNote" placeholder="Note for the crew — gate code, scope…" style="font-size:13.5px">
         <div class="bk-alerts" id="bkAlerts"><div id="bkOverlap"></div><div id="bkPacket"></div><div id="bkGuest"></div><div id="bkSendLink"></div></div>
         <button class="b1 b-go" style="width:100%;margin-top:10px" id="bkSave" onclick="bkSave()">Save</button>
         <button class="add-sub-btn" style="margin-top:8px;display:none;color:var(--clay)" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
@@ -3164,15 +3164,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.349.0 - Homeowner Schedule is House and shows crews. To pay sits on Selections. Crew packet is House.';
+const PLUMB_VERSION='2.350.0 - Book a crew names the other house. Homeowner Updates has a post. Packet Text this link works in the example.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787868901199;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.349.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787914746364;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.350.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -3305,7 +3305,7 @@ function permitStatusFor(i,n,r){const phase=n>1?i/(n-1):0;if(r>=phase+0.15)retur
 function normalizePermits(p){if(p.permits)p.permits=p.permits.filter(pm=>!LEGACY_INSP_PERMITS.has(pm.name));if(p._permitsSeeded)return;const SS=stagesFor(p);const done=SS.filter(s=>p.stageDone&&p.stageDone[s.id]).length;const r=done/SS.length;const ex={};(p.permits||[]).forEach(pm=>{ex[pm.name]=pm.status;});p.permits=DEFAULT_PERMITS.map((name,i)=>({name,status:ex[name]||(done===0?'Not started':permitStatusFor(i,DEFAULT_PERMITS.length,r))}));p._permitsSeeded=true;}
 const SW={oak:'#C7A878,#9A7544',slate:'#8C9AA6,#5E6B78',dove:'#E4DFD5,#C9C2B4',clay:'#C08068,#9A5A44',sage:'#9AA47E,#717C55',dark:'#54504A,#33302B'};
 
-const SEED_VERSION=16; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
+const SEED_VERSION=18; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
 function sampleState(){
   const D=864e5; // one day in ms
   const ds=n=>{const x=new Date(Date.now()-n*D);const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());};
@@ -3379,11 +3379,11 @@ function sampleState(){
           {id:3,cap:'Roof dried-in, windows and exterior doors installed',area:'Framing',crew:'Roofing',issue:false,sw:'slate',t:Date.now()-8*D,day:18,sample:true},
           {id:4,cap:'HVAC trunk conflicts with stair beam — coordinating drop with framer',area:'HVAC',crew:'HVAC / Mechanical',issue:true,status:'open',sw:'clay',t:Date.now()-2*D,day:21,sample:true},
           {id:5,cap:'Primary shower window rough opening 1.5" low — reframed to spec',area:'Primary Bath',crew:'Framing',issue:true,status:'done',sw:'sage',t:Date.now()-4*D,day:20,sample:true},
-          {id:6,cap:'Plumbing rough-in started, basement waste lines set',area:'HVAC',crew:'Plumbing',issue:false,sw:'dove',t:Date.now()-9e6,day:22,sample:true},
+          {id:6,cap:'Plumbing rough-in started, basement waste lines set',area:'HVAC',crew:'Plumbing',issue:false,sw:'dove',t:Date.now()-9e6,day:22,sample:true,share:true},
           {id:7,cap:'Can we keep the existing oak tree at the drive?',area:'Exterior',crew:'',issue:true,status:'open',sw:'clay',t:Date.now()-5e6,day:22,client:true,sample:true}
         ],
         logs:[
-          {date:ds(0),t:Date.now()-9e6,text:'Plumber + electrician on site. HVAC trunk lines roughed, waste lines set. Framing/rough-in inspection requested. Overcast, 64°.'},
+          {date:ds(0),t:Date.now()-9e6,text:'Plumber + electrician on site. HVAC trunk lines roughed, waste lines set. Framing/rough-in inspection requested. Overcast, 64°.',share:true},
           {date:ds(2),t:Date.now()-2*D,text:'HVAC trunk / stair beam conflict found — coordinating drop with framer. South elevation windows installed.'},
           {date:ds(5),t:Date.now()-5*D,text:'Roof dried-in, exterior doors hung. House is weather-tight.'},
           {date:ds(8),t:Date.now()-8*D,text:'Framing topped out, trusses set and braced. Crane day went smooth.'}
@@ -14096,22 +14096,28 @@ function bkRenderOverlap(){
   const sv=(document.getElementById('bkStart')||{}).value||'';
   const ev=(document.getElementById('bkEnd')||{}).value||sv;
   const pid=(document.getElementById('bkSite')||{}).value||'';
-  if(!name||!sv){box.innerHTML='';return;}
-  const start=Date.parse(sv+'T12:00:00'), end=Date.parse(ev+'T12:00:00');
-  if(isNaN(start)||isNaN(end)){box.innerHTML='';return;}
-  const others=[];
+  if(!name){box.innerHTML='';return;}
+  const start=sv?Date.parse(sv+'T12:00:00'):NaN, end=ev?Date.parse(ev+'T12:00:00'):start;
+  const hit=[],soon=[];
   allBookings().forEach(function(b){
     if(b.subName!==name)return;
     if(_bkEdit&&String(b.id)===String(_bkEdit.bid))return;
     if(String(b.p&&b.p.id)===String(pid))return;
-    if(b.end<start||b.start>end)return;
-    const site=(b.p&&(b.p.street||b.p.name))||'';
-    const line=(site?site+' \u00b7 ':'')+fmtWin({start:b.start,end:b.end||b.start});
-    if(line&&others.indexOf(line)<0)others.push(line);
+    if((b.status||'confirmed')==='declined')return;
+    const site=(b.p&&(b.p.street||b.p.name))||'another house';
+    const line=site+' \u00b7 '+fmtWin({start:b.start,end:b.end||b.start});
+    const overlap=!isNaN(start)&&!isNaN(end)&&!(b.end<start||b.start>end);
+    if(overlap){if(hit.indexOf(line)<0)hit.push(line);}
+    else if(b.end>=dayStart(Date.now())-864e5){if(soon.indexOf(line)<0)soon.push(line);}
   });
-  if(!others.length){box.innerHTML='';return;}
-  const street=(others[0].split(' \u00b7 ')[0])||'another house';
-  box.innerHTML='<div class="bk-pkt warn"><div class="bk-pkt-t">Also on '+esc(street)+' that day</div><div class="bk-pkt-d">'+esc(name)+' is already booked: '+others.map(esc).join(' \u00b7 ')+'. Saving this will double-book them unless they have another crew.</div></div>';
+  if(!hit.length&&!soon.length){box.innerHTML='';return;}
+  if(hit.length){
+    const street=(hit[0].split(' \u00b7 ')[0])||'another house';
+    box.innerHTML='<div class="bk-pkt warn"><div class="bk-pkt-t">Also on '+esc(street)+' that day</div><div class="bk-pkt-d">'+esc(name)+' is already booked: '+hit.map(esc).join(' \u00b7 ')+'. Saving this will double-book them unless they have another crew.</div></div>';
+    return;
+  }
+  const street=(soon[0].split(' \u00b7 ')[0])||'another house';
+  box.innerHTML='<div class="bk-pkt warn"><div class="bk-pkt-t">Also on '+esc(street)+'</div><div class="bk-pkt-d">'+esc(name)+' is booked: '+soon.map(esc).join(' \u00b7 ')+'. Not the same days \u2014 still the same crew.</div></div>';
 }
 /* Packet shortcut + verify-before-scheduling. Reads the trade of the currently
    selected sub and shows whether that trade's install packet is ready (specs
@@ -14140,7 +14146,7 @@ function bkRenderPacket(){
   try{bkRenderOverlap();}catch(e){}}
 function bkOpenPacket(){
   const pid=document.getElementById('bkSite').value;const trade=bkSelTrade();
-  if(!pid||!trade){toast('Pick a subcontractor first');return;}
+  if(!pid||!trade){toast('Pick a crew first');return;}
   openSubPacket(pid,trade);}
 function bkSyncBtns(){
   try{
@@ -14148,7 +14154,7 @@ function bkSyncBtns(){
     const sp=state.projects.find(x=>String(x.id)===String(siteSel.value));
     document.getElementById('bkSiteBtnT').textContent=sp?(sp.street||sp.name):(siteSel.options[0]?siteSel.options[0].textContent:'Site');
     const so=subSel.selectedOptions&&subSel.selectedOptions[0];
-    document.getElementById('bkSubBtnT').textContent=(so&&so.value)?so.textContent:'Choose a subcontractor\u2026';
+    document.getElementById('bkSubBtnT').textContent=(so&&so.value)?so.textContent:'Choose a crew\u2026';
     document.getElementById('bkSiteBtn').disabled=siteSel.disabled;
     document.getElementById('bkSiteBtn').style.display=siteSel.style.display==='none'&&siteSel.innerHTML===''?'none':'';
     document.getElementById('bkSubBtn').style.display=subSel.style.display==='none'&&!calIsSub()&&!_bkSubMod?'':'none';
@@ -14269,7 +14275,7 @@ function bkSave(){
     applyEdit();return;
   }
   const subSel=document.getElementById('bkSub');
-  const subName=subSel.value;if(!subName){toast('Pick a subcontractor');return;}
+  const subName=subSel.value;if(!subName){toast('Pick a crew');return;}
   const trade=(subSel.selectedOptions[0]&&subSel.selectedOptions[0].getAttribute('data-trade'))||'';
   const onRoster=(p.subs||[]).some(s=>s.name===subName);
   const clash=[...new Set((p.bookings||[]).filter(b=>b.trade===trade&&b.subName&&b.subName!==subName).map(b=>b.subName))];
@@ -14517,8 +14523,12 @@ function pktAsk(p,tradeId){
     out.push({title:d.n+' has no file yet',meta:'Attach the file',go:`pktGoDocs('${p.id}')`});
   });
   if(sb){
-    const inv=(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
-    if(!inv)out.push({title:'Invite '+sb.name,meta:'So this crew sees this live',go:`invitePacketSub('${p.id}','${sb.id}')`});
+    const bk=(p.bookings||[]).find(function(b){return b.subName===sb.name&&(b.status||'confirmed')!=='declined';});
+    if(bk)out.push({title:'Text this link',meta:sb.name+(bk.note?(' \u00b7 '+fmtWin(bk)):''),go:`sendGuestPacket('${p.id}','${bk.id}')`});
+    else{
+      const inv=(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
+      if(!inv)out.push({title:'Invite '+sb.name,meta:'So this crew sees this live',go:`invitePacketSub('${p.id}','${sb.id}')`});
+    }
   }
   return out;
 }
@@ -14651,11 +14661,19 @@ function packetHTML(p,tradeId){
     h+=`<button class="add-sub-btn" style="margin-top:8px" onclick="openIdea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Add a note for your builder\u2026</button>`;
   }
   if(isBuilder&&sb){
+    const bk=(p.bookings||[]).find(function(b){return b.subName===sb.name&&(b.status||'confirmed')!=='declined';});
+    const phone=_subPhoneOf(sb.name,p)||sb.phone||'';
+    h+='<div class="eyebrow" style="margin-top:16px">Text this link</div>';
+    if(bk){
+      h+='<div class="pkt-foot">'+(phone?('Number on file \u00b7 '+esc(phone)+'. '):('No phone on file for '+esc(sb.name)+' \u2014 the link stays here to copy. '))+'One page with dates, scope and specs.</div>';
+      h+=`<button class="add-sub-btn" onclick="sendGuestPacket('${p.id}','${bk.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Text this link</button>`;
+    }else{
+      h+='<div class="pkt-foot">Save a booking first. Then this button texts the packet to '+esc(sb.name)+'.</div>';
+    }
     const inv=(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
-    h+='<div class="eyebrow" style="margin-top:16px">Live access</div>';
-    if(inv&&inv.status==='joined')h+=`<div class="pkt-foot"><b>${esc(sb.name)} is in SitePlumb.</b> They see this packet live.</div>`;
-    else if(inv)h+=`<div class="pkt-foot">Invite code <b>${esc(inv.code)}</b> \u2014 waiting for them to join. <span class="pkt-vis" style="margin-left:4px" onclick="event.stopPropagation();shareInvite('${esc(inv.code)}')">Share again</span></div>`;
-    else h+=`<button class="add-sub-btn" onclick="invitePacketSub('${p.id}','${sb.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite ${esc(sb.name)}\u2026</button>`;
+    if(inv&&inv.status==='joined')h+=`<div class="pkt-foot" style="margin-top:10px"><b>${esc(sb.name)} is in SitePlumb.</b> They also see this packet live.</div>`;
+    else if(inv)h+=`<div class="pkt-foot" style="margin-top:10px">Invite code <b>${esc(inv.code)}</b> \u2014 waiting for them to join. <span class="pkt-vis" style="margin-left:4px" onclick="event.stopPropagation();shareInvite('${esc(inv.code)}')">Share again</span></div>`;
+    else h+=`<button class="add-sub-btn" onclick="invitePacketSub('${p.id}','${sb.id}')">Invite ${esc(sb.name)} to SitePlumb\u2026</button>`;
   }
   return h;}
 
@@ -14772,10 +14790,8 @@ function sendGuestPacket(pid,bid){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));if(!b){toast('Save the booking first \u2014 the link carries its dates');return;}
   const snap=packetSnapshot(p,b);
-  /* The builder approves the packet by seeing it: the preview IS the guest
-     page, byte for byte. Approve to write and text; anything else sends nothing. */
-  if(appMode()==='real'&&_pkDb()){_gpPendingSend={pid:String(p.id),bid:String(b.id)};}
-  else{_gpPendingSend=null;}
+  /* Preview is the guest page. Approve to text. Demo still shows Text this link so the truck path is walkable. */
+  _gpPendingSend={pid:String(p.id),bid:String(b.id)};
   openGuestPreview(snap);
 }
 let _gpPendingSend=null;
@@ -14784,7 +14800,16 @@ function gpApproveSend(){
   const p=state.projects.find(x=>String(x.id)===ps.pid);
   const b=p&&(p.bookings||[]).find(x=>String(x.id)===ps.bid);
   if(!p||!b){toast('Booking not found');return;}
-  const snap=_gpSnap;const token=_pkToken();
+  const snap=_gpSnap;
+  if(appMode()!=='real'){
+    const token=b.pkToken||('demo_'+String(b.id));
+    if(!b.pkToken)updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});
+    _gpPendingSend=null;closeGuestPreview();
+    _sharePacketLink(Object.assign({},snap,{phone:snap.phone||_subPhoneOf(snap.sub,p)||''}),token);
+    toast('Link is ready to copy. Texts send in Live mode.');
+    return;
+  }
+  const token=_pkToken();
   const db=_pkDb();if(!db){toast('Connecting \u2014 try again in a moment');return;}
   try{
     db.collection('packets').doc(token).set(snap)
