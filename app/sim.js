@@ -1238,6 +1238,7 @@ t('decision card kind sits above the fact', $("String(pkCardBits)").indexOf('ov-
 t('house doors and Coming up are 16px dark', $("document.documentElement.innerHTML.indexOf('.hs-door .k{font-size:16px')>=0&&document.documentElement.innerHTML.indexOf('.td-soontx{flex:1;font-size:16px;color:var(--ink)')>=0&&document.documentElement.innerHTML.indexOf('.pkt-or .k{font-weight:650;font-size:16px')>=0")===true);
 t('empty search says No house matches before All clear', $("String(renderOvCards)").indexOf("q&&!list.length&&!finished.length")>=0&&$("String(renderOvCards)").indexOf('No house matches')<$("String(renderOvCards)").indexOf('All clear'));
 t('card need you is 14px dark', $("document.documentElement.innerHTML.indexOf('.ov-hero .hl{font-size:14px')>=0&&document.documentElement.innerHTML.indexOf('.ov-hero .hl{font-size:14px;font-weight:650;letter-spacing:.02em;color:var(--ink)')>=0")===true);
+t('demo persist does not toast quota', $("String(persist)").indexOf("appMode()!=='real'")>=0&&$("String(persist)").indexOf('house list is too big')>=0);
 t('tour closes Field Notes when leaving the slide', $("String(tourCloseFieldNote)").indexOf('closeLogPick')>=0 && $("String(tourStep)").indexOf('tourCloseFieldNote')>=0);
 t('rest of house gold is that band only', $("String(tourSceneRect)").indexOf('nextElementSibling')>=0);
 t('company gold is the whole modal', $("String(tourSceneRect)").indexOf("scr.querySelector('.pmodal')")>=0);

@@ -1,3 +1,13 @@
+**v2.355.0 is live.** Demo does not toast out of space. Marketing film matches the book (Coming up, Find a street, kind/fact, house briefing). Hero is See Calderwood only.
+
+**PIN — site, after Words 2.354 census (do not do now)**
+- og:image is still the app icon, not the book
+- Home Roles still name owner / PM / homeowner / crew — not superintendent + office
+- How it works og:url points at Home; “No invoices” for the homeowner (app shows invoices)
+- Switch still has a Buildertrend dollar range
+- Terms §§10–11 say PLUMB
+- Lab ship bar leftover words in public HTML (hidden unless lab=1)
+
 **v2.354.0 is live.** Empty search says No house matches. Card need you is 14px dark.
 
 **v2.353.0 is live.** House doors, bands, Still open, Coming up: 16px dark type.

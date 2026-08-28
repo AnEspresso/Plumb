@@ -3167,15 +3167,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.354.0 - Empty search says No house matches. Card need you is 14px dark.';
+const PLUMB_VERSION='2.355.0 - Demo does not toast out of space. Marketing film matches the book.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787937105026;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.354.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787958000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.355.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4276,12 +4276,18 @@ function idbDelDoc(k){return new Promise((res)=>{if(!db)return res();const t=db.
 
 /* ════════ persistence (metadata) ════════ */
 let _lastPersist='',_lastPersistKey='';
-function persist(){try{if(state.session)state.session.role=normRole(state.session.role);}catch(e){}try{
-    const raw=JSON.stringify(state,function(k,v){if(typeof v==='string'&&v.length>32&&v.slice(0,11)==='data:image')return '';return v;});
-    const k=storeKey();
+function persist(){try{if(state.session)state.session.role=normRole(state.session.role);}catch(e){}
+  var raw='',k='';
+  try{
+    raw=JSON.stringify(state,function(key,v){if(typeof v==='string'&&v.length>32&&v.slice(0,11)==='data:image')return '';return v;});
+    k=storeKey();
     if(raw===_lastPersist&&k===_lastPersistKey){try{pkPublishSoon();}catch(e2){}return;}
     localStorage.setItem(k,raw);_lastPersist=raw;_lastPersistKey=k;if(typeof queueSync==='function')queueSync();
-  }catch(e){toast('Could not save. This phone is out of space. The house list is too big for this device.');}try{pkPublishSoon();}catch(e){}}
+  }catch(e){
+    try{_lastPersist=raw;_lastPersistKey=k;}catch(e2){}
+    var demo=false;try{demo=appMode()!=='real';}catch(e3){}
+    if(!demo)toast('Could not save. This phone is out of space. The house list is too big for this device.');
+  }try{pkPublishSoon();}catch(e){}}
 
 /* ════════════════════════════════════════════════════════════════════
    DATA ACCESS LAYER  (Phase 0 — the backend seam)
