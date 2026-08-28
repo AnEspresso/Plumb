@@ -1978,7 +1978,7 @@ body.on-tour .tour-card{display:block;}
       <div class="ov-list">
       <div id="ovToday" class="ov-today"></div>
       <div class="eyebrow ov-builds-hd"><span id="ovBuildsHd">Active Builds</span><span class="eb-line"></span><button class="ov-editbtn" onclick="openEditSites()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit sites</button></div>
-      <input id="ovSearch" class="ov-search" placeholder="Search sites…" oninput="renderOvCards()" style="display:none">
+      <input id="ovSearch" class="ov-search" placeholder="Find a street" oninput="renderOvCards()" style="display:none" autocomplete="off" autocorrect="off">
       <div class="ov-sortrow" id="ovSortRow"></div>
       <div id="ovCards"></div>
       <div class="ov-foot-spacer" aria-hidden="true"></div>
@@ -3164,15 +3164,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.350.0 - Book a crew names the other house. Homeowner Updates has a post. Packet Text this link works in the example.';
+const PLUMB_VERSION='2.351.0 - Done with this house. Find a street. Finished houses stay off Needs You.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787914746364;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.350.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787924564907;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.351.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -3305,7 +3305,7 @@ function permitStatusFor(i,n,r){const phase=n>1?i/(n-1):0;if(r>=phase+0.15)retur
 function normalizePermits(p){if(p.permits)p.permits=p.permits.filter(pm=>!LEGACY_INSP_PERMITS.has(pm.name));if(p._permitsSeeded)return;const SS=stagesFor(p);const done=SS.filter(s=>p.stageDone&&p.stageDone[s.id]).length;const r=done/SS.length;const ex={};(p.permits||[]).forEach(pm=>{ex[pm.name]=pm.status;});p.permits=DEFAULT_PERMITS.map((name,i)=>({name,status:ex[name]||(done===0?'Not started':permitStatusFor(i,DEFAULT_PERMITS.length,r))}));p._permitsSeeded=true;}
 const SW={oak:'#C7A878,#9A7544',slate:'#8C9AA6,#5E6B78',dove:'#E4DFD5,#C9C2B4',clay:'#C08068,#9A5A44',sage:'#9AA47E,#717C55',dark:'#54504A,#33302B'};
 
-const SEED_VERSION=18; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
+const SEED_VERSION=19; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
 function sampleState(){
   const D=864e5; // one day in ms
   const ds=n=>{const x=new Date(Date.now()-n*D);const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());};
@@ -3813,7 +3813,7 @@ function sampleState(){
       },
       /* ───── 9 · CLOSED OUT — CO issued, family in, warranty window ───── */
       {
-        id:'p9', sample:true, name:'Orchard Row Build', street:'884 Orchard Row', city:'Plymouth',
+        id:'p9', sample:true, name:'Orchard Row Build', street:'884 Orchard Row', city:'Plymouth', doneAt:Date.now()-20*D,
         items:[
           {id:1,cap:'Certificate of occupancy issued - keys handed over',area:'Whole House',crew:'',issue:false,sw:'sage',t:Date.now()-24*D,day:172,sample:true,share:true},
           {id:2,cap:'Driveway sealed, final grade and sod complete',area:'Grading',crew:'Landscaping / Grading',issue:false,sw:'oak',t:Date.now()-28*D,day:168,sample:true,share:true},
@@ -4392,7 +4392,17 @@ function logEvent(type,detail){
 }
 
 async function hydratePhotos(){
-  const ids=[];state.projects.forEach(p=>p.items.forEach(i=>{if(i.photoId)ids.push(i.photoId);}));
+  const ids=[];
+  (state.projects||[]).forEach(function(p){
+    if(p.doneAt)return;
+    (p.items||[]).forEach(function(i){if(i.photoId)ids.push(i.photoId);});
+  });
+  for(const id of ids){try{const b=await idbGet(id);if(b)photoURLs[id]=URL.createObjectURL(b);}catch(e){}}
+}
+async function hydrateHousePhotos(p){
+  if(!p)return;
+  const ids=[];
+  (p.items||[]).forEach(function(i){if(i.photoId&&!photoURLs[i.photoId])ids.push(i.photoId);});
   for(const id of ids){try{const b=await idbGet(id);if(b)photoURLs[id]=URL.createObjectURL(b);}catch(e){}}
 }
 
@@ -4427,6 +4437,7 @@ async function backfillPhotos(){            /* pull cloud photos into local IDB 
   if(typeof fetch!=='function')return;
   const todo=[];
   (state.projects||[]).forEach(p=>(p.items||[]).forEach(it=>{
+    if(p.doneAt)return;
     if(it.photoId&&it.photoUrl&&!photoURLs[it.photoId]&&!_bf.inflight[it.photoId])todo.push(it);}));
   for(const it of todo.slice(0,40)){       // bounded per pass; leftovers picked up next schedule
     _bf.inflight[it.photoId]=1;
@@ -5990,7 +6001,7 @@ function openEditSites(){renderEditSites();document.getElementById('esScrim').cl
 function closeEditSites(){document.getElementById('esScrim').classList.remove('show');}
 function renderEditSites(){
   const el=document.getElementById('esBody');if(!el)return;
-  el.innerHTML=(state.projects||[]).map(p=>`<div class="day-row avr" style="cursor:default"><div style="flex:1"><div class="n">${esc(p.street||p.name)}</div><div class="d">${[p.street?esc(p.name):'',esc([p.city,p.state].filter(Boolean).join(', '))].filter(Boolean).join(' · ')}</div></div><button class="lpay" onclick="openImportFor('${p.id}')">Edit</button><button class="lpay" style="color:var(--clay)" onclick="deleteSite('${p.id}')">Delete</button></div>`).join('')
+  el.innerHTML=(state.projects||[]).map(p=>`<div class="day-row avr" style="cursor:default"><div style="flex:1"><div class="n">${esc(p.street||p.name)}</div><div class="d">${[p.street?esc(p.name):'',esc([p.city,p.state].filter(Boolean).join(', '))].filter(Boolean).join(' · ')}${p.doneAt?' \u00b7 Finished':''}</div></div><button class="lpay" onclick="${p.doneAt?`markHouseDone('${p.id}',false)`:`askHouseDone('${p.id}')`}">${p.doneAt?'Put back on the book':'Done with this house'}</button><button class="lpay" onclick="openImportFor('${p.id}')">Edit</button><button class="lpay" style="color:var(--clay)" onclick="deleteSite('${p.id}')">Delete</button></div>`).join('')
     +`<button class="add-sub-btn" style="margin-top:10px" onclick="closeEditSites();openStart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add new or existing site\u2026</button>`;}
 function openHoAccess(){
   const se=document.getElementById('hoSearch');se.value='';
@@ -7223,6 +7234,68 @@ function visibleProjects(){
   if(state.session&&state.session.role==='subs'){return state.projects.filter(p=>p.subs.some(s=>s.name===state.session.name));}
   return state.projects;
 }
+function isOffBook(p){return !!(p&&p.doneAt);}
+function liveProjects(){return (visibleProjects()||[]).filter(function(p){return !isOffBook(p);});}
+function offBookProjects(){return (visibleProjects()||[]).filter(isOffBook);}
+function houseCall(p){
+  const s=String((p&&(p.street||p.name))||'This house');
+  const noNum=s.replace(/^\d+\s+/,'');
+  const core=noNum.replace(/\s+(Lane|Ln|Drive|Dr|Avenue|Ave|Street|St|Road|Rd|Court|Ct|Way|Row|Boulevard|Blvd)\.?$/i,'');
+  return (core.split(/\s+/)[0]||s);
+}
+function markHouseDone(pid,on){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  if(on===false){delete p.doneAt;p.doneAskUntil=0;persist();logEvent('houseOnBook',p.street||p.name);toast(houseCall(p)+' is on the book again');}
+  else {p.doneAt=Date.now();persist();logEvent('houseOffBook',p.street||p.name);toast(houseCall(p)+' is off Needs You. Still on All homes.');}
+  try{renderHouse();}catch(e){}
+  try{renderOverview();}catch(e){}
+  try{renderEditSites();}catch(e){}
+}
+function askHouseDone(pid){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  const street=p.street||p.name||'this house';
+  openConfirm({
+    title:'Done with '+street+'?',
+    body:'Take it off Needs You and Coming up? You can still open it from All homes.',
+    okLabel:'Done with this house',
+    cancelLabel:'Keep it on the book',
+    onConfirm:function(){markHouseDone(p.id,true);}
+  });
+}
+function houseLooksFinished(p){
+  if(!p||isOffBook(p))return false;
+  if(p.stageDone&&p.stageDone.final)return true;
+  if((p.inspections||{}).final==='passed')return true;
+  try{if(overallPct(p)>=100)return true;}catch(e){}
+  return false;
+}
+function houseQuiet14(p){
+  const last=lastActivityTs(p);if(!last)return false;
+  return (Date.now()-last)>=14*864e5;
+}
+function houseAskDone(p){
+  if(((state.session||{}).role)!=='builder')return false;
+  if(p.sample)return false;
+  if(!houseLooksFinished(p))return false;
+  if(!houseQuiet14(p))return false;
+  try{if(nyForHouse(p).length)return false;}catch(e){return false;}
+  if((p.doneAskUntil||0)>Date.now())return false;
+  return true;
+}
+function maybeAskDoneHouse(){
+  try{if(window._tourHoldNext)return;}catch(e){}
+  try{const cs=document.getElementById('confirmScrim');if(cs&&cs.classList.contains('show'))return;}catch(e){}
+  const p=liveProjects().find(houseAskDone);if(!p)return;
+  const street=p.street||p.name||'this house';
+  openConfirm({
+    title:'Done with '+street+'?',
+    body:'Nothing new in two weeks, and this house looks finished. Take it off Needs You and Coming up? You can still open it from All homes.',
+    okLabel:'Done with this house',
+    cancelLabel:'Keep it on the book',
+    onConfirm:function(){markHouseDone(p.id,true);},
+    onCancel:function(){p.doneAskUntil=Date.now()+30*864e5;persist();}
+  });
+}
 function openOpenItems(){renderOpenItems();document.getElementById('openItemsScrim').classList.add('show');}
 function closeOpenItems(){document.getElementById('openItemsScrim').classList.remove('show');}
 function renderOpenItems(){
@@ -7262,13 +7335,14 @@ function renderOverview(){
   const projs=visibleProjects();
   const bh=document.getElementById('ovBuildsHd');if(bh)bh.textContent=projs.length+(projs.length===1?' house':' houses');
   const hd=document.querySelector('.ov-builds-hd');if(hd)hd.style.display=projs.length?'':'none';
-  const sb=document.getElementById('ovSearch');if(sb)sb.style.display=projs.length>5?'':'none';
+  const sb=document.getElementById('ovSearch');if(sb)sb.style.display=projs.length>1?'':'none';
   renderToday();
   try{renderOvWeek();}catch(e){}
   renderOvSortRow();
   renderOvCards();
   setSync(syncStatus);
   toggleDevDot();
+  try{if(!window._doneAskT)window._doneAskT=setTimeout(function(){window._doneAskT=0;maybeAskDoneHouse();},800);}catch(e){}
 }
 /* ── "Today" — the anticipatory briefing. Turns what the builder already entered
    (bookings, specs/packets, schedule windows, activity) into a short, prioritized
@@ -7277,7 +7351,7 @@ function tdDayLabel(ts){const d=dayStart(Date.now());if(ts<=d)return 'today';if(
   return new Date(ts).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
 function tdTradeOf(p,b){return b.trade||((p.subs||[]).find(s=>s.name===b.subName)||{}).specialty||'';}
 function _nyByHouse(projs){
-  const issues=_nyIssues(projs||visibleProjects());
+  const issues=_nyIssues(projs||liveProjects());
   const map={};const cross=[];
   issues.forEach(function(it){
     if(it.cross||it.pid==null||it.pid===''){cross.push(it);return;}
@@ -7457,6 +7531,7 @@ function nyOpenHouse(pid){
   if(String(_housePid)!==String(p.id)){_keepScrollY.house=0;_houseOpenAll=false;}
   _housePid=String(p.id);
   try{Data.setActive(p.id);}catch(e){}
+  try{hydrateHousePhotos(p);}catch(e){}
   renderHouse();
   document.getElementById('houseScrim').classList.add('show');
   if(keep)applyScroll('house');
@@ -7680,13 +7755,17 @@ function houseHTML(p){
     h+='<button class="hs-door wide" data-door="items" onclick="houseGoDesk(\'items\')"><div class="k">Open items</div><div class="m">Open and closed</div></button>';
     h+='</div>';
   }
+  if(isBuilder){
+    if(p.doneAt)h+='<button class="add-sub-btn" style="margin-top:16px" onclick="markHouseDone(\''+String(p.id)+'\',false)">Put back on the book</button>';
+    else h+='<button class="add-sub-btn" style="margin-top:16px" onclick="askHouseDone(\''+String(p.id)+'\')">Done with this house</button>';
+  }
   return h;
 }
 function renderToday(){
   const el=document.getElementById('ovToday');if(!el)return;
   const typing=document.getElementById('nyQText');
   const keep=typing&&document.activeElement===typing?{v:typing.value,s:typing.selectionStart}:null;
-  const projs=visibleProjects();const today=dayStart(Date.now());
+  const projs=liveProjects();const today=dayStart(Date.now());
   if(!projs.length){el.innerHTML='';el.style.display='none';return;}
   el.style.display='';
   try{pkSweep();}catch(e){}
@@ -7726,7 +7805,7 @@ function ovWeekNav(d){if(!_ovMonth)_ovMonth=new Date();_ovMonth=new Date(_ovMont
 function renderOvWeek(){
   const el=document.getElementById('ovWeek');if(!el)return;
   try{document.body.classList.toggle('ov-desk',ovDesk());}catch(e){}
-  const projs=visibleProjects();
+  const projs=liveProjects();
   if(!ovDesk()||!projs.length){el.hidden=true;el.innerHTML='';return;}
   el.hidden=false;
   if(!_ovMonth){const n=new Date();_ovMonth=new Date(n.getFullYear(),n.getMonth(),1);}
@@ -7738,6 +7817,7 @@ function renderOvWeek(){
   try{bs=calVisibleBookings();}catch(e){
     projs.forEach(function(p){(p.bookings||[]).forEach(function(b){if((b.status||'')!=='declined')bs.push(Object.assign({p:p},b));});});
   }
+  bs=bs.filter(function(b){return b.p&&!isOffBook(b.p);});
   const cf=(typeof conflictIds==='function')?conflictIds():{};
   let grid='';
   for(let i=0;i<42;i++){
@@ -7811,7 +7891,7 @@ function nyCardBits(p){
   return h+'</div>';
 }
 function allNyPreview(){
-  const issues=nySorted(_nyIssues(visibleProjects()));
+  const issues=nySorted(_nyIssues(liveProjects()));
   if(!issues.length)return {n:0,line:'All clear',hot:''};
   const top=issues[0];
   const hot=[top.kind,top.site].filter(Boolean).join(' \u00b7 ');
@@ -7834,13 +7914,16 @@ function renderOvSortRow(){
 function setOvSort(m){_ovSort=m;_keepScrollY.home=0;try{localStorage.setItem('plumb.ovSort',m);}catch(e){}renderOvSortRow();renderOvCards();}
 function renderOvCards(){
   const projs=visibleProjects();
+  const live=liveProjects();
+  const done=offBookProjects();
   const q=((document.getElementById('ovSearch')||{}).value||'').trim().toLowerCase();
-  const need=_nyByHouse(projs);
+  const match=function(p){return !q||((p.street||'')+' '+(p.name||'')+' '+(p.city||'')+' '+(p.state||'')).toLowerCase().includes(q);};
+  const need=_nyByHouse(live);
   const cards=document.getElementById('ovCards');
   const _ent=(Date.now()-_ovAnimateTs)<900;
   const _sc=document.querySelector('.ov-body');const _keepScroll=_sc?_sc.scrollTop:0;
   cards.classList.remove('scroll');
-  let list=projs.slice();
+  let list=live.slice();
   if(_ovSort==='attn'){
     list=list.filter(function(p){return !!need.map[String(p.id)]||!!_siteWhisper(p);})
       .sort(function(a,b){
@@ -7856,7 +7939,10 @@ function renderOvCards(){
   }else{
     list.sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
   }
-  list=list.filter(function(p){return !q||((p.street||'')+' '+(p.name||'')+' '+(p.city||'')+' '+(p.state||'')).toLowerCase().includes(q);});
+  list=list.filter(match);
+  let finished=done.filter(match);
+  if(_ovSort==='attn'&&!q)finished=[];
+  else finished.sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
   let head='';
   if(projs.length){
     if(_ovSort==='recent'){
@@ -7867,7 +7953,7 @@ function renderOvCards(){
       head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openNyInbox()"><div class="ct"><div><div class="st">All homes</div><div class="nm">${esc(prev.line)}</div>${prev.hot?`<div class="ov-allhot">${esc(prev.hot)}</div>`:''}</div><span class="td-chev">\u203a</span></div></div>`;
     }
   }
-  const body=list.map(function(p,i){
+  const cardOf=function(p,i){
     const n=(need.map[String(p.id)]||{}).n||0;
     const _ttl=p.street||p.name||'Untitled site';
     if(_ovSort==='recent'){
@@ -7881,15 +7967,17 @@ function renderOvCards(){
         <div class="ov-hero ${n?'attn':'clean'}"><div class="hn">${n||'\u2713'}</div><div class="hl">${n?(n===1?'needs you':'need you'):'all clear'}</div></div></div>
       ${nyCardBits(p)}
     </div>`;
-  }).join('');
+  };
+  const body=list.map(cardOf).join('');
+  const fin=finished.length?('<div class="eyebrow" style="margin-top:18px">Finished</div>'+finished.map(function(p,i){return cardOf(p,list.length+i);}).join('')):'';
   const empty=(!projs.length)
     ?((state.session&&state.session.role==='builder')
       ?`<div class="ov-empty"><svg class="ov-empty-house" viewBox="0 0 300 250" fill="none" stroke="#1B1916" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="28" y1="228" x2="272" y2="228" stroke="#B0895A" stroke-width="2"/><line x1="64" y1="223" x2="236" y2="223" stroke="#B0895A" stroke-width="2.4"/><line x1="72" y1="228" x2="72" y2="92"/><line x1="228" y1="228" x2="228" y2="92"/><line x1="72" y1="146" x2="228" y2="146"/><polyline points="60,96 150,30 240,96" stroke-width="2.2"/><line x1="66" y1="92" x2="234" y2="92"/><line x1="54" y1="158" x2="246" y2="158" stroke-width="1.8"/><rect x="135" y="170" width="30" height="54" stroke-width="1.5"/><rect x="90" y="106" width="28" height="30"/><rect x="182" y="106" width="28" height="30"/></svg><div class="empty">The book is empty.</div><button class="ov-newbtn" onclick="openNewSite()">Add the first house</button></div>`
       :`<div class="empty">No sites assigned to you yet.</div>`)
-    :(_ovSort==='attn'&&!list.length)
+    :(_ovSort==='attn'&&!list.length&&!finished.length)
     ?'<div class="td-clear">All clear.</div>'
-    :((!list.length)?(`<div class="empty">${q?'No sites match \u201c'+esc(q)+'\u201d.':'No sites match.'}</div>`):'');
-  cards.innerHTML=head+body+empty;
+    :((!list.length&&!finished.length)?(`<div class="empty">${q?'No house matches.':'No sites match.'}</div>`):'');
+  cards.innerHTML=head+body+fin+empty;
   if(_sc)_sc.scrollTop=_keepScroll;
 }
 
@@ -15583,7 +15671,7 @@ function inbTabs(){
 }
 function inbRaw(){
   if(_inbMode==='pk')return pkRowsFor(_inbPid||'');
-  const all=_nyIssues(visibleProjects());
+  const all=_nyIssues(liveProjects());
   if(!_inbPid)return all;
   return all.filter(function(r){return String(r.pid||'')===String(_inbPid);});
 }

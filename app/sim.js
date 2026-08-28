@@ -186,7 +186,7 @@ t('client attaches only its five colls', $("__g.attached.join()")==='items,bk,se
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
-t('SEED_VERSION 18',$('SEED_VERSION')===18);
+t('SEED_VERSION 19',$('SEED_VERSION')===19);
 t('10 seed sites',$('state.projects.length')===10);
 t('no boot errors',w.__thrown.length===0,w.__thrown[0]);
 
@@ -1226,6 +1226,13 @@ t('add-a-crew save stays Save after a hit', $("String(subAfterHit)").indexOf("sa
 t('book-a-day names the other house even when days do not overlap', $("String(bkRenderOverlap)").indexOf('Also on')>=0&&$("String(bkRenderOverlap)").indexOf('Not the same days')>=0);
 t('homeowner Updates has a shared post on Calderwood', $("!!(state.projects.find(x=>x.id==='p2').items.some(it=>it.share)&&state.projects.find(x=>x.id==='p2').logs.some(l=>l.share))")===true);
 t('packet Text this link is on the builder packet', $("String(packetHTML)").indexOf('Text this link')>=0&&$("String(sendGuestPacket)").indexOf('_gpPendingSend')>=0&&$("String(gpApproveSend)").indexOf('Texts send in Live mode')>=0);
+t('Orchard Row is off the book in the example', $("!!state.projects.find(x=>x.id==='p9'&&x.doneAt)")===true);
+t('Needs You walks live houses only', $("String(allNyPreview)").indexOf('liveProjects')>=0&&$("String(inbRaw)").indexOf('liveProjects')>=0);
+t('Coming up walks live houses only', $("String(renderToday)").indexOf('liveProjects')>=0);
+t('Find a street is on the book', $("document.getElementById('ovSearch').placeholder")==='Find a street'&&$("String(renderOvCards)").indexOf('Finished')>=0&&$("String(renderOvCards)").indexOf('No house matches')>=0);
+t('Done with this house is on the house', $("String(houseHTML)").indexOf('Done with this house')>=0&&$("String(askHouseDone)").indexOf('Keep it on the book')>=0);
+t('finished houses skip photo boot', $("String(hydratePhotos)").indexOf('doneAt')>=0&&$("typeof hydrateHousePhotos")==='function');
+t('quiet finished house can ask', $("String(maybeAskDoneHouse)").indexOf('Nothing new in two weeks')>=0&&$("String(houseAskDone)").indexOf('houseLooksFinished')>=0);
 t('tour closes Field Notes when leaving the slide', $("String(tourCloseFieldNote)").indexOf('closeLogPick')>=0 && $("String(tourStep)").indexOf('tourCloseFieldNote')>=0);
 t('rest of house gold is that band only', $("String(tourSceneRect)").indexOf('nextElementSibling')>=0);
 t('company gold is the whole modal', $("String(tourSceneRect)").indexOf("scr.querySelector('.pmodal')")>=0);

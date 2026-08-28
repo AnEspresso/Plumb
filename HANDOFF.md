@@ -1,4 +1,7 @@
+**v2.351.0 is live.** Done with this house. Find a street. Finished houses leave Needs You and Coming up, stay on All homes. Photos for finished houses load when you open the house. Quiet finished house asks once.
+
 **v2.350.0 is live.** Book a crew names the other house. Homeowner Updates has a post. Packet Text this link works in the example.
+
 
 **PIN for later (Ink leftovers, not this pass):**
 - People is Live-only in the example. First hour is a new Live login.
