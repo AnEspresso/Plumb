@@ -1235,6 +1235,7 @@ t('finished houses skip photo boot', $("String(hydratePhotos)").indexOf('doneAt'
 t('quiet finished house can ask', $("String(maybeAskDoneHouse)").indexOf('Nothing new in two weeks')>=0&&$("String(houseAskDone)").indexOf('houseLooksFinished')>=0);
 t('house card kind sits above the fact', $("String(nyCardBits)").indexOf('ov-k')>=0&&$("String(nyCardBits)").indexOf('ov-l')>=0&&$("String(nyCardBits)").indexOf('still need you')<0);
 t('decision card kind sits above the fact', $("String(pkCardBits)").indexOf('ov-k')>=0&&$("String(pkCardBits)").indexOf('pkKind')>=0);
+t('house doors and Coming up are 16px dark', $("document.documentElement.innerHTML.indexOf('.hs-door .k{font-size:16px')>=0&&document.documentElement.innerHTML.indexOf('.td-soontx{flex:1;font-size:16px;color:var(--ink)')>=0&&document.documentElement.innerHTML.indexOf('.pkt-or .k{font-weight:650;font-size:16px')>=0")===true);
 t('tour closes Field Notes when leaving the slide', $("String(tourCloseFieldNote)").indexOf('closeLogPick')>=0 && $("String(tourStep)").indexOf('tourCloseFieldNote')>=0);
 t('rest of house gold is that band only', $("String(tourSceneRect)").indexOf('nextElementSibling')>=0);
 t('company gold is the whole modal', $("String(tourSceneRect)").indexOf("scr.querySelector('.pmodal')")>=0);

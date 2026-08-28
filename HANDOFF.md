@@ -1,3 +1,5 @@
+**v2.353.0 is live.** House doors, bands, Still open, Coming up: 16px dark type.
+
 **v2.352.0 is live.** House cards: kind on its own line, 16px fact, no second count.
 
 **PIN — Spanish on the crew packet (and Field Notes labels), not a language menu.** US custom shops: English office, Spanish field. Do not add a Settings globe. Do not translate the whole app. When a crew cannot read the packet: Spanish on the packet + Field Notes labels only. After the first sit, not before Ink.

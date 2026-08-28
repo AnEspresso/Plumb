@@ -610,20 +610,20 @@
   .pkt-strip.ok .st{color:var(--sage);}
   .pkt-strip .meta{font-size:12.5px;color:var(--ink-2);margin-top:5px;line-height:1.45;}
   .pkt-open{background:rgba(176,96,74,.10);border-radius:14px;padding:12px 14px;margin:0 0 16px;}
-  .pkt-open .h{font-weight:700;color:var(--clay);font-size:14.5px;margin-bottom:6px;letter-spacing:-.015em;}
-  .pkt-or{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid rgba(176,96,74,.16);cursor:pointer;}
+  .pkt-open .h{font-weight:700;color:var(--clay);font-size:16px;margin-bottom:8px;letter-spacing:-.015em;}
+  .pkt-or{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-top:1px solid rgba(176,96,74,.16);cursor:pointer;min-height:44px;}
   .pkt-or:first-of-type{border-top:none;padding-top:4px;}
-  .pkt-or .k{font-weight:650;font-size:14.5px;color:var(--ink);line-height:1.3;}
-  .pkt-or .m{font-size:12px;color:var(--ink-3);margin-top:2px;}
+  .pkt-or .k{font-weight:650;font-size:16px;color:var(--ink);line-height:1.3;}
+  .pkt-or .m{font-size:14px;color:var(--ink);margin-top:3px;line-height:1.35;font-weight:500;}
   .pkt-or .td-chev{flex:none;margin-top:2px;line-height:1;}
   .hs-sub{display:none;text-align:center;font-size:12.5px;color:var(--ink-3);margin:-8px 0 12px;font-weight:500;}
   .hs-doors{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 6px;}
   .hs-door{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 12px 11px;text-align:left;cursor:pointer;font-family:inherit;color:var(--ink);}
   .hs-door:active{transform:scale(.98);}
-  .hs-door .k{font-size:13.5px;font-weight:650;letter-spacing:-.01em;}
-  .hs-door .m{font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.3;font-weight:500;}
+  .hs-door .k{font-size:16px;font-weight:650;letter-spacing:-.01em;color:var(--ink);line-height:1.25;}
+  .hs-door .m{font-size:14px;color:var(--ink);margin-top:4px;line-height:1.35;font-weight:500;}
   .hs-door.wide{grid-column:1/-1;}
-  .hs-band{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:14px 2px 8px;}
+  .hs-band{font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);margin:16px 2px 8px;}
   .hs-title-btn{cursor:pointer;}
   body.on-house-desk nav{display:none !important;}
   body.on-house-desk #hdrSync{display:none;}
@@ -1022,9 +1022,9 @@
   .td-q:focus{outline:none;border-color:var(--oak);}
   .ov-whisper{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink);font-weight:560;letter-spacing:-.01em;line-height:1.35;}
   .ov-whisper b{font-weight:650;}
-  .td-soon{display:flex;align-items:center;gap:10px;padding:10px 2px;min-height:44px;cursor:pointer;}
-  .td-when{flex:0 0 auto;min-width:74px;font-size:13.5px;font-weight:700;color:var(--oak);}
-  .td-soontx{flex:1;font-size:14.5px;color:var(--ink-2);}
+  .td-soon{display:flex;align-items:center;gap:10px;padding:12px 2px;min-height:44px;cursor:pointer;}
+  .td-when{flex:0 0 auto;min-width:74px;font-size:15px;font-weight:700;color:var(--oak);}
+  .td-soontx{flex:1;font-size:16px;color:var(--ink);font-weight:500;line-height:1.35;}
   .td-more{display:none;}
   .tour-catch{position:fixed;inset:0;z-index:1999;background:transparent;}
   .tc-p{position:fixed;z-index:1998;background:transparent;}
@@ -3167,15 +3167,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.352.0 - House cards: kind on its own line, 16px fact, no second count.';
+const PLUMB_VERSION='2.353.0 - House doors, bands, Still open, Coming up: 16px dark type.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787930393663;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.352.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1787931841556;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.353.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
