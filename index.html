@@ -352,6 +352,7 @@ h1 em:not(.coin),.origin blockquote,.origin blockquote em,.q p,.brand .tag{font-
 .phone .find{border:1px solid var(--line);border-radius:10px;padding:7px 10px;color:var(--ink-3);font-size:13px;margin:8px 0 10px;}
 .phone .band{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);margin:10px 2px 6px;}
 .phone .doors i{font-size:12px;padding:9px 7px;}
+.phone .doors i.wide{grid-column:1/-1;}
 .phone .doors i small{display:block;font-size:11px;font-weight:500;margin-top:2px;color:var(--ink);}
 .phone .doors{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;}
 .phone .doors i{display:block;border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center;font-style:normal;font-size:11px;font-weight:650;background:var(--surface-2);}
@@ -492,7 +493,7 @@ h2 + .lock{margin-top:-8px;}
 
 
 </style>
-<link rel="stylesheet" href="site.css?v=how2">
+<link rel="stylesheet" href="site.css?v=how3">
 </head>
 <body class="b">
 <div id="shipBar">
@@ -910,6 +911,7 @@ body.lab #shipBar{display:block!important}
         <div class="frame on" data-i="0">
           <div class="phone" style="box-shadow:none;border:0;max-width:none;padding:8px 4px">
             <div class="wm-row"><span class="w">SitePlumb</span><span class="who">Builder</span></div>
+            <div class="band">Coming up</div>
             <div class="soon"><b>Tomorrow</b> Framing · 288 Calderwood Ln</div>
             <div class="soon"><b>Tomorrow</b> HVAC · 741 Whitaker Ave</div>
             <div class="find">Find a street</div>
@@ -943,7 +945,7 @@ body.lab #shipBar{display:block!important}
             <div class="band">On the job</div>
             <div class="doors"><i>Field Notes<small>A note, or a photo</small></i><i>Schedule<small>This house on the calendar</small></i><i>Selections<small>Finishes for this house</small></i><i>Money<small>Committed · spent</small></i></div>
             <div class="band">The rest of this house</div>
-            <div class="doors"><i>Progress</i><i>Photos</i><i>Crews</i><i>Open items</i></div>
+            <div class="doors"><i>Progress</i><i>Daily log</i><i>Photos</i><i>Documents</i><i>Permits</i><i>Crews</i><i class="wide">Open items</i></div>
           </div>
         </div>
         <div class="frame" data-i="3">
@@ -957,9 +959,9 @@ body.lab #shipBar{display:block!important}
       </div>
     </div>
     <div class="film-copy">
-      <p class="beat" id="filmBeat">7:40am · the field</p>
-      <h2 id="filmH">Photograph the leak.</h2>
-      <p id="filmP">On the jobsite, not the office. Field Notes is the camera on the home screen. House, photo, send. Filed to that house.</p>
+      <p class="beat" id="filmBeat">7:40am · the book</p>
+      <h2 id="filmH">The house that needs you is first.</h2>
+      <p id="filmP">Coming up is the week. Needs You is the shout list. Find a street finds any house.</p>
       <div class="film-nav">
         <button type="button" class="btn ghost film-next" id="filmPrev">Back</button>
         <span class="film-count" id="filmCount">1 of 4</span>
@@ -1061,8 +1063,8 @@ body.lab #shipBar{display:block!important}
 })();
 (function(){
   var copy=[
-    {beat:'7:40am · the field', h:'Photograph the leak.', p:'On the jobsite, not the office. Field Notes is the camera on the book. House, photo, a label, Send. Filed to that house.'},
-    {beat:'7:41am · send', h:'Leak. A line. Send.', p:'Tap Leak, Damage, Punch, or Note, then send. Needs You shows the Field Note to the builder right away.'},
+    {beat:'7:40am · the book', h:'The house that needs you is first.', p:'Coming up is the week. Needs You is the shout list. Find a street finds any house.'},
+    {beat:'7:41am · the field', h:'Photograph the leak.', p:'On the jobsite, not the office. Field Notes is the camera on the book. House, photo, a label, Send. Filed to that house.'},
     {beat:'7:42am · the house', h:'One page for this house.', p:'Still open. On the job: Field Notes, Schedule, Selections, Money. The rest of this house is under that.'},
     {beat:'7:43am · the homeowner', h:'The photo is already there.', p:'The homeowner opens the app and the picture is there. The “any update?” text is never written.'}
   ];
