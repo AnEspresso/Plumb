@@ -42,6 +42,14 @@
     padding-top:12px;padding-bottom:10px;
     box-shadow:0 1px 0 var(--line);
   }
+  .compare th.sp{
+    text-transform:none;letter-spacing:-.015em;
+    font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:700;color:var(--ink);
+  }
+  .compare th.sp .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--oak);margin-right:6px;vertical-align:middle;transform:translateY(-1px);
+  }
   .compare td:first-child,.compare th:first-child{width:34%;font-weight:650;color:var(--ink);padding-right:12px;}
   .compare td:nth-child(2),.compare td:nth-child(3){width:33%;}
   .compare .yes{color:var(--sage);font-weight:700;}
@@ -114,14 +122,14 @@
     <h3 class="cmp-title">Side by side</h3>
     <table class="compare">
       <thead>
-        <tr><th>&nbsp;</th><th>Here</th><th>The big suites</th></tr>
+        <tr><th>&nbsp;</th><th class="sp"><span class="dot"></span>SitePlumb</th><th>The big suites</th></tr>
       </thead>
       <tbody>
-        <tr><td>Selections</td><td class="yes">Core feature</td><td class="there">In the suite</td></tr>
-        <tr><td>Homeowner login</td><td class="yes">Core feature</td><td class="there">In the suite</td></tr>
+        <tr><td>Selections</td><td class="yes">Core feature</td><td class="there">Included</td></tr>
+        <tr><td>Homeowner login</td><td class="yes">Core feature</td><td class="there">Included</td></tr>
         <tr><td>Works with no signal</td><td class="yes">Yes</td><td class="there">Needs a connection</td></tr>
-        <tr><td>Estimating</td><td class="here">Not yet<sup>2</sup></td><td class="there">Extra to learn</td></tr>
-        <tr><td>Time tracking</td><td class="here">Not yet<sup>3</sup></td><td class="there">Extra to learn</td></tr>
+        <tr><td>Estimating</td><td class="here">Not yet<sup>2</sup></td><td class="there">Additional onboarding</td></tr>
+        <tr><td>Time tracking</td><td class="here">Not yet<sup>3</sup></td><td class="there">Additional onboarding</td></tr>
         <tr><td>Data import</td><td class="here">Next house by hand</td><td class="pain">Weeks of cleanup</td></tr>
         <tr><td>Support</td><td class="yes">Someone answers</td><td class="pain">A ticket queue</td></tr>
         <tr><td>Setup</td><td class="yes">One Zoom call</td><td class="pain">Weeks, then a bill</td></tr>
@@ -129,7 +137,7 @@
       </tbody>
     </table>
     <div class="table-notes">
-      <p><sup>1</sup> Free while we sit your first houses and while the product is early. No charge today. If that changes, you get notice first. Details in <a href="/app/terms.html">Terms</a>.</p>
+      <p><sup>1</sup> Free while we sit your first houses and while the product is early. No charge today. When that changes, you get notice first. Details in <a href="/app/terms.html">Terms</a>.</p>
       <p><sup>2</sup> Estimating and takeoff are not built yet. Budgets start once you have the job. Details in <a href="/app/terms.html">Terms</a>.</p>
       <p><sup>3</sup> Time tracking is not built yet. Other tools do this. Details in <a href="/app/terms.html">Terms</a>.</p>
       <p>Buildertrend does not post a price. The company quotes on volume. Official page: <a href="https://buildertrend.com/pricing/" rel="noopener">buildertrend.com/pricing</a>.</p>
