@@ -20,29 +20,52 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9,700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Hanken+Grotesk:wght@400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=how4">
+<link rel="stylesheet" href="site.css?v=how5">
 <style>
   .prose{max-width:66ch;}
   .prose p{color:var(--ink-2);font-size:17px;margin:0 0 20px;}
   .prose h3{font-size:24px;margin:38px 0 12px;}
   .prose ul{margin:0 0 20px;padding-left:22px;color:var(--ink-2);}
   .prose li{margin:0 0 9px;}
-  .compare{width:100%;border-collapse:collapse;margin:8px 0 0;font-size:15.5px;}
-  .compare th,.compare td{text-align:left;padding:14px 14px 14px 0;border-bottom:1px solid var(--line);vertical-align:top;}
-  .compare th{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);font-weight:700;}
-  .compare td:first-child{font-weight:600;color:var(--ink);width:34%;}
-  .compare .yes{color:var(--sage);font-weight:700;}
-  .compare .pain{color:var(--clay);font-weight:600;}
-  .compare .here,.compare .there{color:var(--ink);font-weight:600;}
-  .compare .fine a{color:var(--ink-2);}
-  .table-notes{margin:16px 0 0;font-size:13px;color:var(--ink-3);line-height:1.5;}
-  .table-notes a{color:var(--ink-2);}
   .callout{
     border-left:3px solid var(--oak);background:var(--surface);padding:20px 22px;
     border-radius:0 var(--r-sm) var(--r-sm) 0;margin:0 0 26px;
   }
   .callout p{margin:0;font-size:16px;color:var(--ink-2);}
-  @media(max-width:640px){.compare td:first-child{width:auto;}}
+  .cmp-title{font-size:24px;margin:38px 0 16px;}
+  .compare{margin:8px 0 0;max-width:none;}
+  .cmp-legend{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;
+    padding:0 0 12px;border-bottom:1px solid var(--line);
+    font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  }
+  .cmp-legend .skip{display:none;}
+  .cmp-row{padding:16px 0;border-bottom:1px solid var(--line);}
+  .cmp-feat{font-size:16px;font-weight:700;color:var(--ink);margin:0 0 10px;letter-spacing:-.01em;}
+  .cmp-vals{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch;}
+  .cmp-v{
+    display:flex;align-items:center;
+    font-size:14.5px;line-height:1.35;font-weight:600;
+    padding:12px 12px;border-radius:12px;min-height:52px;
+    background:var(--surface-2);color:var(--ink);border:1px solid var(--line);
+  }
+  .cmp-v.yes{background:#EEF2E6;color:var(--sage);border-color:#D5DDC4;}
+  .cmp-v.here{background:var(--surface);color:var(--ink);}
+  .cmp-v.there{background:var(--surface-2);color:var(--ink-2);font-weight:500;}
+  .cmp-v.pain{background:#F8EEEA;color:var(--clay);border-color:#E8D2CB;}
+  .cmp-v sup{font-size:10px;font-weight:700;}
+  .table-notes{display:grid;gap:8px;margin:20px 0 0;padding-top:18px;border-top:1px solid var(--line);}
+  .table-notes p{margin:0;font-size:13px;color:var(--ink-3);line-height:1.5;padding-left:1.15em;text-indent:-1.15em;}
+  .table-notes a{color:var(--ink-2);}
+  @media(min-width:760px){
+    .cmp-legend,.cmp-row{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:16px;align-items:center;}
+    .cmp-legend{padding:0 0 14px;}
+    .cmp-legend .skip{display:block;}
+    .cmp-row{padding:14px 0;}
+    .cmp-feat{margin:0;font-size:16.5px;}
+    .cmp-vals{display:contents;}
+    .cmp-v{min-height:56px;}
+  }
 </style>
 </head>
 <body>
@@ -71,7 +94,8 @@
 </section>
 
 <section class="s tint">
-  <div class="wrap prose">
+  <div class="wrap">
+    <div class="prose">
     <div class="callout">
       <p>Buildertrend is a strong product. If you run thirty-plus homes with office staff, it may fit better. This page is for shops where that is too much.</p>
     </div>
@@ -95,28 +119,89 @@
       <li><b>Bulk import.</b> Not yet. Jobs in flight come over by hand. Email first and I will say if it is worth it.</li>
     </ul>
 
-    <h3>Side by side</h3>
-    <table class="compare">
-      <tr><th>&nbsp;</th><th>Here</th><th>The big suites</th></tr>
-      <tr><td>Selections and approvals</td><td class="yes">Core feature</td><td class="there">One piece of a bigger suite</td></tr>
-      <tr><td>Homeowner login</td><td class="yes">Core feature</td><td class="there">One piece of a bigger suite</td></tr>
-      <tr><td>Works with no signal</td><td class="yes">Yes</td><td class="there">Usually needs a connection</td></tr>
-      <tr><td>Estimating and bidding</td><td class="here">Not yet<sup>2</sup></td><td class="there">Yes — another thing to learn</td></tr>
-      <tr><td>Time tracking</td><td class="here">Not yet<sup>3</sup></td><td class="there">Yes — another thing to learn</td></tr>
-      <tr><td>Data import</td><td class="here">Next house by hand</td><td class="pain">Weeks of files, mapping, and cleanup</td></tr>
-      <tr><td>Support</td><td class="yes">One person, who answers</td><td class="pain">A ticket queue</td></tr>
-      <tr><td>Setup</td><td class="yes">One Zoom call</td><td class="pain">A long migration: weeks of training, leftover modules, and a bill</td></tr>
-      <tr><td>Price</td><td class="yes">Free right now<sup>1</sup></td><td class="pain">Quoted on volume</td></tr>
-    </table>
-    <p class="table-notes">
-      <sup>1</sup> Free while we sit your first houses and while the product is early. No charge today. If that changes, you get notice first. Details in <a href="/app/terms.html">Terms</a>.<br>
-      <sup>2</sup> Estimating and takeoff are not built yet. Budgets start once you have the job. Details in <a href="/app/terms.html">Terms</a>.<br>
-      <sup>3</sup> Time tracking is not built yet. Other tools do this. Details in <a href="/app/terms.html">Terms</a>.<br>
-      Buildertrend does not post a price. The company quotes on volume. Official page: <a href="https://buildertrend.com/pricing/" rel="noopener">buildertrend.com/pricing</a>.
-    </p>
+    </div>
+    <h3 class="cmp-title">Side by side</h3>
+    <div class="compare">
+      <div class="cmp-legend">
+        <span class="skip">&nbsp;</span>
+        <span>Here</span>
+        <span>The big suites</span>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-feat">Selections and approvals</div>
+        <div class="cmp-vals">
+          <div class="cmp-v yes">Core feature</div>
+          <div class="cmp-v there">One piece of a bigger suite</div>
+        </div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-feat">Homeowner login</div>
+        <div class="cmp-vals">
+          <div class="cmp-v yes">Core feature</div>
+          <div class="cmp-v there">One piece of a bigger suite</div>
+        </div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-feat">Works with no signal</div>
+        <div class="cmp-vals">
+          <div class="cmp-v yes">Yes</div>
+          <div class="cmp-v there">Usually needs a connection</div>
+        </div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-feat">Estimating and bidding</div>
+        <div class="cmp-vals">
+          <div class="cmp-v here">Not yet<sup>2</sup></div>
+          <div class="cmp-v there">Yes — another thing to learn</div>
+        </div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-feat">Time tracking</div>
+        <div class="cmp-vals">
+          <div class="cmp-v here">Not yet<sup>3</sup></div>
+          <div class="cmp-v there">Yes — another thing to learn</div>
+        </div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-feat">Data import</div>
+        <div class="cmp-vals">
+          <div class="cmp-v here">Next house by hand</div>
+          <div class="cmp-v pain">Weeks of files, mapping, and cleanup</div>
+        </div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-feat">Support</div>
+        <div class="cmp-vals">
+          <div class="cmp-v yes">Someone who answers</div>
+          <div class="cmp-v pain">A ticket queue</div>
+        </div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-feat">Setup</div>
+        <div class="cmp-vals">
+          <div class="cmp-v yes">One Zoom call</div>
+          <div class="cmp-v pain">Weeks of training, leftover modules, and a bill</div>
+        </div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-feat">Price</div>
+        <div class="cmp-vals">
+          <div class="cmp-v yes">Free right now<sup>1</sup></div>
+          <div class="cmp-v pain">Quoted on volume</div>
+        </div>
+      </div>
+    </div>
+    <div class="table-notes">
+      <p><sup>1</sup> Free while we sit your first houses and while the product is early. No charge today. If that changes, you get notice first. Details in <a href="/app/terms.html">Terms</a>.</p>
+      <p><sup>2</sup> Estimating and takeoff are not built yet. Budgets start once you have the job. Details in <a href="/app/terms.html">Terms</a>.</p>
+      <p><sup>3</sup> Time tracking is not built yet. Other tools do this. Details in <a href="/app/terms.html">Terms</a>.</p>
+      <p>Buildertrend does not post a price. The company quotes on volume. Official page: <a href="https://buildertrend.com/pricing/" rel="noopener">buildertrend.com/pricing</a>.</p>
+    </div>
 
+    <div class="prose">
     <h3>The honest recommendation</h3>
     <p>Do not move a job that is halfway through. Put the next house in. Run both for a month. Keep the old system open until you stop checking it. If the homeowner side does not save you a talk a week, walk away.</p>
+    </div>
   </div>
 </section>
 
