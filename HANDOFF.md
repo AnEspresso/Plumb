@@ -1,3 +1,5 @@
+**Site offer + compare (live).** Free is its own line with *1. How it works has air. Compare: core features sage, not-yet ink, competitor pain clay. No dollar range.
+
 **Site film polish (live with 2.355.0).** Frame 1 caption is the book. Coming up is labeled. The rest lists all seven doors.
 
 **v2.355.0 is live.** Demo does not toast out of space. Marketing film matches the book (Coming up, Find a street, kind/fact, house briefing). Hero is See Calderwood only.

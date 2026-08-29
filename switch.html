@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9,700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Hanken+Grotesk:wght@400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site.css?v=how3">
+<link rel="stylesheet" href="site.css?v=how4">
 <style>
   .prose{max-width:66ch;}
   .prose p{color:var(--ink-2);font-size:17px;margin:0 0 20px;}
@@ -32,8 +32,11 @@
   .compare th{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);font-weight:700;}
   .compare td:first-child{font-weight:600;color:var(--ink);width:34%;}
   .compare .yes{color:var(--sage);font-weight:700;}
-  .compare .no{color:var(--clay);font-weight:600;}
+  .compare .pain{color:var(--clay);font-weight:600;}
+  .compare .here,.compare .there{color:var(--ink);font-weight:600;}
   .compare .fine a{color:var(--ink-2);}
+  .table-notes{margin:16px 0 0;font-size:13px;color:var(--ink-3);line-height:1.5;}
+  .table-notes a{color:var(--ink-2);}
   .callout{
     border-left:3px solid var(--oak);background:var(--surface);padding:20px 22px;
     border-radius:0 var(--r-sm) var(--r-sm) 0;margin:0 0 26px;
@@ -87,29 +90,29 @@
 
     <h3>What does not</h3>
     <ul>
-      <li><b>Estimating and bidding.</b> Not built. If you estimate in CoConstruct today, you will need another place for that.</li>
-      <li><b>Time tracking and payroll hours.</b> Not built.</li>
+      <li><b>Estimating and bidding.</b> Not yet. If you estimate in CoConstruct today, you will need another place for that.</li>
+      <li><b>Time tracking and payroll hours.</b> Not yet.</li>
       <li><b>Bulk import.</b> Not yet. Jobs in flight come over by hand. Email first and I will say if it is worth it.</li>
     </ul>
 
     <h3>Side by side</h3>
     <table class="compare">
       <tr><th>&nbsp;</th><th>Here</th><th>The big suites</th></tr>
-      <tr><td>Selections and approvals</td><td class="yes">Core</td><td>Included</td></tr>
-      <tr><td>Homeowner login</td><td class="yes">The starting point</td><td>A module</td></tr>
-      <tr><td>Works with no signal</td><td class="yes">Yes</td><td>Varies</td></tr>
-      <tr><td>Estimating and bidding</td><td class="no">Not built</td><td class="yes">Yes</td></tr>
-      <tr><td>Time tracking</td><td class="no">Not built</td><td class="yes">Yes</td></tr>
-      <tr><td>Data import</td><td class="no">By hand</td><td class="yes">Assisted</td></tr>
-      <tr><td>Support</td><td>One person, who answers</td><td class="yes">A team</td></tr>
-      <tr><td>Setup</td><td class="yes">One Zoom call</td><td>A migration</td></tr>
-      <tr><td>Price</td><td class="yes">Free right now</td><td>Quoted on volume</td></tr>
+      <tr><td>Selections and approvals</td><td class="yes">Core feature</td><td class="there">One piece of a bigger suite</td></tr>
+      <tr><td>Homeowner login</td><td class="yes">Core feature</td><td class="there">One piece of a bigger suite</td></tr>
+      <tr><td>Works with no signal</td><td class="yes">Yes</td><td class="there">Usually needs a connection</td></tr>
+      <tr><td>Estimating and bidding</td><td class="here">Not yet<sup>2</sup></td><td class="there">Yes — another thing to learn</td></tr>
+      <tr><td>Time tracking</td><td class="here">Not yet<sup>3</sup></td><td class="there">Yes — another thing to learn</td></tr>
+      <tr><td>Data import</td><td class="here">Next house by hand</td><td class="pain">Weeks of files, mapping, and cleanup</td></tr>
+      <tr><td>Support</td><td class="yes">One person, who answers</td><td class="pain">A ticket queue</td></tr>
+      <tr><td>Setup</td><td class="yes">One Zoom call</td><td class="pain">A long migration: weeks of training, leftover modules, and a bill</td></tr>
+      <tr><td>Price</td><td class="yes">Free right now<sup>1</sup></td><td class="pain">Quoted on volume</td></tr>
     </table>
-    <p class="fine" style="margin:14px 0 0;font-size:13px;color:var(--ink-3)">
-      Buildertrend does not post a price. They quote on volume.
-      Independent reports of the last public list: about $339–$1,099 a month.
-      <a href="https://buildworkpro.com/blog/buildertrend-pricing/" rel="noopener">Source</a>.
-      Official page: <a href="https://buildertrend.com/pricing/" rel="noopener">buildertrend.com/pricing</a>.
+    <p class="table-notes">
+      <sup>1</sup> Free while we sit your first houses and while the product is early. No charge today. If that changes, you get notice first. Details in <a href="/app/terms.html">Terms</a>.<br>
+      <sup>2</sup> Estimating and takeoff are not built yet. Budgets start once you have the job. Details in <a href="/app/terms.html">Terms</a>.<br>
+      <sup>3</sup> Time tracking is not built yet. Other tools do this. Details in <a href="/app/terms.html">Terms</a>.<br>
+      Buildertrend does not post a price. The company quotes on volume. Official page: <a href="https://buildertrend.com/pricing/" rel="noopener">buildertrend.com/pricing</a>.
     </p>
 
     <h3>The honest recommendation</h3>
