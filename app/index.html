@@ -2097,7 +2097,10 @@ body.on-tour .tour-card{display:block;}
           <button type="button" class="gp-cal-ok" onclick="bkCalDone()" aria-label="Use these dates">✓</button></div></div>
         <input id="bkNote" placeholder="Note for the crew — gate code, scope…" style="font-size:13.5px">
         <div class="bk-alerts" id="bkAlerts"><div id="bkOverlap"></div><div id="bkPacket"></div><div id="bkGuest"></div><div id="bkSendLink"></div></div>
-        <button class="b1 b-go" style="width:100%;margin-top:10px" id="bkSave" onclick="bkSave()">Save</button>
+        <div class="row2" style="margin-top:10px">
+          <button class="b1 b-cancel" onclick="closeBk()">Cancel</button>
+          <button class="b1 b-go" id="bkSave" onclick="bkSave()">Save</button>
+        </div>
         <button class="add-sub-btn" style="margin-top:8px;display:none;color:var(--clay)" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
       </div>
     </div>
@@ -3167,15 +3170,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.355.0 - Demo does not toast out of space. Marketing film matches the book.';
+const PLUMB_VERSION='2.356.0 - Packet back is House. Book a crew has Cancel. Escape closes Field Notes.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787958000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.355.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788064800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.356.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4474,8 +4477,11 @@ function showInfo(title,bodyHTML,own){
   try{
     const foot=document.getElementById('infoFoot');
     if(foot&&!own){
+      const fromH=typeof fromTheHouse==='function'&&fromTheHouse();
       const hasGo=!!document.querySelector('#infoBody .b-go');
-      foot.innerHTML='<button class="b1 '+(hasGo?'b-cancel':'b-go')+'" style="flex:1" onclick="closeInfo()">'+(hasGo?'Done':'Got it')+'</button>';
+      const label=fromH?'\u2039 House':(hasGo?'Done':'Got it');
+      const cls=(fromH||hasGo)?'b-cancel':'b-go';
+      foot.innerHTML='<button class="b1 '+cls+'" style="flex:1" onclick="closeInfo()">'+label+'</button>';
     }
   }catch(e){}
 }
@@ -7588,7 +7594,8 @@ function houseMoneyLine(p){
 function fromTheHouse(){return !!(_houseResume||(typeof houseStillOpen==='function'&&houseStillOpen()));}
 function labelHouseBack(el, fallback){
   if(!el)return;
-  el.textContent=fromTheHouse()?'House':(fallback||'Done');
+  if(fallback==='Cancel'){el.textContent='Cancel';return;}
+  el.textContent=fromTheHouse()?'\u2039 House':(fallback||'Done');
 }
 function logFromHouse(){
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openFieldNote();});
@@ -13949,7 +13956,7 @@ function openCal(keepCrew){
   }
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   document.getElementById('calview').classList.add('show');renderCal();
-  try{labelHouseBack(document.getElementById('calDoneBtn'),(calIsClient()||fromTheHouse())?'House':'Done');}catch(e){}}
+  try{labelHouseBack(document.getElementById('calDoneBtn'),'Done');}catch(e){}}
 function openClientCal(){
   const p=clientProj();
   if(p){try{Data.setActive(p.id);}catch(e){}calSiteFilter=String(p.id);}
@@ -15963,6 +15970,16 @@ const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScri
 function dismissScrim(scrim){if(!scrim)return;const fn=MODAL_CLOSERS[scrim.id];if(fn&&typeof window[fn]==='function'){try{window[fn]();return;}catch(e){}}scrim.classList.remove('show');}
 function dismissParent(elm){let n=elm;while(n&&!(n.classList&&n.classList.contains('pmodal-scrim')))n=n.parentElement;dismissScrim(n);}
 if(typeof window!=='undefined'){window.addEventListener('load',function(){
+  document.addEventListener('keydown',function(ev){
+    if(ev.key!=='Escape')return;
+    if(document.getElementById('tourCatch'))return;
+    try{
+      const lb=document.getElementById('lightbox');
+      if(lb&&lb.classList.contains('show')){ev.preventDefault();closeLightbox();return;}
+      const sh=document.getElementById('sheet');
+      if(sh&&sh.classList.contains('show')){ev.preventDefault();closeSheet();return;}
+    }catch(e){}
+  });
   /* iOS caret-drag guard: when a finger drags inside the focused text field
      (moving the cursor, using the magnifier, OR dragging a selection handle to
      extend the highlight), keep the scroll container from panning underneath.

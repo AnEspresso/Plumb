@@ -1,3 +1,7 @@
+**v2.356.0 is live.** Packet from a house: ‹ House, not Got it. Book a crew has Cancel. Escape closes Field Notes. Homeowner Schedule back is ‹ House.
+
+**PIN — Ink 2.355 consider 2+3 (do later).** House Schedule title Trades Calendar + All sites chip. Money ledger words. Not this pass.
+
 **Site offer + compare (live).** Free is its own line with *1. How it works has air. Compare: core features sage, not-yet ink, competitor pain clay. No dollar range.
 
 **Site film polish (live with 2.355.0).** Frame 1 caption is the book. Coming up is labeled. The rest lists all seven doors.
