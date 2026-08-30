@@ -1644,7 +1644,7 @@
 .bgt-tot b{display:block;font-size:1.05rem}
 .bgt-tot b.bgt-em{font-size:1.3rem}
 .bgt-tot b.bgt-em.over{color:var(--clay)}
-.bgt-tot span{color:var(--ink-3);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.bgt-tot span{color:var(--ink-3);font-size:.82rem;letter-spacing:.01em;font-weight:650}
 .bgt-toggle{display:flex;align-items:center;justify-content:space-between;margin:12px 0 2px}
 .bgt-toggle>span{color:var(--ink-3);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
 .bgt-mini{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
@@ -3170,15 +3170,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.356.0 - Packet back is House. Book a crew has Cancel. Escape closes Field Notes.';
+const PLUMB_VERSION='2.357.0 - House Schedule is Schedule. Money words are 8th grade.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788064800000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.356.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788065400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.357.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9231,15 +9231,19 @@ function budgetCardHTML(p){
 
 function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');try{labelHouseBack(document.getElementById('budgetDoneBtn'),'Done');}catch(e){}}
 function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{houseMaybeResume();}catch(e){}}
+function moneyTotHTML(p){
+  const cs=costSummary(p);const bill=billingSummary(p);
+  return `<div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
+    <div><b>${invUsd(cs.committed)}</b><span>Signed for</span></div>
+    <div><b>${invUsd(cs.spent)}</b><span>Paid</span></div>
+    <div><b>${invUsd(bill.billed)}</b><span>On an invoice</span></div>
+    <div><b>${invUsd(bill.paid)}</b><span>They paid</span></div>
+    <div><b class="bgt-em ${bill.out>0.005?'over':''}">${invUsd(Math.max(0,bill.out))}</b><span>Still due</span></div>`;
+}
 function renderBudget(){
   const p=P();const cs=costSummary(p);const lines=costLines(p);const bill=billingSummary(p);
   let h=`<div class="bgt-tot" id="bgtTotals">
-    <div><b>${invUsd(cs.budget)}</b><span>Allowance</span></div>
-    <div><b>${invUsd(cs.committed)}</b><span>Committed</span></div>
-    <div><b>${invUsd(cs.spent)}</b><span>Spent</span></div>
-    <div><b>${invUsd(bill.billed)}</b><span>Invoiced</span></div>
-    <div><b>${invUsd(bill.paid)}</b><span>Received</span></div>
-    <div><b class="bgt-em ${bill.out>0.005?'over':''}">${invUsd(Math.max(0,bill.out))}</b><span>Still out</span></div>
+    ${moneyTotHTML(p)}
   </div>
   <div class="row2"><button class="b1 b-cancel" style="flex:1" onclick="openCostLine()">+ Budget line</button><button class="b1 b-cancel" style="flex:1" onclick="openCostActual()">+ Log a cost</button></div>
   <div class="row2" style="margin-top:8px"><button class="b1 b-cancel" style="flex:1" onclick="moneyNewInvoice()">+ Invoice</button><button class="b1 b-cancel" style="flex:1" onclick="moneyNewPayment()">+ Payment</button></div>
@@ -9640,12 +9644,9 @@ function bgtRefreshRow(id){
   set('bgtL-',r.over?invUsd(-r.remaining)+' over':invUsd(r.remaining),r.over);
 }
 function bgtRefreshTotals(){
-  const p=P();const cs=costSummary(p);
+  const p=P();
   const e=document.getElementById('bgtTotals');if(!e)return;
-  e.innerHTML=`<div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
-    <div><b class="bgt-em ${cs.over?'over':''}">${cs.over?invUsd(-cs.remaining):invUsd(cs.remaining)}</b><span>${cs.over?'Over budget':'Remaining'}</span></div>
-    <div><b>${invUsd(cs.committed)}</b><span>Signed for</span></div>
-    <div><b>${invUsd(cs.spent)}</b><span>Paid</span></div>`;
+  e.innerHTML=moneyTotHTML(p);
   try{renderBuild();}catch(e2){}
 }
 function bgtQuickAdd(){
@@ -13997,7 +13998,7 @@ function renderCal(){
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   const who=document.getElementById('calWho');
   const fp=calSiteFilter==='all'?null:state.projects.find(x=>String(x.id)===String(calSiteFilter));
-  try{document.getElementById('calHdrT').textContent=calCrewFilter?calCrewFilter:(calIsSub()?'My schedule':(calIsClient()?'Site calendar':'Trades Calendar'));}catch(e){}
+  try{document.getElementById('calHdrT').textContent=calCrewFilter?calCrewFilter:(calIsSub()?'My schedule':((typeof fromTheHouse==='function'&&fromTheHouse())||calIsClient()?'Schedule':'Trades Calendar'));}catch(e){}
   if(who)who.textContent=calCrewFilter?('Every house this crew is on. Overlap is marked')
     :calIsClient()?('Your build \u2014 '+esc((clientProj()||{}).street||(clientProj()||{}).name||''))
     :calIsSub()?('Your schedule \u2014 '+((state.session||{}).name||'')):(fp?(fp.street||fp.name):'All sites');
@@ -14007,7 +14008,7 @@ function renderCal(){
   const todayK=dayKey(Date.now());
   const bs=calVisibleBookings();const av=calVisibleAvail();const cf=conflictIds();
   let chips='';
-  if(!calIsSub()&&!calIsClient()&&!calCrewFilter){
+  if(!calIsSub()&&!calIsClient()&&!calCrewFilter&&!(typeof fromTheHouse==='function'&&fromTheHouse())){
     const fHome=calSiteFilter!=='all'&&fp;
     chips='<div class="cal-ctrl">'
       +'<button class="cal-chip'+(calSiteFilter==='all'?' on':'')+'" onclick="calPick(\'all\')">All sites</button>'

@@ -1,3 +1,5 @@
+**v2.357.0 is live.** From a house, Schedule is Schedule (no All sites chip). Money: Budget, Signed for, Paid, On an invoice, They paid, Still due — sentence case, not ALL CAPS.
+
 **v2.356.0 is live.** Packet from a house: ‹ House, not Got it. Book a crew has Cancel. Escape closes Field Notes. Homeowner Schedule back is ‹ House.
 
 **PIN — Ink 2.355 consider 2+3 (do later).** House Schedule title Trades Calendar + All sites chip. Money ledger words. Not this pass.
