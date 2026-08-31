@@ -219,6 +219,7 @@ section.s.ink .card .fine{color:rgba(246,241,231,.5);}
   padding:46px 40px;box-shadow:var(--shadow-lift);text-align:center;
 }
 .cta-box h2{margin:0 0 14px;}
+.cta-box h2 .fn-n{padding-top:0;vertical-align:super;font-size:14px;margin-left:4px;}
 .cta-box p{color:var(--ink-2);max-width:52ch;margin:0 auto 26px;font-size:17px;}
 .cta-box .offer-lead{margin:0 auto 14px;}
 .cta-box .offer-free{margin:0 auto 28px;font-size:18px;font-weight:600;color:var(--oak);}

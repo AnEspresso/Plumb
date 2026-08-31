@@ -1,3 +1,5 @@
+**Offer on the home page (live).** Same words as the hero: Free Zoom video chat setup. First house only.
+
 **Homepage format (live).** No “say goodbye.” Gold only on Plumb. What you get / The first hour eyebrows. Limits: not yet. Money: signed for, paid.
 
 **Opener last beat (live).** The expectation — partnership, vision, the book on time. No fake quote.
