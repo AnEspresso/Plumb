@@ -1,3 +1,5 @@
+**Opener last beat (live).** The expectation — partnership, vision, the book on time. No fake quote.
+
 **Opener restack (live).** Eyebrow under the house line. Organized weeks. One Plumb Truth. Say goodbye to miscommunication. One source. Homeowner Partner quote.
 
 **Homeowner Partner quote (live).** Partnership. SitePlumb asks. Direct line to my vision.
