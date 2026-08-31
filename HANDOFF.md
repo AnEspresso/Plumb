@@ -1,3 +1,5 @@
+**Hero is one button (live).** Free Zoom video chat setup¹. First house only. Example book stays in the nav.
+
 **Site opener is live.** Stillwork is gone. Organized weeks. Plumb jobs. Plumb Truth + The Homeowner Partner. Say goodbye to miscommunication. Gold only on Plumb, not SitePlumb.
 
 **v2.357.0 is live.** From a house, Schedule is Schedule (no All sites chip). Money: Budget, Signed for, Paid, On an invoice, They paid, Still due — sentence case, not ALL CAPS.

@@ -461,7 +461,12 @@ h2 + .lock{margin-top:-8px;}
 .b-hero-in{max-width:720px;margin:0 auto;text-align:center;}
 .b-hero h1{font-size:clamp(38px,5.8vw,64px);margin:0 0 8px;}
 .b-hero .lede{max-width:48ch;margin:0 auto 20px;}
-.b-hero .hero-cta{justify-content:center;}
+.b-hero .hero-cta{justify-content:center;align-items:flex-start;gap:6px;}
+.fn-n{
+  font-size:13px;font-weight:700;color:var(--oak);text-decoration:none;
+  line-height:1;padding-top:8px;
+}
+.cta-box .offer-free .fn-n{padding-top:0;vertical-align:super;font-size:11px;margin-left:2px;}
 .b-hero .hero-note{text-align:center;margin:14px 0 0;}
 .b-hero .eyebrow{margin:0 0 12px;}
 .hero-beats{display:flex;flex-direction:column;max-width:44ch;margin:0 auto 14px;text-align:center;}
