@@ -1,4 +1,4 @@
-**Homeowner Partner quote (live).** Direct line to my vision. They get what they need from me on time.
+**Homeowner Partner quote (live).** Partnership. SitePlumb asks. Direct line to my vision.
 
 **Hero is one button (live).** Free Zoom video chat setup¹. First house only. Example book stays in the nav.
 
