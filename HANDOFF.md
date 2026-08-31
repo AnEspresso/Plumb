@@ -1,3 +1,5 @@
+**Opener restack (live).** Eyebrow under the house line. Organized weeks. One Plumb Truth. Say goodbye to miscommunication. One source. Homeowner Partner quote.
+
 **Homeowner Partner quote (live).** Partnership. SitePlumb asks. Direct line to my vision.
 
 **Hero is one button (live).** Free Zoom video chat setup¹. First house only. Example book stays in the nav.
