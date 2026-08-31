@@ -1,4 +1,4 @@
-**Homeowner Partner quote (live).** Builder has what they need. Homeowner is in on the house.
+**Homeowner Partner quote (live).** Direct line to my vision. They get what they need from me on time.
 
 **Hero is one button (live).** Free Zoom video chat setup¹. First house only. Example book stays in the nav.
 
