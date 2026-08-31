@@ -453,7 +453,7 @@ body.b{background:var(--paper);}
   font-size:clamp(22px,2.8vw,30px);font-weight:600;letter-spacing:-.015em;
   color:var(--ink);margin:0 0 20px;line-height:1.2;
 }
-.b-hero .lock{margin:0 0 6px;color:var(--ink);}
+.b-hero .lock{margin:0 0 10px;color:var(--ink);}
 h2 + .lock{margin-top:-8px;}
 
 /* opener */
@@ -471,9 +471,14 @@ h2 + .lock{margin-top:-8px;}
 .b-hero .eyebrow{margin:4px 0 10px;}
 .hero-source{
   font-family:'Source Serif 4',Georgia,serif;font-size:17.5px;line-height:1.45;
-  color:var(--ink-2);margin:0 auto 18px;max-width:42ch;
+  color:var(--ink-2);margin:0 auto 22px;max-width:42ch;
 }
-.hbeat{padding:16px 0 8px;margin:0 auto 16px;max-width:44ch;border-top:1px solid var(--line);}
+.hbeat{padding:18px 0 4px;margin:0 auto 22px;max-width:44ch;border-top:1px solid var(--line);}
+.pw h3{
+  font-family:'Fraunces',Georgia,serif;font-size:22px;margin:0 0 6px;font-weight:700;
+}
+.power{border-top:1px solid var(--line);max-width:58ch;}
+.limits{grid-template-columns:repeat(3,1fr);}
 .hbeat-k{
   font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:700;letter-spacing:-.01em;
   margin:0 0 6px;color:var(--ink);line-height:1.2;
