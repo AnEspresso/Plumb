@@ -1,3 +1,5 @@
+**Homeowner Partner quote (live).** Builder has what they need. Homeowner is in on the house.
+
 **Hero is one button (live).** Free Zoom video chat setup¹. First house only. Example book stays in the nav.
 
 **Site opener is live.** Stillwork is gone. Organized weeks. Plumb jobs. Plumb Truth + The Homeowner Partner. Say goodbye to miscommunication. Gold only on Plumb, not SitePlumb.
