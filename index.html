@@ -1,15 +1,4 @@
 <!DOCTYPE html>
-<!--
-  ─────────────────────────────────────────────────────────────────────────
-  NAME IS A VARIABLE. Trademark clearance is still open, so every visible
-  instance of the product name is wrapped in <b class="wm">…</b> and every
-  domain reference sits in one place. To rename:
-      1. Find/replace  SitePlumb  ->  NewName      (only inside class="wm")
-      2. Find/replace  siteplumb.com  ->  newdomain.com
-      3. Swap the two <title> tags and og:site_name below
-  Nothing else encodes the name. No image contains it.
-  ─────────────────────────────────────────────────────────────────────────
--->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -29,7 +18,7 @@ try{
 </script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SitePlumb — the book for custom home builders</title>
-<meta name="description" content="The book for every house you run. Photos, crews, finishes, money. Quiet weeks. Plumb jobs.">
+<meta name="description" content="The book for custom home builders. Two to twenty homes. Photos, crews, finishes, money. The &quot;any update?&quot; texts stop.">
 <link rel="canonical" href="https://siteplumb.com/">
 <meta name="theme-color" content="#F2EEE6">
 <link rel="icon" href="icon-192.png">
@@ -43,7 +32,7 @@ try{
 <meta property="og:image" content="https://siteplumb.com/icon-512.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="SitePlumb — the book for custom home builders">
-<meta name="twitter:description" content="The book for every house you run. Quiet weeks. Plumb jobs.">
+<meta name="twitter:description" content="The book for custom home builders. Two to twenty homes. Photos, crews, finishes, money. The &quot;any update?&quot; texts stop.">
 <meta name="twitter:image" content="https://siteplumb.com/icon-512.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -413,27 +402,52 @@ h1 em:not(.coin),.origin blockquote,.origin blockquote em,.q p,.brand .tag{font-
 
 /* ── pitch B: Tuesday ── */
 body.b{background:var(--paper);}
-.b-hero{padding:28px 0 28px;position:relative;}
+.b-hero{padding:18px 0 24px;position:relative;box-sizing:border-box;}
 .b-hero .grid-bg{opacity:.35;}
-.b-hero-in{position:relative;max-width:720px;}
-.b-hero h1{font-size:clamp(40px,6.2vw,72px);line-height:1.02;margin:0 0 10px;}
+.b-hero-in{position:relative;max-width:720px;margin:0 auto;text-align:center;}
+.b-hero h1{font-size:clamp(38px,5.8vw,64px);line-height:1.02;margin:0 0 8px;}
 .b-hero h1.wm{
   font-family:'Fraunces',Georgia,serif;font-weight:700;font-style:normal;color:var(--ink);
   letter-spacing:-.015em;
 }
-.b-hero .lede{font-size:19px;max-width:42ch;margin:0 0 28px;}
-.b-hero .hero-cta .btn.ghost{border:0;padding-left:8px;}
+.b-hero .lede{font-size:19px;max-width:48ch;margin:0 auto 20px;}
+.b-hero .hero-cta{justify-content:center;margin-top:0;}
+.b-hero .hero-note{text-align:center;margin:14px 0 0;}
+.b-hero .eyebrow{margin:0 0 12px;}
+.hero-beats{display:flex;flex-direction:column;gap:0;max-width:44ch;margin:0 auto 14px;text-align:center;}
+.hbeat{padding:14px 0;}
+.hbeat + .hbeat{border-top:1px solid var(--line);}
+.hbeat-k{
+  font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:700;letter-spacing:-.01em;
+  margin:0 0 6px;color:var(--ink);line-height:1.2;
+}
+.hbeat-b{
+  font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.42;
+  color:var(--ink-2);margin:0;
+}
+.hbeat-quote{
+  font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:17.5px;
+  line-height:1.4;color:var(--ink);margin:0;
+}
+.hero-close{
+  font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-weight:600;
+  font-size:clamp(20px,2.4vw,26px);letter-spacing:-.015em;line-height:1.25;
+  color:var(--ink);text-align:center;margin:6px auto 20px;max-width:28ch;
+}
+.hbeat-end{display:none;}
 .still-house{
   display:flex;justify-content:center;align-items:flex-end;
-  margin:0 auto 18px;max-width:560px;
+  margin:0 auto 14px;max-width:500px;
 }
-.still-house #house{width:100%;max-width:520px;height:auto;display:block;overflow:visible;}
+.still-house #house{width:100%;max-width:480px;max-height:40vh;height:auto;display:block;overflow:visible;}
 
 .film-wrap{padding:96px 0;background:var(--paper);}
 .film{
   display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start;
   max-width:920px;
 }
+.film-col{display:flex;flex-direction:column;gap:10px;width:280px;}
+.film-live,.film-hats{margin:0;font-size:14.5px;color:var(--ink-2);line-height:1.4;}
 .film-stage{
   position:relative;width:280px;height:auto;flex-shrink:0;border-radius:28px;
   background:#1B1916;padding:8px;box-shadow:var(--shadow-lift);
@@ -470,7 +484,13 @@ body.b{background:var(--paper);}
 .film-next:hover{color:var(--oak);}
 @media(max-width:820px){
   .still-house{max-width:100%;}
-  .still-house #house{max-width:340px;}
+  .still-house #house{max-width:300px;max-height:32vh;}
+  .b-hero{padding:12px 0 20px;}
+  .b-hero h1{font-size:clamp(34px,9vw,44px);margin:0 0 6px;}
+  .b-hero .lock{font-size:22px;margin:0 0 6px;}
+  .hbeat{padding:12px 0;}
+  .hero-close{margin:6px auto 16px;font-size:20px;}
+  .b-hero .hero-note{font-size:13px;margin:12px 0 0;}
   .film{grid-template-columns:1fr;gap:14px;justify-items:center;}
   .film-stage{order:1;height:auto;width:280px;}
   .film-copy{order:2;height:auto;width:100%;text-align:center;}
@@ -499,285 +519,17 @@ body.b{background:var(--paper);}
 .lock{
   font-family:'Source Serif 4',Georgia,serif;
   font-size:clamp(22px,2.8vw,30px);font-weight:600;letter-spacing:-.015em;
-  color:var(--oak);margin:0 0 20px;line-height:1.2;
+  color:var(--ink);margin:0 0 20px;line-height:1.2;
 }
-.b-hero .lock{margin:-6px 0 20px;}
+.b-hero .lock{margin:-6px 0 8px;color:var(--ink);}
 h2 + .lock{margin-top:-8px;}
 
 
 
 </style>
-<link rel="stylesheet" href="site.css?v=how6">
+<link rel="stylesheet" href="site.css?v=how9">
 </head>
 <body class="b">
-<div id="shipBar">
-  <button type="button" id="shipBarToggle" aria-expanded="false">
-    <span>2.355.0 is ready to publish.</span>
-    <span class="ship-more">Twenty-three versions · tap to compare</span>
-  </button>
-  <div id="shipBarPanel" hidden>
-    <a class="ship-v" href="/publish/Plumb-2.239.0.zip">
-      <b>2.239.0 · Restore</b>
-      <span>Before house briefing. The last live app if you do not like the #2 work. Branch restore-2.239.0.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.248.0.zip">
-      <b>2.248.0 · Field Notes</b>
-      <span>#2 done. Rangefinder on home. A house opens as a briefing. The version just before this one.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.255.0.zip">
-      <b>2.255.0 · Coherent house</b>
-      <span>Pinned. Last live app before the gold-master rewrite. Branch restore-2.255.0.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.256.0.zip">
-      <b>2.256.0 · Quiet book</b>
-      <span>Empty home is only Add the first house. All homes is a header. The version just before this one.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.257.0.zip">
-      <b>2.257.0 · Desktop split</b>
-      <span>Laptop: month on the left, houses on the right. Camera in the list header.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.258.0.zip">
-      <b>2.258.0 · Three taps</b>
-      <span>Field Notes: house, photo, a label, Send. Tap i for what Leak, Damage, Punch, and Note mean.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.259.0.zip">
-      <b>2.259.0 · Visual pass</b>
-      <span>Clay only on blockers. Oak for labels. The freeze version.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.260.0.zip">
-      <b>2.260.0 · Gold master</b>
-      <span>File to a trade and room after Field Notes. The freeze plus file-to.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.261.0.zip">
-      <b>2.261.0 · House voice</b>
-      <span>One camera. Needs You. Same four jobs.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.262.0.zip">
-      <b>2.262.0 · Sub hat</b>
-      <span>A signed-in sub stays a sub on a new phone.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.262.0.zip">
-      <b>2.262.0 · Sub hat</b>
-      <span>A signed-in sub stays a sub on a new phone.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.264.0.zip">
-      <b>2.264.0 · Voice</b>
-      <span>Five-spot walkthrough. First voice pass.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.265.0.zip">
-      <b>2.265.0 · Getting to know you</b>
-      <span>Friendly 10-beat walk. Classic saved.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.267.0.zip">
-      <b>2.267.0 · Ara</b>
-      <span>Warm voice baked in. First Ara pass.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.268.0.zip">
-      <b>2.268.0 · Sync</b>
-      <span>Orb moves as she talks. No robot.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.270.0.zip">
-      <b>2.270.0 · Clear stage</b>
-      <span>Ring on the thing. First park pass.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.271.0.zip">
-      <b>2.271.0 · Doors clear</b>
-      <span>Card off the doors. The rest of the house closes the briefing.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.274.0.zip">
-      <b>2.274.0 · Stage</b>
-      <span>Gold box is the scene. Orb points.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.275.0.zip">
-      <b>2.275.0 · Finish the line</b>
-      <span>Clips play through. Ring follows the sheet.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.276.0.zip">
-      <b>2.276.0 · On tap</b>
-      <span>Voice starts on the tap.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.277.0.zip">
-      <b>2.277.0 · One player</b>
-      <span>Same speaker. Still froze after hello on iPhone.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.278.0.zip">
-      <b>2.278.0 · Keep going</b>
-      <span>Watchdog. Prefetch. Card stayed invisible.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.279.0.zip">
-      <b>2.279.0 · Card first</b>
-      <span>Card showed in tests. Restarted hello every beat on the phone.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.280.0.zip">
-      <b>2.280.0 · Settings tap</b>
-      <span>Works in Safari. Home Screen froze on demo load.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.281.0.zip">
-      <b>2.281.0 · Home Screen</b>
-      <span>Card first. PWA audio not a page.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.282.0.zip">
-      <b>2.282.0 · Stage + orb</b>
-      <span>Scene box. List was too tall.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.283.0.zip">
-      <b>2.283.0 · On-screen stage</b>
-      <span>Clamped box. Froze Safari on start.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.284.0.zip">
-      <b>2.284.0 · Start now</b>
-      <span>Walk starts first. Card sat on the gold box.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.285.0.zip">
-      <b>2.285.0 · Card off the box</b>
-      <span>Box jumped every phrase.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.286.0.zip">
-      <b>2.286.0 · Scene frames</b>
-      <span>Today+camera swallowed the houses.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.287.0.zip">
-      <b>2.287.0 · Right box</b>
-      <span>Muted unlock killed Ara. No orb.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.288.0.zip">
-      <b>2.288.0 · Voice + orb</b>
-      <span>Ara and orb back. Box still one tall slice.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.289.0.zip">
-      <b>2.289.0 · Tight stage</b>
-      <span>Today box better. Walk never left slide 1.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.290.0.zip">
-      <b>2.290.0 · Keep walking</b>
-      <span>Walk played all 10. Orb circled Next. Book grew. Card kissed the sheet.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.291.0.zip">
-      <b>2.291.0 · Air</b>
-      <span>Double hello. The rest of the house hid. Field Notes skipped Send.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.292.0.zip">
-      <b>2.292.0 · Do the note</b>
-      <span>Underline landed. Phone went silent — tap never unlocked Ara.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.293.0.zip">
-      <b>2.293.0 · Pinned live walk</b>
-      <span>Last walk on the real demo UI. Rules: gold box = the scene; orb = circle / tap / underline with her voice; card = least important band; Ara only, one hello; Field Notes tap–write–Send; close the house before the rest of the house. Read WALK-LIVE-2.293.md. Studio → Old live walk.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.294.0.zip">
-      <b>2.294.0 · Locked stage (rejected)</b>
-      <span>Mini stage. Peter said no — too small, not the real app.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.295.0.zip">
-      <b>2.295.0 · Walk parked</b>
-      <span>Locked stage gone. Walks QA-only. Frozen until 4.7.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.296.0.zip">
-      <b>2.296.0 · Early access</b>
-      <span>Public bar hidden. Company then houses. Walks QA-only.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.297.0.zip">
-      <b>2.297.0 · Honest card</b>
-      <span>Website lookup fills only what it can prove. McCarver is HVAC + phone, never Excavation.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.298.0.zip">
-      <b>2.298.0 · UI rows</b>
-      <span>Needs You sees leaks. Day names the overlap. Field Notes does not jump the camera. Money is one sheet.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.299.0.zip">
-      <b>2.299.0 · Clean names</b>
-      <span>Old company names are gone. Builder is builder.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.300.0.zip">
-      <b>2.300.0 · First hour</b>
-      <span>After the first house: invite the homeowner and a crew. Invite your people sits on the book.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.301.0.zip">
-      <b>2.301.0 · Line notes</b>
-      <span>Field Notes drawn like the house. Bigger type. Empty book has air.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.302.0.zip">
-      <b>2.302.0 · Four notes</b>
-      <span>Day shouts overlap. Field Notes stays put. Money is one sheet. Packet says Text this link.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.303.0.zip">
-      <b>2.303.0 · After a hit, Save</b>
-      <span>Scan or Website, then Save. People is three buttons. Second house stays short. Notifications can Send a test.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.304.0.zip">
-      <b>2.304.0 · Lock screen</b>
-      <span>Send a test dings this phone. Packet replies use the same path.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.305.0.zip">
-      <b>2.305.0 · One ding</b>
-      <span>Send a test is one lock-screen card, not two.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.306.0.zip">
-      <b>2.306.0 · People</b>
-      <span>One People sheet. Invite sits under Team, Homeowners, and Subs.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.307.0.zip">
-      <b>2.307.0 · Invite</b>
-      <span>Invite stays a dashed row. On Invite it is a heading, not a black button. Homeowners fits the pill.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.308.0.zip">
-      <b>2.308.0 · One black action</b>
-      <span>Each sheet has one black button. Settings no longer duplicates Homeowners.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.309.0.zip">
-      <b>2.309.0 · Sheet contract</b>
-      <span>Ship ritual fails if a sheet has two black buttons, wrapping pills, or overflow. Workbench can Run census.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.310.0.zip">
-      <b>2.310.0 · Desk</b>
-      <span>Home on a laptop is month plus book. Pills are 44px under a thumb.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.311.0.zip">
-      <b>2.311.0 · Census on a sheet</b>
-      <span>Workbench sits above People and the other sheets. Open it, census is already run.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.312.0.zip">
-      <b>2.312.0 · Office roles</b>
-      <span>Four templates. Change what each role sees. Confirm warns you if it is not the default, especially money.</span>
-    </a>
-    <a class="ship-v" href="/publish/Plumb-2.313.0.zip">
-      <b>2.313.0 · Roles</b>
-      <span>Four roles. Project Manager, superintendent, office, owner. Same four templates.</span>
-    </a>
-    <a class="ship-v on" href="/publish/">
-      <b>2.314.0 · Role chrome</b>
-      <span>Team stays selected. Role names are ink, not blue. The owner has no trash can.</span>
-    </a>
-  </div>
-  <a class="ship-dl" href="/publish/">Download the files</a>
-</div>
-<style>
-#shipBar{display:none!important;background:#1c1916;color:#f7f4ef;padding:10px 16px 12px;font:15px/1.4 -apple-system,sans-serif;text-align:center}
-body.lab #shipBar{display:block!important}
-#shipBarToggle{display:block;width:100%;background:none;border:0;color:#f7f4ef;font:inherit;cursor:pointer;padding:4px 8px}
-#shipBarToggle .ship-more{display:block;margin-top:3px;font-size:12.5px;color:#c4b8a6}
-#shipBarPanel{display:none;max-width:560px;margin:10px auto 0;text-align:left}
-#shipBarPanel.open,#shipBarPanel:not([hidden]){display:block}
-#shipBarPanel[hidden]{display:none}
-.ship-v{display:block;background:#2a2622;color:#f7f4ef;text-decoration:none;border-radius:12px;padding:12px 14px;margin:0 0 8px;border:1px solid #3d372f}
-.ship-v b{display:block;font-size:14.5px}
-.ship-v span{display:block;margin-top:4px;font-size:12.5px;color:#c4b8a6;line-height:1.4}
-.ship-v.on{border-color:#b0895a}
-.ship-dl{display:inline-block;color:#f7f4ef;margin-top:6px;font-size:13px}
-</style>
-<script>
-(function(){
-  try{if(/[?&]lab=1(?:&|$)/.test(location.search||''))document.body.classList.add('lab');}catch(e){}
-  var b=document.getElementById('shipBarToggle');
-  var p=document.getElementById('shipBarPanel');
-  if(!b||!p)return;
-  b.addEventListener('click',function(){
-    var on=b.getAttribute('aria-expanded')==='true';
-    b.setAttribute('aria-expanded', on?'false':'true');
-    if(on)p.setAttribute('hidden',''); else p.removeAttribute('hidden');
-  });
-})();
-</script>
 <header class="nav" id="nav">
   <div class="wrap nav-in">
     <a class="brand" href="/">
@@ -785,14 +537,14 @@ body.lab #shipBar{display:block!important}
       <b class="wm">SitePlumb</b>
       <span class="tag">true to the build</span>
     </a>
-    <a class="lnk hide-s" href="#stillwork">The book</a>
+    <a class="lnk hide-s" href="#book">The book</a>
     <a class="lnk hide-s" href="#gain">What you get</a>
     <a class="lnk hide-s" href="#field">The field</a>
-    <a class="btn sm" href="/app/?demo=1">See Calderwood</a>
+    <a class="btn sm" href="/app/?demo=1">Open the example book</a>
   </div>
 </header>
 
-<section class="b-hero" id="stillwork">
+<section class="b-hero" id="book">
   <div class="grid-bg"></div>
   <div class="wrap b-hero-in">
     <div class="still-house">
@@ -874,15 +626,23 @@ body.lab #shipBar{display:block!important}
     </div>
     <p class="eyebrow">The book for custom home builders</p>
     <h1 class="wm">SitePlumb</h1>
-    <p class="lock">Quiet weeks. Plumb jobs.</p>
-    <p class="lede">
-      Every house you run in one place. Photos, crews, finishes, money.
-      <span class="gold">Stillwork</span> is what you get when that book is in order.
-    </p>
-    <div class="hero-cta">
-      <a class="btn" href="/app/?demo=1">See Calderwood</a>
+    <p class="lock">Organized weeks. <span class="gold">Plumb</span> jobs.</p>
+    <div class="hero-beats">
+      <div class="hbeat">
+        <p class="hbeat-k"><span class="gold">Plumb</span> Truth</p>
+        <p class="hbeat-b">One source, synced from the field to the office — photos, crews, finishes, money.</p>
+      </div>
+      <div class="hbeat">
+        <p class="hbeat-k">The Homeowner Partner</p>
+        <p class="hbeat-quote">“The right updates for my house. When the schedule needs a decision, I’m asked. I stay <span class="gold">Plumb</span> too.”</p>
+      </div>
     </div>
-    <p class="hero-note">Calderwood is the example house. No account needed.</p>
+    <p class="hero-close">Say goodbye to miscommunication</p>
+    <div class="hero-cta">
+      <a class="btn" href="mailto:hello@siteplumb.com?subject=Zoom%20onboarding">Email me. Zoom is free while early.</a>
+      <a class="btn ghost" href="/app/?demo=1">Open the example book</a>
+    </div>
+    <p class="hero-note">hello@siteplumb.com · 288 Calderwood Ln is first. No account needed.</p>
   </div>
 </section>
 
@@ -920,6 +680,7 @@ body.lab #shipBar{display:block!important}
 
 <section class="film-wrap" id="field">
   <div class="wrap film">
+    <div class="film-col">
     <div class="film-stage" aria-hidden="true">
       <div class="film-glass">
         <div class="frame on" data-i="0">
@@ -973,6 +734,9 @@ body.lab #shipBar{display:block!important}
           </div>
         </div>
       </div>
+    </div>
+    <p class="film-live">This is the live example book. 288 Calderwood Ln is first.</p>
+    <p class="film-hats">Open it as the builder, the homeowner, or the crew.</p>
     </div>
     <div class="film-copy">
       <p class="beat" id="filmBeat">7:40am · the book</p>
@@ -1034,13 +798,14 @@ body.lab #shipBar{display:block!important}
   <div class="wrap">
     <div class="cta-box rv">
       <p class="eyebrow">The offer</p>
-      <h2>Schedule Zoom onboarding.</h2>
+      <h2>Email me. We set up the book on Zoom.</h2>
       <p class="offer-lead">We set up the book together: company, first house, invite your people.</p>
       <p class="offer-free">Free while we work together.<sup>1</sup></p>
       <div class="mailrow">
         <a class="btn" href="mailto:hello@siteplumb.com?subject=Zoom%20onboarding">Email me</a>
-        <a class="btn ghost" href="/app/?demo=1">See Calderwood first</a>
+        <a class="btn ghost" href="/app/?demo=1">Open the example book</a>
       </div>
+      <p class="hero-note">hello@siteplumb.com</p>
       <nav class="foot-pills more-pills" aria-label="How it works">
         <a href="/pitch-a.html">How it works</a>
       </nav>

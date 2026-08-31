@@ -1,3 +1,5 @@
+**Site opener is live.** Stillwork is gone. Organized weeks. Plumb jobs. Plumb Truth + The Homeowner Partner. Say goodbye to miscommunication. Gold only on Plumb, not SitePlumb.
+
 **v2.357.0 is live.** From a house, Schedule is Schedule (no All sites chip). Money: Budget, Signed for, Paid, On an invoice, They paid, Still due — sentence case, not ALL CAPS.
 
 **v2.356.0 is live.** Packet from a house: ‹ House, not Got it. Book a crew has Cancel. Escape closes Field Notes. Homeowner Schedule back is ‹ House.
