@@ -1,3 +1,5 @@
+**v2.360.0 is live.** Packet is the one trade control on Edit item. File to a trade is gone. After Field Notes, Which packet? still asks once.
+
 **v2.359.0 is live.** Edit item: tap a change to see that earlier version (Save puts it back). Each chip group shows two options plus …. Empty photo is a short Add a photo row.
 
 **v2.358.0 is live.** Tap a Still-open item → Open / Closed list. Check mark closes it. Tap the row to edit. Each save logs who, when, and what changed.

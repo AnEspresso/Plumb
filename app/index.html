@@ -2663,8 +2663,9 @@ body.on-tour .tour-card{display:block;}
       <textarea id="recNote" rows="2" oninput="growNote(this)" placeholder="A few words…" style="width:100%;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:12px 13px;font-family:inherit;font-size:15px;color:var(--ink);outline:none;resize:vertical;box-sizing:border-box;margin-bottom:10px;min-height:62px"></textarea>
       <div class="fld-label">Area</div>
       <div class="chips" id="recAreaChips"></div>
-      <div class="fld-label">Assigned to</div>
+      <div class="fld-label">Packet</div>
       <select id="recCrew" class="fld-select"></select>
+      <div class="fld-hint">Shows in that trade’s packet. Site super stays in the office.</div>
       <div class="fld-label">Item status</div>
       <div class="seg3" id="recStatusSeg">
         <button type="button" data-s="none" onclick="pickRecStatus(this)">Not an item</button>
@@ -2674,22 +2675,19 @@ body.on-tour .tour-card{display:block;}
       <div class="flagrow" style="margin:0 0 4px"><div class="l"><div class="t">Share with homeowner</div><div class="s">Show on the homeowner’s progress view</div></div><div class="toggle" id="recShare" onclick="this.classList.toggle('on')"></div></div>
       <div id="recHist" class="rec-hist" hidden></div>
       <div class="row2" style="margin-top:10px"><button class="b1 b-cancel" onclick="closeRecord()">Cancel</button><button class="b1 b-go" onclick="saveRecord()">Save</button></div>
-      <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:1.5px solid var(--line);color:var(--ink-2);font-weight:600;font-size:13px;cursor:pointer" onclick="openFileTo(editingRecId)">File to a trade…</button>
       <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:none;color:var(--clay);font-weight:600;font-size:13px;cursor:pointer" onclick="deleteRecord()">Delete this entry</button>
     </div>
   </div>
 
   <div class="pmodal-scrim" id="fileToScrim" style="z-index:97">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4>File this</h4>
-      <div class="fn-tag" id="fileToLead">Optional. A trade puts it in that packet. A room makes it filterable.</div>
+      <h4>Which packet?</h4>
+      <div class="fn-tag" id="fileToLead">Put this on a trade’s packet, or skip.</div>
       <div class="fld-label">Trade</div>
       <div class="chips" id="fileToTrades"></div>
-      <div class="fld-label">Room · optional</div>
-      <div class="chips" id="fileToRooms"></div>
       <div class="row2" style="margin-top:14px">
         <button class="b1 b-cancel" onclick="closeFileTo()">Skip</button>
-        <button class="b1 b-go" onclick="saveFileTo()">File</button>
+        <button class="b1 b-go" onclick="saveFileTo()">Put on packet</button>
       </div>
     </div>
   </div>
@@ -2970,7 +2968,7 @@ body.on-tour .tour-card{display:block;}
     <div class="field-lbl" id="sheetNoteLbl">Note</div>
     <textarea class="ti" id="caption" rows="2" oninput="growNote(this)" placeholder="A few words…"></textarea>
     <div class="chips" id="areaChips"></div>
-    <div class="field-lbl" id="sheetAssignLbl">Assign to <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-3)">· optional</span></div>
+    <div class="field-lbl" id="sheetAssignLbl">Packet <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-3)">· optional</span></div>
     <select class="sheet-select" id="crewSelect" onchange="onCrewChange(this)"></select>
     <div class="flagrow" style="margin-top:12px">
       <div class="l"><div class="t">Flag as an open item</div><div class="s">Needs a fix or follow-up</div></div>
@@ -3189,15 +3187,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.359.0 - Edit item: earlier versions, shorter chip lists, smaller add-photo.';
+const PLUMB_VERSION='2.360.0 - Packet is the one trade control. File to a trade is gone.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788260100000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.359.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788261900000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.360.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -12886,7 +12884,7 @@ function addPermit(){openPrompt({title:'Add permit',placeholder:'Permit name (e.
 /* ── searchable select: a custom bottom-sheet picker that fronts a native <select> ──
    The <select> stays in the DOM (hidden) as the source of truth, so every existing
    .value read / onchange handler keeps working untouched. */
-const SS_FIELDS={crewSelect:{t:'Assign to',search:true},recCrew:{t:'Assigned to',search:true},selCat:{t:'Trade section'},recArea:{t:'Area'},selRoomSel:{t:'Room / location'},docType:{t:'Document type'},docTrade:{t:'For trade'},selStatus:{t:'Status',search:false},jSystem:{t:'Permit system',search:false},subSpec:{t:'Trade',search:true},inspEditSel:{t:'Status',search:false},
+const SS_FIELDS={crewSelect:{t:'Packet',search:true},recCrew:{t:'Packet',search:true},selCat:{t:'Trade section'},recArea:{t:'Area'},selRoomSel:{t:'Room / location'},docType:{t:'Document type'},docTrade:{t:'For trade'},selStatus:{t:'Status',search:false},jSystem:{t:'Permit system',search:false},subSpec:{t:'Trade',search:true},inspEditSel:{t:'Status',search:false},
   loginSelect:{t:'Who are you today?',search:false},laRole:{t:'Your role',search:false},suRosterTrade:{t:'Trade'},tqWho:{t:'Who decides',search:false},logFilter:{t:'Show',search:false}};
 function ssCfg(id){const c=SS_FIELDS[id];return (c&&typeof c==='object')?c:{t:c};}
 function ssTitleOf(id){if(ssCfg(id).t)return ssCfg(id).t;try{const el=document.getElementById(id);if(el&&el.dataset&&el.dataset.ssTitle)return el.dataset.ssTitle;}catch(e){}return 'Choose';}
@@ -16528,7 +16526,7 @@ function describeRecChanges(before,patch){
   const out=[];
   if(patch.cap!==undefined&&patch.cap!==before.cap)out.push('Note');
   if(patch.area!==undefined&&patch.area!==before.area)out.push('Area');
-  if(patch.crew!==undefined&&patch.crew!==before.crew)out.push('Assigned to');
+  if(patch.crew!==undefined&&patch.crew!==before.crew)out.push('Packet');
   if(patch.status!==undefined&&patch.status!==before.status)out.push(patch.status==='done'?'Closed':'Opened');
   if(patch.issue===false&&before.issue)out.push('Not an item');
   if(patch.issue===true&&!before.issue)out.push('Opened');
@@ -16609,17 +16607,12 @@ function pickFileTrade(id){
   _fileToTrade=_fileToTrade===id?'':id;
   document.querySelectorAll('#fileToTrades .chip').forEach(function(c){c.classList.toggle('on',c.dataset.t===_fileToTrade);});
 }
-function pickFileRoom(name){
-  _fileToRoom=_fileToRoom===name?'':name;
-  document.querySelectorAll('#fileToRooms .chip').forEach(function(c){c.classList.toggle('on',c.dataset.r===_fileToRoom);});
-}
+function pickFileRoom(name){}
 function openFileTo(id){
   const p=P();if(!p||id==null)return;
   const it=(p.items||[]).find(function(x){return String(x.id)===String(id);});if(!it)return;
-  _fileToId=id;_fileToTrade='';_fileToRoom='';
+  _fileToId=id;_fileToTrade='';
   if(it.crew){const hit=SPECIALTIES.find(function(s){return s.label===it.crew||s.id===it.crew;});if(hit)_fileToTrade=hit.id;}
-  const tags=areaTags(it.area||'');
-  _fileToRoom=tags.find(function(t){return AREAS.indexOf(t)>=0&&t!=='Leak'&&t!=='Damage'&&t!=='Punch'&&t!=='Note'&&t!=='Decision';})||'';
   const onSite={};
   (p.subs||[]).forEach(function(s){if(s.specialty)onSite[s.specialty]=true;});
   const trades=SPECIALTIES.filter(function(s){return onSite[s.id]||['plumb','elec','hvac','framing','paint','floor','drywall','roofing'].indexOf(s.id)>=0;});
@@ -16629,17 +16622,15 @@ function openFileTo(id){
   document.getElementById('fileToTrades').innerHTML=shown.map(function(s){
     return '<button type="button" class="chip'+(_fileToTrade===s.id?' on':'')+'" data-t="'+s.id+'" onclick="pickFileTrade(\''+s.id+'\')">'+esc(s.label)+'</button>';
   }).join('');
-  document.getElementById('fileToRooms').innerHTML=FILE_ROOMS.map(function(r){
-    return '<button type="button" class="chip'+(_fileToRoom===r?' on':'')+'" data-r="'+esc(r)+'" onclick="pickFileRoom(\''+String(r).replace(/'/g,'\\\'')+'\')">'+esc(r)+'</button>';
-  }).join('');
   const lead=document.getElementById('fileToLead');
-  if(lead)lead.textContent=(it.fieldKind?(it.fieldKind.charAt(0).toUpperCase()+it.fieldKind.slice(1)+' · '):'')+'A trade puts it in that packet. A room makes it filterable.';
+  const kind=it.fieldKind?((FIELD_KINDS.find(function(k){return k.id===it.fieldKind;})||{}).n):'';
+  if(lead)lead.textContent=(kind?(kind+' \u2014 '):'')+'Put this on a trade\u2019s packet, or skip.';
   try{document.getElementById('recScrim').classList.remove('show');}catch(e){}
   document.getElementById('fileToScrim').classList.add('show');
 }
 function closeFileTo(){
   const el=document.getElementById('fileToScrim');if(el)el.classList.remove('show');
-  _fileToId=null;_fileToTrade='';_fileToRoom='';
+  _fileToId=null;_fileToTrade='';
   if(!document.body.classList.contains('on-house-desk')){try{houseMaybeResume();}catch(e){}}
 }
 function saveFileTo(){
@@ -16648,19 +16639,20 @@ function saveFileTo(){
   if(!it){closeFileTo();return;}
   const spec=SPECIALTIES.find(function(s){return s.id===_fileToTrade;});
   const crew=spec?spec.label:'';
-  const kind=it.fieldKind?((FIELD_KINDS.find(function(k){return k.id===it.fieldKind;})||{}).n||''):'';
-  const room=_fileToRoom||'';
-  const area=[room,kind].filter(Boolean).join(' \u00b7 ')||it.area||'Whole House';
-  const patch={area:area};
+  const snap=itemSnap(it);
+  const patch={};
   if(crew){
     patch.crew=crew;
     if(!it.issue){patch.issue=true;patch.status='open';}
   }
+  const changes=describeRecChanges(snap,patch);
+  if(changes.length)pushItemEdit(it,changes,snap);
+  if(it.edits)patch.edits=it.edits;
   Data.updateItem(p.id,it.id,patch);
-  logEvent('fileTo','#'+it.id+(crew?' · '+crew:'')+(room?' · '+room:''));
+  logEvent('fileTo','#'+it.id+(crew?' \u00b7 '+crew:''));
   closeFileTo();
   try{renderFeed();renderIssues();renderToday();renderOvCards();}catch(e){}
-  toast(crew?(crew+' packet · '+(room||'filed')):(room?('Filed to '+room):'Left on the house record'));
+  toast(crew?(crew+' packet'):'Left on the house');
 }
 function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);if(!it)return;
   const cap=document.getElementById('recNote').value.trim()||'(no note)';
@@ -16670,7 +16662,9 @@ function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.
   const share=document.getElementById('recShare').classList.contains('on');
   const before=itemSnap(it);
   const patch={cap,area,crew,share};
-  if(seg==='none'){patch.issue=false;patch.status=undefined;}
+  const packet=crew&&crew!=='Site super';
+  if(seg==='none'&&packet){patch.issue=true;patch.status='open';}
+  else if(seg==='none'){patch.issue=false;patch.status=undefined;}
   else if(seg==='open'){patch.issue=true;patch.status='open';}
   else if(seg==='done'){patch.issue=true;patch.status='done';}
   if(_recPendingPhotoId!==(it.photoId||null))patch.photoId=_recPendingPhotoId||null;
