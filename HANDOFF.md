@@ -1,3 +1,5 @@
+**The Expectation (live).** Title capitalized. Three first-person lines. SitePlumb is that book.
+
 **The Expectation copy (live).** Title case. Partnership line. Homeowner / Builder / Trades as specified.
 
 **The expectation type (live).** Title is large. Body under it is small.
