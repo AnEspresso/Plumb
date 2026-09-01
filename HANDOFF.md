@@ -1,3 +1,5 @@
+**First screen is grand (live).** House and SitePlumb type scaled up. The expectation is the next section.
+
 **The expectation (live).** Homeowner, builder, trades — three lines. SitePlumb is that book.
 
 **Offer on the home page (live).** Same words as the hero: Free Zoom video chat setup. First house only.
