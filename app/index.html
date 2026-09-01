@@ -325,6 +325,11 @@
   .toast.has-action{display:flex;align-items:center;gap:14px;}
   .toast .ua{background:transparent;border:none;color:var(--oak);font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;padding:2px 4px;white-space:nowrap;flex:0 0 auto;}
   .item.tappable{cursor:pointer;}
+  .item.flash-issue{box-shadow:0 0 0 2px var(--oak);}
+  .rec-hist{margin:8px 0 4px;text-align:left;}
+  .rec-hist-row{padding:8px 0;border-top:1px solid var(--line);}
+  .rec-hist-row .n{font-size:13px;font-weight:650;color:var(--ink);}
+  .rec-hist-row .d{font-size:12.5px;color:var(--ink-2);margin-top:2px;}
   .item.closing{opacity:0;transform:translateX(40px);transition:opacity .3s,transform .3s;}
   .sel-row .si{cursor:pointer;}
   .stage .sh{cursor:pointer;}
@@ -2654,6 +2659,7 @@ body.on-tour .tour-card{display:block;}
         <button type="button" data-s="done" onclick="pickRecStatus(this)">Closed</button>
       </div>
       <div class="flagrow" style="margin:0 0 4px"><div class="l"><div class="t">Share with homeowner</div><div class="s">Show on the homeowner’s progress view</div></div><div class="toggle" id="recShare" onclick="this.classList.toggle('on')"></div></div>
+      <div id="recHist" class="rec-hist" hidden></div>
       <div class="row2" style="margin-top:10px"><button class="b1 b-cancel" onclick="closeRecord()">Cancel</button><button class="b1 b-go" onclick="saveRecord()">Save</button></div>
       <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:1.5px solid var(--line);color:var(--ink-2);font-weight:600;font-size:13px;cursor:pointer" onclick="openFileTo(editingRecId)">File to a trade…</button>
       <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:none;color:var(--clay);font-weight:600;font-size:13px;cursor:pointer" onclick="deleteRecord()">Delete this entry</button>
@@ -3170,15 +3176,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.357.0 - House Schedule is Schedule. Money words are 8th grade.';
+const PLUMB_VERSION='2.358.0 - Still open opens Open and Closed. Edits keep who, when, and what.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788065400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.357.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788259200000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.358.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -7535,8 +7541,23 @@ function _nyIssues(projs){
 }
 function nyOpenItem(pid,id){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});
-  if(p)try{Data.setActive(p.id);}catch(e){}
-  try{openRecord(id);}catch(e){}
+  if(!p)return;
+  try{Data.setActive(p.id);}catch(e){}
+  _housePid=String(p.id);
+  _focusIssueId=id;
+  const it=(p.items||[]).find(function(x){return String(x.id)===String(id);});
+  issueFilter=(it&&it.status==='done')?'done':'open';
+  try{houseGoDesk('items');}catch(e){try{openRecord(id);}catch(e2){}}
+  setTimeout(function(){
+    try{
+      document.querySelectorAll('#decItems .seg button').forEach(function(b){
+        b.classList.toggle('on',(b.getAttribute('data-f')||b.dataset.f)===issueFilter);
+      });
+      renderIssues();
+      const el=document.getElementById('issue-'+id);
+      if(el){el.classList.add('flash-issue');el.scrollIntoView({block:'nearest',behavior:'smooth'});}
+    }catch(e){}
+  },140);
 }
 function nyOpenHouse(pid){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
@@ -7551,7 +7572,7 @@ function nyOpenHouse(pid){
   document.getElementById('houseScrim').classList.add('show');
   if(keep)applyScroll('house');
 }
-let _housePid=null,_houseCalPeek=false,_clientCalPeek=false,_houseResume=null,_houseOpenAll=false,_houseFacts=[];
+let _housePid=null,_houseCalPeek=false,_clientCalPeek=false,_houseResume=null,_houseOpenAll=false,_houseFacts=[],_focusIssueId=null;
 function houseStillOpen(){const el=document.getElementById('houseScrim');return !!(el&&el.classList.contains('show')&&_housePid);}
 function refreshHouse(){if(!houseStillOpen())return;renderHouse();}
 function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');_housePid=null;_houseResume=null;_houseResumeScroll=false;_keepScrollY.house=0;try{renderToday();}catch(e){}applyScroll('home');}
@@ -15961,8 +15982,8 @@ function renderDecisions(){
 function filterIssues(f,el){issueFilter=f;document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderIssues();}
 function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;const closing=it.status==='open';
   const row=document.getElementById('issue-'+id);
-  const apply=()=>{Data.updateItem(P().id,id,{status:closing?'done':'open',t:Date.now()});logEvent('issueToggle','#'+id+' → '+(closing?'done':'open'));renderIssues();renderFeed();
-    if(closing)toastAction('Moved to Closed','Undo',()=>{Data.updateItem(P().id,id,{status:'open'});renderIssues();renderFeed();toast('Item reopened');});
+  const apply=()=>{const next=closing?'done':'open';pushItemEdit(it,[closing?'Closed':'Opened']);Data.updateItem(P().id,id,{status:next,t:Date.now(),edits:it.edits});logEvent('issueToggle','#'+id+' → '+next);renderIssues();renderFeed();
+    if(closing)toastAction('Moved to Closed','Undo',()=>{pushItemEdit(it,['Opened']);Data.updateItem(P().id,id,{status:'open',edits:it.edits});renderIssues();renderFeed();toast('Item reopened');});
     else toast('Item reopened');};
   if(closing&&row){row.classList.add('closing');setTimeout(apply,260);}else apply();}
 
@@ -16465,6 +16486,39 @@ function closeLightbox(){
 /* ════════ record detail / edit (Recent + Items) ════════ */
 let editingRecId=null;
 function pickRecStatus(el){document.querySelectorAll('#recStatusSeg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
+function editorName(){
+  const s=state.session||{};
+  if(s.name&&String(s.name).trim())return String(s.name).trim();
+  if(s.email)return String(s.email);
+  if(s.role==='builder')return 'Builder';
+  if(s.role==='client')return 'Homeowner';
+  if(s.role==='subs')return 'Crew';
+  return 'Someone';
+}
+function pushItemEdit(it,changes){
+  if(!it||!changes||!changes.length)return;
+  it.edits=it.edits||[];
+  it.edits.push({t:Date.now(),by:editorName(),changes:changes.slice()});
+  if(it.edits.length>40)it.edits=it.edits.slice(-40);
+}
+function describeRecChanges(before,patch){
+  const out=[];
+  if(patch.cap!==undefined&&patch.cap!==before.cap)out.push('Note');
+  if(patch.area!==undefined&&patch.area!==before.area)out.push('Area');
+  if(patch.crew!==undefined&&patch.crew!==before.crew)out.push('Assigned to');
+  if(patch.status!==undefined&&patch.status!==before.status)out.push(patch.status==='done'?'Closed':'Opened');
+  if(patch.issue===false&&before.issue)out.push('Not an item');
+  if(patch.issue===true&&!before.issue)out.push('Opened');
+  if(patch.share!==undefined&&!!patch.share!==!!before.share)out.push(patch.share?'Shared with homeowner':'Hidden from homeowner');
+  return out;
+}
+function recHistHTML(it){
+  const logs=(it&&it.edits)||[];
+  if(!logs.length)return '';
+  return logs.slice().reverse().map(function(e){
+    return '<div class="rec-hist-row"><div class="n">'+esc(e.by||'Someone')+' · '+esc(timeAgo(e.t))+'</div><div class="d">'+esc((e.changes||[]).join(' · '))+'</div></div>';
+  }).join('');
+}
 function openRecord(id){saveScroll('site');const it=P().items.find(x=>x.id===id);if(!it)return;editingRecId=id;
   document.getElementById('recTitle').textContent=it.issue?'Edit item':'Edit entry';
   const thumb=document.getElementById('recThumb');
@@ -16476,10 +16530,13 @@ function openRecord(id){saveScroll('site');const it=P().items.find(x=>x.id===id)
   const seg=(!it.issue)?'none':(it.status==='done'?'done':'open');
   document.querySelectorAll('#recStatusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.s===seg));
   document.getElementById('recShare').classList.toggle('on',!!it.share);
+  const hist=document.getElementById('recHist');
+  if(hist){const html=recHistHTML(it);hist.hidden=!html;hist.innerHTML=html?('<div class="fld-label">Changes</div>'+html):'';}
   document.getElementById('recScrim').classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('recNote')));}
 function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
-  try{houseMaybeResume();}catch(e){}
+  if(document.body.classList.contains('on-house-desk')){try{renderIssues();}catch(e){}}
+  else{try{houseMaybeResume();}catch(e){}}
   try{applyScroll('site');}catch(e){}
   try{if(_pktLogCtx&&document.getElementById('pktLogScrim').classList.contains('show'))renderPacketLog();}catch(e){}}
 let _fileToId=null,_fileToTrade='',_fileToRoom='';
@@ -16519,7 +16576,7 @@ function openFileTo(id){
 function closeFileTo(){
   const el=document.getElementById('fileToScrim');if(el)el.classList.remove('show');
   _fileToId=null;_fileToTrade='';_fileToRoom='';
-  try{houseMaybeResume();}catch(e){}
+  if(!document.body.classList.contains('on-house-desk')){try{houseMaybeResume();}catch(e){}}
 }
 function saveFileTo(){
   const p=P();if(!p||_fileToId==null){closeFileTo();return;}
@@ -16547,12 +16604,16 @@ function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.
   const crew=document.getElementById('recCrew').value;
   const seg=(document.querySelector('#recStatusSeg button.on')||{}).dataset?document.querySelector('#recStatusSeg button.on').dataset.s:'none';
   const share=document.getElementById('recShare').classList.contains('on');
+  const before={cap:it.cap,area:it.area,crew:it.crew,status:it.status,issue:it.issue,share:!!it.share};
   const patch={cap,area,crew,share};
   if(seg==='none'){patch.issue=false;patch.status=undefined;}
   else if(seg==='open'){patch.issue=true;patch.status='open';}
   else if(seg==='done'){patch.issue=true;patch.status='done';}
-  Data.updateItem(P().id,editingRecId,patch);logEvent('recordEdit','#'+editingRecId);
-  closeRecord();renderFeed();renderIssues();renderPhotos();renderBuild();toast('Entry updated');}
+  const changes=describeRecChanges(before,patch);
+  if(changes.length)pushItemEdit(it,changes);
+  if(it.edits)patch.edits=it.edits;
+  Data.updateItem(P().id,editingRecId,patch);logEvent('recordEdit','#'+editingRecId+(changes.length?(' · '+changes.join(', ')):''));
+  closeRecord();renderFeed();renderIssues();renderPhotos();renderBuild();toast(changes.length?'Saved':'No change');}
 function deleteRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);const rid=editingRecId;
   confirmDelete({title:'Delete entry?',body:'\u201c'+esc((it&&it.cap)||'')+'\u201d<br><br>Permanently removes the note'+(it&&it.photoId?', its photo,':'')+' and any open-item flag. This can\u2019t be undone.',onConfirm:()=>{
   Data.removeItem(P().id,rid);logEvent('recordDelete','#'+rid);

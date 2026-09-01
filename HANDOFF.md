@@ -1,3 +1,5 @@
+**v2.358.0 is live.** Tap a Still-open item → Open / Closed list. Check mark closes it. Tap the row to edit. Each save logs who, when, and what changed.
+
 **The Expectation (live).** Title capitalized. Three first-person lines. SitePlumb is that book.
 
 **The Expectation copy (live).** Title case. Partnership line. Homeowner / Builder / Trades as specified.
