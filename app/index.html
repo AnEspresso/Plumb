@@ -327,9 +327,21 @@
   .item.tappable{cursor:pointer;}
   .item.flash-issue{box-shadow:0 0 0 2px var(--oak);}
   .rec-hist{margin:8px 0 4px;text-align:left;}
-  .rec-hist-row{padding:8px 0;border-top:1px solid var(--line);}
+  .rec-hist-row{padding:10px 0;border-top:1px solid var(--line);cursor:pointer;}
   .rec-hist-row .n{font-size:13px;font-weight:650;color:var(--ink);}
   .rec-hist-row .d{font-size:12.5px;color:var(--ink-2);margin-top:2px;}
+  .rec-hist-row.on{background:rgba(176,137,90,.08);margin:0 -12px;padding:10px 12px;border-radius:10px;}
+  .rec-photo{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    height:48px;border-radius:13px;background:var(--surface-2);border:1px dashed var(--line);
+    color:var(--ink-2);font-size:13.5px;font-weight:600;cursor:pointer;margin:0;
+    font-family:inherit;
+  }
+  .rec-photo svg{width:20px;height:20px;flex:none;}
+  .rec-photo.has-img{height:auto;border:none;background:none;padding:0;display:block;}
+  .rec-photo.has-img img{width:100%;border-radius:13px;display:block;max-height:160px;object-fit:cover;}
+  .rec-photo-add{display:block;margin:8px 0 4px;background:none;border:none;color:var(--oak);font:inherit;font-size:13px;font-weight:650;cursor:pointer;padding:0;}
+  .chip.more{min-width:44px;letter-spacing:.16em;font-weight:800;}
   .item.closing{opacity:0;transform:translateX(40px);transition:opacity .3s,transform .3s;}
   .sel-row .si{cursor:pointer;}
   .stage .sh{cursor:pointer;}
@@ -2646,6 +2658,7 @@ body.on-tour .tour-card{display:block;}
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="recTitle">Edit entry</h4>
       <div id="recThumb" style="margin-bottom:12px"></div>
+      <input id="recPhotoFile" type="file" accept="image/*" hidden onchange="onRecPhoto(event)">
       <div class="fld-label">Note</div>
       <textarea id="recNote" rows="2" oninput="growNote(this)" placeholder="A few words…" style="width:100%;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:12px 13px;font-family:inherit;font-size:15px;color:var(--ink);outline:none;resize:vertical;box-sizing:border-box;margin-bottom:10px;min-height:62px"></textarea>
       <div class="fld-label">Area</div>
@@ -3176,15 +3189,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.358.0 - Still open opens Open and Closed. Edits keep who, when, and what.';
+const PLUMB_VERSION='2.359.0 - Edit item: earlier versions, shorter chip lists, smaller add-photo.';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788259200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.358.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788260100000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.359.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -15982,8 +15995,8 @@ function renderDecisions(){
 function filterIssues(f,el){issueFilter=f;document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderIssues();}
 function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;const closing=it.status==='open';
   const row=document.getElementById('issue-'+id);
-  const apply=()=>{const next=closing?'done':'open';pushItemEdit(it,[closing?'Closed':'Opened']);Data.updateItem(P().id,id,{status:next,t:Date.now(),edits:it.edits});logEvent('issueToggle','#'+id+' → '+next);renderIssues();renderFeed();
-    if(closing)toastAction('Moved to Closed','Undo',()=>{pushItemEdit(it,['Opened']);Data.updateItem(P().id,id,{status:'open',edits:it.edits});renderIssues();renderFeed();toast('Item reopened');});
+  const apply=()=>{const snap=itemSnap(it);const next=closing?'done':'open';pushItemEdit(it,[closing?'Closed':'Opened'],snap);Data.updateItem(P().id,id,{status:next,t:Date.now(),edits:it.edits});logEvent('issueToggle','#'+id+' → '+next);renderIssues();renderFeed();
+    if(closing)toastAction('Moved to Closed','Undo',()=>{const s2=itemSnap(it);pushItemEdit(it,['Opened'],s2);Data.updateItem(P().id,id,{status:'open',edits:it.edits});renderIssues();renderFeed();toast('Item reopened');});
     else toast('Item reopened');};
   if(closing&&row){row.classList.add('closing');setTimeout(apply,260);}else apply();}
 
@@ -16088,27 +16101,33 @@ let pendingPhotoId=null,sheetIsLog=false,editingLogDate=null;
 /* The editor uses the SAME picker the entry was created with, so editing can
    express everything creating could. A tag we no longer offer is shown lit in
    its own row rather than dropped - the record keeps whatever it was given. */
+let _recChipOpen={},_sheetChipOpen={},_recPendingPhotoId=null,_recHistOn=null;
+function chipRowHTML(grp,on,openMap,expandFn){
+  const many=grp.a.length>2;
+  const open=!many||!!openMap[grp.k];
+  let list=open?grp.a.slice():grp.a.slice(0,2);
+  if(!open)on.forEach(function(a){if(grp.a.indexOf(a)>=0&&list.indexOf(a)<0)list.push(a);});
+  let h=list.map(function(a){return '<button type="button" class="chip'+(on.indexOf(a)>=0?' on':'')+'" data-grp="'+grp.k+'" data-area="'+esc(a)+'" onclick="pickChip(this)">'+esc(a)+'</button>';}).join('');
+  if(many&&!open)h+='<button type="button" class="chip more" onclick="event.stopPropagation();'+expandFn+'(\''+grp.k+'\')">\u2026</button>';
+  return '<div class="chip-group-lbl">'+esc(grp.g)+'</div><div class="chip-row">'+h+'</div>';
+}
+function expandRecChips(k){_recChipOpen[k]=true;const area=[...document.querySelectorAll('#recAreaChips .chip.on')].map(function(c){return c.dataset.area;}).join(' \u00b7 ');buildRecChips(area);}
+function expandSheetChips(k){_sheetChipOpen[k]=true;const area=[...document.querySelectorAll('#areaChips .chip.on')].map(function(c){return c.dataset.area;}).join(' \u00b7 ');buildChips(area);}
 function buildRecChips(area){
-  const on=areaTags(area),box=document.getElementById('recAreaChips');   // aliased, so an old tag lights its new chip
+  const on=areaTags(area),box=document.getElementById('recAreaChips');
   if(!box)return;
-  const stray=on.filter(a=>AREAS.indexOf(a)===-1);
+  const stray=on.filter(function(a){return AREAS.indexOf(a)===-1;});
   box.innerHTML=(stray.length?'<div class="chip-group-lbl">On this entry</div><div class="chip-row">'+
-      stray.map(a=>`<button class="chip on" data-area="${esc(a)}" onclick="pickChip(this)">${esc(a)}</button>`).join('')+'</div>':'')+
-    AREA_GROUPS.map(grp=>`<div class="chip-group-lbl">${grp.g}</div><div class="chip-row">`+
-      grp.a.map(a=>`<button class="chip${on.indexOf(a)>=0?' on':''}" data-grp="${grp.k}" data-area="${esc(a)}" onclick="pickChip(this)">${esc(a)}</button>`).join('')+
-      `</div>`).join('');
-  syncAreaExclusivity(box);}
-/* Tags renamed for the vernacular. Records still hold the old strings, so they
-   are translated on the way OUT - matching and display both. Nothing is
-   rewritten in place: an entry picks up the new wording the next time someone
-   saves it, and until then it still answers to its stage. */
+      stray.map(function(a){return '<button type="button" class="chip on" data-area="'+esc(a)+'" onclick="pickChip(this)">'+esc(a)+'</button>';}).join('')+'</div>':'')+
+    AREA_GROUPS.map(function(grp){return chipRowHTML(grp,on,_recChipOpen,'expandRecChips');}).join('');
+  syncAreaExclusivity(box);
+}
 const AREA_ALIASES={'Mechanical':'HVAC','Exterior / Siding':'Siding','Exterior / Grading':'Grading','Site':'Sitework','Stairs / Railings':'Railings'};
 function areaTags(v){return String(v||'').split('\u00b7').map(s=>s.trim()).filter(Boolean).map(a=>AREA_ALIASES[a]||a);}
 function areaText(v){const t=areaTags(v);return t.length?t.join(' \u00b7 '):String(v||'');}
-function buildChips(){
-  document.getElementById('areaChips').innerHTML=AREA_GROUPS.map(grp=>
-    `<div class="chip-group-lbl">${grp.g}</div><div class="chip-row">`+grp.a.map(a=>`<button class="chip" data-grp="${grp.k}" data-area="${a}" onclick="pickChip(this)">${a}</button>`).join('')+`</div>`
-  ).join('');
+function buildChips(area){
+  const on=areaTags(area||'');
+  document.getElementById('areaChips').innerHTML=AREA_GROUPS.map(function(grp){return chipRowHTML(grp,on,_sheetChipOpen,'expandSheetChips');}).join('');
   syncAreaExclusivity(document.getElementById('areaChips'));
   document.getElementById('crewSelect').innerHTML='<option value="">Unassigned</option><option value="Site super">Site super</option>'+crewLabelsSorted().map(c=>`<option value="${c}">${c}</option>`).join('')+'<option value="__add">＋ Add specific trade / sub…</option>';
 }
@@ -16126,6 +16145,7 @@ function syncAreaExclusivity(box){
   rooms.forEach(c=>{c.disabled=wholeOn&&!c.classList.contains('on');});
   if(whole)whole.disabled=roomOn&&!wholeOn;}
 function pickChip(el){
+  if(!el||el.classList.contains('more'))return;
   /* One chip per GROUP, on purpose. A record gets a place AND a system:
      the framing in the stair hall is both, and a builder looking for either
      one should find it. Clearing only the tapped row is what makes that
@@ -16495,10 +16515,13 @@ function editorName(){
   if(s.role==='subs')return 'Crew';
   return 'Someone';
 }
-function pushItemEdit(it,changes){
+function itemSnap(it){
+  return {cap:it.cap||'',area:it.area||'',crew:it.crew||'',status:it.status,issue:!!it.issue,share:!!it.share,photoId:it.photoId||null};
+}
+function pushItemEdit(it,changes,snap){
   if(!it||!changes||!changes.length)return;
   it.edits=it.edits||[];
-  it.edits.push({t:Date.now(),by:editorName(),changes:changes.slice()});
+  it.edits.push({t:Date.now(),by:editorName(),changes:changes.slice(),snap:snap||itemSnap(it)});
   if(it.edits.length>40)it.edits=it.edits.slice(-40);
 }
 function describeRecChanges(before,patch){
@@ -16510,30 +16533,71 @@ function describeRecChanges(before,patch){
   if(patch.issue===false&&before.issue)out.push('Not an item');
   if(patch.issue===true&&!before.issue)out.push('Opened');
   if(patch.share!==undefined&&!!patch.share!==!!before.share)out.push(patch.share?'Shared with homeowner':'Hidden from homeowner');
+  if(patch.photoId!==undefined&&patch.photoId!==before.photoId)out.push(patch.photoId?'Photo':'Photo removed');
   return out;
 }
 function recHistHTML(it){
   const logs=(it&&it.edits)||[];
   if(!logs.length)return '';
-  return logs.slice().reverse().map(function(e){
-    return '<div class="rec-hist-row"><div class="n">'+esc(e.by||'Someone')+' · '+esc(timeAgo(e.t))+'</div><div class="d">'+esc((e.changes||[]).join(' · '))+'</div></div>';
+  return logs.map(function(e,i){return {e:e,i:i};}).reverse().map(function(x){
+    const e=x.e,i=x.i;
+    return '<div class="rec-hist-row'+(_recHistOn===i?' on':'')+'" onclick="loadRecVersion('+i+')"><div class="n">'+esc(e.by||'Someone')+' \u00b7 '+esc(timeAgo(e.t))+'</div><div class="d">'+esc((e.changes||[]).join(' \u00b7 '))+'</div></div>';
   }).join('');
 }
+function paintRecHist(it){
+  const hist=document.getElementById('recHist');if(!hist)return;
+  const html=recHistHTML(it);
+  hist.hidden=!html;hist.innerHTML=html?('<div class="fld-label">Changes</div>'+html):'';
+}
+function recPickPhoto(){const f=document.getElementById('recPhotoFile');if(f){f.value='';f.click();}}
+function recViewPhoto(){
+  const src=_recPendingPhotoId&&photoURLs[_recPendingPhotoId];
+  if(src){openMediaView(src,'','');return;}
+  if(editingRecId!=null)openLightbox(editingRecId);
+}
+function renderRecThumb(){
+  const thumb=document.getElementById('recThumb');if(!thumb)return;
+  const it=P()&&(P().items||[]).find(function(x){return x.id===editingRecId;});
+  const pid=_recPendingPhotoId;
+  const src=pid?(photoURLs[pid]||(it&&it.photoId===pid&&photoSrc(it))||null):null;
+  const cam='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>';
+  if(src)thumb.innerHTML='<button type="button" class="rec-photo has-img" onclick="recViewPhoto()"><img src="'+src+'" alt=""></button><button type="button" class="rec-photo-add" onclick="recPickPhoto()">Replace photo</button>';
+  else thumb.innerHTML='<button type="button" class="rec-photo" onclick="recPickPhoto()">'+cam+' Add a photo</button>';
+}
+async function onRecPhoto(e){
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  toast('Saving photo\u2026');
+  try{const id=await processPhoto(f);_recPendingPhotoId=id;renderRecThumb();toast('Photo added \u2014 Save to keep it');}
+  catch(err){toast('Could not read that photo');}
+}
+function fillRecForm(s){
+  document.getElementById('recNote').value=(s.cap==='(no note)'||!s.cap)?'':s.cap;
+  buildRecChips(s.area||'Whole House');
+  document.getElementById('recCrew').innerHTML='<option value="">Unassigned</option><option value="Site super" '+(s.crew==='Site super'?'selected':'')+'>Site super</option>'+crewLabelsSorted().map(c=>`<option value="${c}" ${c===s.crew?'selected':''}>${c}</option>`).join('');
+  const seg=(!s.issue)?'none':(s.status==='done'?'done':'open');
+  document.querySelectorAll('#recStatusSeg button').forEach(function(b){b.classList.toggle('on',b.dataset.s===seg);});
+  document.getElementById('recShare').classList.toggle('on',!!s.share);
+  _recPendingPhotoId=s.photoId||null;
+  renderRecThumb();
+  requestAnimationFrame(function(){growNote(document.getElementById('recNote'));});
+}
+function loadRecVersion(i){
+  const it=P()&&(P().items||[]).find(function(x){return x.id===editingRecId;});if(!it)return;
+  const e=(it.edits||[])[i];
+  if(!e||!e.snap){toast('That change has no saved version');return;}
+  _recHistOn=i;
+  fillRecForm(e.snap);
+  paintRecHist(it);
+  toast('This is how it looked then. Save to put it back.');
+}
 function openRecord(id){saveScroll('site');const it=P().items.find(x=>x.id===id);if(!it)return;editingRecId=id;
+  _recChipOpen={};_recHistOn=null;
   document.getElementById('recTitle').textContent=it.issue?'Edit item':'Edit entry';
-  const thumb=document.getElementById('recThumb');
-  const _tsrc=photoSrc(it);if(_tsrc){thumb.innerHTML=`<img src="${_tsrc}" alt="" style="width:100%;border-radius:13px;display:block" onclick="openLightbox(${id})">`;}
-  else{thumb.innerHTML=`<div style="height:96px;border-radius:13px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:12.5px">No photo on this entry</div>`;}
-  document.getElementById('recNote').value=it.cap==='(no note)'?'':it.cap;
-  buildRecChips(it.area);
-  document.getElementById('recCrew').innerHTML='<option value="">Unassigned</option><option value="Site super" '+(it.crew==='Site super'?'selected':'')+'>Site super</option>'+crewLabelsSorted().map(c=>`<option value="${c}" ${c===it.crew?'selected':''}>${c}</option>`).join('');
-  const seg=(!it.issue)?'none':(it.status==='done'?'done':'open');
-  document.querySelectorAll('#recStatusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.s===seg));
-  document.getElementById('recShare').classList.toggle('on',!!it.share);
-  const hist=document.getElementById('recHist');
-  if(hist){const html=recHistHTML(it);hist.hidden=!html;hist.innerHTML=html?('<div class="fld-label">Changes</div>'+html):'';}
-  document.getElementById('recScrim').classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('recNote')));}
-function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;
+  fillRecForm(it);
+  paintRecHist(it);
+  const f=document.getElementById('recPhotoFile');if(f)f.value='';
+  document.getElementById('recScrim').classList.add('show');}
+function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;_recPendingPhotoId=null;_recHistOn=null;_recChipOpen={};
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
   if(document.body.classList.contains('on-house-desk')){try{renderIssues();}catch(e){}}
   else{try{houseMaybeResume();}catch(e){}}
@@ -16604,13 +16668,14 @@ function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.
   const crew=document.getElementById('recCrew').value;
   const seg=(document.querySelector('#recStatusSeg button.on')||{}).dataset?document.querySelector('#recStatusSeg button.on').dataset.s:'none';
   const share=document.getElementById('recShare').classList.contains('on');
-  const before={cap:it.cap,area:it.area,crew:it.crew,status:it.status,issue:it.issue,share:!!it.share};
+  const before=itemSnap(it);
   const patch={cap,area,crew,share};
   if(seg==='none'){patch.issue=false;patch.status=undefined;}
   else if(seg==='open'){patch.issue=true;patch.status='open';}
   else if(seg==='done'){patch.issue=true;patch.status='done';}
+  if(_recPendingPhotoId!==(it.photoId||null))patch.photoId=_recPendingPhotoId||null;
   const changes=describeRecChanges(before,patch);
-  if(changes.length)pushItemEdit(it,changes);
+  if(changes.length)pushItemEdit(it,changes,before);
   if(it.edits)patch.edits=it.edits;
   Data.updateItem(P().id,editingRecId,patch);logEvent('recordEdit','#'+editingRecId+(changes.length?(' · '+changes.join(', ')):''));
   closeRecord();renderFeed();renderIssues();renderPhotos();renderBuild();toast(changes.length?'Saved':'No change');}
