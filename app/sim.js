@@ -1097,11 +1097,11 @@ t('Needs You is one card per house', (function(){
   return n===1;
 })());
 t('Attention uses Needs You language', $("String(renderOvCards)").indexOf('needs you')>=0&&$("String(renderOvCards)").indexOf("_ovSort==='attn'")>=0&&$("SORTLABELS.attn")==='Needs You');
-t('empty company does not show All homes', $("String(renderOvCards)").indexOf('if(projs.length&&!q)')>=0&&$("String(renderOvCards)").indexOf('The book is empty')>=0);
+t('empty company does not show All houses', $("String(renderOvCards)").indexOf('if(projs.length&&!q)')>=0&&$("String(renderOvCards)").indexOf('The book is empty')>=0);
 t('empty book hides field notes', $("String(renderToday)").indexOf('if(!projs.length)')>=0);
 t('empty book hides houses header', $("String(renderOverview)").indexOf("hd.style.display=projs.length")>=0);
-t('Needs You opens an inbox', $("String(renderOvCards)").indexOf('All homes')>=0&&$("String(renderOvCards)").indexOf('openNyInbox')>=0&&$("String(inbTabLabel)").indexOf('Needs you')>=0);
-t('All homes is a header not a clone', $("String(allNyPreview)").indexOf('slice(0,2)')<0&&$("String(renderOvCards)").indexOf('ov-allhot')>=0&&$("String(allNyPreview)").indexOf('hot')>=0);
+t('Needs You opens an inbox', $("String(renderOvCards)").indexOf('All houses')>=0&&$("String(renderOvCards)").indexOf('openNyInbox')>=0&&$("String(inbTabLabel)").indexOf('Needs you')>=0);
+t('All houses is a header not a clone', $("String(allNyPreview)").indexOf('slice(0,2)')<0&&$("String(renderOvCards)").indexOf('ov-allhot')>=0&&$("String(allNyPreview)").indexOf('hot')>=0);
 t('desktop week pane exists', $("document.getElementById('ovWeek')")&&SRC.indexOf('renderOvWeek')>=0);
 t('desktop split at 1100', SRC.indexOf('min-width:1100px')>=0&&SRC.indexOf('ov-week')>=0);
 t('field notes three taps', SRC.indexOf('function openFieldNote')>=0&&SRC.indexOf('FIELD_KINDS')>=0&&SRC.indexOf("saveBtn').textContent='Send'")>=0);
@@ -1150,7 +1150,15 @@ t('Needs You includes open field issues', SRC.indexOf('nyOpenItem')>=0&&SRC.inde
 t('Field Notes does not auto-open the camera', SRC.indexOf('function openFieldNote')>=0&&SRC.indexOf("openFieldNote();")>=0&&SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf('.click()')<0);
 t('Field Notes drop waits', SRC.indexOf('function dropPickPhoto')>=0&&SRC.indexOf('function _fnArmDrop')>=0&&SRC.indexOf('_fnSheetOrder(true)')>=0);
 t('packet share keeps the link', SRC.indexOf('function pkDoShare')>=0&&SRC.indexOf('Text this link')>=0);
-t('Money sheet has invoiced and received', SRC.indexOf('Invoiced')>=0&&SRC.indexOf('Still out')>=0&&SRC.indexOf('openPayments()')>=0);
+t('new packet links point at the light page', SRC.indexOf('app/p.html?packet=')>=0);
+t('old packet arrival still works', SRC.indexOf('_PACKET_ON_ARRIVAL')>=0);
+t('guest packet page is under 50 KB', fs.statSync(path.join(__dirname,'p.html')).size<50000);
+t('Needs You smart tab caps the wall', SRC.indexOf("_inbTab==='smart'")>=0&&SRC.indexOf('Show all ')>=0&&SRC.indexOf('need you now')>=0);
+t('Money sheet has invoiced and received', SRC.indexOf('Invoiced')>=0&&(SRC.indexOf('Still due')>=0||SRC.indexOf('Still to pay')>=0)&&SRC.indexOf('openPayments()')>=0);
+t('clipboard writeText is promise-aware', !SRC.split('clipboard.writeText(').slice(1).some(chunk=>{
+  const head=chunk.slice(0,120);
+  return /toast\(/.test(head) && !/\.then\(/.test(head);
+}));
 t('Money lists invoices as rows', SRC.indexOf('function moneyBillHTML')>=0&&SRC.indexOf('moneyNewInvoice')>=0&&SRC.indexOf('+ Invoice')>=0);
 t('calendar shout says double-booked', SRC.indexOf('is double-booked')>=0&&SRC.indexOf('function bkRenderOverlap')>=0);
 t('website lookup reads the site', SRC.indexOf('function parseSiteFacts')>=0&&SRC.indexOf('function guessTrade')>=0&&SRC.indexOf('function applySiteUrl')>=0);

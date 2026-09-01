@@ -1997,7 +1997,7 @@ body.on-tour .tour-card{display:block;}
       <aside id="ovWeek" class="ov-week" hidden></aside>
       <div class="ov-list">
       <div id="ovToday" class="ov-today"></div>
-      <div class="eyebrow ov-builds-hd"><span id="ovBuildsHd">Active Builds</span><span class="eb-line"></span><button class="ov-editbtn" onclick="openEditSites()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit sites</button></div>
+      <div class="eyebrow ov-builds-hd"><span id="ovBuildsHd">Active Builds</span><span class="eb-line"></span><button class="ov-editbtn" onclick="openEditSites()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit houses</button></div>
       <input id="ovSearch" class="ov-search" placeholder="Find a street" oninput="renderOvCards()" style="display:none" autocomplete="off" autocorrect="off">
       <div class="ov-sortrow" id="ovSortRow"></div>
       <div id="ovCards"></div>
@@ -2035,12 +2035,12 @@ body.on-tour .tour-card{display:block;}
       <p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">Your company roster. Every new site starts with these subs — add the crews you use again and again.</p>
       <input id="rosterSearch" placeholder="Search crews…" autocapitalize="off" autocomplete="off" oninput="renderRoster()" style="margin-bottom:8px;display:none">
       <div id="rosterList"></div>
-      <button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add new sub</button>
+      <button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a crew</button>
       <div id="rosterCount" style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:8px"></div>
-      <div class="lbl" style="margin-top:14px">Give a sub live access</div>
-      <p style="margin:0 0 8px;color:var(--ink-3);font-size:12.5px">Invite codes are per-site — pick the site, then the sub, and we’ll generate their code.</p>
-      <button class="add-sub-btn" onclick="inviteSubFlow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite a sub to SitePlumb…</button>
-      <button class="add-sub-btn" style="margin-top:10px;opacity:.85" onclick="subsOnSite()">Manage subs on a specific site…</button>
+      <div class="lbl" style="margin-top:14px">Give a crew live access</div>
+      <p style="margin:0 0 8px;color:var(--ink-3);font-size:12.5px">Invite codes are per-house — pick the house, then the crew, and we’ll generate their code.</p>
+      <button class="add-sub-btn" onclick="inviteSubFlow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite a crew to SitePlumb…</button>
+      <button class="add-sub-btn" style="margin-top:10px;opacity:.85" onclick="subsOnSite()">Manage crews on a specific house…</button>
     </div>
   </div>
 
@@ -2074,7 +2074,7 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="esScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4>Edit sites</h4>
+      <h4>Edit houses</h4>
       <div class="info-body" id="esBody"></div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeEditSites()">Done</button></div>
     </div>
@@ -2179,7 +2179,7 @@ body.on-tour .tour-card{display:block;}
 
 
   <header>
-    <button class="back-btn" id="backBtn" onclick="backToOverview()" aria-label="All homes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span>Homes</span></button>
+    <button class="back-btn" id="backBtn" onclick="backToOverview()" aria-label="All houses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span>Houses</span></button>
     <div class="brand" id="brand" onclick="if(document.getElementById('backBtn').classList.contains('show'))backToOverview()">
       <div class="wordmark"><span class="dot"></span>SitePlumb</div>
       <div class="tagline">true to the build</div>
@@ -3053,7 +3053,7 @@ body.on-tour .tour-card{display:block;}
       <div class="sub" style="font-size:13px;color:var(--ink-2);margin:-6px 0 14px;text-align:center" id="readySub"></div>
       <div id="readyList"></div>
       <button class="b1 b-cancel" style="width:100%;margin-top:14px" onclick="closeReady()">Done</button>
-      <div class="modal-note">Marks the sub <b>Cleared to start</b> on the board with a timestamp. Until devices are synced, this is a local marker — it doesn't ping their phone yet.</div>
+      <div class="modal-note">Marks the crew <b>Cleared to start</b> on the board with a timestamp. Until devices are synced, this is a local marker — it doesn't ping their phone yet.</div>
     </div>
   </div>
   <div class="devpanel" id="devpanel">
@@ -3187,15 +3187,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.361.0 - Packet hint sits under the field, one line.';
+const PLUMB_VERSION='2.362.0 - Parity, tour mute, clipboard, tests, guest packet, house words, Needs You';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788262800000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.361.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788264000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.362.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4301,13 +4301,13 @@ function persist(){try{if(state.session)state.session.role=normRole(state.sessio
   try{
     raw=JSON.stringify(state,function(key,v){if(typeof v==='string'&&v.length>32&&v.slice(0,11)==='data:image')return '';return v;});
     k=storeKey();
-    if(raw===_lastPersist&&k===_lastPersistKey){try{pkPublishSoon();}catch(e2){}return;}
+    if(raw===_lastPersist&&k===_lastPersistKey){try{pkPublishSoon();}catch(e2){trapError('caught',e2&&e2.message,'persist.pkPublishSoon');}return;}
     localStorage.setItem(k,raw);_lastPersist=raw;_lastPersistKey=k;if(typeof queueSync==='function')queueSync();
   }catch(e){
-    try{_lastPersist=raw;_lastPersistKey=k;}catch(e2){}
+    try{_lastPersist=raw;_lastPersistKey=k;}catch(e2){trapError('caught',e2&&e2.message,'persist');}
     var demo=false;try{demo=appMode()!=='real';}catch(e3){}
     if(!demo)toast('Could not save. This phone is out of space. The house list is too big for this device.');
-  }try{pkPublishSoon();}catch(e){}}
+  }try{pkPublishSoon();}catch(e){trapError('caught',e&&e.message,'persist.pkPublishSoon');}}
 
 /* ════════════════════════════════════════════════════════════════════
    DATA ACCESS LAYER  (Phase 0 — the backend seam)
@@ -4608,14 +4608,14 @@ function mailReviewAccept(id){
     p.docs=p.docs||[];p.docs.push({n:m.subject||m.name||'Forwarded document',m:m.from?('From '+m.from):'Forwarded',k:'pdf',trade:'',aud:'team',fileId:m.fileId||null,fileUrl:m.fileUrl||null});
   }
   m.status='filed';
-  persist();try{Sync.pushAll();}catch(e){}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}
   renderMailReview();renderDocs();renderFeed&&renderFeed();toast('Filed');
 }
 function mailReviewDiscard(id){
   const p=P();const m=p&&(p.mailReview||[]).find(x=>String(x.id)===String(id));if(!m)return;
   confirmDelete({title:'Discard this mail?',body:'Removes <b>'+esc(m.subject||m.name||'this item')+'</b> from the review tray. It won\u2019t be filed.',onConfirm:()=>{
     p.mailReview=(p.mailReview||[]).filter(x=>String(x.id)!==String(id));
-    persist();try{Sync.pushAll();}catch(e){}renderMailReview();renderDocs();toast('Discarded');}});
+    persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}renderMailReview();renderDocs();toast('Discarded');}});
 }
 async function openDocFile(projId,fileId,remoteUrl){
   if(fileId){try{const blob=await idbGetDoc(fileId);if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
@@ -4810,7 +4810,7 @@ function renderSiteMenu(){
       <div class="so-i"><div class="so-st">${esc(p.street||p.name)}</div><div class="so-nm">${esc(p.name)}${p.city?' · '+esc(p.city):''}</div></div>
       <div class="so-meta">${open?`<span class="so-open">${open} open</span>`:''}${p.id===state.activeId?'<svg class="so-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4.5 4.5L19 7"/></svg>':''}</div>
     </button>`;
-  }).join('')||`<div class="empty" style="padding:26px 16px">No sites match “${esc(q)}”</div>`;
+  }).join('')||`<div class="empty" style="padding:26px 16px">No houses match “${esc(q)}”</div>`;
 }
 function setActiveProject(id){if(id===state.activeId){closeSiteMenu();return;}Data.setActive(id);updateHeader();closeSiteMenu();
   issueFilter='open';document.querySelectorAll('.seg button').forEach((b,i)=>b.classList.toggle('on',i===0));
@@ -5064,7 +5064,7 @@ function savePersonGates(){
     p.memberInfo[d.uid]=Object.assign({},cur,{rpRole:d.rpRole,gates:Object.assign({},d.gates)});
     ch=true;
   });
-  if(ch){persist();try{Sync.pushAll();}catch(e){}}
+  if(ch){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}
   toast('Role updated');
   peopleMode='team';_teamInv=null;renderPeople();
 }
@@ -5405,7 +5405,7 @@ if(_PACKET_ON_ARRIVAL){
       setTimeout(attempt,120);
     })();
   });
-  _pkPrefetch.catch(function(){});
+  _pkPrefetch.catch(function(e){trapError('caught',e&&e.message,'_pkPrefetch');});
 }
 const _AUTH_ACTION_ON_ARRIVAL=(function(){
   try{const q=new URLSearchParams(location.search||'');
@@ -5632,7 +5632,7 @@ function removeTeamMember(uid){
   (state.projects||[]).forEach(p=>{
     if(p.members&&p.members[uid]){delete p.members[uid];if(p.memberInfo)delete p.memberInfo[uid];ch=true;}});
   const ti=laTeamInvites();ti.forEach(i=>{if(i.uid===uid)i.status='revoked';});laSaveTeamInvites(ti);
-  if(ch){persist();try{Sync.pushAll();}catch(e){}try{Org.touch();}catch(e){}logEvent('memberRemoved','team');toast((info.name||'Team member')+' removed from all sites');}
+  if(ch){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}try{Org.touch();}catch(e){}logEvent('memberRemoved','team');toast((info.name||'Team member')+' removed from all sites');}
   try{renderPeople();}catch(e){}}});}
 function removeHomeownerMember(){
   const p=P();const inv=(p.invites||[]).find(i=>i.role==='client'&&i.status!=='revoked');
@@ -5640,7 +5640,7 @@ function removeHomeownerMember(){
   confirmDelete({title:'Remove homeowner access?',body:'The homeowner loses the portal for <b>'+esc(p.street||p.name)+'</b> the next time that phone syncs.',onConfirm:()=>{
   if(uid&&p.members&&p.members[uid]){delete p.members[uid];if(p.memberInfo)delete p.memberInfo[uid];}
   if(inv)inv.status='revoked';
-  persist();try{Sync.pushAll();}catch(e){}logEvent('memberRemoved','client');toast('Homeowner access removed');
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}logEvent('memberRemoved','client');toast('Homeowner access removed');
   try{renderPeople();}catch(e){}}});}
 /* Per-site homeowner actions for the general Homeowners panel (item 14). They
    target a chosen site by id rather than the active one, so a builder can manage
@@ -5709,7 +5709,7 @@ function __renderSetup(){
   back.style.display=setupStep===0?'none':'';
   next.textContent=setupStep===3?'Finish':'Next';
   if(setupStep===0){t.textContent='Welcome to SitePlumb';
-    b.innerHTML=`<p style="margin:0 0 10px">A few minutes now sets up your whole company — your team, your subs, and how you run selections. Everything here can be changed later from <b>People &amp; invites</b>.</p>
+    b.innerHTML=`<p style="margin:0 0 10px">A few minutes now sets up your whole company — your team, your crew, and how you run selections. Everything here can be changed later from <b>People &amp; invites</b>.</p>
       <div class="lbl">Company name</div>
       <input id="suCompany" placeholder="e.g. Hilltop Homes" value="${esc(setupDraft.company||'')}">
       ${appMode()==='real'?`<button class="add-sub-btn" style="margin-top:14px" onclick="createInvite('team',null,{setup:true})">${PPL_INV_SVG}Someone else should answer these? Invite &amp; hand off setup…</button>
@@ -5895,7 +5895,7 @@ function impSetStage(){
   p.stageDone={};
   SS.forEach((s,i)=>{if(i<cut)p.stageDone[s.id]=true;});
   p._permitsSeeded=false;try{normalizePermits(p);}catch(e){}
-  persist();try{Sync.pushAll();}catch(e){}renderAll();
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}renderAll();
 }
 /* Contacts: the Web Contacts Picker exists only on some mobile browsers; fall
    back to the manual add-sub modal everywhere else so the path never dead-ends. */
@@ -5949,7 +5949,24 @@ async function _impNext(){
     if(sub)sub.textContent='Photo '+n+' of '+(window._impTotal||n)+' \u2014 pick the area, add a caption, save.';
   }catch(e){toast('Could not read one photo \u2014 skipped');_impNext();}
 }
-function copyText(t){try{navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast(t);}}
+function copyTextFallback(t){
+  try{
+    const el=document.createElement('input');el.value=String(t||'');el.setAttribute('readonly','');
+    el.style.position='absolute';el.style.left='-9999px';document.body.appendChild(el);
+    el.select();el.setSelectionRange(0,el.value.length);
+    const ok=document.execCommand('copy');document.body.removeChild(el);return !!ok;
+  }catch(e){return false;}
+}
+function copyTextNow(t){
+  return new Promise(function(res,rej){
+    const done=function(){res();},fail=function(){if(copyTextFallback(t))res();else rej();};
+    try{
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(String(t||'')).then(done,fail);return;}
+    }catch(e){}
+    fail();
+  });
+}
+function copyText(t){copyTextNow(t).then(function(){toast('Copied');},function(){toast(t);});}
 
 /* Convergence — after either door, celebrate the win, push the homeowner/sub
    invites (the relief-from-texts wedge), and surface the OTHER door. */
@@ -5963,7 +5980,7 @@ function startConverge(){
       : '';
   showInfo('You\u2019re rolling',`<p style="margin:0 0 12px;font-size:14px;line-height:1.55"><b>${esc((p&&(p.street||p.name))||'Your job')}</b> is in SitePlumb. Two quick moves make it pay off right away:</p>
     <button class="add-sub-btn" onclick="closeInfo();openPeopleMode('homeowner')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V21H3z"/><path d="M9 21v-6h6v6"/></svg>Invite the homeowner \u2014 stop the \u201cwhat\u2019s happening?\u201d texts</button>
-    <button class="add-sub-btn" style="margin-top:8px" onclick="closeInfo();openPeopleMode('subs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite the sub coming this week</button>
+    <button class="add-sub-btn" style="margin-top:8px" onclick="closeInfo();openPeopleMode('subs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite the crew coming this week</button>
     ${otherBtn}
     <p style="color:var(--ink-3);font-size:12.5px;margin:14px 0 0">Everything else fills in as you go — log a photo, set a stage, add a selection whenever it comes up.</p>`);
 }
@@ -6045,14 +6062,14 @@ function renderHoAccess(){
   const q=(document.getElementById('hoSearch').value||'').trim().toLowerCase();
   const ps=(state.projects||[]).filter(p=>!q||((p.street||'')+' '+(p.name||'')+' '+(p.city||'')).toLowerCase().includes(q));
   const allOn=(state.projects||[]).length>0&&(state.projects||[]).every(p=>p.hoCal);
-  el.innerHTML=`<div class="day-row avr" style="cursor:pointer" onclick="hoSetAll(${allOn?'false':'true'})"><div style="flex:1"><div class="n">All homes</div><div class="d">Turn every site on or off at once</div></div><span class="sw-toggle${allOn?' on':''}"></span></div>`
+  el.innerHTML=`<div class="day-row avr" style="cursor:pointer" onclick="hoSetAll(${allOn?'false':'true'})"><div style="flex:1"><div class="n">All houses</div><div class="d">Turn every house on or off at once</div></div><span class="sw-toggle${allOn?' on':''}"></span></div>`
     +ps.map(p=>`<div class="day-row avr" style="cursor:pointer" onclick="hoSet('${p.id}')"><div style="flex:1"><div class="n">${esc(p.street||p.name)}${p.city?' · '+esc(p.city):''}</div><div class="d">${p.hoCal?'Homeowner sees their calendar':'Off'}</div></div><span class="sw-toggle${p.hoCal?' on':''}"></span></div>`).join('');}
 function hoSet(pid){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   p.hoCal=!p.hoCal;persist();logEvent('hoCal',(p.hoCal?'on':'off')+' · '+(p.street||p.name));renderHoAccess();}
 function hoRowsHTML(rr){
   const ps=state.projects||[];const allOn=ps.length>0&&ps.every(p=>!!p.hoCal);
-  return `<div class="day-row avr" style="cursor:pointer" onclick="hoSetAll(${allOn?'false':'true'});${rr}()"><div style="flex:1"><div class="n">All homes</div><div class="d">One switch for every site</div></div><span class="sw-toggle${allOn?' on':''}"></span></div>`
+  return `<div class="day-row avr" style="cursor:pointer" onclick="hoSetAll(${allOn?'false':'true'});${rr}()"><div style="flex:1"><div class="n">All houses</div><div class="d">One switch for every house</div></div><span class="sw-toggle${allOn?' on':''}"></span></div>`
     +ps.map(p=>`<div class="day-row avr" style="cursor:pointer" onclick="hoSet('${p.id}');${rr}()"><div style="flex:1"><div class="n">${esc(p.street||p.name)}${p.city?' · '+esc(p.city):''}</div><div class="d">${p.hoCal?'Homeowner sees their calendar':'Off'}</div></div><span class="sw-toggle${p.hoCal?' on':''}"></span></div>`).join('');}
 function hoSetAll(on){
   (state.projects||[]).forEach(p=>{if(!!p.hoCal!==on){p.hoCal=on;}});persist();
@@ -6066,7 +6083,7 @@ function deleteSite(id){
     if(appMode()==='real'){
       p.deleted=Date.now();
       try{persist();}catch(e){}
-      try{Sync._pushOne(p);}catch(e){}   // tombstone reaches the cloud; other devices drop it on receipt
+      try{Sync._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync._pushOne');}   // tombstone reaches the cloud; other devices drop it on receipt
     }
     state.projects=state.projects.filter(x=>String(x.id)!==String(pid));
     if(!state.projects.length){state.activeId=null;}
@@ -6576,7 +6593,7 @@ function tourStep(){
         +'<div class="tour-b">'+esc(step.body||'')+'</div>'
         +'<div class="tour-foot">'+(lastE?'<button class="tour-next" onclick="tourEnd(\'explore\')">Explore demo</button>':'<button class="tour-skip" onclick="event.stopPropagation();tourEnd(\'skip\')">Skip tour</button>')+'<div>'
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
-        +'<button class="tour-mute-mini" onclick="tourMuteToggle()">'+(tourMuted()?'\ud83d\udd07':'\ud83d\udd0a')+'</button>'
+        +'<button class="tour-mute-mini" onclick="tourToggleMute()">'+(tourMuted()?'\ud83d\udd07':'\ud83d\udd0a')+'</button>'
         +'<button class="'+(lastE&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(lastE&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(lastE?(step.cta||'Done'):'Next')+'</button></div></div>';
     }
   }catch(e){}
@@ -6980,13 +6997,13 @@ function __renderPeople(){
     const list=hits.map(function(x){
       const tr=SPECIALTIES.find(function(s){return s.id===x.r.trade;});const col=(TRADE_COLORS[x.r.trade]||{}).bg||'var(--oak)';
       return '<div class="subrow"><div class="si"><div class="n">'+esc(x.r.name)+'</div><div class="d"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+col+';margin-right:5px;vertical-align:-1px"></span>'+esc((tr||{}).label||'General')+'</div></div><button class="rm" onclick="rosterDrop('+x.i+')" title="Remove from roster">'+ICON.trash+'</button></div>';
-    }).join('')||('<div class="empty" style="padding:8px 0">'+(q?'No one matches.':'No subs yet — add the trades you work with.')+'</div>');
+    }).join('')||('<div class="empty" style="padding:8px 0">'+(q?'No one matches.':'No crews yet — add the trades you work with.')+'</div>');
     el.innerHTML=peoplePills()
       +'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Your company roster. Every new house starts with these crews.</p>'
       +(all.length>=10?'<input id="pplRosterSearch" placeholder="Search crews" autocapitalize="off" autocomplete="off" oninput="renderPeople()" value="'+esc(q)+'" style="margin-bottom:8px">':'')
       +list
-      +'<button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a sub</button>'
-      +'<p class="ppl-quiet">Live access is per house. <button type="button" onclick="inviteSubFlow()">Invite a sub</button> · <button type="button" onclick="subsOnSite()">Manage on a house</button></p>';
+      +'<button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a crew</button>'
+      +'<p class="ppl-quiet">Live access is per house. <button type="button" onclick="inviteSubFlow()">Invite a crew</button> · <button type="button" onclick="subsOnSite()">Manage on a house</button></p>';
     return;}
   if(title)title.textContent='People';
   const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
@@ -7066,7 +7083,7 @@ function approveClaim(code,uid,c){
       if(ensureMembership(p))ch=true;     // legacy sites: make sure I'm stamped too before pushing a members map
       if(ensureTeam(p))ch=true;});        // ...and the rest of the roster
     tinv.status='joined';tinv.uid=uid;tinv.name=c.name||'';laSaveTeamInvites(ti);
-    if(ch){persist();try{Sync.pushAll();}catch(e){}try{Org.touch();}catch(e){}toast((c.name||'Your team member')+' joined the team — all sites shared');logEvent('memberJoined','team · '+(c.name||''));}
+    if(ch){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}try{Org.touch();}catch(e){}toast((c.name||'Your team member')+' joined the team — all sites shared');logEvent('memberJoined','team · '+(c.name||''));}
     try{renderSubs();}catch(e){}
     return;}
   for(const p of (state.projects||[])){
@@ -7181,7 +7198,7 @@ function subsOnSite(){
   const go=id=>{Data.setActive(id);calSiteFilter=String(id);openCal();};
   if(ps.length===1){go(ps[0].id);return;}
   openPick({title:'Subcontractors \u2014 which site?',
-    options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' sub'+(p.subs.length===1?'':'s')):'No subs yet')+(p.city?' \u00b7 '+p.city:'')})),
+    options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' crew'+(p.subs.length===1?'':'s')):'No crews yet')+(p.city?' \u00b7 '+p.city:'')})),
     onPick:go});}
 /* #1: invite a sub to SitePlumb from the roster screen. Codes are per-site, so this
    walks site → sub, skipping subs who already have a live invite, then hands off
@@ -7206,11 +7223,11 @@ function inviteSubFlow(){
     if(!roster.length){toast('No subs on '+(p.street||p.name)+' yet — add one first');return;}
     if(!subs.length){toast('Everyone on '+(p.street||p.name)+' is already invited');return;}
     if(subs.length===1){closeSubsRoster();Data.setActive(p.id);createInvite('sub',subs[0].id);return;}
-    openPick({title:'Invite which sub?',options:subs.map(s=>({id:s.id,label:s.name,sub:specLabel(s.specialty)})),
+    openPick({title:'Invite which crew?',options:subs.map(s=>({id:s.id,label:s.name,sub:specLabel(s.specialty)})),
       onPick:sid=>{closeSubsRoster();Data.setActive(p.id);createInvite('sub',sid);}});};
   if(ps.length===1){pickSub(ps[0]);return;}
-  openPick({title:'Invite a sub \u2014 which site?',
-    options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' sub'+(p.subs.length===1?'':'s')):'No subs yet')+(p.city?' · '+p.city:'')})),
+  openPick({title:'Invite a crew \u2014 which house?',
+    options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' crew'+(p.subs.length===1?'':'s')):'No crews yet')+(p.city?' · '+p.city:'')})),
     onPick:id=>{const p=state.projects.find(x=>String(x.id)===String(id));if(p)pickSub(p);}});}
 function onDeckGo(pid,trade){
   calSiteFilter=String(pid);openCal();
@@ -7278,7 +7295,7 @@ function houseCall(p){
 function markHouseDone(pid,on){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
   if(on===false){delete p.doneAt;p.doneAskUntil=0;persist();logEvent('houseOnBook',p.street||p.name);toast(houseCall(p)+' is on the book again');}
-  else {p.doneAt=Date.now();persist();logEvent('houseOffBook',p.street||p.name);toast(houseCall(p)+' is off Needs You. Still on All homes.');}
+  else {p.doneAt=Date.now();persist();logEvent('houseOffBook',p.street||p.name);toast(houseCall(p)+' is off Needs You. Still on All houses.');}
   try{renderHouse();}catch(e){}
   try{renderOverview();}catch(e){}
   try{renderEditSites();}catch(e){}
@@ -7288,7 +7305,7 @@ function askHouseDone(pid){
   const street=p.street||p.name||'this house';
   openConfirm({
     title:'Done with '+street+'?',
-    body:'Take it off Needs You and Coming up? You can still open it from All homes.',
+    body:'Take it off Needs You and Coming up? You can still open it from All houses.',
     okLabel:'Done with this house',
     cancelLabel:'Keep it on the book',
     onConfirm:function(){markHouseDone(p.id,true);}
@@ -7321,7 +7338,7 @@ function maybeAskDoneHouse(){
   const street=p.street||p.name||'this house';
   openConfirm({
     title:'Done with '+street+'?',
-    body:'Nothing new in two weeks, and this house looks finished. Take it off Needs You and Coming up? You can still open it from All homes.',
+    body:'Nothing new in two weeks, and this house looks finished. Take it off Needs You and Coming up? You can still open it from All houses.',
     okLabel:'Done with this house',
     cancelLabel:'Keep it on the book',
     onConfirm:function(){markHouseDone(p.id,true);},
@@ -7645,8 +7662,8 @@ function setBackHouse(){
 function setBackHomes(){
   const b=document.getElementById('backBtn');if(!b)return;
   b.onclick=backToOverview;
-  b.setAttribute('aria-label','All homes');
-  const sp=b.querySelector('span');if(sp)sp.textContent='Homes';
+  b.setAttribute('aria-label','All houses');
+  const sp=b.querySelector('span');if(sp)sp.textContent='Houses';
   const brand=document.getElementById('brand');
   if(brand)brand.onclick=function(){if(document.getElementById('backBtn').classList.contains('show'))backToOverview();};
 }
@@ -7944,9 +7961,11 @@ function nyCardBits(p){
 function allNyPreview(){
   const issues=nySorted(_nyIssues(liveProjects()));
   if(!issues.length)return {n:0,line:'All clear',hot:''};
-  const top=issues[0];
+  const urgent=issues.filter(function(x){return (x.pri||0)<=1;});
+  const top=(urgent[0]||issues[0]);
   const hot=[top.kind,top.site].filter(Boolean).join(' \u00b7 ');
-  return {n:issues.length,line:issues.length+(issues.length===1?' still needs you':' still need you'),hot:hot};
+  if(!urgent.length)return {n:issues.length,line:'Nothing urgent',hot:hot};
+  return {n:urgent.length,line:urgent.length+(urgent.length===1?' needs you now':' need you now'),hot:hot};
 }
 function allPkPreview(){
   const rows=pkRowsFor('');
@@ -8001,12 +8020,12 @@ function renderOvCards(){
       head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openPkLog()"><div class="ct"><div><div class="st">All houses</div><div class="nm">${esc(prev.line)}</div>${prev.hot?`<div class="ov-allhot">${esc(prev.hot)}</div>`:''}</div><span class="td-chev">\u203a</span></div></div>`;
     }else{
       const prev=allNyPreview();
-      head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openNyInbox()"><div class="ct"><div><div class="st">All homes</div><div class="nm">${esc(prev.line)}</div>${prev.hot?`<div class="ov-allhot">${esc(prev.hot)}</div>`:''}</div><span class="td-chev">\u203a</span></div></div>`;
+      head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openNyInbox()"><div class="ct"><div><div class="st">All houses</div><div class="nm">${esc(prev.line)}</div>${prev.hot?`<div class="ov-allhot">${esc(prev.hot)}</div>`:''}</div><span class="td-chev">\u203a</span></div></div>`;
     }
   }
   const cardOf=function(p,i){
     const n=(need.map[String(p.id)]||{}).n||0;
-    const _ttl=p.street||p.name||'Untitled site';
+    const _ttl=p.street||p.name||'Untitled house';
     if(_ovSort==='recent'){
       return `<div class="ov-card${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
       <div class="ct"><div><div class="st">${esc(_ttl)}</div></div><span class="td-chev">\u203a</span></div>
@@ -8024,12 +8043,12 @@ function renderOvCards(){
   const empty=(!projs.length)
     ?((state.session&&state.session.role==='builder')
       ?`<div class="ov-empty"><svg class="ov-empty-house" viewBox="0 0 300 250" fill="none" stroke="#1B1916" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="28" y1="228" x2="272" y2="228" stroke="#B0895A" stroke-width="2"/><line x1="64" y1="223" x2="236" y2="223" stroke="#B0895A" stroke-width="2.4"/><line x1="72" y1="228" x2="72" y2="92"/><line x1="228" y1="228" x2="228" y2="92"/><line x1="72" y1="146" x2="228" y2="146"/><polyline points="60,96 150,30 240,96" stroke-width="2.2"/><line x1="66" y1="92" x2="234" y2="92"/><line x1="54" y1="158" x2="246" y2="158" stroke-width="1.8"/><rect x="135" y="170" width="30" height="54" stroke-width="1.5"/><rect x="90" y="106" width="28" height="30"/><rect x="182" y="106" width="28" height="30"/></svg><div class="empty">The book is empty.</div><button class="ov-newbtn" onclick="openNewSite()">Add the first house</button></div>`
-      :`<div class="empty">No sites assigned to you yet.</div>`)
+      :`<div class="empty">No houses assigned to you yet.</div>`)
     :(q&&!list.length&&!finished.length)
     ?'<div class="empty">No house matches.</div>'
     :(_ovSort==='attn'&&!list.length&&!finished.length)
     ?'<div class="td-clear">All clear.</div>'
-    :((!list.length&&!finished.length)?'<div class="empty">No sites match.</div>':'');
+    :((!list.length&&!finished.length)?'<div class="empty">No houses match.</div>':'');
   cards.innerHTML=head+body+fin+empty;
   if(_sc)_sc.scrollTop=_keepScroll;
 }
@@ -8144,7 +8163,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       if(this.on)this.disconnect();
       if(fbConfig())this.init();
     }catch(e){}});}catch(e){}},
-  async pushAll(){if(!this.ready())return;for(const p of state.projects){try{await this._pushOne(p);}catch(e){}}},
+  async pushAll(){if(!this.ready())return;for(const p of state.projects){try{await this._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}},
   async _pushOne(p){if(!this.ready()||!p)return;
     if(p.sample||(this.mode||'demo')!=='live')return;     // demo is local-only: nothing in demo (sample or not) syncs to the cloud
     const id=String(p.id);
@@ -8626,7 +8645,7 @@ const Org={
     }
     try{localStorage.setItem('plumb.orgId',id);}catch(e){}
     let stamped=false;(state.projects||[]).forEach(p=>{if(!p.org){p.org=id;stamped=true;}});
-    if(stamped){persist();try{Sync.pushAll();}catch(e){}}
+    if(stamped){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}
     this._adopt(id);
   },
   _absorb(d){
@@ -8901,13 +8920,13 @@ function renderSubView(){
   const body=document.getElementById('svBody');const projs=subProjects();const nav=document.getElementById('subNav');
   if(!subSel){
     if(nav)nav.style.display='none';
-    body.innerHTML='<div style="margin:0 0 12px"><span class="syncpill"><span class="sd"></span>On this device</span></div><div class="eyebrow" style="margin-top:6px">Your sites</div><div id="subCards">'+
+    body.innerHTML='<div style="margin:0 0 12px"><span class="syncpill"><span class="sd"></span>On this device</span></div><div class="eyebrow" style="margin-top:6px">Your houses</div><div id="subCards">'+
       (projs.map((p,i)=>{const tr=subTradeFor(p);const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open').length;
         return `<div class="ov-card ${open?'attn':''}" style="animation-delay:${i*60}ms" onclick="openSubSite('${p.id}')">
           <div class="ct"><div><div class="st">${esc(p.street||p.name)}</div><div class="nm">${esc(tr.label)}${p.city?' · '+esc(p.city):''}</div></div>
           <span class="ov-open ${tr.cleared?'clean':''}">${tr.cleared?'Cleared':'Waiting'}</span></div>
           <div class="foot"><span>${open?open+' open item'+(open===1?'':'s'):'no open items'}</span></div></div>`;}).join('')
-       ||'<div class="empty">No sites assigned to you yet.</div>')+'</div>';
+       ||'<div class="empty">No houses assigned to you yet.</div>')+'</div>';
     setSync(syncStatus);return;
   }
   const p=projs.find(x=>x.id===subSel)||projs[0];if(!p){subSel=null;return renderSubView();}
@@ -12407,7 +12426,7 @@ async function invShare(projId,invId){
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv)return;
   const text=invText(p,inv);
   try{if(navigator.share){await navigator.share({title:inv.no+' — '+inv.title,text});return;}}catch(e){if(e&&e.name==='AbortError')return;}
-  try{await navigator.clipboard.writeText(text);toast('Invoice copied — paste it into a text or email');}catch(e){toast('Couldn\u2019t share on this device');}
+  copyTextNow(text).then(function(){toast('Invoice copied — paste it into a text or email');},function(){toast('Could not share on this device');});
 }
 /* In-app print preview. We never window.open() — in a standalone iOS PWA that
    replaces the app with a page that has no way back (force-quit only). Instead
@@ -13025,9 +13044,9 @@ async function shareInvite(code){
     'Or enter it by hand. Open SitePlumb \u2192 Live \u2192 \u201cI have an invite code,\u201d then enter:\n\n'+
     code+'\n';
   let copied=false;
-  try{await navigator.clipboard.writeText(code);copied=true;}catch(e){}
   try{if(navigator.share){await navigator.share({title:'Your SitePlumb invite',text:msg});return;}}catch(e){/* user closed the sheet */}
-  toast(copied?'Code copied \u2014 invite text ready to paste':'Couldn\u2019t copy on this device \u2014 long-press the code instead');}
+  copyTextNow(code).then(function(){toast('Code copied — invite text ready to paste');},function(){toast('Could not copy on this device — long-press the code instead');});
+}
 /* On load, if the app was opened from an invite link, reveal and prefill the
    code field. Returning users land on Sign in; new users tap Create account —
    either way the code is already filled and submitted with their auth. */
@@ -13083,13 +13102,8 @@ function invBarCopy(){
         setTimeout(()=>{b.textContent=o;b._busy=0;},1800);}}catch(e){}
     toast('Code '+c+' copied - in SitePlumb tap I have an invite code, then Paste code');
     logEvent('inviteBarCopied','');};
-  try{if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(c).then(flash,()=>toast('Your invite code is '+c));return;}}catch(e){}
-  try{const t=document.createElement('input');t.value=c;t.setAttribute('readonly','');
-    t.style.position='absolute';t.style.left='-9999px';document.body.appendChild(t);
-    t.select();t.setSelectionRange(0,c.length);document.execCommand('copy');
-    document.body.removeChild(t);flash();}
-  catch(e){toast('Your invite code is '+c);}}
+  copyTextNow(c).then(flash,function(){toast('Your invite code is '+c);});
+}
 /* Returns true when the bar took the screen, so boot can stand the heavier
    full-screen install nudge down instead of stacking two prompts. */
 function maybeInviteBar(){
@@ -13565,7 +13579,7 @@ function saveSub(){const name=document.getElementById('subName').value.trim();if
     op.subRoster.push({name,trade:patch.specialty||'general',phone:patch.phone,contact:patch.contact,email:patch.email,address:patch.address,website:patch.website,license:patch.license,notes:patch.notes});
     saveOrgPrefs(op);logEvent('rosterAdd',name);_rosterMode=false;closeAddSub();renderRoster();toast('Added to roster');return;
   }
-  if(_editSubId){Data.updateSub(_editSubId,patch);try{Sync.pushAll();}catch(e){}logEvent('subEdited',name);_editSubId=null;closeAddSub();renderBuild();toast('Saved');}
+  if(_editSubId){Data.updateSub(_editSubId,patch);try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}logEvent('subEdited',name);_editSubId=null;closeAddSub();renderBuild();toast('Saved');}
   else{Data.addSub({id:'s'+Date.now().toString(36),...patch,cleared:null});logEvent('subAdded',name);renderBuild();closeAddSub();toast('Crew added');}
   // If this was launched from the "bring in a job" import flow, refresh it so the
   // running roster count updates and the flow stays open to add more.
@@ -13597,7 +13611,7 @@ function removeSub(id){const s=P().subs.find(x=>x.id===id);if(!s)return;
   confirmDelete({title:'Remove '+s.name+'?',body:'Removes <b>'+esc(s.name)+'</b> ('+esc(specLabel(s.specialty))+') from this site\u2019s subcontractor list. Their logged records stay. This can\u2019t be undone.',onConfirm:()=>{
   try{const p=P();const inv=(p.invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked');
     if(inv){if(inv.uid&&p.members&&p.members[inv.uid]){delete p.members[inv.uid];if(p.memberInfo)delete p.memberInfo[inv.uid];}inv.status='revoked';}}catch(e){}
-  Data.removeSub(id);try{Sync.pushAll();}catch(e){}logEvent('subRemoved',s.name);renderBuild();toast('Removed');}});}
+  Data.removeSub(id);try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}logEvent('subRemoved',s.name);renderBuild();toast('Removed');}});}
 
 /* site-ready picker */
 let readyStageId=null;
@@ -14404,7 +14418,7 @@ function bkSave(){
   if(_bkEdit){
     const ep=state.projects.find(x=>String(x.id)===String(_bkEdit.pid));
     const etrade=bkSelTrade()||'';
-    const applyEdit=()=>{const cur=(ep.bookings||[]).find(x=>String(x.id)===String(_bkEdit.bid));const kept=cur&&cur.pkResp&&cur.pkResp.status==='confirmed'&&dayStart(cur.pkResp.start||start)===dayStart(start)&&dayStart(cur.pkResp.end||end)===dayStart(end);updateBooking(ep,_bkEdit.bid,{start:start,end:end,note:note,status:kept?'confirmed':'pending'});_bkArmSpecs(ep,bkSelTrade()||'',start);toast(kept?'Booking saved':'Booking updated — the sub will be asked to confirm');done();};
+    const applyEdit=()=>{const cur=(ep.bookings||[]).find(x=>String(x.id)===String(_bkEdit.bid));const kept=cur&&cur.pkResp&&cur.pkResp.status==='confirmed'&&dayStart(cur.pkResp.start||start)===dayStart(start)&&dayStart(cur.pkResp.end||end)===dayStart(end);updateBooking(ep,_bkEdit.bid,{start:start,end:end,note:note,status:kept?'confirmed':'pending'});_bkArmSpecs(ep,bkSelTrade()||'',start);toast(kept?'Booking saved':'Booking updated — the crew will be asked to confirm');done();};
     if(etrade&&!packetReady(ep,etrade)){
       const gaps=tradeSpecGaps(ep,etrade).length;
       const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'install specs are not signed off yet';
@@ -14518,7 +14532,7 @@ function setPacketSignoff(p,tradeId,who,on){
   p.packetSignoff=p.packetSignoff||{};p.packetSignoff[tradeId]=p.packetSignoff[tradeId]||{};
   if(on){const sess=state.session||{};p.packetSignoff[tradeId][who]={by:sess.name||(who==='homeowner'?'Homeowner':'Builder'),at:Date.now()};}
   else delete p.packetSignoff[tradeId][who];
-  persist();try{Sync.pushAll();}catch(e){}}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}
 function docHiddenSet(p,tradeId){return ((p.docHidden||{})[tradeId])||[];}
 function docShownSet(p,tradeId){return ((p.docShown||{})[tradeId])||[];}
 function packetPins(p,tradeId){const x=((p.packetPins||{})[tradeId])||{};return {items:x.items||[],logs:x.logs||[]};}
@@ -14529,13 +14543,13 @@ function togglePacketItem(pid,tradeId,id){
   p.packetPins=p.packetPins||{};p.packetPins[tradeId]=p.packetPins[tradeId]||{items:[],logs:[]};
   const arr=p.packetPins[tradeId].items;const i=arr.map(String).indexOf(String(id));
   if(i>=0)arr.splice(i,1);else arr.push(id);
-  persist();try{Sync.pushAll();}catch(e){}renderPacketLog();try{refreshPacket();}catch(e){}}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}renderPacketLog();try{refreshPacket();}catch(e){}}
 function togglePacketLog(pid,tradeId,date){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   p.packetPins=p.packetPins||{};p.packetPins[tradeId]=p.packetPins[tradeId]||{items:[],logs:[]};
   const arr=p.packetPins[tradeId].logs;const i=arr.indexOf(date);
   if(i>=0)arr.splice(i,1);else arr.push(date);
-  persist();try{Sync.pushAll();}catch(e){}renderPacketLog();try{refreshPacket();}catch(e){}}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}renderPacketLog();try{refreshPacket();}catch(e){}}
 /* Default-deny. A doc is in this trade's packet only if it is tagged for
    this trade, or the builder turned it on. Untagged site PDFs never ride. */
 function docInPacket(p,tradeId,d){
@@ -14570,7 +14584,7 @@ function toggleDocInPacket(tradeId,name){
     const i=hid.indexOf(name);if(i>=0)hid.splice(i,1);
   }
   p.docHidden[tradeId]=hid;p.docShown[tradeId]=sh;
-  persist();try{Sync.pushAll();}catch(e){}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}
   try{refreshPacket();}catch(e){}}
 function packetReady(p,tradeId){return tradeSpecGaps(p,tradeId).length===0&&packetSignedBoth(p,tradeId);}
 let _pktCtx=null;
@@ -14923,10 +14937,10 @@ function _pkDb(){
     if(!_pkAppCheckOn){
       try{const ak=(typeof appCheckKey==='function')&&appCheckKey();
         if(ak&&firebase.appCheck)firebase.appCheck().activate(ak,true);
-        _pkAppCheckOn=true;}catch(e){_pkAppCheckOn=true;}
+        _pkAppCheckOn=true;}catch(e){_pkAppCheckOn=true;trapError('caught',e&&e.message,'_pkDb.appCheck');}
     }
     return firebase.firestore();
-  }catch(e){return null;}
+  }catch(e){trapError('caught',e&&e.message,'_pkDb');return null;}
 }
 function sendGuestPacket(pid,bid){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
@@ -14964,7 +14978,7 @@ function gpApproveSend(){
   }catch(e){toast('Could not create the link');}
 }
 function _sharePacketLink(snap,token){
-  const url='https://siteplumb.com/app/?packet='+token;
+  const url='https://siteplumb.com/app/p.html?packet='+token;
   const msg='Hi \u2014 '+fmtWin({start:snap.start,end:snap.end})+' at '+snap.site+'. Dates, scope and specs \u2014 one tap to confirm: '+url;
   const phone=_subPhoneOf(snap.sub,null)||snap.phone||'';
   window._pkLastShare={url:url,msg:msg,who:snap.subName||snap.sub||'the crew',phone:phone};
@@ -14988,7 +15002,7 @@ function _smsOrCopy(msg,phone){
     const to=String(phone||'').replace(/[^\d+]/g,'');
     location.href='sms:'+(to||'')+'?&body='+encodeURIComponent(msg);
   }catch(e){}
-  try{navigator.clipboard&&navigator.clipboard.writeText(msg).then(()=>toast('Message copied \u2014 paste it into a text'));}catch(e){}
+  copyTextNow(msg).then(function(){toast('Message copied \u2014 paste it into a text');},function(){});
 }
 function openGuestPreview(snap){window.__packetFixture=snap;renderGuestPacket('preview');}
 let _gpSnap=null,_gpToken=null,_gpCalCursor=null,_bkCalCursor=null;
@@ -15015,7 +15029,7 @@ function _gpApplyRemote(g){
   _gpSnap=g;_gpCacheWrite(_gpToken,g);_gpRender();
 }
 function _gpUnlisten(){
-  try{if(_gpUnsub){_gpUnsub();}}catch(e){}
+  try{if(_gpUnsub){_gpUnsub();}}catch(e){trapError('caught',e&&e.message,'_gpUnlisten');}
   _gpUnsub=null;
 }
 function _gpListen(){
@@ -15023,7 +15037,7 @@ function _gpListen(){
   if(!_gpToken||_gpToken==='preview')return;
   const db=_pkDb();
   if(db){
-    try{_gpUnsub=db.collection('packets').doc(String(_gpToken)).onSnapshot(function(d){if(d&&d.exists)_gpApplyRemote(d.data());},function(){});}catch(e){}
+    try{_gpUnsub=db.collection('packets').doc(String(_gpToken)).onSnapshot(function(d){if(d&&d.exists)_gpApplyRemote(d.data());},function(e){trapError('caught',e&&e.message,'_gpListen.snap');});}catch(e){trapError('caught',e&&e.message,'_gpListen');}
   }
   if(!_gpTick)_gpTick=setInterval(function(){
     if(typeof document!=='undefined'&&document.visibilityState!=='visible')return;
@@ -15031,7 +15045,7 @@ function _gpListen(){
     if(_gpBusy())return;
     if(_gpPendingRemote){const g=_gpPendingRemote;_gpPendingRemote=null;_gpApplyRemote(g);return;}
     const db2=_pkDb();if(!db2)return;
-    db2.collection('packets').doc(String(_gpToken)).get().then(function(d){if(d.exists)_gpApplyRemote(d.data());}).catch(function(){});
+    db2.collection('packets').doc(String(_gpToken)).get().then(function(d){if(d.exists)_gpApplyRemote(d.data());}).catch(function(e){trapError('caught',e&&e.message,'_gpListen.poll');});
   },4000);
 }
 function renderGuestPacket(token){
@@ -15093,7 +15107,7 @@ function _gpRender(){
   }
   if(preview&&_gpPendingSend)h+='<div class="gp-preview">Review before it sends \u2014 this is exactly what '+esc(g.sub)+' will see'+(g.phone?(' at '+esc(g.phone)):'')+'.</div>'
     +'<button class="gp-btn go" style="margin-bottom:10px" onclick="gpApproveSend()">Text this link</button>';
-  else if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your sub receives by text. Nothing was sent.</div>';
+  else if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your crew receives by text. Nothing was sent.</div>';
   h+='<div class="gp-site">'+esc(g.site)+'</div>';
   h+='<div class="gp-sub">'+esc(g.tradeLabel)+' \u00b7 for '+esc(g.sub)+' \u00b7 from '+esc(g.builder)+'</div>';
   h+='<div class="gp-dates"><div class="d">'+esc(dates)+'</div>'+(g.note?'<div class="n">'+esc(g.note)+'</div>':'')+'</div>';
@@ -15284,7 +15298,7 @@ function _gpWriteResp(resp){
   _gpSnap.resp=resp;
   if(_gpToken&&_gpToken!=='preview'){
     const db=_pkDb();
-    if(db){try{db.collection('packets').doc(String(_gpToken)).update({resp:resp}).catch(()=>{});}catch(e){}}
+    if(db){try{db.collection('packets').doc(String(_gpToken)).update({resp:resp}).catch(function(e){trapError('caught',e&&e.message,'_gpWriteResp');});}catch(e){trapError('caught',e&&e.message,'_gpWriteResp');}}
   }
   _gpRender();
 }
@@ -15300,7 +15314,7 @@ function gpSendQuestion(){
   _gpSnap.q=(_gpSnap.q||[]).concat([{text:txt,t:Date.now()}]);
   if(_gpToken&&_gpToken!=='preview'){
     const db=_pkDb();
-    if(db){try{db.collection('packets').doc(String(_gpToken)).update({q:_gpSnap.q}).catch(()=>{});}catch(e){}}
+    if(db){try{db.collection('packets').doc(String(_gpToken)).update({q:_gpSnap.q}).catch(function(e){trapError('caught',e&&e.message,'gpSendQuestion');});}catch(e){trapError('caught',e&&e.message,'gpSendQuestion');}}
   }
   _gpRender();
 }
@@ -15614,7 +15628,7 @@ function pkOfferTellThem(){
     onConfirm:function(){
       const hold=_pkPubNotify;_pkPubNotify=null;
       if(!hold)return;
-      const url='https://siteplumb.com/app/?packet='+hold.token;
+      const url='https://siteplumb.com/app/p.html?packet='+hold.token;
       const msg='Update on '+hold.site+': '+hold.what+' ('+pkWhen(hold.t)+'). Same link: '+url;
       if(navigator.share){navigator.share({text:msg}).catch(function(){_smsOrCopy(msg);});}
       else _smsOrCopy(msg);
@@ -15743,6 +15757,15 @@ function inbFiltered(){
     const blob=[r.kind,r.line,r.site,r.who,r.detail,pkKind(r)].join(' ').toLowerCase();
     return blob.indexOf(q)>=0;
   });
+  if(_inbMode==='ny'&&_inbTab==='smart'&&!q){
+    const n=rows.length;
+    const urgent=rows.filter(function(r){return (r.pri||0)<=1;});
+    rows=urgent.slice(0,6);
+    window._inbAllN=n;
+    window._inbSmartCapped=n>rows.length;
+  }else{
+    window._inbSmartCapped=false;
+  }
   return rows;
 }
 function inbTabLabel(t){
@@ -15770,7 +15793,9 @@ function inbDraw(){
     return '<button type="button" class="ov-sortpill'+(_inbTab===t?' on':'')+'" onclick="inbSetTab(\''+String(t).replace(/'/g,'\\\'')+'\')">'+esc(lab)+'</button>';
   }).join('');
   const rows=inbFiltered();
-  if(!rows.length){el.innerHTML='<div class="empty">Nothing matches.</div>';return;}
+  if(!rows.length){
+    if(window._inbSmartCapped){el.innerHTML='<div class="empty">Nothing urgent.</div><button type="button" class="add-sub-btn" style="width:100%;margin-top:14px" onclick="inbSetTab(\'all\')">Show all '+window._inbAllN+'</button>';return;}
+    el.innerHTML='<div class="empty">Nothing matches.</div>';return;}
   el.innerHTML=rows.map(function(r){
     if(_inbMode==='pk'){
       const when=r.t?new Date(r.t).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
@@ -15784,7 +15809,7 @@ function inbDraw(){
     return '<div class="pkt-or" style="margin-top:8px" onclick="closePkLog();'+go+'"><div><div class="k">'+esc(r.kind||'Needs you')+'</div>'
       +'<div class="m">'+esc(r.line||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div></div>'
       +'<div><div class="ps-c">'+esc(when)+'</div><span class="td-chev">\u203a</span></div></div>';
-  }).join('');
+  }).join('')+(window._inbSmartCapped?('<button type="button" class="add-sub-btn" style="width:100%;margin-top:14px" onclick="inbSetTab(\'all\')">Show all '+window._inbAllN+'</button>'):'');
 }
 function openInb(mode,pid){
   saveScroll('home');
@@ -15797,7 +15822,7 @@ function openInb(mode,pid){
   const q=document.getElementById('pkLogQ');
   if(q)q.value='';
   if(_inbMode==='ny'){
-    if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All homes';
+    if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All houses';
     if(sub)sub.textContent=p?'What still needs you on this house.':'Most time-sensitive first. Search or filter by type.';
   }else{
     if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All houses';
@@ -16244,7 +16269,7 @@ function openInstall(){
   document.getElementById('installScrim').classList.add('show');
 }
 function closeInstall(){document.getElementById('installScrim').classList.remove('show');}
-function openInSafari(){const url=location.href;let copied=false;try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url);copied=true;}}catch(e){}if(!copied){try{const t=document.createElement('input');t.value=url;t.setAttribute('readonly','');t.style.position='absolute';t.style.left='-9999px';document.body.appendChild(t);t.select();t.setSelectionRange(0,url.length);document.execCommand('copy');document.body.removeChild(t);copied=true;}catch(e){}}try{const b=document.querySelector('.inst-safari-link');if(b&&!b._busy){b._busy=1;const o=b.innerHTML;b.innerHTML='Link copied \u2713';setTimeout(()=>{b.innerHTML=o;b._busy=0;},2200);}}catch(e){}toast(copied?'Link copied \u2014 now open Safari and paste it in the address bar':'Open Safari and go to this page, then add it to your Home Screen');}
+function openInSafari(){const url=location.href;const flash=function(){try{const b=document.querySelector('.inst-safari-link');if(b&&!b._busy){b._busy=1;const o=b.innerHTML;b.innerHTML='Link copied \u2713';setTimeout(()=>{b.innerHTML=o;b._busy=0;},2200);}}catch(e){}};copyTextNow(url).then(function(){flash();toast('Link copied \u2014 now open Safari and paste it in the address bar');},function(){toast('Open Safari and go to this page, then add it to your Home Screen');});}
 async function doInstall(){if(!deferredPrompt){toast('Use your browser menu → Install');return;}try{deferredPrompt.prompt();await deferredPrompt.userChoice;}catch(e){}deferredPrompt=null;closeInstall();}
 function refreshInstallEntry(){const b=document.getElementById('loginInstall');if(b)b.style.display=isStandalone()?'none':'';}
 function installRequestedByUrl(){try{const p=new URLSearchParams(location.search||'');return p.has('install')||p.has('a2hs');}catch(e){return false;}}

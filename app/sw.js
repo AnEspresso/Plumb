@@ -1,9 +1,10 @@
 /* Plumb service worker — caches the app shell for offline use.
    Bump CACHE when you ship a new build so clients update. */
-const CACHE = 'plumb-v2.361.0';
+const CACHE = 'plumb-v2.362.0';
 const SHELL = [
   './',
   'index.html',
+  'p.html',
   'manifest.json',
   '../icon-192.png',
   '../icon-512.png',
@@ -34,6 +35,18 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+
+  // Guest packet page is not the builder app shell. Never fall back to index.html.
+  if (url.origin === location.origin && url.pathname.endsWith('/p.html')) {
+    e.respondWith(
+      fetch(req, { cache: 'no-cache' }).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+        return res;
+      }).catch(async () => (await caches.match('p.html')) || new Response('This packet needs a connection.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }))
+    );
+    return;
+  }
 
   // The app shell itself: NETWORK-FIRST with a short timeout, cache fallback.
   // New builds appear on the next launch; offline still works from cache.

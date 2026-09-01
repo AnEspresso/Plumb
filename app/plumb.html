@@ -325,6 +325,23 @@
   .toast.has-action{display:flex;align-items:center;gap:14px;}
   .toast .ua{background:transparent;border:none;color:var(--oak);font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;padding:2px 4px;white-space:nowrap;flex:0 0 auto;}
   .item.tappable{cursor:pointer;}
+  .item.flash-issue{box-shadow:0 0 0 2px var(--oak);}
+  .rec-hist{margin:8px 0 4px;text-align:left;}
+  .rec-hist-row{padding:10px 0;border-top:1px solid var(--line);cursor:pointer;}
+  .rec-hist-row .n{font-size:13px;font-weight:650;color:var(--ink);}
+  .rec-hist-row .d{font-size:12.5px;color:var(--ink-2);margin-top:2px;}
+  .rec-hist-row.on{background:rgba(176,137,90,.08);margin:0 -12px;padding:10px 12px;border-radius:10px;}
+  .rec-photo{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    height:48px;border-radius:13px;background:var(--surface-2);border:1px dashed var(--line);
+    color:var(--ink-2);font-size:13.5px;font-weight:600;cursor:pointer;margin:0;
+    font-family:inherit;
+  }
+  .rec-photo svg{width:20px;height:20px;flex:none;}
+  .rec-photo.has-img{height:auto;border:none;background:none;padding:0;display:block;}
+  .rec-photo.has-img img{width:100%;border-radius:13px;display:block;max-height:160px;object-fit:cover;}
+  .rec-photo-add{display:block;margin:8px 0 4px;background:none;border:none;color:var(--oak);font:inherit;font-size:13px;font-weight:650;cursor:pointer;padding:0;}
+  .chip.more{min-width:44px;letter-spacing:.16em;font-weight:800;}
   .item.closing{opacity:0;transform:translateX(40px);transition:opacity .3s,transform .3s;}
   .sel-row .si{cursor:pointer;}
   .stage .sh{cursor:pointer;}
@@ -1273,7 +1290,7 @@
   .pmodal.no-grip .mgrip{display:none;}
   .pmodal .mgrip{width:38px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px;cursor:pointer;}
   .fld-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:2px 2px 5px;}
-  .fld-hint{font-size:11.5px;color:var(--ink-3);margin:-6px 2px 10px;}
+  .fld-hint{font-size:12.5px;line-height:1.35;color:var(--ink-2);margin:8px 2px 14px;}
   .seg3{display:flex;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:12px;}
   .seg3 button{flex:1;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink-2);padding:9px 4px;border-radius:9px;cursor:pointer;transition:.15s;}
   .seg3 button.on{background:var(--paper);color:var(--oak);box-shadow:var(--shadow);}
@@ -1644,7 +1661,7 @@
 .bgt-tot b{display:block;font-size:1.05rem}
 .bgt-tot b.bgt-em{font-size:1.3rem}
 .bgt-tot b.bgt-em.over{color:var(--clay)}
-.bgt-tot span{color:var(--ink-3);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+.bgt-tot span{color:var(--ink-3);font-size:.82rem;letter-spacing:.01em;font-weight:650}
 .bgt-toggle{display:flex;align-items:center;justify-content:space-between;margin:12px 0 2px}
 .bgt-toggle>span{color:var(--ink-3);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
 .bgt-mini{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
@@ -1980,7 +1997,7 @@ body.on-tour .tour-card{display:block;}
       <aside id="ovWeek" class="ov-week" hidden></aside>
       <div class="ov-list">
       <div id="ovToday" class="ov-today"></div>
-      <div class="eyebrow ov-builds-hd"><span id="ovBuildsHd">Active Builds</span><span class="eb-line"></span><button class="ov-editbtn" onclick="openEditSites()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit sites</button></div>
+      <div class="eyebrow ov-builds-hd"><span id="ovBuildsHd">Active Builds</span><span class="eb-line"></span><button class="ov-editbtn" onclick="openEditSites()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit houses</button></div>
       <input id="ovSearch" class="ov-search" placeholder="Find a street" oninput="renderOvCards()" style="display:none" autocomplete="off" autocorrect="off">
       <div class="ov-sortrow" id="ovSortRow"></div>
       <div id="ovCards"></div>
@@ -2018,12 +2035,12 @@ body.on-tour .tour-card{display:block;}
       <p style="margin:0 0 10px;color:var(--ink-3);font-size:13px">Your company roster. Every new site starts with these subs — add the crews you use again and again.</p>
       <input id="rosterSearch" placeholder="Search crews…" autocapitalize="off" autocomplete="off" oninput="renderRoster()" style="margin-bottom:8px;display:none">
       <div id="rosterList"></div>
-      <button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add new sub</button>
+      <button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a crew</button>
       <div id="rosterCount" style="text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:8px"></div>
-      <div class="lbl" style="margin-top:14px">Give a sub live access</div>
-      <p style="margin:0 0 8px;color:var(--ink-3);font-size:12.5px">Invite codes are per-site — pick the site, then the sub, and we’ll generate their code.</p>
-      <button class="add-sub-btn" onclick="inviteSubFlow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite a sub to SitePlumb…</button>
-      <button class="add-sub-btn" style="margin-top:10px;opacity:.85" onclick="subsOnSite()">Manage subs on a specific site…</button>
+      <div class="lbl" style="margin-top:14px">Give a crew live access</div>
+      <p style="margin:0 0 8px;color:var(--ink-3);font-size:12.5px">Invite codes are per-house — pick the house, then the crew, and we’ll generate their code.</p>
+      <button class="add-sub-btn" onclick="inviteSubFlow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite a crew to SitePlumb…</button>
+      <button class="add-sub-btn" style="margin-top:10px;opacity:.85" onclick="subsOnSite()">Manage crews on a specific house…</button>
     </div>
   </div>
 
@@ -2057,7 +2074,7 @@ body.on-tour .tour-card{display:block;}
 
   <div class="pmodal-scrim" id="esScrim">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4>Edit sites</h4>
+      <h4>Edit houses</h4>
       <div class="info-body" id="esBody"></div>
       <div class="row2" style="margin-top:14px"><button class="b1 b-go" style="flex:1" onclick="closeEditSites()">Done</button></div>
     </div>
@@ -2097,7 +2114,10 @@ body.on-tour .tour-card{display:block;}
           <button type="button" class="gp-cal-ok" onclick="bkCalDone()" aria-label="Use these dates">✓</button></div></div>
         <input id="bkNote" placeholder="Note for the crew — gate code, scope…" style="font-size:13.5px">
         <div class="bk-alerts" id="bkAlerts"><div id="bkOverlap"></div><div id="bkPacket"></div><div id="bkGuest"></div><div id="bkSendLink"></div></div>
-        <button class="b1 b-go" style="width:100%;margin-top:10px" id="bkSave" onclick="bkSave()">Save</button>
+        <div class="row2" style="margin-top:10px">
+          <button class="b1 b-cancel" onclick="closeBk()">Cancel</button>
+          <button class="b1 b-go" id="bkSave" onclick="bkSave()">Save</button>
+        </div>
         <button class="add-sub-btn" style="margin-top:8px;display:none;color:var(--clay)" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
       </div>
     </div>
@@ -2159,7 +2179,7 @@ body.on-tour .tour-card{display:block;}
 
 
   <header>
-    <button class="back-btn" id="backBtn" onclick="backToOverview()" aria-label="All homes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span>Homes</span></button>
+    <button class="back-btn" id="backBtn" onclick="backToOverview()" aria-label="All houses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span>Houses</span></button>
     <div class="brand" id="brand" onclick="if(document.getElementById('backBtn').classList.contains('show'))backToOverview()">
       <div class="wordmark"><span class="dot"></span>SitePlumb</div>
       <div class="tagline">true to the build</div>
@@ -2638,12 +2658,14 @@ body.on-tour .tour-card{display:block;}
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
       <h4 id="recTitle">Edit entry</h4>
       <div id="recThumb" style="margin-bottom:12px"></div>
+      <input id="recPhotoFile" type="file" accept="image/*" hidden onchange="onRecPhoto(event)">
       <div class="fld-label">Note</div>
       <textarea id="recNote" rows="2" oninput="growNote(this)" placeholder="A few words…" style="width:100%;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:12px 13px;font-family:inherit;font-size:15px;color:var(--ink);outline:none;resize:vertical;box-sizing:border-box;margin-bottom:10px;min-height:62px"></textarea>
       <div class="fld-label">Area</div>
       <div class="chips" id="recAreaChips"></div>
-      <div class="fld-label">Assigned to</div>
+      <div class="fld-label">Packet</div>
       <select id="recCrew" class="fld-select"></select>
+      <div class="fld-hint">Shows in that trade’s packet.</div>
       <div class="fld-label">Item status</div>
       <div class="seg3" id="recStatusSeg">
         <button type="button" data-s="none" onclick="pickRecStatus(this)">Not an item</button>
@@ -2651,23 +2673,21 @@ body.on-tour .tour-card{display:block;}
         <button type="button" data-s="done" onclick="pickRecStatus(this)">Closed</button>
       </div>
       <div class="flagrow" style="margin:0 0 4px"><div class="l"><div class="t">Share with homeowner</div><div class="s">Show on the homeowner’s progress view</div></div><div class="toggle" id="recShare" onclick="this.classList.toggle('on')"></div></div>
+      <div id="recHist" class="rec-hist" hidden></div>
       <div class="row2" style="margin-top:10px"><button class="b1 b-cancel" onclick="closeRecord()">Cancel</button><button class="b1 b-go" onclick="saveRecord()">Save</button></div>
-      <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:1.5px solid var(--line);color:var(--ink-2);font-weight:600;font-size:13px;cursor:pointer" onclick="openFileTo(editingRecId)">File to a trade…</button>
       <button class="b1" style="width:100%;margin-top:9px;background:transparent;border:none;color:var(--clay);font-weight:600;font-size:13px;cursor:pointer" onclick="deleteRecord()">Delete this entry</button>
     </div>
   </div>
 
   <div class="pmodal-scrim" id="fileToScrim" style="z-index:97">
     <div class="pmodal"><div class="mgrip" onclick="dismissParent(this)"></div>
-      <h4>File this</h4>
-      <div class="fn-tag" id="fileToLead">Optional. A trade puts it in that packet. A room makes it filterable.</div>
+      <h4>Which packet?</h4>
+      <div class="fn-tag" id="fileToLead">Put this on a trade’s packet, or skip.</div>
       <div class="fld-label">Trade</div>
       <div class="chips" id="fileToTrades"></div>
-      <div class="fld-label">Room · optional</div>
-      <div class="chips" id="fileToRooms"></div>
       <div class="row2" style="margin-top:14px">
         <button class="b1 b-cancel" onclick="closeFileTo()">Skip</button>
-        <button class="b1 b-go" onclick="saveFileTo()">File</button>
+        <button class="b1 b-go" onclick="saveFileTo()">Put on packet</button>
       </div>
     </div>
   </div>
@@ -2948,7 +2968,7 @@ body.on-tour .tour-card{display:block;}
     <div class="field-lbl" id="sheetNoteLbl">Note</div>
     <textarea class="ti" id="caption" rows="2" oninput="growNote(this)" placeholder="A few words…"></textarea>
     <div class="chips" id="areaChips"></div>
-    <div class="field-lbl" id="sheetAssignLbl">Assign to <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-3)">· optional</span></div>
+    <div class="field-lbl" id="sheetAssignLbl">Packet <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink-3)">· optional</span></div>
     <select class="sheet-select" id="crewSelect" onchange="onCrewChange(this)"></select>
     <div class="flagrow" style="margin-top:12px">
       <div class="l"><div class="t">Flag as an open item</div><div class="s">Needs a fix or follow-up</div></div>
@@ -3033,7 +3053,7 @@ body.on-tour .tour-card{display:block;}
       <div class="sub" style="font-size:13px;color:var(--ink-2);margin:-6px 0 14px;text-align:center" id="readySub"></div>
       <div id="readyList"></div>
       <button class="b1 b-cancel" style="width:100%;margin-top:14px" onclick="closeReady()">Done</button>
-      <div class="modal-note">Marks the sub <b>Cleared to start</b> on the board with a timestamp. Until devices are synced, this is a local marker — it doesn't ping their phone yet.</div>
+      <div class="modal-note">Marks the crew <b>Cleared to start</b> on the board with a timestamp. Until devices are synced, this is a local marker — it doesn't ping their phone yet.</div>
     </div>
   </div>
   <div class="devpanel" id="devpanel">
@@ -3167,15 +3187,15 @@ body.on-tour .tour-card{display:block;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.355.0 - Demo does not toast out of space. Marketing film matches the book.';
+const PLUMB_VERSION='2.362.0 - Parity, tour mute, clipboard, tests, guest packet, house words, Needs You';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1787958000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.355.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788264000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.362.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4281,13 +4301,13 @@ function persist(){try{if(state.session)state.session.role=normRole(state.sessio
   try{
     raw=JSON.stringify(state,function(key,v){if(typeof v==='string'&&v.length>32&&v.slice(0,11)==='data:image')return '';return v;});
     k=storeKey();
-    if(raw===_lastPersist&&k===_lastPersistKey){try{pkPublishSoon();}catch(e2){}return;}
+    if(raw===_lastPersist&&k===_lastPersistKey){try{pkPublishSoon();}catch(e2){trapError('caught',e2&&e2.message,'persist.pkPublishSoon');}return;}
     localStorage.setItem(k,raw);_lastPersist=raw;_lastPersistKey=k;if(typeof queueSync==='function')queueSync();
   }catch(e){
-    try{_lastPersist=raw;_lastPersistKey=k;}catch(e2){}
+    try{_lastPersist=raw;_lastPersistKey=k;}catch(e2){trapError('caught',e2&&e2.message,'persist');}
     var demo=false;try{demo=appMode()!=='real';}catch(e3){}
     if(!demo)toast('Could not save. This phone is out of space. The house list is too big for this device.');
-  }try{pkPublishSoon();}catch(e){}}
+  }try{pkPublishSoon();}catch(e){trapError('caught',e&&e.message,'persist.pkPublishSoon');}}
 
 /* ════════════════════════════════════════════════════════════════════
    DATA ACCESS LAYER  (Phase 0 — the backend seam)
@@ -4474,8 +4494,11 @@ function showInfo(title,bodyHTML,own){
   try{
     const foot=document.getElementById('infoFoot');
     if(foot&&!own){
+      const fromH=typeof fromTheHouse==='function'&&fromTheHouse();
       const hasGo=!!document.querySelector('#infoBody .b-go');
-      foot.innerHTML='<button class="b1 '+(hasGo?'b-cancel':'b-go')+'" style="flex:1" onclick="closeInfo()">'+(hasGo?'Done':'Got it')+'</button>';
+      const label=fromH?'\u2039 House':(hasGo?'Done':'Got it');
+      const cls=(fromH||hasGo)?'b-cancel':'b-go';
+      foot.innerHTML='<button class="b1 '+cls+'" style="flex:1" onclick="closeInfo()">'+label+'</button>';
     }
   }catch(e){}
 }
@@ -4585,14 +4608,14 @@ function mailReviewAccept(id){
     p.docs=p.docs||[];p.docs.push({n:m.subject||m.name||'Forwarded document',m:m.from?('From '+m.from):'Forwarded',k:'pdf',trade:'',aud:'team',fileId:m.fileId||null,fileUrl:m.fileUrl||null});
   }
   m.status='filed';
-  persist();try{Sync.pushAll();}catch(e){}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}
   renderMailReview();renderDocs();renderFeed&&renderFeed();toast('Filed');
 }
 function mailReviewDiscard(id){
   const p=P();const m=p&&(p.mailReview||[]).find(x=>String(x.id)===String(id));if(!m)return;
   confirmDelete({title:'Discard this mail?',body:'Removes <b>'+esc(m.subject||m.name||'this item')+'</b> from the review tray. It won\u2019t be filed.',onConfirm:()=>{
     p.mailReview=(p.mailReview||[]).filter(x=>String(x.id)!==String(id));
-    persist();try{Sync.pushAll();}catch(e){}renderMailReview();renderDocs();toast('Discarded');}});
+    persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}renderMailReview();renderDocs();toast('Discarded');}});
 }
 async function openDocFile(projId,fileId,remoteUrl){
   if(fileId){try{const blob=await idbGetDoc(fileId);if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
@@ -4787,7 +4810,7 @@ function renderSiteMenu(){
       <div class="so-i"><div class="so-st">${esc(p.street||p.name)}</div><div class="so-nm">${esc(p.name)}${p.city?' · '+esc(p.city):''}</div></div>
       <div class="so-meta">${open?`<span class="so-open">${open} open</span>`:''}${p.id===state.activeId?'<svg class="so-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4.5 4.5L19 7"/></svg>':''}</div>
     </button>`;
-  }).join('')||`<div class="empty" style="padding:26px 16px">No sites match “${esc(q)}”</div>`;
+  }).join('')||`<div class="empty" style="padding:26px 16px">No houses match “${esc(q)}”</div>`;
 }
 function setActiveProject(id){if(id===state.activeId){closeSiteMenu();return;}Data.setActive(id);updateHeader();closeSiteMenu();
   issueFilter='open';document.querySelectorAll('.seg button').forEach((b,i)=>b.classList.toggle('on',i===0));
@@ -5041,7 +5064,7 @@ function savePersonGates(){
     p.memberInfo[d.uid]=Object.assign({},cur,{rpRole:d.rpRole,gates:Object.assign({},d.gates)});
     ch=true;
   });
-  if(ch){persist();try{Sync.pushAll();}catch(e){}}
+  if(ch){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}
   toast('Role updated');
   peopleMode='team';_teamInv=null;renderPeople();
 }
@@ -5382,7 +5405,7 @@ if(_PACKET_ON_ARRIVAL){
       setTimeout(attempt,120);
     })();
   });
-  _pkPrefetch.catch(function(){});
+  _pkPrefetch.catch(function(e){trapError('caught',e&&e.message,'_pkPrefetch');});
 }
 const _AUTH_ACTION_ON_ARRIVAL=(function(){
   try{const q=new URLSearchParams(location.search||'');
@@ -5609,7 +5632,7 @@ function removeTeamMember(uid){
   (state.projects||[]).forEach(p=>{
     if(p.members&&p.members[uid]){delete p.members[uid];if(p.memberInfo)delete p.memberInfo[uid];ch=true;}});
   const ti=laTeamInvites();ti.forEach(i=>{if(i.uid===uid)i.status='revoked';});laSaveTeamInvites(ti);
-  if(ch){persist();try{Sync.pushAll();}catch(e){}try{Org.touch();}catch(e){}logEvent('memberRemoved','team');toast((info.name||'Team member')+' removed from all sites');}
+  if(ch){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}try{Org.touch();}catch(e){}logEvent('memberRemoved','team');toast((info.name||'Team member')+' removed from all sites');}
   try{renderPeople();}catch(e){}}});}
 function removeHomeownerMember(){
   const p=P();const inv=(p.invites||[]).find(i=>i.role==='client'&&i.status!=='revoked');
@@ -5617,7 +5640,7 @@ function removeHomeownerMember(){
   confirmDelete({title:'Remove homeowner access?',body:'The homeowner loses the portal for <b>'+esc(p.street||p.name)+'</b> the next time that phone syncs.',onConfirm:()=>{
   if(uid&&p.members&&p.members[uid]){delete p.members[uid];if(p.memberInfo)delete p.memberInfo[uid];}
   if(inv)inv.status='revoked';
-  persist();try{Sync.pushAll();}catch(e){}logEvent('memberRemoved','client');toast('Homeowner access removed');
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}logEvent('memberRemoved','client');toast('Homeowner access removed');
   try{renderPeople();}catch(e){}}});}
 /* Per-site homeowner actions for the general Homeowners panel (item 14). They
    target a chosen site by id rather than the active one, so a builder can manage
@@ -5686,7 +5709,7 @@ function __renderSetup(){
   back.style.display=setupStep===0?'none':'';
   next.textContent=setupStep===3?'Finish':'Next';
   if(setupStep===0){t.textContent='Welcome to SitePlumb';
-    b.innerHTML=`<p style="margin:0 0 10px">A few minutes now sets up your whole company — your team, your subs, and how you run selections. Everything here can be changed later from <b>People &amp; invites</b>.</p>
+    b.innerHTML=`<p style="margin:0 0 10px">A few minutes now sets up your whole company — your team, your crew, and how you run selections. Everything here can be changed later from <b>People &amp; invites</b>.</p>
       <div class="lbl">Company name</div>
       <input id="suCompany" placeholder="e.g. Hilltop Homes" value="${esc(setupDraft.company||'')}">
       ${appMode()==='real'?`<button class="add-sub-btn" style="margin-top:14px" onclick="createInvite('team',null,{setup:true})">${PPL_INV_SVG}Someone else should answer these? Invite &amp; hand off setup…</button>
@@ -5872,7 +5895,7 @@ function impSetStage(){
   p.stageDone={};
   SS.forEach((s,i)=>{if(i<cut)p.stageDone[s.id]=true;});
   p._permitsSeeded=false;try{normalizePermits(p);}catch(e){}
-  persist();try{Sync.pushAll();}catch(e){}renderAll();
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}renderAll();
 }
 /* Contacts: the Web Contacts Picker exists only on some mobile browsers; fall
    back to the manual add-sub modal everywhere else so the path never dead-ends. */
@@ -5926,7 +5949,24 @@ async function _impNext(){
     if(sub)sub.textContent='Photo '+n+' of '+(window._impTotal||n)+' \u2014 pick the area, add a caption, save.';
   }catch(e){toast('Could not read one photo \u2014 skipped');_impNext();}
 }
-function copyText(t){try{navigator.clipboard.writeText(t);toast('Copied');}catch(e){toast(t);}}
+function copyTextFallback(t){
+  try{
+    const el=document.createElement('input');el.value=String(t||'');el.setAttribute('readonly','');
+    el.style.position='absolute';el.style.left='-9999px';document.body.appendChild(el);
+    el.select();el.setSelectionRange(0,el.value.length);
+    const ok=document.execCommand('copy');document.body.removeChild(el);return !!ok;
+  }catch(e){return false;}
+}
+function copyTextNow(t){
+  return new Promise(function(res,rej){
+    const done=function(){res();},fail=function(){if(copyTextFallback(t))res();else rej();};
+    try{
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(String(t||'')).then(done,fail);return;}
+    }catch(e){}
+    fail();
+  });
+}
+function copyText(t){copyTextNow(t).then(function(){toast('Copied');},function(){toast(t);});}
 
 /* Convergence — after either door, celebrate the win, push the homeowner/sub
    invites (the relief-from-texts wedge), and surface the OTHER door. */
@@ -5940,7 +5980,7 @@ function startConverge(){
       : '';
   showInfo('You\u2019re rolling',`<p style="margin:0 0 12px;font-size:14px;line-height:1.55"><b>${esc((p&&(p.street||p.name))||'Your job')}</b> is in SitePlumb. Two quick moves make it pay off right away:</p>
     <button class="add-sub-btn" onclick="closeInfo();openPeopleMode('homeowner')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V21H3z"/><path d="M9 21v-6h6v6"/></svg>Invite the homeowner \u2014 stop the \u201cwhat\u2019s happening?\u201d texts</button>
-    <button class="add-sub-btn" style="margin-top:8px" onclick="closeInfo();openPeopleMode('subs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite the sub coming this week</button>
+    <button class="add-sub-btn" style="margin-top:8px" onclick="closeInfo();openPeopleMode('subs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite the crew coming this week</button>
     ${otherBtn}
     <p style="color:var(--ink-3);font-size:12.5px;margin:14px 0 0">Everything else fills in as you go — log a photo, set a stage, add a selection whenever it comes up.</p>`);
 }
@@ -6022,14 +6062,14 @@ function renderHoAccess(){
   const q=(document.getElementById('hoSearch').value||'').trim().toLowerCase();
   const ps=(state.projects||[]).filter(p=>!q||((p.street||'')+' '+(p.name||'')+' '+(p.city||'')).toLowerCase().includes(q));
   const allOn=(state.projects||[]).length>0&&(state.projects||[]).every(p=>p.hoCal);
-  el.innerHTML=`<div class="day-row avr" style="cursor:pointer" onclick="hoSetAll(${allOn?'false':'true'})"><div style="flex:1"><div class="n">All homes</div><div class="d">Turn every site on or off at once</div></div><span class="sw-toggle${allOn?' on':''}"></span></div>`
+  el.innerHTML=`<div class="day-row avr" style="cursor:pointer" onclick="hoSetAll(${allOn?'false':'true'})"><div style="flex:1"><div class="n">All houses</div><div class="d">Turn every house on or off at once</div></div><span class="sw-toggle${allOn?' on':''}"></span></div>`
     +ps.map(p=>`<div class="day-row avr" style="cursor:pointer" onclick="hoSet('${p.id}')"><div style="flex:1"><div class="n">${esc(p.street||p.name)}${p.city?' · '+esc(p.city):''}</div><div class="d">${p.hoCal?'Homeowner sees their calendar':'Off'}</div></div><span class="sw-toggle${p.hoCal?' on':''}"></span></div>`).join('');}
 function hoSet(pid){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   p.hoCal=!p.hoCal;persist();logEvent('hoCal',(p.hoCal?'on':'off')+' · '+(p.street||p.name));renderHoAccess();}
 function hoRowsHTML(rr){
   const ps=state.projects||[];const allOn=ps.length>0&&ps.every(p=>!!p.hoCal);
-  return `<div class="day-row avr" style="cursor:pointer" onclick="hoSetAll(${allOn?'false':'true'});${rr}()"><div style="flex:1"><div class="n">All homes</div><div class="d">One switch for every site</div></div><span class="sw-toggle${allOn?' on':''}"></span></div>`
+  return `<div class="day-row avr" style="cursor:pointer" onclick="hoSetAll(${allOn?'false':'true'});${rr}()"><div style="flex:1"><div class="n">All houses</div><div class="d">One switch for every house</div></div><span class="sw-toggle${allOn?' on':''}"></span></div>`
     +ps.map(p=>`<div class="day-row avr" style="cursor:pointer" onclick="hoSet('${p.id}');${rr}()"><div style="flex:1"><div class="n">${esc(p.street||p.name)}${p.city?' · '+esc(p.city):''}</div><div class="d">${p.hoCal?'Homeowner sees their calendar':'Off'}</div></div><span class="sw-toggle${p.hoCal?' on':''}"></span></div>`).join('');}
 function hoSetAll(on){
   (state.projects||[]).forEach(p=>{if(!!p.hoCal!==on){p.hoCal=on;}});persist();
@@ -6043,7 +6083,7 @@ function deleteSite(id){
     if(appMode()==='real'){
       p.deleted=Date.now();
       try{persist();}catch(e){}
-      try{Sync._pushOne(p);}catch(e){}   // tombstone reaches the cloud; other devices drop it on receipt
+      try{Sync._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync._pushOne');}   // tombstone reaches the cloud; other devices drop it on receipt
     }
     state.projects=state.projects.filter(x=>String(x.id)!==String(pid));
     if(!state.projects.length){state.activeId=null;}
@@ -6553,7 +6593,7 @@ function tourStep(){
         +'<div class="tour-b">'+esc(step.body||'')+'</div>'
         +'<div class="tour-foot">'+(lastE?'<button class="tour-next" onclick="tourEnd(\'explore\')">Explore demo</button>':'<button class="tour-skip" onclick="event.stopPropagation();tourEnd(\'skip\')">Skip tour</button>')+'<div>'
         +(_tourIdx>0?'<button class="tour-back" onclick="tourPrev()">Back</button>':'')
-        +'<button class="tour-mute-mini" onclick="tourMuteToggle()">'+(tourMuted()?'\ud83d\udd07':'\ud83d\udd0a')+'</button>'
+        +'<button class="tour-mute-mini" onclick="tourToggleMute()">'+(tourMuted()?'\ud83d\udd07':'\ud83d\udd0a')+'</button>'
         +'<button class="'+(lastE&&step.cta?'tour-gold':'tour-next')+'" onclick="'+(lastE&&step.cta?'tourEnd();exitDemo();try{openNewSite()}catch(e){}':'tourNext()')+'">'+(lastE?(step.cta||'Done'):'Next')+'</button></div></div>';
     }
   }catch(e){}
@@ -6957,13 +6997,13 @@ function __renderPeople(){
     const list=hits.map(function(x){
       const tr=SPECIALTIES.find(function(s){return s.id===x.r.trade;});const col=(TRADE_COLORS[x.r.trade]||{}).bg||'var(--oak)';
       return '<div class="subrow"><div class="si"><div class="n">'+esc(x.r.name)+'</div><div class="d"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+col+';margin-right:5px;vertical-align:-1px"></span>'+esc((tr||{}).label||'General')+'</div></div><button class="rm" onclick="rosterDrop('+x.i+')" title="Remove from roster">'+ICON.trash+'</button></div>';
-    }).join('')||('<div class="empty" style="padding:8px 0">'+(q?'No one matches.':'No subs yet — add the trades you work with.')+'</div>');
+    }).join('')||('<div class="empty" style="padding:8px 0">'+(q?'No one matches.':'No crews yet — add the trades you work with.')+'</div>');
     el.innerHTML=peoplePills()
       +'<p style="margin:0 0 12px;color:var(--ink-3);font-size:13px">Your company roster. Every new house starts with these crews.</p>'
       +(all.length>=10?'<input id="pplRosterSearch" placeholder="Search crews" autocapitalize="off" autocomplete="off" oninput="renderPeople()" value="'+esc(q)+'" style="margin-bottom:8px">':'')
       +list
-      +'<button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a sub</button>'
-      +'<p class="ppl-quiet">Live access is per house. <button type="button" onclick="inviteSubFlow()">Invite a sub</button> · <button type="button" onclick="subsOnSite()">Manage on a house</button></p>';
+      +'<button class="add-sub-btn" onclick="openRosterAdd()" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a crew</button>'
+      +'<p class="ppl-quiet">Live access is per house. <button type="button" onclick="inviteSubFlow()">Invite a crew</button> · <button type="button" onclick="subsOnSite()">Manage on a house</button></p>';
     return;}
   if(title)title.textContent='People';
   const r=teamRoster();const me=(state.session&&state.session.auth&&state.session.auth.uid)||null;
@@ -7043,7 +7083,7 @@ function approveClaim(code,uid,c){
       if(ensureMembership(p))ch=true;     // legacy sites: make sure I'm stamped too before pushing a members map
       if(ensureTeam(p))ch=true;});        // ...and the rest of the roster
     tinv.status='joined';tinv.uid=uid;tinv.name=c.name||'';laSaveTeamInvites(ti);
-    if(ch){persist();try{Sync.pushAll();}catch(e){}try{Org.touch();}catch(e){}toast((c.name||'Your team member')+' joined the team — all sites shared');logEvent('memberJoined','team · '+(c.name||''));}
+    if(ch){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}try{Org.touch();}catch(e){}toast((c.name||'Your team member')+' joined the team — all sites shared');logEvent('memberJoined','team · '+(c.name||''));}
     try{renderSubs();}catch(e){}
     return;}
   for(const p of (state.projects||[])){
@@ -7158,7 +7198,7 @@ function subsOnSite(){
   const go=id=>{Data.setActive(id);calSiteFilter=String(id);openCal();};
   if(ps.length===1){go(ps[0].id);return;}
   openPick({title:'Subcontractors \u2014 which site?',
-    options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' sub'+(p.subs.length===1?'':'s')):'No subs yet')+(p.city?' \u00b7 '+p.city:'')})),
+    options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' crew'+(p.subs.length===1?'':'s')):'No crews yet')+(p.city?' \u00b7 '+p.city:'')})),
     onPick:go});}
 /* #1: invite a sub to SitePlumb from the roster screen. Codes are per-site, so this
    walks site → sub, skipping subs who already have a live invite, then hands off
@@ -7183,11 +7223,11 @@ function inviteSubFlow(){
     if(!roster.length){toast('No subs on '+(p.street||p.name)+' yet — add one first');return;}
     if(!subs.length){toast('Everyone on '+(p.street||p.name)+' is already invited');return;}
     if(subs.length===1){closeSubsRoster();Data.setActive(p.id);createInvite('sub',subs[0].id);return;}
-    openPick({title:'Invite which sub?',options:subs.map(s=>({id:s.id,label:s.name,sub:specLabel(s.specialty)})),
+    openPick({title:'Invite which crew?',options:subs.map(s=>({id:s.id,label:s.name,sub:specLabel(s.specialty)})),
       onPick:sid=>{closeSubsRoster();Data.setActive(p.id);createInvite('sub',sid);}});};
   if(ps.length===1){pickSub(ps[0]);return;}
-  openPick({title:'Invite a sub \u2014 which site?',
-    options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' sub'+(p.subs.length===1?'':'s')):'No subs yet')+(p.city?' · '+p.city:'')})),
+  openPick({title:'Invite a crew \u2014 which house?',
+    options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' crew'+(p.subs.length===1?'':'s')):'No crews yet')+(p.city?' · '+p.city:'')})),
     onPick:id=>{const p=state.projects.find(x=>String(x.id)===String(id));if(p)pickSub(p);}});}
 function onDeckGo(pid,trade){
   calSiteFilter=String(pid);openCal();
@@ -7255,7 +7295,7 @@ function houseCall(p){
 function markHouseDone(pid,on){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
   if(on===false){delete p.doneAt;p.doneAskUntil=0;persist();logEvent('houseOnBook',p.street||p.name);toast(houseCall(p)+' is on the book again');}
-  else {p.doneAt=Date.now();persist();logEvent('houseOffBook',p.street||p.name);toast(houseCall(p)+' is off Needs You. Still on All homes.');}
+  else {p.doneAt=Date.now();persist();logEvent('houseOffBook',p.street||p.name);toast(houseCall(p)+' is off Needs You. Still on All houses.');}
   try{renderHouse();}catch(e){}
   try{renderOverview();}catch(e){}
   try{renderEditSites();}catch(e){}
@@ -7265,7 +7305,7 @@ function askHouseDone(pid){
   const street=p.street||p.name||'this house';
   openConfirm({
     title:'Done with '+street+'?',
-    body:'Take it off Needs You and Coming up? You can still open it from All homes.',
+    body:'Take it off Needs You and Coming up? You can still open it from All houses.',
     okLabel:'Done with this house',
     cancelLabel:'Keep it on the book',
     onConfirm:function(){markHouseDone(p.id,true);}
@@ -7298,7 +7338,7 @@ function maybeAskDoneHouse(){
   const street=p.street||p.name||'this house';
   openConfirm({
     title:'Done with '+street+'?',
-    body:'Nothing new in two weeks, and this house looks finished. Take it off Needs You and Coming up? You can still open it from All homes.',
+    body:'Nothing new in two weeks, and this house looks finished. Take it off Needs You and Coming up? You can still open it from All houses.',
     okLabel:'Done with this house',
     cancelLabel:'Keep it on the book',
     onConfirm:function(){markHouseDone(p.id,true);},
@@ -7529,8 +7569,23 @@ function _nyIssues(projs){
 }
 function nyOpenItem(pid,id){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});
-  if(p)try{Data.setActive(p.id);}catch(e){}
-  try{openRecord(id);}catch(e){}
+  if(!p)return;
+  try{Data.setActive(p.id);}catch(e){}
+  _housePid=String(p.id);
+  _focusIssueId=id;
+  const it=(p.items||[]).find(function(x){return String(x.id)===String(id);});
+  issueFilter=(it&&it.status==='done')?'done':'open';
+  try{houseGoDesk('items');}catch(e){try{openRecord(id);}catch(e2){}}
+  setTimeout(function(){
+    try{
+      document.querySelectorAll('#decItems .seg button').forEach(function(b){
+        b.classList.toggle('on',(b.getAttribute('data-f')||b.dataset.f)===issueFilter);
+      });
+      renderIssues();
+      const el=document.getElementById('issue-'+id);
+      if(el){el.classList.add('flash-issue');el.scrollIntoView({block:'nearest',behavior:'smooth'});}
+    }catch(e){}
+  },140);
 }
 function nyOpenHouse(pid){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
@@ -7545,7 +7600,7 @@ function nyOpenHouse(pid){
   document.getElementById('houseScrim').classList.add('show');
   if(keep)applyScroll('house');
 }
-let _housePid=null,_houseCalPeek=false,_clientCalPeek=false,_houseResume=null,_houseOpenAll=false,_houseFacts=[];
+let _housePid=null,_houseCalPeek=false,_clientCalPeek=false,_houseResume=null,_houseOpenAll=false,_houseFacts=[],_focusIssueId=null;
 function houseStillOpen(){const el=document.getElementById('houseScrim');return !!(el&&el.classList.contains('show')&&_housePid);}
 function refreshHouse(){if(!houseStillOpen())return;renderHouse();}
 function closeHouse(){const el=document.getElementById('houseScrim');if(el)el.classList.remove('show');_housePid=null;_houseResume=null;_houseResumeScroll=false;_keepScrollY.house=0;try{renderToday();}catch(e){}applyScroll('home');}
@@ -7588,7 +7643,8 @@ function houseMoneyLine(p){
 function fromTheHouse(){return !!(_houseResume||(typeof houseStillOpen==='function'&&houseStillOpen()));}
 function labelHouseBack(el, fallback){
   if(!el)return;
-  el.textContent=fromTheHouse()?'House':(fallback||'Done');
+  if(fallback==='Cancel'){el.textContent='Cancel';return;}
+  el.textContent=fromTheHouse()?'\u2039 House':(fallback||'Done');
 }
 function logFromHouse(){
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openFieldNote();});
@@ -7606,8 +7662,8 @@ function setBackHouse(){
 function setBackHomes(){
   const b=document.getElementById('backBtn');if(!b)return;
   b.onclick=backToOverview;
-  b.setAttribute('aria-label','All homes');
-  const sp=b.querySelector('span');if(sp)sp.textContent='Homes';
+  b.setAttribute('aria-label','All houses');
+  const sp=b.querySelector('span');if(sp)sp.textContent='Houses';
   const brand=document.getElementById('brand');
   if(brand)brand.onclick=function(){if(document.getElementById('backBtn').classList.contains('show'))backToOverview();};
 }
@@ -7905,9 +7961,11 @@ function nyCardBits(p){
 function allNyPreview(){
   const issues=nySorted(_nyIssues(liveProjects()));
   if(!issues.length)return {n:0,line:'All clear',hot:''};
-  const top=issues[0];
+  const urgent=issues.filter(function(x){return (x.pri||0)<=1;});
+  const top=(urgent[0]||issues[0]);
   const hot=[top.kind,top.site].filter(Boolean).join(' \u00b7 ');
-  return {n:issues.length,line:issues.length+(issues.length===1?' still needs you':' still need you'),hot:hot};
+  if(!urgent.length)return {n:issues.length,line:'Nothing urgent',hot:hot};
+  return {n:urgent.length,line:urgent.length+(urgent.length===1?' needs you now':' need you now'),hot:hot};
 }
 function allPkPreview(){
   const rows=pkRowsFor('');
@@ -7962,12 +8020,12 @@ function renderOvCards(){
       head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openPkLog()"><div class="ct"><div><div class="st">All houses</div><div class="nm">${esc(prev.line)}</div>${prev.hot?`<div class="ov-allhot">${esc(prev.hot)}</div>`:''}</div><span class="td-chev">\u203a</span></div></div>`;
     }else{
       const prev=allNyPreview();
-      head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openNyInbox()"><div class="ct"><div><div class="st">All homes</div><div class="nm">${esc(prev.line)}</div>${prev.hot?`<div class="ov-allhot">${esc(prev.hot)}</div>`:''}</div><span class="td-chev">\u203a</span></div></div>`;
+      head=`<div class="ov-card allh${_ent?' enter':''}" onclick="openNyInbox()"><div class="ct"><div><div class="st">All houses</div><div class="nm">${esc(prev.line)}</div>${prev.hot?`<div class="ov-allhot">${esc(prev.hot)}</div>`:''}</div><span class="td-chev">\u203a</span></div></div>`;
     }
   }
   const cardOf=function(p,i){
     const n=(need.map[String(p.id)]||{}).n||0;
-    const _ttl=p.street||p.name||'Untitled site';
+    const _ttl=p.street||p.name||'Untitled house';
     if(_ovSort==='recent'){
       return `<div class="ov-card${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
       <div class="ct"><div><div class="st">${esc(_ttl)}</div></div><span class="td-chev">\u203a</span></div>
@@ -7985,12 +8043,12 @@ function renderOvCards(){
   const empty=(!projs.length)
     ?((state.session&&state.session.role==='builder')
       ?`<div class="ov-empty"><svg class="ov-empty-house" viewBox="0 0 300 250" fill="none" stroke="#1B1916" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="28" y1="228" x2="272" y2="228" stroke="#B0895A" stroke-width="2"/><line x1="64" y1="223" x2="236" y2="223" stroke="#B0895A" stroke-width="2.4"/><line x1="72" y1="228" x2="72" y2="92"/><line x1="228" y1="228" x2="228" y2="92"/><line x1="72" y1="146" x2="228" y2="146"/><polyline points="60,96 150,30 240,96" stroke-width="2.2"/><line x1="66" y1="92" x2="234" y2="92"/><line x1="54" y1="158" x2="246" y2="158" stroke-width="1.8"/><rect x="135" y="170" width="30" height="54" stroke-width="1.5"/><rect x="90" y="106" width="28" height="30"/><rect x="182" y="106" width="28" height="30"/></svg><div class="empty">The book is empty.</div><button class="ov-newbtn" onclick="openNewSite()">Add the first house</button></div>`
-      :`<div class="empty">No sites assigned to you yet.</div>`)
+      :`<div class="empty">No houses assigned to you yet.</div>`)
     :(q&&!list.length&&!finished.length)
     ?'<div class="empty">No house matches.</div>'
     :(_ovSort==='attn'&&!list.length&&!finished.length)
     ?'<div class="td-clear">All clear.</div>'
-    :((!list.length&&!finished.length)?'<div class="empty">No sites match.</div>':'');
+    :((!list.length&&!finished.length)?'<div class="empty">No houses match.</div>':'');
   cards.innerHTML=head+body+fin+empty;
   if(_sc)_sc.scrollTop=_keepScroll;
 }
@@ -8105,7 +8163,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       if(this.on)this.disconnect();
       if(fbConfig())this.init();
     }catch(e){}});}catch(e){}},
-  async pushAll(){if(!this.ready())return;for(const p of state.projects){try{await this._pushOne(p);}catch(e){}}},
+  async pushAll(){if(!this.ready())return;for(const p of state.projects){try{await this._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}},
   async _pushOne(p){if(!this.ready()||!p)return;
     if(p.sample||(this.mode||'demo')!=='live')return;     // demo is local-only: nothing in demo (sample or not) syncs to the cloud
     const id=String(p.id);
@@ -8587,7 +8645,7 @@ const Org={
     }
     try{localStorage.setItem('plumb.orgId',id);}catch(e){}
     let stamped=false;(state.projects||[]).forEach(p=>{if(!p.org){p.org=id;stamped=true;}});
-    if(stamped){persist();try{Sync.pushAll();}catch(e){}}
+    if(stamped){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}
     this._adopt(id);
   },
   _absorb(d){
@@ -8862,13 +8920,13 @@ function renderSubView(){
   const body=document.getElementById('svBody');const projs=subProjects();const nav=document.getElementById('subNav');
   if(!subSel){
     if(nav)nav.style.display='none';
-    body.innerHTML='<div style="margin:0 0 12px"><span class="syncpill"><span class="sd"></span>On this device</span></div><div class="eyebrow" style="margin-top:6px">Your sites</div><div id="subCards">'+
+    body.innerHTML='<div style="margin:0 0 12px"><span class="syncpill"><span class="sd"></span>On this device</span></div><div class="eyebrow" style="margin-top:6px">Your houses</div><div id="subCards">'+
       (projs.map((p,i)=>{const tr=subTradeFor(p);const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open').length;
         return `<div class="ov-card ${open?'attn':''}" style="animation-delay:${i*60}ms" onclick="openSubSite('${p.id}')">
           <div class="ct"><div><div class="st">${esc(p.street||p.name)}</div><div class="nm">${esc(tr.label)}${p.city?' · '+esc(p.city):''}</div></div>
           <span class="ov-open ${tr.cleared?'clean':''}">${tr.cleared?'Cleared':'Waiting'}</span></div>
           <div class="foot"><span>${open?open+' open item'+(open===1?'':'s'):'no open items'}</span></div></div>`;}).join('')
-       ||'<div class="empty">No sites assigned to you yet.</div>')+'</div>';
+       ||'<div class="empty">No houses assigned to you yet.</div>')+'</div>';
     setSync(syncStatus);return;
   }
   const p=projs.find(x=>x.id===subSel)||projs[0];if(!p){subSel=null;return renderSubView();}
@@ -9224,15 +9282,19 @@ function budgetCardHTML(p){
 
 function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');try{labelHouseBack(document.getElementById('budgetDoneBtn'),'Done');}catch(e){}}
 function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{houseMaybeResume();}catch(e){}}
+function moneyTotHTML(p){
+  const cs=costSummary(p);const bill=billingSummary(p);
+  return `<div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
+    <div><b>${invUsd(cs.committed)}</b><span>Signed for</span></div>
+    <div><b>${invUsd(cs.spent)}</b><span>Paid</span></div>
+    <div><b>${invUsd(bill.billed)}</b><span>On an invoice</span></div>
+    <div><b>${invUsd(bill.paid)}</b><span>They paid</span></div>
+    <div><b class="bgt-em ${bill.out>0.005?'over':''}">${invUsd(Math.max(0,bill.out))}</b><span>Still due</span></div>`;
+}
 function renderBudget(){
   const p=P();const cs=costSummary(p);const lines=costLines(p);const bill=billingSummary(p);
   let h=`<div class="bgt-tot" id="bgtTotals">
-    <div><b>${invUsd(cs.budget)}</b><span>Allowance</span></div>
-    <div><b>${invUsd(cs.committed)}</b><span>Committed</span></div>
-    <div><b>${invUsd(cs.spent)}</b><span>Spent</span></div>
-    <div><b>${invUsd(bill.billed)}</b><span>Invoiced</span></div>
-    <div><b>${invUsd(bill.paid)}</b><span>Received</span></div>
-    <div><b class="bgt-em ${bill.out>0.005?'over':''}">${invUsd(Math.max(0,bill.out))}</b><span>Still out</span></div>
+    ${moneyTotHTML(p)}
   </div>
   <div class="row2"><button class="b1 b-cancel" style="flex:1" onclick="openCostLine()">+ Budget line</button><button class="b1 b-cancel" style="flex:1" onclick="openCostActual()">+ Log a cost</button></div>
   <div class="row2" style="margin-top:8px"><button class="b1 b-cancel" style="flex:1" onclick="moneyNewInvoice()">+ Invoice</button><button class="b1 b-cancel" style="flex:1" onclick="moneyNewPayment()">+ Payment</button></div>
@@ -9633,12 +9695,9 @@ function bgtRefreshRow(id){
   set('bgtL-',r.over?invUsd(-r.remaining)+' over':invUsd(r.remaining),r.over);
 }
 function bgtRefreshTotals(){
-  const p=P();const cs=costSummary(p);
+  const p=P();
   const e=document.getElementById('bgtTotals');if(!e)return;
-  e.innerHTML=`<div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
-    <div><b class="bgt-em ${cs.over?'over':''}">${cs.over?invUsd(-cs.remaining):invUsd(cs.remaining)}</b><span>${cs.over?'Over budget':'Remaining'}</span></div>
-    <div><b>${invUsd(cs.committed)}</b><span>Signed for</span></div>
-    <div><b>${invUsd(cs.spent)}</b><span>Paid</span></div>`;
+  e.innerHTML=moneyTotHTML(p);
   try{renderBuild();}catch(e2){}
 }
 function bgtQuickAdd(){
@@ -12367,7 +12426,7 @@ async function invShare(projId,invId){
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv)return;
   const text=invText(p,inv);
   try{if(navigator.share){await navigator.share({title:inv.no+' — '+inv.title,text});return;}}catch(e){if(e&&e.name==='AbortError')return;}
-  try{await navigator.clipboard.writeText(text);toast('Invoice copied — paste it into a text or email');}catch(e){toast('Couldn\u2019t share on this device');}
+  copyTextNow(text).then(function(){toast('Invoice copied — paste it into a text or email');},function(){toast('Could not share on this device');});
 }
 /* In-app print preview. We never window.open() — in a standalone iOS PWA that
    replaces the app with a page that has no way back (force-quit only). Instead
@@ -12844,7 +12903,7 @@ function addPermit(){openPrompt({title:'Add permit',placeholder:'Permit name (e.
 /* ── searchable select: a custom bottom-sheet picker that fronts a native <select> ──
    The <select> stays in the DOM (hidden) as the source of truth, so every existing
    .value read / onchange handler keeps working untouched. */
-const SS_FIELDS={crewSelect:{t:'Assign to',search:true},recCrew:{t:'Assigned to',search:true},selCat:{t:'Trade section'},recArea:{t:'Area'},selRoomSel:{t:'Room / location'},docType:{t:'Document type'},docTrade:{t:'For trade'},selStatus:{t:'Status',search:false},jSystem:{t:'Permit system',search:false},subSpec:{t:'Trade',search:true},inspEditSel:{t:'Status',search:false},
+const SS_FIELDS={crewSelect:{t:'Packet',search:true},recCrew:{t:'Packet',search:true},selCat:{t:'Trade section'},recArea:{t:'Area'},selRoomSel:{t:'Room / location'},docType:{t:'Document type'},docTrade:{t:'For trade'},selStatus:{t:'Status',search:false},jSystem:{t:'Permit system',search:false},subSpec:{t:'Trade',search:true},inspEditSel:{t:'Status',search:false},
   loginSelect:{t:'Who are you today?',search:false},laRole:{t:'Your role',search:false},suRosterTrade:{t:'Trade'},tqWho:{t:'Who decides',search:false},logFilter:{t:'Show',search:false}};
 function ssCfg(id){const c=SS_FIELDS[id];return (c&&typeof c==='object')?c:{t:c};}
 function ssTitleOf(id){if(ssCfg(id).t)return ssCfg(id).t;try{const el=document.getElementById(id);if(el&&el.dataset&&el.dataset.ssTitle)return el.dataset.ssTitle;}catch(e){}return 'Choose';}
@@ -12985,9 +13044,9 @@ async function shareInvite(code){
     'Or enter it by hand. Open SitePlumb \u2192 Live \u2192 \u201cI have an invite code,\u201d then enter:\n\n'+
     code+'\n';
   let copied=false;
-  try{await navigator.clipboard.writeText(code);copied=true;}catch(e){}
   try{if(navigator.share){await navigator.share({title:'Your SitePlumb invite',text:msg});return;}}catch(e){/* user closed the sheet */}
-  toast(copied?'Code copied \u2014 invite text ready to paste':'Couldn\u2019t copy on this device \u2014 long-press the code instead');}
+  copyTextNow(code).then(function(){toast('Code copied — invite text ready to paste');},function(){toast('Could not copy on this device — long-press the code instead');});
+}
 /* On load, if the app was opened from an invite link, reveal and prefill the
    code field. Returning users land on Sign in; new users tap Create account —
    either way the code is already filled and submitted with their auth. */
@@ -13043,13 +13102,8 @@ function invBarCopy(){
         setTimeout(()=>{b.textContent=o;b._busy=0;},1800);}}catch(e){}
     toast('Code '+c+' copied - in SitePlumb tap I have an invite code, then Paste code');
     logEvent('inviteBarCopied','');};
-  try{if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(c).then(flash,()=>toast('Your invite code is '+c));return;}}catch(e){}
-  try{const t=document.createElement('input');t.value=c;t.setAttribute('readonly','');
-    t.style.position='absolute';t.style.left='-9999px';document.body.appendChild(t);
-    t.select();t.setSelectionRange(0,c.length);document.execCommand('copy');
-    document.body.removeChild(t);flash();}
-  catch(e){toast('Your invite code is '+c);}}
+  copyTextNow(c).then(flash,function(){toast('Your invite code is '+c);});
+}
 /* Returns true when the bar took the screen, so boot can stand the heavier
    full-screen install nudge down instead of stacking two prompts. */
 function maybeInviteBar(){
@@ -13525,7 +13579,7 @@ function saveSub(){const name=document.getElementById('subName').value.trim();if
     op.subRoster.push({name,trade:patch.specialty||'general',phone:patch.phone,contact:patch.contact,email:patch.email,address:patch.address,website:patch.website,license:patch.license,notes:patch.notes});
     saveOrgPrefs(op);logEvent('rosterAdd',name);_rosterMode=false;closeAddSub();renderRoster();toast('Added to roster');return;
   }
-  if(_editSubId){Data.updateSub(_editSubId,patch);try{Sync.pushAll();}catch(e){}logEvent('subEdited',name);_editSubId=null;closeAddSub();renderBuild();toast('Saved');}
+  if(_editSubId){Data.updateSub(_editSubId,patch);try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}logEvent('subEdited',name);_editSubId=null;closeAddSub();renderBuild();toast('Saved');}
   else{Data.addSub({id:'s'+Date.now().toString(36),...patch,cleared:null});logEvent('subAdded',name);renderBuild();closeAddSub();toast('Crew added');}
   // If this was launched from the "bring in a job" import flow, refresh it so the
   // running roster count updates and the flow stays open to add more.
@@ -13557,7 +13611,7 @@ function removeSub(id){const s=P().subs.find(x=>x.id===id);if(!s)return;
   confirmDelete({title:'Remove '+s.name+'?',body:'Removes <b>'+esc(s.name)+'</b> ('+esc(specLabel(s.specialty))+') from this site\u2019s subcontractor list. Their logged records stay. This can\u2019t be undone.',onConfirm:()=>{
   try{const p=P();const inv=(p.invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked');
     if(inv){if(inv.uid&&p.members&&p.members[inv.uid]){delete p.members[inv.uid];if(p.memberInfo)delete p.memberInfo[inv.uid];}inv.status='revoked';}}catch(e){}
-  Data.removeSub(id);try{Sync.pushAll();}catch(e){}logEvent('subRemoved',s.name);renderBuild();toast('Removed');}});}
+  Data.removeSub(id);try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}logEvent('subRemoved',s.name);renderBuild();toast('Removed');}});}
 
 /* site-ready picker */
 let readyStageId=null;
@@ -13949,7 +14003,7 @@ function openCal(keepCrew){
   }
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   document.getElementById('calview').classList.add('show');renderCal();
-  try{labelHouseBack(document.getElementById('calDoneBtn'),(calIsClient()||fromTheHouse())?'House':'Done');}catch(e){}}
+  try{labelHouseBack(document.getElementById('calDoneBtn'),'Done');}catch(e){}}
 function openClientCal(){
   const p=clientProj();
   if(p){try{Data.setActive(p.id);}catch(e){}calSiteFilter=String(p.id);}
@@ -13990,7 +14044,7 @@ function renderCal(){
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   const who=document.getElementById('calWho');
   const fp=calSiteFilter==='all'?null:state.projects.find(x=>String(x.id)===String(calSiteFilter));
-  try{document.getElementById('calHdrT').textContent=calCrewFilter?calCrewFilter:(calIsSub()?'My schedule':(calIsClient()?'Site calendar':'Trades Calendar'));}catch(e){}
+  try{document.getElementById('calHdrT').textContent=calCrewFilter?calCrewFilter:(calIsSub()?'My schedule':((typeof fromTheHouse==='function'&&fromTheHouse())||calIsClient()?'Schedule':'Trades Calendar'));}catch(e){}
   if(who)who.textContent=calCrewFilter?('Every house this crew is on. Overlap is marked')
     :calIsClient()?('Your build \u2014 '+esc((clientProj()||{}).street||(clientProj()||{}).name||''))
     :calIsSub()?('Your schedule \u2014 '+((state.session||{}).name||'')):(fp?(fp.street||fp.name):'All sites');
@@ -14000,7 +14054,7 @@ function renderCal(){
   const todayK=dayKey(Date.now());
   const bs=calVisibleBookings();const av=calVisibleAvail();const cf=conflictIds();
   let chips='';
-  if(!calIsSub()&&!calIsClient()&&!calCrewFilter){
+  if(!calIsSub()&&!calIsClient()&&!calCrewFilter&&!(typeof fromTheHouse==='function'&&fromTheHouse())){
     const fHome=calSiteFilter!=='all'&&fp;
     chips='<div class="cal-ctrl">'
       +'<button class="cal-chip'+(calSiteFilter==='all'?' on':'')+'" onclick="calPick(\'all\')">All sites</button>'
@@ -14364,7 +14418,7 @@ function bkSave(){
   if(_bkEdit){
     const ep=state.projects.find(x=>String(x.id)===String(_bkEdit.pid));
     const etrade=bkSelTrade()||'';
-    const applyEdit=()=>{const cur=(ep.bookings||[]).find(x=>String(x.id)===String(_bkEdit.bid));const kept=cur&&cur.pkResp&&cur.pkResp.status==='confirmed'&&dayStart(cur.pkResp.start||start)===dayStart(start)&&dayStart(cur.pkResp.end||end)===dayStart(end);updateBooking(ep,_bkEdit.bid,{start:start,end:end,note:note,status:kept?'confirmed':'pending'});_bkArmSpecs(ep,bkSelTrade()||'',start);toast(kept?'Booking saved':'Booking updated — the sub will be asked to confirm');done();};
+    const applyEdit=()=>{const cur=(ep.bookings||[]).find(x=>String(x.id)===String(_bkEdit.bid));const kept=cur&&cur.pkResp&&cur.pkResp.status==='confirmed'&&dayStart(cur.pkResp.start||start)===dayStart(start)&&dayStart(cur.pkResp.end||end)===dayStart(end);updateBooking(ep,_bkEdit.bid,{start:start,end:end,note:note,status:kept?'confirmed':'pending'});_bkArmSpecs(ep,bkSelTrade()||'',start);toast(kept?'Booking saved':'Booking updated — the crew will be asked to confirm');done();};
     if(etrade&&!packetReady(ep,etrade)){
       const gaps=tradeSpecGaps(ep,etrade).length;
       const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'install specs are not signed off yet';
@@ -14478,7 +14532,7 @@ function setPacketSignoff(p,tradeId,who,on){
   p.packetSignoff=p.packetSignoff||{};p.packetSignoff[tradeId]=p.packetSignoff[tradeId]||{};
   if(on){const sess=state.session||{};p.packetSignoff[tradeId][who]={by:sess.name||(who==='homeowner'?'Homeowner':'Builder'),at:Date.now()};}
   else delete p.packetSignoff[tradeId][who];
-  persist();try{Sync.pushAll();}catch(e){}}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}
 function docHiddenSet(p,tradeId){return ((p.docHidden||{})[tradeId])||[];}
 function docShownSet(p,tradeId){return ((p.docShown||{})[tradeId])||[];}
 function packetPins(p,tradeId){const x=((p.packetPins||{})[tradeId])||{};return {items:x.items||[],logs:x.logs||[]};}
@@ -14489,13 +14543,13 @@ function togglePacketItem(pid,tradeId,id){
   p.packetPins=p.packetPins||{};p.packetPins[tradeId]=p.packetPins[tradeId]||{items:[],logs:[]};
   const arr=p.packetPins[tradeId].items;const i=arr.map(String).indexOf(String(id));
   if(i>=0)arr.splice(i,1);else arr.push(id);
-  persist();try{Sync.pushAll();}catch(e){}renderPacketLog();try{refreshPacket();}catch(e){}}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}renderPacketLog();try{refreshPacket();}catch(e){}}
 function togglePacketLog(pid,tradeId,date){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   p.packetPins=p.packetPins||{};p.packetPins[tradeId]=p.packetPins[tradeId]||{items:[],logs:[]};
   const arr=p.packetPins[tradeId].logs;const i=arr.indexOf(date);
   if(i>=0)arr.splice(i,1);else arr.push(date);
-  persist();try{Sync.pushAll();}catch(e){}renderPacketLog();try{refreshPacket();}catch(e){}}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}renderPacketLog();try{refreshPacket();}catch(e){}}
 /* Default-deny. A doc is in this trade's packet only if it is tagged for
    this trade, or the builder turned it on. Untagged site PDFs never ride. */
 function docInPacket(p,tradeId,d){
@@ -14530,7 +14584,7 @@ function toggleDocInPacket(tradeId,name){
     const i=hid.indexOf(name);if(i>=0)hid.splice(i,1);
   }
   p.docHidden[tradeId]=hid;p.docShown[tradeId]=sh;
-  persist();try{Sync.pushAll();}catch(e){}
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}
   try{refreshPacket();}catch(e){}}
 function packetReady(p,tradeId){return tradeSpecGaps(p,tradeId).length===0&&packetSignedBoth(p,tradeId);}
 let _pktCtx=null;
@@ -14883,10 +14937,10 @@ function _pkDb(){
     if(!_pkAppCheckOn){
       try{const ak=(typeof appCheckKey==='function')&&appCheckKey();
         if(ak&&firebase.appCheck)firebase.appCheck().activate(ak,true);
-        _pkAppCheckOn=true;}catch(e){_pkAppCheckOn=true;}
+        _pkAppCheckOn=true;}catch(e){_pkAppCheckOn=true;trapError('caught',e&&e.message,'_pkDb.appCheck');}
     }
     return firebase.firestore();
-  }catch(e){return null;}
+  }catch(e){trapError('caught',e&&e.message,'_pkDb');return null;}
 }
 function sendGuestPacket(pid,bid){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
@@ -14924,7 +14978,7 @@ function gpApproveSend(){
   }catch(e){toast('Could not create the link');}
 }
 function _sharePacketLink(snap,token){
-  const url='https://siteplumb.com/app/?packet='+token;
+  const url='https://siteplumb.com/app/p.html?packet='+token;
   const msg='Hi \u2014 '+fmtWin({start:snap.start,end:snap.end})+' at '+snap.site+'. Dates, scope and specs \u2014 one tap to confirm: '+url;
   const phone=_subPhoneOf(snap.sub,null)||snap.phone||'';
   window._pkLastShare={url:url,msg:msg,who:snap.subName||snap.sub||'the crew',phone:phone};
@@ -14948,7 +15002,7 @@ function _smsOrCopy(msg,phone){
     const to=String(phone||'').replace(/[^\d+]/g,'');
     location.href='sms:'+(to||'')+'?&body='+encodeURIComponent(msg);
   }catch(e){}
-  try{navigator.clipboard&&navigator.clipboard.writeText(msg).then(()=>toast('Message copied \u2014 paste it into a text'));}catch(e){}
+  copyTextNow(msg).then(function(){toast('Message copied \u2014 paste it into a text');},function(){});
 }
 function openGuestPreview(snap){window.__packetFixture=snap;renderGuestPacket('preview');}
 let _gpSnap=null,_gpToken=null,_gpCalCursor=null,_bkCalCursor=null;
@@ -14975,7 +15029,7 @@ function _gpApplyRemote(g){
   _gpSnap=g;_gpCacheWrite(_gpToken,g);_gpRender();
 }
 function _gpUnlisten(){
-  try{if(_gpUnsub){_gpUnsub();}}catch(e){}
+  try{if(_gpUnsub){_gpUnsub();}}catch(e){trapError('caught',e&&e.message,'_gpUnlisten');}
   _gpUnsub=null;
 }
 function _gpListen(){
@@ -14983,7 +15037,7 @@ function _gpListen(){
   if(!_gpToken||_gpToken==='preview')return;
   const db=_pkDb();
   if(db){
-    try{_gpUnsub=db.collection('packets').doc(String(_gpToken)).onSnapshot(function(d){if(d&&d.exists)_gpApplyRemote(d.data());},function(){});}catch(e){}
+    try{_gpUnsub=db.collection('packets').doc(String(_gpToken)).onSnapshot(function(d){if(d&&d.exists)_gpApplyRemote(d.data());},function(e){trapError('caught',e&&e.message,'_gpListen.snap');});}catch(e){trapError('caught',e&&e.message,'_gpListen');}
   }
   if(!_gpTick)_gpTick=setInterval(function(){
     if(typeof document!=='undefined'&&document.visibilityState!=='visible')return;
@@ -14991,7 +15045,7 @@ function _gpListen(){
     if(_gpBusy())return;
     if(_gpPendingRemote){const g=_gpPendingRemote;_gpPendingRemote=null;_gpApplyRemote(g);return;}
     const db2=_pkDb();if(!db2)return;
-    db2.collection('packets').doc(String(_gpToken)).get().then(function(d){if(d.exists)_gpApplyRemote(d.data());}).catch(function(){});
+    db2.collection('packets').doc(String(_gpToken)).get().then(function(d){if(d.exists)_gpApplyRemote(d.data());}).catch(function(e){trapError('caught',e&&e.message,'_gpListen.poll');});
   },4000);
 }
 function renderGuestPacket(token){
@@ -15053,7 +15107,7 @@ function _gpRender(){
   }
   if(preview&&_gpPendingSend)h+='<div class="gp-preview">Review before it sends \u2014 this is exactly what '+esc(g.sub)+' will see'+(g.phone?(' at '+esc(g.phone)):'')+'.</div>'
     +'<button class="gp-btn go" style="margin-bottom:10px" onclick="gpApproveSend()">Text this link</button>';
-  else if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your sub receives by text. Nothing was sent.</div>';
+  else if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your crew receives by text. Nothing was sent.</div>';
   h+='<div class="gp-site">'+esc(g.site)+'</div>';
   h+='<div class="gp-sub">'+esc(g.tradeLabel)+' \u00b7 for '+esc(g.sub)+' \u00b7 from '+esc(g.builder)+'</div>';
   h+='<div class="gp-dates"><div class="d">'+esc(dates)+'</div>'+(g.note?'<div class="n">'+esc(g.note)+'</div>':'')+'</div>';
@@ -15244,7 +15298,7 @@ function _gpWriteResp(resp){
   _gpSnap.resp=resp;
   if(_gpToken&&_gpToken!=='preview'){
     const db=_pkDb();
-    if(db){try{db.collection('packets').doc(String(_gpToken)).update({resp:resp}).catch(()=>{});}catch(e){}}
+    if(db){try{db.collection('packets').doc(String(_gpToken)).update({resp:resp}).catch(function(e){trapError('caught',e&&e.message,'_gpWriteResp');});}catch(e){trapError('caught',e&&e.message,'_gpWriteResp');}}
   }
   _gpRender();
 }
@@ -15260,7 +15314,7 @@ function gpSendQuestion(){
   _gpSnap.q=(_gpSnap.q||[]).concat([{text:txt,t:Date.now()}]);
   if(_gpToken&&_gpToken!=='preview'){
     const db=_pkDb();
-    if(db){try{db.collection('packets').doc(String(_gpToken)).update({q:_gpSnap.q}).catch(()=>{});}catch(e){}}
+    if(db){try{db.collection('packets').doc(String(_gpToken)).update({q:_gpSnap.q}).catch(function(e){trapError('caught',e&&e.message,'gpSendQuestion');});}catch(e){trapError('caught',e&&e.message,'gpSendQuestion');}}
   }
   _gpRender();
 }
@@ -15574,7 +15628,7 @@ function pkOfferTellThem(){
     onConfirm:function(){
       const hold=_pkPubNotify;_pkPubNotify=null;
       if(!hold)return;
-      const url='https://siteplumb.com/app/?packet='+hold.token;
+      const url='https://siteplumb.com/app/p.html?packet='+hold.token;
       const msg='Update on '+hold.site+': '+hold.what+' ('+pkWhen(hold.t)+'). Same link: '+url;
       if(navigator.share){navigator.share({text:msg}).catch(function(){_smsOrCopy(msg);});}
       else _smsOrCopy(msg);
@@ -15703,6 +15757,15 @@ function inbFiltered(){
     const blob=[r.kind,r.line,r.site,r.who,r.detail,pkKind(r)].join(' ').toLowerCase();
     return blob.indexOf(q)>=0;
   });
+  if(_inbMode==='ny'&&_inbTab==='smart'&&!q){
+    const n=rows.length;
+    const urgent=rows.filter(function(r){return (r.pri||0)<=1;});
+    rows=urgent.slice(0,6);
+    window._inbAllN=n;
+    window._inbSmartCapped=n>rows.length;
+  }else{
+    window._inbSmartCapped=false;
+  }
   return rows;
 }
 function inbTabLabel(t){
@@ -15730,7 +15793,9 @@ function inbDraw(){
     return '<button type="button" class="ov-sortpill'+(_inbTab===t?' on':'')+'" onclick="inbSetTab(\''+String(t).replace(/'/g,'\\\'')+'\')">'+esc(lab)+'</button>';
   }).join('');
   const rows=inbFiltered();
-  if(!rows.length){el.innerHTML='<div class="empty">Nothing matches.</div>';return;}
+  if(!rows.length){
+    if(window._inbSmartCapped){el.innerHTML='<div class="empty">Nothing urgent.</div><button type="button" class="add-sub-btn" style="width:100%;margin-top:14px" onclick="inbSetTab(\'all\')">Show all '+window._inbAllN+'</button>';return;}
+    el.innerHTML='<div class="empty">Nothing matches.</div>';return;}
   el.innerHTML=rows.map(function(r){
     if(_inbMode==='pk'){
       const when=r.t?new Date(r.t).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
@@ -15744,7 +15809,7 @@ function inbDraw(){
     return '<div class="pkt-or" style="margin-top:8px" onclick="closePkLog();'+go+'"><div><div class="k">'+esc(r.kind||'Needs you')+'</div>'
       +'<div class="m">'+esc(r.line||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div></div>'
       +'<div><div class="ps-c">'+esc(when)+'</div><span class="td-chev">\u203a</span></div></div>';
-  }).join('');
+  }).join('')+(window._inbSmartCapped?('<button type="button" class="add-sub-btn" style="width:100%;margin-top:14px" onclick="inbSetTab(\'all\')">Show all '+window._inbAllN+'</button>'):'');
 }
 function openInb(mode,pid){
   saveScroll('home');
@@ -15757,7 +15822,7 @@ function openInb(mode,pid){
   const q=document.getElementById('pkLogQ');
   if(q)q.value='';
   if(_inbMode==='ny'){
-    if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All homes';
+    if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All houses';
     if(sub)sub.textContent=p?'What still needs you on this house.':'Most time-sensitive first. Search or filter by type.';
   }else{
     if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All houses';
@@ -15953,8 +16018,8 @@ function renderDecisions(){
 function filterIssues(f,el){issueFilter=f;document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderIssues();}
 function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;const closing=it.status==='open';
   const row=document.getElementById('issue-'+id);
-  const apply=()=>{Data.updateItem(P().id,id,{status:closing?'done':'open',t:Date.now()});logEvent('issueToggle','#'+id+' → '+(closing?'done':'open'));renderIssues();renderFeed();
-    if(closing)toastAction('Moved to Closed','Undo',()=>{Data.updateItem(P().id,id,{status:'open'});renderIssues();renderFeed();toast('Item reopened');});
+  const apply=()=>{const snap=itemSnap(it);const next=closing?'done':'open';pushItemEdit(it,[closing?'Closed':'Opened'],snap);Data.updateItem(P().id,id,{status:next,t:Date.now(),edits:it.edits});logEvent('issueToggle','#'+id+' → '+next);renderIssues();renderFeed();
+    if(closing)toastAction('Moved to Closed','Undo',()=>{const s2=itemSnap(it);pushItemEdit(it,['Opened'],s2);Data.updateItem(P().id,id,{status:'open',edits:it.edits});renderIssues();renderFeed();toast('Item reopened');});
     else toast('Item reopened');};
   if(closing&&row){row.classList.add('closing');setTimeout(apply,260);}else apply();}
 
@@ -15963,6 +16028,16 @@ const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScri
 function dismissScrim(scrim){if(!scrim)return;const fn=MODAL_CLOSERS[scrim.id];if(fn&&typeof window[fn]==='function'){try{window[fn]();return;}catch(e){}}scrim.classList.remove('show');}
 function dismissParent(elm){let n=elm;while(n&&!(n.classList&&n.classList.contains('pmodal-scrim')))n=n.parentElement;dismissScrim(n);}
 if(typeof window!=='undefined'){window.addEventListener('load',function(){
+  document.addEventListener('keydown',function(ev){
+    if(ev.key!=='Escape')return;
+    if(document.getElementById('tourCatch'))return;
+    try{
+      const lb=document.getElementById('lightbox');
+      if(lb&&lb.classList.contains('show')){ev.preventDefault();closeLightbox();return;}
+      const sh=document.getElementById('sheet');
+      if(sh&&sh.classList.contains('show')){ev.preventDefault();closeSheet();return;}
+    }catch(e){}
+  });
   /* iOS caret-drag guard: when a finger drags inside the focused text field
      (moving the cursor, using the magnifier, OR dragging a selection handle to
      extend the highlight), keep the scroll container from panning underneath.
@@ -16049,27 +16124,33 @@ let pendingPhotoId=null,sheetIsLog=false,editingLogDate=null;
 /* The editor uses the SAME picker the entry was created with, so editing can
    express everything creating could. A tag we no longer offer is shown lit in
    its own row rather than dropped - the record keeps whatever it was given. */
+let _recChipOpen={},_sheetChipOpen={},_recPendingPhotoId=null,_recHistOn=null;
+function chipRowHTML(grp,on,openMap,expandFn){
+  const many=grp.a.length>2;
+  const open=!many||!!openMap[grp.k];
+  let list=open?grp.a.slice():grp.a.slice(0,2);
+  if(!open)on.forEach(function(a){if(grp.a.indexOf(a)>=0&&list.indexOf(a)<0)list.push(a);});
+  let h=list.map(function(a){return '<button type="button" class="chip'+(on.indexOf(a)>=0?' on':'')+'" data-grp="'+grp.k+'" data-area="'+esc(a)+'" onclick="pickChip(this)">'+esc(a)+'</button>';}).join('');
+  if(many&&!open)h+='<button type="button" class="chip more" onclick="event.stopPropagation();'+expandFn+'(\''+grp.k+'\')">\u2026</button>';
+  return '<div class="chip-group-lbl">'+esc(grp.g)+'</div><div class="chip-row">'+h+'</div>';
+}
+function expandRecChips(k){_recChipOpen[k]=true;const area=[...document.querySelectorAll('#recAreaChips .chip.on')].map(function(c){return c.dataset.area;}).join(' \u00b7 ');buildRecChips(area);}
+function expandSheetChips(k){_sheetChipOpen[k]=true;const area=[...document.querySelectorAll('#areaChips .chip.on')].map(function(c){return c.dataset.area;}).join(' \u00b7 ');buildChips(area);}
 function buildRecChips(area){
-  const on=areaTags(area),box=document.getElementById('recAreaChips');   // aliased, so an old tag lights its new chip
+  const on=areaTags(area),box=document.getElementById('recAreaChips');
   if(!box)return;
-  const stray=on.filter(a=>AREAS.indexOf(a)===-1);
+  const stray=on.filter(function(a){return AREAS.indexOf(a)===-1;});
   box.innerHTML=(stray.length?'<div class="chip-group-lbl">On this entry</div><div class="chip-row">'+
-      stray.map(a=>`<button class="chip on" data-area="${esc(a)}" onclick="pickChip(this)">${esc(a)}</button>`).join('')+'</div>':'')+
-    AREA_GROUPS.map(grp=>`<div class="chip-group-lbl">${grp.g}</div><div class="chip-row">`+
-      grp.a.map(a=>`<button class="chip${on.indexOf(a)>=0?' on':''}" data-grp="${grp.k}" data-area="${esc(a)}" onclick="pickChip(this)">${esc(a)}</button>`).join('')+
-      `</div>`).join('');
-  syncAreaExclusivity(box);}
-/* Tags renamed for the vernacular. Records still hold the old strings, so they
-   are translated on the way OUT - matching and display both. Nothing is
-   rewritten in place: an entry picks up the new wording the next time someone
-   saves it, and until then it still answers to its stage. */
+      stray.map(function(a){return '<button type="button" class="chip on" data-area="'+esc(a)+'" onclick="pickChip(this)">'+esc(a)+'</button>';}).join('')+'</div>':'')+
+    AREA_GROUPS.map(function(grp){return chipRowHTML(grp,on,_recChipOpen,'expandRecChips');}).join('');
+  syncAreaExclusivity(box);
+}
 const AREA_ALIASES={'Mechanical':'HVAC','Exterior / Siding':'Siding','Exterior / Grading':'Grading','Site':'Sitework','Stairs / Railings':'Railings'};
 function areaTags(v){return String(v||'').split('\u00b7').map(s=>s.trim()).filter(Boolean).map(a=>AREA_ALIASES[a]||a);}
 function areaText(v){const t=areaTags(v);return t.length?t.join(' \u00b7 '):String(v||'');}
-function buildChips(){
-  document.getElementById('areaChips').innerHTML=AREA_GROUPS.map(grp=>
-    `<div class="chip-group-lbl">${grp.g}</div><div class="chip-row">`+grp.a.map(a=>`<button class="chip" data-grp="${grp.k}" data-area="${a}" onclick="pickChip(this)">${a}</button>`).join('')+`</div>`
-  ).join('');
+function buildChips(area){
+  const on=areaTags(area||'');
+  document.getElementById('areaChips').innerHTML=AREA_GROUPS.map(function(grp){return chipRowHTML(grp,on,_sheetChipOpen,'expandSheetChips');}).join('');
   syncAreaExclusivity(document.getElementById('areaChips'));
   document.getElementById('crewSelect').innerHTML='<option value="">Unassigned</option><option value="Site super">Site super</option>'+crewLabelsSorted().map(c=>`<option value="${c}">${c}</option>`).join('')+'<option value="__add">＋ Add specific trade / sub…</option>';
 }
@@ -16087,6 +16168,7 @@ function syncAreaExclusivity(box){
   rooms.forEach(c=>{c.disabled=wholeOn&&!c.classList.contains('on');});
   if(whole)whole.disabled=roomOn&&!wholeOn;}
 function pickChip(el){
+  if(!el||el.classList.contains('more'))return;
   /* One chip per GROUP, on purpose. A record gets a place AND a system:
      the framing in the stair hall is both, and a builder looking for either
      one should find it. Clearing only the tapped row is what makes that
@@ -16187,7 +16269,7 @@ function openInstall(){
   document.getElementById('installScrim').classList.add('show');
 }
 function closeInstall(){document.getElementById('installScrim').classList.remove('show');}
-function openInSafari(){const url=location.href;let copied=false;try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url);copied=true;}}catch(e){}if(!copied){try{const t=document.createElement('input');t.value=url;t.setAttribute('readonly','');t.style.position='absolute';t.style.left='-9999px';document.body.appendChild(t);t.select();t.setSelectionRange(0,url.length);document.execCommand('copy');document.body.removeChild(t);copied=true;}catch(e){}}try{const b=document.querySelector('.inst-safari-link');if(b&&!b._busy){b._busy=1;const o=b.innerHTML;b.innerHTML='Link copied \u2713';setTimeout(()=>{b.innerHTML=o;b._busy=0;},2200);}}catch(e){}toast(copied?'Link copied \u2014 now open Safari and paste it in the address bar':'Open Safari and go to this page, then add it to your Home Screen');}
+function openInSafari(){const url=location.href;const flash=function(){try{const b=document.querySelector('.inst-safari-link');if(b&&!b._busy){b._busy=1;const o=b.innerHTML;b.innerHTML='Link copied \u2713';setTimeout(()=>{b.innerHTML=o;b._busy=0;},2200);}}catch(e){}};copyTextNow(url).then(function(){flash();toast('Link copied \u2014 now open Safari and paste it in the address bar');},function(){toast('Open Safari and go to this page, then add it to your Home Screen');});}
 async function doInstall(){if(!deferredPrompt){toast('Use your browser menu → Install');return;}try{deferredPrompt.prompt();await deferredPrompt.userChoice;}catch(e){}deferredPrompt=null;closeInstall();}
 function refreshInstallEntry(){const b=document.getElementById('loginInstall');if(b)b.style.display=isStandalone()?'none':'';}
 function installRequestedByUrl(){try{const p=new URLSearchParams(location.search||'');return p.has('install')||p.has('a2hs');}catch(e){return false;}}
@@ -16447,21 +16529,101 @@ function closeLightbox(){
 /* ════════ record detail / edit (Recent + Items) ════════ */
 let editingRecId=null;
 function pickRecStatus(el){document.querySelectorAll('#recStatusSeg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
+function editorName(){
+  const s=state.session||{};
+  if(s.name&&String(s.name).trim())return String(s.name).trim();
+  if(s.email)return String(s.email);
+  if(s.role==='builder')return 'Builder';
+  if(s.role==='client')return 'Homeowner';
+  if(s.role==='subs')return 'Crew';
+  return 'Someone';
+}
+function itemSnap(it){
+  return {cap:it.cap||'',area:it.area||'',crew:it.crew||'',status:it.status,issue:!!it.issue,share:!!it.share,photoId:it.photoId||null};
+}
+function pushItemEdit(it,changes,snap){
+  if(!it||!changes||!changes.length)return;
+  it.edits=it.edits||[];
+  it.edits.push({t:Date.now(),by:editorName(),changes:changes.slice(),snap:snap||itemSnap(it)});
+  if(it.edits.length>40)it.edits=it.edits.slice(-40);
+}
+function describeRecChanges(before,patch){
+  const out=[];
+  if(patch.cap!==undefined&&patch.cap!==before.cap)out.push('Note');
+  if(patch.area!==undefined&&patch.area!==before.area)out.push('Area');
+  if(patch.crew!==undefined&&patch.crew!==before.crew)out.push('Packet');
+  if(patch.status!==undefined&&patch.status!==before.status)out.push(patch.status==='done'?'Closed':'Opened');
+  if(patch.issue===false&&before.issue)out.push('Not an item');
+  if(patch.issue===true&&!before.issue)out.push('Opened');
+  if(patch.share!==undefined&&!!patch.share!==!!before.share)out.push(patch.share?'Shared with homeowner':'Hidden from homeowner');
+  if(patch.photoId!==undefined&&patch.photoId!==before.photoId)out.push(patch.photoId?'Photo':'Photo removed');
+  return out;
+}
+function recHistHTML(it){
+  const logs=(it&&it.edits)||[];
+  if(!logs.length)return '';
+  return logs.map(function(e,i){return {e:e,i:i};}).reverse().map(function(x){
+    const e=x.e,i=x.i;
+    return '<div class="rec-hist-row'+(_recHistOn===i?' on':'')+'" onclick="loadRecVersion('+i+')"><div class="n">'+esc(e.by||'Someone')+' \u00b7 '+esc(timeAgo(e.t))+'</div><div class="d">'+esc((e.changes||[]).join(' \u00b7 '))+'</div></div>';
+  }).join('');
+}
+function paintRecHist(it){
+  const hist=document.getElementById('recHist');if(!hist)return;
+  const html=recHistHTML(it);
+  hist.hidden=!html;hist.innerHTML=html?('<div class="fld-label">Changes</div>'+html):'';
+}
+function recPickPhoto(){const f=document.getElementById('recPhotoFile');if(f){f.value='';f.click();}}
+function recViewPhoto(){
+  const src=_recPendingPhotoId&&photoURLs[_recPendingPhotoId];
+  if(src){openMediaView(src,'','');return;}
+  if(editingRecId!=null)openLightbox(editingRecId);
+}
+function renderRecThumb(){
+  const thumb=document.getElementById('recThumb');if(!thumb)return;
+  const it=P()&&(P().items||[]).find(function(x){return x.id===editingRecId;});
+  const pid=_recPendingPhotoId;
+  const src=pid?(photoURLs[pid]||(it&&it.photoId===pid&&photoSrc(it))||null):null;
+  const cam='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>';
+  if(src)thumb.innerHTML='<button type="button" class="rec-photo has-img" onclick="recViewPhoto()"><img src="'+src+'" alt=""></button><button type="button" class="rec-photo-add" onclick="recPickPhoto()">Replace photo</button>';
+  else thumb.innerHTML='<button type="button" class="rec-photo" onclick="recPickPhoto()">'+cam+' Add a photo</button>';
+}
+async function onRecPhoto(e){
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  toast('Saving photo\u2026');
+  try{const id=await processPhoto(f);_recPendingPhotoId=id;renderRecThumb();toast('Photo added \u2014 Save to keep it');}
+  catch(err){toast('Could not read that photo');}
+}
+function fillRecForm(s){
+  document.getElementById('recNote').value=(s.cap==='(no note)'||!s.cap)?'':s.cap;
+  buildRecChips(s.area||'Whole House');
+  document.getElementById('recCrew').innerHTML='<option value="">Unassigned</option><option value="Site super" '+(s.crew==='Site super'?'selected':'')+'>Site super</option>'+crewLabelsSorted().map(c=>`<option value="${c}" ${c===s.crew?'selected':''}>${c}</option>`).join('');
+  const seg=(!s.issue)?'none':(s.status==='done'?'done':'open');
+  document.querySelectorAll('#recStatusSeg button').forEach(function(b){b.classList.toggle('on',b.dataset.s===seg);});
+  document.getElementById('recShare').classList.toggle('on',!!s.share);
+  _recPendingPhotoId=s.photoId||null;
+  renderRecThumb();
+  requestAnimationFrame(function(){growNote(document.getElementById('recNote'));});
+}
+function loadRecVersion(i){
+  const it=P()&&(P().items||[]).find(function(x){return x.id===editingRecId;});if(!it)return;
+  const e=(it.edits||[])[i];
+  if(!e||!e.snap){toast('That change has no saved version');return;}
+  _recHistOn=i;
+  fillRecForm(e.snap);
+  paintRecHist(it);
+  toast('This is how it looked then. Save to put it back.');
+}
 function openRecord(id){saveScroll('site');const it=P().items.find(x=>x.id===id);if(!it)return;editingRecId=id;
+  _recChipOpen={};_recHistOn=null;
   document.getElementById('recTitle').textContent=it.issue?'Edit item':'Edit entry';
-  const thumb=document.getElementById('recThumb');
-  const _tsrc=photoSrc(it);if(_tsrc){thumb.innerHTML=`<img src="${_tsrc}" alt="" style="width:100%;border-radius:13px;display:block" onclick="openLightbox(${id})">`;}
-  else{thumb.innerHTML=`<div style="height:96px;border-radius:13px;background:var(--surface-2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:12.5px">No photo on this entry</div>`;}
-  document.getElementById('recNote').value=it.cap==='(no note)'?'':it.cap;
-  buildRecChips(it.area);
-  document.getElementById('recCrew').innerHTML='<option value="">Unassigned</option><option value="Site super" '+(it.crew==='Site super'?'selected':'')+'>Site super</option>'+crewLabelsSorted().map(c=>`<option value="${c}" ${c===it.crew?'selected':''}>${c}</option>`).join('');
-  const seg=(!it.issue)?'none':(it.status==='done'?'done':'open');
-  document.querySelectorAll('#recStatusSeg button').forEach(b=>b.classList.toggle('on',b.dataset.s===seg));
-  document.getElementById('recShare').classList.toggle('on',!!it.share);
-  document.getElementById('recScrim').classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('recNote')));}
-function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;
+  fillRecForm(it);
+  paintRecHist(it);
+  const f=document.getElementById('recPhotoFile');if(f)f.value='';
+  document.getElementById('recScrim').classList.add('show');}
+function closeRecord(){document.getElementById('recScrim').classList.remove('show');editingRecId=null;_recPendingPhotoId=null;_recHistOn=null;_recChipOpen={};
   if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}
-  try{houseMaybeResume();}catch(e){}
+  if(document.body.classList.contains('on-house-desk')){try{renderIssues();}catch(e){}}
+  else{try{houseMaybeResume();}catch(e){}}
   try{applyScroll('site');}catch(e){}
   try{if(_pktLogCtx&&document.getElementById('pktLogScrim').classList.contains('show'))renderPacketLog();}catch(e){}}
 let _fileToId=null,_fileToTrade='',_fileToRoom='';
@@ -16470,17 +16632,12 @@ function pickFileTrade(id){
   _fileToTrade=_fileToTrade===id?'':id;
   document.querySelectorAll('#fileToTrades .chip').forEach(function(c){c.classList.toggle('on',c.dataset.t===_fileToTrade);});
 }
-function pickFileRoom(name){
-  _fileToRoom=_fileToRoom===name?'':name;
-  document.querySelectorAll('#fileToRooms .chip').forEach(function(c){c.classList.toggle('on',c.dataset.r===_fileToRoom);});
-}
+function pickFileRoom(name){}
 function openFileTo(id){
   const p=P();if(!p||id==null)return;
   const it=(p.items||[]).find(function(x){return String(x.id)===String(id);});if(!it)return;
-  _fileToId=id;_fileToTrade='';_fileToRoom='';
+  _fileToId=id;_fileToTrade='';
   if(it.crew){const hit=SPECIALTIES.find(function(s){return s.label===it.crew||s.id===it.crew;});if(hit)_fileToTrade=hit.id;}
-  const tags=areaTags(it.area||'');
-  _fileToRoom=tags.find(function(t){return AREAS.indexOf(t)>=0&&t!=='Leak'&&t!=='Damage'&&t!=='Punch'&&t!=='Note'&&t!=='Decision';})||'';
   const onSite={};
   (p.subs||[]).forEach(function(s){if(s.specialty)onSite[s.specialty]=true;});
   const trades=SPECIALTIES.filter(function(s){return onSite[s.id]||['plumb','elec','hvac','framing','paint','floor','drywall','roofing'].indexOf(s.id)>=0;});
@@ -16490,18 +16647,16 @@ function openFileTo(id){
   document.getElementById('fileToTrades').innerHTML=shown.map(function(s){
     return '<button type="button" class="chip'+(_fileToTrade===s.id?' on':'')+'" data-t="'+s.id+'" onclick="pickFileTrade(\''+s.id+'\')">'+esc(s.label)+'</button>';
   }).join('');
-  document.getElementById('fileToRooms').innerHTML=FILE_ROOMS.map(function(r){
-    return '<button type="button" class="chip'+(_fileToRoom===r?' on':'')+'" data-r="'+esc(r)+'" onclick="pickFileRoom(\''+String(r).replace(/'/g,'\\\'')+'\')">'+esc(r)+'</button>';
-  }).join('');
   const lead=document.getElementById('fileToLead');
-  if(lead)lead.textContent=(it.fieldKind?(it.fieldKind.charAt(0).toUpperCase()+it.fieldKind.slice(1)+' · '):'')+'A trade puts it in that packet. A room makes it filterable.';
+  const kind=it.fieldKind?((FIELD_KINDS.find(function(k){return k.id===it.fieldKind;})||{}).n):'';
+  if(lead)lead.textContent=(kind?(kind+' \u2014 '):'')+'Put this on a trade\u2019s packet, or skip.';
   try{document.getElementById('recScrim').classList.remove('show');}catch(e){}
   document.getElementById('fileToScrim').classList.add('show');
 }
 function closeFileTo(){
   const el=document.getElementById('fileToScrim');if(el)el.classList.remove('show');
-  _fileToId=null;_fileToTrade='';_fileToRoom='';
-  try{houseMaybeResume();}catch(e){}
+  _fileToId=null;_fileToTrade='';
+  if(!document.body.classList.contains('on-house-desk')){try{houseMaybeResume();}catch(e){}}
 }
 function saveFileTo(){
   const p=P();if(!p||_fileToId==null){closeFileTo();return;}
@@ -16509,19 +16664,20 @@ function saveFileTo(){
   if(!it){closeFileTo();return;}
   const spec=SPECIALTIES.find(function(s){return s.id===_fileToTrade;});
   const crew=spec?spec.label:'';
-  const kind=it.fieldKind?((FIELD_KINDS.find(function(k){return k.id===it.fieldKind;})||{}).n||''):'';
-  const room=_fileToRoom||'';
-  const area=[room,kind].filter(Boolean).join(' \u00b7 ')||it.area||'Whole House';
-  const patch={area:area};
+  const snap=itemSnap(it);
+  const patch={};
   if(crew){
     patch.crew=crew;
     if(!it.issue){patch.issue=true;patch.status='open';}
   }
+  const changes=describeRecChanges(snap,patch);
+  if(changes.length)pushItemEdit(it,changes,snap);
+  if(it.edits)patch.edits=it.edits;
   Data.updateItem(p.id,it.id,patch);
-  logEvent('fileTo','#'+it.id+(crew?' · '+crew:'')+(room?' · '+room:''));
+  logEvent('fileTo','#'+it.id+(crew?' \u00b7 '+crew:''));
   closeFileTo();
   try{renderFeed();renderIssues();renderToday();renderOvCards();}catch(e){}
-  toast(crew?(crew+' packet · '+(room||'filed')):(room?('Filed to '+room):'Left on the house record'));
+  toast(crew?(crew+' packet'):'Left on the house');
 }
 function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);if(!it)return;
   const cap=document.getElementById('recNote').value.trim()||'(no note)';
@@ -16529,12 +16685,19 @@ function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.
   const crew=document.getElementById('recCrew').value;
   const seg=(document.querySelector('#recStatusSeg button.on')||{}).dataset?document.querySelector('#recStatusSeg button.on').dataset.s:'none';
   const share=document.getElementById('recShare').classList.contains('on');
+  const before=itemSnap(it);
   const patch={cap,area,crew,share};
-  if(seg==='none'){patch.issue=false;patch.status=undefined;}
+  const packet=crew&&crew!=='Site super';
+  if(seg==='none'&&packet){patch.issue=true;patch.status='open';}
+  else if(seg==='none'){patch.issue=false;patch.status=undefined;}
   else if(seg==='open'){patch.issue=true;patch.status='open';}
   else if(seg==='done'){patch.issue=true;patch.status='done';}
-  Data.updateItem(P().id,editingRecId,patch);logEvent('recordEdit','#'+editingRecId);
-  closeRecord();renderFeed();renderIssues();renderPhotos();renderBuild();toast('Entry updated');}
+  if(_recPendingPhotoId!==(it.photoId||null))patch.photoId=_recPendingPhotoId||null;
+  const changes=describeRecChanges(before,patch);
+  if(changes.length)pushItemEdit(it,changes,before);
+  if(it.edits)patch.edits=it.edits;
+  Data.updateItem(P().id,editingRecId,patch);logEvent('recordEdit','#'+editingRecId+(changes.length?(' · '+changes.join(', ')):''));
+  closeRecord();renderFeed();renderIssues();renderPhotos();renderBuild();toast(changes.length?'Saved':'No change');}
 function deleteRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);const rid=editingRecId;
   confirmDelete({title:'Delete entry?',body:'\u201c'+esc((it&&it.cap)||'')+'\u201d<br><br>Permanently removes the note'+(it&&it.photoId?', its photo,':'')+' and any open-item flag. This can\u2019t be undone.',onConfirm:()=>{
   Data.removeItem(P().id,rid);logEvent('recordDelete','#'+rid);

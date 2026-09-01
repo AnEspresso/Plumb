@@ -1,3 +1,5 @@
+**v2.362.0 ready to ship.** Audit 7: parity restored (always `cp index.html plumb.html` last), tour mute handler, clipboard promises, stale tests, guest packet page `app/p.html` (25 KB), house/crew words, Needs You cap, trapError on money/sync/packet.
+
 **v2.361.0 is live.** Packet hint is one line, under the field, not overlapping Unassigned.
 
 **v2.360.0 is live.** Packet is the one trade control on Edit item. File to a trade is gone. After Field Notes, Which packet? still asks once.

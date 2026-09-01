@@ -143,9 +143,36 @@ async function tappable(page,sel){
   await new Promise(r=>setTimeout(r,1600));
 
   t('demo arrival shows the example-build banner', await page.evaluate(()=>document.body.classList.contains('on-excursion')&&getComputedStyle(document.getElementById('excBanner')).display!=='none'));
-  t('tour offer appears on a fresh arrival', await page.evaluate(()=>document.getElementById('demoIntroScrim').classList.contains('show')));
+  t('public demo arrival does not show the tour offer', await page.evaluate(()=>!document.getElementById('demoIntroScrim').classList.contains('show')));
+  t('tour offer appears when QA or owner is allowed', await page.evaluate(()=>{
+    const orig=walkAllowed;
+    walkAllowed=function(){return true;};
+    try{sessionStorage.removeItem('plumbTourOffered');}catch(e){}
+    maybeOfferTour();
+    const shown=document.getElementById('demoIntroScrim').classList.contains('show');
+    walkAllowed=orig;
+    try{document.getElementById('demoIntroScrim').classList.remove('show');}catch(e){}
+    try{sessionStorage.removeItem('plumbTourOffered');}catch(e){}
+    return shown;
+  }));
   t('no install gate over the demo', await page.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return e&&e.classList.contains('show');};return !vis('installGate')&&!vis('installScrim');}));
-  t('serif faces really loaded', await page.evaluate(()=>document.fonts.check("16px 'Source Serif 4'")&&document.fonts.check("16px 'Fraunces'")));
+  t('serif faces really loaded', await page.evaluate(async()=>{
+    const faces=["16px 'Source Serif 4'","16px 'Fraunces'"];
+    try{
+      if(document.fonts&&document.fonts.load){
+        await Promise.all(faces.map(f=>document.fonts.load(f).catch(()=>{})));
+      }
+      if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+    }catch(e){}
+    const check=()=>faces.every(f=>document.fonts.check(f));
+    if(check())return true;
+    for(let i=0;i<6;i++){
+      await new Promise(r=>setTimeout(r,250));
+      try{if(document.fonts&&document.fonts.load)await Promise.all(faces.map(f=>document.fonts.load(f).catch(()=>{})));}catch(e){}
+      if(check())return true;
+    }
+    return check();
+  }));
   await shot(page,'01-demo-arrival');
   await page.evaluate(()=>demoIntroExplore());
 
