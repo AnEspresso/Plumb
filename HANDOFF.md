@@ -1,3 +1,5 @@
+**The expectation type (live).** Title is large. Body under it is small.
+
 **First screen is grand (live).** House and SitePlumb type scaled up. The expectation is the next section.
 
 **The expectation (live).** Homeowner, builder, trades — three lines. SitePlumb is that book.
