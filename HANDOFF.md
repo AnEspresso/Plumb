@@ -1,3 +1,5 @@
+**The expectation (live).** Homeowner, builder, trades — three lines. SitePlumb is that book.
+
 **Offer on the home page (live).** Same words as the hero: Free Zoom video chat setup. First house only.
 
 **Homepage format (live).** No “say goodbye.” Gold only on Plumb. What you get / The first hour eyebrows. Limits: not yet. Money: signed for, paid.
