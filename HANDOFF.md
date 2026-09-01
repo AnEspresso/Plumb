@@ -1,3 +1,5 @@
+**The Expectation copy (live).** Title case. Partnership line. Homeowner / Builder / Trades as specified.
+
 **The expectation type (live).** Title is large. Body under it is small.
 
 **First screen is grand (live).** House and SitePlumb type scaled up. The expectation is the next section.
