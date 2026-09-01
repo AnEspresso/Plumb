@@ -1,3 +1,5 @@
+**v2.361.0 is live.** Packet hint is one line, under the field, not overlapping Unassigned.
+
 **v2.360.0 is live.** Packet is the one trade control on Edit item. File to a trade is gone. After Field Notes, Which packet? still asks once.
 
 **v2.359.0 is live.** Edit item: tap a change to see that earlier version (Save puts it back). Each chip group shows two options plus …. Empty photo is a short Add a photo row.
