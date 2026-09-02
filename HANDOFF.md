@@ -1,4 +1,7 @@
-**v2.365.0 ready to ship.** Money hero (projected vs budget) and a calmer home screen. Log a cost is the one primary. More opens a choice sheet. Needs you is three rows then All N. Field Notes card stays after Needs you. Seed v20.
+**v2.366.0 ready to ship.** Field Notes on the book is a full-width primary: the camera mark plus Write a field note. Same tap, same place under Needs you.
+
+**v2.365.0 is live.** Money hero (projected vs budget) and a calmer home screen. Log a cost is the one primary. More opens a choice sheet. Needs you is three rows then All N. Field Notes card stays after Needs you. Seed v20.
+
 
 **v2.364.0 is live.** One sheet on every overlay, three button roles, sentence-case sections, house/crew words, five named z layers. Rem type folded into --t-*. Old class names kept as aliases for JS.
 

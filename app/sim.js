@@ -2131,7 +2131,7 @@ $('closeChoice()');
 $('closeBudget()');
 $('showOverview()');
 $('renderToday()');
-t('overview today has no primary button', $("document.querySelectorAll('#ovToday .btn-primary').length")===0);
+t('overview today has one Field Notes primary', $("document.querySelectorAll('#ovToday .btn-primary').length")===0&&$("!!document.querySelector('#ovToday .ov-field')")===true);
 t('Needs you on first screen is at most three', $("document.querySelectorAll('#ovToday .ny-home-row').length")<=3);
 t('Field Notes card is on home after Needs you', (function(){
   const h=$("document.getElementById('ovToday').innerHTML");
@@ -2140,6 +2140,11 @@ t('Field Notes card is on home after Needs you', (function(){
   const cu=h.indexOf('Coming up');
   return ny>=0&&fn>ny&&(cu<0||cu>fn)&&$("!!document.querySelector('#ovToday .ov-field')")===true;
 })());
+t('Field Notes button has words', (function(){
+  const txt=$("(function(){var el=document.querySelector('#ovToday .ov-field');return el?String(el.textContent||''):'';})()");
+  return txt.indexOf('Write a field note')>=0&&txt.indexOf('Photo, note, or a problem')>=0;
+})());
+t('Field Notes button is full width in source', SRC.indexOf('.ov-field{')>=0&&SRC.split('.ov-field{')[1].slice(0,280).indexOf('width:100%')>=0&&SRC.indexOf('min-height:var(--tap)')>=0);
 t('Coming up rows still open a booking', $("String(renderToday)").indexOf('openBk')>=0&&$("String(renderToday)").indexOf('ov-coming')>=0);
 t('Your houses keeps the sort pills for the tour', $("!!document.getElementById('ovSortRow')")===true&&$("String(renderOvSortRow)").indexOf('data-sort')>=0);
 t('Find a street lives with Your houses', SRC.indexOf('id="ovSearch"')>SRC.indexOf('id="ovBuildsHd"')&&$("document.getElementById('ovSearch').placeholder")==='Find a street');

@@ -198,6 +198,19 @@ async function tappable(page,sel){
   await page.evaluate(()=>{const el=document.querySelector('#ovToday .ov-field');if(el)el.scrollIntoView({block:'center'});});
   const fnTap=await tappable(page,'#ovToday .ov-field');
   t('Field Notes card tappable',fnTap.ok,fnTap.why);
+  const fnMeta=await page.evaluate(()=>{
+    const el=document.querySelector('#ovToday .ov-field');
+    if(!el)return {ok:false,why:'missing'};
+    const r=el.getBoundingClientRect();
+    const cs=getComputedStyle(el);
+    const name=(el.getAttribute('aria-label')||el.innerText||'').replace(/\s+/g,' ').trim();
+    const txt=(el.innerText||'').replace(/\s+/g,' ').trim();
+    return {
+      ok:r.height>=48&&r.width>=300&&!!name&&txt.indexOf('Write a field note')>=0,
+      why:'h='+Math.round(r.height)+' w='+Math.round(r.width)+' name='+JSON.stringify(name)+' txt='+JSON.stringify(txt)+' bg='+cs.backgroundColor
+    };
+  });
+  t('Field Notes is a labelled full-width primary',fnMeta.ok,fnMeta.why);
   await shot(page,'04-overview');
 
   await page.evaluate(()=>{state.activeId='p9';demoRole('subs');});
