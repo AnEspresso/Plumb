@@ -73,6 +73,20 @@ $("localStorage.removeItem('plumb.errors')");
 t('desktop rail brand present in nav', $("document.querySelector('nav .rail-brand .wordmark').textContent").includes('SitePlumb'));
 t('rail foot carries the live sync pill', $("document.querySelector('nav .rail-foot .syncpill').textContent").includes('device'));
 
+/* ════ 1c · UI SYSTEM (2.363 token + inline migration) ════ */
+S('ui-system');
+t('ui-system style block is in the source', SRC.indexOf('<style id="ui-system">')>=0);
+t('ui-system opens after the first style closes', SRC.indexOf('<style id="ui-system">')>SRC.indexOf('</style>'));
+t('type tokens live in the system', SRC.indexOf('--t-xs:')>=0&&SRC.indexOf('--t-hero:')>=0&&SRC.indexOf('--t-md:')>=0);
+t('space tokens live in the system', SRC.indexOf('--s-1:')>=0&&SRC.indexOf('--s-8:')>=0);
+t('radius tokens live in the system', SRC.indexOf('--r-sm:')>=0&&SRC.indexOf('--r-lg:')>=0);
+t('hero-host block rule is present', SRC.indexOf('.hero-host')>=0);
+t('hide utility is not important', SRC.indexOf('.hide{display:none;}')>=0&&SRC.indexOf('.hide{display:none!important')<0);
+t('old CSS has no font-size px', (function(){
+  const a=SRC.indexOf('<style>'), b=SRC.indexOf('</style>');
+  return a>=0&&b>a&&!/font-size:\s*[\d.]+px/.test(SRC.slice(a,b));
+})());
+
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
 S('sync-scope');
 t('builder gets all seven colls', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs');
@@ -1243,9 +1257,9 @@ t('finished houses skip photo boot', $("String(hydratePhotos)").indexOf('doneAt'
 t('quiet finished house can ask', $("String(maybeAskDoneHouse)").indexOf('Nothing new in two weeks')>=0&&$("String(houseAskDone)").indexOf('houseLooksFinished')>=0);
 t('house card kind sits above the fact', $("String(nyCardBits)").indexOf('ov-k')>=0&&$("String(nyCardBits)").indexOf('ov-l')>=0&&$("String(nyCardBits)").indexOf('still need you')<0);
 t('decision card kind sits above the fact', $("String(pkCardBits)").indexOf('ov-k')>=0&&$("String(pkCardBits)").indexOf('pkKind')>=0);
-t('house doors and Coming up are 16px dark', $("document.documentElement.innerHTML.indexOf('.hs-door .k{font-size:16px')>=0&&document.documentElement.innerHTML.indexOf('.td-soontx{flex:1;font-size:16px;color:var(--ink)')>=0&&document.documentElement.innerHTML.indexOf('.pkt-or .k{font-weight:650;font-size:16px')>=0")===true);
+t('house doors and Coming up are 16px dark', $("document.documentElement.innerHTML.indexOf('.hs-door .k{font-size:var(--t-md)')>=0&&document.documentElement.innerHTML.indexOf('.td-soontx{flex:1;font-size:var(--t-md);color:var(--ink)')>=0&&document.documentElement.innerHTML.indexOf('.pkt-or .k{font-weight:650;font-size:var(--t-md)')>=0")===true);
 t('empty search says No house matches before All clear', $("String(renderOvCards)").indexOf("q&&!list.length&&!finished.length")>=0&&$("String(renderOvCards)").indexOf('No house matches')<$("String(renderOvCards)").indexOf('All clear'));
-t('card need you is 14px dark', $("document.documentElement.innerHTML.indexOf('.ov-hero .hl{font-size:14px')>=0&&document.documentElement.innerHTML.indexOf('.ov-hero .hl{font-size:14px;font-weight:650;letter-spacing:.02em;color:var(--ink)')>=0")===true);
+t('card need you is 14px dark', $("document.documentElement.innerHTML.indexOf('.ov-hero .hl{font-size:var(--t-sm)')>=0&&document.documentElement.innerHTML.indexOf('.ov-hero .hl{font-size:var(--t-sm);font-weight:650;letter-spacing:.02em;color:var(--ink)')>=0")===true);
 t('demo persist does not toast quota', $("String(persist)").indexOf("appMode()!=='real'")>=0&&$("String(persist)").indexOf('house list is too big')>=0);
 t('tour closes Field Notes when leaving the slide', $("String(tourCloseFieldNote)").indexOf('closeLogPick')>=0 && $("String(tourStep)").indexOf('tourCloseFieldNote')>=0);
 t('rest of house gold is that band only', $("String(tourSceneRect)").indexOf('nextElementSibling')>=0);
@@ -1850,8 +1864,18 @@ t('the welcome card stands down too', $("maybeWelcome.toString().indexOf('_authA
 t('so does the soft install nudge', $("maybeNudgeInstall.toString().indexOf('_authActionPending()')")>=0);
 t('the gate really does outrank the modal it was covering', (function(){
   const g=/\.install-gate\{position:fixed;inset:0;z-index:(\d+)/.exec(SRC);
-  const m=/id="pwResetScrim" style="z-index:(\d+)/.exec(SRC);
-  return !!g&&!!m&&Number(g[1])>Number(m[1]);})());
+  if(!g) return false;
+  const style=/id="pwResetScrim"[^>]*style="[^"]*z-index:(\d+)/.exec(SRC);
+  let z=style?Number(style[1]):null;
+  if(z==null){
+    const cls=/class="([^"]*)"[^>]*id="pwResetScrim"/.exec(SRC)||/id="pwResetScrim"[^>]*class="([^"]*)"/.exec(SRC);
+    if(!cls) return false;
+    cls[1].split(/\s+/).forEach(function(c){
+      const m=new RegExp('\\.'+c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\{z-index:(\\d+)').exec(SRC);
+      if(m) z=Number(m[1]);
+    });
+  }
+  return z!=null&&Number(g[1])>z;})());
 
 // a cold landing can beat the SDK - wait for it rather than giving up
 t('both handlers wait for the sign-in library', $("typeof _awaitFirebase")==='function'

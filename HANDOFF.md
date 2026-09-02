@@ -1,4 +1,6 @@
-**v2.362.0 ready to ship.** Audit 7: parity restored (always `cp index.html plumb.html` last), tour mute handler, clipboard promises, stale tests, guest packet page `app/p.html` (25 KB), house/crew words, Needs You cap, trapError on money/sync/packet.
+**v2.363.0 ready to ship.** Design tokens and inline styles folded into the system. ui-system.css is the last style block. Literal font-size, spacing, radius, and hex in the old CSS now use tokens. Inline style attributes dropped from 926 to 59.
+
+**v2.362.0 is live.** Audit 7: parity restored (always `cp index.html plumb.html` last), tour mute handler, clipboard promises, stale tests, guest packet page `app/p.html` (25 KB), house/crew words, Needs You cap, trapError on money/sync/packet.
 
 **v2.361.0 is live.** Packet hint is one line, under the field, not overlapping Unassigned.
 
