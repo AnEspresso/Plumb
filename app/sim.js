@@ -86,6 +86,29 @@ t('old CSS has no font-size px', (function(){
   const a=SRC.indexOf('<style>'), b=SRC.indexOf('</style>');
   return a>=0&&b>a&&!/font-size:\s*[\d.]+px/.test(SRC.slice(a,b));
 })());
+t('old CSS has no font-size rem', (function(){
+  const a=SRC.indexOf('<style>'), b=SRC.indexOf('</style>');
+  return a>=0&&b>a&&!/font-size:\s*[\d.]+rem/.test(SRC.slice(a,b));
+})());
+t('CSS z-index is only named tokens', (function(){
+  const blocks=[];
+  let i=0;
+  while(true){
+    const a=SRC.indexOf('<style', i);
+    if(a<0) break;
+    const gt=SRC.indexOf('>', a);
+    const b=SRC.indexOf('</style>', gt);
+    if(b<0) break;
+    blocks.push(SRC.slice(gt+1, b));
+    i=b+1;
+  }
+  const css=blocks.join('\n');
+  const vals=[...css.matchAll(/z-index:\s*([^;}]+)/g)].map(m=>m[1].trim().replace(/\s*!important/,'').trim());
+  return vals.length>0 && vals.every(v=>/^var\(--z-(nav|sheet|sheet-2|toast|tour)\)$/.test(v));
+})());
+t('pmodal-scrim also has sheet-scrim', /class="[^"]*\bpmodal-scrim\b[^"]*\bsheet-scrim\b/.test(SRC));
+t('sheet-head Done is on overlays', SRC.indexOf('class="sheet-head"')>=0 && SRC.split('class="sheet-head"').length>50);
+t('five z tokens are declared', SRC.indexOf('--z-nav:100')>=0&&SRC.indexOf('--z-sheet:200')>=0&&SRC.indexOf('--z-sheet-2:210')>=0&&SRC.indexOf('--z-toast:300')>=0&&SRC.indexOf('--z-tour:400')>=0);
 
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
 S('sync-scope');
@@ -685,7 +708,7 @@ asBuilder();$("state.activeId='p4'");
 t('Maple Court starts empty', $("costLines(P()).length")===0);
 t('sources exclude self and empty sites', $("JSON.stringify(budgetSources().map(s=>s.id).sort())")===JSON.stringify(['p1','p10','p2','p3','p5','p6','p7','p8','p9']));
 $('openBudget()');
-t('empty budget offers the copy link', el('budgetBody').innerHTML.includes('Copy budget lines from another site'));
+t('empty budget offers the copy link', el('budgetBody').innerHTML.includes('Copy budget lines from another house'));
 $('openBudgetCopy()');
 t('picker lists donor sites with totals', el('bcBody').innerHTML.includes('Calderwood')&&el('bcBody').innerHTML.includes('656,300'));
 $("cloneBudgetFrom('p2')");
@@ -708,22 +731,22 @@ S('ux polish');
 asBuilder();$("state.activeId='p2'");$('renderBuild()');
 t('Invoice card is the Budget twin', ['To collect','Awaiting OK','Billed','Paid','View invoices'].every(s=>el('billingCard').innerHTML.includes(s)));
 t('Billing card math (out=net-paid on p2)', el('billingCard').innerHTML.includes($("invUsd(billingSummary(P()).out)")));
-t('calendar door atop Schedule pane', el('buildSchedule').innerHTML.includes('Trades calendar for this site'));
+t('calendar door atop Schedule pane', el('buildSchedule').innerHTML.includes('Trades calendar for this house'));
 $("calSiteFilter=String(state.activeId);openCal()");
 t('door opens calendar scoped to this site', el('calview').classList.contains('show'));
 $("document.getElementById('calview').classList.remove('show')");
 t('Full site tab says Needs You', $("document.querySelector('nav .tab[data-v=\"decisions\"] span').textContent")==='Needs You');
-t('To-Do segments speak one language', el('view-decisions').innerHTML.includes('Waiting on you')&&el('view-decisions').innerHTML.includes('Site issues'));
+t('To-Do segments speak one language', el('view-decisions').innerHTML.includes('Waiting on you')&&el('view-decisions').innerHTML.includes('House issues'));
 t('Log camera is Field Notes', $("!!document.querySelector('#view-log .site-field')")===true);
 t('Photos pane uses Field Notes', el('filesPhotos').innerHTML.includes('Field Notes')&&el('filesPhotos').innerHTML.includes('openFieldNote'));
 $("go('decisions')");$("decSeg('waiting',document.querySelector('[data-d=waiting]'))");
-t('issues header matches segment vocabulary', el('view-decisions').innerHTML.includes('Open site issues'));
+t('issues header matches segment vocabulary', el('view-decisions').innerHTML.includes('Open house issues'));
 // homeowner side
 $("state.activeId='p2'");
 const CH=clientHTML('p2','home');
 t('homeowner sees still to pay on Selections, not a fake To pay door', CH.includes('Selections')&&CH.includes('still to pay')&&!CH.includes('>To pay<')&&!/<div class="k">To pay<\/div>/.test(CH)&&!CH.includes('Outstanding'));
 t('homeowner Schedule opens House calendar', CH.includes('openClientCal()')&&CH.includes('Crews on this house'));
-t('homeowner stats are tappable doors', CH.includes('hs-door')&&CH.includes('On the job')&&CH.includes('Selections'));
+t('homeowner stats are tappable doors', CH.includes('hs-door')&&CH.includes('On this house')&&CH.includes('Selections'));
 t('Share an idea sits beside Raise a concern', CH.includes('Raise a concern')&&CH.includes('Share an idea'));
 // 2.349 · Ink 1-7
 t('demo bar chip says Crew', (D.querySelector('.exc-roles button[data-r="subs"]')||{}).textContent==='Crew');
@@ -1144,7 +1167,7 @@ t('Field Notes chips start outline', SRC.split('function openFieldNote')[1].spli
 t('Scan and Website are dashed', SRC.indexOf('.qf-btn')>=0&&SRC.split('.qf-btn{')[1].split('}')[0].indexOf('dashed')>=0);
 t('desk home shows the month', SRC.indexOf('function ovDesk')>=0&&SRC.indexOf('body.classList.toggle(\'ov-desk\'')>=0&&SRC.indexOf('function renderOvWeek')>=0);
 t('thumbs get 44px pills', SRC.indexOf('pointer: coarse')>=0&&SRC.split('@media (pointer: coarse)')[1].slice(0,500).indexOf('44px')>=0);
-t('Workbench sits above sheets', SRC.split('.devpanel{')[1].slice(0,120).indexOf('z-index:140')>=0&&SRC.split('#devDot{')[1].slice(0,180).indexOf('z-index:139')>=0&&SRC.split('async function openDev')[1].slice(0,900).indexOf('devRunCensus')>=0);
+t('Workbench sits above sheets', SRC.indexOf('.tour-bubble,.devpanel{z-index:var(--z-tour)')>=0&&SRC.split('#devDot{')[1].slice(0,180).indexOf('z-index:var(--z-')>=0&&SRC.split('async function openDev')[1].slice(0,900).indexOf('devRunCensus')>=0);
 t('four office roles exist', SRC.indexOf('const ROLE_MACROS=')>=0&&SRC.indexOf('superintendent:{')>=0&&SRC.indexOf('moneyCo:0')>=0);
 t('PM does not get company money by default', /pm:\{[^}]*moneyCo:0/.test(SRC));
 t('confirm warns when a role is not the template', SRC.indexOf('This is not the template')>=0&&SRC.indexOf('function teamInvCommit')>=0&&SRC.indexOf('function canGate')>=0);
@@ -1185,11 +1208,7 @@ t('walk hear tools', SRC.indexOf('function tourTrace')>=0&&SRC.indexOf('function
 t('walk see tools', SRC.indexOf('function tourSeeSnap')>=0&&SRC.indexOf('__tourSee')>=0);
 t('the house list pills are Needs You, decisions, A-Z', $("SORTLABELS.recent")==='Recent decisions'&&$("String(renderOvSortRow)").indexOf('ov-allpill')<0);
 t('coming up more this week expands', $("String(renderToday)").indexOf('toggleSoon')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
-t('the day sheet sits over the calendar', (function(){
-  const z=$("(function(){var d=document.getElementById('dayScrim');var c=document.getElementById('calview');return getComputedStyle(d).zIndex+'|'+getComputedStyle(c).zIndex;})()");
-  const p=z.split('|').map(Number);
-  return p[0]>=96&&p[0]>p[1];
-})());
+t('the day sheet sits over the calendar', SRC.indexOf('#dayScrim,#idleScrim,#invScrim,#payScrim{z-index:var(--z-sheet-2);}')>=0&&SRC.indexOf('#calview{z-index:var(--z-nav);}')>=0&&SRC.indexOf('--z-sheet-2:210')>=0&&SRC.indexOf('--z-nav:100')>=0);
 t('back to a list keeps your place', $("String(nyOpenHouse)").indexOf("saveScroll('home')")>=0&&$("String(houseLeave)").indexOf("saveScroll('house')")>=0&&$("String(showOverview)").indexOf('applyScroll')>=0&&$("String(closeHouse)").indexOf("applyScroll('home')")>=0);
 t('A-Z keeps the portfolio card', $("String(renderOvCards)").indexOf('localeCompare')>=0&&$("String(renderOvCards)").indexOf('nyCardBits')>=0);
 t('tapping a house card opens the briefing on home', (function(){
@@ -1228,7 +1247,7 @@ t('money is one sentence', $("String(houseMoneyLine)").indexOf('Contracted')>=0&
 t('settings leads with company', $("String(renderSettings)").indexOf("set-hd\">Company")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
 t('house doors stay two across', $("document.documentElement.innerHTML").indexOf('hs-doors{grid-template-columns:repeat(3')<0&&$("String(houseHTML)").indexOf('hs-door wide')>=0);
-t('the first door grid is On the job', $("String(houseHTML)").indexOf('On the job')>=0&&$("String(houseHTML)").indexOf('The rest of this house')>=0);
+t('the first door grid is On this house', $("String(houseHTML)").indexOf('On this house')>=0&&$("String(houseHTML)").indexOf('The rest of this house')>=0);
 t('demo Settings can replay the tour', $("String(renderSettings)").indexOf('Replay the tour')>=0&&$("String(startGrandTour)").indexOf("appMode()!=='demo'")>=0);
 t('Replay plays the ten-slide book tour', $("String(startGrandTour)").indexOf("startTour('team')")>=0&&$("String(startGrandTour)").indexOf("startTour('grand')")<0&&$("TOUR.team.length")===10);
 t('team tour waits for Next', $("String(tourStep)").indexOf('if(_tourSteps===TOUR.team)return')>=0);
@@ -1242,8 +1261,8 @@ t('Replay starts the tour from Settings', $("String(replayTour)").indexOf('start
 t('Replay starts voice on the tap', $("String(replayTour)").indexOf('setTimeout')<0 && $("String(replayTour)").indexOf('tourUnlockAudio')>=0);
 t('Glad you are here stages the book', $("String(tourSceneRect)").indexOf('ovSortRow')>=0);
 t('tour camera opens Field Notes not the house picker', $("String(openLogPick)").indexOf('tourOpenFieldNote')>=0 && $("String(tourOpenFieldNote)").indexOf("classList.add('show')")>=0);
-t('homeowner briefing uses house doors', $("String(renderClient)").indexOf('On the job')>=0 && $("String(renderClient)").indexOf('The rest of this house')>=0);
-t('crew briefing uses house doors', $("String(renderSubView)").indexOf('On the job')>=0 && $("String(renderSubView)").indexOf('Your packet')>=0);
+t('homeowner briefing uses house doors', $("String(renderClient)").indexOf('On this house')>=0 && $("String(renderClient)").indexOf('The rest of this house')>=0);
+t('crew briefing uses house doors', $("String(renderSubView)").indexOf('On this house')>=0 && $("String(renderSubView)").indexOf('Your packet')>=0);
 t('add-a-crew save stays Save after a hit', $("String(subAfterHit)").indexOf("save.textContent='Save'")>=0);
 t('book-a-day names the other house even when days do not overlap', $("String(bkRenderOverlap)").indexOf('Also on')>=0&&$("String(bkRenderOverlap)").indexOf('Not the same days')>=0);
 t('homeowner Updates has a shared post on Calderwood', $("!!(state.projects.find(x=>x.id==='p2').items.some(it=>it.share)&&state.projects.find(x=>x.id==='p2').logs.some(l=>l.share))")===true);
@@ -1484,7 +1503,7 @@ asBuilder();$("state.activeId='p1'");
 $('renderBuild()');
 t('money card shows Projected and Tracking', $("document.body.innerHTML.indexOf('Projected')")>=0&&$("document.body.innerHTML.indexOf('Tracking')")>=0);
 $('openBudget()');
-t('budget sheet offers the job cost report', $("document.getElementById('budgetBody').innerHTML.indexOf('Job cost report')")>=0);
+t('budget sheet offers the job cost report', $("document.getElementById('budgetBody').innerHTML.indexOf('Cost report')")>=0);
 $('openJobCost()');
 t('report opens with a whole-build total row', $("document.getElementById('jcScrim').classList.contains('show')")===true&&$("document.getElementById('jcBody').innerHTML.indexOf('Whole build')")>=0);
 $('closeJobCost()');
@@ -1728,8 +1747,12 @@ t('the entry picker still accepts images', SRC.indexOf('id="file" accept="image/
 // tapped inside Edit item appeared to do nothing until the modal was dismissed.
 t('the viewer is fixed to the viewport, not a parent box', SRC.indexOf('.lightbox{position:fixed')>=0);
 t('the viewer outranks the modal layer', (function(){
-  const m=/\.lightbox\{position:fixed;inset:0;z-index:(\d+)/.exec(SRC);
-  return !!m&&Number(m[1])>130;})());
+  const m=/\.lightbox\{[^}]*z-index:([^;}]+)/.exec(SRC);
+  if(!m) return false;
+  const raw=m[1].trim();
+  const tokens={'var(--z-nav)':100,'var(--z-sheet)':200,'var(--z-sheet-2)':210,'var(--z-toast)':300,'var(--z-tour)':400};
+  const n=tokens[raw]||Number(raw);
+  return n>130;})());
 t('the zoom stage swallows browser gestures', SRC.indexOf('touch-action:none')>=0);
 
 t('viewer plumbing present', $("typeof openMediaView")==='function'&&$("typeof closeLightbox")==='function'
@@ -1863,19 +1886,25 @@ t('the install gate stands down for an action link', $("maybeInstallGate.toStrin
 t('the welcome card stands down too', $("maybeWelcome.toString().indexOf('_authActionPending()')")>=0);
 t('so does the soft install nudge', $("maybeNudgeInstall.toString().indexOf('_authActionPending()')")>=0);
 t('the gate really does outrank the modal it was covering', (function(){
-  const g=/\.install-gate\{position:fixed;inset:0;z-index:(\d+)/.exec(SRC);
+  const tokens={'var(--z-nav)':100,'var(--z-sheet)':200,'var(--z-sheet-2)':210,'var(--z-toast)':300,'var(--z-tour)':400};
+  function zOf(raw){const v=String(raw||'').trim().replace(/\s*!important/,'');return tokens[v]||Number(v);}
+  const g=/\.install-gate\{[^}]*z-index:([^;}]+)/.exec(SRC);
   if(!g) return false;
-  const style=/id="pwResetScrim"[^>]*style="[^"]*z-index:(\d+)/.exec(SRC);
-  let z=style?Number(style[1]):null;
+  const style=/id="pwResetScrim"[^>]*style="[^"]*z-index:([^;"]+)/.exec(SRC);
+  let z=style?zOf(style[1]):null;
   if(z==null){
     const cls=/class="([^"]*)"[^>]*id="pwResetScrim"/.exec(SRC)||/id="pwResetScrim"[^>]*class="([^"]*)"/.exec(SRC);
     if(!cls) return false;
     cls[1].split(/\s+/).forEach(function(c){
-      const m=new RegExp('\\.'+c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\{z-index:(\\d+)').exec(SRC);
-      if(m) z=Number(m[1]);
+      const m=new RegExp('\\.'+c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\{[^}]*z-index:([^;}]+)').exec(SRC);
+      if(m){const n=zOf(m[1]); if(n) z=n;}
+      const m2=new RegExp('\\.'+c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\.sheet-2\\{[^}]*z-index:([^;}]+)').exec(SRC)
+        || new RegExp('\\.sheet-2,\\.'+c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\{[^}]*z-index:([^;}]+)').exec(SRC)
+        || new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\.sheet-2\\{[^}]*z-index:([^;}]+)').exec(SRC);
+      if(m2){const n=zOf(m2[1]); if(n) z=n;}
     });
   }
-  return z!=null&&Number(g[1])>z;})());
+  return z!=null&&zOf(g[1])>z;})());
 
 // a cold landing can beat the SDK - wait for it rather than giving up
 t('both handlers wait for the sign-in library', $("typeof _awaitFirebase")==='function'

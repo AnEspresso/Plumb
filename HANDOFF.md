@@ -1,4 +1,6 @@
-**v2.363.0 ready to ship.** Design tokens and inline styles folded into the system. ui-system.css is the last style block. Literal font-size, spacing, radius, and hex in the old CSS now use tokens. Inline style attributes dropped from 926 to 59.
+**v2.364.0 ready to ship.** One sheet on every overlay, three button roles, sentence-case sections, house/crew words, five named z layers. Rem type folded into --t-*. Old class names kept as aliases for JS.
+
+**v2.363.0 is live.** Design tokens and inline styles folded into the system. ui-system.css is the last style block. Literal font-size, spacing, radius, and hex in the old CSS now use tokens. Inline style attributes dropped from 926 to 59.
 
 **v2.362.0 is live.** Audit 7: parity restored (always `cp index.html plumb.html` last), tour mute handler, clipboard promises, stale tests, guest packet page `app/p.html` (25 KB), house/crew words, Needs You cap, trapError on money/sync/packet.
 
