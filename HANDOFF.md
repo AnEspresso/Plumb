@@ -1,4 +1,7 @@
-**v2.366.0 ready to ship.** Field Notes on the book is a full-width primary: the camera mark plus Write a field note. Same tap, same place under Needs you.
+**v2.367.0 is live.** Field Notes mark is 82x56 and readable on the dark button. Words, fill, place, and tap stay.
+
+**v2.366.0 is live.** Field Notes on the book is a full-width primary: the camera mark plus Write a field note. Same tap, same place under Needs you.
+
 
 **v2.365.0 is live.** Money hero (projected vs budget) and a calmer home screen. Log a cost is the one primary. More opens a choice sheet. Needs you is three rows then All N. Field Notes card stays after Needs you. Seed v20.
 

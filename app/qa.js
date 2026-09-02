@@ -211,6 +211,13 @@ async function tappable(page,sel){
     };
   });
   t('Field Notes is a labelled full-width primary',fnMeta.ok,fnMeta.why);
+  const fnMark=await page.evaluate(()=>{
+    const svg=document.querySelector('#ovToday .ov-field svg.cam');
+    if(!svg)return {ok:false,why:'missing'};
+    const r=svg.getBoundingClientRect();
+    return {ok:r.width>=80&&r.height>=50,why:'w='+Math.round(r.width)+' h='+Math.round(r.height)};
+  });
+  t('Field Notes mark is large enough to read',fnMark.ok,fnMark.why);
   await shot(page,'04-overview');
 
   await page.evaluate(()=>{state.activeId='p9';demoRole('subs');});

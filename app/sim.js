@@ -2145,6 +2145,12 @@ t('Field Notes button has words', (function(){
   return txt.indexOf('Write a field note')>=0&&txt.indexOf('Photo, note, or a problem')>=0;
 })());
 t('Field Notes button is full width in source', SRC.indexOf('.ov-field{')>=0&&SRC.split('.ov-field{')[1].slice(0,280).indexOf('width:100%')>=0&&SRC.indexOf('min-height:var(--tap)')>=0);
+t('Field Notes mark is 82 by 56', (function(){
+  const i=SRC.indexOf('.ov-field svg.cam{');
+  if(i<0)return false;
+  const block=SRC.slice(i,i+140);
+  return block.indexOf('width:82px')>=0&&block.indexOf('height:56px')>=0;
+})());
 t('Coming up rows still open a booking', $("String(renderToday)").indexOf('openBk')>=0&&$("String(renderToday)").indexOf('ov-coming')>=0);
 t('Your houses keeps the sort pills for the tour', $("!!document.getElementById('ovSortRow')")===true&&$("String(renderOvSortRow)").indexOf('data-sort')>=0);
 t('Find a street lives with Your houses', SRC.indexOf('id="ovSearch"')>SRC.indexOf('id="ovBuildsHd"')&&$("document.getElementById('ovSearch').placeholder")==='Find a street');

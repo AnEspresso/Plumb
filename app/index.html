@@ -952,14 +952,19 @@
   .ov-allhot{font-size:var(--t-sm);color:var(--ink-2);margin-top:var(--s-1);line-height:1.4;}
   .ov-field{display:flex;align-items:center;justify-content:flex-start;gap:var(--s-4);
     width:100%;height:auto;min-height:var(--tap);box-sizing:border-box;
-    padding:var(--s-4) var(--s-5);margin:var(--s-5) 0;
+    padding:var(--s-4) var(--s-5) var(--s-4) var(--s-4);margin:var(--s-5) 0;
     background:var(--ink);color:var(--paper);border:0;border-radius:var(--r);
     font-family:var(--f-sans);font-size:var(--t-md);font-weight:600;text-align:left;
     cursor:pointer;box-shadow:none;position:relative;overflow:visible;
     transition:transform .18s cubic-bezier(.2,.7,.2,1);-webkit-tap-highlight-color:transparent;}
   .ov-field::before{display:none;}
-  .ov-field svg.cam{position:relative;width:44px;height:30px;flex:none;display:block;}
+  .ov-field svg.cam{position:relative;width:82px;height:56px;flex:none;display:block;}
   .ov-field svg.cam text{display:none;}
+  .ov-field svg.cam rect[stroke]{stroke:var(--oak-soft);stroke-width:2;}
+  .ov-field svg.cam path[stroke]{stroke:var(--oak-soft);stroke-width:2;}
+  .ov-field svg.cam circle[stroke="#1B1916"]{stroke:var(--oak-soft);stroke-width:1.9;}
+  .ov-field svg.cam g[stroke]{stroke:#3A342B;stroke-width:1.7;}
+  .ov-field svg.cam g line{stroke:var(--oak);stroke-width:2.2;}
   .ov-field .fn-l{display:flex;flex-direction:column;line-height:1.25;}
   .ov-field .fn-l small{font-size:var(--t-sm);font-weight:400;color:var(--oak-soft);}
   .ov-field:active{transform:scale(.975);}
@@ -3827,15 +3832,15 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.366.0 - Field Notes is a full-width primary';
+const PLUMB_VERSION='2.367.0 - Field Notes mark is readable';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788552000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.366.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788638400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.367.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8504,7 +8509,7 @@ function renderToday(){
   }else{
     h+='<div class="empty"><b>Nothing needs you</b>Crews are booked, decisions are in.</div>';
   }
-  if(canGate('field'))h+='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#B0895A" stroke-width="1.7"/><path d="M52 20V15h24v5" fill="none" stroke="#B0895A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#1B1916" stroke-width="1.55"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#1B1916" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="1.8"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Write a field note<small>Photo, note, or a problem</small></span></button>';
+  if(canGate('field'))h+='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#CDB48C" stroke-width="2"/><path d="M52 20V15h24v5" fill="none" stroke="#CDB48C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#CDB48C" stroke-width="1.9"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#3A342B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="2.2"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Write a field note<small>Photo, note, or a problem</small></span></button>';
   if(soon.length){
     h+='<div class="sec"><h2>Coming up</h2><button type="button" class="sec-act" onclick="openCal()">Calendar</button></div>';
     h+='<div class="ov-coming">';
