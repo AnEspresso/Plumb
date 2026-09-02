@@ -1244,7 +1244,7 @@ t('the briefing keeps field schedule selections money and the desk', (function()
 t('the house briefing does not repeat the street', $("String(houseHTML)").indexOf('This job')<0&&$("String(houseHTML)").indexOf('pkt-head')<0);
 t('rooms on the house are doors not a second inbox', $("String(houseHTML)").indexOf('hs-doors')>=0&&$("String(houseHTML)").indexOf("Read and close old lines")<0&&$("String(houseHTML)").indexOf("This house</div>")<0);
 t('money is one sentence', $("String(houseMoneyLine)").indexOf('Contracted')>=0&&$("String(houseMoneyLine)").indexOf('billed')>=0);
-t('settings leads with company', $("String(renderSettings)").indexOf("set-hd\">Company")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
+t('settings leads with company', $("String(renderSettings)").indexOf("<h2>Company</h2>")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
 t('house doors stay two across', $("document.documentElement.innerHTML").indexOf('hs-doors{grid-template-columns:repeat(3')<0&&$("String(houseHTML)").indexOf('hs-door wide')>=0);
 t('the first door grid is On this house', $("String(houseHTML)").indexOf('On this house')>=0&&$("String(houseHTML)").indexOf('The rest of this house')>=0);
@@ -2155,6 +2155,28 @@ t('Coming up rows still open a booking', $("String(renderToday)").indexOf('openB
 t('Your houses keeps the sort pills for the tour', $("!!document.getElementById('ovSortRow')")===true&&$("String(renderOvSortRow)").indexOf('data-sort')>=0);
 t('Find a street lives with Your houses', SRC.indexOf('id="ovSearch"')>SRC.indexOf('id="ovBuildsHd"')&&$("document.getElementById('ovSearch').placeholder")==='Find a street');
 t('budget foot Done is still the tour tap', SRC.indexOf('id="budgetDoneBtn"')>=0&&SRC.indexOf('class="b1 b-go flex-1 btn btn-primary" id="budgetDoneBtn"')>=0);
+
+S('4A list screens');
+asBuilder();
+$("state.activeId='p2'");
+$('renderAll()');
+t('Documents has one primary', $("document.querySelectorAll('#filesDocs .btn-primary').length")===1);
+t('Documents primary is Add document', ($("document.querySelector('#filesDocs .btn-primary')")&&$("document.querySelector('#filesDocs .btn-primary').textContent")||'').indexOf('Add document')>=0);
+t('Documents list uses rows', $("document.querySelectorAll('#docList .row').length")>=1);
+t('Crews has one primary', $("document.querySelectorAll('#buildSubs .btn-primary').length")===1);
+t('Crews primary is Add a crew', ($("document.querySelector('#buildSubs .btn-primary')")&&$("document.querySelector('#buildSubs .btn-primary').textContent")||'').indexOf('Add a crew')>=0);
+t('Crews list uses rows', $("document.querySelectorAll('#subList .row').length")>=1);
+t('Photos has one primary', $("document.querySelectorAll('#filesPhotos .btn-primary').length")===1);
+$('renderSettings()');
+t('Settings body has no extra primary', $("document.querySelectorAll('#settingsBody .btn-primary').length")===0);
+t('Settings Sign out is danger', ($("document.querySelector('#settingsBody .btn-danger')")&&$("document.querySelector('#settingsBody .btn-danger').textContent")||'').indexOf('Sign out')>=0);
+t('rewritten screens dropped eyebrow and lbl', (function(){
+  const fns=['renderDocs','renderSubs','renderSettings','renderPhotos','renderDayLog'];
+  return fns.every(function(n){
+    const s=$("String("+n+")");
+    return s.indexOf('class="eyebrow"')<0&&s.indexOf("class='eyebrow'")<0&&s.indexOf('class="lbl"')<0&&s.indexOf("class='lbl'")<0;
+  });
+})());
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');

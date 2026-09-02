@@ -1,3 +1,5 @@
+**v2.368.0 is live.** Documents, Crews, Settings and Photos use rows and one primary. Sign out is danger. Same taps.
+
 **v2.367.0 is live.** Field Notes mark is 82x56 and readable on the dark button. Words, fill, place, and tap stay.
 
 **v2.366.0 is live.** Field Notes on the book is a full-width primary: the camera mark plus Write a field note. Same tap, same place under Needs you.

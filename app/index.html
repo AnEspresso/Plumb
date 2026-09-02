@@ -1972,6 +1972,15 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
    must become a block. Apply to .bgt-tot and its equivalents. ────────── */
 .hero-host{display:block;}
 .row-aside.warn{color:var(--clay);}
+.row-aside.ok{color:var(--sage);}
+.row-thumb{flex:none;width:48px;height:48px;border-radius:var(--r-sm);overflow:hidden;background:var(--surface-2);}
+.row-thumb img,.row-thumb svg{width:100%;height:100%;object-fit:cover;display:block;}
+button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;}
+.add-sub-btn.btn-primary{border-style:solid;border-color:transparent;background:var(--ink);color:var(--surface);}
+.cell .area{position:absolute;left:0;right:0;bottom:0;padding:var(--s-4) var(--s-2) var(--s-2);font-size:var(--t-xs);font-weight:600;
+  color:var(--white);background:linear-gradient(transparent, rgba(20,18,14,.55));}
+.list-danger{margin-top:var(--s-6);display:flex;flex-direction:column;gap:var(--s-2);}
+#docList > .sec:first-child,#subList > .sec:first-child,#settingsBody > .sec:first-child,.day-group:first-child .sec{margin-top:0;}
 .money-actions{display:flex;gap:var(--s-3);margin:var(--s-4) 0;align-items:stretch;}
 .money-actions .btn-primary{flex:1;}
 .bgt-tot .hero{margin:0;padding:0;}
@@ -3478,7 +3487,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
         <div class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
       </div>
       <div id="logHistory"></div>
-      <div class="eyebrow">Recent</div>
+      <div class="sec"><h2>Recent</h2></div>
       <div class="feed" id="feed"></div>
       <div class="copyright" id="copyright">© 2026 SitePlumb</div>
     </section>
@@ -3486,7 +3495,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
     <section class="view" id="view-files">
       <div class="seg seg-top"><button class="on" data-fl="photos" onclick="filesSeg('photos',this)">Photos</button><button data-fl="docs" onclick="filesSeg('docs',this)">Documents</button></div>
       <div id="filesPhotos" class="files-pane">
-      <button class="add-sub-btn mb-3 btn btn-secondary" onclick="openFieldNote()">Field Notes</button>
+      <button class="add-sub-btn mb-3 btn btn-primary" onclick="openFieldNote()">Field Notes</button>
       <div class="searchbar photo-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
         <input id="photoSearch" placeholder="Search photos by area or note…" oninput="renderPhotos()">
@@ -3498,7 +3507,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
         <input id="docSearch" placeholder="Search documents…" oninput="renderDocs()">
       </div>
-      <button class="add-sub-btn btn btn-secondary" onclick="openAddDoc()">
+      <button class="add-sub-btn btn btn-primary" onclick="openAddDoc()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         Add document
       </button>
@@ -3556,7 +3565,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
         </div>
       </div>
       <div id="buildSubs" class="build-pane" style="display:none">
-        <button class="add-sub-btn btn btn-secondary" onclick="openAddSub()">
+        <button class="add-sub-btn btn btn-primary" onclick="openAddSub()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Add a crew
         </button>
@@ -3832,15 +3841,15 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.367.0 - Field Notes mark is readable';
+const PLUMB_VERSION='2.368.0 - Documents Crews Settings and Photos use rows';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788638400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.367.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788724800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.368.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5181,8 +5190,8 @@ function renderPhotos(){
   const items=(visibleItems()||[]).filter(it=>it&&(!q||(it.area||'').toLowerCase().includes(q)||(it.cap||'').toLowerCase().includes(q)||(it.crew||'').toLowerCase().includes(q)));
   items.forEach(it=>{const d=Number.isFinite(+it.day)?+it.day:0;(byDay[d]=byDay[d]||[]).push(it);});
   const days=Object.keys(byDay).map(Number).sort((a,b)=>a-b);
-  wrap.innerHTML=days.map(day=>{const cells=byDay[day]||[];return `<div class="day-group"><div class="eyebrow mt-1">${dayLabel(day)}</div>
-    <div class="grid">${cells.map(it=>`<div class="cell" onclick='openLightbox(${it.id})'>${thumbHTML(it)}<div class="lbl">${esc(areaText(it.area))}</div></div>`).join('')}</div></div>`;}).join('')||`<div class="empty">${q?'No photos match “'+esc(q)+'”.':'No photos yet — snap one from the daily log and it files here by date & area.'}</div>`;
+  wrap.innerHTML=days.map(day=>{const cells=byDay[day]||[];return `<div class="day-group"><div class="sec"><h2>${dayLabel(day)}</h2></div>
+    <div class="grid">${cells.map(it=>`<div class="cell" onclick='openLightbox(${it.id})'>${thumbHTML(it)}<div class="area">${esc(areaText(it.area))}</div></div>`).join('')}</div></div>`;}).join('')||`<div class="empty">${q?'No photos match “'+esc(q)+'”.':'No photos yet — snap one from the daily log and it files here by date & area.'}</div>`;
 }
 function renderIssues(){
   const fil=visibleItems().filter(it=>it.issue&&it.status===issueFilter).sort((a,b)=>b.t-a.t);
@@ -5201,7 +5210,6 @@ let docTradeFilter='';
 function setDocFilter(t){docTradeFilter=t;renderDocs();}
 function renderDocs(){
   const q=(document.getElementById('docSearch').value||'').toLowerCase();
-  const icons={pdf:'<path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/>',plan:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>'};
   const docs=P().docs||[];
   const present=[...new Set(docs.map(d=>d.trade).filter(Boolean))].sort((a,b)=>specLabel(a).localeCompare(specLabel(b)));
   const filterEl=document.getElementById('docFilters');
@@ -5214,10 +5222,29 @@ function renderDocs(){
     .filter(({d})=>d.n.toLowerCase().includes(q)||(d.m||'').toLowerCase().includes(q)||(d.trade?specLabel(d.trade).toLowerCase().includes(q):false));
   const review=(P().mailReview||[]).filter(m=>m&&m.status==='review');
   const reviewBanner=review.length?`<div class="mail-review" onclick="openMailReview()"><div><div class="n">\u2709\uFE0F ${review.length} forwarded ${review.length===1?'item':'items'} to review</div><div class="d">Mail from a sender we don\u2019t recognize \u2014 tap to file or discard</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></div>`:'';
-  document.getElementById('docList').innerHTML=reviewBanner+(rows.map(({d,i})=>`
-    <div class="doc" onclick="openDoc(${i})"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[d.k]||icons.pdf}</svg></div>
-    <div class="info"><div class="n">${esc(d.n)}${d.trade?`<span class="doc-trade">${esc(specLabel(d.trade))}</span>`:''}<span class="doc-trade${docAudClient(d)?'':' gen'}" style="cursor:pointer${docAudClient(d)?';color:var(--clay);border-color:rgba(176,96,74,.32)':''}" onclick="event.stopPropagation();cycleDocAud(${i})" title="Tap to change who can see this">${DOC_AUD_LABEL[docAud(d)]}</span></div><div class="m">${esc(d.m||'')}${d.fileId?' \u00b7 file attached':''}</div></div>
-    <div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>`).join('')||`<div class="empty">${docs.length?'No matches.':'No documents yet. Add the contract, plans, permits and trade spec sheets here.'}</div>`);
+  function docRow(o){
+    const d=o.d,i=o.i;
+    const trade=d.trade?specLabel(d.trade):'Shared';
+    const sub=[trade,d.m||'',d.fileId?'file attached':''].filter(Boolean).join(' \u00b7 ');
+    const warn=docAudClient(d);
+    return '<div class="row row-tap" onclick="openDoc('+i+')"><div class="row-main"><div class="row-title">'+esc(d.n)+'</div><div class="row-sub">'+esc(sub)+'</div></div><span class="row-aside'+(warn?' warn':'')+'" onclick="event.stopPropagation();cycleDocAud('+i+')" title="Tap to change who can see this">'+esc(DOC_AUD_LABEL[docAud(d)]||'')+'</span><span class="row-chev">\u203a</span></div>';
+  }
+  let list='';
+  if(!rows.length){
+    list='<div class="empty">'+(docs.length?'No matches.':'No documents yet. Add the contract, plans, permits and trade spec sheets here.')+'</div>';
+  }else{
+    const trades=[...new Set(rows.map(function(o){return o.d.trade||'';}))];
+    if(trades.length>1){
+      trades.sort(function(a,b){if(!a)return 1;if(!b)return -1;return specLabel(a).localeCompare(specLabel(b));});
+      list=trades.map(function(t){
+        const rs=rows.filter(function(o){return (o.d.trade||'')===t;});
+        return '<div class="sec"><h2>'+esc(t?specLabel(t):'Shared')+'</h2></div>'+rs.map(docRow).join('');
+      }).join('');
+    }else{
+      list=rows.map(docRow).join('');
+    }
+  }
+  document.getElementById('docList').innerHTML=reviewBanner+list;
 }
 async function openDoc(i){
   const d=P().docs[i];if(!d)return;
@@ -5322,8 +5349,9 @@ function renderDayLog(){
   document.getElementById('logTitle').textContent=today?"Edit today's entry":"Add today's entry";
   document.getElementById('logSub').textContent='Crew, conditions, what got done';
   const wrap=document.getElementById('logHistory');if(!wrap)return;
-  wrap.innerHTML=logs.length?logs.map(l=>`<div class="loghist-item" onclick="openSheet(true,'${l.date}')">
-    <div class="d">${fmtLogDate(l.date)}</div><div class="x">${esc(l.text)}</div></div>`).join(''):'';
+  wrap.innerHTML=logs.length?logs.map(l=>`<div class="row row-tap" onclick="openSheet(true,'${l.date}')">
+    <div class="row-main"><div class="row-title">${fmtLogDate(l.date)}</div><div class="row-sub">${esc(l.text)}</div></div>
+    <span class="row-chev">\u203a</span></div>`).join(''):'';
 }
 function renderAll(){if(!P()){try{updateHeader();}catch(e){}return;}renderSiteSummary();renderFeed();renderDayLog();renderPhotos();renderIssues();renderDocs();renderBuild();renderSelections();}
 function renderSiteSummary(){
@@ -6630,6 +6658,7 @@ function startConverge(){
     <p class="c-ink-3 fs-xs mt-3 ml-0 mr-0 mb-0">Everything else fills in as you go — log a photo, set a stage, add a selection whenever it comes up.</p>`);
 }
 const SET_GEAR_ROW=(label,desc,onclick,icon)=>`<button class="set-row" onclick="${onclick}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg><div class="flex-1"><div>${label}</div>${desc?`<div class="sr-d">${desc}</div>`:''}</div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="u-m16"><path d="M9 6l6 6-6 6"/></svg></button>`;
+const SET_LIST_ROW=(label,desc,onclick)=>'<button type="button" class="row row-tap" onclick="'+onclick+'"><div class="row-main"><div class="row-title">'+label+'</div>'+(desc?'<div class="row-sub">'+desc+'</div>':'')+'</div><span class="row-chev">\u203a</span></button>';
 function openSettings(){try{tourPrefetch();tourUnlockAudio();}catch(e){}saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
 function closeSettings(){document.getElementById('settingsScrim').classList.remove('show');}
 function openCompany(){saveScroll('home');renderCompany();document.getElementById('companyScrim').classList.add('show');}
@@ -6645,52 +6674,51 @@ function renderCompany(){
 function renderSettings(){
   const el=document.getElementById('settingsBody');if(!el)return;
   const sess=state.session||{};const role=sess.role||'';
-  const I={team:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
-    subs:'<path d="M14 7h6m-3-3v6M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>',
-    home:'<path d="M3 11l9-8 9 8M5 9.5V21h14V9.5"/>',
-    tmpl:'<path d="M4 4h16v4H4zM4 12h7v8H4zM15 12h5v8h-5z"/>',
-    wiz:'<path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
-    how:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.33c-.7.27-.9.77-.9 1.42v.25M12 17h.01"/>',
-    dev:'<path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 5l-2 14"/>',
-    out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>'};
   let rows='';
   if(role==='builder'){
-    rows+='<div class="set-hd">Company</div>';
-    rows+=SET_GEAR_ROW('Company','People, calendar, invoices, new job','closeSettings();openCompany()','<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>');
+    rows+='<div class="sec"><h2>Company</h2></div>';
+    rows+=SET_LIST_ROW('Company','People, calendar, invoices, new job','closeSettings();openCompany()');
     if(appMode()==='real'){
       if(isOrgOwner()){
-        rows+=SET_GEAR_ROW('Selection templates','Build style & install spec sheets','closeSettings();openPeopleMode(\'templates\')',I.tmpl);
-        rows+=SET_GEAR_ROW('First-time setup','Re-run the setup questions','closeSettings();openSetup()',I.wiz);
+        rows+=SET_LIST_ROW('Selection templates','Build style & install spec sheets','closeSettings();openPeopleMode(\'templates\')');
+        rows+=SET_LIST_ROW('First-time setup','Re-run the setup questions','closeSettings();openSetup()');
       }
-      if(sess.rpRole==='owner'&&prefsPending())rows+=SET_GEAR_ROW('Review setup','Choices made by '+esc((orgPrefs()._prov||{}).by||'a team member')+' need your OK','closeSettings();openSetupReview()',I.wiz);
+      if(sess.rpRole==='owner'&&prefsPending())rows+=SET_LIST_ROW('Review setup','Choices made by '+esc((orgPrefs()._prov||{}).by||'a team member')+' need your OK','closeSettings();openSetupReview()');
     }else{
       rows+='<div class="empty pt-2 px-0 pb-3">Homeowner portals and templates manage your real company — switch to <b>Live</b> to use them.</div>';
     }
-    rows+='<div class="set-hd">This device</div>';
-    rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
-    rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>');
+    rows+='<div class="sec"><h2>This device</h2></div>';
+    rows+=SET_LIST_ROW('Notifications',Notify.permission()==='granted'?'On — issues, deadlines, invoices':'Tap to turn on','closeSettings();openNotifyCenter()');
+    rows+=SET_LIST_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeSettings();openPkLog()');
     if(walkAllowed()||appMode()==='demo'||onExcursion()){
-      rows+='<button type="button" id="replayTourBtn" class="b1 b-go w-full mt-2 ml-0 mr-0 mb-3 btn btn-primary" onclick="replayTour(event)">Replay the tour</button>';
+      rows+='<button type="button" id="replayTourBtn" class="btn btn-secondary btn-block mt-2 mb-3" onclick="replayTour(event)">Replay the tour</button>';
     }
     if(walkAllowed()){
-      rows+=SET_GEAR_ROW('Walkthrough studio','Play one beat. Check the orb and the card.','closeSettings();openTourStudio()',I.dev);
-      rows+=SET_GEAR_ROW('Classic walkthrough','The older house tour, saved','closeSettings();startTour(\'teamLegacy\')',I.how);
+      rows+=SET_LIST_ROW('Walkthrough studio','Play one beat. Check the orb and the card.','closeSettings();openTourStudio()');
+      rows+=SET_LIST_ROW('Classic walkthrough','The older house tour, saved','closeSettings();startTour(\'teamLegacy\')');
     }
-    rows+=SET_GEAR_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()',I.how);
-    if(devAllowed())rows+=SET_GEAR_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()',I.dev);
+    rows+=SET_LIST_ROW('Example build','Explore the demo anytime','closeSettings();enterDemo()');
+    if(devAllowed())rows+=SET_LIST_ROW('Workbench','Storage, sync & diagnostics','closeSettings();openDev()');
   }else{
-    rows+=SET_GEAR_ROW('Notifications',Notify.permission()==='granted'?'On':'Tap to turn on','closeSettings();openNotifyCenter()','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>');
-    if(role==='subs')rows+=SET_GEAR_ROW('My schedule','Your bookings & blocked time','closeSettings();openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
-    if(walkAllowed())rows+=SET_GEAR_ROW('How SitePlumb works','Take the guided tour','closeSettings();startTour(\''+(role==='client'?'client':'sub')+'\')',I.how);
+    rows+=SET_LIST_ROW('Notifications',Notify.permission()==='granted'?'On':'Tap to turn on','closeSettings();openNotifyCenter()');
+    if(role==='subs')rows+=SET_LIST_ROW('My schedule','Your bookings & blocked time','closeSettings();openCal()');
+    if(walkAllowed())rows+=SET_LIST_ROW('How SitePlumb works','Take the guided tour','closeSettings();startTour(\''+(role==='client'?'client':'sub')+'\')');
   }
-  rows+='<div class="set-hd">Account</div>';
+  rows+='<div class="sec"><h2>Account</h2></div>';
   const _fbn=(state.feedback||[]).filter(f=>!f.done).length;
-    rows+=SET_GEAR_ROW('Report a problem or idea',_fbn?(_fbn+' open '+(_fbn===1?'item':'items')):'Share a bug or suggestion with the team','closeSettings();openFeedback()','<path d="M8 8a4 4 0 0 1 8 0v3a4 4 0 0 1-8 0z"/><path d="M12 12v6M5 9H3m18 0h-2M5 15H3m18 0h-2M9 5 7 3m8 2 2-2"/>');
-  try{if(_evNeeded())rows+=SET_GEAR_ROW('Confirm your email','Unconfirmed - this is what makes Forgot password work','closeSettings();evOpenFromSettings()','<path d="M3 6h18v12H3z"/><path d="m3 7 9 6 9-6"/>');}catch(e){}
-  rows+=SET_GEAR_ROW('Privacy &amp; legal','Policies, your data &amp; account deletion','closeSettings();openLegal()','<path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9.5 12.5l2 2 3.5-4"/>');
-  rows+=SET_GEAR_ROW('Sign out','','closeSettings();logout()',I.out);
+  rows+=SET_LIST_ROW('Report a problem or idea',_fbn?(_fbn+' open '+(_fbn===1?'item':'items')):'Share a bug or suggestion with the team','closeSettings();openFeedback()');
+  try{if(_evNeeded())rows+=SET_LIST_ROW('Confirm your email','Unconfirmed - this is what makes Forgot password work','closeSettings();evOpenFromSettings()');}catch(e){}
+  rows+=SET_LIST_ROW('Privacy & legal','Policies, your data & account deletion','closeSettings();openLegal()');
+  rows+='<div class="list-danger">';
+  rows+='<button type="button" class="btn btn-danger btn-block" onclick="closeSettings();logout()">Sign out</button>';
+  try{
+    if(_isLiveAccount())rows+='<button type="button" class="btn btn-danger btn-block" onclick="closeSettings();openDeleteAccount()">Delete account</button>';
+    else if(state.session&&state.session.mode==='real'&&(laProfile()||{}).provider==='local')rows+='<button type="button" class="btn btn-danger btn-block" onclick="closeSettings();eraseLocalAccount()">Delete account</button>';
+  }catch(e){}
+  rows+='</div>';
   rows+='<div class="set-ver">SitePlumb '+esc(PLUMB_VERSION)+'</div>';
   el.innerHTML=rows;}
+
 function openEditSites(){renderEditSites();document.getElementById('esScrim').classList.add('show');}
 function closeEditSites(){document.getElementById('esScrim').classList.remove('show');}
 function renderEditSites(){
@@ -13456,22 +13484,22 @@ function renderSubs(){
   const match=s=>!q||(s.name||'').toLowerCase().includes(q)||(specLabel(s.specialty)||'').toLowerCase().includes(q)||(s.phone||'').toLowerCase().includes(q);
   const groups={};P().subs.filter(match).forEach(s=>{(groups[s.specialty]=groups[s.specialty]||[]).push(s);});
   const order=SPECIALTIES.filter(sp=>groups[sp.id]);
-  const peopleHTML='';
-  document.getElementById('subList').innerHTML=peopleHTML+(order.length?order.map(sp=>`
-    <div class="spec-group">
-      <div class="spec-head"><span class="nm">${esc(sp.label)}</span>${curTrades.includes(sp.id)?'<span class="ondeck">On deck</span>':''}</div>
-      ${groups[sp.id].map(s=>{
-        const openN=visibleItems().filter(it=>it.crew===sp.label&&it.issue&&it.status==='open').length;
-        const inv=appMode()==='real'?((P().invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked')):null;
-        const invHTML=appMode()!=='real'?'' : inv?(inv.status==='joined'?'<span class="cleared">In SitePlumb</span>':'<span class="cleared op-65">Invited</span>')
-          :`<button class="rm c-oak" onclick="createInvite('sub','${s.id}')" title="Invite to SitePlumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg></button>`;
-        return `<div class="subrow">
-          <div class="si cur-p" onclick="openSubDetail('${s.id}')"><div class="n">${esc(s.name)}</div><div class="d">${s.phone?esc(s.phone)+' · ':''}${openN?openN+' open item'+(openN===1?'':'s'):'no open items'}</div></div>
-          ${s.cleared?`<span class="cleared">Cleared</span>`:''}<button class="rm c-oak" onclick="openPacket('${s.id}')" title="Install packet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9zM9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 11h6M9 15h6"/></svg></button>${invHTML}
-          <button class="rm" onclick="removeSub('${s.id}')" title="Remove">${ICON.trash}</button>
-        </div>`;}).join('')}
-    </div>`).join(''):(q?`<div class="empty">No crews match “${esc(subQuery.trim())}”.</div>`:`<div class="empty">No crews yet. Add your crews so they are ready when a stage comes up.</div>`));
+  document.getElementById('subList').innerHTML=(order.length?order.map(sp=>{
+    const head='<div class="sec"><h2>'+esc(sp.label)+'</h2>'+(curTrades.includes(sp.id)?'<span class="sec-act">On deck</span>':'')+'</div>';
+    const rows=groups[sp.id].map(s=>{
+      const openN=visibleItems().filter(it=>it.crew===sp.label&&it.issue&&it.status==='open').length;
+      const inv=appMode()==='real'?((P().invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked')):null;
+      const bits=[specLabel(s.specialty),s.phone||'',openN?openN+' open item'+(openN===1?'':'s'):'no open items'];
+      if(appMode()==='real'){
+        if(inv&&inv.status==='joined')bits.push('In SitePlumb');
+        else if(inv)bits.push('Invited');
+      }
+      return '<div class="row row-tap" onclick="openSubDetail(\''+s.id+'\')"><div class="row-main"><div class="row-title">'+esc(s.name)+'</div><div class="row-sub">'+esc(bits.filter(Boolean).join(' \u00b7 '))+'</div></div><span class="row-aside'+(s.cleared?' ok':' warn')+'">'+(s.cleared?'Cleared':'Not cleared')+'</span><button type="button" class="btn btn-quiet" onclick="event.stopPropagation();openPacket(\''+s.id+'\')">Packet</button><span class="row-chev">\u203a</span></div>';
+    }).join('');
+    return head+rows;
+  }).join(''):(q?'<div class="empty">No crews match \u201c'+esc(subQuery.trim())+'\u201d.</div>':'<div class="empty">No crews yet. Add your crews so they are ready when a stage comes up.</div>'));
 }
+
 function inspOf(stId){return (P().inspections&&P().inspections[stId])||'pending';}
 function inspMetaOf(id){return (P().inspMeta&&P().inspMeta[id])||{};}
 function cycleInspection(inspId){const next=INSP_NEXT[inspOf(inspId)]||'pending';Data.setInspection(inspId,next);logEvent('inspection',inspId+' → '+next);renderBuild();toast((INSP_LABEL[inspId]||'Inspection')+' inspection: '+next);}
@@ -14320,8 +14348,10 @@ function openSubDetail(id){const p=P();const s=p&&(p.subs||[]).find(x=>x.id===id
     +row('License #',s.license)
     +(access?row('Live access',access):'')
     +`</div>`;
-  if(s.notes)h+=`<div class="lbl mt-3">Notes</div><div class="sd-notes">${esc(s.notes)}</div>`;
+  if(s.notes)h+=`<div class="meta mt-3">Notes</div><div class="sd-notes">${esc(s.notes)}</div>`;
+  h+=`<button class="btn btn-secondary btn-block mt-3" onclick="closeSubDetail();openPacket('${s.id}')">Open packet</button>`;
   if(appMode()==='real'&&!inv)h+=`<button class="add-sub-btn mt-3 btn btn-secondary" onclick="closeSubDetail();createInvite('sub','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite ${esc(s.name)} to SitePlumb…</button>`;
+    h+=`<button class="btn btn-danger btn-block mt-2" onclick="closeSubDetail();removeSub('${s.id}')">Remove from this house</button>`;
   document.getElementById('sdBody').innerHTML=h;
   document.getElementById('subDetailScrim').classList.add('show');}
 function closeSubDetail(){document.getElementById('subDetailScrim').classList.remove('show');}

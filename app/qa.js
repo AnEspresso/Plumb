@@ -220,6 +220,42 @@ async function tappable(page,sel){
   t('Field Notes mark is large enough to read',fnMark.ok,fnMark.why);
   await shot(page,'04-overview');
 
+  await page.evaluate(()=>{try{demoRole('builder');state.activeId='p2';nyOpenHouse('p2');houseGoDesk('docs');}catch(e){}});
+  await new Promise(r=>setTimeout(r,250));
+  const docTap=await tappable(page,'#filesDocs .btn-primary');
+  t('Documents primary tappable',docTap.ok,docTap.why);
+  const docName=await page.evaluate(()=>{const el=document.querySelector('#filesDocs .btn-primary');return (el&&(el.innerText||el.getAttribute('aria-label')||'')).replace(/\s+/g,' ').trim();});
+  t('Documents primary is named',!!docName&&docName.indexOf('Add document')>=0,docName);
+
+  await page.evaluate(()=>{try{houseGoDesk('crews');}catch(e){}});
+  await new Promise(r=>setTimeout(r,250));
+  const crewTap=await tappable(page,'#buildSubs .btn-primary');
+  t('Crews primary tappable',crewTap.ok,crewTap.why);
+  const crewName=await page.evaluate(()=>{const el=document.querySelector('#buildSubs .btn-primary');return (el&&(el.innerText||el.getAttribute('aria-label')||'')).replace(/\s+/g,' ').trim();});
+  t('Crews primary is named',!!crewName&&crewName.indexOf('Add a crew')>=0,crewName);
+
+  await page.evaluate(()=>{try{exitHouseDesk();closeHouse();openSiteFromOverview('p2');go('files');filesSeg('photos');}catch(e){}});
+  await new Promise(r=>setTimeout(r,250));
+  await page.evaluate(()=>{const el=document.querySelector('#filesPhotos .btn-primary');if(el)el.scrollIntoView({block:'center'});});
+  const phTap=await tappable(page,'#filesPhotos .btn-primary');
+  t('Photos primary tappable',phTap.ok,phTap.why);
+  const phName=await page.evaluate(()=>{const el=document.querySelector('#filesPhotos .btn-primary');return (el&&(el.innerText||el.getAttribute('aria-label')||'')).replace(/\s+/g,' ').trim();});
+  t('Photos primary is named',!!phName,phName);
+
+  await page.evaluate(()=>{try{openSettings();}catch(e){}});
+  await new Promise(r=>setTimeout(r,200));
+  const setDone=await tappable(page,'#settingsScrim .sheet-foot .btn-primary');
+  t('Settings Done tappable',setDone.ok,setDone.why);
+  const setDoneName=await page.evaluate(()=>{const el=document.querySelector('#settingsScrim .sheet-foot .btn-primary');return (el&&(el.innerText||el.getAttribute('aria-label')||'')).replace(/\s+/g,' ').trim();});
+  t('Settings Done is named',!!setDoneName,setDoneName);
+  await page.evaluate(()=>{
+    try{closeSettings();}catch(e){}
+    try{exitHouseDesk();}catch(e){}
+    try{closeHouse();}catch(e){}
+    try{showOverview();renderToday();}catch(e){}
+    try{demoRole('builder');}catch(e){}
+  });
+
   await page.evaluate(()=>{state.activeId='p9';demoRole('subs');});
   await new Promise(r=>setTimeout(r,200));
   t('sub chip on Orchard Row is Ridgeline', await page.evaluate(()=>state.session.name)==='Ridgeline Plumbing');
