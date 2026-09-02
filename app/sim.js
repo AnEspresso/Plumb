@@ -223,7 +223,7 @@ t('client attaches only its five colls', $("__g.attached.join()")==='items,bk,se
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
-t('SEED_VERSION 19',$('SEED_VERSION')===19);
+t('SEED_VERSION 20',$('SEED_VERSION')===20);
 t('10 seed sites',$('state.projects.length')===10);
 t('no boot errors',w.__thrown.length===0,w.__thrown[0]);
 
@@ -668,7 +668,7 @@ $("Data.removeCost(costLines(P()).find(l=>l.label==='Gutters & downspouts').id)"
 t('cleanup', $("costLines(P()).length")===16);
 $("Object.defineProperty(window,'innerWidth',{value:390,configurable:true})");
 $('renderBudget()');
-t('narrow width returns the phone list', el('budgetBody').innerHTML.includes('bgt-row'));
+t('narrow width returns the phone list', el('budgetBody').innerHTML.includes('row-tap')&&el('budgetBody').innerHTML.includes('Log a cost'));
 $('closeBudget()');
 
 /* ════ 14e · PHASE D: ACCOUNTANT CSV + SELECTION MARGIN LINK ════ */
@@ -1106,7 +1106,7 @@ t('removing a booking clears its Needs You card', (function(){
 t('leaving the calendar redraws Needs You', $("String(closeCal)").indexOf('renderToday')>=0);
 t('Needs You names the kind of work', $("String(_nyIssues)").indexOf('Date change')>=0&&$("String(_nyIssues)").indexOf('Question')>=0);
 t('Needs You covers the six new kinds', $("String(_nyIssues)").indexOf('The crew declined')>=0&&$("String(_nyIssues)").indexOf('Waiting on this crew')>=0&&$("String(_nyIssues)").indexOf('Site not ready')>=0&&$("String(_nyIssues)").indexOf('Homeowner wrote you')>=0&&$("String(_nyIssues)").indexOf('On deck, not booked')>=0&&$("String(_nyOnDeck)").indexOf('prevDone')>=0);
-t('Show all and Recent decisions are separate actions', $("String(renderOvCards)").indexOf('openPkLog')>=0&&$("String(renderToday)").indexOf('toggleSoon')>=0);
+t('Show all and Recent decisions are separate actions', $("String(renderOvCards)").indexOf('openPkLog')>=0&&$("String(renderToday)").indexOf('openCal')>=0);
 t('untagged site files stay out of a trade packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Construction Contract.pdf'})")===false);
 t('a trade-tagged plan is in that packet', $("docInPacket({docHidden:{},docShown:{}},'plumb',{n:'Plumbing Rough-In Plan.pdf',trade:'plumb'})")===true);
 t('the packet is a briefing with still-open first', $("String(packetHTML)").indexOf('pkt-strip')>=0&&$("String(packetHTML)").indexOf('For the truck')>=0&&$("String(pktAsk)").indexOf('No dates on the calendar')>=0);
@@ -1133,7 +1133,7 @@ t('Needs You is one card per house', (function(){
   const n=$("(function(){var hs=[].slice.call(document.querySelectorAll('#ovCards .ov-card .st')).map(function(el){return el.textContent;});return hs.filter(function(x){return x.indexOf('Calderwood')>=0;}).length;})()");
   return n===1;
 })());
-t('Attention uses Needs You language', $("String(renderOvCards)").indexOf('needs you')>=0&&$("String(renderOvCards)").indexOf("_ovSort==='attn'")>=0&&$("SORTLABELS.attn")==='Needs You');
+t('Attention uses Needs You language', $("String(renderOvCards)").indexOf('needs you')>=0&&$("String(renderOvCards)").indexOf("_ovSort==='attn'")>=0&&$("SORTLABELS.attn")==='Needs you');
 t('empty company does not show All houses', $("String(renderOvCards)").indexOf('if(projs.length&&!q)')>=0&&$("String(renderOvCards)").indexOf('The book is empty')>=0);
 t('empty book hides field notes', $("String(renderToday)").indexOf('if(!projs.length)')>=0);
 t('empty book hides houses header', $("String(renderOverview)").indexOf("hd.style.display=projs.length")>=0);
@@ -1196,7 +1196,7 @@ t('clipboard writeText is promise-aware', !SRC.split('clipboard.writeText(').sli
   const head=chunk.slice(0,120);
   return /toast\(/.test(head) && !/\.then\(/.test(head);
 }));
-t('Money lists invoices as rows', SRC.indexOf('function moneyBillHTML')>=0&&SRC.indexOf('moneyNewInvoice')>=0&&SRC.indexOf('+ Invoice')>=0);
+t('Money lists invoices as rows', SRC.indexOf('function moneyBillHTML')>=0&&SRC.indexOf('moneyNewInvoice')>=0&&SRC.indexOf('Send an invoice')>=0&&SRC.indexOf('function openChoice')>=0);
 t('calendar shout says double-booked', SRC.indexOf('is double-booked')>=0&&SRC.indexOf('function bkRenderOverlap')>=0);
 t('website lookup reads the site', SRC.indexOf('function parseSiteFacts')>=0&&SRC.indexOf('function guessTrade')>=0&&SRC.indexOf('function applySiteUrl')>=0);
 t('walkthrough has spoken scripts', SRC.indexOf("f:'s1a'")>=0&&SRC.indexOf('function tourWarmVoice')>=0&&SRC.indexOf('function tourChunks')>=0);
@@ -1207,7 +1207,7 @@ t('walkthrough studio and cues', SRC.indexOf('function openTourStudio')>=0&&SRC.
 t('walk hear tools', SRC.indexOf('function tourTrace')>=0&&SRC.indexOf('function tourPrefetch')>=0&&SRC.indexOf('_tourEl')>=0&&SRC.indexOf('play-ac')>=0);
 t('walk see tools', SRC.indexOf('function tourSeeSnap')>=0&&SRC.indexOf('__tourSee')>=0);
 t('the house list pills are Needs You, decisions, A-Z', $("SORTLABELS.recent")==='Recent decisions'&&$("String(renderOvSortRow)").indexOf('ov-allpill')<0);
-t('coming up more this week expands', $("String(renderToday)").indexOf('toggleSoon')>=0&&$("String(renderToday)").indexOf('td-morebtn')>=0);
+t('coming up rest of week is Calendar', $("String(renderToday)").indexOf('openCal')>=0&&$("String(renderToday)").indexOf('comingUpItems')>=0&&$("String(renderToday)").indexOf('Calendar')>=0);
 t('the day sheet sits over the calendar', SRC.indexOf('#dayScrim,#idleScrim,#invScrim,#payScrim{z-index:var(--z-sheet-2);}')>=0&&SRC.indexOf('#calview{z-index:var(--z-nav);}')>=0&&SRC.indexOf('--z-sheet-2:210')>=0&&SRC.indexOf('--z-nav:100')>=0);
 t('back to a list keeps your place', $("String(nyOpenHouse)").indexOf("saveScroll('home')")>=0&&$("String(houseLeave)").indexOf("saveScroll('house')")>=0&&$("String(showOverview)").indexOf('applyScroll')>=0&&$("String(closeHouse)").indexOf("applyScroll('home')")>=0);
 t('A-Z keeps the portfolio card', $("String(renderOvCards)").indexOf('localeCompare')>=0&&$("String(renderOvCards)").indexOf('nyCardBits')>=0);
@@ -2097,6 +2097,53 @@ t('unpicking the room hands Whole House back', $("window.__W.disabled")===false)
 $("_simClearChips()");$("closeSheet()");
 $("delete window.__W;delete window.__R;delete window.__R2");
 asBuilder();
+
+/* ════ 14u · MONEY HERO + CALMER HOME ════ */
+S('money hero + home');
+t('openChoice is a reusable sheet', $("typeof openChoice")==='function'&&$("typeof closeChoice")==='function'&&SRC.indexOf('id="choiceScrim"')>=0);
+t('needs you and coming up are extracted once', $("typeof needsYouItems")==='function'&&$("typeof comingUpItems")==='function'&&SRC.split('function needsYouItems').length===2&&SRC.split('function comingUpItems').length===2);
+t('renderToday calls both collectors', $("String(renderToday)").indexOf('needsYouItems')>=0&&$("String(renderToday)").indexOf('comingUpItems')>=0);
+t('needsYouItems does not duplicate collectors', $("String(needsYouItems)").indexOf('_nyIssues')>=0&&$("String(needsYouItems)").indexOf('_nyOnDeck')<0&&$("String(needsYouItems)").indexOf('_pkChangeOpen')<0);
+t('Needs You skips closed field issues', $("String(_nyIssues)").indexOf("status==='done'")>=0&&$("String(_nyIssues)").indexOf("status==='closed'")>=0);
+t('Money More opens the choice sheet', $("String(moneyMore)").indexOf('openChoice')>=0&&$("String(moneyMore)").indexOf('Add a budget line')>=0&&$("String(moneyMore)").indexOf('Send an invoice')>=0&&$("String(moneyMore)").indexOf('Record a payment')>=0);
+t('Money primary is Log a cost', $("String(moneyActionsHTML)").indexOf('Log a cost')>=0&&$("String(moneyActionsHTML)").indexOf('btn-primary')>=0&&$("String(renderBudget)").indexOf('moneyActionsHTML')>=0);
+t('Money lines are rows', $("String(renderBudget)").indexOf('moneyLineRowHTML')>=0&&$("String(moneyLineRowHTML)").indexOf('row-tap')>=0);
+asBuilder();
+$('enterDemo()');
+$("Object.defineProperty(window,'innerWidth',{value:390,configurable:true})");
+$("state.activeId='p8'");
+$('openBudget()');
+t('over house money hero is clay', !!el('budgetBody').querySelector('.hero-n.warn')&&el('budgetBody').innerHTML.indexOf('Over budget')>=0);
+t('Money body has one primary', $("document.querySelectorAll('#budgetBody .btn-primary').length")===1);
+t('Log a cost is the on-screen primary', /Log a cost/.test((el('budgetBody').querySelector('.btn-primary')||{textContent:''}).textContent));
+$('closeBudget()');
+$("state.activeId='p4'");
+$('openBudget()');
+t('even house money hero is sage', !!el('budgetBody').querySelector('.hero-n.ok')&&el('budgetBody').innerHTML.indexOf('On budget')>=0);
+t('empty-budget Money body still one primary', $("document.querySelectorAll('#budgetBody .btn-primary').length")===1);
+$('closeBudget()');
+$("state.activeId='p2'");
+$('openBudget()');
+t('Calderwood Money body still one primary', $("document.querySelectorAll('#budgetBody .btn-primary').length")===1);
+$('moneyMore()');
+t('More opens the choice sheet', el('choiceScrim').classList.contains('show')&&el('choiceBody').innerHTML.indexOf('Add a budget line')>=0&&el('choiceBody').innerHTML.indexOf('Send an invoice')>=0&&el('choiceBody').innerHTML.indexOf('Record a payment')>=0);
+$('closeChoice()');
+$('closeBudget()');
+$('showOverview()');
+$('renderToday()');
+t('overview today has no primary button', $("document.querySelectorAll('#ovToday .btn-primary').length")===0);
+t('Needs you on first screen is at most three', $("document.querySelectorAll('#ovToday .ny-home-row').length")<=3);
+t('Field Notes card is on home after Needs you', (function(){
+  const h=$("document.getElementById('ovToday').innerHTML");
+  const ny=h.indexOf('Needs you');
+  const fn=h.indexOf('ov-field');
+  const cu=h.indexOf('Coming up');
+  return ny>=0&&fn>ny&&(cu<0||cu>fn)&&$("!!document.querySelector('#ovToday .ov-field')")===true;
+})());
+t('Coming up rows still open a booking', $("String(renderToday)").indexOf('openBk')>=0&&$("String(renderToday)").indexOf('ov-coming')>=0);
+t('Your houses keeps the sort pills for the tour', $("!!document.getElementById('ovSortRow')")===true&&$("String(renderOvSortRow)").indexOf('data-sort')>=0);
+t('Find a street lives with Your houses', SRC.indexOf('id="ovSearch"')>SRC.indexOf('id="ovBuildsHd"')&&$("document.getElementById('ovSearch').placeholder")==='Find a street');
+t('budget foot Done is still the tour tap', SRC.indexOf('id="budgetDoneBtn"')>=0&&SRC.indexOf('class="b1 b-go flex-1 btn btn-primary" id="budgetDoneBtn"')>=0);
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');

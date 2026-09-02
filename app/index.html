@@ -950,12 +950,12 @@
   .ov-card.allh .st{font-size:var(--t-sm);font-weight:700;color:var(--ink-3);}
   .ov-card.allh .nm{font-family:'Source Serif 4',Georgia,serif;font-size:var(--t-lg);font-weight:600;color:var(--ink);margin-top:var(--s-1);letter-spacing:-.015em;line-height:1.3;}
   .ov-allhot{font-size:var(--t-sm);color:var(--ink-2);margin-top:var(--s-1);line-height:1.4;}
-  .ov-field{display:flex;align-items:center;justify-content:center;width:158px;height:102px;
-    background:var(--surface);color:var(--ink);border:1.5px solid var(--oak);border-radius:var(--r);padding:var(--s-2) var(--s-2);margin:var(--s-1) auto var(--s-4);
+  .ov-field{display:flex;align-items:center;justify-content:center;width:136px;height:88px;
+    background:var(--surface);color:var(--ink);border:1.5px solid var(--oak);border-radius:var(--r);padding:var(--s-2) var(--s-2);margin:var(--s-4) auto;
     font-family:inherit;cursor:pointer;box-shadow:none;position:relative;overflow:hidden;
     transition:transform .18s cubic-bezier(.2,.7,.2,1);}
   .ov-field::before{display:none;}
-  .ov-field .cam{position:relative;width:136px;height:84px;display:block;}
+  .ov-field .cam{position:relative;width:118px;height:74px;display:block;}
   .ov-field:active{transform:scale(.975);}
   .ov-people{display:block;width:100%;margin:0 0 var(--s-4);border:1.5px solid var(--line);background:var(--surface);color:inherit;border-radius:var(--r);padding:var(--s-3) var(--s-4);text-align:left;font:inherit;cursor:pointer;box-shadow:var(--shadow);}
   .ov-people:active{transform:scale(.98);}
@@ -1150,7 +1150,7 @@
   /* overview builds header + edit-sites pill + idle/search (all screen sizes) */
   .ov-builds-hd{margin-bottom:var(--s-3);}
   .ov-builds-hd::after{display:none;}
-  .eb-line{flex:1;height:1px;background:var(--line);}
+  .eb-line{display:none;}
   .ov-editbtn{display:inline-flex;align-items:center;gap:6px;flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:var(--s-2) var(--s-3);font-family:inherit;font-size:var(--t-xs);font-weight:600;letter-spacing:.01em;text-transform:none;cursor:pointer;box-shadow:var(--shadow);transition:transform .12s ease,border-color .15s ease;}
   .ov-editbtn:active{transform:scale(.95);border-color:var(--oak);}
   .ov-editbtn svg{width:14px;height:14px;color:var(--oak);flex:none;}
@@ -1262,7 +1262,7 @@
     .ov-week .cal-dow span{font-size:var(--t-xs);}
     .ov-week .cal-day{min-height:52px;border-radius:var(--r-sm);padding:var(--s-1) var(--s-1) var(--s-1);}
     .ov-week .cal-bar{height:5px;}
-    .ov-list .ov-today{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 20px;margin:0 0 var(--s-4);}
+    .ov-list .ov-today{display:block;margin:0 0 var(--s-4);}
     .ov-list .ov-field{width:128px;height:84px;margin:0;border-radius:var(--r);}
     .ov-list .ov-field .cam{width:112px;height:70px;}
     .ov-list .ov-coming{flex:1;min-width:180px;margin:0;}
@@ -1659,7 +1659,7 @@
 .bgt-cardgrid b.ov{color:var(--clay)}
 .bgt-cardgrid span{color:var(--ink-3);font-size:var(--t-xs);}
 .bgt-open{display:flex;justify-content:flex-end;align-items:center;gap:3px;margin-top:var(--s-2);color:var(--ink-2);font-size:var(--t-sm);font-weight:600}
-.bgt-tot{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin:var(--s-1) 0 var(--s-4);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s-4) var(--s-4);text-align:center}
+.bgt-tot{display:block;margin:var(--s-1) 0 var(--s-4);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s-4) var(--s-4);text-align:left}
 .bgt-tot b{display:block;font-size:var(--t-lg)}
 .bgt-tot b.bgt-em{font-size:var(--t-xl)}
 .bgt-tot b.bgt-em.over{color:var(--clay)}
@@ -1963,6 +1963,12 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
    must become a block. Apply to .bgt-tot and its equivalents. ────────── */
 .hero-host{display:block;}
 .row-aside.warn{color:var(--clay);}
+.money-actions{display:flex;gap:var(--s-3);margin:var(--s-4) 0;align-items:stretch;}
+.money-actions .btn-primary{flex:1;}
+.bgt-tot .hero{margin:0;padding:0;}
+.ov-today > .sec:first-child{margin-top:0;}
+.ov-houses-tools{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-3);flex-wrap:wrap;}
+.ov-houses-tools #ovSortRow{flex:1;min-width:0;margin:0;display:flex;}
 
 
 /* ── Step-3 utilities (migration) ─────────────────────────────────── */
@@ -2553,9 +2559,9 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
       <aside id="ovWeek" class="ov-week" hidden></aside>
       <div class="ov-list">
       <div id="ovToday" class="ov-today"></div>
-      <div class="eyebrow ov-builds-hd"><span id="ovBuildsHd">Active Builds</span><span class="eb-line"></span><button class="ov-editbtn" onclick="openEditSites()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit houses</button></div>
+      <div class="sec ov-builds-hd"><h2 id="ovBuildsHd">Your houses</h2><button type="button" class="sec-act" onclick="openNewSite()">Add a house</button></div>
       <input id="ovSearch" class="ov-search" placeholder="Find a street" oninput="renderOvCards()" style="display:none" autocomplete="off" autocorrect="off">
-      <div class="ov-sortrow" id="ovSortRow"></div>
+      <div class="ov-houses-tools"><div class="ov-sortrow" id="ovSortRow"></div><button class="ov-editbtn" onclick="openEditSites()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button></div>
       <div id="ovCards"></div>
       <div class="ov-foot-spacer" aria-hidden="true"></div>
       </div>
@@ -3359,6 +3365,15 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 <div class="row2 mt-1 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAddDoc()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveDoc()">Add document</button></div></div>
   </div>
 
+  <div class="pmodal-scrim sheet-scrim sheet-2" id="choiceScrim">
+    <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="closeChoice()"></div>
+      <div class="sheet-head"><h4 id="choiceTitle">Choose</h4><button type="button" class="btn btn-quiet" onclick="closeChoice()">Done</button></div>
+<div class="sheet-body">
+<div id="choiceBody"></div>
+</div>
+</div>
+  </div>
+
   <div class="pmodal-scrim sheet-scrim sheet-2" id="promptScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
       <div class="sheet-head"><h4 id="promptTitle">Add</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
@@ -3808,15 +3823,15 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.364.0 - One sheet, three button roles, sentence-case sections, house words, five z layers';
+const PLUMB_VERSION='2.365.0 - Money hero and a calmer home screen';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788379200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.364.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788465600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.365.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -3949,7 +3964,7 @@ function permitStatusFor(i,n,r){const phase=n>1?i/(n-1):0;if(r>=phase+0.15)retur
 function normalizePermits(p){if(p.permits)p.permits=p.permits.filter(pm=>!LEGACY_INSP_PERMITS.has(pm.name));if(p._permitsSeeded)return;const SS=stagesFor(p);const done=SS.filter(s=>p.stageDone&&p.stageDone[s.id]).length;const r=done/SS.length;const ex={};(p.permits||[]).forEach(pm=>{ex[pm.name]=pm.status;});p.permits=DEFAULT_PERMITS.map((name,i)=>({name,status:ex[name]||(done===0?'Not started':permitStatusFor(i,DEFAULT_PERMITS.length,r))}));p._permitsSeeded=true;}
 const SW={oak:'#C7A878,#9A7544',slate:'#8C9AA6,#5E6B78',dove:'#E4DFD5,#C9C2B4',clay:'#C08068,#9A5A44',sage:'#9AA47E,#717C55',dark:'#54504A,#33302B'};
 
-const SEED_VERSION=19; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
+const SEED_VERSION=20; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
 function sampleState(){
   const D=864e5; // one day in ms
   const ds=n=>{const x=new Date(Date.now()-n*D);const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());};
@@ -4099,8 +4114,8 @@ function sampleState(){
           {id:1,cap:'Cabinets set, quartz counters templated',area:'Kitchen',crew:'Finish Carpentry',issue:false,sw:'dove',t:Date.now()-14*D,day:96,sample:true},
           {id:2,cap:'White oak flooring installed and finished throughout main level',area:'Whole House',crew:'Flooring / Tile',issue:false,sw:'oak',t:Date.now()-9*D,day:101,sample:true,share:true},
           {id:3,cap:'Interior paint complete, final coat on trim',area:'Whole House',crew:'Paint',issue:false,sw:'dove',t:Date.now()-5*D,day:105,sample:true,share:true},
-          {id:4,cap:'Primary bath cabinet door misaligned — adjust hinge before walkthrough',area:'Primary Bath',crew:'Finish Carpentry',issue:true,status:'open',sw:'clay',t:Date.now()-2*D,day:108,sample:true},
-          {id:5,cap:'Touch-up paint needed at stair wall scuff',area:'Whole House',crew:'Paint',issue:true,status:'open',sw:'slate',t:Date.now()-15e5,day:108,sample:true},
+          {id:4,cap:'Primary bath cabinet door misaligned — adjust hinge before walkthrough',area:'Primary Bath',crew:'Finish Carpentry',issue:true,status:'done',sw:'clay',t:Date.now()-2*D,day:108,sample:true},
+          {id:5,cap:'Touch-up paint needed at stair wall scuff',area:'Whole House',crew:'Paint',issue:true,status:'done',sw:'slate',t:Date.now()-15e5,day:108,sample:true},
           {id:6,cap:'Regrade low spot at NW downspout for positive drainage',area:'Grading',crew:'Landscaping / Grading',issue:true,status:'done',sw:'sage',t:Date.now()-3*D,day:107,sample:true},
           {id:7,cap:'Light fixtures hung, electrical trim-out complete',area:'Whole House',crew:'Electrical',issue:false,sw:'dark',t:Date.now()-7*D,day:103,sample:true,share:true}
         ],
@@ -4166,7 +4181,7 @@ function sampleState(){
         id:'p4', sample:true, name:'Maple Court Spec', street:'92 Maple Court', city:'Royal Oak',
         items:[
           {id:1,cap:'Foundation walls poured and stripped, slab on grade complete',area:'Foundation',crew:'Concrete / Masonry',issue:false,sw:'dark',t:Date.now()-19*D,day:8,sample:true},
-          {id:2,cap:'Revised truss package not released by designer — framing on hold',area:'Framing',crew:'Framing',issue:true,status:'open',sw:'clay',t:Date.now()-16*D,day:9,sample:true},
+          {id:2,cap:'Revised truss package not released by designer — framing on hold',area:'Framing',crew:'Framing',issue:true,status:'done',sw:'clay',t:Date.now()-16*D,day:9,sample:true},
           {id:3,cap:'Lender draw inspection for foundation completed',area:'Foundation',crew:'',issue:false,sw:'sage',t:Date.now()-17*D,day:8,sample:true}
         ],
         logs:[
@@ -4266,7 +4281,7 @@ function sampleState(){
         items:[
           {id:1,cap:'First-floor walls framed and plumbed, sheathing started',area:'Framing',crew:'Framing',issue:false,sw:'oak',t:Date.now()-5*D,day:24,sample:true,share:true},
           {id:2,cap:'Second-floor deck set, stair opening framed to revised detail',area:'Framing',crew:'Framing',issue:false,sw:'dark',t:Date.now()-2*D,day:27,sample:true},
-          {id:3,cap:'Beam pocket at kitchen bearing wall cut 3 in shallow - reframing per engineer',area:'Kitchen',crew:'Framing',issue:true,status:'open',sw:'clay',t:Date.now()-1*D,day:28,sample:true},
+          {id:3,cap:'Beam pocket at kitchen bearing wall cut 3 in shallow - reframing per engineer',area:'Kitchen',crew:'Framing',issue:true,status:'done',sw:'clay',t:Date.now()-1*D,day:28,sample:true},
           {id:4,cap:'Window package confirmed for delivery Thursday',area:'Whole House',crew:'',issue:false,sw:'dove',t:Date.now()-8e6,day:29,sample:true},
           {id:5,cap:'Crane scheduled - truss set Monday, weather window looks clean',area:'Framing',crew:'Framing',issue:false,sw:'sage',t:Date.now()-5e6,day:29,sample:true}
         ],
@@ -4331,7 +4346,7 @@ function sampleState(){
           {id:2,cap:'Wall insulation complete, attic blown to R-49',area:'Whole House',crew:'Insulation',issue:false,sw:'dove',t:Date.now()-3*D,day:66,sample:true},
           {id:3,cap:'Drywall stacked, hanging starts first floor tomorrow',area:'Whole House',crew:'Drywall',issue:false,sw:'dark',t:Date.now()-1*D,day:68,sample:true},
           {id:4,cap:'Attic baffle gaps at eaves - corrected before insulation inspection',area:'Whole House',crew:'Insulation',issue:true,status:'done',sw:'oak',t:Date.now()-4*D,day:65,sample:true},
-          {id:5,cap:'Hairline crack in garage slab - marked to monitor through drywall',area:'Garage',crew:'Concrete / Masonry',issue:true,status:'open',sw:'slate',t:Date.now()-2*D,day:67,sample:true}
+          {id:5,cap:'Hairline crack in garage slab - marked to monitor through drywall',area:'Garage',crew:'Concrete / Masonry',issue:true,status:'done',sw:'slate',t:Date.now()-2*D,day:67,sample:true}
         ],
         logs:[
           {date:ds(0),t:Date.now()-6e6,text:'Drywall stocked, hanging starts tomorrow. Paint colors are now the critical path - reminded homeowner sign-off is due Friday. Overcast, 66.'},
@@ -4390,7 +4405,7 @@ function sampleState(){
         id:'p8', sample:true, name:'Beaumont Park Build', street:'509 Beaumont Park', city:'Grosse Pointe',
         items:[
           {id:1,cap:'Kitchen and butler pantry cabinets set, level and shimmed',area:'Kitchen',crew:'Finish Carpentry',issue:false,sw:'dove',t:Date.now()-8*D,day:118,sample:true,share:true},
-          {id:2,cap:'Herringbone tile labor running past estimate - homeowner notified, cost logged',area:'Primary Bath',crew:'Flooring / Tile',issue:true,status:'open',sw:'clay',t:Date.now()-3*D,day:123,sample:true},
+          {id:2,cap:'Herringbone tile labor running past estimate - homeowner notified, cost logged',area:'Primary Bath',crew:'Flooring / Tile',issue:true,status:'done',sw:'clay',t:Date.now()-3*D,day:123,sample:true},
           {id:3,cap:'Site-finished oak acclimating - moisture readings on track',area:'Whole House',crew:'Flooring / Tile',issue:false,sw:'oak',t:Date.now()-5*D,day:121,sample:true},
           {id:4,cap:'Pocket door at pantry rebuilt - frame was out of square',area:'Kitchen',crew:'Finish Carpentry',issue:true,status:'done',sw:'sage',t:Date.now()-6*D,day:120,sample:true},
           {id:5,cap:'Trim carpenter starts crown and casing Monday - 9 working days quoted',area:'Whole House',crew:'Finish Carpentry',issue:false,sw:'dark',t:Date.now()-1*D,day:125,sample:true},
@@ -4461,7 +4476,7 @@ function sampleState(){
         items:[
           {id:1,cap:'Certificate of occupancy issued - keys handed over',area:'Whole House',crew:'',issue:false,sw:'sage',t:Date.now()-24*D,day:172,sample:true,share:true},
           {id:2,cap:'Driveway sealed, final grade and sod complete',area:'Grading',crew:'Landscaping / Grading',issue:false,sw:'oak',t:Date.now()-28*D,day:168,sample:true,share:true},
-          {id:3,cap:'Warranty: nail pops in upstairs hallway - patch at 60-day visit',area:'Whole House',crew:'Drywall',issue:true,status:'open',sw:'slate',t:Date.now()-6*D,day:190,sample:true},
+          {id:3,cap:'Warranty: nail pops in upstairs hallway - patch at 60-day visit',area:'Whole House',crew:'Drywall',issue:true,status:'done',sw:'slate',t:Date.now()-6*D,day:190,sample:true},
           {id:4,cap:'Irrigation startup and walkthrough with homeowner complete',area:'Grading',crew:'Landscaping / Grading',issue:false,sw:'dove',t:Date.now()-10*D,day:186,sample:true}
         ],
         logs:[
@@ -4523,7 +4538,7 @@ function sampleState(){
           {id:1,cap:'Brick veneer complete on front elevation, scaffold moving to north wall',area:'Whole House',crew:'Concrete / Masonry',issue:false,sw:'oak',t:Date.now()-3*D,day:74,sample:true},
           {id:2,cap:'Siding crew started rear elevation - board and batten',area:'Whole House',crew:'Siding / Exterior',issue:false,sw:'dark',t:Date.now()-1*D,day:76,sample:true},
           {id:3,cap:'Roof complete, gutters on',area:'Whole House',crew:'Roofing',issue:false,sw:'dove',t:Date.now()-9*D,day:68,sample:true},
-          {id:4,cap:'Buyer prospect walkthrough Thursday - flooring and counters still open for their pick',area:'Whole House',crew:'',issue:true,status:'open',sw:'sage',t:Date.now()-8e6,day:77,sample:true}
+          {id:4,cap:'Buyer prospect walkthrough Thursday - flooring and counters still open for their pick',area:'Whole House',crew:'',issue:true,status:'done',sw:'sage',t:Date.now()-8e6,day:77,sample:true}
         ],
         logs:[
           {date:ds(0),t:Date.now()-7e6,text:'Masons on north wall, siding crew on rear. Broker bringing a buyer prospect Thursday - flooring and counter selections still open for a buyer to personalize. Sunny, 70.'},
@@ -8003,8 +8018,9 @@ function renderOverview(){
   const _roleLbl=who&&who.role==='subs'?'Crew':'Builder';
   document.getElementById('ovWho').textContent=(who&&who.name&&who.name!==_roleLbl?who.name+' · ':'')+_roleLbl;
   const projs=visibleProjects();
-  const bh=document.getElementById('ovBuildsHd');if(bh)bh.textContent=projs.length+(projs.length===1?' house':' houses');
+  const bh=document.getElementById('ovBuildsHd');if(bh)bh.textContent='Your houses';
   const hd=document.querySelector('.ov-builds-hd');if(hd)hd.style.display=projs.length?'':'none';
+  const tools=document.querySelector('.ov-houses-tools');if(tools)tools.style.display=projs.length?'':'none';
   const sb=document.getElementById('ovSearch');if(sb)sb.style.display=projs.length>1?'':'none';
   renderToday();
   try{renderOvWeek();}catch(e){}
@@ -8179,7 +8195,7 @@ function _nyIssues(projs){
   });
   (projs||[]).forEach(function(p){
     (p.items||[]).forEach(function(it){
-      if(!it.issue||it.status==='closed')return;
+      if(!it.issue||it.status==='done'||it.status==='closed')return;
       const kn=(typeof FIELD_KINDS!=='undefined'&&FIELD_KINDS.find(function(k){return k.id===it.fieldKind;}))||null;
       const kind=kn?kn.n:(it.area||'Open item');
       issues.push({kind:kind,pid:p.id,site:p.street||p.name||'',trade:'',pri:0,lvl:'warn',ts:it.t||today,
@@ -8447,25 +8463,50 @@ function houseHTML(p){
   }
   return h;
 }
+function comingUpItems(projs,n){
+  const today=dayStart(Date.now());
+  const soon=[];
+  (projs||[]).forEach(function(p){(p.bookings||[]).forEach(function(b){
+    if((b.status||'confirmed')==='declined')return;
+    if(b.start<today||b.start>today+7*864e5)return;
+    const tr=tdTradeOf(p,b);
+    soon.push({p:p,b:b,trade:specLabel(tr)||tr||(b.subName||'Crew'),street:p.street||p.name||'',when:tdDayLabel(b.start)});
+  });});
+  soon.sort(function(a,b){return a.b.start-b.b.start;});
+  if(n!=null&&n>=0)return soon.slice(0,n);
+  return soon;
+}
+function needsYouItems(projs){
+  return nySorted(_nyIssues(projs||[])).map(function(it){
+    return {title:it.kind,sub:[it.site,it.line].filter(Boolean).join(' \u00b7 '),go:it.go||'',pri:it.pri,ts:it.ts,pid:it.pid};
+  });
+}
+function openAllNeeds(){openNyInbox();}
 function renderToday(){
   const el=document.getElementById('ovToday');if(!el)return;
   const typing=document.getElementById('nyQText');
   const keep=typing&&document.activeElement===typing?{v:typing.value,s:typing.selectionStart}:null;
-  const projs=liveProjects();const today=dayStart(Date.now());
+  const projs=liveProjects();
   if(!projs.length){el.innerHTML='';el.style.display='none';return;}
   el.style.display='';
   try{pkSweep();}catch(e){}
-  const soon=[];projs.forEach(function(p){(p.bookings||[]).forEach(function(b){
-    if((b.status||'confirmed')==='declined')return;
-    if(b.start<today||b.start>today+7*864e5)return;
-    soon.push({p:p,b:b,trade:tdTradeOf(p,b)});});});
-  soon.sort(function(a,b){return a.b.start-b.b.start;});
-  let h=canGate('field')?('<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#B0895A" stroke-width="1.7"/><path d="M52 20V15h24v5" fill="none" stroke="#B0895A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#1B1916" stroke-width="1.55"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#1B1916" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="1.8"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg></button>'):'';
+  const needs=needsYouItems(projs);
+  const soon=comingUpItems(projs,3);
+  let h='<div class="sec"><h2>Needs you</h2>'+(needs.length>3?'<button type="button" class="sec-act" onclick="openAllNeeds()">All '+needs.length+'</button>':'')+'</div>';
+  if(needs.length){
+    h+=needs.slice(0,3).map(function(n){
+      return '<div class="row row-tap ny-home-row" onclick="'+n.go+'"><div class="row-main"><div class="row-title">'+esc(n.title)+'</div><div class="row-sub">'+esc(n.sub)+'</div></div><span class="row-chev">\u203a</span></div>';
+    }).join('');
+  }else{
+    h+='<div class="empty"><b>Nothing needs you</b>Crews are booked, decisions are in.</div>';
+  }
+  if(canGate('field'))h+='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#B0895A" stroke-width="1.7"/><path d="M52 20V15h24v5" fill="none" stroke="#B0895A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#1B1916" stroke-width="1.55"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#1B1916" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="1.8"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg></button>';
   if(soon.length){
-    h+='<div class="ov-coming"><div class="eyebrow">Coming up</div>';
-    const shown=_soonOpen?soon:soon.slice(0,3);
-    shown.forEach(function(s){h+=`<div class="td-soon" onclick="openBk('${s.p.id}|${s.b.id}')"><span class="td-when">${tdDayLabel(s.b.start)}</span><span class="td-soontx">${esc(s.trade?specLabel(s.trade):(s.b.subName||'Crew'))} \u00b7 ${esc(s.p.street||s.p.name)}</span></div>`;});
-    if(soon.length>3)h+=`<button type="button" class="td-morebtn" onclick="event.stopPropagation();toggleSoon()">`+(_soonOpen?'Show less':('+'+(soon.length-3)+' more this week'))+`</button>`;
+    h+='<div class="sec"><h2>Coming up</h2><button type="button" class="sec-act" onclick="openCal()">Calendar</button></div>';
+    h+='<div class="ov-coming">';
+    soon.forEach(function(s){
+      h+='<div class="row row-tap td-soon" onclick="openBk(\''+s.p.id+'|'+s.b.id+'\')"><div class="row-main"><div class="row-title">'+esc(s.trade)+'</div><div class="row-sub">'+esc(s.street)+'</div></div><div class="row-aside">'+esc(s.when)+'</div></div>';
+    });
     h+='</div>';
   }
   try{
@@ -8539,7 +8580,7 @@ function nyBookSub(pid,subName){
 }
 
 function highlightSel(id){const row=document.querySelector('.sel-row[data-sel="'+id+'"]');if(!row)return;try{row.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){row.scrollIntoView();}row.classList.remove('sel-hl');void row.offsetWidth;row.classList.add('sel-hl');setTimeout(()=>row.classList.remove('sel-hl'),2400);}
-const SORTLABELS={attn:'Needs You',recent:'Recent decisions',az:'A\u2013Z'};
+const SORTLABELS={attn:'Needs you',recent:'Recent decisions',az:'A\u2013Z'};
 let _ovSort='attn';
 let _ovAnimateTs=0;
 let _soonOpen=false;
@@ -9905,21 +9946,72 @@ function openBudget(){renderBudget();document.getElementById('budgetScrim').clas
 function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{houseMaybeResume();}catch(e){}}
 function moneyTotHTML(p){
   const cs=costSummary(p);const bill=billingSummary(p);
-  return `<div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
-    <div><b>${invUsd(cs.committed)}</b><span>Signed for</span></div>
-    <div><b>${invUsd(cs.spent)}</b><span>Paid</span></div>
-    <div><b>${invUsd(bill.billed)}</b><span>On an invoice</span></div>
-    <div><b>${invUsd(bill.paid)}</b><span>They paid</span></div>
-    <div><b class="bgt-em ${bill.out>0.005?'over':''}">${invUsd(Math.max(0,bill.out))}</b><span>Still due</span></div>`;
+  const left=cs.budget-cs.projected;
+  const over=left<-0.005, even=Math.abs(left)<=0.005;
+  const heroN=even?'On budget':invUsd(Math.abs(left));
+  const heroL=even?'Projected to land exactly on budget'
+             :over?'Over budget, projected':'Under budget, projected';
+  let h='<div class="hero">'
+    +'<div class="hero-n '+(over?'warn':'ok')+'">'+heroN+'</div>'
+    +'<div class="hero-l">'+heroL+'</div>'
+    +'<div class="hero-s">'+invUsd(cs.budget)+' budget &middot; '+invUsd(cs.committed)+' signed &middot; '+invUsd(cs.spent)+' paid out</div>'
+    +'</div>';
+  if(bill.billed>0.005){
+    const owed=Math.max(0,bill.out);
+    h+='<div class="row"><div class="row-main"><div class="row-title">Homeowner</div>'
+      +'<div class="row-sub">'+invUsd(bill.billed)+' invoiced &middot; '+invUsd(bill.paid)+' received</div></div>'
+      +'<div class="row-aside'+(owed>0.005?' warn':'')+'">'+(owed>0.005?invUsd(owed)+' due':'Paid up')+'</div></div>';
+  }
+  return h;
 }
+function moneyActionsHTML(){
+  return '<div class="money-actions">'
+    +'<button class="btn btn-primary btn-block" onclick="openCostActual()">Log a cost</button>'
+    +'<button class="btn btn-secondary" onclick="moneyMore()" aria-label="More money actions">More</button>'
+    +'</div>';
+}
+function moneyMore(){
+  openChoice({title:'Money',items:[
+    {label:'Add a budget line',fn:openCostLine},
+    {label:'Send an invoice',fn:moneyNewInvoice},
+    {label:'Record a payment',fn:moneyNewPayment}
+  ]});
+}
+function moneyLineRowHTML(l,r){
+  const left=r.budget-r.projected;const over=left<-0.005;
+  return '<div class="row row-tap" onclick="openCostLine(\''+String(l.id).replace(/'/g,'')+'\')">'
+    +'<div class="row-main"><div class="row-title">'+esc(l.label||'')+'</div>'
+    +'<div class="row-sub">'+invUsd(r.projected)+' of '+invUsd(r.budget)+'</div></div>'
+    +'<div class="row-aside'+(over?' warn':'')+'">'+(over?invUsd(-left)+' over':invUsd(left)+' left')+'</div>'
+    +'<span class="row-chev">&rsaquo;</span></div>';
+}
+let _choiceItems=null;
+function openChoice(o){
+  o=o||{};
+  _choiceItems=o.items||[];
+  const ttl=document.getElementById('choiceTitle');if(ttl)ttl.textContent=o.title||'Choose';
+  const body=document.getElementById('choiceBody');if(!body)return;
+  body.innerHTML=_choiceItems.map(function(it,i){
+    return '<div class="row row-tap" data-choice="'+i+'"><div class="row-main"><div class="row-title">'+esc(it.label||'')+'</div></div><span class="row-chev">&rsaquo;</span></div>';
+  }).join('')||'<div class="empty">Nothing here.</div>';
+  body.querySelectorAll('[data-choice]').forEach(function(el){
+    el.onclick=function(){
+      const i=+el.getAttribute('data-choice');
+      const fn=_choiceItems[i]&&_choiceItems[i].fn;
+      closeChoice();
+      if(typeof fn==='function')fn();
+    };
+  });
+  document.getElementById('choiceScrim').classList.add('show');
+}
+function closeChoice(){const el=document.getElementById('choiceScrim');if(el)el.classList.remove('show');_choiceItems=null;}
 function renderBudget(){
   const p=P();const cs=costSummary(p);const lines=costLines(p);const bill=billingSummary(p);
-  let h=`<div class="bgt-tot" id="bgtTotals">
+  let h=`<div class="bgt-tot hero-host" id="bgtTotals">
     ${moneyTotHTML(p)}
   </div>
-  <div class="row2"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="openCostLine()">+ Budget line</button><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="openCostActual()">+ Log a cost</button></div>
-  <div class="row2 mt-2"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="moneyNewInvoice()">+ Invoice</button><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="moneyNewPayment()">+ Payment</button></div>
-  <div class="bgt-toggle"><span>Group</span><div class="bgt-mini"><button class="${_costGroup==='stage'?'on':''}" onclick="setCostGroup('stage')">By stage</button><button class="${_costGroup==='trade'?'on':''}" onclick="setCostGroup('trade')">By trade</button></div></div>`;
+  ${moneyActionsHTML()}
+  <div class="seg" id="costGroupSeg"><button class="${_costGroup==='stage'?'on':''}" onclick="setCostGroup('stage')">By stage</button><button class="${_costGroup==='trade'?'on':''}" onclick="setCostGroup('trade')">By trade</button></div>`;
   const copyBtn=budgetSources().length?`<button class="la-link d-block mt-3 mb-0 mx-auto btn btn-quiet" onclick="openBudgetCopy()">Copy budget lines from another house…</button>`:'';
   const qbBtn=(qbEligible()&&_qbState&&_qbState.connected)?`<button class="la-link d-block mt-3 mb-0 mx-auto fw-7 btn btn-quiet" onclick="qbExportNow()">Send new costs to QuickBooks</button>`:'';
   const jcBtn=lines.length?`<button class="la-link d-block mt-3 mb-0 mx-auto fw-7 btn btn-quiet" onclick="openJobCost()">Cost report</button>`:'';
@@ -9937,10 +10029,7 @@ function renderBudget(){
     if(!gl.length)return;
     h+=`<div class="bgt-grp">${esc(g.label)}</div>`;
     gl.forEach(l=>{const r=costLineRollup(p,l.id);
-      h+=`<div class="bgt-row" onclick="openCostLine('${esc(String(l.id))}')">
-        <div class="bgt-l"><b>${esc(l.label||'Untitled')}</b><i>${invUsd(r.exposure)} used of ${invUsd(r.budget)} budget${r.paidOver?' <b class="c-clay">· paid more than signed</b>':''}${r.expect>0?' <b class="c-ink-3">· expecting '+invUsd(r.expect)+'</b>':''}</i></div>
-        <div class="bgt-chip ${r.over?'over':''}">${r.over?invUsd(-r.remaining)+' over':invUsd(r.remaining)+' remaining'}</div>
-      </div>`;});
+      h+=moneyLineRowHTML(l,r);});
   });
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
   if(un.length){
@@ -16645,7 +16734,7 @@ function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;con
   if(closing&&row){row.classList.add('closing');setTimeout(apply,260);}else apply();}
 
 /* ── universal modal dismissal: tap grip, or swipe the modal down ── */
-const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',fileToScrim:'closeFileTo',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',studioScrim:'closeTourStudio',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
+const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',fileToScrim:'closeFileTo',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',choiceScrim:'closeChoice',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',studioScrim:'closeTourStudio',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
 function dismissScrim(scrim){if(!scrim)return;const fn=MODAL_CLOSERS[scrim.id];if(fn&&typeof window[fn]==='function'){try{window[fn]();return;}catch(e){}}scrim.classList.remove('show');}
 function dismissParent(elm){let n=elm;while(n&&!(n.classList&&n.classList.contains('pmodal-scrim')))n=n.parentElement;dismissScrim(n);}
 if(typeof window!=='undefined'){window.addEventListener('load',function(){

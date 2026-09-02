@@ -193,6 +193,11 @@ async function tappable(page,sel){
 
   const cards=await page.evaluate(()=>{try{demoRole('builder');}catch(e){}return document.querySelectorAll('#ovCards .ov-card').length;});
   t('overview renders all ten site cards',cards===10,cards);
+  const nyN=await page.evaluate(()=>document.querySelectorAll('#ovToday .ny-home-row').length);
+  t('first screen shows at most three Needs-you rows',nyN<=3,nyN);
+  await page.evaluate(()=>{const el=document.querySelector('#ovToday .ov-field');if(el)el.scrollIntoView({block:'center'});});
+  const fnTap=await tappable(page,'#ovToday .ov-field');
+  t('Field Notes card tappable',fnTap.ok,fnTap.why);
   await shot(page,'04-overview');
 
   await page.evaluate(()=>{state.activeId='p9';demoRole('subs');});
@@ -214,7 +219,11 @@ async function tappable(page,sel){
   await new Promise(r=>setTimeout(r,300));
   await page.evaluate(()=>openBudget());
   await new Promise(r=>setTimeout(r,300));
-  t('Beaumont Park budget shows the amber overrun', await page.evaluate(()=>document.getElementById('budgetBody').innerHTML.includes('5,200 over')));
+  t('Beaumont Park budget shows the amber overrun', await page.evaluate(()=>{
+    const b=document.getElementById('budgetBody');
+    return !!(b&&b.querySelector('.hero-n.warn')&&b.innerHTML.includes('Over budget')&&b.innerHTML.includes('5,200 over'));
+  }));
+  t('Beaumont Money body has one primary', await page.evaluate(()=>document.querySelectorAll('#budgetBody .btn-primary').length===1));
   await shot(page,'07-p8-budget');
   await page.evaluate(()=>closeBudget());
   await page.evaluate(()=>{demoRole('builder');openSiteFromOverview('p8');openBudget();openJobCost();});

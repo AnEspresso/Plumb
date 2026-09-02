@@ -1,4 +1,6 @@
-**v2.364.0 ready to ship.** One sheet on every overlay, three button roles, sentence-case sections, house/crew words, five named z layers. Rem type folded into --t-*. Old class names kept as aliases for JS.
+**v2.365.0 ready to ship.** Money hero (projected vs budget) and a calmer home screen. Log a cost is the one primary. More opens a choice sheet. Needs you is three rows then All N. Field Notes card stays after Needs you. Seed v20.
+
+**v2.364.0 is live.** One sheet on every overlay, three button roles, sentence-case sections, house/crew words, five named z layers. Rem type folded into --t-*. Old class names kept as aliases for JS.
 
 **v2.363.0 is live.** Design tokens and inline styles folded into the system. ui-system.css is the last style block. Literal font-size, spacing, radius, and hex in the old CSS now use tokens. Inline style attributes dropped from 926 to 59.
 
