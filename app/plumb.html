@@ -3844,15 +3844,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.370.0 - Packet uses rows and one primary';
+const PLUMB_VERSION='2.371.0 - Packet button follows the calendar';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788900000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.370.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788910000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.371.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -15441,8 +15441,8 @@ function pktAsk(p,tradeId){
     out.push({title:d.n+' has no file yet',meta:'Attach the file',go:`pktGoDocs('${p.id}')`});
   });
   if(sb){
-    const bk=(p.bookings||[]).find(function(b){return b.subName===sb.name&&(b.status||'confirmed')!=='declined';});
-    if(bk)out.push({title:'Text this link',meta:sb.name+(bk.note?(' \u00b7 '+fmtWin(bk)):''),go:`sendGuestPacket('${p.id}','${bk.id}')`});
+    const liveBk=(p.bookings||[]).find(function(b){return b.subName===sb.name&&(b.status||'confirmed')!=='declined'&&b.end>=today;});
+    if(liveBk)out.push({title:'Text this link',meta:sb.name+(liveBk.note?(' \u00b7 '+fmtWin(liveBk)):''),go:`sendGuestPacket('${p.id}','${liveBk.id}')`});
     else{
       const inv=(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
       if(!inv)out.push({title:'Invite '+sb.name,meta:'So this crew sees this live',go:`invitePacketSub('${p.id}','${sb.id}')`});
@@ -15508,7 +15508,7 @@ function packetHTML(p,tradeId){
   h+='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+' install packet</div></div>';
   h+='<div class="pkt-strip '+(warn?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
 
-  const bk=isBuilder&&sb&&(p.bookings||[]).find(function(b){return b.subName===sb.name&&(b.status||'confirmed')!=='declined';});
+  const bk=isBuilder&&bkWin;
   if(isBuilder){
     if(bk)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="sendGuestPacket(\''+p.id+'\',\''+bk.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
     else if(sb)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="pktGoBook(\''+p.id+'\',\''+esc(sb.name)+'\')">Schedule this crew</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
@@ -15521,13 +15521,27 @@ function packetHTML(p,tradeId){
       missRows.push({sel:sel,f:f});
     });
   });
+  const doneSels=sels.filter(function(s){return specComplete(s);});
+  const pins=packetPins(p,tradeId);
+  const pinnedItems=(p.items||[]).filter(function(it){return pins.items.map(String).includes(String(it.id));});
+  const pinnedLogs=(p.logs||[]).filter(function(l){return pins.logs.includes(l.date);}).sort(function(a,b){return a.date<b.date?1:-1;});
+  const truckDocs=isBuilder?inDocs:inDocs.filter(function(d){return !!(d.fileId||d.fileUrl);});
+  const hasTruck=doneSels.length||openItems.length||pinnedItems.length||pinnedLogs.length||truckDocs.length;
   const asks=isBuilder?pktAsk(p,tradeId):[];
   const skipAsk={};
-  if(bk)skipAsk['Text this link']=1;
-  if(!bk)skipAsk['No dates on the calendar']=1;
-  if(sb)skipAsk['Invite '+sb.name]=1;
+  skipAsk['Text this link']=1;
+  skipAsk['No dates on the calendar']=1;
   skipAsk['Set a specs deadline']=1;
-  const visAsks=asks.filter(function(a){return !skipAsk[a.title];});
+  if(sb)skipAsk['Invite '+sb.name]=1;
+  if(hasTruck)skipAsk['Nothing in the packet for the truck']=1;
+  const visAsks=asks.filter(function(a){
+    if(skipAsk[a.title])return false;
+    const t=String(a.title||'');
+    if(t.indexOf('not booked')>=0)return false;
+    const g=String(a.go||'');
+    if(g.indexOf('pktGoBook')>=0||g.indexOf('sendGuestPacket')>=0)return false;
+    return true;
+  });
   if(missRows.length||visAsks.length){
     h+='<div class="sec"><h2>'+(missRows.length?(missRows.length+' still '+(missRows.length===1?'needs':'need')+' an answer'):'Before you send this')+'</h2></div>';
     missRows.forEach(function(r){
@@ -15540,12 +15554,6 @@ function packetHTML(p,tradeId){
     });
   }
 
-  const doneSels=sels.filter(function(s){return specComplete(s);});
-  const pins=packetPins(p,tradeId);
-  const pinnedItems=(p.items||[]).filter(function(it){return pins.items.map(String).includes(String(it.id));});
-  const pinnedLogs=(p.logs||[]).filter(function(l){return pins.logs.includes(l.date);}).sort(function(a,b){return a.date<b.date?1:-1;});
-  const truckDocs=isBuilder?inDocs:inDocs.filter(function(d){return !!(d.fileId||d.fileUrl);});
-  const hasTruck=doneSels.length||openItems.length||pinnedItems.length||pinnedLogs.length||truckDocs.length;
   if(hasTruck){
     h+='<div class="sec"><h2>For the truck</h2></div>';
     doneSels.forEach(function(sel){

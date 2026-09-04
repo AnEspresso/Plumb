@@ -256,6 +256,26 @@ async function tappable(page,sel){
   t('Packet More is on the overlay',pkt.more,JSON.stringify(pkt));
   t('Packet dropped the pink still-open box',!pkt.pink,JSON.stringify(pkt));
   await page.evaluate(()=>{try{closeInfo();closeSubDetail();}catch(e){}});
+  await page.evaluate(()=>{try{nyOpenHouse('p8');const s=(P().subs.find(x=>/Timberline/i.test(x.name))||P().subs[0]);openPacket(s.id);}catch(e){}});
+  await new Promise(r=>setTimeout(r,250));
+  const tl=await page.evaluate(()=>{
+    const body=document.getElementById('infoBody');
+    const primary=(body&&body.querySelector('.btn-primary')&&(body.querySelector('.btn-primary').innerText||body.querySelector('.btn-primary').textContent||'')).replace(/\s+/g,' ').trim();
+    const titles=[...((body&&body.querySelectorAll('.row-title'))||[])].map(el=>(el.textContent||'').trim());
+    return {primary,titles,open:document.getElementById('infoScrim').classList.contains('show')};
+  });
+  t('Timberline packet is open',tl.open,JSON.stringify(tl));
+  t('Timberline primary follows the calendar',tl.primary.indexOf('Schedule this crew')>=0,tl.primary);
+  t('Timberline does not repeat not booked',tl.titles.every(t=>t.indexOf('not booked')<0&&t!=='No dates on the calendar'),JSON.stringify(tl.titles));
+  await page.evaluate(()=>{try{closeInfo();const s=(P().subs.find(x=>/Fine Line/i.test(x.name))||P().subs[0]);openPacket(s.id);}catch(e){}});
+  await new Promise(r=>setTimeout(r,250));
+  const fl=await page.evaluate(()=>{
+    const body=document.getElementById('infoBody');
+    const primary=(body&&body.querySelector('.btn-primary')&&(body.querySelector('.btn-primary').innerText||body.querySelector('.btn-primary').textContent||'')).replace(/\s+/g,' ').trim();
+    return {primary,open:document.getElementById('infoScrim').classList.contains('show')};
+  });
+  t('Fine Line primary follows the calendar',fl.open&&fl.primary.indexOf('Text this link')>=0,fl.primary);
+  await page.evaluate(()=>{try{closeInfo();closeSubDetail();}catch(e){}});
 
   await page.evaluate(()=>{try{exitHouseDesk();closeHouse();openSiteFromOverview('p2');go('files');filesSeg('photos');}catch(e){}});
   await new Promise(r=>setTimeout(r,250));

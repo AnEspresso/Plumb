@@ -2191,6 +2191,7 @@ t('packet More is a choice sheet', $("String(packetMore)").indexOf('openChoice')
 t('packet leftover buttons left the list', $("String(packetHTML)").indexOf('add-sub-btn')<0&&$("String(packetHTML)").indexOf('pkt-sign-btn')<0&&$("String(packetHTML)").indexOf('class="eyebrow"')<0);
 t('packet lists are rows', $("String(packetHTML)").indexOf('row-tap')>=0);
 t('unbooked packet primary is Schedule this crew', $("String(packetHTML)").indexOf('Schedule this crew')>=0&&$("String(packetHTML)").indexOf('pktGoBook')>=0);
+t('packet send uses the live window', $("String(packetHTML)").indexOf('const bk=isBuilder&&bkWin')>=0);
 t('crew packet door keeps the tour id', SRC.indexOf('id="svPacket"')>=0);
 asBuilder();
 $("state.activeId='p2'");
@@ -2201,6 +2202,22 @@ t('builder packet uses rows', $("document.querySelectorAll('#infoBody .row').len
 $('packetMore()');
 t('packet More opens', el('choiceScrim').classList.contains('show')&&el('choiceBody').innerHTML.indexOf('Add a document for this trade')>=0);
 $('closeChoice()');
+$('closeInfo()');
+asBuilder();
+$("state.activeId='p8'");
+$("openPacket((P().subs.find(function(s){return /Timberline/i.test(s.name);})||P().subs[0]).id)");
+(function(){
+  const body=el('infoBody');
+  const primary=(body&&body.querySelector('.btn-primary')&&body.querySelector('.btn-primary').textContent)||'';
+  const titles=[...((body&&body.querySelectorAll('.row-title'))||[])].map(function(n){return n.textContent||'';});
+  const txt=(body&&body.textContent)||'';
+  t('Timberline primary is Schedule this crew', primary.indexOf('Schedule this crew')>=0, primary);
+  t('Timberline does not repeat not booked', titles.every(function(x){return x.indexOf('not booked')<0&&x!=='No dates on the calendar';}), titles.join(' | '));
+  t('unbooked packet does not say empty truck over a spec', txt.indexOf('Nothing in the packet for the truck')<0||txt.indexOf('For the truck')<0);
+})();
+$('closeInfo()');
+$("openPacket((P().subs.find(function(s){return /Fine Line/i.test(s.name);})||P().subs[0]).id)");
+t('Fine Line primary is Text this link', ((el('infoBody')&&el('infoBody').querySelector('.btn-primary')&&el('infoBody').querySelector('.btn-primary').textContent)||'').indexOf('Text this link')>=0);
 $('closeInfo()');
 t('rewritten screens dropped eyebrow and lbl', (function(){
   const fns=['renderDocs','renderSubs','renderSettings','renderPhotos','renderDayLog'];

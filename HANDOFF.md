@@ -1,4 +1,7 @@
+**v2.371.0 is live.** Packet dark button follows the calendar: Schedule this crew when there are no dates, Text this link when there are. Not booked is said once. Empty-truck line stays off when specs are already on the truck.
+
 **v2.370.0 is live.** Packet uses rows and one primary. Text this link when booked, Schedule this crew when not. Leftovers live in More. Pink still-open box is gone. Same taps.
+
 
 **v2.369.0 is live.** Money leftovers live in More. Even lines have no leftover aside. Packet is on the person, not the crew row. Documents Add sits above search. Everyone is clay only when mixed.
 
