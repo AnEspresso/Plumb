@@ -1983,6 +1983,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 #docList > .sec:first-child,#subList > .sec:first-child,#settingsBody > .sec:first-child,.day-group:first-child .sec{margin-top:0;}
 .money-actions{display:flex;gap:var(--s-3);margin:var(--s-4) 0;align-items:stretch;}
 .money-actions .btn-primary{flex:1;}
+#calBody .money-actions{margin-top:var(--s-4);}
 #infoBody .pkt-strip{background:transparent;padding:0;margin:0 0 var(--s-4);border-radius:0;}
 #infoBody .pkt-strip.warn,#infoBody .pkt-strip.ok{background:transparent;}
 #infoBody .pkt-strip .st{font-size:var(--t-xl);}
@@ -2692,7 +2693,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="bkScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="bkTitle">Book a crew</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="bkTitle">Schedule a crew</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
 <div class="sheet-body">
 <div class="info-body">
         <div class="lbl" id="bkSiteLbl">Site</div>
@@ -2707,11 +2708,8 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
           <button type="button" class="gp-cal-ok" onclick="bkCalDone()" aria-label="Use these dates">✓</button></div></div>
         <input id="bkNote" placeholder="Note for the crew — gate code, scope…" class="fs-sm">
         <div class="bk-alerts" id="bkAlerts"><div id="bkOverlap"></div><div id="bkPacket"></div><div id="bkGuest"></div><div id="bkSendLink"></div></div>
-        <div class="row2 mt-2">
-          <button class="b1 b-cancel btn btn-secondary" onclick="closeBk()">Cancel</button>
-          <button class="b1 b-go btn btn-primary" id="bkSave" onclick="bkSave()">Save</button>
-        </div>
-        <button class="add-sub-btn mt-2 hide c-clay btn btn-secondary" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
+        <button class="btn btn-primary btn-block mt-3" id="bkSave" onclick="bkSave()">Save</button>
+        <button class="btn btn-danger btn-block mt-2 hide" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
       </div>
 </div>
 </div>
@@ -3844,15 +3842,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.371.0 - Packet button follows the calendar';
+const PLUMB_VERSION='2.372.0 - Calendar and booking use one primary';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788910000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.371.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788920000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.372.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -14797,6 +14795,13 @@ function closeCal(){
 function calNav(d){calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+d,1);renderCal();}
 function calToday(){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);renderCal();}
 function calPick(siteId){calSiteFilter=siteId;renderCal();}
+function calMore(){
+  const items=[];
+  if(!calIsClient())items.push({label:'Add to calendar app',fn:function(){calExport();}});
+  if(!calIsClient()&&!calIsSub())items.push({label:'Homeowner calendars',fn:function(){openHoAccess();}});
+  if(calIsSub())items.push({label:'My crews',fn:function(){calMyCrews();}});
+  openChoice({title:'Calendar',items:items});
+}
 function renderCal(){
   const el=document.getElementById('calBody');if(!el)return;
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
@@ -14873,17 +14878,13 @@ function renderCal(){
     +'</div>';
   const emptyMonth=(calIsClient()&&!monthBs.length)?'<div class="empty mt-3 ml-1 mr-1 mb-0">No crews on the calendar this month.</div>':'';
   const suggHTML='';
-  const subCrewBtn=calIsSub()?`<button class="add-sub-btn mt-2 ml-1 mr-1 mb-0 btn btn-secondary" onclick="calMyCrews()">My crews: ${crewsOf((state.session||{}).name||'')} \u2014 change\u2026</button>`:'';
-  const exportBtn=calIsClient()?'':`<button class="add-sub-btn mt-2 ml-1 mr-1 mb-0 btn btn-secondary" onclick="calExport()">Add to calendar app (.ics)\u2026</button>`;
-  const hoBtn=(calIsClient()||calIsSub())?'':`<button class="add-sub-btn mt-2 ml-1 mr-1 mb-0 btn btn-secondary" onclick="openHoAccess()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 9v11h14V9"/></svg>Homeowner calendars\u2026</button>`;
-  const addBtn=calIsClient()?''
-    :(calIsSub()
-    ?`<button class="add-sub-btn mt-3 ml-1 mr-1 mb-0 btn btn-secondary" onclick="openBk(null,Date.now())">Block time off (working elsewhere)\u2026</button>`
-    :`<button class="add-sub-btn mt-3 ml-1 mr-1 mb-0 btn btn-secondary" onclick="openBk(null,Date.now())">Book a crew\u2026</button>`);
+  const addBtn=calIsClient()?'':(calIsSub()
+    ?'<div class="money-actions"><button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Block time off</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>'
+    :'<div class="money-actions"><button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Schedule a crew</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>');
   el.innerHTML='<div class="cal-wrap"><div class="cal-main">'+chips+moveBanner+banner+wxBanner
     +`<div class="cal-nav"><div class="m">${calMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</div><div class="btns"><button onclick="calNav(-1)">\u2039</button><button class="today" onclick="calToday()">Today</button><button onclick="calNav(1)">\u203a</button></div></div>`
     +'<div class="cal-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>'
-    +'<div class="cal-grid">'+grid+'</div>'+emptyMonth+'</div><div class="cal-side">'+legend+suggHTML+addBtn+subCrewBtn+exportBtn+hoBtn+'</div></div>';}
+    +'<div class="cal-grid">'+grid+'</div>'+emptyMonth+'</div><div class="cal-side">'+legend+suggHTML+addBtn+'</div></div>';}
 function openDay(ts){calDay=ts;renderDay();document.getElementById('dayScrim').classList.add('show');}
 function closeDay(){document.getElementById('dayScrim').classList.remove('show');}
 function renderDay(){
@@ -14908,21 +14909,42 @@ function renderDay(){
   if(dayDoubles.length&&!calIsClient()){
     h+=dayDoubles.map(function(c){
       const who=String(c.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      return '<div class="day-row u-m38" onclick="closeDay();openCalCrew(\''+who+'\','+calDay+')"><div class="flex-1"><div class="n c-clay">Double-booked \u00b7 '+esc(c.name)+'</div><div class="d">'+esc(_dblWhere(c))+'. Tap to see only this crew.</div></div></div>';
+      return '<div class="row row-tap" onclick="closeDay();openCalCrew(\''+who+'\','+calDay+')"><div class="row-main"><div class="row-title">Double-booked \u00b7 '+esc(c.name)+'</div><div class="row-sub">'+esc(_dblWhere(c))+'. Tap to see only this crew.</div></div><span class="row-aside warn">Overlap</span><span class="row-chev">\u203a</span></div>';
     }).join('');
   }
-  h+=bs.map(b=>calIsClient()
-    ?`<div class="day-row avr"><span class="sw" style="background:${tradeColor(b.trade)}"></span><div class="flex-1"><div class="n">${esc(specLabel(b.trade)||'Crew')} crew at the house</div><div class="d">${fmtWin(b)}</div></div></div>`
-    :`<div class="day-row" ${calIsSub()?'':`onclick="openBk('${b.p.id}|${b.id}')"`}><span class="sw" style="background:${tradeColor(b.trade)}"></span><div class="flex-1"><div class="n">${esc(b.subName)}${cf[b.id]?' <span style=\"color:var(--clay)\">\u26a0</span>':''}<span class="bk-st ${bkStatus(b)}">${BK_STATUS[bkStatus(b)].label}</span></div><div class="d">${esc(b.p.street||b.p.name)} \u00b7 ${esc(specLabel(b.trade)||'')} \u00b7 ${fmtWin(b)}</div>${cf[b.id]?_alsoOnDay(b,calDay):''}${b.note?`<div class="note">${esc(b.note)}</div>`:''}${calIsSub()?'':bkInviteLine(b)}${calIsSub()?'':`<button class="lpay mt-2 btn btn-quiet" onclick="event.stopPropagation();sendGuestPacket('${b.p.id}','${b.id}')">Text this link</button>`}${calIsSub()&&b.subName===(state.session||{}).name&&bkStatus(b)!=='confirmed'?`<div class="row2 mt-2"><button class="lpay btn btn-quiet" onclick="event.stopPropagation();bkConfirm('${b.p.id}','${b.id}')">Confirm</button><button class="lpay btn btn-quiet" onclick="event.stopPropagation();bkSubModify('${b.p.id}','${b.id}')">Change dates</button><button class="lpay c-clay btn btn-quiet" onclick="event.stopPropagation();bkDecline('${b.p.id}','${b.id}')">Can\u2019t make it</button></div>`:''}${calIsSub()&&b.subName===(state.session||{}).name?`<button class="lpay mt-2 btn btn-quiet" onclick="event.stopPropagation();bkToCalendar('${b.p.id}','${b.id}')">📅 Add to my calendar</button>`:''}</div></div>`).join('');
-  h+=av.map(a=>`<div class="day-row avr"><span class="sw u-m36"></span><div class="flex-1"><div class="n">${esc(a.subName)} \u2014 unavailable</div><div class="d">${fmtWin(a)}${a.note?' \u00b7 '+esc(a.note):''}</div></div>${calIsSub()&&a.subName===(state.session||{}).name?`<button class="lpay btn btn-quiet" onclick="event.stopPropagation();delAvail('${a.p.id}','${a.id}')">Remove</button>`:''}</div>`).join('');
+  h+=bs.map(function(b){
+    if(calIsClient()){
+      return '<div class="row"><div class="row-main"><div class="row-title">'+esc(specLabel(b.trade)||'Crew')+' crew at the house</div><div class="row-sub">'+esc(fmtWin(b))+'</div></div></div>';
+    }
+    const st=bkStatus(b);
+    const asideCls=st==='declined'||cf[b.id]?'warn':(st==='confirmed'?'ok':'');
+    const tap=calIsSub()?'':' row-tap';
+    const oc=calIsSub()?'':(' onclick="openBk(\''+b.p.id+'|'+b.id+'\')"');
+    let extra='';
+    if(cf[b.id])extra+=_alsoOnDay(b,calDay);
+    if(b.note)extra+='<div class="row-sub">'+esc(b.note)+'</div>';
+    if(!calIsSub())extra+=bkInviteLine(b);
+    let acts='';
+    if(!calIsSub())acts='<button class="btn-quiet" onclick="event.stopPropagation();sendGuestPacket(\''+b.p.id+'\',\''+b.id+'\')">Text this link</button>';
+    if(calIsSub()&&b.subName===(state.session||{}).name&&st!=='confirmed'){
+      acts+='<div class="row2 mt-2"><button class="btn-quiet" onclick="event.stopPropagation();bkConfirm(\''+b.p.id+'\',\''+b.id+'\')">Confirm</button><button class="btn-quiet" onclick="event.stopPropagation();bkSubModify(\''+b.p.id+'\',\''+b.id+'\')">Change dates</button><button class="btn-quiet c-clay" onclick="event.stopPropagation();bkDecline(\''+b.p.id+'\',\''+b.id+'\')">Can\u2019t make it</button></div>';
+    }
+    if(calIsSub()&&b.subName===(state.session||{}).name){
+      acts+='<button class="btn-quiet mt-2" onclick="event.stopPropagation();bkToCalendar(\''+b.p.id+'\',\''+b.id+'\')">Add to my calendar</button>';
+    }
+    return '<div class="row'+tap+'"'+oc+'><div class="row-main"><div class="row-title">'+esc(b.subName)+(cf[b.id]?' \u26a0':'')+'</div><div class="row-sub">'+esc(b.p.street||b.p.name)+' \u00b7 '+esc(specLabel(b.trade)||'')+' \u00b7 '+esc(fmtWin(b))+'</div>'+extra+'</div><span class="row-aside'+(asideCls?' '+asideCls:'')+'">'+esc(BK_STATUS[st].label)+'</span>'+acts+(calIsSub()?'':'<span class="row-chev">\u203a</span>')+'</div>';
+  }).join('');
+  h+=av.map(function(a){
+    return '<div class="row"><div class="row-main"><div class="row-title">'+esc(a.subName)+' \u2014 unavailable</div><div class="row-sub">'+esc(fmtWin(a))+(a.note?(' \u00b7 '+esc(a.note)):'')+'</div></div>'+(calIsSub()&&a.subName===(state.session||{}).name?'<button class="btn-quiet" onclick="event.stopPropagation();delAvail(\''+a.p.id+'\',\''+a.id+'\')">Remove</button>':'')+'</div>';
+  }).join('');
   if(!bs.length&&!av.length)h+='<div class="empty py-2 px-0">Nothing scheduled this day.</div>';
   if(calIsClient()){ /* read-only: no add, no idle roster */ }
   else if(!calIsSub()){
     const idle=idleSubs(calDay);
-    if(idle.length)h+='<div class="lbl mt-3">Free this day</div><div class="fday-list fs-xs c-ink-3 lh-16">'+idle.map(x=>'<span class="fseg">'+esc(x.name)+'</span>').join('')+'</div>';
-    h+=`<button class="add-sub-btn mt-3 btn btn-secondary" onclick="openBk(null,${calDay})">Schedule someone this day\u2026</button>`;
+    if(idle.length)h+='<div class="sec"><h2>Free this day</h2></div><div class="fday-list fs-xs c-ink-3 lh-16">'+idle.map(x=>'<span class="fseg">'+esc(x.name)+'</span>').join('')+'</div>';
+    h+='<button class="btn btn-primary btn-block mt-3" onclick="openBk(null,'+calDay+')">Schedule someone this day</button>';
   }else{
-    h+=`<button class="add-sub-btn mt-3 btn btn-secondary" onclick="openBk(null,${calDay})">Block this day (working elsewhere)\u2026</button>`;
+    h+='<button class="btn btn-primary btn-block mt-3" onclick="openBk(null,'+calDay+')">Block this day</button>';
   }
   el.innerHTML=h;}
 function bkConfirm(pid,id){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;bkSetStatus(p,id,'confirmed');toast('Confirmed \u2014 your builder can see it');}
@@ -14981,7 +15003,7 @@ function openBk(ref,defTs){
     document.getElementById('bkNote').value=b.note||'';
     del.style.display='';
   }else{
-    title.textContent=calIsSub()?'Block time off':'Book a crew';
+    title.textContent=calIsSub()?'Block time off':'Schedule a crew';
     siteSel.disabled=false;subSel.disabled=false;
     if(calSiteFilter!=='all')siteSel.value=String(calSiteFilter);
     if(calIsSub()){
@@ -15027,11 +15049,11 @@ function bkRenderOverlap(){
   if(!hit.length&&!soon.length){box.innerHTML='';return;}
   if(hit.length){
     const street=(hit[0].split(' \u00b7 ')[0])||'another house';
-    box.innerHTML='<div class="bk-pkt warn"><div class="bk-pkt-t">Also on '+esc(street)+' that day</div><div class="bk-pkt-d">'+esc(name)+' is already booked: '+hit.map(esc).join(' \u00b7 ')+'. Saving this will double-book them unless they have another crew.</div></div>';
+    box.innerHTML='<div class="row"><div class="row-main"><div class="row-title">Also on '+esc(street)+' that day</div><div class="row-sub">'+esc(name)+' is already booked: '+hit.map(esc).join(' \u00b7 ')+'. Saving this will double-book them unless they have another crew.</div></div><span class="row-aside warn">Double</span></div>';
     return;
   }
   const street=(soon[0].split(' \u00b7 ')[0])||'another house';
-  box.innerHTML='<div class="bk-pkt warn"><div class="bk-pkt-t">Also on '+esc(street)+'</div><div class="bk-pkt-d">'+esc(name)+' is booked: '+soon.map(esc).join(' \u00b7 ')+'. Not the same days \u2014 still the same crew.</div></div>';
+  box.innerHTML='<div class="row"><div class="row-main"><div class="row-title">Also on '+esc(street)+'</div><div class="row-sub">'+esc(name)+' is booked: '+soon.map(esc).join(' \u00b7 ')+'. Not the same days \u2014 still the same crew.</div></div><span class="row-aside warn">Same crew</span></div>';
 }
 /* Packet shortcut + verify-before-scheduling. Reads the trade of the currently
    selected sub and shows whether that trade's install packet is ready (specs
@@ -15049,14 +15071,7 @@ function bkRenderPacket(){
   const signed=packetSignedBoth(p,trade);
   let why='';
   if(!ready){const bits=[];if(gaps)bits.push(gaps+' spec'+(gaps===1?'':'s')+' still open');if(!signed)bits.push('not signed off yet');why=bits.join(' \u00b7 ');}
-  box.innerHTML=`<div class="bk-pkt ${ready?'ok':'warn'}">
-      <div class="bk-pkt-row">
-        <span class="bk-pkt-i">${ready?'\u2713':'\u26a0'}</span>
-        <span class="bk-pkt-t">${ready?'Install specs signed off':'Install specs not signed off'}</span>
-      </div>
-      ${ready?'<div class="bk-pkt-d">Specs complete and signed off \u2014 good to schedule.</div>':`<div class="bk-pkt-d">${esc(why||'Review the specs before scheduling')}</div>`}
-      <button class="bk-pkt-btn" onclick="bkOpenPacket()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9zM9 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 11h6M9 15h6"/></svg>${ready?'View install packet':'Review the packet'}</button>
-    </div>`;
+  box.innerHTML='<div class="row row-tap" onclick="bkOpenPacket()"><div class="row-main"><div class="row-title">Install packet</div><div class="row-sub">'+esc(ready?'Specs complete and signed off':(why||'Review the specs before scheduling'))+'</div></div><span class="row-aside '+(ready?'ok':'warn')+'">'+(ready?'Ready':'Not signed')+'</span><span class="row-chev">\u203a</span></div>';
   try{bkRenderOverlap();}catch(e){}}
 function bkOpenPacket(){
   const pid=document.getElementById('bkSite').value;const trade=bkSelTrade();
@@ -16154,8 +16169,9 @@ function gpCalGoogle(remember){
 function _bkBriefHTML(p,b){
   if(!p||!b)return '';
   const box=function(title,body,act,go){
-    return '<div class="bk-pkt warn"><div class="bk-pkt-t">'+esc(title)+'</div><div class="bk-pkt-d">'+esc(body)+'</div>'
-      +(act&&go?('<button class="bk-pkt-btn" onclick="'+go+'">'+esc(act)+'</button>'):'')+'</div>';
+    return '<div class="row'+(go?' row-tap':'')+'"'+(go?(' onclick="'+go+'"'):'')+'><div class="row-main"><div class="row-title">'+esc(title)+'</div><div class="row-sub">'+esc(body)+'</div></div>'
+      +(act?('<span class="row-aside warn">'+esc(act)+'</span>'):'<span class="row-aside warn">Needs you</span>')
+      +(go?'<span class="row-chev">\u203a</span>':'')+'</div>';
   };
   const lead=_bkLead||'';
   const show=function(k){return !lead||lead===k;};

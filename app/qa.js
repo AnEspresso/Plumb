@@ -277,6 +277,33 @@ async function tappable(page,sel){
   t('Fine Line primary follows the calendar',fl.open&&fl.primary.indexOf('Text this link')>=0,fl.primary);
   await page.evaluate(()=>{try{closeInfo();closeSubDetail();}catch(e){}});
 
+  await page.evaluate(()=>{
+    try{closeInfo();closeSubDetail();closeBk();closeDay();}catch(e){}
+    try{[...document.querySelectorAll('.sheet-scrim.show')].forEach(el=>el.classList.remove('show'));}catch(e){}
+    try{calMonth=null;calSiteFilter='p8';openCal();}catch(e){}
+  });
+  await new Promise(r=>setTimeout(r,250));
+  await page.evaluate(()=>{const el=document.querySelector('#calBody .btn-primary');if(el)el.scrollIntoView({block:'center'});});
+  const calTap=await tappable(page,'#calBody .btn-primary');
+  t('Calendar primary tappable',calTap.ok,calTap.why);
+  const calName=await page.evaluate(()=>{const el=document.querySelector('#calBody .btn-primary');return (el&&(el.innerText||el.textContent||'')).replace(/\s+/g,' ').trim();});
+  t('Calendar primary is Schedule a crew',!!calName&&calName.indexOf('Schedule a crew')>=0,calName);
+  await page.evaluate(()=>{try{openBk(null,Date.now());const site=document.getElementById('bkSite');if(site){site.value='p8';bkFillSubs('p8');}}catch(e){}});
+  await new Promise(r=>setTimeout(r,250));
+  const bk=await page.evaluate(()=>{
+    const scr=document.getElementById('bkScrim');
+    const n=scr?scr.querySelectorAll('.btn-primary').length:-1;
+    const title=(document.getElementById('bkTitle')&&document.getElementById('bkTitle').textContent)||'';
+    const pink=!!(document.getElementById('bkPacket')&&document.getElementById('bkPacket').querySelector('.bk-pkt'));
+    const row=!!(document.getElementById('bkPacket')&&document.getElementById('bkPacket').querySelector('.row'));
+    return {open:scr&&scr.classList.contains('show'),n,title,pink,row};
+  });
+  t('Booking sheet is open',bk.open,JSON.stringify(bk));
+  t('Booking has one primary',bk.n===1,JSON.stringify(bk));
+  t('Booking title is Schedule a crew',bk.title==='Schedule a crew',bk.title);
+  t('Booking dropped the pink packet card',!bk.pink&&bk.row,JSON.stringify(bk));
+  await page.evaluate(()=>{try{closeBk();closeCal();}catch(e){}});
+
   await page.evaluate(()=>{try{exitHouseDesk();closeHouse();openSiteFromOverview('p2');go('files');filesSeg('photos');}catch(e){}});
   await new Promise(r=>setTimeout(r,250));
   await page.evaluate(()=>{const el=document.querySelector('#filesPhotos .btn-primary');if(el)el.scrollIntoView({block:'center'});});

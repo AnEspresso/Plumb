@@ -2227,6 +2227,27 @@ t('rewritten screens dropped eyebrow and lbl', (function(){
   });
 })());
 
+S('calendar recut');
+t('calendar More is a choice sheet', $("String(calMore)").indexOf('openChoice')>=0&&$("String(calMore)").indexOf('Add to calendar app')>=0&&$("String(calMore)").indexOf('Homeowner calendars')>=0);
+t('calendar primary is Schedule a crew', $("String(renderCal)").indexOf('Schedule a crew')>=0&&$("String(renderCal)").indexOf('calMore()')>=0);
+t('calendar keeps the month grid', $("String(renderCal)").indexOf('cal-grid')>=0);
+t('calendar tour still finds the grid', SRC.indexOf('#calview .pkt-banner, #calview .cal-grid')>=0&&SRC.indexOf('id="calDoneBtn"')>=0);
+t('booking title is Schedule a crew', $("String(openBk)").indexOf('Schedule a crew')>=0);
+t('booking packet is a row', $("String(bkRenderPacket)").indexOf('row-tap')>=0&&$("String(bkRenderPacket)").indexOf('bk-pkt')<0);
+t('booking delete is danger', SRC.indexOf('id="bkDelete"')>=0&&SRC.indexOf('btn btn-danger btn-block mt-2 hide" id="bkDelete"')>=0);
+t('day sheet uses rows', $("String(renderDay)").indexOf('row-title')>=0&&$("String(renderDay)").indexOf('Text this link')>=0);
+asBuilder();
+$('calMonth=null');
+$('renderCal()');
+t('calendar has one primary', $("document.querySelectorAll('#calBody .btn-primary').length")===1);
+t('calendar primary is named', (($("document.querySelector('#calBody .btn-primary')")&&$("document.querySelector('#calBody .btn-primary').textContent")||'').indexOf('Schedule a crew')>=0));
+$('openBk()');
+t('booking sheet is on screen', el('bkScrim').classList.contains('show'));
+t('booking sheet has one primary', $("document.querySelectorAll('#bkScrim .btn-primary').length")===1);
+t('booking primary is Save', (el('bkSave')&&el('bkSave').textContent||'').indexOf('Save')>=0);
+t('booking title on the sheet', (el('bkTitle')&&el('bkTitle').textContent||'')==='Schedule a crew');
+$('closeBk()');
+
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');
 function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
