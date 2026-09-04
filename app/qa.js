@@ -238,6 +238,24 @@ async function tappable(page,sel){
     return {n:rows.length,pkt:rows.filter(r=>/\bPacket\b/.test(r.innerText||'')).length,quiet:document.querySelectorAll('#subList .btn-quiet').length};
   });
   t('Crews rows have no Packet button',crewPkt.n>=1&&crewPkt.pkt===0&&crewPkt.quiet===0,JSON.stringify(crewPkt));
+  await page.evaluate(()=>{const row=document.querySelector('#subList .row');if(row)row.click();});
+  await new Promise(r=>setTimeout(r,200));
+  await page.evaluate(()=>{try{closeSubDetail();openPacket((P().subs.find(s=>s.specialty==='plumb')||P().subs[0]||{}).id);}catch(e){}});
+  await new Promise(r=>setTimeout(r,250));
+  const pkt=await page.evaluate(()=>{
+    const body=document.getElementById('infoBody');
+    const n=body?body.querySelectorAll('.btn-primary').length: -1;
+    const rows=body?body.querySelectorAll('.row').length:0;
+    const more=!!(body&&/packetMore/.test(body.innerHTML));
+    const pink=!!(body&&body.querySelector('.pkt-open'));
+    return {n,rows,more,pink,open:document.getElementById('infoScrim').classList.contains('show')};
+  });
+  t('Packet overlay is open',pkt.open,JSON.stringify(pkt));
+  t('Packet has at most one primary',pkt.n<=1,JSON.stringify(pkt));
+  t('Packet uses rows',pkt.rows>=1,JSON.stringify(pkt));
+  t('Packet More is on the overlay',pkt.more,JSON.stringify(pkt));
+  t('Packet dropped the pink still-open box',!pkt.pink,JSON.stringify(pkt));
+  await page.evaluate(()=>{try{closeInfo();closeSubDetail();}catch(e){}});
 
   await page.evaluate(()=>{try{exitHouseDesk();closeHouse();openSiteFromOverview('p2');go('files');filesSeg('photos');}catch(e){}});
   await new Promise(r=>setTimeout(r,250));

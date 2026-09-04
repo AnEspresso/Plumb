@@ -2187,6 +2187,21 @@ t('Documents Add sits above search', (function(){
   return block.indexOf('openAddDoc')<block.indexOf('id="docSearch"');
 })());
 t('Documents clay only when audience is mixed', $("String(renderDocs)").indexOf('mixed&&docAudClient')>=0);
+t('packet More is a choice sheet', $("String(packetMore)").indexOf('openChoice')>=0&&$("String(packetMore)").indexOf('Add a document for this trade')>=0&&$("String(packetMore)").indexOf('Pin a note or log day')>=0);
+t('packet leftover buttons left the list', $("String(packetHTML)").indexOf('add-sub-btn')<0&&$("String(packetHTML)").indexOf('pkt-sign-btn')<0&&$("String(packetHTML)").indexOf('class="eyebrow"')<0);
+t('packet lists are rows', $("String(packetHTML)").indexOf('row-tap')>=0);
+t('unbooked packet primary is Schedule this crew', $("String(packetHTML)").indexOf('Schedule this crew')>=0&&$("String(packetHTML)").indexOf('pktGoBook')>=0);
+t('crew packet door keeps the tour id', SRC.indexOf('id="svPacket"')>=0);
+asBuilder();
+$("state.activeId='p2'");
+$("openPacket((P().subs.find(function(s){return s.specialty==='plumb';})||P().subs[0]).id)");
+t('builder packet is on screen', el('infoScrim').classList.contains('show'));
+t('builder packet has at most one primary', $("document.querySelectorAll('#infoBody .btn-primary').length")<=1);
+t('builder packet uses rows', $("document.querySelectorAll('#infoBody .row').length")>=1);
+$('packetMore()');
+t('packet More opens', el('choiceScrim').classList.contains('show')&&el('choiceBody').innerHTML.indexOf('Add a document for this trade')>=0);
+$('closeChoice()');
+$('closeInfo()');
 t('rewritten screens dropped eyebrow and lbl', (function(){
   const fns=['renderDocs','renderSubs','renderSettings','renderPhotos','renderDayLog'];
   return fns.every(function(n){
