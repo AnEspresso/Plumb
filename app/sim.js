@@ -2247,6 +2247,19 @@ t('booking sheet has one primary', $("document.querySelectorAll('#bkScrim .btn-p
 t('booking primary is Save', (el('bkSave')&&el('bkSave').textContent||'').indexOf('Save')>=0);
 t('booking title on the sheet', (el('bkTitle')&&el('bkTitle').textContent||'')==='Schedule a crew');
 $('closeBk()');
+t('house conflicts stay on that house', $("typeof calConflictOnScreen")==='function'&&$("String(renderCal)").indexOf('calConflictOnScreen')>=0);
+asBuilder();
+$("calSiteFilter='p8'");
+$("calCrewFilter=''");
+$("calMonth=new Date(2026,7,1)");
+$('renderCal()');
+t('Beaumont August does not flag other houses', (function(){
+  const txt=(el('calBody')&&el('calBody').textContent)||'';
+  return txt.indexOf('Calderwood')<0&&txt.indexOf('Whitaker')<0&&txt.indexOf('Clearwater')<0&&txt.indexOf('Juniper')<0;
+})());
+$("calSiteFilter='all'");
+$('renderCal()');
+t('all houses still flags doubles', ((el('calBody')&&el('calBody').textContent)||'').indexOf('double-booked')>=0);
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');

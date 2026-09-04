@@ -303,6 +303,16 @@ async function tappable(page,sel){
   t('Booking title is Schedule a crew',bk.title==='Schedule a crew',bk.title);
   t('Booking dropped the pink packet card',!bk.pink&&bk.row,JSON.stringify(bk));
   await page.evaluate(()=>{try{closeBk();closeCal();}catch(e){}});
+  await page.evaluate(()=>{try{calMonth=new Date(2026,7,1);calSiteFilter='p8';calCrewFilter='';openCal();}catch(e){}});
+  await new Promise(r=>setTimeout(r,250));
+  const houseCal=await page.evaluate(()=>{
+    const txt=(document.getElementById('calBody')&&document.getElementById('calBody').innerText)||'';
+    const banners=[...document.querySelectorAll('#calBody .pkt-banner')].map(el=>(el.innerText||'').replace(/\s+/g,' ').trim());
+    return {txt,banners,who:(document.getElementById('calWho')&&document.getElementById('calWho').textContent)||''};
+  });
+  t('Beaumont calendar is this house',houseCal.who.indexOf('Beaumont')>=0,houseCal.who);
+  t('Beaumont calendar does not flag other houses',['Calderwood','Whitaker','Clearwater','Juniper'].every(n=>houseCal.txt.indexOf(n)<0),JSON.stringify(houseCal.banners));
+  await page.evaluate(()=>{try{closeCal();}catch(e){}});
 
   await page.evaluate(()=>{try{exitHouseDesk();closeHouse();openSiteFromOverview('p2');go('files');filesSeg('photos');}catch(e){}});
   await new Promise(r=>setTimeout(r,250));

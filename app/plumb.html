@@ -3842,15 +3842,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.372.0 - Calendar and booking use one primary';
+const PLUMB_VERSION='2.373.0 - Calendar flags follow this house';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788920000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.372.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788930000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.373.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -14741,6 +14741,17 @@ function idleBook(name){
   const sb=document.getElementById('bkSub');if(sb)sb.value=name;
   bkSyncBtns();bkRenderPacket();}
 function calMine(b){return !calIsSub()||b.subName===(state.session||{}).name;}
+function calConflictOnScreen(c){
+  if(!c)return false;
+  if(calCrewFilter&&c.name!==calCrewFilter)return false;
+  const hit=(c.bs&&c.bs[0])||c.a;
+  if(hit&&!calMine(hit))return false;
+  if(calSiteFilter==='all'||calCrewFilter)return true;
+  const sid=String(calSiteFilter);
+  if(c.bs&&c.bs.length)return c.bs.some(function(b){return b&&b.p&&String(b.p.id)===sid;});
+  if(c.a&&c.a.p)return String(c.a.p.id)===sid;
+  return false;
+}
 function calVisibleBookings(){
   if(calIsClient()){const sid=(state.session||{}).site||((clientProj()||{}).id);return allBookings().filter(b=>String(b.p.id)===String(sid));}
   if(calCrewFilter)return allBookings().filter(b=>b.subName===calCrewFilter);
@@ -14825,7 +14836,7 @@ function renderCal(){
       +'<button class="cal-chip" onclick="openIdle()">Idle / plan</button>'
       +'</div>';
   }
-  const conf=calIsClient()?[]:bookingConflicts().filter(c=>(!calCrewFilter||c.name===calCrewFilter)&&calMine(c.bs?c.bs[0]:c.a));
+  const conf=calIsClient()?[]:bookingConflicts().filter(calConflictOnScreen);
   const banner=conf.length?'<div class="mt-0 ml-1 mr-1 mb-3">'+conf.slice(0,3).map(function(c){
       if(c.kind==='double'){
         const who=String(c.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -14843,9 +14854,10 @@ function renderCal(){
   const dblDays={};
   if(!calIsClient())bookingConflicts().forEach(function(c){
     if(c.kind!=='double')return;
-    if(calCrewFilter&&c.name!==calCrewFilter)return;
+    if(!calConflictOnScreen(c))return;
     (c.bs||[]).forEach(function(b){
       if(!calMine(b))return;
+      if(calSiteFilter!=='all'&&!calCrewFilter&&String((b.p&&b.p.id)||'')!==String(calSiteFilter))return;
       let d=dayStart(b.start), last=dayStart(b.end||b.start);
       for(;d<=last;d+=86400000)dblDays[dayKey(d)]=1;
     });
@@ -14894,9 +14906,9 @@ function renderDay(){
   const av=calVisibleAvail().filter(a=>spanCovers(a,calDay));
   const cf=conflictIds();
   const dayDoubles=bookingConflicts().filter(function(c){
-    return c.kind==='double'&&(c.bs||[]).some(function(b){return spanCovers(b,calDay);});
+    return c.kind==='double'&&calConflictOnScreen(c)&&(c.bs||[]).some(function(b){return spanCovers(b,calDay);});
   });
-  if(!calIsClient()){
+  if(!calIsClient()&&(calSiteFilter==='all'||calCrewFilter)){
     dayDoubles.forEach(function(c){
       (c.bs||[]).forEach(function(b){
         if(!spanCovers(b,calDay))return;

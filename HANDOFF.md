@@ -1,4 +1,7 @@
+**v2.373.0 is live.** Calendar flags follow this house. Banners and the red wash stay off other jobs when you are on one house. All houses still shows the portfolio.
+
 **v2.372.0 is live.** Calendar has one primary: Schedule a crew. Leftovers live in More. Booking sheet is Schedule a crew, packet is a row, Save is the dark button, no pink card.
+
 
 **v2.371.0 is live.** Packet dark button follows the calendar: Schedule this crew when there are no dates, Text this link when there are. Not booked is said once. Empty-truck line stays off when specs are already on the truck.
 
