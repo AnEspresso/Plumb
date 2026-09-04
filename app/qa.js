@@ -233,6 +233,11 @@ async function tappable(page,sel){
   t('Crews primary tappable',crewTap.ok,crewTap.why);
   const crewName=await page.evaluate(()=>{const el=document.querySelector('#buildSubs .btn-primary');return (el&&(el.innerText||el.getAttribute('aria-label')||'')).replace(/\s+/g,' ').trim();});
   t('Crews primary is named',!!crewName&&crewName.indexOf('Add a crew')>=0,crewName);
+  const crewPkt=await page.evaluate(()=>{
+    const rows=[...document.querySelectorAll('#subList .row')];
+    return {n:rows.length,pkt:rows.filter(r=>/\bPacket\b/.test(r.innerText||'')).length,quiet:document.querySelectorAll('#subList .btn-quiet').length};
+  });
+  t('Crews rows have no Packet button',crewPkt.n>=1&&crewPkt.pkt===0&&crewPkt.quiet===0,JSON.stringify(crewPkt));
 
   await page.evaluate(()=>{try{exitHouseDesk();closeHouse();openSiteFromOverview('p2');go('files');filesSeg('photos');}catch(e){}});
   await new Promise(r=>setTimeout(r,250));
@@ -280,6 +285,17 @@ async function tappable(page,sel){
     return !!(b&&b.querySelector('.hero-n.warn')&&b.innerHTML.includes('Over budget')&&b.innerHTML.includes('5,200 over'));
   }));
   t('Beaumont Money body has one primary', await page.evaluate(()=>document.querySelectorAll('#budgetBody .btn-primary').length===1));
+  t('Beaumont Money has no leftover oak links', await page.evaluate(()=>{
+    const txt=(document.getElementById('budgetBody')||{}).innerText||'';
+    return txt.indexOf('Cost report')<0&&txt.indexOf('QuickBooks')<0&&txt.indexOf('accountant')<0&&txt.indexOf('$0 left')<0;
+  }));
+  await page.evaluate(()=>moneyMore());
+  await new Promise(r=>setTimeout(r,150));
+  t('More still reaches Cost report', await page.evaluate(()=>{
+    const txt=(document.getElementById('choiceBody')||{}).innerText||'';
+    return txt.indexOf('Cost report')>=0&&txt.indexOf('Add a budget line')>=0&&txt.indexOf('Download costs for your accountant')>=0;
+  }));
+  await page.evaluate(()=>closeChoice());
   await shot(page,'07-p8-budget');
   await page.evaluate(()=>closeBudget());
   await page.evaluate(()=>{demoRole('builder');openSiteFromOverview('p8');openBudget();openJobCost();});

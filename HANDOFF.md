@@ -1,4 +1,7 @@
+**v2.369.0 is live.** Money leftovers live in More. Even lines have no leftover aside. Packet is on the person, not the crew row. Documents Add sits above search. Everyone is clay only when mixed.
+
 **v2.368.0 is live.** Documents, Crews, Settings and Photos use rows and one primary. Sign out is danger. Same taps.
+
 
 **v2.367.0 is live.** Field Notes mark is 82x56 and readable on the dark button. Words, fill, place, and tap stay.
 

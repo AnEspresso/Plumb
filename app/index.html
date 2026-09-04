@@ -3503,14 +3503,14 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div id="photoGroups"></div>
       </div>
       <div id="filesDocs" class="files-pane" style="display:none">
-      <div class="searchbar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-        <input id="docSearch" placeholder="Search documents…" oninput="renderDocs()">
-      </div>
       <button class="add-sub-btn btn btn-primary" onclick="openAddDoc()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         Add document
       </button>
+      <div class="searchbar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input id="docSearch" placeholder="Search documents…" oninput="renderDocs()">
+      </div>
       <div id="docFilters" class="doc-filters"></div>
       <div id="docList"></div>
       </div>
@@ -3841,15 +3841,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.368.0 - Documents Crews Settings and Photos use rows';
+const PLUMB_VERSION='2.369.0 - Money leftovers in More and quieter lists';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788724800000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.368.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788825600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.369.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5226,7 +5226,8 @@ function renderDocs(){
     const d=o.d,i=o.i;
     const trade=d.trade?specLabel(d.trade):'Shared';
     const sub=[trade,d.m||'',d.fileId?'file attached':''].filter(Boolean).join(' \u00b7 ');
-    const warn=docAudClient(d);
+    const mixed=rows.some(function(x){return docAudClient(x.d);})&&rows.some(function(x){return !docAudClient(x.d);});
+    const warn=mixed&&docAudClient(d);
     return '<div class="row row-tap" onclick="openDoc('+i+')"><div class="row-main"><div class="row-title">'+esc(d.n)+'</div><div class="row-sub">'+esc(sub)+'</div></div><span class="row-aside'+(warn?' warn':'')+'" onclick="event.stopPropagation();cycleDocAud('+i+')" title="Tap to change who can see this">'+esc(DOC_AUD_LABEL[docAud(d)]||'')+'</span><span class="row-chev">\u203a</span></div>';
   }
   let list='';
@@ -10008,18 +10009,27 @@ function moneyActionsHTML(){
     +'</div>';
 }
 function moneyMore(){
-  openChoice({title:'Money',items:[
+  const p=P()||{};
+  const items=[
     {label:'Add a budget line',fn:openCostLine},
     {label:'Send an invoice',fn:moneyNewInvoice},
     {label:'Record a payment',fn:moneyNewPayment}
-  ]});
+  ];
+  try{if(costLines(p).length)items.push({label:'Cost report',fn:openJobCost});}catch(e){}
+  try{if(qbEligible()&&_qbState&&_qbState.connected)items.push({label:'Send new costs to QuickBooks',fn:qbExportNow});}catch(e){}
+  try{if(budgetSources().length)items.push({label:'Copy budget lines from another house',fn:openBudgetCopy});}catch(e){}
+  items.push({label:'Download costs for your accountant',fn:exportCosts});
+  openChoice({title:'Money',items:items});
 }
 function moneyLineRowHTML(l,r){
   const left=r.budget-r.projected;const over=left<-0.005;
+  const aside=over
+    ?'<div class="row-aside warn">'+invUsd(-left)+' over</div>'
+    :(left>0.005?'<div class="row-aside">'+invUsd(left)+' left</div>':'');
   return '<div class="row row-tap" onclick="openCostLine(\''+String(l.id).replace(/'/g,'')+'\')">'
     +'<div class="row-main"><div class="row-title">'+esc(l.label||'')+'</div>'
     +'<div class="row-sub">'+invUsd(r.projected)+' of '+invUsd(r.budget)+'</div></div>'
-    +'<div class="row-aside'+(over?' warn':'')+'">'+(over?invUsd(-left)+' over':invUsd(left)+' left')+'</div>'
+    +aside
     +'<span class="row-chev">&rsaquo;</span></div>';
 }
 let _choiceItems=null;
@@ -10049,12 +10059,8 @@ function renderBudget(){
   </div>
   ${moneyActionsHTML()}
   <div class="seg" id="costGroupSeg"><button class="${_costGroup==='stage'?'on':''}" onclick="setCostGroup('stage')">By stage</button><button class="${_costGroup==='trade'?'on':''}" onclick="setCostGroup('trade')">By trade</button></div>`;
-  const copyBtn=budgetSources().length?`<button class="la-link d-block mt-3 mb-0 mx-auto btn btn-quiet" onclick="openBudgetCopy()">Copy budget lines from another house…</button>`:'';
-  const qbBtn=(qbEligible()&&_qbState&&_qbState.connected)?`<button class="la-link d-block mt-3 mb-0 mx-auto fw-7 btn btn-quiet" onclick="qbExportNow()">Send new costs to QuickBooks</button>`:'';
-  const jcBtn=lines.length?`<button class="la-link d-block mt-3 mb-0 mx-auto fw-7 btn btn-quiet" onclick="openJobCost()">Cost report</button>`:'';
-  const exportBtn=jcBtn+qbBtn+copyBtn+`<button class="la-link d-block mt-2 mb-1 mx-auto btn btn-quiet" onclick="exportCosts()">Download costs for your accountant (.csv)</button>`;
-  if(isWideBudget()){document.getElementById('budgetBody').innerHTML=h+budgetTableHTML(p)+moneyBillHTML(p)+exportBtn;return;}
-  if(!lines.length)h+=`<div class="empty">No budget lines yet. Add one \u2014 or copy another house\u2019s budget below \u2014 to start tracking this build\u2019s money.</div>`;
+  if(isWideBudget()){document.getElementById('budgetBody').innerHTML=h+budgetTableHTML(p)+moneyBillHTML(p);return;}
+  if(!lines.length)h+='<div class="empty">No budget lines yet. Add one \u2014 or copy another house from More.</div>';
   const groups=[];
   if(_costGroup==='stage'){STAGES.forEach(s=>groups.push({key:s.id,label:s.name}));}
   else{SPECIALTIES.forEach(s=>groups.push({key:s.id,label:s.label}));}
@@ -10073,7 +10079,7 @@ function renderBudget(){
     h+=`<div class="bgt-grp c-clay">Not assigned to a line</div>`;
     un.forEach(a=>{h+=`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${qbBadge(a)}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`;});
   }
-  document.getElementById('budgetBody').innerHTML=h+moneyBillHTML(p)+exportBtn;
+  document.getElementById('budgetBody').innerHTML=h+moneyBillHTML(p);
 }
 function moneyBillHTML(p){
   const invs=(p.invoices||[]).slice().reverse();
@@ -13494,7 +13500,7 @@ function renderSubs(){
         if(inv&&inv.status==='joined')bits.push('In SitePlumb');
         else if(inv)bits.push('Invited');
       }
-      return '<div class="row row-tap" onclick="openSubDetail(\''+s.id+'\')"><div class="row-main"><div class="row-title">'+esc(s.name)+'</div><div class="row-sub">'+esc(bits.filter(Boolean).join(' \u00b7 '))+'</div></div><span class="row-aside'+(s.cleared?' ok':' warn')+'">'+(s.cleared?'Cleared':'Not cleared')+'</span><button type="button" class="btn btn-quiet" onclick="event.stopPropagation();openPacket(\''+s.id+'\')">Packet</button><span class="row-chev">\u203a</span></div>';
+      return '<div class="row row-tap" onclick="openSubDetail(\''+s.id+'\')"><div class="row-main"><div class="row-title">'+esc(s.name)+'</div><div class="row-sub">'+esc(bits.filter(Boolean).join(' \u00b7 '))+'</div></div><span class="row-aside'+(s.cleared?' ok':' warn')+'">'+(s.cleared?'Cleared':'Not cleared')+'</span><span class="row-chev">\u203a</span></div>';
     }).join('');
     return head+rows;
   }).join(''):(q?'<div class="empty">No crews match \u201c'+esc(subQuery.trim())+'\u201d.</div>':'<div class="empty">No crews yet. Add your crews so they are ready when a stage comes up.</div>'));
@@ -16773,7 +16779,7 @@ function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;con
   if(closing&&row){row.classList.add('closing');setTimeout(apply,260);}else apply();}
 
 /* ── universal modal dismissal: tap grip, or swipe the modal down ── */
-const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',fileToScrim:'closeFileTo',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',choiceScrim:'closeChoice',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',studioScrim:'closeTourStudio',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
+const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',fileToScrim:'closeFileTo',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',choiceScrim:'closeChoice',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',studioScrim:'closeTourStudio',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',budgetScrim:'closeBudget',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
 function dismissScrim(scrim){if(!scrim)return;const fn=MODAL_CLOSERS[scrim.id];if(fn&&typeof window[fn]==='function'){try{window[fn]();return;}catch(e){}}scrim.classList.remove('show');}
 function dismissParent(elm){let n=elm;while(n&&!(n.classList&&n.classList.contains('pmodal-scrim')))n=n.parentElement;dismissScrim(n);}
 if(typeof window!=='undefined'){window.addEventListener('load',function(){

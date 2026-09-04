@@ -685,7 +685,9 @@ CSVT=$("costsCsv(P())");
 t('csv quotes commas, quotes and newlines', CSVT.includes('"Acme, ""Quote"" Co"')&&CSVT.includes('"line1\nline2"'));
 $("Data.removeCost('caq')");
 $('openBudget()');
-t('export button rendered', el('budgetBody').innerHTML.includes('for your accountant'));
+$('moneyMore()');
+t('export button rendered', el('choiceBody').innerHTML.includes('for your accountant'));
+$('closeChoice()');
 // margin link through the real line modal
 const pricedSel=$("((P().selections||[]).find(s=>Number(s.price)>0)||{}).id");
 $("openCostLine('b1')");
@@ -708,7 +710,9 @@ asBuilder();$("state.activeId='p4'");
 t('Maple Court starts empty', $("costLines(P()).length")===0);
 t('sources exclude self and empty sites', $("JSON.stringify(budgetSources().map(s=>s.id).sort())")===JSON.stringify(['p1','p10','p2','p3','p5','p6','p7','p8','p9']));
 $('openBudget()');
-t('empty budget offers the copy link', el('budgetBody').innerHTML.includes('Copy budget lines from another house'));
+$('moneyMore()');
+t('empty budget offers the copy link', el('choiceBody').innerHTML.includes('Copy budget lines from another house'));
+$('closeChoice()');
 $('openBudgetCopy()');
 t('picker lists donor sites with totals', el('bcBody').innerHTML.includes('Calderwood')&&el('bcBody').innerHTML.includes('656,300'));
 $("cloneBudgetFrom('p2')");
@@ -1503,7 +1507,9 @@ asBuilder();$("state.activeId='p1'");
 $('renderBuild()');
 t('money card shows Projected and Tracking', $("document.body.innerHTML.indexOf('Projected')")>=0&&$("document.body.innerHTML.indexOf('Tracking')")>=0);
 $('openBudget()');
-t('budget sheet offers the job cost report', $("document.getElementById('budgetBody').innerHTML.indexOf('Cost report')")>=0);
+$('moneyMore()');
+t('budget sheet offers the job cost report', $("document.getElementById('choiceBody').innerHTML.indexOf('Cost report')")>=0);
+$('closeChoice()');
 $('openJobCost()');
 t('report opens with a whole-build total row', $("document.getElementById('jcScrim').classList.contains('show')")===true&&$("document.getElementById('jcBody').innerHTML.indexOf('Whole build')")>=0);
 $('closeJobCost()');
@@ -2105,7 +2111,9 @@ t('needs you and coming up are extracted once', $("typeof needsYouItems")==='fun
 t('renderToday calls both collectors', $("String(renderToday)").indexOf('needsYouItems')>=0&&$("String(renderToday)").indexOf('comingUpItems')>=0);
 t('needsYouItems does not duplicate collectors', $("String(needsYouItems)").indexOf('_nyIssues')>=0&&$("String(needsYouItems)").indexOf('_nyOnDeck')<0&&$("String(needsYouItems)").indexOf('_pkChangeOpen')<0);
 t('Needs You skips closed field issues', $("String(_nyIssues)").indexOf("status==='done'")>=0&&$("String(_nyIssues)").indexOf("status==='closed'")>=0);
-t('Money More opens the choice sheet', $("String(moneyMore)").indexOf('openChoice')>=0&&$("String(moneyMore)").indexOf('Add a budget line')>=0&&$("String(moneyMore)").indexOf('Send an invoice')>=0&&$("String(moneyMore)").indexOf('Record a payment')>=0);
+t('Money More opens the choice sheet', $("String(moneyMore)").indexOf('openChoice')>=0&&$("String(moneyMore)").indexOf('Add a budget line')>=0&&$("String(moneyMore)").indexOf('Send an invoice')>=0&&$("String(moneyMore)").indexOf('Record a payment')>=0&&$("String(moneyMore)").indexOf('Cost report')>=0&&$("String(moneyMore)").indexOf('Download costs for your accountant')>=0);
+t('Money leftovers are not on the list', $("String(renderBudget)").indexOf('openJobCost')<0&&$("String(renderBudget)").indexOf('exportCosts')<0&&$("String(renderBudget)").indexOf('openBudgetCopy')<0);
+t('even money lines have no leftover aside', $("String(moneyLineRowHTML)").indexOf("left>0.005")>=0);
 t('Money primary is Log a cost', $("String(moneyActionsHTML)").indexOf('Log a cost')>=0&&$("String(moneyActionsHTML)").indexOf('btn-primary')>=0&&$("String(renderBudget)").indexOf('moneyActionsHTML')>=0);
 t('Money lines are rows', $("String(renderBudget)").indexOf('moneyLineRowHTML')>=0&&$("String(moneyLineRowHTML)").indexOf('row-tap')>=0);
 asBuilder();
@@ -2126,7 +2134,7 @@ $("state.activeId='p2'");
 $('openBudget()');
 t('Calderwood Money body still one primary', $("document.querySelectorAll('#budgetBody .btn-primary').length")===1);
 $('moneyMore()');
-t('More opens the choice sheet', el('choiceScrim').classList.contains('show')&&el('choiceBody').innerHTML.indexOf('Add a budget line')>=0&&el('choiceBody').innerHTML.indexOf('Send an invoice')>=0&&el('choiceBody').innerHTML.indexOf('Record a payment')>=0);
+t('More opens the choice sheet', el('choiceScrim').classList.contains('show')&&el('choiceBody').innerHTML.indexOf('Add a budget line')>=0&&el('choiceBody').innerHTML.indexOf('Send an invoice')>=0&&el('choiceBody').innerHTML.indexOf('Record a payment')>=0&&el('choiceBody').innerHTML.indexOf('Cost report')>=0);
 $('closeChoice()');
 $('closeBudget()');
 $('showOverview()');
@@ -2170,6 +2178,15 @@ t('Photos has one primary', $("document.querySelectorAll('#filesPhotos .btn-prim
 $('renderSettings()');
 t('Settings body has no extra primary', $("document.querySelectorAll('#settingsBody .btn-primary').length")===0);
 t('Settings Sign out is danger', ($("document.querySelector('#settingsBody .btn-danger')")&&$("document.querySelector('#settingsBody .btn-danger').textContent")||'').indexOf('Sign out')>=0);
+t('Crews list has no Packet button', $("String(renderSubs)").indexOf('openPacket')<0&&$("document.querySelectorAll('#subList .btn-quiet').length")===0);
+t('Crew detail still opens the packet', $("String(openSubDetail)").indexOf("openPacket")>=0&&$("String(openSubDetail)").indexOf('Open packet')>=0);
+t('Documents Add sits above search', (function(){
+  const i=SRC.indexOf('id="filesDocs"');
+  if(i<0)return false;
+  const block=SRC.slice(i,i+900);
+  return block.indexOf('openAddDoc')<block.indexOf('id="docSearch"');
+})());
+t('Documents clay only when audience is mixed', $("String(renderDocs)").indexOf('mixed&&docAudClient')>=0);
 t('rewritten screens dropped eyebrow and lbl', (function(){
   const fns=['renderDocs','renderSubs','renderSettings','renderPhotos','renderDayLog'];
   return fns.every(function(n){
