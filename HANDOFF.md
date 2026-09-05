@@ -1,4 +1,6 @@
-**v2.385.0 is live.** Money Done is the white button at the bottom. Header Done is gone. Calendar House is already at the bottom from 2.384 (not yet live).
+**v2.387.0 is live.** Progress House is pinned to the phone bottom, not the header. Money House is a pill. Calendar House is already at the bottom.
+
+
 
 
 
