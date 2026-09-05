@@ -1,4 +1,4 @@
-**v2.397.0 is live.** Timeline rail runs center-to-center under the coins. Lines meet the dots.
+**v2.397.0 is live.** Timeline rail runs center-to-center under the coins. Lines meet the dots. Pixel-tight baselines blessed (home, house, People, Add a crew, Company).
 
 
 
