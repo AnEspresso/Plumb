@@ -1,4 +1,5 @@
-**v2.391.0 is live.** Field Notes has one pull handle. Shared leave bar from 2.390 is in this ship if 2.390 never went live.
+**v2.392.0 is live.** Browse sheets use the leave bar. Header Done is gone. Action sheets keep Cancel + the job.
+
 
 
 

@@ -376,9 +376,9 @@ async function tappable(page,sel){
 
   await page.evaluate(()=>{try{openSettings();}catch(e){}});
   await new Promise(r=>setTimeout(r,200));
-  const setDone=await tappable(page,'#settingsScrim .sheet-foot .btn-primary');
+  const setDone=await tappable(page,'#settingsScrim .leave-bar .btn');
   t('Settings Done tappable',setDone.ok,setDone.why);
-  const setDoneName=await page.evaluate(()=>{const el=document.querySelector('#settingsScrim .sheet-foot .btn-primary');return (el&&(el.innerText||el.getAttribute('aria-label')||'')).replace(/\s+/g,' ').trim();});
+  const setDoneName=await page.evaluate(()=>{const el=document.querySelector('#settingsScrim .leave-bar .btn');return (el&&(el.innerText||el.getAttribute('aria-label')||'')).replace(/\s+/g,' ').trim();});
   t('Settings Done is named',!!setDoneName,setDoneName);
   await page.evaluate(()=>{
     try{closeSettings();}catch(e){}

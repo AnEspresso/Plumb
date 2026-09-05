@@ -2177,6 +2177,8 @@ t('money Done is a bottom pill', SRC.split('id="budgetScrim"')[1].split('id="cos
 t('leave bar is the shared bottom exit', SRC.indexOf('.leave-bar{')>=0&&SRC.split('id="houseScrim"')[1].split('id="logPickScrim"')[0].indexOf('id="houseDoneBtn"')>=0&&SRC.split('id="houseScrim"')[1].split('id="logPickScrim"')[0].indexOf('btn-quiet')<0);
 t('Field Notes pick uses the leave bar', SRC.split('id="logPickScrim"')[1].split('id="infoScrim"')[0].indexOf('leave-bar')>=0&&SRC.split('id="logPickScrim"')[1].split('id="infoScrim"')[0].indexOf('btn-quiet')<0);
 t('Field Notes has one pull handle', SRC.indexOf('id="sheet"')>=0&&SRC.split('id="sheet"')[1].split('id="lightbox"')[0].indexOf('class="grip"')<0&&SRC.split('id="sheet"')[1].split('id="lightbox"')[0].indexOf('sheet-handle')>=0);
+t('browse sheets have no header Done', SRC.split('<body')[1].split('<script')[0].indexOf('class="btn btn-quiet" onclick="dismissParent(this)">Done')<0);
+t('settings uses the leave bar', SRC.split('id="settingsScrim"')[1].split('id="studioScrim"')[0].indexOf('leave-bar')>=0);
 
 S('4A list screens');
 asBuilder();

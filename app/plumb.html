@@ -2601,18 +2601,18 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="hoScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Homeowner calendars</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Homeowner calendars</h4></div>
 <div class="sheet-body">
 <div class="la-hint mt-0 ml-0 mr-0 mb-2 ta-l">Give homeowners a read-only calendar of their own build. Their house only — never your other jobs. Crews show by trade, not by name ("Flooring crew at the house Tue–Thu"), and your notes to crews stay private. Homeowners who can see the week ahead call and text far less.</div>
       <input id="hoSearch" placeholder="Type an address or name…" autocapitalize="off" autocomplete="off" oninput="renderHoAccess()" class="mb-2 hide">
       <div class="pick-list" id="hoBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeHoAccess()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeHoAccess()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="rosterScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Crews</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Crews</h4></div>
 <div class="sheet-body">
 <p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-sm">Your company roster. Every new site starts with these subs — add the crews you use again and again.</p>
       <input id="rosterSearch" placeholder="Search crews…" autocapitalize="off" autocomplete="off" oninput="renderRoster()" class="mb-2" style="display:none">
@@ -2624,72 +2624,72 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <button class="add-sub-btn btn btn-secondary" onclick="inviteSubFlow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite a crew to SitePlumb…</button>
       <button class="add-sub-btn mt-2 op-85 btn btn-secondary" onclick="subsOnSite()">Manage crews on a specific house…</button>
 </div>
-</div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="dismissParent(this)"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="idleScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Idle &amp; Plan Ahead</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Idle &amp; Plan Ahead</h4></div>
 <div class="sheet-body">
 <input id="idleSearch" class="ov-search hide mb-2" placeholder="Search idle subs…" oninput="renderIdleSheet()">
       <div class="idle-scroll" id="idleBody"></div>
       <div id="idlePlan"></div>
 </div>
-</div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="dismissParent(this)"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="openItemsScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Open items</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Open items</h4></div>
 <div class="sheet-body">
 <p class="fs-sm c-ink-3 mt-0 ml-1 mr-1 mb-3">Houses needing attention, most open items first.</p>
       <div class="info-body" id="openItemsBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeOpenItems()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeOpenItems()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="idleSitesScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Idle houses</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Idle houses</h4></div>
 <div class="sheet-body">
 <p class="fs-sm c-ink-3 mt-0 ml-1 mr-1 mb-3">Started but quiet — no scheduled subs, no recent log activity, no permits in motion. Longest-idle first.</p>
       <div class="info-body" id="idleSitesBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeIdleSites()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeIdleSites()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="esScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Edit houses</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Edit houses</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="esBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeEditSites()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeEditSites()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="dayScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="dayTitle">Day</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="dayTitle">Day</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="dayBody"></div>
 </div>
-</div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeDay()"><span>Done</span></button></div></div>
   </div>
 
   <div id="legalDocScrim"><div class="ld-bar"><button class="ov-logout btn btn-secondary" onclick="closeLegalDoc()">Done</button></div><iframe id="legalDocFrame" src="about:blank" title="Policy document"></iframe></div>
   <div id="guestScrim"><div class="gp-wrap" id="gpBody"></div></div>
   <div class="pmodal-scrim sheet-scrim" id="pktLogScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="pktLogTitle">Daily log / photos</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="pktLogTitle">Daily log / photos</h4></div>
 <div class="sheet-body">
 <div class="info-body"><div id="pktLogBody"></div></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closePktLog()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closePktLog()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="bkScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="bkTitle">Schedule a crew</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="bkTitle">Schedule a crew</h4></div>
 <div class="sheet-body">
 <div class="info-body">
         <div class="meta" id="bkSiteLbl">House</div>
@@ -2708,7 +2708,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
         <button class="btn btn-danger btn-block mt-2 hide" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
       </div>
 </div>
-</div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="dismissParent(this)"><span>Done</span></button></div></div>
   </div>
 
   <div class="subview" id="subview">
@@ -2751,7 +2751,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <!-- homeowner: raise a concern -->
   <div class="pmodal-scrim sheet-scrim" id="concernScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Raise a concern</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Raise a concern</h4></div>
 <div class="sheet-body">
 <div class="info-body mb-3">Send a photo and note to your builder. Your builder sees it in Needs You so it does not get lost.</div>
       <div class="photo-drop mb-3" id="cDrop" onclick="var e=document.getElementById('cFile');e&amp;&amp;e.click()">
@@ -2801,7 +2801,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <!-- new site modal -->
   <!-- reusable type-to-confirm destructive modal -->
   <div class="pmodal-scrim u-m2 sheet-scrim sheet-2" id="confirmDelScrim">
-    <div class="pmodal mw-340 sheet"><div class="sheet-head"><h4 id="cdTitle">Delete</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal mw-340 sheet"><div class="sheet-head"><h4 id="cdTitle">Delete</h4></div>
 <div class="sheet-body">
 <p id="cdBody" class="fs-sm lh-15 c-ink-2 mt-0 ml-1 mr-1 mb-3"></p>
       <div class="fld-hint mt-0 ml-1 mr-1 mb-1">Type <b>DELETE</b> to confirm</div>
@@ -2811,7 +2811,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   </div>
 
   <div class="pmodal-scrim u-m2 sheet-scrim sheet-2" id="confirmScrim">
-    <div class="pmodal mw-340 sheet"><div class="sheet-head"><h4 id="ocTitle">Confirm</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal mw-340 sheet"><div class="sheet-head"><h4 id="ocTitle">Confirm</h4></div>
 <div class="sheet-body">
 <p id="ocBody" class="fs-sm lh-15 c-ink-2 mt-0 ml-1 mr-1 mb-4"></p>
 </div>
@@ -2819,7 +2819,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   </div>
 
   <div class="pmodal-scrim u-m3 sheet-scrim sheet-2" id="nyAskScrim">
-    <div class="pmodal mw-360 sheet"><div class="sheet-head"><h4 id="nyAskTitle">Question</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal mw-360 sheet"><div class="sheet-head"><h4 id="nyAskTitle">Question</h4></div>
 <div class="sheet-body">
 <p id="nyAskWho" class="fs-sm c-ink-3 mt-1 ml-1 mr-1 mb-2"></p>
       <p id="nyAskQ" class="fs-md lh-145 c-ink mt-0 ml-1 mr-1 mb-3 fw-6"></p>
@@ -2830,19 +2830,18 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim u-m4 sheet-scrim sheet-2" id="pkLogScrim">
     <div class="pmodal mw-360 sheet"><div class="mgrip sheet-handle" onclick="closePkLog()"></div>
-      <div class="sheet-head"><h4 id="pkLogTitle">Decisions</h4><button type="button" class="btn btn-quiet" onclick="closePkLog()">Done</button></div>
+      <div class="sheet-head"><h4 id="pkLogTitle">Decisions</h4></div>
 <div class="sheet-body">
 <p id="pkLogSub" class="fs-sm c-ink-3 mt-1 ml-1 mr-1 mb-2">Dates you confirmed and answers you sent.</p>
       <input id="pkLogQ" class="ov-search d-block mt-0 ml-0 mr-0 mb-2" placeholder="Search…" oninput="inbDraw()">
       <div class="ov-inbtabs" id="pkLogTabs"></div>
       <div id="pkLogBody"></div>
-      <button class="add-sub-btn mt-3 btn btn-secondary" onclick="closePkLog()">Done</button>
 </div>
-</div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closePkLog()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim u-m5 sheet-scrim sheet-2" id="pwResetScrim">
-    <div class="pmodal mw-360 sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div><div class="sheet-head"><h4 id="prTitle">Choose a new password</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal mw-360 sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div><div class="sheet-head"><h4 id="prTitle">Choose a new password</h4></div>
 <div class="sheet-body">
 <p id="prBody" class="fs-sm lh-15 c-ink-2 mt-0 ml-1 mr-1 mb-3"></p>
       <div id="prSetRow">
@@ -2869,7 +2868,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   </div>
 
   <div class="pmodal-scrim u-m6 sheet-scrim sheet-2" id="demoIntroScrim">
-    <div class="pmodal mw-360 sheet"><div class="sheet-head"><h4>Welcome to the example build</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal mw-360 sheet"><div class="sheet-head"><h4>Welcome to the example build</h4></div>
 <div class="sheet-body">
 <p class="fs-sm lh-15 c-ink-2 mt-0 ml-1 mr-1 mb-3">
         Four live houses, real numbers, nothing you can break.</p>
@@ -2881,7 +2880,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   </div>
 
   <div class="pmodal-scrim u-m6 sheet-scrim sheet-2" id="exitDemoScrim">
-    <div class="pmodal mw-360 sheet"><div class="sheet-head"><h4>Done looking around?</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal mw-360 sheet"><div class="sheet-head"><h4>Done looking around?</h4></div>
 <div class="sheet-body">
 <p class="fs-sm lh-15 c-ink-2 mt-0 ml-1 mr-1 mb-3">
         That was a demo house — nothing you tapped is saved anywhere.</p>
@@ -2893,7 +2892,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   </div>
 
   <div class="pmodal-scrim u-m5 sheet-scrim sheet-2" id="evScrim">
-    <div class="pmodal mw-360 sheet"><div class="sheet-head"><h4 id="evTitle">Confirm your email</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal mw-360 sheet"><div class="sheet-head"><h4 id="evTitle">Confirm your email</h4></div>
 <div class="sheet-body">
 <p id="evBody" class="fs-sm lh-15 c-ink-2 mt-0 ml-1 mr-1 mb-3"></p>
       
@@ -2904,7 +2903,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="newSiteScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="nsTitle">Add a house</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="nsTitle">Add a house</h4></div>
 <div class="sheet-body">
 <p id="nsHint" class="ls mt-1 ml-0 mr-0 mb-3">Street first. A name is optional if the street is the name.</p>
       <input id="nsStreet" placeholder="Street address" autocomplete="street-address" list="nsStreetList">
@@ -2925,7 +2924,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <!-- add selection modal -->
   <div class="pmodal-scrim sheet-scrim" id="selScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="selModalTitle">Add selection</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="selModalTitle">Add selection</h4></div>
 <div class="sheet-body">
 <div class="fld-label">Trade section</div>
       <select id="selCat" class="fld-select" onchange="onSelCatChange()"></select>
@@ -2948,7 +2947,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <!-- payments modal -->
   <div class="pmodal-scrim sheet-scrim" id="payScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Payments</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Payments</h4></div>
 <div class="sheet-body">
 <div class="sub fs-xs c-ink-2 mt-1 ml-0 mr-0 mb-3 ta-c">All money received toward the upcharge balance. Add loose payments here; invoice payments are edited on each invoice.</div>
       <div id="payList" class="mb-3"></div>
@@ -2965,7 +2964,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <!-- special instructions modal -->
   <div class="pmodal-scrim sheet-scrim" id="selNotesScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Special instructions</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Special instructions</h4></div>
 <div class="sheet-body">
 <div class="sub fs-xs c-ink-2 mt-1 ml-0 mr-0 mb-3 ta-c">Build-wide notes, allowances, mechanical/electrical instructions.</div>
       <textarea id="selNotesText" rows="6" placeholder="e.g. Confirm cabinet hardware finish. Tile walk with foreman before ordering. Paint sheen per room." class="w-full bg-surface r-sm py-3 px-3 fs-sm c-ink u-m1"></textarea>
@@ -2976,7 +2975,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <!-- generic info / demo prompt modal -->
   <div class="pmodal-scrim sheet-scrim" id="startScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="startTitle">Welcome to SitePlumb</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="startTitle">Welcome to SitePlumb</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="startBody"></div>
 </div>
@@ -2985,17 +2984,17 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="mailReviewScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Forwarded mail to review</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Forwarded mail to review</h4></div>
 <div class="sheet-body">
 <p class="fs-sm c-ink-3 mt-0 ml-1 mr-1 mb-3">From senders not on this house's team. File the ones you want; discard the rest.</p>
       <div class="info-body" id="mailReviewBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeMailReview()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeMailReview()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="setupScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="setupTitle">Welcome to SitePlumb</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="setupTitle">Welcome to SitePlumb</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="setupBody"></div>
       
@@ -3009,11 +3008,11 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="invScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="invTitle">Invoices</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="invTitle">Invoices</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="invBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeInvoices()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeInvoices()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="budgetScrim">
@@ -3027,7 +3026,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="costLineScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="clHead">Budget line</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="clHead">Budget line</h4></div>
 <div class="sheet-body">
 <div class="info-body">
         <label class="flabel">What is it for</label>
@@ -3060,7 +3059,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="costActualScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="caHead">Log a cost</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="caHead">Log a cost</h4></div>
 <div class="sheet-body">
 <div class="info-body">
         <label class="flabel">Amount</label>
@@ -3099,20 +3098,18 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="jcScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Cost report</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Cost report</h4></div>
 <div class="sheet-body">
 <div class="ls ta-c mt-1 ml-0 mr-0 mb-2">Budget · signed · paid · projected — the whole build’s money on one sheet. Private to your team.</div>
       <div class="info-body" id="jcBody"></div>
       <button class="la-link d-block mt-3 mb-0 mx-auto btn btn-quiet" onclick="downloadJobCost()">Download cost report (.csv)</button>
 </div>
-<div class="row2 mt-3 sheet-foot">
-        <button class="b1 b-go flex-1 btn btn-primary" onclick="closeJobCost()">Done</button>
-      </div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeJobCost()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="budgetCopyScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Copy a budget</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Copy a budget</h4></div>
 <div class="sheet-body">
 <div class="ls ta-c mt-1 ml-0 mr-0 mb-2">Start from another house’s lines — amounts stay editable, logged costs never copy.</div>
       <div class="info-body" id="bcBody"></div>
@@ -3122,7 +3119,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <!-- ───── WELCOME FORK (first live sign-in, no sites) ───── -->
   <div class="pmodal-scrim sheet-scrim" id="welcomeScrim">
-    <div class="pmodal ta-c sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div><div class="sheet-head"><h4>Welcome to SitePlumb</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal ta-c sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div><div class="sheet-head"><h4>Welcome to SitePlumb</h4></div>
 <div class="sheet-body">
 <div class="ls mt-1 ml-0 mr-0 mb-4">Your workspace is ready. Want the two-minute walkthrough first?</div>
       <button class="b1 b-go w-full mb-2 btn btn-primary" onclick="startGrandTour()">Show me around</button>
@@ -3172,25 +3169,25 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="schedScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Schedule — all houses</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Schedule — all houses</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="schedBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeSchedule()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeSchedule()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="legalScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Privacy &amp; legal</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Privacy &amp; legal</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="legalBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeLegal()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeLegal()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="delAcctScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Delete account</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Delete account</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="delAcctBody"></div>
 </div>
@@ -3199,16 +3196,16 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="settingsScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Settings</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Settings</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="settingsBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeSettings()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeSettings()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="studioScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Walkthrough studio</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Walkthrough studio</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="studioBody"></div>
 </div>
@@ -3220,30 +3217,30 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="companyScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Company</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Company</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="companyBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeCompany()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeCompany()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="nextScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="nextTitle">Up next</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="nextTitle">Up next</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="nextBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeNextSite()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeNextSite()"><span>Done</span></button></div></div>
   </div>
 
 
   <div class="pmodal-scrim sheet-scrim" id="peopleScrim">
     <div class="pmodal sheet" id="peopleModal"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="peopleTitle">People</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="peopleTitle">People</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="peopleBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot" id="peopleFoot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closePeople()">Done</button></div></div>
+<div class="leave-bar sheet-foot" id="peopleFoot"><button class="btn btn-secondary" onclick="closePeople()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim u-m8 sheet-scrim" id="houseScrim">
@@ -3269,17 +3266,17 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="infoScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="infoTitle">Heads up</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="infoTitle">Heads up</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="infoBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot" id="infoFoot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeInfo()">Got it</button></div></div>
+<div class="leave-bar sheet-foot" id="infoFoot"><button class="btn btn-secondary" onclick="closeInfo()"><span>Got it</span></button></div></div>
   </div>
 
   <!-- record (photo / item) detail + edit modal -->
   <div class="pmodal-scrim sheet-scrim" id="recScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="recTitle">Edit entry</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="recTitle">Edit entry</h4></div>
 <div class="sheet-body">
 <div id="recThumb" class="mb-3"></div>
       <input id="recPhotoFile" type="file" accept="image/*" hidden onchange="onRecPhoto(event)">
@@ -3306,7 +3303,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim u-m11 sheet-scrim sheet-2" id="fileToScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Which packet?</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Which packet?</h4></div>
 <div class="sheet-body">
 <div class="fn-tag" id="fileToLead">Put this on a trade’s packet, or skip.</div>
       <div class="fld-label">Trade</div>
@@ -3321,7 +3318,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <!-- jurisdiction edit modal -->
   <div class="pmodal-scrim sheet-scrim" id="jurisScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Permit jurisdiction</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Permit jurisdiction</h4></div>
 <div class="sheet-body">
 <div class="sub fs-xs c-ink-2 mt-1 ml-0 mr-0 mb-3 ta-c">Where this house's permits live, so SitePlumb can deep-link and parse status emails.</div>
       <div class="fld-label">City</div>
@@ -3336,17 +3333,17 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="installScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Add SitePlumb to your Home Screen</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Add SitePlumb to your Home Screen</h4></div>
 <div class="sheet-body">
 <div class="sub fs-xs c-ink-2 mt-1 ml-0 mr-0 mb-3 ta-c">Opens full-screen like a real app — one tap to launch.</div>
       <div id="installBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeInstall()">Got it</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeInstall()"><span>Got it</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="inspScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="inspTitle">Inspection</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="inspTitle">Inspection</h4></div>
 <div class="sheet-body">
 <div id="inspBody"></div>
 </div>
@@ -3355,7 +3352,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="docScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Add document</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Add document</h4></div>
 <div class="sheet-body">
 <div class="fld-label">Document type</div>
       <select id="docType" class="fld-select" onchange="onDocTypeChange(this)"></select>
@@ -3382,16 +3379,16 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim sheet-2" id="choiceScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="closeChoice()"></div>
-      <div class="sheet-head"><h4 id="choiceTitle">Choose</h4><button type="button" class="btn btn-quiet" onclick="closeChoice()">Done</button></div>
+      <div class="sheet-head"><h4 id="choiceTitle">Choose</h4></div>
 <div class="sheet-body">
 <div id="choiceBody"></div>
 </div>
-</div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeChoice()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim sheet-2" id="promptScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="promptTitle">Add</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="promptTitle">Add</h4></div>
 <div class="sheet-body">
 <p id="promptBody" class="hide fs-sm c-ink-2 lh-145 mt-1 ml-0 mr-0 mb-3"></p>
       <input id="promptInput" placeholder="" onkeydown="if(event.key==='Enter')confirmPrompt()">
@@ -3417,16 +3414,16 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="signScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Homeowner sign-off</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Homeowner sign-off</h4></div>
 <div class="sheet-body">
 <div id="signBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeSignoff()">Close</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeSignoff()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="ideaScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Share with your builder</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Share with your builder</h4></div>
 <div class="sheet-body">
 <div class="fld-label">Type</div>
       <div class="seg3" id="ideaSeg">
@@ -3446,7 +3443,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="ledgerScrim">
     <div class="pmodal pmodal-tall sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Upcharge ledger</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Upcharge ledger</h4></div>
 <div class="sheet-body">
 <div id="ledgerBody"></div>
 </div>
@@ -3455,7 +3452,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="stageReviewScrim">
     <div class="pmodal pmodal-tall sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="srTitle">Mark complete</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="srTitle">Mark complete</h4></div>
 <div class="sheet-body">
 <div class="sr-sub" id="srSub"></div>
       <div id="srBody"></div>
@@ -3466,7 +3463,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="specScrim">
     <div class="pmodal pmodal-tall sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Install spec sheet</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Install spec sheet</h4></div>
 <div class="sheet-body">
 <div class="sr-sub" id="specSub"></div>
       <div id="specBody"></div>
@@ -3647,7 +3644,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <!-- feedback form -->
   <div class="pmodal-scrim sheet-scrim" id="fbScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Report a problem or idea</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Report a problem or idea</h4></div>
 <div class="sheet-body">
 <div class="seg-type">
         <button id="fbt-bug" class="on" onclick="setFbType('bug')">🐛 Problem</button>
@@ -3662,7 +3659,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <!-- add crew -->
   <div class="pmodal-scrim sheet-scrim" id="subScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="subModalTitle">Add a crew</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="subModalTitle">Add a crew</h4></div>
 <div class="sheet-body">
 <div id="subHit" class="sub-hit"></div>
       <div class="qf-row" id="subQuickFill">
@@ -3683,29 +3680,28 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       
       <button type="button" class="la-link btn btn-quiet" id="subMoreBtn" onclick="subShowMore()">More details</button>
 </div>
-<div class="sheet-foot"><button class="btn btn-primary btn-block" id="subSaveBtn" onclick="saveSub()">Save</button></div></div>
+<div class="row2 sheet-foot"><button class="btn btn-secondary" onclick="dismissParent(this)">Done</button><button class="btn btn-primary" id="subSaveBtn" onclick="saveSub()">Save</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="subDetailScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="sdName">Crew</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="sdName">Crew</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="sdBody"></div>
 </div>
-</div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="dismissParent(this)"><span>Done</span></button></div></div>
   </div>
 
   <!-- site-ready picker -->
   <div class="pmodal-scrim sheet-scrim" id="readyScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="readyTitle">House ready</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="readyTitle">House ready</h4></div>
 <div class="sheet-body">
 <div class="sub fs-sm c-ink-2 mt-1 ml-0 mr-0 mb-3 ta-c" id="readySub"></div>
       <div id="readyList"></div>
-      <button class="b1 b-cancel w-full mt-3 btn btn-secondary" onclick="closeReady()">Done</button>
       <div class="modal-note">Marks the crew <b>Cleared to start</b> on the board with a timestamp. Until devices are synced, this is a local marker — it doesn't ping their phone yet.</div>
 </div>
-</div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeReady()"><span>Done</span></button></div></div>
   </div>
   <div class="devpanel" id="devpanel">
     <div class="dev-head">
@@ -3838,15 +3834,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.391.0 - Field Notes one handle';
+const PLUMB_VERSION='2.392.0 - Browse sheets use the leave bar';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789110000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.391.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789120000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.392.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5147,9 +5143,8 @@ function showInfo(title,bodyHTML,own){
     if(foot&&!own){
       const fromH=typeof fromTheHouse==='function'&&fromTheHouse();
       const hasGo=!!document.querySelector('#infoBody .b-go');
-      const label=fromH?'\u2039 House':(hasGo?'Done':'Got it');
-      const cls=(fromH||hasGo)?'b-cancel':'b-go';
-      foot.innerHTML='<button class="b1 '+cls+' flex-1" onclick="closeInfo()">'+label+'</button>';
+      const label=fromH?'House':(hasGo?'Done':'Got it');
+      foot.innerHTML='<button class="btn btn-secondary" onclick="closeInfo()"><span>'+label+'</span></button>';
     }
   }catch(e){}
 }
@@ -7524,7 +7519,7 @@ function renderPeople(__a,__b){
       } else if(peopleMode==='roles'){
         foot.style.display='';foot.innerHTML='<button class="b1 b-go flex-1 btn btn-primary" onclick="openPeopleMode(\'team\')">Done</button>';
       } else {
-        foot.style.display='';foot.innerHTML='<button class="b1 b-go flex-1 btn btn-primary" onclick="closePeople()">Done</button>';
+        foot.style.display='';foot.innerHTML='<button class="btn btn-secondary" onclick="closePeople()"><span>Done</span></button>';
       }
     }
   }catch(e){}
