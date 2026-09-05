@@ -908,7 +908,7 @@ const l5c=$("window._law5({left:900,right:990,top:900,bottom:990})");
 
 t('LAW 5: covered press moves bubble once, waits thereafter, ignores clear presses', l5ok===true&&l5a===true&&l5b===true&&l5c===false&&$("(document.getElementById('tourBubble')||{classList:{contains:()=>false}}).classList.contains('tour-bub-dock')")===true&&$("(document.getElementById('tourBubble')||{dataset:{}}).dataset.side")===$("(innerWidth<700)?((200<innerHeight/2)?'bb':'tb'):((200>innerWidth/2)?'tl':'tr')"));
 t('finale buttons: demo=black, first-site=gold', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('tour-gold')&&$("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Explore demo'));
-t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my site'));
+t('final step carries the first-site CTA', $("(document.getElementById('tourBubble')||{innerHTML:''}).innerHTML").includes('Set up my house'));
 $('tourEnd()');$('exitDemo()');$('exitDemoToApp()');
 t('post-tour exit is clean', $("appMode()")==='real'&&$("_tourLift?1:0")===0);
 // banner role buttons: three chips, hop to each hat cleanly, active mark follows
@@ -2260,6 +2260,8 @@ t('password reset sheet has a handle', SRC.split('id="pwResetScrim"')[1].split('
 t('welcome sheet has a handle', SRC.split('id="welcomeScrim"')[1].split('id="')[0].indexOf('sheet-handle')>=0);
 t('chips use tap height', /\.chip\{[^}]*min-height:var\(--tap\)/.test(SRC.replace(/\s+/g,' ')));
 t('segs use tap height', /\.seg button\{[^}]*min-height:var\(--tap\)/.test(SRC.replace(/\s+/g,' ')));
+t('chips center their label', SRC.indexOf('justify-content:center')>=0&&SRC.indexOf('#fieldKindChips .chip')>=0);
+t('pickers say house not site', SRC.indexOf("title:'Which house?'")>=0&&SRC.indexOf("title:'Which site?'")<0);
 
 S('calendar recut');
 t('calendar More is a choice sheet', $("String(calMore)").indexOf('openChoice')>=0&&$("String(calMore)").indexOf('Add to calendar app')>=0&&$("String(calMore)").indexOf('Homeowner calendars')>=0);

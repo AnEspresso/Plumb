@@ -219,7 +219,7 @@
   .sheet-select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:var(--s-3) var(--s-4);
     font-family:inherit;font-size:var(--t-md);color:var(--ink);outline:none;margin-bottom:var(--s-4);-webkit-appearance:none;appearance:none;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%23928B7E' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M5 8l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;}
-  .chip{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:var(--s-2) var(--s-4);font-family:inherit;
+  .chip{display:inline-flex;align-items:center;justify-content:center;line-height:1;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:var(--s-2) var(--s-4);font-family:inherit;
     font-size:var(--t-md);font-weight:600;color:var(--ink-2);cursor:pointer;transition:.18s;}
   .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
   .chip[disabled]{opacity:.3;pointer-events:none;}
@@ -982,11 +982,11 @@
   @media (pointer: coarse){
     .ov-sortpill{min-height:44px;padding:var(--s-2) var(--s-4);}
     .ppl-nav .ppl-dirs .ov-sortpill{min-height:44px;padding:var(--s-2) var(--s-2);}
-    .chip{min-height:var(--tap);padding:var(--s-2) var(--s-4);}
-    #fieldKindChips .chip{padding:var(--s-2) var(--s-1);}
+    .chip{min-height:var(--tap);padding:0 var(--s-4);}
+    #fieldKindChips .chip{padding:0 var(--s-1);}
   }
   #fieldKindChips{flex-wrap:nowrap;gap:5px;}
-  #fieldKindChips .chip{flex:1 1 0;min-width:0;padding:var(--s-2) var(--s-1);font-size:var(--t-sm);text-align:center;white-space:nowrap;}
+  #fieldKindChips .chip{flex:1 1 0;min-width:0;padding:0 var(--s-1);font-size:var(--t-sm);text-align:center;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
   .ppl-gate{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;width:100%;padding:var(--s-3) 0;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:inherit;text-align:left;cursor:pointer;}
   .ppl-gate .si{flex:1;min-width:0;}
   .ppl-gate .n{font-weight:650;font-size:var(--t-md);}
@@ -1935,7 +1935,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 .seg button{min-height:var(--tap);padding:0 var(--s-4);border:0;border-radius:999px;background:none;
   font-family:var(--f-sans);font-size:var(--t-sm);font-weight:600;color:var(--ink-2);}
 .seg button.on{background:var(--ink);color:var(--surface);}
-.chip{display:inline-flex;align-items:center;min-height:var(--tap);padding:0 var(--s-3);border-radius:999px;
+.chip{display:inline-flex;align-items:center;justify-content:center;line-height:1;min-height:var(--tap);padding:0 var(--s-3);border-radius:999px;
   background:var(--surface);border:1px solid var(--line);font-size:var(--t-sm);font-weight:600;color:var(--ink-2);}
 .chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
 
@@ -2597,7 +2597,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
       <div class="sheet-head"><h4>Homeowner calendars</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
 <div class="sheet-body">
-<div class="la-hint mt-0 ml-0 mr-0 mb-2 ta-l">Give homeowners a read-only calendar of their own build. Their site only — never your other jobs. Crews show by trade, not by name ("Flooring crew at the house Tue–Thu"), and your notes to subs stay private. Homeowners who can see the week ahead call and text far less.</div>
+<div class="la-hint mt-0 ml-0 mr-0 mb-2 ta-l">Give homeowners a read-only calendar of their own build. Their house only — never your other jobs. Crews show by trade, not by name ("Flooring crew at the house Tue–Thu"), and your notes to crews stay private. Homeowners who can see the week ahead call and text far less.</div>
       <input id="hoSearch" placeholder="Type an address or name…" autocapitalize="off" autocomplete="off" oninput="renderHoAccess()" class="mb-2 hide">
       <div class="pick-list" id="hoBody"></div>
 </div>
@@ -2854,7 +2854,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="invbar" id="invBar" role="status">
     <button class="ib-x" onclick="invBarDismiss()" aria-label="Dismiss">&times;</button>
-    <div class="ib-t">You have been invited to a build site</div>
+    <div class="ib-t">You have been invited to a house</div>
     <div class="ib-s" id="invBarS"></div>
     <div class="ib-row">
       <button class="ib-b" id="invBarCopy" onclick="invBarCopy()">Copy code</button>
@@ -3832,15 +3832,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.381.0 - Sheet handles and 48px taps';
+const PLUMB_VERSION='2.382.0 - Chip center and house crew words';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789010000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.381.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789020000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.382.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5405,7 +5405,7 @@ function renderNext(){
     body.innerHTML='<div class="sec"><h2>Work up next</h2></div>'
       +`<div class="sr-d mt-1 ml-0 mr-0 mb-3"><b>${esc(st.name)}</b> \u00b7 ${esc(tradeLabelOf(st))}</div>`
       +`<div class="td-alert warn" onclick="closeNextSite();todayGo('${p.id}','build')"><span class="td-bar"></span><div class="td-tx"><b>Not cleared yet</b> \u2014 ${esc(gate.prev.name)} needs its ${gate.labels.map(esc).join(' & ')} inspection${gate.labels.length>1?'s':''} to pass before this trade starts.</div><span class="td-chev">\u203a</span></div>`
-      +`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="_nextForce=true;renderNext()">Suggest subs anyway \u2192</button>`;
+      +`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="_nextForce=true;renderNext()">Suggest crews anyway \u2192</button>`;
     return;}
   const today=dayStart(Date.now());
   const loadOf=name=>allBookings().filter(b=>b.subName===name&&(b.status||'confirmed')!=='declined'&&b.end>=today).length;
@@ -5555,7 +5555,7 @@ function saveNewSite(){const name=document.getElementById('nsName').value.trim()
   Data.setActive(id);                       // make the NEW site active before anything else
   if(_startConverge){renderAll();startConverge();return;}
   if(afterHouseAdded(id,nBefore))return;
-  openSiteFromOverview(id);toast('Site created');}
+  openSiteFromOverview(id);toast('House created');}
 
 /* ════════ login + session + overview ════════ */
 const EMPLOYEES=[
@@ -6337,7 +6337,7 @@ function approveOrgPrefs(){const o=orgPrefs();if(!o._prov)return;o._prov.approve
 function openSetupReview(){
   const o=orgPrefs();const pr=o._prov||{};
   showInfo('Review company setup',
-    `<p class="mt-0 ml-0 mr-0 mb-2"><b>${esc(pr.by||'A team member')}</b>${RP_ROLES[pr.rpRole]?' ('+esc(RP_ROLES[pr.rpRole])+')':''} set up the company. These choices apply to every new site — give them your OK or adjust them.</p>
+    `<p class="mt-0 ml-0 mr-0 mb-2"><b>${esc(pr.by||'A team member')}</b>${RP_ROLES[pr.rpRole]?' ('+esc(RP_ROLES[pr.rpRole])+')':''} set up the company. These choices apply to every new house — give them your OK or adjust them.</p>
      <div class="subrow"><div class="si"><div class="n">Company</div><div class="d">${esc(o.company||'—')}</div></div></div>
      <div class="subrow"><div class="si"><div class="n">Build style</div><div class="d">${esc(buildStyleLabel())}</div></div></div>
      <div class="subrow"><div class="si"><div class="n">Sub roster</div><div class="d">${(o.subRoster||[]).length} compan${(o.subRoster||[]).length===1?'y':'ies'} pre-loaded on new sites</div></div></div>
@@ -6389,7 +6389,7 @@ function __renderSetup(){
       +`<button class="add-sub-btn btn btn-secondary" onclick="createInvite('team')">${PPL_INV_SVG}Create a team invite code…</button>
       <p class="c-ink-3 fs-xs mt-2 ml-0 mr-0 mb-0">Solo? Skip this — you can invite people any time.</p>`;}
   else if(setupStep===2){t.textContent='Your crews';
-    b.innerHTML=`<p class="mt-0 ml-0 mr-0 mb-2">Add the subs you work with again and again. They\u2019re pre-loaded onto every new site, ready for scheduling, docs and invites.</p>`
+    b.innerHTML=`<p class="mt-0 ml-0 mr-0 mb-2">Add the crews you work with again and again. They\u2019re pre-loaded onto every new house, ready for scheduling, docs and invites.</p>`
       +setupDraft.subRoster.map((r,i)=>`<div class="subrow"><div class="si"><div class="n">${esc(r.name)}</div><div class="d">${esc(specLabel(r.trade))}</div></div><button class="rm" onclick="setupDropRoster(${i})">${ICON.trash}</button></div>`).join('')
       +`<div class="setup-roster-row su-roster"><input id="suRosterName" placeholder="Company name">
         <select id="suRosterTrade">${SPECIALTIES.map(sp=>`<option value="${sp.id}">${esc(sp.label)}</option>`).join('')}</select></div>
@@ -6408,7 +6408,7 @@ function finishSetup(skipped){
   if(skipped){toast('Setup skipped \u2014 run it any time from People & invites');return;}
   const hasJobs=(state.projects||[]).length>0;
   showInfo(hasJobs?'You\u2019re set up':'Company is ready',hasJobs
-    ?`<p class="mt-0 ml-0 mr-0 mb-2"><b>${esc(setupDraft.company||'Your company')}</b> is ready. Your roster and selections style apply to every new site automatically.</p>
+    ?`<p class="mt-0 ml-0 mr-0 mb-2"><b>${esc(setupDraft.company||'Your company')}</b> is ready. Your roster and selections style apply to every new house automatically.</p>
     <p class="c-ink-3 fs-xs m-0">Change any of this later: People & invites \u2192 Run first-time setup again.</p>`
     :`<p class="mt-0 ml-0 mr-0 mb-2"><b>${esc(setupDraft.company||'Your company')}</b> is on the book. Roster and selections style apply to every house you add.</p>
     <button class="b1 b-go w-full mt-2 btn btn-primary" onclick="closeInfo();openNewSite()">Add the first house</button>
@@ -6838,19 +6838,19 @@ const TOUR={team:[
 /* Saved 2.262 builder walkthrough. Replay from Settings \u2192 Classic walkthrough. */
 teamLegacy:[
  {title:'Welcome to SitePlumb',body:'A quick tour of how SitePlumb runs your jobs. Tap the highlighted spots to try them, or use Next to skip ahead \u2014 and Skip to leave anytime.',nav:()=>{try{showOverview();}catch(e){}}},
- {sel:'#ovToday',title:'Today',body:'SitePlumb watches every job and tells you what needs you \u2014 a crew arriving before specs are signed, a sub double-booked, a site gone quiet.'},
+ {sel:'#ovToday',title:'Today',body:'SitePlumb watches every job and tells you what needs you \u2014 a crew arriving before specs are signed, a crew double-booked, a house gone quiet.'},
  {sel:'#ovCompanyBtn',title:'Company',body:'One button for everything company-wide: your trades calendar, invoices, crew roster, team, and adding a job.'},
- {sel:'#ovCards .ov-card',title:'Your jobs',body:'Each home shows its open count, progress, and what\u2019s on deck. We\u2019ll step into one now.',nav:()=>{try{showOverview();}catch(e){}}},
+ {sel:'#ovCards .ov-card',title:'Your jobs',body:'Each house shows its open count, progress, and what\u2019s on deck. We\u2019ll step into one now.',nav:()=>{try{showOverview();}catch(e){}}},
  {sel:'#siteSummary',title:'The site at a glance',body:'A job opens calm: current stage and %, what it\u2019s waiting on, and who\u2019s next on site.',nav:()=>{try{const sp=state.projects||[];const pick=sp.find(p=>!p.sample)||sp[0];if(pick)openSiteFromOverview(pick.id);}catch(e){}}},
- {sel:'#siteSummary .ss-card:last-child',title:'Next on site',body:'The smart one: it suggests the best subs free across all your jobs for the work that\u2019s due \u2014 by who can start first, who has room, or who knows the site.'},
+ {sel:'#siteSummary .ss-card:last-child',title:'Next on site',body:'The smart one: it suggests the best crews free across all your jobs for the work that\u2019s due \u2014 by who can start first, who has room, or who knows the house.'},
  {sel:'nav .tabs .tab[data-v="decisions"]',tap:true,title:'Needs You',body:'Everything the job is waiting on \u2014 open issues and selections in one list. Tap it to look.'},
  {sel:'nav .tabs .tab[data-v="build"]',tap:true,title:'Build',body:'Your schedule, permits and subs \u2014 the whole build in one place. Tap Build.'},
  {sel:'nav .tabs .tab[data-v="files"]',tap:true,title:'Files',body:'Photos and documents together, filed by date and trade. Tap Files.'},
  {title:'That\u2019s the tour',body:'Explore the demo freely \u2014 three sample homes at different stages. When you\u2019re ready, switch to Live to run your own jobs.',nav:()=>{try{go('log');}catch(e){}}}
 ],sub:[
  {title:'Welcome',body:'This is your contractor view \u2014 only your part of each job, nothing to wade through. Tap the highlights or use Next.',nav:()=>{try{subBackToList();}catch(e){}}},
- {sel:'#subCards',title:'Your houses',body:'Every home you\u2019re assigned to. A flag means something on your scope needs attention.',nav:()=>{try{subBackToList();}catch(e){}}},
- {sel:'.sv-banner',title:'Cleared to start',body:'SitePlumb tells you the moment the site super marks the site ready for your trade \u2014 no calls, no guessing.',nav:()=>{try{const sp=subProjects();if(sp[0])openSubSite(sp[0].id);}catch(e){}}},
+ {sel:'#subCards',title:'Your houses',body:'Every house you\u2019re assigned to. A flag means something on your scope needs attention.',nav:()=>{try{subBackToList();}catch(e){}}},
+ {sel:'.sv-banner',title:'Cleared to start',body:'SitePlumb tells you the moment the site super marks the house ready for your trade \u2014 no calls, no guessing.',nav:()=>{try{const sp=subProjects();if(sp[0])openSubSite(sp[0].id);}catch(e){}}},
  {sel:'#svPacket',title:'Your install packet',body:'Specs, approved selections and documents for your scope \u2014 everything you need to start, in one tap.'},
  {sel:'#svUpdate',title:'Post an update',body:'Snap a photo from the field and it posts straight back to the builder\u2019s log.'},
  {sel:'#subtab-selections',tap:true,title:'Your selections',body:'The selections that fall under your trade, confirmed before you build. Tap to see them.'},
@@ -6964,7 +6964,7 @@ teamLegacy:[
 {sel:'#filesPhotos .searchbar',title:'Files, kept for you',body:'Every photo lands here by date and area \u2014 including the shot you just took, already filed under today. Search by trade or stage when the drywaller asks what\u2019s behind that wall. Documents live one tab over.',
   acts:[{tap:'nav .tab[data-v=files]',do:()=>tourGoto('files')},{tap:'[data-fl=photos]',jump:true,do:()=>{try{filesSeg('photos',document.querySelector('[data-fl=photos]'));}catch(e){}}}],
   after:async(tok)=>{await tourPing([...document.querySelectorAll('#filesPhotos .day-group')].slice(0,2),tok,800,document.querySelector('#filesPhotos .searchbar'));}},
- {sel:'#filesDocs',bubSide:'tb',title:'The Install Packet',body:'This is where the Install Packet is born \u2014 attach a document to a trade, and every cleared sub carries it in their pocket, kept current.',
+ {sel:'#filesDocs',bubSide:'tb',title:'The Install Packet',body:'This is where the Install Packet is born \u2014 attach a document to a trade, and every cleared crew carries it in their pocket, kept current.',
   acts:[{do:()=>tourGoto('files','photos')},{tap:'[data-fl=docs]',do:()=>{try{filesSeg('docs',document.querySelector('[data-fl=docs]'));}catch(e){}}}],
   task:{payoff:'Attached to Plumbing \u2014 and already in every cleared plumber\u2019s packet. Exactly what the crew needs, and nothing that isn\u2019t the crew\u2019s.',
     steps:[
@@ -7005,13 +7005,13 @@ teamLegacy:[
     try{demoRole('subs');}catch(e){}
     const pk=document.querySelector('#svPacket');
     if(pk)await tourPing([pk],tok,1200,prev);}},
- {sel:'#ovCards',bubSide:'tb',title:'One honest record',body:'The Daily Log. The Install Packet. One record, live in every hand that touches the build. That\u2019s SitePlumb. Ready to set up your first site?',cta:'Set up my site',
+ {sel:'#ovCards',bubSide:'tb',title:'One honest record',body:'The Daily Log. The Install Packet. One record, live in every hand that touches the build. That\u2019s SitePlumb. Ready to set up your first house?',cta:'Set up my house',
   acts:[{tap:'.exc-roles button[data-r=builder]',do:()=>demoRole('builder')}]}
 ],client:[
  {title:'Welcome home',body:'This is your view of the build \u2014 a calm picture of where things stand. Tap the highlights or use Next.',nav:()=>{try{clientGo('home');}catch(e){}}},
  {sel:'.cl-hero',title:'At a glance',body:'How far along, whether you\u2019re on track, and what\u2019s next on site \u2014 the answer to \u201chow\u2019s it going?\u201d without a single text.'},
  {sel:'.cl-stats',title:'Decisions & balance',body:'What\u2019s waiting on you to decide, and your running balance from selection changes.'},
- {sel:'#cltab-progress',tap:true,title:'Updates',body:'Photo updates from the site land here as work happens. Tap to look.'},
+ {sel:'#cltab-progress',tap:true,title:'Updates',body:'Photo updates from the house land here as work happens. Tap to look.'},
  {sel:'#cltab-specs',tap:true,title:'Your selections',body:'Every finish and fixture you\u2019ve chosen \u2014 review and sign off here. Tap to open.'},
  {sel:'.cl-concern',title:'Raise a concern',body:'Something on your mind? Send it straight to your builder \u2014 it won\u2019t get lost in a text thread.',nav:()=>{try{clientGo('home');}catch(e){}}},
  {title:'That\u2019s it',body:'No app to learn \u2014 just open it whenever you want to see how your home is coming along.'}
@@ -7479,8 +7479,8 @@ function peoplePills(){
 function roleSummary(id){
   if(id==='owner')return 'Everything';
   if(id==='pm')return 'Everything except invoices';
-  if(id==='superintendent')return 'Field Notes, schedule, and the site';
-  if(id==='office')return 'Selections, people, and the site';
+  if(id==='superintendent')return 'Field Notes, schedule, and the house';
+  if(id==='office')return 'Selections, people, and the house';
   const g=roleMacro(id);
   return GATE_KEYS.filter(function(k){return g[k.id];}).map(function(k){return k.n;}).join(' · ');
 }
@@ -7782,7 +7782,7 @@ function setRole(r){r=normRole(r);loginRole=r;['builder','subs','client'].forEac
 function populateLoginSelect(){
   const sel=document.getElementById('loginSelect');
   if(loginRole==='builder'){sel.innerHTML='<option value="" disabled selected>Select employee…</option>'+EMPLOYEES.map(e=>`<option value="${esc(e.name)}">${esc(e.name)} · ${esc(e.role)}</option>`).join('');}
-  else if(loginRole==='client'){sel.innerHTML='<option value="" disabled selected>Select your home…</option>'+state.projects.map(p=>`<option value="${p.id}">${esc(p.street||p.name)}${p.city?' · '+esc(p.city):''}</option>`).join('');}
+  else if(loginRole==='client'){sel.innerHTML='<option value="" disabled selected>Select your house…</option>'+state.projects.map(p=>`<option value="${p.id}">${esc(p.street||p.name)}${p.city?' · '+esc(p.city):''}</option>`).join('');}
   else{const subs=subRoster();sel.innerHTML='<option value="" disabled selected>Select a crew…</option>'+subs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');}
 }
 function doLogin(){
@@ -7855,14 +7855,14 @@ function renderRoster(){
     const t=SPECIALTIES.find(x=>x.id===r.trade);const col=(TRADE_COLORS[r.trade]||{}).bg||'var(--oak)';
     return `<div class="subrow"><div class="si"><div class="n">${esc(r.name)}</div><div class="d"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${col};margin-right:5px;vertical-align:-1px"></span>${esc((t||{}).label||'General')}</div></div><button class="rm" onclick="rosterDrop(${i})" title="Remove from roster">${ICON.trash}</button></div>`;}).join('')
     ||`<div class="empty py-2 px-0">${q?'No one matches.':'No subs yet — add the trades you work with, ready for when a stage comes up.'}</div>`;
-  document.getElementById('rosterCount').textContent=all.length?(all.length+' crew'+(all.length===1?'':'s')+' \u00b7 every new site starts with them'):'';}
+  document.getElementById('rosterCount').textContent=all.length?(all.length+' crew'+(all.length===1?'':'s')+' \u00b7 every new house starts with them'):'';}
 function subsOnSite(){
   closeSubsRoster();
   const ps=state.projects||[];
   if(!ps.length){toast('Create a house first');return;}
   const go=id=>{Data.setActive(id);calSiteFilter=String(id);openCal();};
   if(ps.length===1){go(ps[0].id);return;}
-  openPick({title:'Crews \u2014 which site?',
+  openPick({title:'Crews \u2014 which house?',
     options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.subs||[]).length?(p.subs.length+' crew'+(p.subs.length===1?'':'s')):'No crews yet')+(p.city?' \u00b7 '+p.city:'')})),
     onPick:go});}
 /* #1: invite a sub to SitePlumb from the roster screen. Codes are per-site, so this
@@ -7881,7 +7881,7 @@ function inviteHomeownerFlow(){
 function inviteSubFlow(){
   if(appMode()!=='real'){toast('Invites work in Live mode');return;}
   const ps=state.projects||[];
-  if(!ps.length){toast('Create a site and add subs first');return;}
+  if(!ps.length){toast('Create a house and add crews first');return;}
   const pickSub=p=>{
     const roster=(p.subs||[]);
     const subs=roster.filter(s=>!(p.invites||[]).some(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked'));
@@ -7901,7 +7901,7 @@ function onDeckGo(pid,trade){
   if(sb){openBk(null,Date.now());
     document.getElementById('bkSite').value=String(pid);bkFillSubs(pid);
     document.getElementById('bkSub').value=sb.name;}
-  else toast('No '+(specLabel(trade)||trade)+' sub on this house yet \u2014 add one from the site\u2019s Subs tab');}
+  else toast('No '+(specLabel(trade)||trade)+' crew on this house yet \u2014 add one from the house\u2019s Crews tab');}
 function openSiteFromOverview(id){if(!(state.projects||[]).some(x=>String(x.id)===String(id)))return;Data.setActive(id);updateHeader();document.getElementById('overview').classList.remove('show');
   document.getElementById('backBtn').classList.add('show');
   issueFilter='open';document.querySelectorAll('.seg button').forEach((b,i)=>b.classList.toggle('on',i===0));
@@ -8905,7 +8905,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
             const di=state.projects.findIndex(p=>String(p.id)===String(id));
             if(di>=0){state.projects.splice(di,1);
               if(String(state.activeId)===String(id))state.activeId=state.projects.length?state.projects[0].id:null;
-              persistLocalOnly();rerenderCurrent();toast('A site was deleted');}
+              persistLocalOnly();rerenderCurrent();toast('A house was deleted');}
             return;}
           const sess=state.session||{};const myUid=(sess.auth&&sess.auth.uid)||this.uid;
           const mem=(d.meta&&d.meta.members)||null;
@@ -8914,7 +8914,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
               const idx=state.projects.findIndex(p=>String(p.id)===String(id));
               if(idx>=0){state.projects.splice(idx,1);                           // removal propagates: drop stale copy
                 if(String(state.activeId)===String(id))state.activeId=state.projects.length?state.projects[0].id:null;
-                persistLocalOnly();rerenderCurrent();toast('A site was removed from your access');}
+                persistLocalOnly();rerenderCurrent();toast('A house was removed from your access');}
               return;}
           }
           else if(sess.role&&sess.role!=='builder')return;                        // legacy live doc w/o members: builders only
@@ -10210,12 +10210,12 @@ function caPayeeChange(){
   const sel=document.getElementById('caPayeeSel');const inp=document.getElementById('caPayee');
   if(sel.value==='__new'){
     sel.value='';
-    openPrompt({title:'New sub or supplier',placeholder:'Company name',onOk:(name)=>{
+    openPrompt({title:'New crew or supplier',placeholder:'Company name',onOk:(name)=>{
       name=String(name||'').trim();if(!name)return;
       const p=P();p.subs=p.subs||[];
       if(!p.subs.some(s=>s.name===name))p.subs.push({id:'s'+Date.now().toString(36)+Math.floor(Math.random()*1e3),name,specialty:'general',cleared:null});
       Data.commit();_fillPayeeSel(sel,name);inp.style.display='none';
-      toast('Added to this house’s subs');
+      toast('Added to this house’s crews');
     }});
     return;
   }
@@ -10502,7 +10502,7 @@ function maybeInstallGate(){
     const g=document.getElementById('installGate');if(!g)return false;
     const inv=(localStorage.getItem('plumbPendingInvite')||'');
     document.getElementById('igLead').textContent=inv
-      ?'You\u2019ve been invited to a build site. Copy your code first, then add SitePlumb to your home screen and paste it in.'
+      ?'You\u2019ve been invited to a house. Copy your code first, then add SitePlumb to your home screen and paste it in.'
       :'SitePlumb works best from your home screen \u2014 full screen, faster, and ready for the jobsite.';
     const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
     document.getElementById('igIos').style.display=ios?'flex':'none';
@@ -12949,7 +12949,7 @@ function openInvoices(){if(!canGate('moneyCo')){toast('Invoices are off for this
 function invoicesFromSettings(){
   const ps=state.projects||[];
   if(ps.length<=1){openInvoices();return;}
-  openPick({title:'Invoices \u2014 which site?',
+  openPick({title:'Invoices \u2014 which house?',
     options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.invoices||[]).length?(p.invoices.length+' invoice'+(p.invoices.length===1?'':'s')):'No invoices yet')+(p.city?' \u00b7 '+p.city:'')})),
     onPick:id=>{Data.setActive(id);try{renderAll();updateHeader();}catch(e){}openInvoices();}});}
 function closeInvoices(){document.getElementById('invScrim').classList.remove('show');try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}
@@ -14678,7 +14678,7 @@ function renderPickList(q){
   document.getElementById('ssCount').textContent=q?(hits.length+' of '+(_pick.options||[]).length):((_pick.options||[]).length+(_ssSearchOn?' options \u00b7 type to filter':' option'+((_pick.options||[]).length===1?'':'s')));}
 function pickGo(id){const f=_pick&&_pick.onPick;_pick=null;closeSearchSelect();if(f)f(id);}
 function openHomes(){
-  openPick({title:'Find a home',options:(state.projects||[]).map(p=>({id:p.id,label:p.street||p.name,sub:(p.name||'')+(p.city?' \u00b7 '+p.city:'')})),
+  openPick({title:'Find a house',options:(state.projects||[]).map(p=>({id:p.id,label:p.street||p.name,sub:(p.name||'')+(p.city?' \u00b7 '+p.city:'')})),
     onPick:id=>calPick(id)});}
 /* homes picker now rides openPick (one sheet) */
 function openIdle(){const s=document.getElementById('idleSearch');if(s)s.value='';renderIdleSheet();document.getElementById('idleScrim').classList.add('show');}
@@ -14809,7 +14809,7 @@ function openPacketFor(pid,trade){
   try{Data.setActive(pid);}catch(e){}
   const sb=(p.subs||[]).find(function(x){return x.specialty===trade;});
   if(sb){openPacket(sb.id);return;}
-  showInfo('Install packet', '<p class="m-0">No '+esc(specLabel(trade)||'trade')+' sub on this house yet. Add them from the site and the packet fills itself.</p>');
+  showInfo('Install packet', '<p class="m-0">No '+esc(specLabel(trade)||'trade')+' crew on this house yet. Add them from the house and the packet fills itself.</p>');
 }
 function openCalOn(ts,siteId){try{const d=new Date(Number(ts));calMonth=new Date(d.getFullYear(),d.getMonth(),1);}catch(e){}calSiteFilter=(siteId===undefined||siteId===null||siteId==='')?'all':String(siteId);openCal();}
 function closeCal(){
@@ -15138,7 +15138,7 @@ function bkSyncBtns(){
   }catch(e){}}
 function bkPickSite(){
   const siteSel=document.getElementById('bkSite');if(siteSel.disabled)return;
-  openPick({title:'Which site?',options:[...siteSel.options].map(o=>{const p=state.projects.find(x=>String(x.id)===String(o.value));return {id:o.value,label:(p&&(p.street||p.name))||o.textContent,sub:p?((p.name||'')+(p.city?' \u00b7 '+p.city:'')):''};}),
+  openPick({title:'Which house?',options:[...siteSel.options].map(o=>{const p=state.projects.find(x=>String(x.id)===String(o.value));return {id:o.value,label:(p&&(p.street||p.name))||o.textContent,sub:p?((p.name||'')+(p.city?' \u00b7 '+p.city:'')):''};}),
     onPick:id=>{siteSel.value=id;bkFillSubs(id);}});}
 function bkPickSub(){
   const subSel=document.getElementById('bkSub');
@@ -15172,7 +15172,7 @@ function bkOfferInvite(p,name,wasAdded){
   if(!wasAdded||appMode()!=='real')return;
   const s=(p.subs||[]).find(x=>x.name===name);if(!s)return;
   openConfirm({title:'Invite '+name+' to connect?',
-    body:esc(name)+' is scheduled. Send an invite so they can see '+esc(p.street||p.name)+' in SitePlumb — they get a code and a one-tap link. You can also do this anytime from the site’s Subs tab.',
+    body:esc(name)+' is scheduled. Send an invite so they can see '+esc(p.street||p.name)+' in SitePlumb — they get a code and a one-tap link. You can also do this anytime from the house’s Crews tab.',
     okLabel:'Send invite',cancelLabel:'Not now',
     onConfirm:()=>{try{Data.setActive(p.id);createInvite('sub',s.id);}catch(e){}}});}
 function closeBk(){document.getElementById('bkScrim').classList.remove('show');_bkSubMod=null;_bkLead='';
@@ -15229,7 +15229,7 @@ function bkSave(){
     toast('Proposed — the builder sees your new dates on the calendar');done();return;
   }
   const pid=document.getElementById('bkSite').value;
-  const p=state.projects.find(x=>String(x.id)===String(pid));if(!p){toast('Pick a site');return;}
+  const p=state.projects.find(x=>String(x.id)===String(pid));if(!p){toast('Pick a house');return;}
   if(calIsSub()){
     addAvail(p,{subName:(state.session||{}).name,trade:(subTradeFor(p)||{}).id||'',start:start,end:end,note:note});
     toast('Time blocked — your builder sees it on the calendar');done();return;
@@ -15242,7 +15242,7 @@ function bkSave(){
       const gaps=tradeSpecGaps(ep,etrade).length;
       const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'install specs are not signed off yet';
       openConfirm({title:specLabel(etrade)+' specs are not signed off',
-        body:'Heads up — '+why+'. The sub may show up before the specs are final.',
+        body:'Heads up — '+why+'. The crew may show up before the specs are final.',
         okLabel:'Save anyway',cancelLabel:'Review packet',
         onConfirm:applyEdit,onCancel:()=>{try{bkOpenPacket();}catch(e){}}});
       return;
@@ -15262,7 +15262,7 @@ function bkSave(){
       const gaps=tradeSpecGaps(p,trade).length;
       const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'install specs are not signed off yet';
       openConfirm({title:specLabel(trade)+' specs are not signed off',
-        body:'Heads up — '+why+'. Scheduling now means the sub may show up before the specs are final.',
+        body:'Heads up — '+why+'. Scheduling now means the crew may show up before the specs are final.',
         okLabel:'Schedule anyway',cancelLabel:'Review packet',
         onConfirm:next,onCancel:()=>{try{bkOpenPacket();}catch(e){}}});
       return;
@@ -15293,7 +15293,7 @@ function bkDelete(){
   if(!_bkEdit)return;
   const p=state.projects.find(x=>String(x.id)===String(_bkEdit.pid));if(!p)return;
   const bid=_bkEdit.bid;const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));
-  confirmDelete({title:'Remove this booking?',body:'<b>'+esc((b&&b.subName)||'This sub')+'</b> is un-scheduled for these dates and the booking drops off the calendar. The install packet and site history stay.',onConfirm:()=>{
+  confirmDelete({title:'Remove this booking?',body:'<b>'+esc((b&&b.subName)||'This crew')+'</b> is un-scheduled for these dates and the booking drops off the calendar. The install packet and house history stay.',onConfirm:()=>{
     deleteBooking(p,bid);closeBk();renderCal();try{renderDay();}catch(e){}toast('Booking removed');}});}
 function openSchedule(){renderSchedule();document.getElementById('schedScrim').classList.add('show');}
 function closeSchedule(){document.getElementById('schedScrim').classList.remove('show');}
@@ -15489,7 +15489,7 @@ function pktAsk(p,tradeId){
   const booked=(p.bookings||[]).some(function(b){return tdTradeOf(p,b)===tradeId&&(b.status||'confirmed')!=='declined'&&b.end>=today;});
   if(!booked)out.push({title:'No dates on the calendar',meta:'Schedule '+tl,go:`pktGoBook('${p.id}','${esc((sb&&sb.name)||'')}')`});
   if(gaps.length&&sb&&!sb.specsDue)out.push({title:'Set a specs deadline',meta:'So the answers land before the crew',go:`setPacketDeadline('${sb.id}')`});
-  if(sb&&!sb.cleared)out.push({title:'Site is not marked ready',meta:tl,go:`pktGoReady('${p.id}','${esc(tradeId)}')`});
+  if(sb&&!sb.cleared)out.push({title:'House is not marked ready',meta:tl,go:`pktGoReady('${p.id}','${esc(tradeId)}')`});
   const permName=PK_PERMIT[tradeId];
   if(permName){
     const perm=(p.permits||[]).find(function(x){return x.name===permName;});
@@ -15750,7 +15750,7 @@ function packetSnapshot(p,b){
         c.insp=(PK_INSP_LBL[ik]||cap1(ik))+': '+cap1(iv)+(meta.date?(' \u00b7 '+meta.date):'');}
       const sb=(p.subs||[]).find(x=>x.name===b.subName&&x.specialty===trade)||(p.subs||[]).find(x=>x.specialty===trade);
       c.readyOk=!!(sb&&sb.cleared);
-      c.ready=c.readyOk?'Site marked ready for you':'Site not yet marked ready \u2014 confirm before mobilizing';
+      c.ready=c.readyOk?'House marked ready for you':'House not yet marked ready \u2014 confirm before mobilizing';
       const open=(p.items||[]).filter(it=>it.crew===specLabel(trade)&&it.issue&&it.status==='open').map(it=>String(it.cap||'')).slice(0,4);
       if(open.length)c.openItems=open;
       /* Recent site history for context: this trade's own feed entries plus
@@ -16396,7 +16396,7 @@ function pkDiffWhat(prev,fresh){
     if((prev.start||0)!==(fresh.start||0)||(prev.end||0)!==(fresh.end||0))bits.push('Dates changed');
     if(String(prev.note||'')!==String(fresh.note||''))bits.push('Note updated');
     const pr=prev.ctx&&prev.ctx.readyOk,fr=fresh.ctx&&fresh.ctx.readyOk;
-    if(!!pr!==!!fr)bits.push(fr?'Site marked ready':'Site readiness changed');
+    if(!!pr!==!!fr)bits.push(fr?'House marked ready':'House readiness changed');
     if(JSON.stringify((prev.ctx&&prev.ctx.openItems)||[])!==JSON.stringify((fresh.ctx&&fresh.ctx.openItems)||[]))bits.push('Open items updated');
   }catch(e){}
   if(!bits.length)return '';
@@ -16999,7 +16999,7 @@ function buildChips(area){
   const on=areaTags(area||'');
   document.getElementById('areaChips').innerHTML=AREA_GROUPS.map(function(grp){return chipRowHTML(grp,on,_sheetChipOpen,'expandSheetChips');}).join('');
   syncAreaExclusivity(document.getElementById('areaChips'));
-  document.getElementById('crewSelect').innerHTML='<option value="">Unassigned</option><option value="Site super">Site super</option>'+crewLabelsSorted().map(c=>`<option value="${c}">${c}</option>`).join('')+'<option value="__add">＋ Add specific trade / sub…</option>';
+  document.getElementById('crewSelect').innerHTML='<option value="">Unassigned</option><option value="Site super">Site super</option>'+crewLabelsSorted().map(c=>`<option value="${c}">${c}</option>`).join('')+'<option value="__add">＋ Add specific trade / crew…</option>';
 }
 function onCrewChange(sel){if(sel.value==='__add'){sel.value='';openAddSub();}}
 /* Whole House and a specific room answer the same question two ways, so each

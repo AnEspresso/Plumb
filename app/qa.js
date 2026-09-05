@@ -459,14 +459,14 @@ async function tappable(page,sel){
       specs:[{item:'Brushed brass / matte black',cat:'Plumbing Fixtures',room:'Whole House',
         rows:[{k:'Finish',v:'Brushed brass / matte black'},{k:'Valve height',gap:'builder'}]}],
       docs:['Mechanical / HVAC Layout.pdf'],siteId:'p2',bookingId:'bk_p2a',resp:null,
-      ctx:{ready:'Site marked ready for you',readyOk:true,permit:'Plumbing Permit: Issued',insp:'rough plumb inspection: scheduled',
+      ctx:{ready:'House marked ready for you',readyOk:true,permit:'Plumbing Permit: Issued',insp:'rough plumb inspection: scheduled',
         history:[{d:'Jul 30',text:'Roof dried-in, windows and exterior doors installed'},{d:'Jul 28',text:'Framing topped out, trusses set and braced'}]}};
   });
   await guest.goto('http://localhost:'+PORT+'/index.html?packet=qa',{waitUntil:'load'});
   await new Promise(r=>setTimeout(r,1600));
   t('guest page renders over everything', await guest.evaluate(()=>document.getElementById('guestScrim').classList.contains('show')));
   t('guest page shows no install chrome and no login', await guest.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return e&&e.classList.contains('show');};return !vis('installGate')&&!vis('installScrim');}));
-  t('guest page shows readiness context and site history', await guest.evaluate(()=>{const h=document.getElementById('gpBody').innerHTML;return h.includes('Site marked ready for you')&&h.includes('Before you arrive')&&h.includes('Framing topped out');}));
+  t('guest page shows readiness context and site history', await guest.evaluate(()=>{const h=document.getElementById('gpBody').innerHTML;return h.includes('House marked ready for you')&&h.includes('Before you arrive')&&h.includes('Framing topped out');}));
   for(const [sel,label] of [["#gpBody .gp-btn.go",'These dates work'],["#gpBody .gp-btn.ghost",'Suggest different dates']]){
     const r=await tappable(guest,sel);t('guest button tappable: '+label,r.ok,r.why);
   }

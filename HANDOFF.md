@@ -1,4 +1,7 @@
+**v2.382.0 is live.** Field Notes chips center their words. Site and sub say house and crew when they mean the build or the worker. Trade, build, street, on site, Home Screen, and Site super stay.
+
 **v2.381.0 is live.** Password reset and welcome have the same sheet handle. Chips and segs are 48px.
+
 
 **v2.380.0 is live.** Headings use .sec, not eyebrow. Form labels use .meta. Guest packet and calendar rooms untouched.
 
