@@ -1194,6 +1194,15 @@ t('packet share keeps the link', SRC.indexOf('function pkDoShare')>=0&&SRC.index
 t('new packet links point at the light page', SRC.indexOf('app/p.html?packet=')>=0);
 t('old packet arrival still works', SRC.indexOf('_PACKET_ON_ARRIVAL')>=0);
 t('guest packet page is under 50 KB', fs.statSync(path.join(__dirname,'p.html')).size<50000);
+(function(){
+  const PHTML=fs.readFileSync(path.join(__dirname,'p.html'),'utf8');
+  t('guest packet has no eyebrow', !/class="[^"]*\beyebrow\b/.test(PHTML));
+  t('guest packet has no lbl', !/class="[^"]*\blbl\b/.test(PHTML));
+  t('guest packet uses rows', PHTML.indexOf('row-title')>=0&&PHTML.indexOf('class="sec"')>=0);
+  t('guest packet uses the system', PHTML.indexOf('--tap')>=0&&PHTML.indexOf('btn-primary')>=0);
+  const i=PHTML.indexOf('initializeApp'),a=PHTML.indexOf('appCheck'),f=PHTML.indexOf('firebase.firestore()');
+  t('guest packet App Check after initializeApp', i>=0&&a>i&&f>a);
+})();
 t('Needs You smart tab caps the wall', SRC.indexOf("_inbTab==='smart'")>=0&&SRC.indexOf('Show all ')>=0&&SRC.indexOf('need you now')>=0);
 t('Money sheet has invoiced and received', SRC.indexOf('Invoiced')>=0&&(SRC.indexOf('Still due')>=0||SRC.indexOf('Still to pay')>=0)&&SRC.indexOf('openPayments()')>=0);
 t('clipboard writeText is promise-aware', !SRC.split('clipboard.writeText(').slice(1).some(chunk=>{

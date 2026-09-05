@@ -1,4 +1,7 @@
+**v2.379.0 is live.** Guest packet uses the system. Rows, one primary, same tokens. Under 50 KB. App Check order unchanged. Calendar More stays secondary.
+
 **v2.378.0 is live.** Crew sheet Save is the primary. Cancel is gone. Idle is rows, header Done only.
+
 
 **v2.377.0 is live.** Person sheet uses one primary: Open packet. Edit is quiet. Header Done stays. Foot Done is gone.
 

@@ -8,69 +8,111 @@
 <title>SitePlumb packet</title>
 <link rel="icon" type="image/png" href="../icon-192.png">
 <style>
-:root{--paper:#F2EEE6;--surface:#FBF9F4;--surface-2:#F7F3EB;--ink:#1B1916;--ink-2:#5C564C;--ink-3:#928B7E;--line:#E4DDD0;--oak:#B0895A;--clay:#B0604A;--sage:#6F7B58}
+:root{
+  --paper:#F2EEE6; --surface:#FBF9F4; --surface-2:#F7F3EB;
+  --ink:#1B1916; --ink-2:#5C564C; --ink-3:#928B7E;
+  --line:#E4DDD0; --line-2:#EDE7DB;
+  --oak:#B0895A; --oak-soft:#CDB48C; --clay:#B0604A; --sage:#6F7B58;
+  --f-serif:'Source Serif 4',Georgia,serif;
+  --f-sans:'Hanken Grotesk',-apple-system,system-ui,sans-serif;
+  --f-mark:'Fraunces',Georgia,serif;
+  --t-xs:12px; --t-sm:13.5px; --t-md:15.5px; --t-lg:17px; --t-xl:21px; --t-2xl:27px; --t-hero:36px;
+  --lh-tight:1.15; --lh-body:1.45;
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px; --s-7:32px; --s-8:48px;
+  --r-sm:10px; --r:16px; --r-lg:24px;
+  --tap:48px;
+  --shadow:0 1px 2px rgba(27,25,22,.04),0 8px 24px rgba(27,25,22,.05);
+  --shadow-lift:0 2px 6px rgba(27,25,22,.06),0 18px 48px rgba(27,25,22,.10);
+  --z-nav:100; --z-sheet:200; --z-sheet-2:210; --z-toast:300; --z-tour:400;
+}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{min-height:100%;background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
-.wrap{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 22px) 18px calc(env(safe-area-inset-bottom) + 30px)}
-.brand{display:flex;align-items:center;gap:8px;font-weight:650;font-size:19px;margin-bottom:14px}
+html{-webkit-text-size-adjust:100%;}
+html,body{min-height:100%;}
+body{font-family:var(--f-sans);font-size:var(--t-md);line-height:var(--lh-body);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-serif);font-weight:600;line-height:var(--lh-tight);letter-spacing:-.01em;margin:0;}
+.wordmark{font-family:var(--f-mark);font-weight:500;}
+.meta{font-size:var(--t-xs);color:var(--ink-3);}
+.sub{font-size:var(--t-sm);color:var(--ink-2);}
+:focus-visible{outline:2px solid var(--oak);outline-offset:2px;border-radius:var(--r-sm);}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+.wrap{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + var(--s-6)) var(--s-5) calc(env(safe-area-inset-bottom) + var(--s-7))}
+.brand{display:flex;align-items:center;gap:var(--s-2);font-size:var(--t-lg);margin-bottom:var(--s-4)}
 .brand .dot{width:7px;height:7px;border-radius:50%;background:var(--oak);box-shadow:0 0 0 4px rgba(176,137,90,.14)}
-.updated{background:rgba(122,140,110,.12);border:1px solid rgba(122,140,110,.28);border-radius:12px;padding:11px 13px;margin:0 0 14px;font-size:13.5px;line-height:1.45}
-.updated .when{font-size:12px;color:var(--ink-3);margin-top:3px}
-.site{font-size:24px;font-weight:650;letter-spacing:-.01em;line-height:1.15}
-.sub{font-size:13.5px;color:var(--ink-3);margin-top:3px}
-.dates{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:16px;margin:16px 0 12px}
-.dates .d{font-size:22px;font-weight:650}
-.dates .n{font-size:14px;color:var(--ink-2);margin-top:5px;line-height:1.45}
-.btn{display:block;width:100%;border:none;border-radius:14px;padding:16px;font:inherit;font-size:16.5px;font-weight:700;cursor:pointer}
-.btn.go{background:#1B1916;color:#F6F1E7}
-.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink);margin-top:9px;font-weight:600}
-.ok{background:rgba(111,123,88,.13);border:1.5px solid var(--sage);border-radius:14px;padding:14px;font-size:15px;margin:14px 0}
-.chg{display:none;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:13px;margin-top:10px}
+.updated{background:rgba(111,123,88,.12);border:1px solid rgba(111,123,88,.28);border-radius:var(--r-sm);padding:var(--s-3);margin:0 0 var(--s-4);font-size:var(--t-sm);line-height:1.45}
+.updated .when{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1)}
+.sec{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s-3);margin:var(--s-7) 0 var(--s-3);}
+.sec h2{font-size:var(--t-xl);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s-2);
+  min-height:var(--tap);padding:0 var(--s-5);border-radius:var(--r);
+  font-family:var(--f-sans);font-size:var(--t-md);font-weight:600;line-height:1;
+  border:1.5px solid transparent;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.btn:active{transform:scale(.98);}
+.btn-primary{background:var(--ink);color:var(--surface);}
+.btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--line);}
+.btn-quiet{background:transparent;color:var(--oak);padding:0 var(--s-3);}
+.btn-block{display:flex;width:100%;}
+.btn + .btn{margin-top:var(--s-2);}
+.row{display:flex;align-items:center;gap:var(--s-4);min-height:var(--tap);
+  padding:var(--s-4) 0;border-bottom:1px solid var(--line-2);}
+.row:last-child{border-bottom:0;}
+.row-main{flex:1;min-width:0;}
+.row-title{font-size:var(--t-lg);font-weight:600;color:var(--ink);}
+.row-sub{font-size:var(--t-sm);color:var(--ink-2);margin-top:2px;}
+.row-aside{flex:none;text-align:right;font-size:var(--t-md);font-weight:600;}
+.row-aside.warn{color:var(--clay);}
+.row-aside.ok{color:var(--sage);}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s-4);margin:var(--s-4) 0;}
+.hero-n{font-family:var(--f-serif);font-size:var(--t-hero);font-weight:600;line-height:1;letter-spacing:-.02em;}
+.hero-l{font-size:var(--t-md);color:var(--ink-2);margin-top:var(--s-2);}
+.hero-s{font-size:var(--t-sm);color:var(--ink-3);margin-top:var(--s-3);line-height:1.5;}
+.field{display:block;margin-bottom:var(--s-4);}
+.field label{display:block;font-size:var(--t-sm);font-weight:600;color:var(--ink-2);margin-bottom:var(--s-1);}
+.field input,.field select,.field textarea{width:100%;min-height:var(--tap);padding:var(--s-3) var(--s-4);
+  border:1.5px solid var(--line);border-radius:var(--r-sm);background:var(--surface);
+  font-family:var(--f-sans);font-size:var(--t-md);color:var(--ink);}
+.field textarea{min-height:72px;}
+.empty{padding:var(--s-7) var(--s-4);text-align:center;color:var(--ink-3);font-size:var(--t-md);line-height:1.5;}
+.empty b{display:block;color:var(--ink);font-size:var(--t-lg);margin-bottom:var(--s-2);}
+.toast{position:fixed;left:50%;bottom:calc(var(--s-6) + env(safe-area-inset-bottom));transform:translateX(-50%);
+  z-index:var(--z-toast);max-width:min(92vw,420px);padding:var(--s-3) var(--s-5);
+  background:var(--ink);color:var(--surface);border-radius:var(--r);font-size:var(--t-md);box-shadow:var(--shadow-lift);
+  opacity:0;pointer-events:none;transition:.2s}
+.toast.show{opacity:1;}
+.chg{display:none;margin-top:var(--s-3)}
 .chg.show{display:block}
-.chg label{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:8px 0 4px}
-.chg input,.chg textarea,.chg select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font:inherit;font-size:16px;background:var(--paper)}
-.eyebrow{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:20px 2px 12px;display:flex;align-items:center;gap:10px}
-.eyebrow:after{content:"";flex:1;height:1px;background:var(--line)}
-.doc{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:7px}
-.doc .n{font-weight:600;font-size:13.5px}
-.doc .t{font-size:11.5px;color:var(--ink-3);margin-top:1px}
-.sel{margin-bottom:12px}
-.sel .h{display:flex;flex-direction:column;margin-bottom:4px}
-.sel .c{font-size:12px;color:var(--ink-3)}
-.spec{margin-top:8px;padding:9px 11px;background:var(--surface-2);border-radius:10px}
-.spec .r{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;padding:2px 0}
-.spec .k{color:var(--ink-3)}
-.spec .v{font-weight:600;text-align:right}
-.gap{color:var(--clay);font-style:italic}
-.foot{font-size:12px;color:var(--ink-3);margin-top:22px;text-align:center;line-height:1.6}
-.err{text-align:center;padding:60px 10px;font-size:16px;color:var(--ink-2);line-height:1.6}
-.cal-nav{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 10px}
-.cal-nav .m{font-size:18px;font-weight:650}
-.cal-nav button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--paper);font-size:18px;cursor:pointer}
-.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:2px}
-.cal-dow span{text-align:center;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:4px 0}
+.ok{padding:var(--s-4) 0;font-size:var(--t-md)}
+.ok b{color:var(--sage)}
+.ok.warn b{color:var(--oak)}
+.foot{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-7);text-align:center;line-height:1.6}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;padding:var(--s-1) 0 var(--s-3)}
+.cal-nav .m{font-size:var(--t-lg);font-weight:600;font-family:var(--f-serif)}
+.cal-nav button{min-width:var(--tap);min-height:var(--tap);border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-size:var(--t-lg);cursor:pointer;color:var(--ink)}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:var(--s-1)}
+.cal-dow span{text-align:center;font-size:var(--t-xs);font-weight:600;color:var(--ink-3);padding:var(--s-2) 0}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-.gd{aspect-ratio:1;border:0;background:transparent;font:inherit;font-size:14px;font-weight:560;color:var(--ink);cursor:pointer;padding:0}
+.gd{min-height:var(--tap);border:0;background:transparent;font:inherit;font-size:var(--t-sm);font-weight:600;color:var(--ink);cursor:pointer;padding:0}
 .gd.out{color:var(--ink-3);opacity:.42}
 .gd.today span{box-shadow:0 0 0 1.5px var(--oak);border-radius:50%}
 .gd.mid{background:rgba(176,137,90,.16)}
 .gd.start.mid-r{background:linear-gradient(90deg,transparent 50%,rgba(176,137,90,.16) 50%)}
 .gd.end.mid-l{background:linear-gradient(90deg,rgba(176,137,90,.16) 50%,transparent 50%)}
-.gd.start span,.gd.end span{background:var(--ink);color:#F6F1E7;box-shadow:none}
-.gd span{display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin:0 auto;border-radius:50%;position:relative;z-index:1}
-.cal-acts{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
-.cal-reset{border:0;background:#1B1916;color:#F6F1E7;border-radius:999px;padding:9px 16px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
-.cal-ok{width:42px;height:42px;border-radius:50%;border:0;background:var(--oak);color:#fff;font-size:18px;cursor:pointer}
-.chosen{display:block;width:100%;border:0;background:transparent;font-size:22px;font-weight:650;color:var(--ink);text-align:center;padding:2px 4px 12px;cursor:pointer}
-.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);z-index:20;background:var(--ink);color:var(--paper);font-size:14px;font-weight:500;padding:11px 18px;border-radius:30px;opacity:0;pointer-events:none;transition:.3s}
-.toast.show{opacity:1;transform:translate(-50%,0)}
+.gd.start span,.gd.end span{background:var(--ink);color:var(--surface);box-shadow:none}
+.gd span{display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin:0 auto;border-radius:50%}
+.cal-acts{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);margin-top:var(--s-3)}
+.chosen{display:block;width:100%;border:0;background:transparent;font-family:var(--f-serif);font-size:var(--t-xl);font-weight:600;color:var(--ink);text-align:center;padding:var(--s-2) 0 var(--s-4);cursor:pointer;min-height:var(--tap)}
+.spec-kv{display:flex;justify-content:space-between;gap:var(--s-3);font-size:var(--t-sm);padding:var(--s-1) 0}
+.spec-kv .k{color:var(--ink-3)}
+.spec-kv .v{font-weight:600;text-align:right}
+.spec-kv .gap{color:var(--clay);font-style:italic}
+.rem{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);font-size:var(--t-sm);color:var(--ink-2)}
+.rem input{width:auto;min-height:auto}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js"></script>
 </head>
 <body>
-<div class="wrap" id="body"><div class="err">Opening your packet…</div></div>
+<div class="wrap" id="body"><div class="empty">Opening your packet…</div></div>
 <div class="toast" id="toast"></div>
 <script>
 (function(){
@@ -93,98 +135,100 @@ function db(){
   return firebase.firestore();
 }
 function fail(msg){
-  document.getElementById("body").innerHTML='<div class="brand"><span class="dot"></span>SitePlumb</div><div class="err">'+msg+'</div><button class="btn go" style="max-width:320px;margin:0 auto" onclick="location.reload()">Try again</button>';
+  document.getElementById("body").innerHTML='<div class="brand wordmark"><span class="dot"></span>SitePlumb</div><div class="empty"><b>This packet will not open</b>'+msg+'</div><button class="btn btn-primary btn-block" onclick="location.reload()">Try again</button>';
+}
+function row(title,sub,aside,asideCls){
+  return '<div class="row"><div class="row-main"><div class="row-title">'+esc(title)+'</div>'+(sub?('<div class="row-sub">'+sub+'</div>'):'')+'</div>'+(aside?('<span class="row-aside'+(asideCls?(' '+asideCls):'')+'">'+esc(aside)+'</span>'):'')+'</div>';
 }
 function paint(){
   var g=_snap,body=document.getElementById("body");
   if(!g){fail("This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.");return;}
   var dates=fmtWin({start:(g.resp&&g.resp.start)||g.start,end:(g.resp&&g.resp.end)||g.end});
   var h="";
-  h+='<div class="brand"><span class="dot"></span>SitePlumb</div>';
+  h+='<div class="brand wordmark"><span class="dot"></span>SitePlumb</div>';
   if(g.lastChange||(g.changes&&g.changes[0])){
     var ch=(g.changes&&g.changes[0])||{what:g.lastChange,t:g.lastChangeT||g.t};
     var when=ch.t?new Date(ch.t).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
     h+='<div class="updated"><div>'+esc(ch.what||"Packet updated")+'</div>'+(when?('<div class="when">'+esc(when)+"</div>"):"")+"</div>";
   }
-  h+='<div class="site">'+esc(g.site)+"</div>";
-  h+='<div class="sub">'+esc(g.tradeLabel)+" \u00b7 for "+esc(g.sub)+" \u00b7 from "+esc(g.builder)+"</div>";
-  h+='<div class="dates"><div class="d">'+esc(dates)+"</div>"+(g.note?('<div class="n">'+esc(g.note)+"</div>"):"")+"</div>";
+  h+='<div class="card"><div class="hero-n">'+esc(dates||"Dates coming")+'</div>';
+  h+='<div class="hero-l">'+esc(g.site)+'</div>';
+  h+='<div class="hero-s">'+esc(g.tradeLabel)+' \u00b7 '+esc(g.sub)+' \u00b7 from '+esc(g.builder)+'</div>';
+  if(g.note)h+='<div class="hero-s">'+esc(g.note)+'</div>';
+  h+='</div>';
   if(g.resp&&g.resp.status==="confirmed"){
     h+='<div class="ok"><b>Confirmed.</b> You said these dates work'+(g.resp.t?(" \u00b7 "+new Date(g.resp.t).toLocaleDateString()):"")+".</div>";
-    h+='<button class="btn ghost" onclick="gpAddToCal()">Add to my calendar</button>';
-    h+='<button class="btn ghost" style="font-size:14px" onclick="gpToggleChange()">Suggest different dates</button>';
+    h+='<button class="btn btn-primary btn-block" onclick="gpAddToCal()">Add to my calendar</button>';
+    h+='<button class="btn btn-secondary btn-block" onclick="gpToggleChange()">Suggest different dates</button>';
     h+=chgHTML();
-    h+='<div class="chg" id="gpCalPick"><label>Which calendar?</label>'
-      +'<button class="btn ghost" onclick="gpCalDevice(document.getElementById(\'gpCalRem\').checked)">This device\u2019s calendar (Apple\u2026)</button>'
-      +'<button class="btn ghost" onclick="gpCalGoogle(document.getElementById(\'gpCalRem\').checked)">Google Calendar</button>'
-      +'<label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13.5px;margin-top:10px"><input type="checkbox" id="gpCalRem" checked style="width:auto"> Remember my choice</label>'
-      +'<div class="sub" style="margin-top:8px">On iPhone the calendar opens its own screen \u2014 tap <b>Add To Calendar</b> at the bottom of it.</div></div>';
+    h+='<div class="chg" id="gpCalPick">'
+      +'<div class="sec"><h2>Which calendar</h2></div>'
+      +'<button class="btn btn-secondary btn-block" onclick="gpCalDevice(document.getElementById(\'gpCalRem\').checked)">This device\u2019s calendar</button>'
+      +'<button class="btn btn-secondary btn-block" onclick="gpCalGoogle(document.getElementById(\'gpCalRem\').checked)">Google Calendar</button>'
+      +'<label class="rem"><input type="checkbox" id="gpCalRem" checked> Remember my choice</label>'
+      +'<div class="sub">On iPhone the calendar opens its own screen \u2014 tap <b>Add To Calendar</b> at the bottom of it.</div></div>';
   }else if(g.resp&&g.resp.status==="change"){
     var asked=g.resp.start?fmtWin({start:g.resp.start,end:g.resp.end||g.resp.start}):"";
-    h+='<div class="ok" style="border-color:var(--oak);background:rgba(176,137,90,.12)"><b>Change requested.</b> '+(asked?("You asked for "+esc(asked)+". "):"")+"Your builder has this"+(g.resp.note?(" \u2014 \u201c"+esc(g.resp.note)+"\u201d"):"")+".</div>";
+    h+='<div class="ok warn"><b>Change requested.</b> '+(asked?("You asked for "+esc(asked)+". "):"")+"Your builder has this"+(g.resp.note?(" \u2014 \u201c"+esc(g.resp.note)+"\u201d"):"")+".</div>";
+    h+='<button class="btn btn-secondary btn-block" onclick="gpToggleChange()">Suggest different dates</button>';
+    h+=chgHTML();
   }else{
-    h+='<button class="btn go" onclick="gpConfirm()">These dates work \u2713</button>';
-    h+='<button class="btn ghost" onclick="gpToggleChange()">Suggest different dates</button>';
+    h+='<button class="btn btn-primary btn-block" onclick="gpConfirm()">These dates work</button>';
+    h+='<button class="btn btn-secondary btn-block" onclick="gpToggleChange()">Suggest different dates</button>';
     h+=chgHTML();
   }
   var cx=g.ctx||{};
   if(cx.ready||cx.permit||cx.insp){
-    h+='<div class="dates" style="margin-top:0;padding:12px 14px">';
-    if(cx.ready)h+='<div class="n" style="margin-top:0;font-weight:700;color:'+(cx.readyOk?"var(--sage)":"var(--clay)")+'">'+(cx.readyOk?"\u2713 ":"\u26a0 ")+esc(cx.ready)+"</div>";
-    var kv=function(k,v){return '<div class="n" style="display:flex;justify-content:space-between;gap:12px"><span style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding-top:2px">'+k+'</span><span style="text-align:right">'+esc(v)+"</span></div>";};
-    if(cx.permit){var i=cx.permit.indexOf(": ");h+=kv("Permit",i>0?cx.permit.slice(0,i)+" \u2014 "+cx.permit.slice(i+2):cx.permit);}
-    if(cx.insp){var j=cx.insp.indexOf(": ");h+=kv("Inspection",j>0?cx.insp.slice(0,j)+" \u2014 "+cx.insp.slice(j+2):cx.insp);}
-    h+="</div>";
+    if(cx.ready)h+=row("House ready",esc(cx.ready),cx.readyOk?"Ready":"Not ready",cx.readyOk?"ok":"warn");
+    if(cx.permit){var i=cx.permit.indexOf(": ");h+=row("Permit",esc(i>0?cx.permit.slice(0,i)+" \u2014 "+cx.permit.slice(i+2):cx.permit),"","");}
+    if(cx.insp){var j=cx.insp.indexOf(": ");h+=row("Inspection",esc(j>0?cx.insp.slice(0,j)+" \u2014 "+cx.insp.slice(j+2):cx.insp),"","");}
   }
   if((cx.openItems||[]).length){
-    h+='<div class="eyebrow">Open items on your scope</div>';
-    h+=cx.openItems.map(function(x){return '<div class="doc"><span class="n">'+esc(x)+"</span></div>";}).join("");
+    h+='<div class="sec"><h2>Open items on your scope</h2></div>';
+    h+=cx.openItems.map(function(x){return row(x,"","","");}).join("");
   }
   if((cx.history||[]).length){
-    h+='<div class="eyebrow">Before you arrive \u2014 recent site history</div>';
-    h+=cx.history.map(function(x){return '<div class="doc"><span class="n">'+esc(x.text)+'</span><span class="t">'+esc(x.d)+"</span></div>";}).join("");
+    h+='<div class="sec"><h2>Before you arrive</h2></div>';
+    h+=cx.history.map(function(x){return row(x.text,esc(x.d),"","");}).join("");
   }
   if((g.specs||[]).length){
-    h+='<div class="eyebrow">Your install specs</div>';
+    h+='<div class="sec"><h2>Install specs</h2></div>';
     h+=g.specs.map(function(sel){
       var rows=(sel.rows||[]).map(function(r){return r.gap
-        ?'<div class="r"><span class="k">'+esc(r.k)+'</span><span class="v gap">awaiting '+esc(r.gap)+"</span></div>"
-        :'<div class="r"><span class="k">'+esc(r.k)+'</span><span class="v">'+esc(r.v)+"</span></div>";}).join("");
-      return '<div class="sel"><div class="h"><b>'+esc(sel.item||"(unspecified)")+'</b><span class="c">'+esc(sel.cat||"")+(sel.room?" \u00b7 "+esc(sel.room):"")+"</span></div>"+(rows?'<div class="spec">'+rows+"</div>":"")+"</div>";
+        ?'<div class="spec-kv"><span class="k">'+esc(r.k)+'</span><span class="v gap">awaiting '+esc(r.gap)+"</span></div>"
+        :'<div class="spec-kv"><span class="k">'+esc(r.k)+'</span><span class="v">'+esc(r.v)+"</span></div>";}).join("");
+      return '<div class="row"><div class="row-main"><div class="row-title">'+esc(sel.item||"(unspecified)")+'</div><div class="row-sub">'+esc(sel.cat||"")+(sel.room?" \u00b7 "+esc(sel.room):"")+"</div>"+rows+"</div></div>";
     }).join("");
   }
   if((g.docs||[]).length){
-    h+='<div class="eyebrow">Documents on file</div>';
-    h+=g.docs.map(function(n){return '<div class="doc"><span class="n">'+esc(n)+"</span></div>";}).join("");
-    h+='<div class="sub" style="margin-top:6px">Need a file? Reply to the text and it comes right over.</div>';
+    h+='<div class="sec"><h2>Documents on file</h2></div>';
+    h+=g.docs.map(function(n){return row(n,"Need a file? Reply to the text.","","");}).join("");
   }
-  h+='<div class="eyebrow">Questions</div>';
+  h+='<div class="sec"><h2>Questions</h2></div>';
   var qs=g.q||[];
   h+=qs.length?qs.map(function(x){
-    return '<div class="sel"><div class="h"><b>'+esc(x.text)+'</b><span class="c">'+new Date(x.t).toLocaleDateString()+"</span></div>"
-      +(x.a?'<div class="spec"><div class="r"><span class="k">'+esc(g.builder)+'</span><span class="v">'+esc(x.a)+"</span></div></div>"
-           :'<div class="sub" style="margin-top:4px">Sent \u2014 '+esc(g.builder)+" will get back to you.</div>");
-  }).join(""):"";
-  h+='<button class="btn ghost" style="margin-top:8px" onclick="gpToggleAsk()">Ask a question\u2026</button>';
-  h+='<div class="chg" id="gpAsk"><label>Your question</label><textarea id="gpQText" rows="2" placeholder="e.g. Is the water heater gas or electric?"></textarea><button class="btn go" style="margin-top:10px" onclick="gpSendQuestion()">Send to '+esc(g.builder)+"</button></div>";
-  h+='<button class="btn ghost" style="margin-top:16px;font-size:14px" onclick="gpTogglePrefs()">\u2699 Preferences</button>';
+    return '<div class="row"><div class="row-main"><div class="row-title">'+esc(x.text)+'</div><div class="row-sub">'+esc(new Date(x.t).toLocaleDateString())+(x.a?(" \u00b7 "+esc(g.builder)+": "+esc(x.a)):" \u00b7 Sent \u2014 "+esc(g.builder)+" will get back to you.")+"</div></div></div>";
+  }).join(""):'<div class="sub">Nothing asked yet.</div>';
+  h+='<button class="btn btn-quiet btn-block" onclick="gpToggleAsk()">Ask a question</button>';
+  h+='<div class="chg" id="gpAsk"><div class="field"><label>Your question</label><textarea id="gpQText" rows="2" placeholder="e.g. Is the water heater gas or electric?"></textarea></div><button class="btn btn-secondary btn-block" onclick="gpSendQuestion()">Send to '+esc(g.builder)+"</button></div>";
+  h+='<button class="btn btn-quiet btn-block" onclick="gpTogglePrefs()">Preferences</button>';
   var cp=calPref();
-  h+='<div class="chg" id="gpPrefs"><label>Default calendar</label><select id="gpPrefCal" onchange="setCalPref(this.value)">'
+  h+='<div class="chg" id="gpPrefs"><div class="field"><label>Default calendar</label><select id="gpPrefCal" onchange="setCalPref(this.value)">'
     +'<option value=""'+(cp===""?" selected":"")+">Ask each time</option>"
     +'<option value="device"'+(cp==="device"?" selected":"")+">This device\u2019s calendar</option>"
-    +'<option value="google"'+(cp==="google"?" selected":"")+">Google Calendar</option></select>"
-    +'<div class="sub" style="margin-top:8px">Saved on this phone.</div></div>';
+    +'<option value="google"'+(cp==="google"?" selected":"")+">Google Calendar</option></select></div>"
+    +'<div class="sub">Saved on this phone.</div></div>';
   h+='<div class="foot">Sent with SitePlumb \u00b7 this link expires '+new Date(g.expires||Date.now()).toLocaleDateString()+"</div>";
   body.innerHTML=h;
 }
 function chgHTML(){
   return '<div class="chg" id="gpChg"><input type="hidden" id="gpStart"><input type="hidden" id="gpEnd">'
-    +'<div id="gpChgCal"><div id="gpCalMount"></div><div class="cal-acts"><button type="button" class="cal-reset" onclick="gpCalReset()">Reset</button>'
-    +'<button type="button" class="cal-ok" onclick="gpCalDone()" aria-label="Use these dates">\u2713</button></div></div>'
+    +'<div id="gpChgCal"><div id="gpCalMount"></div><div class="cal-acts"><button type="button" class="btn btn-secondary" onclick="gpCalReset()">Reset</button>'
+    +'<button type="button" class="btn btn-primary" onclick="gpCalDone()" aria-label="Use these dates">Use these dates</button></div></div>'
     +'<div id="gpChgNote" style="display:none"><button type="button" class="chosen" id="gpChosen" onclick="gpCalBack()"></button>'
-    +'<label>Note <span style="font-weight:400;letter-spacing:0;text-transform:none">(optional)</span></label>'
-    +'<textarea id="gpNote" rows="2" placeholder="Crew is on another job until Thursday"></textarea>'
-    +'<button class="btn go" style="margin-top:10px" onclick="gpSendChange()">Send to '+esc((_snap||{}).builder||"your builder")+"</button></div></div>";
+    +'<div class="field"><label>Note <span class="meta">(optional)</span></label>'
+    +'<textarea id="gpNote" rows="2" placeholder="Crew is on another job until Thursday"></textarea></div>'
+    +'<button class="btn btn-secondary btn-block" onclick="gpSendChange()">Send to '+esc((_snap||{}).builder||"your builder")+"</button></div></div>";
 }
 function calHTML(cursor,sv,ev){
   if(!cursor){var n=new Date();cursor=new Date(n.getFullYear(),n.getMonth(),1);}
