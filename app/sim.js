@@ -2180,6 +2180,7 @@ t('Field Notes has one pull handle', SRC.indexOf('id="sheet"')>=0&&SRC.split('id
 t('browse sheets have no header Done', SRC.split('<body')[1].split('<script')[0].indexOf('class="btn btn-quiet" onclick="dismissParent(this)">Done')<0);
 t('settings uses the leave bar', SRC.split('id="settingsScrim"')[1].split('id="studioScrim"')[0].indexOf('leave-bar')>=0);
 t('action sheets share the bar', SRC.indexOf('.action-bar{')>=0&&SRC.split('id="bkScrim"')[1].split('id="subview"')[0].indexOf('id="bkSave"')>=0&&SRC.split('id="bkScrim"')[1].split('id="subview"')[0].indexOf('action-bar')>=0);
+t('leave bar has no extra strip under Done', SRC.indexOf('.sheet:has(> .leave-bar)')>=0&&SRC.indexOf('padding-bottom:0')>=0);
 
 S('4A list screens');
 asBuilder();

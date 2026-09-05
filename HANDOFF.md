@@ -1,4 +1,5 @@
-**v2.393.0 is live.** Action sheets: Done/Cancel on the bar, the job in black beside it. Schedule a crew Save sits on that bar.
+**v2.394.0 is live.** Leave/action bars: same gap under Done as above it. No empty strip.
+
 
 
 
