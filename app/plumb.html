@@ -597,7 +597,7 @@
   .pkt-banner.warn{background:rgba(176,96,74,.12);color:var(--clay);}
   .pkt-sel{margin-bottom:var(--s-3);}
   .pkt-sel .ps-h{display:flex;flex-direction:column;margin-bottom:var(--s-1);}
-  .pkt-sel .ps-c{font-size:var(--t-xs);color:var(--ink-3);}
+  .pkt-sel .ps-c{font-size:var(--t-xs);color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums;}
   .pkt-ho{display:inline-block;font-size:var(--t-xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--oak);border:1px solid rgba(176,137,90,.35);border-radius:var(--r-sm);padding:var(--s-1) var(--s-1);margin-left:var(--s-2);vertical-align:1px;}
   .pkt-gap{color:var(--clay);font-style:italic;}
   .pkt-doc{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s-2) var(--s-3);margin-bottom:var(--s-2);cursor:pointer;}
@@ -629,6 +629,7 @@
   .pkt-or .k{font-weight:650;font-size:var(--t-md);color:var(--ink);line-height:1.3;}
   .pkt-or .m{font-size:var(--t-sm);color:var(--ink);margin-top:var(--s-1);line-height:1.35;font-weight:500;}
   .pkt-or .td-chev{flex:none;margin-top:var(--s-1);line-height:1;}
+  .pkt-or .ps-c{white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right;font-size:var(--t-xs);color:var(--ink-3);}
   .hs-sub{display:none;text-align:center;font-size:var(--t-xs);color:var(--ink-3);margin:calc((var(--s-2))*-1) 0 var(--s-3);font-weight:500;}
   .hs-doors{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:var(--s-1) 0 var(--s-2);}
   .hs-door{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:var(--s-3) var(--s-3) var(--s-3);text-align:left;cursor:pointer;font-family:inherit;color:var(--ink);}
@@ -2585,10 +2586,10 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <div class="subview" id="calview">
     <div class="sv-head">
       <div>
+        <button class="sv-back" id="calDoneBtn" onclick="closeCal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span>Done</span></button>
         <div class="wm"><span class="dot"></span><span id="calHdrT">Trades Calendar</span></div>
         <div class="who" id="calWho">All houses</div>
       </div>
-      <button class="ov-logout btn btn-secondary" id="calDoneBtn" onclick="closeCal()">Done</button>
     </div>
     <div class="sv-body" id="calBody"></div>
   </div>
@@ -3016,7 +3017,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sheet-body">
 <div class="info-body" id="budgetBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" id="budgetDoneBtn" onclick="closeBudget()">Done</button></div></div>
+</div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="costLineScrim">
@@ -3832,15 +3833,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.382.0 - Chip center and house crew words';
+const PLUMB_VERSION='2.383.0 - House back left, dates one line';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789020000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.382.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789030000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.383.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6928,7 +6929,7 @@ teamLegacy:[
  {sel:'#calview .pkt-banner, #calview .cal-grid',bubSide:'tl',title:'The trades calendar',body:'Every crew booking across every job \u2014 who\u2019s on site, and when. Double-bookings get flagged before they burn a day, and subs confirm with one tap.',
   acts:[{do:()=>tourGoto('build','schedule')},{tap:'.cal-door',do:()=>{try{calSiteFilter=state.activeId;openCal();}catch(e){}}}],
   after:async(tok)=>{await new Promise(r=>setTimeout(r,5600));if(!tourAlive(tok))return;
-    await orbTo('#calview .ov-logout',{tap:true});if(!tourAlive(tok))return;
+    await orbTo('#calDoneBtn',{tap:true});if(!tourAlive(tok))return;
     try{closeCal();}catch(e){}
     setTimeout(()=>{try{if(!tourAlive(tok))return;const d2=document.querySelector('.cal-door');if(d2){const r2=d2.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2,true,undefined,true);orbTo(d2,{settle:true,rest:true});}}catch(e){}},420);}},
  {sel:'#buildPermits',title:'Permits, inspections & your subs',body:'Every permit and inspection, tracked from \u2018not started\u2019 to \u2018passed\u2019 \u2014 where your city posts results online, SitePlumb pulls them in. One tab over is your roster: who\u2019s cleared, who\u2019s booked, who owes you paperwork.',
@@ -6950,7 +6951,7 @@ teamLegacy:[
 {sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build sits 800 dollars from budget with one line over \u2014 and every cost can flow straight into QuickBooks.',
   acts:[{do:()=>tourGoto('build','subs')},{tap:'#budgetCard .overall',do:()=>{try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}try{openBudget();}catch(e){}}}]},
  {sel:'#billingCard',bubSide:'tb',title:'Homeowner invoices',body:'The other side of the money \u2014 upgrades, credits, and invoices the homeowner approves with one tap. The ledger below always knows where every dollar stands.',
-  acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .pmodal .b-go',do:()=>{try{closeBudget();}catch(e){}}}],
+  acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .sheet-head button',do:()=>{try{closeBudget();}catch(e){}}}],
   task:{payoff:'What the homeowner owes, what the homeowner has paid, what is waiting on the homeowner. Always current. Never another spreadsheet.',
     steps:[
       {t:()=>document.querySelector('#billingCard [onclick]')||document.getElementById('billingCard'),
@@ -8309,8 +8310,10 @@ function houseMoneyLine(p){
 function fromTheHouse(){return !!(_houseResume||(typeof houseStillOpen==='function'&&houseStillOpen()));}
 function labelHouseBack(el, fallback){
   if(!el)return;
-  if(fallback==='Cancel'){el.textContent='Cancel';return;}
-  el.textContent=fromTheHouse()?'\u2039 House':(fallback||'Done');
+  const lab=fallback==='Cancel'?'Cancel':(fromTheHouse()?'House':(fallback||'Done'));
+  const sp=el.querySelector('span');
+  if(sp)sp.textContent=lab;
+  else el.textContent=(fromTheHouse()&&fallback!=='Cancel')?'\u2039 House':lab;
 }
 function logFromHouse(){
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openFieldNote();});
@@ -9971,7 +9974,7 @@ function budgetCardHTML(p){
 }
 
 
-function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');try{labelHouseBack(document.getElementById('budgetDoneBtn'),'Done');}catch(e){}}
+function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');}
 function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{houseMaybeResume();}catch(e){}}
 function moneyTotHTML(p){
   const cs=costSummary(p);const bill=billingSummary(p);
@@ -16404,7 +16407,13 @@ function pkDiffWhat(prev,fresh){
   return bits.slice(0,-1).join(', ')+' and '+bits[bits.length-1];
 }
 function pkWhen(ts){
-  return new Date(ts||Date.now()).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  if(!ts)return '';
+  const d=new Date(ts);
+  const h=d.getHours();
+  const m=d.getMinutes();
+  const hr=((h+11)%12)+1;
+  const ap=h>=12?'p':'a';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' \u00b7 '+hr+':'+String(m).padStart(2,'0')+ap;
 }
 function pkPublishSoon(){
   if(typeof appMode==='function'&&appMode()!=='real')return;
@@ -16645,13 +16654,13 @@ function inbDraw(){
     el.innerHTML='<div class="empty">Nothing matches.</div>';return;}
   el.innerHTML=rows.map(function(r){
     if(_inbMode==='pk'){
-      const when=r.t?new Date(r.t).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+      const when=r.t?pkWhen(r.t):'';
       return '<div class="pkt-sel mt-2"><div class="ps-h"><b>'+esc(pkKind(r))+'</b><span class="ps-c">'+esc(when)+'</span></div>'
         +'<div class="td-meta mt-1">'+esc(r.who||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div>'
         +(r.detail?'<div class="td-quote mt-1">'+esc(r.detail)+'</div>':'')
         +'</div>';
     }
-    const when=r.ts?new Date(r.ts).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+    const when=r.ts?pkWhen(r.ts):'';
     const go=r.go?String(r.go).replace(/"/g,'"'):'';
     return '<div class="pkt-or mt-2" onclick="closePkLog();'+go+'"><div><div class="k">'+esc(r.kind||'Needs you')+'</div>'
       +'<div class="m">'+esc(r.line||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div></div>'
