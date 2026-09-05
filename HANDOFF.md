@@ -1,4 +1,6 @@
-**v2.394.0 is live.** Leave/action bars: same gap under Done as above it. No empty strip.
+**v2.396.0 is live.** Timeline rail sits behind the dots. Finished rails say Installed. Last card clears the House bar.
+
+
 
 
 
