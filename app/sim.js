@@ -2271,6 +2271,19 @@ t('Beaumont August does not flag other houses', (function(){
 $("calSiteFilter='all'");
 $('renderCal()');
 t('all houses still flags doubles', ((el('calBody')&&el('calBody').textContent)||'').indexOf('double-booked')>=0);
+$("calMonth=new Date(2026,8,1)");
+$("calSiteFilter='all'");
+$('renderCal()');
+t('September does not flag August doubles', (function(){
+  const txt=(el('calBody')&&el('calBody').textContent)||'';
+  return txt.indexOf('Aug 15')<0&&txt.indexOf('Aug 17')<0;
+})());
+$('closeBk()');
+$("calSiteFilter='all'");
+$("state.activeId='p1'");
+$('openBk(null, Date.now()+24*864e5)');
+t('schedule someone follows the house on that day', (el('bkSite')&&el('bkSite').value)==='p8');
+$('closeBk()');
 $("calSiteFilter='p8'");
 $("calCrewFilter=''");
 $("calMonth=new Date(2026,7,1)");

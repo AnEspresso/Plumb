@@ -1,4 +1,7 @@
+**v2.376.0 is live.** Calendar banners follow the month you’re on. Schedule someone follows the house on that day.
+
 **v2.375.0 is live.** Day sheet follows this house. Free this day is this house’s crews. One dark button: Schedule someone this day. Header Done stays. Invite is a quiet line, not a pink box.
+
 
 **v2.374.0 is live.** House calendar drops the company idle count. All houses still shows who is idle this month.
 

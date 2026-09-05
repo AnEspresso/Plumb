@@ -3842,15 +3842,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.375.0 - Day sheet follows this house';
+const PLUMB_VERSION='2.376.0 - Calendar banners follow the month';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788950000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.375.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788960000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.376.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -14752,6 +14752,35 @@ function calConflictOnScreen(c){
   if(c.a&&c.a.p)return String(c.a.p.id)===sid;
   return false;
 }
+function calConflictInMonth(c){
+  if(!c||!calMonth)return true;
+  const y=calMonth.getFullYear(),m=calMonth.getMonth();
+  const ms=new Date(y,m,1).getTime(),me=new Date(y,m+1,0).getTime();
+  function overlaps(b){
+    if(!b)return false;
+    const s=dayStart(b.start),e=dayStart(b.end!=null?b.end:b.start);
+    return e>=ms&&s<=me;
+  }
+  if(c.kind==='double'){
+    if((c.bs||[]).some(overlaps))return true;
+    const d=dayStart(c.day);
+    return d>=ms&&d<=me;
+  }
+  if(c.a&&overlaps(c.a))return true;
+  if(c.x&&overlaps(c.x))return true;
+  return false;
+}
+function bkDefaultSite(defTs){
+  if(calSiteFilter!=='all')return String(calSiteFilter);
+  const onDay=(defTs!=null)?calVisibleBookings().filter(function(b){return spanCovers(b,defTs);}):[];
+  const ids=[];
+  onDay.forEach(function(b){const id=String((b.p&&b.p.id)||'');if(id&&ids.indexOf(id)<0)ids.push(id);});
+  if(ids.length===1)return ids[0];
+  const act=state.activeId!=null?String(state.activeId):'';
+  if(act&&ids.indexOf(act)>=0)return act;
+  if(ids.length)return ids[0];
+  return act;
+}
 function calVisibleBookings(){
   if(calIsClient()){const sid=(state.session||{}).site||((clientProj()||{}).id);return allBookings().filter(b=>String(b.p.id)===String(sid));}
   if(calCrewFilter)return allBookings().filter(b=>b.subName===calCrewFilter);
@@ -14836,7 +14865,7 @@ function renderCal(){
       +'<button class="cal-chip" onclick="openIdle()">Idle / plan</button>'
       +'</div>';
   }
-  const conf=calIsClient()?[]:bookingConflicts().filter(calConflictOnScreen);
+  const conf=calIsClient()?[]:bookingConflicts().filter(calConflictOnScreen).filter(calConflictInMonth);
   const banner=conf.length?'<div class="mt-0 ml-1 mr-1 mb-3">'+conf.slice(0,3).map(function(c){
       if(c.kind==='double'){
         const who=String(c.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -15031,7 +15060,8 @@ function openBk(ref,defTs){
   }else{
     title.textContent=calIsSub()?'Block time off':'Schedule a crew';
     siteSel.disabled=false;subSel.disabled=false;
-    if(calSiteFilter!=='all')siteSel.value=String(calSiteFilter);
+    const pick=bkDefaultSite(defTs);
+    if(pick)siteSel.value=pick;
     if(calIsSub()){
       const mine=sites.filter(p=>(p.subs||[]).some(sb=>sb.name===(state.session||{}).name));
       siteSel.innerHTML=mine.map(p=>`<option value="${p.id}">${esc(p.street||p.name)}</option>`).join('');

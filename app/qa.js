@@ -324,6 +324,18 @@ async function tappable(page,sel){
   t('day sheet has one primary',day.prim.length===1,JSON.stringify(day.prim));
   t('day primary is Schedule someone',day.prim[0]==='Schedule someone this day',JSON.stringify(day.prim));
   await page.evaluate(()=>{try{closeDay();closeCal();}catch(e){}});
+  await page.evaluate(()=>{try{calMonth=new Date(2026,8,1);calSiteFilter='all';calCrewFilter='';openCal();}catch(e){}});
+  await new Promise(r=>setTimeout(r,200));
+  const sep=await page.evaluate(()=>{
+    const txt=(document.getElementById('calBody')&&document.getElementById('calBody').innerText)||'';
+    return {txt,banners:[...document.querySelectorAll('#calBody .pkt-banner')].map(el=>(el.innerText||'').replace(/\s+/g,' ').trim())};
+  });
+  t('September does not flag August doubles',sep.txt.indexOf('Aug 15')<0&&sep.txt.indexOf('Aug 17')<0,JSON.stringify(sep.banners));
+  await page.evaluate(()=>{try{closeCal();state.activeId='p1';calSiteFilter='all';openBk(null, Date.now()+24*864e5);}catch(e){}});
+  await new Promise(r=>setTimeout(r,200));
+  const site=await page.evaluate(()=>({id:(document.getElementById('bkSite')&&document.getElementById('bkSite').value)||'',label:(document.getElementById('bkSiteBtnT')&&document.getElementById('bkSiteBtnT').textContent)||''}));
+  t('schedule someone follows the house on that day',site.id==='p8'||site.label.indexOf('Beaumont')>=0,JSON.stringify(site));
+  await page.evaluate(()=>{try{closeBk();}catch(e){}});
 
   await page.evaluate(()=>{try{exitHouseDesk();closeHouse();openSiteFromOverview('p2');go('files');filesSeg('photos');}catch(e){}});
   await new Promise(r=>setTimeout(r,250));
