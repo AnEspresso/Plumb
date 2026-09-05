@@ -1,4 +1,6 @@
-**v2.398.0 is live.** Builder packet preview paints the same layout as the page from the text.
+**v2.399.0 is live.** Packet preview: one black button — Text this link on the action bar. Crew taps stay visible, not primary.
+
+
 
 
 

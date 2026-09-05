@@ -457,7 +457,12 @@
   #guestScrim .spec-kv .k{color:var(--ink-3);}
   #guestScrim .spec-kv .v{font-weight:600;text-align:right;}
   #guestScrim .spec-kv .gap{color:var(--clay);font-style:italic;}
-  #guestScrim .btn + .btn{margin-top:var(--s-2);}
+  #guestScrim .btn-block + .btn{margin-top:var(--s-2);}
+  #guestScrim .action-bar .btn + .btn{margin-top:0;}
+  #guestScrim .leave-bar,#guestScrim .action-bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:var(--z-nav);
+    background:var(--paper);padding-left:var(--s-5);padding-right:var(--s-5);
+  }
   #guestScrim .card{margin:var(--s-4) 0;}
   #guestScrim .rem{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);font-size:var(--t-sm);color:var(--ink-2);}
   #guestScrim .rem input{width:auto;min-height:auto;}
@@ -3860,15 +3865,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.398.0 - Packet preview matches the text link';
+const PLUMB_VERSION='2.399.0 - Preview has one black button';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789180000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.398.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789190000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.399.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -15997,8 +16002,7 @@ function _gpRender(){
     h+='<div class="updated gp-updated"><div>'+esc(ch.what||'Packet updated')+'</div>'
       +(when?('<div class="meta">'+esc(when)+'</div>'):'')+'</div>';
   }
-  if(preview&&_gpPendingSend)h+='<div class="gp-preview">Review before it sends \u2014 this is exactly what '+esc(g.sub)+' will see'+(g.phone?(' at '+esc(g.phone)):'')+'.</div>'
-    +'<button class="btn btn-primary btn-block" onclick="gpApproveSend()">Text this link</button>';
+  if(preview&&_gpPendingSend)h+='<div class="gp-preview">Review before it sends \u2014 this is exactly what '+esc(g.sub)+' will see'+(g.phone?(' at '+esc(g.phone)):'')+'.</div>';
   else if(preview)h+='<div class="gp-preview">Preview \u2014 this is the one-page packet your crew receives by text. Nothing was sent.</div>';
   h+='<div class="card"><div class="hero-n">'+esc(dates||'Dates coming')+'</div>';
   h+='<div class="hero-l">'+esc(g.site)+'</div>';
@@ -16021,8 +16025,13 @@ function _gpRender(){
     h+='<button class="btn btn-secondary btn-block" onclick="gpToggleChange()">Suggest different dates</button>';
     h+=_gpChgHTML(g);
   }else{
-    h+='<button class="btn btn-primary btn-block" onclick="gpConfirm()">These dates work</button>';
-    h+='<button class="btn btn-secondary btn-block" onclick="gpToggleChange()">Suggest different dates</button>';
+    if(preview){
+      h+='<button class="btn btn-secondary btn-block" onclick="gpPreviewTap()">These dates work</button>';
+      h+='<button class="btn btn-secondary btn-block" onclick="gpPreviewTap()">Suggest different dates</button>';
+    }else{
+      h+='<button class="btn btn-primary btn-block" onclick="gpConfirm()">These dates work</button>';
+      h+='<button class="btn btn-secondary btn-block" onclick="gpToggleChange()">Suggest different dates</button>';
+    }
     h+=_gpChgHTML(g);
   }
   const cx=g.ctx||{};
@@ -16067,9 +16076,11 @@ function _gpRender(){
     +'<option value="google"'+(cp==='google'?' selected':'')+'>Google Calendar</option></select></div>'
     +'<div class="sub">Saved on this phone.</div></div>';
   h+='<div class="gp-foot">Sent with SitePlumb \u00b7 this link expires '+new Date(g.expires||Date.now()).toLocaleDateString()+'</div>';
-  if(preview)h+='<div class="leave-bar"><button class="btn btn-secondary" onclick="closeGuestPreview()">Done</button></div>';
+  if(preview&&_gpPendingSend)h+='<div class="action-bar"><button class="btn btn-secondary" onclick="closeGuestPreview()">Done</button><button class="btn btn-primary" onclick="gpApproveSend()">Text this link</button></div>';
+  else if(preview)h+='<div class="leave-bar"><button class="btn btn-secondary" onclick="closeGuestPreview()">Done</button></div>';
   body.innerHTML=h;
 }
+function gpPreviewTap(){toast('They tap this \u2014 send is at the bottom');}
 function closeGuestPreview(){try{delete window.__packetFixture;}catch(e){}
   try{_gpUnlisten();}catch(e){}
   const sc=document.getElementById('guestScrim');

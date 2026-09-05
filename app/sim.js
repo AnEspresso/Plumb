@@ -987,7 +987,11 @@ t('readiness carries a machine flag', typeof (snap.ctx||{}).readyOk==='boolean')
 $("window.__packetFixture="+JSON.stringify(snap));
 $("_gpPendingSend={pid:'p2',bid:'x'}");
 $("renderGuestPacket('preview')");
-t('approval bar renders on a sendable preview', el('gpBody').innerHTML.indexOf('Text this link')>=0&&el('gpBody').innerHTML.indexOf('exactly what')>=0);
+t('approval bar renders on a sendable preview', el('gpBody').innerHTML.indexOf('Text this link')>=0&&el('gpBody').innerHTML.indexOf('exactly what')>=0&&el('gpBody').innerHTML.indexOf('action-bar')>=0);
+t('sendable preview has one black button', (function(){
+  const vis=[...el('gpBody').querySelectorAll('.btn-primary')].filter(b=>!b.closest('.gp-chg'));
+  return vis.length===1&&vis[0].textContent.indexOf('Text this link')>=0&&!!el('gpBody').querySelector('.action-bar');
+})());
 $("_gpPendingSend=null");$("_gpRender()");
 t('plain preview has no approval bar', el('gpBody').innerHTML.indexOf('Text this link')<0);
 t('colored readiness renders', el('gpBody').innerHTML.indexOf('row-aside')>=0&&(el('gpBody').innerHTML.indexOf('warn')>=0||el('gpBody').innerHTML.indexOf('ok')>=0));
