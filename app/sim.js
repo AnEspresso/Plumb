@@ -2181,7 +2181,7 @@ t('browse sheets have no header Done', SRC.split('<body')[1].split('<script')[0]
 t('settings uses the leave bar', SRC.split('id="settingsScrim"')[1].split('id="studioScrim"')[0].indexOf('leave-bar')>=0);
 t('action sheets share the bar', SRC.indexOf('.action-bar{')>=0&&SRC.split('id="bkScrim"')[1].split('id="subview"')[0].indexOf('id="bkSave"')>=0&&SRC.split('id="bkScrim"')[1].split('id="subview"')[0].indexOf('action-bar')>=0);
 t('timeline labels only the current step', SRC.indexOf('.tl .tstep .tlbl{display:none')>=0&&SRC.indexOf('.tl .tstep.cur .tlbl{display:block')>=0);
-t('timeline rail sits behind the dots', SRC.indexOf('.tl .tstep::before{')>=0&&SRC.split('.tl .tstep::before{')[1].slice(0,220).indexOf('left:calc(-50% + 9px)')>=0);
+t('timeline rail sits behind the dots', SRC.indexOf('.tl .tstep .dot{')>=0&&SRC.split('.tl .tstep .dot{')[1].slice(0,280).indexOf('position:relative')>=0&&SRC.split('.tl .tstep::before{')[1].slice(0,160).indexOf('left:-50%')>=0&&SRC.split('.tl .tstep::before{')[1].slice(0,160).indexOf('width:100%')>=0);
 t('finished rail keeps a current label', SRC.split('function selTimeline(s)')[1].slice(0,520).indexOf("completed?'done':'')+(i===cur?' cur':'')")>=0);
 t('house desk titles match the house sheet', SRC.indexOf('body.on-house-desk .stage .sn')>=0&&SRC.indexOf('body.on-house-desk .permit-row .pn')>=0&&SRC.indexOf('body.on-house-desk .sel-row .it')>=0);
 

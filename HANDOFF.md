@@ -1,4 +1,5 @@
-**v2.396.0 is live.** Timeline rail sits behind the dots. Finished rails say Installed. Last card clears the House bar.
+**v2.397.0 is live.** Timeline rail runs center-to-center under the coins. Lines meet the dots.
+
 
 
 

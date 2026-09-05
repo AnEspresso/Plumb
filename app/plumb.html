@@ -1640,17 +1640,17 @@
   /* per-selection status timeline (Pending → Installed) */
   .tl{display:flex;align-items:flex-start;gap:0;margin-top:var(--s-2);}
   .tl .tstep{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative;}
-  .tl .tstep .dot{width:14px;height:14px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;}
+  .tl .tstep .dot{width:14px;height:14px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;position:relative;}
   .tl .tstep .dot svg{width:8px;height:8px;stroke:var(--white);}
   .tl .tstep .tlbl{display:none;font-size:var(--t-xs);font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ink-3);text-align:center;line-height:1.15;max-width:100%;}
   .tl .tstep.cur .tlbl{display:block;color:var(--oak);}
   .tl .tstep.done.cur .tlbl{color:var(--sage);}
-  .tl .tstep::before{content:"";position:absolute;top:6.5px;left:calc(-50% + 9px);width:calc(100% - 18px);height:2px;background:var(--line);}
+  .tl .tstep::before{content:"";position:absolute;top:6px;left:-50%;width:100%;height:2px;background:var(--line);}
   .tl .tstep:first-child::before{display:none;}
   .tl .tstep.done .dot{background:var(--sage);border-color:var(--sage);}
   .tl .tstep.done::before{background:var(--sage);}
-  .tl .tstep.cur .dot{background:var(--oak);border-color:var(--oak);box-shadow:0 0 0 3px rgba(176,137,90,.18);}
-  .tl .tstep.done.cur .dot{background:var(--sage);border-color:var(--sage);box-shadow:0 0 0 3px rgba(111,123,88,.22);}
+  .tl .tstep.cur .dot{background:var(--oak);border-color:var(--oak);}
+  .tl .tstep.done.cur .dot{background:var(--sage);border-color:var(--sage);}
   .sel-empty-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px dashed var(--line);border-radius:var(--r-sm);padding:var(--s-3) var(--s-4);margin-bottom:var(--s-3);cursor:pointer;color:var(--ink-3);font-size:var(--t-sm);}
   .sel-empty-row .addlink{color:var(--oak);font-weight:700;font-size:var(--t-sm);}
   .sel-stat.s-pending{color:var(--ink-2);background:var(--surface-2);border-color:var(--line);}
@@ -3846,15 +3846,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.396.0 - Clean dots, Installed on a finished rail';
+const PLUMB_VERSION='2.397.0 - Timeline rail meets the coins';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789160000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.396.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789170000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.397.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
