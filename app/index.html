@@ -3696,7 +3696,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sheet-body">
 <div class="info-body" id="sdBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeSubDetail()">Done</button><button class="b1 b-go btn btn-primary" id="sdEditBtn" onclick="editSubFromDetail()">Edit</button></div></div>
+</div>
   </div>
 
   <!-- site-ready picker -->
@@ -3842,15 +3842,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.376.0 - Calendar banners follow the month';
+const PLUMB_VERSION='2.377.0 - Person sheet uses one primary';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788960000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.376.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788970000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.377.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -14356,7 +14356,7 @@ function openSubDetail(id){const p=P();const s=p&&(p.subs||[]).find(x=>x.id===id
     +(access?row('Live access',access):'')
     +`</div>`;
   if(s.notes)h+=`<div class="meta mt-3">Notes</div><div class="sd-notes">${esc(s.notes)}</div>`;
-  h+=`<button class="btn btn-secondary btn-block mt-3" onclick="closeSubDetail();openPacket('${s.id}')">Open packet</button>`;
+  h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="closeSubDetail();openPacket(\''+s.id+'\')">Open packet</button><button class="btn btn-secondary" id="sdEditBtn" onclick="editSubFromDetail()">Edit</button></div>';
   if(appMode()==='real'&&!inv)h+=`<button class="add-sub-btn mt-3 btn btn-secondary" onclick="closeSubDetail();createInvite('sub','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite ${esc(s.name)} to SitePlumb…</button>`;
     h+=`<button class="btn btn-danger btn-block mt-2" onclick="closeSubDetail();removeSub('${s.id}')">Remove from this house</button>`;
   document.getElementById('sdBody').innerHTML=h;

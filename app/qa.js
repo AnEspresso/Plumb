@@ -240,6 +240,15 @@ async function tappable(page,sel){
   t('Crews rows have no Packet button',crewPkt.n>=1&&crewPkt.pkt===0&&crewPkt.quiet===0,JSON.stringify(crewPkt));
   await page.evaluate(()=>{const row=document.querySelector('#subList .row');if(row)row.click();});
   await new Promise(r=>setTimeout(r,200));
+  const person=await page.evaluate(()=>{
+    const prim=[...document.querySelectorAll('#subDetailScrim .btn-primary')].map(el=>(el.innerText||'').replace(/\s+/g,' ').trim());
+    const edit=document.getElementById('sdEditBtn');
+    return {prim,edit:(edit&&(edit.className||''))||'',shown:document.getElementById('subDetailScrim').classList.contains('show')};
+  });
+  t('person sheet is on screen',person.shown,JSON.stringify(person));
+  t('person sheet has one primary',person.prim.length===1,JSON.stringify(person.prim));
+  t('person primary is Open packet',person.prim[0]==='Open packet',JSON.stringify(person.prim));
+  t('person Edit is quiet',person.edit.indexOf('btn-primary')<0,person.edit);
   await page.evaluate(()=>{try{closeSubDetail();openPacket((P().subs.find(s=>s.specialty==='plumb')||P().subs[0]||{}).id);}catch(e){}});
   await new Promise(r=>setTimeout(r,250));
   const pkt=await page.evaluate(()=>{

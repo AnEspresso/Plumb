@@ -2180,6 +2180,14 @@ t('Settings body has no extra primary', $("document.querySelectorAll('#settingsB
 t('Settings Sign out is danger', ($("document.querySelector('#settingsBody .btn-danger')")&&$("document.querySelector('#settingsBody .btn-danger').textContent")||'').indexOf('Sign out')>=0);
 t('Crews list has no Packet button', $("String(renderSubs)").indexOf('openPacket')<0&&$("document.querySelectorAll('#subList .btn-quiet').length")===0);
 t('Crew detail still opens the packet', $("String(openSubDetail)").indexOf("openPacket")>=0&&$("String(openSubDetail)").indexOf('Open packet')>=0);
+t('Crew detail packet is the primary', $("String(openSubDetail)").indexOf('btn-primary')>=0&&$("String(openSubDetail)").indexOf('editSubFromDetail')>=0);
+asBuilder();
+$("state.activeId='p8'");
+$('openSubDetail((P().subs.find(s=>s.name==="Timberline Framing")||P().subs[0]).id)');
+t('person sheet has one primary', $("document.querySelectorAll('#subDetailScrim .btn-primary').length")===1);
+t('person primary is Open packet', ((el('sdBody')&&el('sdBody').querySelector('.btn-primary')&&el('sdBody').querySelector('.btn-primary').textContent)||'').indexOf('Open packet')>=0);
+t('person Edit is quiet', (el('sdEditBtn')&&el('sdEditBtn').className||'').indexOf('btn-primary')<0);
+$('closeSubDetail()');
 t('Documents Add sits above search', (function(){
   const i=SRC.indexOf('id="filesDocs"');
   if(i<0)return false;
