@@ -313,7 +313,17 @@ async function tappable(page,sel){
   t('Beaumont calendar is this house',houseCal.who.indexOf('Beaumont')>=0,houseCal.who);
   t('Beaumont calendar does not flag other houses',['Calderwood','Whitaker','Clearwater','Juniper'].every(n=>houseCal.txt.indexOf(n)<0),JSON.stringify(houseCal.banners));
   t('Beaumont calendar drops company idle',houseCal.txt.indexOf('idle this month')<0,houseCal.txt.slice(0,180));
-  await page.evaluate(()=>{try{closeCal();}catch(e){}});
+  await page.evaluate(()=>{try{calDay=new Date(2026,8,7).getTime();openDay(calDay);}catch(e){}});
+  await new Promise(r=>setTimeout(r,200));
+  const day=await page.evaluate(()=>{
+    const txt=(document.getElementById('dayBody')&&document.getElementById('dayBody').innerText)||'';
+    const prim=[...document.querySelectorAll('#dayScrim .btn-primary')].map(el=>(el.innerText||'').replace(/\s+/g,' ').trim());
+    return {txt,prim};
+  });
+  t('house day does not list company idle',['GEO Baby','Clearwater','Got a Roof'].every(n=>day.txt.indexOf(n)<0),day.txt.slice(0,240));
+  t('day sheet has one primary',day.prim.length===1,JSON.stringify(day.prim));
+  t('day primary is Schedule someone',day.prim[0]==='Schedule someone this day',JSON.stringify(day.prim));
+  await page.evaluate(()=>{try{closeDay();closeCal();}catch(e){}});
 
   await page.evaluate(()=>{try{exitHouseDesk();closeHouse();openSiteFromOverview('p2');go('files');filesSeg('photos');}catch(e){}});
   await new Promise(r=>setTimeout(r,250));

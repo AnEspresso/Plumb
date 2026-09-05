@@ -2236,6 +2236,17 @@ t('booking title is Schedule a crew', $("String(openBk)").indexOf('Schedule a cr
 t('booking packet is a row', $("String(bkRenderPacket)").indexOf('row-tap')>=0&&$("String(bkRenderPacket)").indexOf('bk-pkt')<0);
 t('booking delete is danger', SRC.indexOf('id="bkDelete"')>=0&&SRC.indexOf('btn btn-danger btn-block mt-2 hide" id="bkDelete"')>=0);
 t('day sheet uses rows', $("String(renderDay)").indexOf('row-title')>=0&&$("String(renderDay)").indexOf('Text this link')>=0);
+$('closeBk()');
+$("calSiteFilter='p8'");
+$("calCrewFilter=''");
+$("calDay=new Date(2026,8,7).getTime()");
+$('renderDay()');
+t('house day does not list company idle', (function(){
+  const txt=(el('dayBody')&&el('dayBody').textContent)||'';
+  return txt.indexOf('GEO Baby')<0&&txt.indexOf('Clearwater')<0&&txt.indexOf('Got a Roof')<0;
+})());
+t('day sheet has one primary', $("document.querySelectorAll('#dayScrim .btn-primary').length")===1);
+t('day primary is Schedule someone', ((el('dayBody')&&el('dayBody').textContent)||'').indexOf('Schedule someone this day')>=0);
 asBuilder();
 $('calMonth=null');
 $('renderCal()');

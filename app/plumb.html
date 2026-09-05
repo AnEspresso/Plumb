@@ -2677,7 +2677,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sheet-body">
 <div class="info-body" id="dayBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeDay()">Done</button></div></div>
+</div>
   </div>
 
   <div id="legalDocScrim"><div class="ld-bar"><button class="ov-logout btn btn-secondary" onclick="closeLegalDoc()">Done</button></div><iframe id="legalDocFrame" src="about:blank" title="Policy document"></iframe></div>
@@ -3842,15 +3842,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.374.0 - House calendar drops company idle';
+const PLUMB_VERSION='2.375.0 - Day sheet follows this house';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788940000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.374.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788950000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.375.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -14641,8 +14641,8 @@ function bkInviteLine(b){
   const sub=(p.subs||[]).find(s=>s.name===b.subName);if(!sub)return '';
   const inv=(p.invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,sub)&&i.status!=='revoked');
   if(inv&&inv.status==='joined')return '';
-  if(inv)return `<div class="bk-invite" onclick="event.stopPropagation();shareInvite('${esc(inv.code)}')">Not joined yet \u00b7 code <b>${esc(inv.code)}</b> \u2014 tap to share again</div>`;
-  return `<div class="bk-invite warn" onclick="event.stopPropagation();bkInviteSub('${p.id}','${sub.id}')">Not in SitePlumb. Tap to invite so this crew gets this booking</div>`;}
+  if(inv)return '<div class="row-sub" onclick="event.stopPropagation();shareInvite(\''+esc(inv.code)+'\')">Not joined yet \u00b7 code '+esc(inv.code)+' \u2014 tap to share</div>';
+  return '<div class="row-sub" onclick="event.stopPropagation();bkInviteSub(\''+p.id+'\',\''+sub.id+'\')">Not in SitePlumb \u2014 tap to invite</div>';}
 function bkInviteSub(pid,subId){if(String(P().id)!==String(pid))Data.setActive(pid);createInvite('sub',subId);}
 const BK_STATUS={pending:{label:'Awaiting reply',cls:'pd'},confirmed:{label:'Confirmed',cls:''},declined:{label:'Can\u2019t make it',cls:'dc'},modified:{label:'New dates proposed',cls:'md'}};
 function bkSetStatus(p,id,st){const b=(p.bookings||[]).find(x=>x.id===id);if(!b)return;b.status=st;persist();
@@ -14944,7 +14944,7 @@ function renderDay(){
     if(calIsSub()&&b.subName===(state.session||{}).name){
       acts+='<button class="btn-quiet mt-2" onclick="event.stopPropagation();bkToCalendar(\''+b.p.id+'\',\''+b.id+'\')">Add to my calendar</button>';
     }
-    return '<div class="row'+tap+'"'+oc+'><div class="row-main"><div class="row-title">'+esc(b.subName)+(cf[b.id]?' \u26a0':'')+'</div><div class="row-sub">'+esc(b.p.street||b.p.name)+' \u00b7 '+esc(specLabel(b.trade)||'')+' \u00b7 '+esc(fmtWin(b))+'</div>'+extra+'</div><span class="row-aside'+(asideCls?' '+asideCls:'')+'">'+esc(BK_STATUS[st].label)+'</span>'+acts+(calIsSub()?'':'<span class="row-chev">\u203a</span>')+'</div>';
+    return '<div class="row'+tap+'"'+oc+'><div class="row-main"><div class="row-title">'+esc(b.subName)+(cf[b.id]?' \u26a0':'')+'</div><div class="row-sub">'+esc(b.p.street||b.p.name)+' \u00b7 '+esc(specLabel(b.trade)||'')+' \u00b7 '+esc(fmtWin(b))+'</div>'+extra+acts+'</div><span class="row-aside'+(asideCls?' '+asideCls:'')+'">'+esc(BK_STATUS[st].label)+'</span>'+(calIsSub()?'':'<span class="row-chev">\u203a</span>')+'</div>';
   }).join('');
   h+=av.map(function(a){
     return '<div class="row"><div class="row-main"><div class="row-title">'+esc(a.subName)+' \u2014 unavailable</div><div class="row-sub">'+esc(fmtWin(a))+(a.note?(' \u00b7 '+esc(a.note)):'')+'</div></div>'+(calIsSub()&&a.subName===(state.session||{}).name?'<button class="btn-quiet" onclick="event.stopPropagation();delAvail(\''+a.p.id+'\',\''+a.id+'\')">Remove</button>':'')+'</div>';
@@ -14952,8 +14952,22 @@ function renderDay(){
   if(!bs.length&&!av.length)h+='<div class="empty py-2 px-0">Nothing scheduled this day.</div>';
   if(calIsClient()){ /* read-only: no add, no idle roster */ }
   else if(!calIsSub()){
-    const idle=idleSubs(calDay);
-    if(idle.length)h+='<div class="sec"><h2>Free this day</h2></div><div class="fday-list fs-xs c-ink-3 lh-16">'+idle.map(x=>'<span class="fseg">'+esc(x.name)+'</span>').join('')+'</div>';
+    let idle=idleSubs(calDay);
+    const houseOnly=calSiteFilter!=='all'&&!calCrewFilter;
+    if(houseOnly){
+      const hp=state.projects.find(function(x){return String(x.id)===String(calSiteFilter);});
+      const names=((hp&&hp.subs)||[]).map(function(s){return s.name;});
+      idle=idle.filter(function(n){return names.indexOf(n.name)>=0;});
+    }
+    if(idle.length){
+      if(houseOnly){
+        h+='<div class="sec"><h2>Free this day</h2></div>'+idle.map(function(x){
+          return '<div class="row"><div class="row-main"><div class="row-title">'+esc(x.name)+'</div><div class="row-sub">'+esc(specLabel(x.trade)||'')+'</div></div></div>';
+        }).join('');
+      }else{
+        h+='<div class="row row-tap" onclick="openIdle()"><div class="row-main"><div class="row-title">'+idle.length+' idle this day</div><div class="row-sub">Tap to see who</div></div><span class="row-chev">\u203a</span></div>';
+      }
+    }
     h+='<button class="btn btn-primary btn-block mt-3" onclick="openBk(null,'+calDay+')">Schedule someone this day</button>';
   }else{
     h+='<button class="btn btn-primary btn-block mt-3" onclick="openBk(null,'+calDay+')">Block this day</button>';
