@@ -2260,6 +2260,14 @@ t('Beaumont August does not flag other houses', (function(){
 $("calSiteFilter='all'");
 $('renderCal()');
 t('all houses still flags doubles', ((el('calBody')&&el('calBody').textContent)||'').indexOf('double-booked')>=0);
+$("calSiteFilter='p8'");
+$("calCrewFilter=''");
+$("calMonth=new Date(2026,7,1)");
+$('renderCal()');
+t('house calendar drops company idle', ((el('calBody')&&el('calBody').textContent)||'').indexOf('idle this month')<0);
+$("calSiteFilter='all'");
+$('renderCal()');
+t('all houses still shows idle', ((el('calBody')&&el('calBody').textContent)||'').indexOf('idle this month')>=0);
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');

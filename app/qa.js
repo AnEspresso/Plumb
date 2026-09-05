@@ -312,6 +312,7 @@ async function tappable(page,sel){
   });
   t('Beaumont calendar is this house',houseCal.who.indexOf('Beaumont')>=0,houseCal.who);
   t('Beaumont calendar does not flag other houses',['Calderwood','Whitaker','Clearwater','Juniper'].every(n=>houseCal.txt.indexOf(n)<0),JSON.stringify(houseCal.banners));
+  t('Beaumont calendar drops company idle',houseCal.txt.indexOf('idle this month')<0,houseCal.txt.slice(0,180));
   await page.evaluate(()=>{try{closeCal();}catch(e){}});
 
   await page.evaluate(()=>{try{exitHouseDesk();closeHouse();openSiteFromOverview('p2');go('files');filesSeg('photos');}catch(e){}});

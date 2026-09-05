@@ -1,4 +1,7 @@
+**v2.374.0 is live.** House calendar drops the company idle count. All houses still shows who is idle this month.
+
 **v2.373.0 is live.** Calendar flags follow this house. Banners and the red wash stay off other jobs when you are on one house. All houses still shows the portfolio.
+
 
 **v2.372.0 is live.** Calendar has one primary: Schedule a crew. Leftovers live in More. Booking sheet is Schedule a crew, packet is a row, Save is the dark button, no pink card.
 
