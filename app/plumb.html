@@ -89,16 +89,10 @@
   .view.active{display:block;}
   @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 
-  .eyebrow{font-size:var(--t-sm);font-weight:700;color:var(--ink-3);
-    margin:var(--s-6) var(--s-1) var(--s-3);display:flex;align-items:center;gap:10px;font-family:var(--f-serif);font-size:var(--t-xl);font-weight:600;color:var(--ink);letter-spacing:-.01em;}
-  .eyebrow::after{content:none;display:none;}
-.eyebrow-c{font-size:var(--t-md);font-weight:700;letter-spacing:.08em;color:var(--ink-2);}
 .rail-brand,.rail-foot{display:none;}
 /* the hero (house + wordmark + tagline) never shrinks and owns >= half the screen */
 .login-hero{min-height:50vh;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;width:100%;}
 .login-hero .house,.login-hero .wm,.login-hero .hairline{flex:none;}
-.eyebrow-c::before{content:"";flex:1;height:1px;background:var(--line);}
-  .eyebrow:first-child{margin-top:var(--s-2);}
 
   .capture-card{background:var(--ink);color:var(--paper);border-radius:var(--r-lg);padding:var(--s-6) var(--s-6) var(--s-6);
     position:relative;overflow:hidden;box-shadow:var(--shadow-lift);margin-top:var(--s-2);}
@@ -158,7 +152,7 @@
     background:var(--surface-2);position:relative;cursor:pointer;transition:transform .25s cubic-bezier(.2,.7,.2,1);}
   .cell:active{transform:scale(.96);}
   .cell img{width:100%;height:100%;object-fit:cover;display:block;}
-  .cell .lbl{position:absolute;left:0;right:0;bottom:0;padding:var(--s-4) var(--s-2) var(--s-2);font-size:var(--t-xs);font-weight:600;
+  .cell .cap{position:absolute;left:0;right:0;bottom:0;padding:var(--s-4) var(--s-2) var(--s-2);font-size:var(--t-xs);font-weight:600;
     color:var(--white);background:linear-gradient(transparent, rgba(20,18,14,.55));}
 
   .seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);
@@ -212,15 +206,15 @@
   .photo-drop .ph{text-align:center;color:var(--ink-3);}
   .photo-drop .ph svg{width:30px;height:30px;margin-bottom:var(--s-2);color:var(--oak);}
   .photo-drop .ph .t{font-size:var(--t-sm);font-weight:600;color:var(--ink-2);}
-  .field-lbl{font-size:var(--t-sm);font-weight:700;color:var(--ink-3);margin:0 var(--s-1) var(--s-2);}
+  .field-k{font-size:var(--t-sm);font-weight:700;color:var(--ink-3);margin:0 var(--s-1) var(--s-2);}
   .ti{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:var(--s-3) var(--s-4);min-height:62px;
     font-family:inherit;font-size:var(--t-md);color:var(--ink);outline:none;resize:none;transition:border-color .2s;margin-bottom:var(--s-4);}
   .ti:focus{border-color:var(--oak-soft);}
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:var(--s-4);}
   #areaChips,#recAreaChips{display:block;margin-bottom:var(--s-4);}
-  .chip-group-lbl{font-size:var(--t-xs);font-weight:800;color:var(--ink-2);margin:var(--s-5) var(--s-1) var(--s-2);}
-  .chips>.chip-group-lbl:first-child{margin-top:var(--s-1);}
-  .chip-group-lbl:first-child{margin-top:0;}
+  .chip-group-k{font-size:var(--t-xs);font-weight:800;color:var(--ink-2);margin:var(--s-5) var(--s-1) var(--s-2);}
+  .chips>.chip-group-k:first-child{margin-top:var(--s-1);}
+  .chip-group-k:first-child{margin-top:0;}
   .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
   .sheet-select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:var(--s-3) var(--s-4);
     font-family:inherit;font-size:var(--t-md);color:var(--ink);outline:none;margin-bottom:var(--s-4);-webkit-appearance:none;appearance:none;
@@ -817,8 +811,8 @@
   /* searchable select */
   .ss-hidden{display:none!important;}
   .ss-trigger{width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:var(--s-3) var(--s-4);font-family:inherit;font-size:var(--t-md);color:var(--ink);cursor:pointer;-webkit-appearance:none;}
-  .ss-trigger.placeholder .ss-lbl{color:var(--ink-3);}
-  .ss-trigger .ss-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-size:var(--t-md);font-weight:500;letter-spacing:normal;}
+  .ss-trigger.placeholder .ss-k{color:var(--ink-3);}
+  .ss-trigger .ss-k{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-size:var(--t-md);font-weight:500;letter-spacing:normal;}
   .ss-trigger .ss-chev{width:18px;height:18px;color:var(--ink-3);flex:none;}
   .ss-scrim{position:absolute;inset:0;z-index:var(--z-sheet-2);background:rgba(20,18,14,.55);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .25s ease;display:flex;align-items:flex-end;justify-content:center;}
   .ss-scrim.show{opacity:1;pointer-events:auto;}
@@ -847,7 +841,6 @@
   .role-seg button.on .ic{color:var(--night);}
   /* ── homeowner (client) view ── */
   .cl-hero{background:var(--ink);color:var(--paper);border-radius:var(--r);padding:var(--s-5) var(--s-5);margin-bottom:var(--s-4);}
-  .cl-hero .eyebrow{color:rgba(242,238,230,.5);margin:0 0 var(--s-2);}
   .cl-hero .addr{font-family:'Source Serif 4',Georgia,serif;font-size:var(--t-xl);font-weight:500;letter-spacing:-.01em;line-height:1.1;}
   .cl-hero .cl-track{display:inline-block;font-size:var(--t-xs);font-weight:700;letter-spacing:.02em;border-radius:var(--r);padding:var(--s-1) var(--s-3);margin:var(--s-2) 0 var(--s-1);background:rgba(242,238,230,.14);color:rgba(242,238,230,.85);}
   .cl-hero .cl-track.ok{background:rgba(150,170,110,.25);color:var(--sage-3);}
@@ -885,7 +878,7 @@
   .cl-photogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:var(--s-2);}
   .cl-photogrid .cell{aspect-ratio:1;border-radius:var(--r-sm);overflow:hidden;position:relative;cursor:pointer;background:var(--surface-2);}
   .cl-photogrid .cell img{width:100%;height:100%;object-fit:cover;display:block;}
-  .cl-photogrid .cell .lbl{position:absolute;left:0;right:0;bottom:0;padding:var(--s-1) var(--s-2);font-size:var(--t-xs);color:var(--white);background:linear-gradient(transparent,rgba(0,0,0,.5));font-weight:600;}
+  .cl-photogrid .cell .cap{position:absolute;left:0;right:0;bottom:0;padding:var(--s-1) var(--s-2);font-size:var(--t-xs);color:var(--white);background:linear-gradient(transparent,rgba(0,0,0,.5));font-weight:600;}
   .login-select{width:100%;border:1px solid rgba(231,220,198,.18);background:rgba(255,255,255,.05);border-radius:var(--r);padding:var(--s-4);
     font-family:inherit;font-size:var(--t-md);color:var(--paper);outline:none;margin-bottom:var(--s-3);-webkit-appearance:none;appearance:none;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%23B0895A' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M5 8l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 15px center;}
@@ -893,8 +886,8 @@
   /* the searchable-sheet trigger fronting the login select wears the splash's dark palette */
   #loginSelect__ss{width:100%;border:1px solid rgba(231,220,198,.18);background:rgba(255,255,255,.05);
     border-radius:var(--r);padding:var(--s-4);font-size:var(--t-md);margin:0 0 var(--s-3);}
-  #loginSelect__ss .ss-lbl{color:var(--paper);}
-  #loginSelect__ss.placeholder .ss-lbl{color:rgba(231,220,198,.6);}
+  #loginSelect__ss .ss-k{color:var(--paper);}
+  #loginSelect__ss.placeholder .ss-k{color:rgba(231,220,198,.6);}
   #loginSelect__ss .ss-chev{color:var(--oak);}
   .login-enter{width:100%;border:1px solid rgba(196,154,108,.55);background:var(--oak-2);color:var(--ink);font-family:inherit;font-size:var(--t-md);font-weight:650;
     letter-spacing:-.01em;padding:var(--s-4);border-radius:var(--r);cursor:pointer;transition:transform .15s;margin-top:var(--s-1);}
@@ -924,7 +917,7 @@
   .ss-num{font-size:var(--t-xl);font-weight:700;color:var(--ink);line-height:1;}
   .ss-card.hot .ss-num{color:var(--clay);}
   .ss-next{font-size:var(--t-md);font-weight:650;color:var(--ink-2);line-height:1.2;}
-  .ss-lbl{font-size:var(--t-sm);font-weight:600;color:var(--ink-3);letter-spacing:.02em;}
+  .ss-k{font-size:var(--t-sm);font-weight:600;color:var(--ink-3);letter-spacing:.02em;}
   .ov-logout{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:var(--s-2) var(--s-3);font-family:inherit;
     font-size:var(--t-sm);font-weight:600;color:var(--ink-2);cursor:pointer;}
   .ov-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:var(--s-2) var(--s-6) calc(var(--s-8)*2 + var(--s-2)*7);}
@@ -1358,7 +1351,7 @@
   .overall{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s-4) var(--s-4);box-shadow:var(--shadow);margin-bottom:var(--s-2);}
   .overall .top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:var(--s-2);}
   .overall .pct{font-family:'Source Serif 4',Georgia,serif;font-size:var(--t-2xl);font-weight:500;line-height:1;}
-  .overall .lbl{font-size:var(--t-xs);color:var(--ink-2);font-weight:500;}
+  .overall .meta{font-size:var(--t-xs);color:var(--ink-2);font-weight:500;}
   .pbar{height:7px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-sm);overflow:hidden;}
   .pbar > i{display:block;height:100%;background:linear-gradient(90deg,var(--oak-soft),var(--oak));border-radius:var(--r-sm);transition:width .6s cubic-bezier(.34,1.2,.64,1);}
   .stage{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s-4) var(--s-4);margin-bottom:var(--s-2);box-shadow:var(--shadow);}
@@ -1459,7 +1452,7 @@
   .ii-doc.empty .iin{color:var(--ink-2);}
   .ii-doc .iim{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1);}
   .ii-doc .ii-open{font-size:var(--t-xs);font-weight:700;color:var(--oak);flex:0 0 auto;}
-  .ii-edit .fld-lbl{font-size:var(--t-xs);font-weight:700;color:var(--ink-3);margin-bottom:var(--s-2);}
+  .ii-edit .fld-k{font-size:var(--t-xs);font-weight:700;color:var(--ink-3);margin-bottom:var(--s-2);}
   .ii-note{font-size:var(--t-xs);color:var(--ink-3);line-height:1.5;margin-top:var(--s-2);}
   .so-head{display:flex;align-items:center;gap:11px;margin-bottom:var(--s-3);}
   .so-check{width:34px;height:34px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
@@ -1472,7 +1465,7 @@
   .so-sig{flex:1 1 auto;min-width:120px;border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s-3);background:var(--surface-2);text-align:center;}
   .so-ini{font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:var(--t-2xl);color:var(--ink);border-bottom:1.5px solid var(--ink-3);display:inline-block;padding:0 var(--s-3) var(--s-1);margin-bottom:var(--s-2);}
   .so-nm{font-size:var(--t-sm);font-weight:600;color:var(--ink);}
-  .so-lbl{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1);}
+  .so-k{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1);}
   .sel-ledger.tappable{cursor:pointer;}
   .ldr-hint{font-size:var(--t-xs);font-weight:600;color:var(--oak);text-align:right;margin-top:var(--s-2);}
   .pmodal-tall{max-height:84vh;overflow-y:auto;}
@@ -1701,7 +1694,7 @@
 #budgetCard .bgt-cardgrid,#billingCard .bgt-cardgrid{gap:8px 12px;margin-bottom:var(--s-2)}
 #budgetCard .bgt-cardgrid b,#billingCard .bgt-cardgrid b{font-size:var(--t-md)}
 #budgetCard .bgt-open,#billingCard .bgt-open{margin-top:var(--s-2)}
-#budgetCard .eyebrow-c{margin-bottom:var(--s-2)}
+#budgetCard .sec{margin-bottom:var(--s-2)}
 #billingCard{margin-bottom:var(--s-4)}
 .cal-door{display:flex;align-items:center;gap:10px;width:100%;padding:var(--s-3) var(--s-4);margin-bottom:var(--s-4);
   border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);cursor:pointer;
@@ -1711,7 +1704,7 @@
 .exc-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:var(--z-toast);background:var(--bark);color:var(--cream);
   font-size:var(--t-sm);font-weight:600;padding:var(--s-2) var(--s-2);
   align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;}
-.exc-lbl{opacity:.85;white-space:nowrap;flex:none;}
+.exc-k{opacity:.85;white-space:nowrap;flex:none;}
 .exc-roles{display:inline-flex;background:rgba(231,220,198,.10);border:1px solid rgba(231,220,198,.22);border-radius:999px;padding:var(--s-1);flex:none;}
 .exc-roles button{background:none;border:none;border-radius:999px;color:rgba(231,220,198,.75);
   font-family:inherit;font-size:var(--t-xs);font-weight:700;padding:var(--s-1) var(--s-2);cursor:pointer;}
@@ -1723,7 +1716,7 @@
 body.on-excursion .exc-banner{display:flex;}
 body.on-excursion .device{margin-top:calc(var(--s-8) + var(--s-1));height:calc(100dvh - 52px);}
 body.on-excursion header{padding-top:var(--s-3);}
-@media(max-width:420px){.exc-lbl{display:none;}}
+@media(max-width:420px){.exc-k{display:none;}}
 /* Role views own the full window whenever shown — demo AND production, identical. */
 @media(min-width:900px){
   #clientview,#subview{left:0;}
@@ -2354,10 +2347,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 .mgrip.sheet-handle{display:block;}
 .sheet-head h4,.sheet-head h3,.sheet-head h2{flex:1;font-family:var(--f-serif);font-size:var(--t-xl);font-weight:600;letter-spacing:-.01em;margin:0;}
 .row2.sheet-foot{margin-top:var(--s-4);padding-top:var(--s-4);border-top:1px solid var(--line-2);display:flex;gap:var(--s-2);}
-.eyebrow,.eyebrow-c{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s-3);
-  margin:var(--s-7) 0 var(--s-3);font-family:var(--f-serif);font-size:var(--t-xl);font-weight:600;
-  letter-spacing:-.01em;text-transform:none;color:var(--ink);}
-.sec h2,.eyebrow h2{font-size:var(--t-xl);}
+.sec h2{font-size:var(--t-xl);}
 /* three button roles — old names kept so JS selectors keep working */
 .b1,.add-sub-btn,.login-enter,.ov-newbtn,.gp-btn,.qf-btn,.pick-btn,.dev-btn,.dev-tool-btn,
 .st-btn,.jc-btn,.rb-btn,.cap-btn,.bk-pkt-btn,.pkt-sign-btn,.inst-btn{
@@ -2623,7 +2613,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div id="rosterList"></div>
       <button class="add-sub-btn mt-2 btn btn-secondary" onclick="openRosterAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a crew</button>
       <div id="rosterCount" class="ta-c fs-xs c-ink-3 mt-2"></div>
-      <div class="lbl mt-3">Give a crew live access</div>
+      <div class="sec"><h2>Give a crew live access</h2></div>
       <p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-xs">Invite codes are per-house — pick the house, then the crew, and we’ll generate their code.</p>
       <button class="add-sub-btn btn btn-secondary" onclick="inviteSubFlow()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg>Invite a crew to SitePlumb…</button>
       <button class="add-sub-btn mt-2 op-85 btn btn-secondary" onclick="subsOnSite()">Manage crews on a specific house…</button>
@@ -2696,7 +2686,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="sheet-head"><h4 id="bkTitle">Schedule a crew</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
 <div class="sheet-body">
 <div class="info-body">
-        <div class="lbl" id="bkSiteLbl">Site</div>
+        <div class="meta" id="bkSiteLbl">House</div>
         <select id="bkSite" class="hide"></select>
         <select id="bkSub" style="display:none"></select>
         <button class="pick-btn" id="bkSiteBtn" onclick="bkPickSite()"><span id="bkSiteBtnT">Site</span><span class="chev">›</span></button>
@@ -3138,7 +3128,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <!-- ───── EXCURSION BANNER + TOUR CARD ───── -->
   <div class="exc-banner" id="excBanner">
-    <span class="exc-lbl">Example build</span>
+    <span class="exc-k">Example build</span>
     <span class="exc-roles">
       <button data-r="builder" onclick="demoRole('builder')">Builder</button><button data-r="client" onclick="demoRole('client')">Homeowner</button><button data-r="subs" onclick="demoRole('subs')">Crew</button>
     </span>
@@ -3550,7 +3540,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
         <button class="cal-door" onclick="calSiteFilter=String(state.activeId);openCal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
           Trades calendar for this house<span class="bgt-chev">›</span></button>
-        <div class="eyebrow">Progress</div>
+        <div class="sec"><h2>Progress</h2></div>
         <div id="overallBar"></div>
         <div id="stageList"></div>
       </div>
@@ -3605,7 +3595,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       </div>
       <input type="file" id="file" accept="image/*" hidden onchange="onPhoto(event)">
     </div>
-    <div class="field-lbl" id="fieldKindLbl" style="display:none">What is it? <button type="button" class="fn-i" onclick="toggleFieldHint(event)" aria-label="What these labels mean">i</button></div>
+    <div class="field-k" id="fieldKindLbl" style="display:none">What is it? <button type="button" class="fn-i" onclick="toggleFieldHint(event)" aria-label="What these labels mean">i</button></div>
     <div class="chips" id="fieldKindChips" style="display:none"></div>
     <div class="fn-hint" id="fieldKindHint" hidden>
       <div><b>Note</b> House record. Not an open item.</div>
@@ -3614,10 +3604,10 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div><b>Decision</b> A call to make. House record.</div>
       <div><b>Punch</b> A leftover from the walkthrough. Goes to Needs You.</div>
     </div>
-    <div class="field-lbl" id="sheetNoteLbl">Note</div>
+    <div class="field-k" id="sheetNoteLbl">Note</div>
     <textarea class="ti" id="caption" rows="2" oninput="growNote(this)" placeholder="A few words…"></textarea>
     <div class="chips" id="areaChips"></div>
-    <div class="field-lbl" id="sheetAssignLbl">Packet <span class="fw-5 tt-n ls-0 c-ink-3">· optional</span></div>
+    <div class="field-k" id="sheetAssignLbl">Packet <span class="fw-5 tt-n ls-0 c-ink-3">· optional</span></div>
     <select class="sheet-select" id="crewSelect" onchange="onCrewChange(this)"></select>
     <div class="flagrow mt-3">
       <div class="l"><div class="t">Flag as an open item</div><div class="s">Needs a fix or follow-up</div></div>
@@ -3729,11 +3719,11 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="sync-status" id="devSyncStatus">Local only — paste a Firebase config to go live.</div>
       <textarea id="fbConfigInput" class="dev-ta" rows="5" placeholder='Paste Firebase web config JSON, e.g. {"apiKey":"…","authDomain":"…","projectId":"…","appId":"…"}'></textarea>
       <button class="dev-btn" onclick="devConnectSync()"><span><span>Connect / reconnect sync</span><span class="d">Saves config on this device &amp; starts live cross-device sync</span></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2"/><path d="M18 4v5h-5M6 20v-5h5"/></svg></span></button>
-      <div class="eyebrow mt-4">QuickBooks</div>
+      <div class="sec"><h2>QuickBooks</h2></div>
       <div id="qbLine" class="fs-sm mt-1 ml-0 mr-0 mb-3"></div>
-      <div class="eyebrow mt-4">Push</div>
+      <div class="sec"><h2>Push</h2></div>
       <div id="pushLine" class="fs-sm mt-1 ml-0 mr-0 mb-3"></div>
-      <div class="eyebrow mt-4">Demo &amp; tour</div>
+      <div class="sec"><h2>Demo and tour</h2></div>
       <div class="d-flex gap-2 mt-1 ml-0 mr-0 mb-3">
         <button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeDev();enterDemo()">Explore the example build</button>
         <button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeDev();startGrandTour()">Replay the tour</button>
@@ -3741,13 +3731,13 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <input id="appCheckInput" class="dev-ta minh-0 h-auto" placeholder="App Check reCAPTCHA v3 site key (optional)" />
       <input id="vapidInput" class="dev-ta minh-0 h-auto" placeholder="FCM Web Push VAPID public key (for lock-screen push)" />
       <div id="grantCard" style="display:none">
-        <div class="lbl mt-3">Tester access</div>
+        <div class="sec"><h2>Tester access</h2></div>
         <div class="la-hint mt-0 ml-0 mr-0 mb-1">Give a teammate temporary Workbench access for testing. One tap revokes it. Owner only.</div>
         <input id="grantEmail" class="dev-ta minh-0 h-auto" placeholder="Tester account email" autocapitalize="off" autocomplete="off" />
         <button class="dev-btn" onclick="devGrantAdd()"><span><span>Grant access</span><span class="d">Syncs to their phone via the company settings</span></span><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6"/></svg></span></button>
         <div id="grantList"></div>
       </div>
-      <div class="lbl mt-3">Errors on this device <span id="errBadge" class="hide bg-clay c-white r-pill py-1 px-2 fs-xs ml-1"></span></div>
+      <div class="sec"><h2>Errors on this device <span id="errBadge" class="hide bg-clay c-white r-pill py-1 px-2 fs-xs ml-1"></span></h2></div>
       <div class="la-hint mt-0 ml-0 mr-0 mb-1">Anything that breaks while you use the app is recorded here. Copy the report and paste it to Claude.</div>
       <div id="errList"></div>
       <div class="row2 mt-2"><button class="lpay flex-1 btn btn-quiet" onclick="devCopyBugReport()">Copy bug report</button><button class="lpay btn btn-quiet" onclick="devClearErrors()">Clear</button></div>
@@ -3842,15 +3832,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.379.0 - Guest packet uses the system';
+const PLUMB_VERSION='2.380.0 - Headings use sec not eyebrow';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788990000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.379.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789000000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.380.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5379,9 +5369,9 @@ function renderSiteSummary(){
       <div class="ss-bar"><span style="width:${pct}%"></span></div></div>
     <div class="ss-cards">
       <button class="ss-card${waiting?' hot':''}" onclick="go('decisions')">
-        <div class="ss-num">${waiting}</div><div class="ss-lbl">${waiting?'waiting on you':'all clear'}</div></button>
+        <div class="ss-num">${waiting}</div><div class="ss-k">${waiting?'waiting on you':'all clear'}</div></button>
       <button class="ss-card" onclick="openNextSite()">
-        <div class="ss-next">${nextLine}</div><div class="ss-lbl">next on site</div></button>
+        <div class="ss-next">${nextLine}</div><div class="ss-k">next on site</div></button>
     </div>`;}
 let _nextExpanded=false,_nextCands=[],_nextPid=null,_nextSort='soonest',_nextForce=false;
 function openNextSite(pid){_nextExpanded=false;_nextForce=false;_nextPid=(pid!=null?pid:(P()&&P().id));renderNext();document.getElementById('nextScrim').classList.add('show');}
@@ -5412,7 +5402,7 @@ function renderNext(){
   let gate=null;
   for(let j=idx-1;j>=0;j--){const pv=SS[j];const ins=STAGE_INSPECTIONS[pv.id]||[];if(!ins.length)continue;const unp=ins.filter(x=>inspStat(x.id)!=='passed');if(unp.length)gate={prev:pv,labels:unp.map(u=>u.label)};break;}
   if(gate&&!_nextForce){
-    body.innerHTML='<div class="lbl mt-1">Work up next</div>'
+    body.innerHTML='<div class="sec"><h2>Work up next</h2></div>'
       +`<div class="sr-d mt-1 ml-0 mr-0 mb-3"><b>${esc(st.name)}</b> \u00b7 ${esc(tradeLabelOf(st))}</div>`
       +`<div class="td-alert warn" onclick="closeNextSite();todayGo('${p.id}','build')"><span class="td-bar"></span><div class="td-tx"><b>Not cleared yet</b> \u2014 ${esc(gate.prev.name)} needs its ${gate.labels.map(esc).join(' & ')} inspection${gate.labels.length>1?'s':''} to pass before this trade starts.</div><span class="td-chev">\u203a</span></div>`
       +`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="_nextForce=true;renderNext()">Suggest subs anyway \u2192</button>`;
@@ -5427,7 +5417,7 @@ function renderNext(){
   if(_nextSort==='least')_nextCands.sort((a,b)=>a.load-b.load||byFree(a,b));
   else if(_nextSort==='used')_nextCands.sort((a,b)=>(a.used?0:1)-(b.used?0:1)||byFree(a,b));
   else _nextCands.sort(byFree);
-  let h='<div class="lbl mt-1">Work up next</div>'
+  let h='<div class="sec"><h2>Work up next</h2></div>'
     +`<div class="sr-d mt-1 ml-0 mr-0 mb-3"><b>${esc(st.name)}</b> \u00b7 ${esc(tradeLabelOf(st))}</div>`;
   if(gate)h+=`<div class="sr-d mt-2 ml-0 mr-0 mb-3 c-clay">Pre-booking \u2014 ${esc(gate.prev.name)} ${gate.labels.length>1?'inspections':'inspection'} still pending.</div>`;
   (function(){if(st.id==='site'||st.id==='demo')return;const _bp=(p.permits||[]).find(x=>x.name==='Building Permit');const _ps=_bp?_bp.status:'Not started';if(_ps==='Issued'||_ps==='Closed')return;h+=`<div class="sr-d mt-2 ml-0 mr-0 mb-3 c-clay">\u26a0 Building Permit: ${esc(_ps)} \u2014 usually needed before this work starts.</div>`;})();
@@ -6385,7 +6375,7 @@ function __renderSetup(){
   next.textContent=setupStep===3?'Finish':'Next';
   if(setupStep===0){t.textContent='Welcome to SitePlumb';
     b.innerHTML=`<p class="mt-0 ml-0 mr-0 mb-2">A few minutes now sets up your whole company — your team, your crew, and how you run selections. Everything here can be changed later from <b>People &amp; invites</b>.</p>
-      <div class="lbl">Company name</div>
+      <div class="meta">Company name</div>
       <input id="suCompany" placeholder="e.g. Hilltop Homes" value="${esc(setupDraft.company||'')}">
       ${appMode()==='real'?`<button class="add-sub-btn mt-3 btn btn-secondary" onclick="createInvite('team',null,{setup:true})">${PPL_INV_SVG}Someone else should answer these? Invite &amp; hand off setup…</button>
       <p class="mt-1 ml-0 mr-0 mb-0 c-ink-3 fs-xs">That teammate gets this wizard on first sign-in. You can close it now.</p>`:''}`;}
@@ -6439,7 +6429,7 @@ function openOnboard(){
     document.getElementById('startTitle').textContent='Your company';
     const el=document.getElementById('startBody');
     if(el)el.innerHTML=`<div class="ob-air"><svg class="ov-empty-house" viewBox="0 0 300 250" fill="none" stroke="#1B1916" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="28" y1="228" x2="272" y2="228" stroke="#B0895A" stroke-width="2"/><line x1="64" y1="223" x2="236" y2="223" stroke="#B0895A" stroke-width="2.4"/><line x1="72" y1="228" x2="72" y2="92"/><line x1="228" y1="228" x2="228" y2="92"/><line x1="72" y1="146" x2="228" y2="146"/><polyline points="60,96 150,30 240,96" stroke-width="2.2"/><line x1="66" y1="92" x2="234" y2="92"/><line x1="54" y1="158" x2="246" y2="158" stroke-width="1.8"/><rect x="135" y="170" width="30" height="54" stroke-width="1.5"/><rect x="90" y="106" width="28" height="30"/><rect x="182" y="106" width="28" height="30"/></svg><p class="mt-0 ml-0 mr-0 mb-4 c-ink-2 fs-md lh-15 ta-c">The book for every house you run. Name the company, then add the first house.</p></div>
-      <div class="lbl">Company name</div>
+      <div class="meta">Company name</div>
       <input id="obCompany" placeholder="Your company" autocomplete="organization">
       <button class="b1 b-go w-full mt-3 btn btn-primary" onclick="onboardCompanyNext()">Add the first house</button>
       <button class="la-link d-block mt-4 mb-0 mx-auto c-ink-3 btn btn-quiet" onclick="closeStart();openImport()">Already building? Bring a house in</button>`;
@@ -6542,7 +6532,7 @@ function renderImport(){
       ${SS.map(s=>`<option value="${s.id}"${s.id===curId?' selected':''}>${esc(s.name)}</option>`).join('')}
       <option value="__done"${curId==='__done'?' selected':''}>Finished / punch list</option>
     </select>
-    <div class="lbl mt-1">${_importEdit?'Add to this house':'Pull in what you already have'}</div>
+    <div class="sec"><h2>${_importEdit?'Add to this house':'Pull in what you already have'}</h2></div>
     <div class="imp-grid">
       <button class="imp-on" onclick="impContacts()"><div class="ic"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div><div class="t">Add crews${subCount?' \u00b7 '+subCount+' on this house':''}</div><div class="d">From contacts or by hand — add as many as you like</div></button>
       <button class="imp-on" onclick="impForward()"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/></svg></div><div class="t">Forward permits or email</div><div class="d">Send to this house\u2019s inbox — we file it</div></button>
@@ -7585,7 +7575,7 @@ function __renderPeople(){
     if(title)title.textContent='People';
     const ps=state.projects||[];
     el.innerHTML=peoplePills()+'<p class="mt-0 ml-0 mr-0 mb-3 c-ink-3 fs-sm">Each homeowner gets a portal for their own home: progress photos, their selections, and the decisions you need from them — answered early, installs stay on schedule.</p>'
-      +(ps.length?'<div class="lbl mt-1">Portal access by home</div>'+ps.map(p=>{
+      +(ps.length?'<div class="sec"><h2>Portal access by house</h2></div>'+ps.map(p=>{
         const hoInv=(p.invites||[]).find(i=>i.role==='client'&&i.status!=='revoked');
         const joined=hoInv&&hoInv.status==='joined';
         const status=joined?'Homeowner has the portal':hoInv?'Code '+esc(hoInv.code)+' — waiting to join':'No homeowner invited yet';
@@ -7594,7 +7584,7 @@ function __renderPeople(){
           :`<button class="lpay flex-none py-2 px-3 btn btn-quiet" onclick="inviteHomeownerFor('${p.id}')">Invite</button>`;
         return `<div class="subrow"><div class="si"><div class="n">${esc(p.street||p.name)}${p.city?' \u00b7 '+esc(p.city):''}</div><div class="d">${status}</div></div>${action}</div>`;
       }).join(''):'<div class="empty">Create a house first, then invite its homeowner here.</div>')
-      +'<div class="lbl mt-4">House calendar in their portal</div>'
+      +'<div class="sec"><h2>House calendar in their portal</h2></div>'
       +'<p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-xs">Fewer \u201cwho\u2019s coming tomorrow?\u201d calls — homeowners see crew days, never your notes or sub names. Turn it on for every home or just specific ones.</p>'
       +hoRowsHTML('renderPeople');
     return;}
@@ -7605,28 +7595,28 @@ function __renderPeople(){
     if(_ctEditing&&_ctDraft){
       // Custom-template build: the category list IS the builder. Tap a trade to pick its questions.
       el.innerHTML='<p class="mt-0 ml-0 mr-0 mb-1 c-ink-3 fs-xs">Pick the questions each trade should ask. Saves as you go.</p>'
-        +'<div class="lbl mt-2">Trades</div>'
+        +'<div class="sec"><h2>Trades</h2></div>'
         +cats.map(c=>{const cc=(_ctDraft.cats&&_ctDraft.cats[c])||{built:{},custom:[]};
           const on=(SPEC_TEMPLATES[c]||[]).filter(q=>cc.built&&cc.built[q.key]&&cc.built[q.key].on).length+((Array.isArray(cc.custom)?cc.custom:[]).length);
           return `<div class="subrow cur-p" onclick="openCtCat('${esc(c)}')"><div class="si"><div class="n">${esc(c)}</div><div class="d">${on?on+' question'+(on===1?'':'s')+' on':'No questions on'}</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="c-ink-3 u-m16"><path d="M9 6l6 6-6 6"/></svg></div>`;}).join('')
         +`<button class="b1 b-go w-full mt-3 btn btn-primary" onclick="ctDoneEditing()">Done \u2014 ${esc(_ctDraft.name)}</button>`;
       return;}
-    el.innerHTML='<div class="lbl mt-1">Build style</div>'
+    el.innerHTML='<div class="sec"><h2>Build style</h2></div>'
       +'<div class="setup-cards">'+SETUP_LEVELS.map(l=>`<div class="setup-card${lvl===l.id?' on':''}" onclick="tmplPickLevel('${l.id}')"><div class="n">${l.n}</div><div class="d">${l.d}</div><div class="d mt-1 fw-6 c-oak">${specTotals(l.id)} questions</div></div>`).join('')+'</div>'
-      +'<div class="lbl mt-3">Your custom templates</div>'
+      +'<div class="sec"><h2>Your custom templates</h2></div>'
       +(cts.length?cts.map(t=>`<div class="subrow${lvl===t.id?' on-row':''} cur-p" onclick="tmplPickLevel('${t.id}')"><div class="si"><div class="n">${esc(t.name)}${lvl===t.id?' · <b class="c-oak">active</b>':''}</div><div class="d">${ctTotal(t)} question${ctTotal(t)===1?'':'s'}</div></div><button class="lpay btn btn-quiet" onclick="event.stopPropagation();openCtBuild('${t.id}')">Edit</button><button class="rm" onclick="event.stopPropagation();ctDelete('${t.id}')">${ICON.trash}</button></div>`).join(''):'<div class="empty py-2 px-0">None yet — build one below.</div>')
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="openCtBuild()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Build your own…</button>'
       +'<p class="mt-1 ml-0 mr-0 mb-0 c-ink-3 fs-xs">The three presets shape every sheet automatically. <b>Build your own</b> lets you pick each question by hand across all trades and save it as a named template.</p>'
-      +'<div class="lbl mt-4">Install spec sheets</div>'
+      +'<div class="sec"><h2>Install spec sheets</h2></div>'
       +'<p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-xs">'+(activeCustomTemplate()?'A custom template is active — edit it above to change its questions.':'What SitePlumb asks per trade before install. Tap a category to switch built-ins off or add your own questions.')+'</p>'
       +cats.map(c=>{const f=specTemplate(c);const b=f.filter(x=>x.who==='builder').length;const h=f.filter(x=>x.who==='homeowner').length;const mine=f.filter(x=>x.org).length;
         return `<div class="subrow" style="cursor:pointer${activeCustomTemplate()?';opacity:.6':''}" onclick="tmplCatTap('${esc(c)}')"><div class="si"><div class="n">${esc(c)}</div><div class="d">${b} builder field${b===1?'':'s'} · ${h} homeowner decision${h===1?'':'s'}${mine?' · <b>'+mine+' yours</b>':''}</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="c-ink-3 u-m16"><path d="M9 6l6 6-6 6"/></svg></div>`;}).join('');
     return;}
   if(peopleMode==='ctname'){
     if(title)title.textContent='New custom template';
-    el.innerHTML='<div class="lbl mt-1">Name</div>'
+    el.innerHTML='<div class="meta">Name</div>'
       +'<input id="ctNameInput" placeholder="e.g. Lakehouse spec" autocomplete="off">'
-      +'<div class="lbl mt-3">Start from</div>'
+      +'<div class="sec"><h2>Start from</h2></div>'
       +'<p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-xs">Pick a starting point, then turn questions on or off per trade. You can change everything.</p>'
       +'<button class="add-sub-btn btn btn-secondary" onclick="ctNameSave(\'blank\')">Custom default — every question available, all off</button>'
       +'<button class="add-sub-btn mt-1 btn btn-secondary" onclick="ctNameSave(\'semi\')">Start from Semi-custom</button>'
@@ -7655,9 +7645,9 @@ function __renderPeople(){
       mine=((orgPrefs().specTemplates||{})[_tmplCat]||[]);
       addHandler='tmplAddQ()';dropHandler='tmplDropQ(';
     }
-    el.innerHTML='<div class="lbl mt-1">Built-in</div>'
+    el.innerHTML='<div class="sec"><h2>Built-in</h2></div>'
       +builtRows
-      +'<div class="lbl mt-4">Your questions</div>'
+      +'<div class="sec"><h2>Your questions</h2></div>'
       +(mine.map(q=>`<div class="subrow"><div class="si"><div class="n">${esc(q.label)}</div><div class="d">${q.who==='homeowner'?'Homeowner decides':'Builder answers'}${q.required?' · required':''}</div></div><button class="rm" onclick="${dropHandler}'${q.id}')">${ICON.trash}</button></div>`).join('')||'<div class="empty py-2 px-0">None yet — your install lessons belong here.</div>')
       +`<input id="tqLabel" placeholder="e.g. Niche height from finished floor" class="mt-2">
         <div class="setup-roster-row gap-2 mt-2"><select id="tqWho"><option value="builder">Builder answers</option><option value="homeowner">Homeowner decides</option></select>
@@ -8740,7 +8730,7 @@ function renderOvCards(){
     </div>`;
   };
   const body=list.map(cardOf).join('');
-  const fin=finished.length?('<div class="eyebrow mt-4">Finished</div>'+finished.map(function(p,i){return cardOf(p,list.length+i);}).join('')):'';
+  const fin=finished.length?('<div class="sec"><h2>Finished</h2></div>'+finished.map(function(p,i){return cardOf(p,list.length+i);}).join('')):'';
   const empty=(!projs.length)
     ?((state.session&&state.session.role==='builder')
       ?`<div class="ov-empty"><svg class="ov-empty-house" viewBox="0 0 300 250" fill="none" stroke="#1B1916" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="28" y1="228" x2="272" y2="228" stroke="#B0895A" stroke-width="2"/><line x1="64" y1="223" x2="236" y2="223" stroke="#B0895A" stroke-width="2.4"/><line x1="72" y1="228" x2="72" y2="92"/><line x1="228" y1="228" x2="228" y2="92"/><line x1="72" y1="146" x2="228" y2="146"/><polyline points="60,96 150,30 240,96" stroke-width="2.2"/><line x1="66" y1="92" x2="234" y2="92"/><line x1="54" y1="158" x2="246" y2="158" stroke-width="1.8"/><rect x="135" y="170" width="30" height="54" stroke-width="1.5"/><rect x="90" y="106" width="28" height="30"/><rect x="182" y="106" width="28" height="30"/></svg><div class="empty">The book is empty.</div><button class="ov-newbtn btn btn-secondary" onclick="openNewSite()">Add the first house</button></div>`
@@ -9320,7 +9310,7 @@ function openNotifyCenter(){
   else permRow='<button class="b1 b-go w-full btn btn-primary" onclick="Notify.enable().then(()=>openNotifyCenter())">Turn on notifications</button>';
   showInfo('Notifications',permRow
     +(((state.session||{}).role==='builder')?`<div class="subrow cur-p mt-3" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span class="c-ink-3 fs-lg pl-1 u-m19">›</span></div>`:'')
-    +'<div class="lbl mt-3">Recent</div>'
+    +'<div class="sec"><h2>Recent</h2></div>'
     +(noticeRecentHTML())
     +'<p class="mt-2 ml-0 mr-0 mb-0 c-ink-3 fs-xs">On iPhone this has to be the Home Screen app, not Safari. A test dings this phone.</p>');}
 /* ── Org settings doc: orgs/{orgId} holds company truth — setup prefs, the
@@ -9621,7 +9611,7 @@ function renderSubView(){
   const body=document.getElementById('svBody');const projs=subProjects();const nav=document.getElementById('subNav');
   if(!subSel){
     if(nav)nav.style.display='none';
-    body.innerHTML='<div class="mt-0 ml-0 mr-0 mb-3"><span class="syncpill"><span class="sd"></span>On this device</span></div><div class="eyebrow mt-1">Your houses</div><div id="subCards">'+
+    body.innerHTML='<div class="mt-0 ml-0 mr-0 mb-3"><span class="syncpill"><span class="sd"></span>On this device</span></div><div class="sec"><h2>Your houses</h2></div><div id="subCards">'+
       (projs.map((p,i)=>{const tr=subTradeFor(p);const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open').length;
         return `<div class="ov-card ${open?'attn':''}" style="animation-delay:${i*60}ms" onclick="openSubSite('${p.id}')">
           <div class="ct"><div><div class="st">${esc(p.street||p.name)}</div><div class="nm">${esc(tr.label)}${p.city?' · '+esc(p.city):''}</div></div>
@@ -9635,10 +9625,10 @@ function renderSubView(){
   if(nav)nav.style.display='none';
   const backHouse=(subTab==='selections'||subTab==='docs'||subTab==='packet');
   const head=`<button class="sv-back" onclick="${backHouse?'subGo(\'todo\')':'subBackToList()'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>${backHouse?'House':'Your houses'}</button>
-   <div class="eyebrow mt-1">${esc(p.street||p.name)}</div>`;
+   <h2 class="title-sheet">${esc(p.street||p.name)}</h2>`;
   if(subTab==='selections'){
     const myCats=SUB_SEL_CATS[tr.id]||[];const mySels=(p.selections||[]).filter(s=>myCats.includes(s.cat));
-    body.innerHTML=head+`<div class="eyebrow">Selections on your scope</div>`+
+    body.innerHTML=head+`<div class="sec"><h2>Selections on your scope</h2></div>`+
       (mySels.length?mySels.map(s=>{return `<div class="sel-row"><div class="si cur-d"><div class="it">${esc(s.item||'(unspecified)')}</div><div class="ct">${esc(s.cat||'')}${s.room&&s.room!=='—'?' · '+esc(s.room):''}</div>${selTimelineRO(s)}${specReadoutHTML(s)}</div></div>`;}).join('')
         :`<div class="empty">No selections fall under your scope (${esc(tr.label)}) yet.</div>`);
     setSync(syncStatus);return;
@@ -9679,24 +9669,24 @@ function renderSubView(){
   h+='<button class="hs-door" onclick="subGo(\'docs\')"><div class="k">Documents</div><div class="m">What you need on site</div></button>';
   h+='</div>';
   if(_svBookings.length){
-    h+='<div class="eyebrow">Your dates</div>'+_svBookings.map(function(b){
+    h+='<div class="sec"><h2>Your dates</h2></div>'+_svBookings.map(function(b){
       const st=bkStatus(b);const needs=(st==='pending'||st==='modified');
       return '<div class="day-row cur-d"><span class="sw" style="background:'+tradeColor(b.trade)+'"></span><div class="flex-1"><div class="n">'+fmtWin(b)+'<span class="bk-st '+st+'">'+BK_STATUS[st].label+'</span></div>'+(b.note?('<div class="note">'+esc(b.note)+'</div>'):'')+(needs?'<div class="row2 mt-2"><button class="lpay btn btn-quiet" onclick="svBkConfirm(\''+p.id+'\',\''+b.id+'\')">Confirm</button><button class="lpay btn btn-quiet" onclick="svBkModify(\''+p.id+'\',\''+b.id+'\')">Change dates</button><button class="lpay c-clay btn btn-quiet" onclick="svBkDecline(\''+p.id+'\',\''+b.id+'\')">Can\u2019t make it</button></div>':'')+'</div></div>';
     }).join('');
   }
   if(open.length){
-    h+='<div class="eyebrow">Your open items</div><div class="feed">'+open.map(function(it){
+    h+='<div class="sec"><h2>Your open items</h2></div><div class="feed">'+open.map(function(it){
       return '<div class="item"><div class="thumb">'+thumbHTML(it)+'</div><div class="body"><div class="cap">'+esc(it.cap)+'</div><div class="meta"><span class="tag area">'+esc(areaText(it.area))+'</span>'+(it.client?'<span class="tag ho">Homeowner</span>':'')+'<span class="when">'+timeAgo(it.t)+'</span></div></div><button onclick="closeSubItem(\''+p.id+'\','+it.id+')" title="Mark done" class="as-c bd-none bg-trans cur-p c-sage"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/></svg></button></div>';
     }).join('')+'</div>';
   }
   if(recent.length){
-    h+='<div class="eyebrow">Recent on your scope</div><div class="feed">'+recent.map(function(it){
+    h+='<div class="sec"><h2>Recent on your scope</h2></div><div class="feed">'+recent.map(function(it){
       return '<div class="item"><div class="thumb">'+thumbHTML(it)+'</div><div class="body"><div class="cap">'+esc(it.cap)+'</div><div class="meta"><span class="tag area">'+esc(areaText(it.area))+'</span>'+(it.client?'<span class="tag ho">Homeowner</span>':'')+(it.issue?('<span class="status '+it.status+'"><span class="d"></span>'+(it.status==='open'?'Open':'Closed')+'</span>'):'')+'<span class="when">'+timeAgo(it.t)+'</span></div></div>'+((it.issue&&it.status!=='open')?('<button onclick="reopenSubItem(\''+p.id+'\','+it.id+')" title="Reopen" class="as-c bd-none bg-trans cur-p"><svg viewBox="0 0 24 24" width="26" height="26" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" fill="var(--sage)" stroke="var(--sage)"/><path d="M8.5 12l2.5 2.5L16 9" fill="none" stroke="var(--surface)"/></svg></button>'):'')+'</div>';
     }).join('')+'</div>';
   }
   if(subTab==='docs'){
     const docIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/></svg>';
-    body.innerHTML=head+'<div class="eyebrow">Documents for your scope</div>'+(myDocs.length?('<div class="feed">'+myDocs.map(function(d){return '<div class="doc" onclick="openDocFile(\''+p.id+'\',\''+esc(d.fileId||'')+'\',\''+esc(d.fileUrl||'')+'\')"><div class="fi">'+docIcon+'</div><div class="info"><div class="n">'+esc(d.n)+(d.trade?('<span class="doc-trade">'+esc(specLabel(d.trade))+'</span>'):'<span class="doc-trade gen">Shared</span>')+'</div><div class="m">'+esc(d.m||'')+(d.fileId?' · tap to open':'')+'</div></div></div>';}).join('')+'</div>'):'<div class="empty">No documents on your scope yet.</div>');
+    body.innerHTML=head+'<div class="sec"><h2>Documents for your scope</h2></div>'+(myDocs.length?('<div class="feed">'+myDocs.map(function(d){return '<div class="doc" onclick="openDocFile(\''+p.id+'\',\''+esc(d.fileId||'')+'\',\''+esc(d.fileUrl||'')+'\')"><div class="fi">'+docIcon+'</div><div class="info"><div class="n">'+esc(d.n)+(d.trade?('<span class="doc-trade">'+esc(specLabel(d.trade))+'</span>'):'<span class="doc-trade gen">Shared</span>')+'</div><div class="m">'+esc(d.m||'')+(d.fileId?' · tap to open':'')+'</div></div></div>';}).join('')+'</div>'):'<div class="empty">No documents on your scope yet.</div>');
     setSync(syncStatus);return;
   }
   body.innerHTML=h;
@@ -9945,7 +9935,7 @@ function billingCardHTML(p){
   const b=billingSummary(p);
   if(!(b.net>0)&&!(p.invoices||[]).length)
     return `<div class="overall bgt-tap" onclick="openInvoices()">
-        <div class="top"><span class="lbl">No homeowner invoices on this house yet. Invoices live here</span><span class="bgt-chev">›</span></div></div>`;
+        <div class="top"><span class="meta">No homeowner invoices on this house yet. Invoices live here</span><span class="bgt-chev">›</span></div></div>`;
   const okN=(p.invoices||[]).filter(invNeedsOK).length;
   const pct=b.net>0?Math.min(100,Math.round(b.paid/b.net*100)):0;
   return `<div class="overall bgt-tap" onclick="openInvoices()">
@@ -9961,11 +9951,11 @@ function billingCardHTML(p){
 }
 function budgetCardHTML(p){
   const cs=costSummary(p);
-  if(!cs.lines)return `<div class="eyebrow eyebrow-c mt-1">Money</div>
+  if(!cs.lines)return `<div class="sec"><h2>Money</h2></div>
     <div class="overall bgt-tap" onclick="openBudget()">
-      <div class="top"><span class="lbl">Set up budget lines to track this build’s money — private to your team</span><span class="bgt-chev">›</span></div></div>`;
+      <div class="top"><span class="meta">Set up budget lines to track this build’s money — private to your team</span><span class="bgt-chev">›</span></div></div>`;
   const pct=cs.budget>0?Math.min(100,Math.round(cs.exposure/cs.budget*100)):(cs.exposure>0?100:0);
-  return `<div class="eyebrow eyebrow-c mt-1">Money</div>
+  return `<div class="sec"><h2>Money</h2></div>
     <div class="overall bgt-tap" onclick="openBudget()">
       <div class="bgt-cardgrid">
         <div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
@@ -12315,7 +12305,7 @@ function renderClient(){
     }
     const hoMine=(p.items||[]).filter(function(it){return it.client;});
     if(hoMine.length){
-      h+='<div class="eyebrow">You wrote us</div>';
+      h+='<div class="sec"><h2>You wrote us</h2></div>';
       hoMine.forEach(function(it){
         h+='<div class="cl-dec"><div class="di"><div class="dt">'+esc(it.cap)+'</div>'+(it.reply?('<div class="ds">Your builder \u00b7 '+esc(it.reply)+'</div>'):'<div class="ds">Sent \u00b7 waiting on your builder</div>')+'</div></div>';
       });
@@ -12337,7 +12327,7 @@ function renderClient(){
     const sharedRecs=(p.items||[]).filter(it=>(!it.sample||state.showSamples)&&it.share).map(it=>({t:it.t||0,kind:'rec',it}));
     const sharedLogs=(p.logs||[]).filter(l=>l.share).map(l=>({t:l.t||logT(l.date),kind:'log',l}));
     const updates=[...sharedRecs,...sharedLogs].sort((a,b)=>b.t-a.t);
-    h+=`<div class="eyebrow">Updates</div>`;
+    h+=`<div class="sec"><h2>Updates</h2></div>`;
     h+=updates.length?'<div class="feed">'+updates.map(u=>{
       if(u.kind==='rec'){const it=u.it;return `<div class="item${it.photoId?' tappable':''}"${it.photoId?` onclick="openLightbox(${it.id})"`:''}><div class="thumb">${thumbHTML(it)}</div><div class="body"><div class="cap">${esc(it.cap)}</div><div class="meta"><span class="tag area">${esc(areaText(it.area))}</span><span class="when">${timeAgo(it.t)}</span></div></div></div>`;}
       const l=u.l;return `<div class="item"><div class="thumb d-flex ai-c jc-c bg-surface-2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16l-3-2-3 2-3-2-2 1.5z"/><path d="M9 8h6M9 12h4"/></svg></div><div class="body"><div class="cap">${esc(l.text)}</div><div class="meta"><span class="tag area">House update</span><span class="dotsep"></span><span class="when">${fmtLogDate(l.date)}</span></div></div></div>`;
@@ -12364,7 +12354,7 @@ function renderClient(){
             `<button class="cl-submit" onclick="clientSaveSpec(${s.id})">Submit answers</button></div>`;}).join('')+`</div>`;
     }
     const bs=billingSummary(p);const loose=bs.paid-bs.invPaid;
-    h+=`<div class="eyebrow">Your investment</div>
+    h+=`<div class="sec"><h2>Your investment</h2></div>
       <div class="sel-ledger">
         <div class="lr"><span>Upgrades</span><b class="up">+${usd(bs.ups)}</b></div>
         ${bs.crs?`<div class="lr"><span>Credits</span><b class="cr">−${usd(bs.crs)}</b></div>`:''}
@@ -12380,9 +12370,9 @@ function renderClient(){
       </div>`;
     const invs=(p.invoices||[]).filter(i=>{const s=invState(i);return s!=='void'&&s!=='draft';}).slice().reverse();
     if(invs.length){
-      h+=`<div class="eyebrow mt-4">Invoices</div>`;
+      h+=`<div class="sec"><h2>Invoices</h2></div>`;
       h+=invs.map(inv=>{const st=invState(inv);return `<div class="subrow cur-p" onclick="openInvoiceDetail('${p.id}','${inv.id}','client')"><div class="si"><div class="n">${esc(inv.no)} · ${esc(inv.title)}</div><div class="d">${invUsd(inv.total)}${(st==='partial'||st==='overdue')?' · '+invUsd(invBalance(inv))+' left':''}${inv.due&&st!=='paid'?(st==='overdue'?' · <b style=\"color:var(--clay)\">past due '+esc(inv.due)+'</b>':' · due '+esc(inv.due)):''}${st==='sent'?' · <b style=\"color:var(--clay)\">needs your OK</b>':''}</div></div>${invStatusChip(st)}</div>`;}).join('');}
-    h+=`<div class="eyebrow mt-4">Your selections</div>`;
+    h+=`<div class="sec"><h2>Your selections</h2></div>`;
     const cats=SEL_CATS.filter(c=>sels.some(s=>(s.cat||'Other')===c));
     const extra=[...new Set(sels.map(s=>s.cat||'Other'))].filter(c=>!SEL_CATS.includes(c));
     const order=[...cats,...extra];
@@ -12403,7 +12393,7 @@ function renderClient(){
 
   else if(T==='docs'){
     h+=houseBack;
-    h+=`<div class="eyebrow">Documents</div>`;
+    h+=`<div class="sec"><h2>Documents</h2></div>`;
     h+=(p.docs||[]).filter(docAudClient).map(d=>`<div class="doc" onclick="openDocFile('${p.id}','${esc(d.fileId||'')}','${esc(d.fileUrl||'')}')"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/></svg></div><div class="info"><div class="n">${esc(d.n)}</div><div class="m">${esc(d.m)}</div></div><div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>`).join('')||`<div class="empty">No documents shared yet.</div>`;
   }
 
@@ -12436,7 +12426,7 @@ function openSignoffInfo(id){
     `<div class="so-head"><div class="so-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></div><div><div class="so-item">${esc(s.item||'Selection')}</div><div class="so-cat">${esc(s.cat||'')}${s.room&&s.room!=='—'?' · '+esc(s.room):''}</div></div></div>`+
     `<div class="so-row"><span>Signed off</span><b>${date}</b></div>`+
     `<div class="so-row"><span>By</span><b>${by.map(esc).join(' & ')}</b></div>`+
-    `<div class="so-sigs">${by.map(n=>`<div class="so-sig"><div class="so-ini">${esc(initialsOf(n))}</div><div class="so-nm">${esc(n)}</div><div class="so-lbl">Buyer under contract</div></div>`).join('')}</div>`+
+    `<div class="so-sigs">${by.map(n=>`<div class="so-sig"><div class="so-ini">${esc(initialsOf(n))}</div><div class="so-nm">${esc(n)}</div><div class="so-k">Buyer under contract</div></div>`).join('')}</div>`+
     `<div class="ii-note">Recorded from the homeowner's own login — the buyer's binding approval of this selection.</div>`;
   document.getElementById('signScrim').classList.add('show');
 }
@@ -12725,12 +12715,12 @@ function closeSpec(){document.getElementById('specScrim').classList.remove('show
 function renderSpecEditor(s){
   const f=specFields(s).filter(x=>!x.custom);
   const grp=who=>{const items=f.filter(x=>x.who===who);if(!items.length)return '';
-    return `<div class="eyebrow mt-3 ml-0 mr-0 mb-1">${who==='homeowner'?'Homeowner decides':'Builder / field decides'}</div>`+items.map(x=>`
+    return `<div class="sec"><h2>${who==='homeowner'?'Homeowner decides':'Builder / field decides'}</h2></div>`+items.map(x=>`
       <div class="spec-fld"><label>${esc(x.label)}${x.required?'<span class="req">required</span>':''}</label>
       <input data-key="${x.key}" value="${esc(x.value)}" placeholder="${who==='homeowner'?'Homeowner to confirm…':'Enter detail…'}"></div>`).join('');};
   document.getElementById('specBody').innerHTML=
     (f.length?grp('builder')+grp('homeowner'):'<div class="empty">No template for this category yet — add custom fields below.</div>')+
-    `<div class="eyebrow mt-3 ml-0 mr-0 mb-1">Custom fields</div><div id="specCustomList"></div>
+    `<div class="sec"><h2>Custom fields</h2></div><div id="specCustomList"></div>
      <button class="add-sub-btn mt-2 btn btn-secondary" onclick="addSpecCustom()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add custom field</button>`;
   renderSpecCustomList();}
 function syncSpecCustomDraft(){_specCustomDraft=[...document.querySelectorAll('#specCustomList .spec-crow')].map(r=>({label:r.querySelector('.sc-label').value,who:r.querySelector('.sc-who').value,required:r.querySelector('.sc-req').checked,value:r.querySelector('.sc-val').value}));}
@@ -13053,7 +13043,7 @@ function invDetailHTML(p,inv,viewer){
   // payment history
   if((inv.payments||[]).length){
     const canEditPm=viewer==='builder'&&st!=='void';
-    h+=`<div class="lbl mt-3">Payments</div>`+inv.payments.map((pm,idx)=>`<div class="sro d-flex jc-sb gap-3 ai-b"><span class="k c-ink-3">${esc(pm.date||'')}${pm.note?' · '+esc(pm.note):''}</span><span class="v ws-nw fw-6">${invUsd(pm.amount)}${canEditPm?` <button onclick="invDelPayment('${p.id}','${inv.id}',${idx})" class="ml-2 fs-xs c-clay bd-0 p-0 cur-p td-u u-m28">Remove</button>`:''}</span></div>`).join('');
+    h+=`<div class="sec"><h2>Payments</h2></div>`+inv.payments.map((pm,idx)=>`<div class="sro d-flex jc-sb gap-3 ai-b"><span class="k c-ink-3">${esc(pm.date||'')}${pm.note?' · '+esc(pm.note):''}</span><span class="v ws-nw fw-6">${invUsd(pm.amount)}${canEditPm?` <button onclick="invDelPayment('${p.id}','${inv.id}',${idx})" class="ml-2 fs-xs c-clay bd-0 p-0 cur-p td-u u-m28">Remove</button>`:''}</span></div>`).join('');
   }
   // share / export — available to the builder for any non-void invoice
   if(viewer==='builder'&&st!=='void'){
@@ -13067,7 +13057,7 @@ function invDetailHTML(p,inv,viewer){
       <p class="mt-2 ml-0 mr-0 mb-0 c-ink-3 fs-xs">Approving tells your builder the charges look right. Payment itself happens however you two normally settle up.</p>`;
   // builder: record payment (partial or full) while a balance remains
   if(viewer==='builder'&&st!=='void'&&bal>0){
-    h+=`<div class="lbl mt-3">Record a payment</div>
+    h+=`<div class="sec"><h2>Record a payment</h2></div>
       <div class="setup-roster-row"><input id="invPayAmt" inputmode="numeric" placeholder="Amount" value="${bal}"><input id="invPayNote" placeholder="Note (optional)" class="u-m12"></div>
       <div class="d-flex gap-2 mt-2">
         <button class="b1 b-go flex-1 btn btn-primary" onclick="invAddPayment('${p.id}','${inv.id}')">Add payment</button>
@@ -13076,7 +13066,7 @@ function invDetailHTML(p,inv,viewer){
   }
   // builder: issue a credit note or add a charge to a sent invoice (append-only correction)
   if(viewer==='builder'&&st!=='void'){
-    h+=`<div class="lbl mt-3">Credit or charge</div>
+    h+=`<div class="sec"><h2>Credit or charge</h2></div>
       <div class="setup-roster-row"><input id="invAdjLabel" placeholder="Reason (e.g. countertop overcharge)"><input id="invAdjAmt" inputmode="numeric" placeholder="Amount" class="u-m30"></div>
       <div class="d-flex gap-2 mt-2">
         <button class="lpay flex-1 btn btn-quiet" onclick="invAddAdjustment('${p.id}','${inv.id}',-1)">Add credit</button>
@@ -13260,16 +13250,16 @@ function renderInvoices(){
     const un=composeSelections(p);
     const total=invDraftItems().reduce((a,b)=>a+b.amount,0);
     const editId=_invDraft.editId,editInv=editId?(p.invoices||[]).find(v=>v.id===editId):null;
-    el.innerHTML=(editInv?`<div class="lbl mb-2 c-oak">${editInv.no?'Editing '+esc(editInv.no)+' · draft':'Editing draft'}</div>`:'')+`<input id="invTitle2" placeholder="Invoice title (e.g. Selections — June)" value="${esc(_invDraft.title)}">
+    el.innerHTML=(editInv?`<div class="meta">${editInv.no?'Editing '+esc(editInv.no)+' · draft':'Editing draft'}</div>`:'')+`<input id="invTitle2" placeholder="Invoice title (e.g. Selections — June)" value="${esc(_invDraft.title)}">
       <div class="setup-roster-row ai-c">
         <input id="invDue" type="date" value="${/^\d{4}-\d{2}-\d{2}$/.test(_invDraft.due)?_invDraft.due:''}" onchange="_invDraft.due=this.value;renderInvoices()" class="flex-1">
         <button class="add-sub-btn btn btn-secondary" style="margin:0;flex:.7;${_invDraft.due==='On receipt'?'color:var(--sage);font-weight:700':''}" onclick="invDueOnReceipt()">On receipt${_invDraft.due==='On receipt'?' \u2713':''}</button>
       </div>
-      ${(_invDraft.due&&_invDraft.due!=='On receipt'&&!/^\d{4}-\d{2}-\d{2}$/.test(_invDraft.due))?`<div class="lbl mt-1">Due: ${esc(_invDraft.due)} \u00b7 <a href="#" onclick="event.preventDefault();_invDraft.due='';renderInvoices()" class="c-gold">clear</a></div>`:''}
-      <div class="lbl mt-2">Unbilled selections</div>`
+      ${(_invDraft.due&&_invDraft.due!=='On receipt'&&!/^\d{4}-\d{2}-\d{2}$/.test(_invDraft.due))?`<div class="meta">Due: ${esc(_invDraft.due)} \u00b7 <a href="#" onclick="event.preventDefault();_invDraft.due='';renderInvoices()" class="c-gold">clear</a></div>`:''}
+      <div class="sec"><h2>Unbilled selections</h2></div>`
       +(un.length?un.map(x=>`<div class="subrow cur-p" onclick="invTogglePick('${x.id}')"><div class="si"><div class="n">${_invDraft.picks[x.id]?'☑':'☐'} ${esc(x.item||'(selection)')}</div><div class="d">${esc(x.cat||'')}${x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+esc(x.room):''}</div></div><b class="${Number(x.price)>0?'up':'cr'} fs-sm">${selMoney(x.price)}</b></div>`).join('')
         :'<div class="empty py-2 px-0">Nothing unbilled — every priced selection is already on an invoice.</div>')
-      +`<div class="lbl mt-3">Custom line</div>
+      +`<div class="sec"><h2>Custom line</h2></div>
       <div class="setup-roster-row"><input id="invExLabel" placeholder="e.g. Change order #3" value="${esc(_invDraft.exLabel)}"><input id="invExAmount" placeholder="Amount" inputmode="numeric" value="${esc(_invDraft.exAmount)}" class="u-m31"></div>
       <div class="sel-ledger mt-3"><div class="lr"><span>Invoice total</span><b>${invUsd(total)}</b></div></div>
       <button class="b1 b-go w-full mt-1 btn btn-primary" onclick="invSave(false)">Send invoice</button>
@@ -13281,7 +13271,7 @@ function renderInvoices(){
     _billAssignees=billingAssignees();const set=billersOf(p);
     const who=set.length?(set.length+' '+(set.length===1?'person gets':'people get')+' invoice alerts'):'Everyone on the builder side gets invoice alerts';
     const row=(i,name,on)=>`<div class="subrow cur-p" onclick="toggleBiller(${i})"><div class="si"><div class="n">${on?'☑':'☐'} ${esc(name)}</div><div class="d">${on?'Gets invoice & overdue alerts':'Tap to add'}</div></div></div>`;
-    el.innerHTML=`<div class="lbl mb-1">Who gets invoice alerts?</div>`
+    el.innerHTML=`<div class="sec"><h2>Who gets invoice alerts?</h2></div>`
       +`<p class="fs-xs c-ink-3 mt-0 ml-0 mr-0 mb-2 lh-15">Approval and overdue alerts for ${esc(p.street||p.name||'this house')} go to the people you check. Check no one to alert the whole builder side. Everyone can still view and edit invoices.</p>`
       +`<div class="fs-sm c-oak fw-6 mt-0 ml-0 mr-0 mb-2">${who}</div>`
       +_billAssignees.map((n,i)=>row(i,n,set.includes(n))).join('')
@@ -13294,7 +13284,7 @@ function renderInvoices(){
     return;}
   if(invMode==='payments'){
     el.innerHTML=seg+paymentsListHTML(p)
-      +`<div class="lbl mt-3">Record a payment</div>
+      +`<div class="sec"><h2>Record a payment</h2></div>
         <input id="bpLabel" placeholder="e.g. Deposit, Draw #2" class="w-full">
         <div class="setup-roster-row mt-2"><input id="bpAmount" inputmode="decimal" placeholder="Amount"><input id="bpDate" type="date" class="fld-date flex-1"></div>
         <button class="b1 b-go w-full mt-2 btn btn-primary" onclick="addBillingPayment()">Add payment</button>
@@ -13361,7 +13351,7 @@ function openStage(i){const st=stagesFor(P())[i];if(!st)return;const status=stag
       ${insp}
       <div class="lr"><span>Records</span><b>${recs.length}</b></div>
     </div>
-    <div class="eyebrow mt-0 ml-0 mr-0 mb-2">Records · ${esc(st.areas.join(' · '))}</div>
+    <div class="sec"><h2>Records</h2></div><div class="meta">${esc(st.areas.join(' · '))}</div>
     ${recsHTML}`;
   showInfo(st.name,body);}
 function openForwardHelp(){const j=P().jurisdiction||{};const addr=esc(j.inbox||'your site inbox');
@@ -13453,7 +13443,7 @@ function renderBuild(){
   const done=SS.filter(s=>P().stageDone[s.id]).length;
   const ovPct=Math.round(SS.reduce((a,s,i)=>a+stageProgress(s,stageStatus(i)),0)/SS.length);
   document.getElementById('overallBar').innerHTML=`<div class="overall">
-    <div class="top"><span class="pct">${ovPct}%</span><span class="lbl">${done} of ${SS.length} stages complete</span></div>
+    <div class="top"><span class="pct">${ovPct}%</span><span class="meta">${done} of ${SS.length} stages complete</span></div>
     <div class="pbar"><i style="width:${ovPct}%"></i></div></div>`;
   try{document.getElementById('budgetCard').innerHTML=budgetCardHTML(P());}catch(e){}
   try{document.getElementById('billingCard').innerHTML=billingCardHTML(P());}catch(e){}
@@ -13520,7 +13510,7 @@ function openInspInfo(inspId){
   document.getElementById('inspBody').innerHTML=
     `<div class="ii-status"><span class="insp ${status}"><span class="dot"></span>${INSP_STATUS_LABEL[status]||status}</span><span class="ii-date">${dateLine}</span></div>`+
     doc+
-    `<div class="ii-edit"><div class="fld-lbl">Edit status</div>`+
+    `<div class="ii-edit"><div class="fld-k">Edit status</div>`+
     `<select id="inspEditSel" class="fld-select">${['pending','scheduled','passed'].map(s=>`<option value="${s}" ${s===status?'selected':''}>${INSP_STATUS_LABEL[s]}</option>`).join('')}</select>`+
     `<div class="ii-note">Status normally syncs from the city's forwarded inspection emails. Change it by hand only if you need to.</div></div>`;
   enhanceSelect('inspEditSel');
@@ -13671,7 +13661,7 @@ function enhanceSelect(id){
   const btn=document.createElement('button');
   btn.type='button';btn.className='ss-trigger';btn.id=id+'__ss';
   btn.addEventListener('click',()=>openSearchSelect(id));
-  btn.innerHTML='<span class="ss-lbl"></span>'+_ssChev();
+  btn.innerHTML='<span class="ss-k"></span>'+_ssChev();
   sel.parentNode.insertBefore(btn,sel.nextSibling);
   try{new MutationObserver(()=>ssSync(id)).observe(sel,{childList:true});}catch(e){}
   ssSync(id);
@@ -13680,7 +13670,7 @@ function ssSync(id){
   const sel=document.getElementById(id),btn=document.getElementById(id+'__ss');if(!sel||!btn)return;
   const o=sel.options[sel.selectedIndex];const txt=o?o.textContent.trim():'';
   const placeholder=!o||o.value===''||o.disabled;
-  btn.querySelector('.ss-lbl').textContent=txt||'Select…';
+  btn.querySelector('.ss-k').textContent=txt||'Select…';
   btn.classList.toggle('placeholder',!!placeholder);
 }
 function openSearchSelect(id){
@@ -14703,7 +14693,7 @@ function renderIdleSheet(){
   const sb=document.getElementById('idleSearch');if(sb)sb.style.display=idleAll.length>6?'':'none';
   const q=((sb&&sb.value)||'').trim().toLowerCase();
   const idle=idleAll.filter(n=>!q||(n.name+' '+(specLabel(n.trade)||'')).toLowerCase().includes(q));
-  let h='<div class="lbl">Open schedules \u2014 '+esc(calMonth.toLocaleDateString(undefined,{month:'long'}))+'</div>';
+  let h='<div class="sec"><h2>Open schedules \u2014 '+esc(calMonth.toLocaleDateString(undefined,{month:'long'}))+'</h2></div>';
   h+=idle.length?idle.map(function(n){
       const blocked=av.some(function(a){return a.subName===n.name&&a.end>=mS&&a.start<=mE;});
       return '<div class="row row-tap" onclick="idleBook(\''+esc(n.name)+'\')"><div class="row-main"><div class="row-title">'+esc(n.name)+'</div><div class="row-sub">'+esc(specLabel(n.trade)||'')+(blocked?' \u00b7 blocked this month':'')+'</div></div><span class="row-aside">Schedule</span><span class="row-chev">\u203a</span></div>';}).join('')
@@ -14712,7 +14702,7 @@ function renderIdleSheet(){
   // Plan Ahead lives outside the scroll window so it's always visible
   const plan=document.getElementById('idlePlan');
   const sugg=calSuggestions();
-  if(plan)plan.innerHTML=sugg.length?'<div class="lbl mt-3">Plan Ahead</div>'
+  if(plan)plan.innerHTML=sugg.length?'<div class="sec"><h2>Plan ahead</h2></div>'
     +sugg.map(o=>`<button class="cal-sugg" onclick="closeIdle();calSuggGo('${o.pid}','${esc(o.sub)}')">${esc(o.stage)} is next at ${esc(o.site)} \u2014 book <b>${esc(o.sub)}</b>?</button>`).join(''):'';}
 function calCrews(name){
   openPrompt({title:'How many crews does '+name+' run?',body:'With 2 crews, two sites the same day is fine — a third flags a conflict.',placeholder:'Number of crews',inputmode:'numeric',value:String(crewsOf(name)),okLabel:'Save',onOk:(v)=>{if(v===''||v==null)return;setCrewsOrg(name,v);renderCal();toast(name+': '+crewsOf(name)+' crew'+(crewsOf(name)===1?'':'s'));}});
@@ -15019,7 +15009,7 @@ function bkSubModify(pid,id){
   document.getElementById('bkTitle').textContent='Propose new dates';
   const siteSel=document.getElementById('bkSite');siteSel.innerHTML='<option>'+esc(p.street||p.name)+'</option>';siteSel.disabled=true;
   document.getElementById('bkSub').style.display='none';
-  document.getElementById('bkSiteLbl').textContent='Site';
+  document.getElementById('bkSiteLbl').textContent='House';
   document.getElementById('bkStart').value=_gpISO(b.start);
   document.getElementById('bkEnd').value=_gpISO(b.end||b.start);
   document.getElementById('bkNote').value=b.note||'';document.getElementById('bkNote').placeholder='Why the change? (optional)';
@@ -15071,7 +15061,7 @@ function openBk(ref,defTs){
     document.getElementById('bkStart').value=d;document.getElementById('bkEnd').value=d;
     const _bn=document.getElementById('bkNote');_bn.value='';_bn.placeholder=calIsSub()?'Note for your builder (optional)\u2026':'Note for the crew \u2014 gate code, scope\u2026';del.style.display='none';
   }
-  document.getElementById('bkSiteLbl').textContent=calIsSub()?'Saved under site':'Site';
+  document.getElementById('bkSiteLbl').textContent=calIsSub()?'Saved under this house':'House';
   subSel.style.display='none';   // native select is the hidden source of truth; bkSubBtn is the visible picker
   siteSel.onchange=()=>{bkFillSubs(siteSel.value);bkRenderPacket();bkRenderOverlap();};
   bkSyncBtns();bkRenderPacket();bkRenderOverlap();bkLeadOrder();_bkCalHide();
@@ -15317,12 +15307,12 @@ function renderSchedule(){
   const weeks={};entries.forEach(e=>{const k=weekKey(e.w.start);(weeks[k]=weeks[k]||[]).push(e);});
   h+=Object.keys(weeks).sort((a,b)=>a-b).map(k=>{
     const wk=new Date(+k).toLocaleDateString(undefined,{month:'short',day:'numeric'});
-    return '<div class="lbl mt-3">Week of '+wk+'</div>'+weeks[k].map(e=>{
+    return '<div class="sec"><h2>Week of '+wk+'</h2></div>'+weeks[k].map(e=>{
       if(e.due)return `<div class="subrow"><div class="si"><div class="n">Specs due — ${esc(e.due.name)}</div><div class="d">${esc(e.p.street||e.p.name)} · ${esc(specLabel(e.due.specialty))} · ${fmtDue(e.due.specsDue)}</div></div><span class="cleared op-7">Deadline</span></div>`;
       const names=e.subs.map(s=>s.name).join(', ');
       return `<div class="subrow cur-p" onclick="setStageWindow('${e.p.id}','${e.st.id}')"><div class="si"><div class="n">${esc(e.st.name)}${e.done?' ✓':''}</div><div class="d">${esc(e.p.street||e.p.name)} · ${fmtWin(e.w)}${names?' · '+esc(names):''}</div></div></div>`;
     }).join('');}).join('');
-  h+='<div class="lbl mt-4">Plan more</div>'+schedPlanList();
+  h+='<div class="sec"><h2>Plan more</h2></div>'+schedPlanList();
   el.innerHTML=h;}
 function schedPlanList(){
   return (state.projects||[]).map(p=>{
@@ -15445,17 +15435,17 @@ function renderPacketLog(){
     </div>`;};
   let h='';
   h+=`<p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-xs">Tap the pin to attach a note, photo or log day to <b>${esc(tl)}</b>\u2019s packet. ${esc(tl)} items show first.</p>`;
-  h+=`<div class="eyebrow">${esc(tl)} items</div>`;
+  h+=`<div class="sec"><h2>${esc(tl)} items</h2></div>`;
   h+=mine.length?mine.map(card).join(''):'<div class="empty py-2 px-0">Nothing logged for this trade yet.</div>';
   if(logs.length){
-    h+='<div class="eyebrow mt-3">Daily log</div>';
+    h+='<div class="sec"><h2>Daily log</h2></div>';
     h+=logs.map(l=>{const on=logPinned(p,tradeId,l.date);return `<div class="loghist-item pkt-pinrow${on?' pinned':''}">
       <div class="flex-1" onclick="openSheet(true,'${l.date}')"><div class="d">${fmtLogDate(l.date)}${l.share?' \u00b7 shared':''}</div><div class="x">${esc(l.text)}</div></div>
       <button class="pkt-pin${on?' on':''}" title="${on?'In packet':'Add to packet'}" onclick="event.stopPropagation();togglePacketLog('${pid}','${esc(tradeId)}','${l.date}')">${pinSvg}</button>
     </div>`;}).join('');
   }
   if(rest.length){
-    h+='<div class="eyebrow mt-3">The rest of this house</div>';
+    h+='<div class="sec"><h2>The rest of this house</h2></div>';
     h+=rest.map(card).join('');
   }
   document.getElementById('pktLogBody').innerHTML=h;}
@@ -15996,15 +15986,15 @@ function _gpRender(){
     h+='</div>';
   }
   if((cx.openItems||[]).length){
-    h+='<div class="eyebrow mt-4">Open items on your scope</div>';
+    h+='<div class="sec"><h2>Open items on your scope</h2></div>';
     h+=cx.openItems.map(x=>'<div class="pkt-doc cur-d"><span class="n">'+esc(x)+'</span></div>').join('');
   }
   if((cx.history||[]).length){
-    h+='<div class="eyebrow mt-4">Before you arrive \u2014 recent house history</div>';
+    h+='<div class="sec"><h2>Before you arrive</h2></div>';
     h+=cx.history.map(x=>'<div class="pkt-doc cur-d"><span class="n">'+esc(x.text)+'</span><span class="t">'+esc(x.d)+'</span></div>').join('');
   }
   if((g.specs||[]).length){
-    h+='<div class="eyebrow mt-5">Your install specs</div>';
+    h+='<div class="sec"><h2>Your install specs</h2></div>';
     h+=g.specs.map(sel=>{
       const rows=(sel.rows||[]).map(r=>r.gap
         ?'<div class="sro"><span class="k">'+esc(r.k)+'</span><span class="v pkt-gap">awaiting '+esc(r.gap)+'</span></div>'
@@ -16013,17 +16003,17 @@ function _gpRender(){
     }).join('');
   }
   if(preview&&!(g.docs||[]).length){
-    h+='<div class="eyebrow mt-4">Documents</div>';
+    h+='<div class="sec"><h2>Documents</h2></div>';
     h+='<div class="gp-sub">None routed to this trade yet \u2014 add them from the install packet and the next send carries them.</div>';
   }
   if((g.docs||[]).length){
-    h+='<div class="eyebrow mt-4">Documents on file</div>';
+    h+='<div class="sec"><h2>Documents on file</h2></div>';
     h+=g.docs.map(n=>'<div class="pkt-doc cur-d"><span class="n">'+esc(n)+'</span></div>').join('');
     h+='<div class="gp-sub mt-1">Need a file? Reply to the text and it comes right over.</div>';
   }
   /* Q&A: the sub asks from here; the builder answers or routes it onward.
      Everything passes through the builder - that IS the approval gate. */
-  h+='<div class="eyebrow mt-5">Questions</div>';
+  h+='<div class="sec"><h2>Questions</h2></div>';
   const qs=g.q||[];
   h+=qs.length?qs.map(function(x){
     return '<div class="pkt-sel"><div class="ps-h"><b>'+esc(x.text)+'</b><span class="ps-c">'+new Date(x.t).toLocaleDateString()+'</span></div>'
@@ -16862,15 +16852,15 @@ function renderDecisions(){
   const extra=[...new Set(sels.map(s=>s.cat||'Other'))].filter(c=>!SEL_CATS.includes(c));
   const pendingCats=[...SEL_CATS,...extra].filter(c=>!sels.some(s=>(s.cat||'Other')===c));
   let h='';
-  if(items.length)h+='<div class="eyebrow">Open house issues</div>'+items.map(it=>`
+  if(items.length)h+='<div class="sec"><h2>Open house issues</h2></div>'+items.map(it=>`
     <div class="item tappable" onclick="openRecord(${it.id})"><div class="thumb">${thumbHTML(it)}</div>
       <div class="body"><div class="cap">${esc(it.cap)}</div>
         <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div></div>`).join('');
-  if(awaiting.length)h+='<div class="eyebrow mt-3">Awaiting homeowner sign-off</div>'+awaiting.map(s=>`
+  if(awaiting.length)h+='<div class="sec"><h2>Awaiting homeowner sign-off</h2></div>'+awaiting.map(s=>`
     <div class="sel-row"><div class="si" onclick="openEditSel(${s.id})"><div class="it">${esc(s.item||'(unspecified)')}</div>
       <div class="ct">${esc(s.cat||'Other')}${s.room?' \u00b7 '+esc(s.room):''}</div></div><span class="approve-ro off">Awaiting</span></div>`).join('');
-  if(pendingCats.length)h+='<div class="eyebrow mt-3">Selections not yet made</div>'+pendingCats.map(c=>`<div class="sel-empty-row" onclick="openAddSel('${String(c).replace(/'/g,"\\'")}')"><span>${esc(c)}</span><span class="addlink">\uff0b Choose</span></div>`).join('');
+  if(pendingCats.length)h+='<div class="sec"><h2>Selections not yet made</h2></div>'+pendingCats.map(c=>`<div class="sel-empty-row" onclick="openAddSel('${String(c).replace(/'/g,"\\'")}')"><span>${esc(c)}</span><span class="addlink">\uff0b Choose</span></div>`).join('');
   el.innerHTML=h||'<div class="empty">Nothing waiting \u2014 this house\'s caught up.</div>';}
 function filterIssues(f,el){issueFilter=f;document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderIssues();}
 function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;const closing=it.status==='open';
@@ -16989,7 +16979,7 @@ function chipRowHTML(grp,on,openMap,expandFn){
   if(!open)on.forEach(function(a){if(grp.a.indexOf(a)>=0&&list.indexOf(a)<0)list.push(a);});
   let h=list.map(function(a){return '<button type="button" class="chip'+(on.indexOf(a)>=0?' on':'')+'" data-grp="'+grp.k+'" data-area="'+esc(a)+'" onclick="pickChip(this)">'+esc(a)+'</button>';}).join('');
   if(many&&!open)h+='<button type="button" class="chip more" onclick="event.stopPropagation();'+expandFn+'(\''+grp.k+'\')">\u2026</button>';
-  return '<div class="chip-group-lbl">'+esc(grp.g)+'</div><div class="chip-row">'+h+'</div>';
+  return '<div class="chip-group-k">'+esc(grp.g)+'</div><div class="chip-row">'+h+'</div>';
 }
 function expandRecChips(k){_recChipOpen[k]=true;const area=[...document.querySelectorAll('#recAreaChips .chip.on')].map(function(c){return c.dataset.area;}).join(' \u00b7 ');buildRecChips(area);}
 function expandSheetChips(k){_sheetChipOpen[k]=true;const area=[...document.querySelectorAll('#areaChips .chip.on')].map(function(c){return c.dataset.area;}).join(' \u00b7 ');buildChips(area);}
@@ -16997,7 +16987,7 @@ function buildRecChips(area){
   const on=areaTags(area),box=document.getElementById('recAreaChips');
   if(!box)return;
   const stray=on.filter(function(a){return AREAS.indexOf(a)===-1;});
-  box.innerHTML=(stray.length?'<div class="chip-group-lbl">On this entry</div><div class="chip-row">'+
+  box.innerHTML=(stray.length?'<div class="chip-group-k">On this entry</div><div class="chip-row">'+
       stray.map(function(a){return '<button type="button" class="chip on" data-area="'+esc(a)+'" onclick="pickChip(this)">'+esc(a)+'</button>';}).join('')+'</div>':'')+
     AREA_GROUPS.map(function(grp){return chipRowHTML(grp,on,_recChipOpen,'expandRecChips');}).join('');
   syncAreaExclusivity(box);

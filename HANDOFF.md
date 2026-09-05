@@ -1,4 +1,7 @@
+**v2.380.0 is live.** Headings use .sec, not eyebrow. Form labels use .meta. Guest packet and calendar rooms untouched.
+
 **v2.379.0 is live.** Guest packet uses the system. Rows, one primary, same tokens. Under 50 KB. App Check order unchanged. Calendar More stays secondary.
+
 
 **v2.378.0 is live.** Crew sheet Save is the primary. Cancel is gone. Idle is rows, header Done only.
 

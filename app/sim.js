@@ -2254,6 +2254,8 @@ t('rewritten screens dropped eyebrow and lbl', (function(){
     return s.indexOf('class="eyebrow"')<0&&s.indexOf("class='eyebrow'")<0&&s.indexOf('class="lbl"')<0&&s.indexOf("class='lbl'")<0;
   });
 })());
+t('index has no eyebrow class', !/class="[^"]*\beyebrow\b/.test(SRC));
+t('index has no lbl class', !/class="[^"]*\blbl\b/.test(SRC));
 
 S('calendar recut');
 t('calendar More is a choice sheet', $("String(calMore)").indexOf('openChoice')>=0&&$("String(calMore)").indexOf('Add to calendar app')>=0&&$("String(calMore)").indexOf('Homeowner calendars')>=0);
