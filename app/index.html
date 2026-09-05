@@ -1983,6 +1983,9 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 #calBody .money-actions #calDoneBtn{min-width:88px;}
 .leave-bar{display:flex;align-items:center;justify-content:center;margin-top:var(--s-2);padding-top:var(--s-2);border-top:1px solid var(--line);}
 .leave-bar > .btn:only-child,#deskBack,#budgetDoneBtn{min-width:220px;width:min(72vw,280px);justify-content:center;}
+.action-bar{display:flex;align-items:stretch;gap:var(--s-3);margin-top:var(--s-2);padding-top:var(--s-2);border-top:1px solid var(--line);}
+.action-bar .btn-primary{flex:1;justify-content:center;}
+.action-bar .btn-secondary{min-width:88px;justify-content:center;}
 #deskBar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:var(--z-nav);align-items:center;justify-content:center;padding:var(--s-2) var(--s-5) calc(var(--s-2) + env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid var(--line);}
 #infoBody .pkt-strip{background:transparent;padding:0;margin:0 0 var(--s-4);border-radius:0;}
 #infoBody .pkt-strip.warn,#infoBody .pkt-strip.ok{background:transparent;}
@@ -2704,11 +2707,10 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
           <button type="button" class="gp-cal-ok" onclick="bkCalDone()" aria-label="Use these dates">✓</button></div></div>
         <input id="bkNote" placeholder="Note for the crew — gate code, scope…" class="fs-sm">
         <div class="bk-alerts" id="bkAlerts"><div id="bkOverlap"></div><div id="bkPacket"></div><div id="bkGuest"></div><div id="bkSendLink"></div></div>
-        <button class="btn btn-primary btn-block mt-3" id="bkSave" onclick="bkSave()">Save</button>
         <button class="btn btn-danger btn-block mt-2 hide" id="bkDelete" onclick="bkDelete()">Remove this booking</button>
       </div>
 </div>
-<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="dismissParent(this)"><span>Done</span></button></div></div>
+<div class="action-bar sheet-foot"><button class="btn btn-secondary" onclick="dismissParent(this)"><span>Done</span></button><button class="btn btn-primary" id="bkSave" onclick="bkSave()">Save</button></div></div>
   </div>
 
   <div class="subview" id="subview">
@@ -2763,7 +2765,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       </div>
       <textarea id="cNote" rows="3" placeholder="What's the concern? e.g. paint scuff on the stair wall" class="w-full bg-surface r-sm py-3 px-3 fs-sm c-ink u-m1"></textarea>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeConcern()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="submitConcern()">Send to builder</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeConcern()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="submitConcern()">Send to builder</button></div></div>
   </div>
 
 
@@ -2807,7 +2809,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="fld-hint mt-0 ml-1 mr-1 mb-1">Type <b>DELETE</b> to confirm</div>
       <input id="cdInput" placeholder="DELETE" autocapitalize="characters" autocomplete="off" oninput="cdSync()">
 </div>
-<div class="row2 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="cdCancel()">Cancel</button><button class="b1 b-go op-5 btn btn-primary" id="cdGo" onclick="cdConfirm()" disabled>Delete</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="cdCancel()">Cancel</button><button class="b1 b-go op-5 btn btn-primary" id="cdGo" onclick="cdConfirm()" disabled>Delete</button></div></div>
   </div>
 
   <div class="pmodal-scrim u-m2 sheet-scrim sheet-2" id="confirmScrim">
@@ -2815,7 +2817,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sheet-body">
 <p id="ocBody" class="fs-sm lh-15 c-ink-2 mt-0 ml-1 mr-1 mb-4"></p>
 </div>
-<div class="row2 sheet-foot"><button class="b1 b-cancel btn btn-secondary" id="ocCancel" onclick="ocCancel()">Cancel</button><button class="b1 b-go btn btn-primary" id="ocGo" onclick="ocConfirm()">Confirm</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" id="ocCancel" onclick="ocCancel()">Cancel</button><button class="b1 b-go btn btn-primary" id="ocGo" onclick="ocConfirm()">Confirm</button></div></div>
   </div>
 
   <div class="pmodal-scrim u-m3 sheet-scrim sheet-2" id="nyAskScrim">
@@ -2825,7 +2827,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <p id="nyAskQ" class="fs-md lh-145 c-ink mt-0 ml-1 mr-1 mb-3 fw-6"></p>
       <textarea id="nyAskText" class="td-q w-full" rows="3" placeholder="Your answer"></textarea>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="nyAskClose()">Close</button><button class="b1 b-go btn btn-primary" onclick="nyAskSend()">Send</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="nyAskClose()">Close</button><button class="b1 b-go btn btn-primary" onclick="nyAskSend()">Send</button></div></div>
   </div>
 
   <div class="pmodal-scrim u-m4 sheet-scrim sheet-2" id="pkLogScrim">
@@ -2898,7 +2900,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       
       <p id="evErr" class="fs-sm c-clay mt-2 ml-1 mr-1 mb-0" style="display:none"></p>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel btn btn-secondary" id="evLater" onclick="evClose()">Later</button><button class="b1 b-go btn btn-primary" id="evResend" onclick="evResend()">Resend link</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" id="evLater" onclick="evClose()">Later</button><button class="b1 b-go btn btn-primary" id="evResend" onclick="evResend()">Resend link</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="newSiteScrim">
@@ -2918,7 +2920,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
         <div class="toggle" id="nsTeardown" onclick="this.classList.toggle('on')"></div>
       </div>
 </div>
-<div class="row2 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeNewSite()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveNewSite()">Create</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeNewSite()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveNewSite()">Create</button></div></div>
   </div>
 
   <!-- add selection modal -->
@@ -2941,7 +2943,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="fld-label">Note (optional)</div>
       <input id="selNote" placeholder="e.g. confirm finish before ordering">
 </div>
-<div class="row2 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAddSel()">Cancel</button><button class="b1 b-go btn btn-primary" id="selSaveBtn" onclick="saveSel()">Add</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAddSel()">Cancel</button><button class="b1 b-go btn btn-primary" id="selSaveBtn" onclick="saveSel()">Add</button></div></div>
   </div>
 
   <!-- payments modal -->
@@ -2958,7 +2960,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="fld-label">Date received</div>
       <input id="payDate" type="date" class="fld-date">
 </div>
-<div class="row2 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closePayments()">Done</button><button class="b1 b-go btn btn-primary" onclick="addPayment()">Add payment</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closePayments()">Done</button><button class="b1 b-go btn btn-primary" onclick="addPayment()">Add payment</button></div></div>
   </div>
 
   <!-- special instructions modal -->
@@ -2969,7 +2971,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sub fs-xs c-ink-2 mt-1 ml-0 mr-0 mb-3 ta-c">Build-wide notes, allowances, mechanical/electrical instructions.</div>
       <textarea id="selNotesText" rows="6" placeholder="e.g. Confirm cabinet hardware finish. Tile walk with foreman before ordering. Paint sheen per room." class="w-full bg-surface r-sm py-3 px-3 fs-sm c-ink u-m1"></textarea>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeSelNotes()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveSelNotes()">Save</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeSelNotes()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveSelNotes()">Save</button></div></div>
   </div>
 
   <!-- generic info / demo prompt modal -->
@@ -3000,7 +3002,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       
       <button class="la-link d-block mt-2 mb-0 mx-auto c-ink-3 btn btn-quiet" onclick="finishSetup(true)">Skip setup for now</button>
 </div>
-<div class="row2 mt-3 sheet-foot">
+<div class="action-bar sheet-foot">
         <button class="b1 b-cancel btn btn-secondary" id="setupBack" onclick="setupNav(-1)">Back</button>
         <button class="b1 b-go flex-1 btn btn-primary" id="setupNext" onclick="setupNav(1)">Next</button>
       </div></div>
@@ -3051,7 +3053,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       
       <button class="la-link hide mt-2 mb-0 mx-auto c-clay btn btn-quiet" id="clDelete" onclick="deleteCostLine()">Delete this line and its costs</button>
 </div>
-<div class="row2 mt-3 sheet-foot">
+<div class="action-bar sheet-foot">
         <button class="b1 b-cancel btn btn-secondary" onclick="closeCostLine()">Cancel</button>
         <button class="b1 b-go flex-1 btn btn-primary" onclick="saveCostLine()">Save</button>
       </div></div>
@@ -3090,7 +3092,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       
       <button class="la-link hide mt-2 mb-0 mx-auto c-clay btn btn-quiet" id="caDelete" onclick="deleteCostActual()">Delete this cost</button>
 </div>
-<div class="row2 mt-3 sheet-foot">
+<div class="action-bar sheet-foot">
         <button class="b1 b-cancel btn btn-secondary" onclick="closeCostActual()">Cancel</button>
         <button class="b1 b-go flex-1 btn btn-primary" onclick="saveCostActual()">Save</button>
       </div></div>
@@ -3114,7 +3116,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="ls ta-c mt-1 ml-0 mr-0 mb-2">Start from another house’s lines — amounts stay editable, logged costs never copy.</div>
       <div class="info-body" id="bcBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeBudgetCopy()">Cancel</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeBudgetCopy()"><span>Done</span></button></div></div>
   </div>
 
   <!-- ───── WELCOME FORK (first live sign-in, no sites) ───── -->
@@ -3191,7 +3193,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sheet-body">
 <div class="info-body" id="delAcctBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 flex-1" onclick="closeDelAcct()">Keep my account</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 flex-1" onclick="closeDelAcct()">Keep my account</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="settingsScrim">
@@ -3209,7 +3211,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sheet-body">
 <div class="info-body" id="studioBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot">
+<div class="action-bar sheet-foot">
         <button class="b1 flex-1" onclick="closeTourStudio();startTeamTour()">Play all</button>
         <button class="b1 b-go flex-1 btn btn-primary" onclick="closeTourStudio()">Done</button>
       </div></div>
@@ -3298,7 +3300,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       
       <button class="b1 w-full mt-2 bg-trans bd-none c-clay fw-6 fs-sm cur-p" onclick="deleteRecord()">Delete this entry</button>
 </div>
-<div class="row2 mt-2 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeRecord()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveRecord()">Save</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeRecord()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveRecord()">Save</button></div></div>
   </div>
 
   <div class="pmodal-scrim u-m11 sheet-scrim sheet-2" id="fileToScrim">
@@ -3309,7 +3311,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="fld-label">Trade</div>
       <div class="chips" id="fileToTrades"></div>
 </div>
-<div class="row2 mt-3 sheet-foot">
+<div class="action-bar sheet-foot">
         <button class="b1 b-cancel btn btn-secondary" onclick="closeFileTo()">Skip</button>
         <button class="b1 b-go btn btn-primary" onclick="saveFileTo()">Put on packet</button>
       </div></div>
@@ -3328,7 +3330,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="fld-label">Portal link</div>
       <input id="jPortal" placeholder="Paste the BS&A / city URL">
 </div>
-<div class="row2 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeJuris()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveJurisdiction()">Save</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeJuris()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveJurisdiction()">Save</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="installScrim">
@@ -3347,7 +3349,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sheet-body">
 <div id="inspBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeInspInfo()">Close</button><button class="b1 b-go flex-1 btn btn-primary" onclick="saveInspEdit()">Save status</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeInspInfo()">Close</button><button class="b1 b-go flex-1 btn btn-primary" onclick="saveInspEdit()">Save status</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="docScrim">
@@ -3374,7 +3376,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <input id="docFile" type="file" class="fld-file" accept="application/pdf,image/*,.pdf,.doc,.docx,.xls,.xlsx,.heic">
       <div class="fld-hint">Pick a standard name so the file stays organized — or choose “Other” to name it yourself. Attach a PDF, photo, or scan; it’s stored on this device for now.</div>
 </div>
-<div class="row2 mt-1 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAddDoc()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveDoc()">Add document</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAddDoc()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveDoc()">Add document</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim sheet-2" id="choiceScrim">
@@ -3393,7 +3395,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <p id="promptBody" class="hide fs-sm c-ink-2 lh-145 mt-1 ml-0 mr-0 mb-3"></p>
       <input id="promptInput" placeholder="" onkeydown="if(event.key==='Enter')confirmPrompt()">
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closePrompt()">Cancel</button><button class="b1 b-go btn btn-primary" id="promptOk" onclick="confirmPrompt()">Add</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closePrompt()">Cancel</button><button class="b1 b-go btn btn-primary" id="promptOk" onclick="confirmPrompt()">Add</button></div></div>
   </div>
 
   <div class="ss-scrim sheet-scrim sheet-2" id="ssScrim" onclick="if(event.target===this)closeSearchSelect()">
@@ -3438,7 +3440,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="fld-label">Explanation</div>
       <textarea id="iNote" placeholder="Describe your idea, the look you're after, or the quote you got…"></textarea>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeIdea()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="submitIdea()">Send to builder</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeIdea()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="submitIdea()">Send to builder</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="ledgerScrim">
@@ -3447,7 +3449,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sheet-body">
 <div id="ledgerBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeLedgerDetail()">Close</button><button class="b1 b-go flex-1 btn btn-primary" onclick="closeLedgerDetail();openPayments()">Add / Edit Payments</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeLedgerDetail()">Close</button><button class="b1 b-go flex-1 btn btn-primary" onclick="closeLedgerDetail();openPayments()">Add / Edit Payments</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="stageReviewScrim">
@@ -3458,7 +3460,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div id="srBody"></div>
       <div class="sr-note">SitePlumb won't block you — this is your sign-off that the stage is done. Use the checklist above to confirm inspections, open items and approvals are handled first.</div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeStageReview()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="confirmStageComplete()">Mark complete</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeStageReview()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="confirmStageComplete()">Mark complete</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="specScrim">
@@ -3468,7 +3470,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="sr-sub" id="specSub"></div>
       <div id="specBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeSpec()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveSpec()">Save spec</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeSpec()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveSpec()">Save spec</button></div></div>
   </div>
 
   <main id="main">
@@ -3620,7 +3622,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="l"><div class="t">Share with homeowner</div><div class="s">Off by default. Show on the homeowner’s progress view</div></div>
       <div class="toggle" id="shareToggle" onclick="this.classList.toggle('on')"></div>
     </div>
-    <div class="row2 mt-1">
+    <div class="action-bar sheet-foot">
       <button class="b1 b-cancel btn btn-secondary" id="sheetCancelBtn" onclick="closeSheet()">Cancel</button>
       <button class="b1 b-go btn btn-primary" id="saveBtn" onclick="save()">Add to log</button>
     </div>
@@ -3653,7 +3655,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <textarea id="fbDesc" rows="3" placeholder="What happened, or what would help?"></textarea>
       <input id="fbName" placeholder="Your name (optional)">
 </div>
-<div class="row2 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeFeedback()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="submitFeedback()">Send</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeFeedback()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="submitFeedback()">Send</button></div></div>
   </div>
 
   <!-- add crew -->
@@ -3680,7 +3682,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       
       <button type="button" class="la-link btn btn-quiet" id="subMoreBtn" onclick="subShowMore()">More details</button>
 </div>
-<div class="row2 sheet-foot"><button class="btn btn-secondary" onclick="dismissParent(this)">Done</button><button class="btn btn-primary" id="subSaveBtn" onclick="saveSub()">Save</button></div></div>
+<div class="action-bar sheet-foot"><button class="btn btn-secondary" onclick="dismissParent(this)">Done</button><button class="btn btn-primary" id="subSaveBtn" onclick="saveSub()">Save</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="subDetailScrim">
@@ -3834,15 +3836,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.392.0 - Browse sheets use the leave bar';
+const PLUMB_VERSION='2.393.0 - Action sheets share the bar';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789120000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.392.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789130000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.393.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */

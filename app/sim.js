@@ -2179,6 +2179,7 @@ t('Field Notes pick uses the leave bar', SRC.split('id="logPickScrim"')[1].split
 t('Field Notes has one pull handle', SRC.indexOf('id="sheet"')>=0&&SRC.split('id="sheet"')[1].split('id="lightbox"')[0].indexOf('class="grip"')<0&&SRC.split('id="sheet"')[1].split('id="lightbox"')[0].indexOf('sheet-handle')>=0);
 t('browse sheets have no header Done', SRC.split('<body')[1].split('<script')[0].indexOf('class="btn btn-quiet" onclick="dismissParent(this)">Done')<0);
 t('settings uses the leave bar', SRC.split('id="settingsScrim"')[1].split('id="studioScrim"')[0].indexOf('leave-bar')>=0);
+t('action sheets share the bar', SRC.indexOf('.action-bar{')>=0&&SRC.split('id="bkScrim"')[1].split('id="subview"')[0].indexOf('id="bkSave"')>=0&&SRC.split('id="bkScrim"')[1].split('id="subview"')[0].indexOf('action-bar')>=0);
 
 S('4A list screens');
 asBuilder();

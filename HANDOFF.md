@@ -1,4 +1,5 @@
-**v2.392.0 is live.** Browse sheets use the leave bar. Header Done is gone. Action sheets keep Cancel + the job.
+**v2.393.0 is live.** Action sheets: Done/Cancel on the bar, the job in black beside it. Schedule a crew Save sits on that bar.
+
 
 
 
