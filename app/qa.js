@@ -249,7 +249,27 @@ async function tappable(page,sel){
   t('person sheet has one primary',person.prim.length===1,JSON.stringify(person.prim));
   t('person primary is Open packet',person.prim[0]==='Open packet',JSON.stringify(person.prim));
   t('person Edit is quiet',person.edit.indexOf('btn-primary')<0,person.edit);
-  await page.evaluate(()=>{try{closeSubDetail();openPacket((P().subs.find(s=>s.specialty==='plumb')||P().subs[0]||{}).id);}catch(e){}});
+  await page.evaluate(()=>{try{const id=_detailSubId;closeSubDetail();if(id)openEditSub(id);}catch(e){}});
+  await new Promise(r=>setTimeout(r,200));
+  const edit=await page.evaluate(()=>{
+    const prim=[...document.querySelectorAll('#subScrim .btn-primary')].map(el=>(el.innerText||'').replace(/\s+/g,' ').trim());
+    const cancel=[...document.querySelectorAll('#subScrim button')].some(el=>(el.innerText||'').trim()==='Cancel');
+    return {prim,cancel,shown:document.getElementById('subScrim').classList.contains('show')};
+  });
+  t('edit crew is on screen',edit.shown,JSON.stringify(edit));
+  t('edit crew has one primary',edit.prim.length===1,JSON.stringify(edit.prim));
+  t('edit crew primary is Save',edit.prim[0]==='Save',JSON.stringify(edit.prim));
+  t('edit crew dropped Cancel',!edit.cancel,JSON.stringify(edit));
+  await page.evaluate(()=>{try{closeAddSub();openIdle();}catch(e){}});
+  await new Promise(r=>setTimeout(r,200));
+  const idle=await page.evaluate(()=>{
+    const rows=document.querySelectorAll('#idleBody .row').length;
+    const prim=document.querySelectorAll('#idleScrim .btn-primary').length;
+    return {rows,prim};
+  });
+  t('idle list uses rows',idle.rows>=1,JSON.stringify(idle));
+  t('idle sheet has no foot Done',idle.prim===0,JSON.stringify(idle));
+  await page.evaluate(()=>{try{closeIdle();closeSubDetail();openPacket((P().subs.find(s=>s.specialty==='plumb')||P().subs[0]||{}).id);}catch(e){}});
   await new Promise(r=>setTimeout(r,250));
   const pkt=await page.evaluate(()=>{
     const body=document.getElementById('infoBody');

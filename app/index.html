@@ -2639,7 +2639,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="idle-scroll" id="idleBody"></div>
       <div id="idlePlan"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeIdle()">Done</button></div></div>
+</div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="openItemsScrim">
@@ -3687,7 +3687,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       
       <button type="button" class="la-link btn btn-quiet" id="subMoreBtn" onclick="subShowMore()">More details</button>
 </div>
-<div class="row2 sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAddSub()">Cancel</button><button class="b1 b-go btn btn-primary" id="subSaveBtn" onclick="saveSub()">Save</button></div></div>
+<div class="sheet-foot"><button class="btn btn-primary btn-block" id="subSaveBtn" onclick="saveSub()">Save</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="subDetailScrim">
@@ -3842,15 +3842,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.377.0 - Person sheet uses one primary';
+const PLUMB_VERSION='2.378.0 - Crew Save and idle rows';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1788970000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.377.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1788980000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.378.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -14704,9 +14704,9 @@ function renderIdleSheet(){
   const q=((sb&&sb.value)||'').trim().toLowerCase();
   const idle=idleAll.filter(n=>!q||(n.name+' '+(specLabel(n.trade)||'')).toLowerCase().includes(q));
   let h='<div class="lbl">Open schedules \u2014 '+esc(calMonth.toLocaleDateString(undefined,{month:'long'}))+'</div>';
-  h+=idle.length?idle.map(n=>{
-      const blocked=av.some(a=>a.subName===n.name&&a.end>=mS&&a.start<=mE);
-      return `<div class="day-row avr cur-p" onclick="idleBook('${esc(n.name)}')"><span class="sw" style="background:${tradeColor(n.trade)}"></span><div class="flex-1"><div class="n">${esc(n.name)}</div><div class="d">${esc(specLabel(n.trade)||'')}${blocked?' \u00b7 has blocked time this month':''}</div></div><span class="od flex-none">Schedule \u2192</span></div>`;}).join('')
+  h+=idle.length?idle.map(function(n){
+      const blocked=av.some(function(a){return a.subName===n.name&&a.end>=mS&&a.start<=mE;});
+      return '<div class="row row-tap" onclick="idleBook(\''+esc(n.name)+'\')"><div class="row-main"><div class="row-title">'+esc(n.name)+'</div><div class="row-sub">'+esc(specLabel(n.trade)||'')+(blocked?' \u00b7 blocked this month':'')+'</div></div><span class="row-aside">Schedule</span><span class="row-chev">\u203a</span></div>';}).join('')
     :('<div class="empty py-1 px-0">'+(q?'No idle subs match \u201c'+esc(q)+'\u201d.':'Everyone has work this month.')+'</div>');
   el.innerHTML=h;
   // Plan Ahead lives outside the scroll window so it's always visible

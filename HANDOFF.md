@@ -1,4 +1,7 @@
+**v2.378.0 is live.** Crew sheet Save is the primary. Cancel is gone. Idle is rows, header Done only.
+
 **v2.377.0 is live.** Person sheet uses one primary: Open packet. Edit is quiet. Header Done stays. Foot Done is gone.
+
 
 **v2.376.0 is live.** Calendar banners follow the month you’re on. Schedule someone follows the house on that day.
 

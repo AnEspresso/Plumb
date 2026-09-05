@@ -2188,6 +2188,17 @@ t('person sheet has one primary', $("document.querySelectorAll('#subDetailScrim 
 t('person primary is Open packet', ((el('sdBody')&&el('sdBody').querySelector('.btn-primary')&&el('sdBody').querySelector('.btn-primary').textContent)||'').indexOf('Open packet')>=0);
 t('person Edit is quiet', (el('sdEditBtn')&&el('sdEditBtn').className||'').indexOf('btn-primary')<0);
 $('closeSubDetail()');
+t('crew sheet Save is the primary', SRC.indexOf('id="subSaveBtn"')>=0&&SRC.indexOf('closeAddSub()">Cancel')<0);
+asBuilder();
+$("state.activeId='p8'");
+$('openEditSub((P().subs.find(s=>s.name==="Fine Line Interiors")||P().subs[0]).id)');
+t('edit crew has one primary', $("document.querySelectorAll('#subScrim .btn-primary').length")===1);
+t('edit crew primary is Save', (el('subSaveBtn')&&el('subSaveBtn').textContent||'')==='Save');
+$('closeAddSub()');
+$('openIdle()');
+t('idle list uses rows', $("document.querySelectorAll('#idleBody .row').length")>=1);
+t('idle sheet has no foot Done', $("document.querySelectorAll('#idleScrim .btn-primary').length")===0);
+$('closeIdle()');
 t('Documents Add sits above search', (function(){
   const i=SRC.indexOf('id="filesDocs"');
   if(i<0)return false;
