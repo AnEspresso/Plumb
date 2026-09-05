@@ -1,4 +1,6 @@
-**v2.397.0 is live.** Timeline rail runs center-to-center under the coins. Lines meet the dots. Pixel-tight baselines blessed (home, house, People, Add a crew, Company).
+**v2.398.0 is live.** Builder packet preview paints the same layout as the page from the text.
+
+
 
 
 

@@ -949,7 +949,7 @@ t('snapshot docs are sub-audience names only', Array.isArray(snap.docs)&&snap.do
 $("window.__packetFixture="+JSON.stringify(snap));
 $("renderGuestPacket('fixture-test')");
 t('guest page renders with both decision buttons', el('gpBody').innerHTML.indexOf('These dates work')>=0&&el('gpBody').innerHTML.indexOf('Suggest different dates')>=0);
-t('guest page shows the specs it was sent', el('gpBody').innerHTML.indexOf('install specs')>=0);
+t('guest page shows the specs it was sent', el('gpBody').innerHTML.toLowerCase().indexOf('install specs')>=0);
 t('guest overlay is showing', $("document.getElementById('guestScrim').classList.contains('show')")===true);
 // one-tap confirm flips to the confirmed state with a calendar button
 $("gpConfirm()");
@@ -990,7 +990,7 @@ $("renderGuestPacket('preview')");
 t('approval bar renders on a sendable preview', el('gpBody').innerHTML.indexOf('Text this link')>=0&&el('gpBody').innerHTML.indexOf('exactly what')>=0);
 $("_gpPendingSend=null");$("_gpRender()");
 t('plain preview has no approval bar', el('gpBody').innerHTML.indexOf('Text this link')<0);
-t('colored readiness renders', el('gpBody').innerHTML.indexOf('var(--sage)')>=0||el('gpBody').innerHTML.indexOf('var(--clay)')>=0);
+t('colored readiness renders', el('gpBody').innerHTML.indexOf('row-aside')>=0&&(el('gpBody').innerHTML.indexOf('warn')>=0||el('gpBody').innerHTML.indexOf('ok')>=0));
 t('permit and inspection rows are labeled', el('gpBody').innerHTML.indexOf('Permit')>=0&&el('gpBody').innerHTML.indexOf('Inspection')>=0);
 // calendar: confirm then chooser + google url + preference memory
 $("_gpSnap.resp={status:'confirmed',t:Date.now()};_gpToken='fixture-x';_gpRender()");
@@ -1026,11 +1026,20 @@ t('excavation falls back to the grading or building permit', (function(){
 t('inspection lines carry readable labels and casing', (function(){
   const c=JSON.parse($("JSON.stringify((packetSnapshot(state.projects[0],{trade:'excav',subName:'Ironhill Excavating',start:Date.now(),end:Date.now()+86400000,note:'',id:'x'})).ctx)"));
   return typeof c.insp==='string'&&c.insp.indexOf('Site / pre-construction')===0&&/: [A-Z]/.test(c.insp);})());
-t('preview explains an empty documents section', (function(){
+t('preview does not invent an empty documents section the crew will not see', (function(){
   $("window.__packetFixture=Object.assign(JSON.parse(JSON.stringify(_gpSnap||{}))||{},{docs:[],resp:null,q:[],specs:[],ctx:{},site:'X',builder:'B',sub:'S',tradeLabel:'T',start:Date.now(),end:Date.now(),expires:Date.now()+86400000})");
   $("renderGuestPacket('preview')");
-  const ok=el('gpBody').innerHTML.indexOf('None routed to this trade yet')>=0;
+  const html=el('gpBody').innerHTML;
+  const ok=html.indexOf('None routed to this trade yet')<0&&html.indexOf('hero-n')>=0&&html.indexOf('These dates work')>=0;
   $("closeGuestPreview()");
+  return ok;})());
+t('preview packet body uses the same rows as p.html', (function(){
+  $("window.__packetFixture="+JSON.stringify(snap));
+  $("_gpPendingSend={pid:'p2',bid:'x'}");
+  $("renderGuestPacket('preview')");
+  const html=el('gpBody').innerHTML;
+  const ok=html.indexOf('hero-n')>=0&&html.indexOf('House ready')>=0&&html.indexOf('row-aside')>=0&&html.toLowerCase().indexOf('install specs')>=0;
+  $("_gpPendingSend=null");$("closeGuestPreview()");
   return ok;})());
 setTimeout(function(){},0);
 $("window.__packetFixture="+JSON.stringify(snap));

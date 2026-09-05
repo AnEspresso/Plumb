@@ -467,23 +467,23 @@ async function tappable(page,sel){
   t('guest page renders over everything', await guest.evaluate(()=>document.getElementById('guestScrim').classList.contains('show')));
   t('guest page shows no install chrome and no login', await guest.evaluate(()=>{const vis=id=>{const e=document.getElementById(id);return e&&e.classList.contains('show');};return !vis('installGate')&&!vis('installScrim');}));
   t('guest page shows readiness context and site history', await guest.evaluate(()=>{const h=document.getElementById('gpBody').innerHTML;return h.includes('House marked ready for you')&&h.includes('Before you arrive')&&h.includes('Framing topped out');}));
-  for(const [sel,label] of [["#gpBody .gp-btn.go",'These dates work'],["#gpBody .gp-btn.ghost",'Suggest different dates']]){
+  for(const [sel,label] of [["#gpBody > .btn-primary",'These dates work'],["#gpBody > .btn-secondary",'Suggest different dates']]){
     const r=await tappable(guest,sel);t('guest button tappable: '+label,r.ok,r.why);
   }
   await shot(guest,'11-guest-packet');
   await guest.evaluate(()=>gpConfirm());
   await new Promise(r=>setTimeout(r,200));
   t('one tap confirms and offers the calendar', await guest.evaluate(()=>document.getElementById('gpBody').innerHTML.includes('Confirmed.')&&document.getElementById('gpBody').innerHTML.includes('Add to my calendar')));
-  const cal=await tappable(guest,"#gpBody .gp-btn.ghost");
+  const cal=await tappable(guest,"#gpBody > .btn-primary");
   t('calendar button tappable after confirm', cal.ok, cal.why);
   await guest.evaluate(()=>gpAddToCal());
   await new Promise(r=>setTimeout(r,150));
   t('calendar chooser offers device and Google', await guest.evaluate(()=>{const h=document.getElementById('gpCalPick');return h&&h.classList.contains('show')&&h.innerHTML.includes('Google Calendar');}));
   await shot(guest,'12-guest-confirmed');
   await guest.evaluate(()=>gpToggleAsk());
-  await guest.evaluate(()=>document.querySelector('#gpAsk .gp-btn.go').scrollIntoView({block:'center'}));
+  await guest.evaluate(()=>document.querySelector('#gpAsk .btn').scrollIntoView({block:'center'}));
   await new Promise(r=>setTimeout(r,250));
-  const ask=await tappable(guest,"#gpAsk .gp-btn.go");
+  const ask=await tappable(guest,"#gpAsk .btn");
   t('guest ask-question send button tappable', ask.ok, ask.why);
   await guest.evaluate(()=>{document.getElementById('gpQText').value='Gas or electric water heater?';gpSendQuestion();});
   await new Promise(r=>setTimeout(r,150));
