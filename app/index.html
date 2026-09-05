@@ -158,7 +158,7 @@
   .seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);
     padding:var(--s-1);gap:4px;margin:var(--s-1) 0 var(--s-1);}
   .seg button{flex:1;border:none;background:transparent;font-family:inherit;cursor:pointer;padding:var(--s-2);
-    border-radius:var(--r-sm);font-size:var(--t-sm);font-weight:600;color:var(--ink-2);transition:.2s;}
+    border-radius:var(--r-sm);font-size:var(--t-sm);font-weight:600;color:var(--ink-2);transition:.2s;min-height:var(--tap);}
   .seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);}
 
   .doc{display:flex;align-items:center;gap:14px;padding:var(--s-4) var(--s-1);border-bottom:1px solid var(--line);cursor:pointer;}
@@ -982,7 +982,7 @@
   @media (pointer: coarse){
     .ov-sortpill{min-height:44px;padding:var(--s-2) var(--s-4);}
     .ppl-nav .ppl-dirs .ov-sortpill{min-height:44px;padding:var(--s-2) var(--s-2);}
-    .chip{min-height:44px;padding:var(--s-2) var(--s-4);}
+    .chip{min-height:var(--tap);padding:var(--s-2) var(--s-4);}
     #fieldKindChips .chip{padding:var(--s-2) var(--s-1);}
   }
   #fieldKindChips{flex-wrap:nowrap;gap:5px;}
@@ -1932,10 +1932,10 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 
 /* ── 6. Segmented control and chips ───────────────────────────────── */
 .seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px;}
-.seg button{min-height:40px;padding:0 var(--s-4);border:0;border-radius:999px;background:none;
+.seg button{min-height:var(--tap);padding:0 var(--s-4);border:0;border-radius:999px;background:none;
   font-family:var(--f-sans);font-size:var(--t-sm);font-weight:600;color:var(--ink-2);}
 .seg button.on{background:var(--ink);color:var(--surface);}
-.chip{display:inline-flex;align-items:center;min-height:36px;padding:0 var(--s-3);border-radius:999px;
+.chip{display:inline-flex;align-items:center;min-height:var(--tap);padding:0 var(--s-3);border-radius:999px;
   background:var(--surface);border:1px solid var(--line);font-size:var(--t-sm);font-weight:600;color:var(--ink-2);}
 .chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
 
@@ -2836,7 +2836,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   </div>
 
   <div class="pmodal-scrim u-m5 sheet-scrim sheet-2" id="pwResetScrim">
-    <div class="pmodal mw-360 sheet"><div class="sheet-head"><h4 id="prTitle">Choose a new password</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal mw-360 sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div><div class="sheet-head"><h4 id="prTitle">Choose a new password</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
 <div class="sheet-body">
 <p id="prBody" class="fs-sm lh-15 c-ink-2 mt-0 ml-1 mr-1 mb-3"></p>
       <div id="prSetRow">
@@ -3116,7 +3116,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <!-- ───── WELCOME FORK (first live sign-in, no sites) ───── -->
   <div class="pmodal-scrim sheet-scrim" id="welcomeScrim">
-    <div class="pmodal ta-c sheet"><div class="sheet-head"><h4>Welcome to SitePlumb</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+    <div class="pmodal ta-c sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div><div class="sheet-head"><h4>Welcome to SitePlumb</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
 <div class="sheet-body">
 <div class="ls mt-1 ml-0 mr-0 mb-4">Your workspace is ready. Want the two-minute walkthrough first?</div>
       <button class="b1 b-go w-full mb-2 btn btn-primary" onclick="startGrandTour()">Show me around</button>
@@ -3832,15 +3832,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.380.0 - Headings use sec not eyebrow';
+const PLUMB_VERSION='2.381.0 - Sheet handles and 48px taps';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789000000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.380.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789010000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.381.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */

@@ -2256,6 +2256,10 @@ t('rewritten screens dropped eyebrow and lbl', (function(){
 })());
 t('index has no eyebrow class', !/class="[^"]*\beyebrow\b/.test(SRC));
 t('index has no lbl class', !/class="[^"]*\blbl\b/.test(SRC));
+t('password reset sheet has a handle', SRC.split('id="pwResetScrim"')[1].split('id="')[0].indexOf('sheet-handle')>=0);
+t('welcome sheet has a handle', SRC.split('id="welcomeScrim"')[1].split('id="')[0].indexOf('sheet-handle')>=0);
+t('chips use tap height', /\.chip\{[^}]*min-height:var\(--tap\)/.test(SRC.replace(/\s+/g,' ')));
+t('segs use tap height', /\.seg button\{[^}]*min-height:var\(--tap\)/.test(SRC.replace(/\s+/g,' ')));
 
 S('calendar recut');
 t('calendar More is a choice sheet', $("String(calMore)").indexOf('openChoice')>=0&&$("String(calMore)").indexOf('Add to calendar app')>=0&&$("String(calMore)").indexOf('Homeowner calendars')>=0);

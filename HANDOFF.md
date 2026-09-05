@@ -1,4 +1,7 @@
+**v2.381.0 is live.** Password reset and welcome have the same sheet handle. Chips and segs are 48px.
+
 **v2.380.0 is live.** Headings use .sec, not eyebrow. Form labels use .meta. Guest packet and calendar rooms untouched.
+
 
 **v2.379.0 is live.** Guest packet uses the system. Rows, one primary, same tokens. Under 50 KB. App Check order unchanged. Calendar More stays secondary.
 
