@@ -1,4 +1,9 @@
+**v2.385.0 is live.** Money Done is the white button at the bottom. Header Done is gone. Calendar House is already at the bottom from 2.384 (not yet live).
+
+
+
 **v2.383.0 is live.** Calendar House is top left. Money lost the extra dark Done. All houses timestamps stay one line: Aug 31 · 1:07p.
+
 
 **v2.382.0 is live.** Field Notes chips center their words. Site and sub say house and crew when they mean the build or the worker. Trade, build, street, on site, Home Screen, and Site super stay.
 

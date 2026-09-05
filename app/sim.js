@@ -2171,8 +2171,8 @@ t('Field Notes mark is 82 by 56', (function(){
 t('Coming up rows still open a booking', $("String(renderToday)").indexOf('openBk')>=0&&$("String(renderToday)").indexOf('ov-coming')>=0);
 t('Your houses keeps the sort pills for the tour', $("!!document.getElementById('ovSortRow')")===true&&$("String(renderOvSortRow)").indexOf('data-sort')>=0);
 t('Find a street lives with Your houses', SRC.indexOf('id="ovSearch"')>SRC.indexOf('id="ovBuildsHd"')&&$("document.getElementById('ovSearch').placeholder")==='Find a street');
-t('calendar House back is top left', SRC.indexOf('id="calDoneBtn"')>=0&&SRC.split('id="calview"')[1].split('id="calBody"')[0].indexOf('class="sv-back"')>=0);
-t('money sheet has one Done in the head', SRC.indexOf('id="budgetDoneBtn"')<0&&SRC.split('id="budgetScrim"')[1].split('id="costLineScrim"')[0].indexOf('sheet-foot')<0);
+t('calendar House back is bottom row', SRC.indexOf('const calBack=')>=0&&SRC.indexOf('id="calDoneBtn" onclick="closeCal()"')>=0&&SRC.split('id="calview"')[1].split('id="calBody"')[0].indexOf('id="calDoneBtn"')<0);
+t('money Done is the bottom quiet button', SRC.split('id="budgetScrim"')[1].split('id="costLineScrim"')[0].indexOf('id="budgetDoneBtn"')>=0&&SRC.split('id="budgetScrim"')[1].split('id="costLineScrim"')[0].indexOf('btn-quiet')<0);
 
 S('4A list screens');
 asBuilder();

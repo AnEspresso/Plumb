@@ -1978,6 +1978,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 .money-actions{display:flex;gap:var(--s-3);margin:var(--s-4) 0;align-items:stretch;}
 .money-actions .btn-primary{flex:1;}
 #calBody .money-actions{margin-top:var(--s-4);}
+#calBody .money-actions #calDoneBtn{min-width:88px;}
 #infoBody .pkt-strip{background:transparent;padding:0;margin:0 0 var(--s-4);border-radius:0;}
 #infoBody .pkt-strip.warn,#infoBody .pkt-strip.ok{background:transparent;}
 #infoBody .pkt-strip .st{font-size:var(--t-xl);}
@@ -2586,7 +2587,6 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
   <div class="subview" id="calview">
     <div class="sv-head">
       <div>
-        <button class="sv-back" id="calDoneBtn" onclick="closeCal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><span>Done</span></button>
         <div class="wm"><span class="dot"></span><span id="calHdrT">Trades Calendar</span></div>
         <div class="who" id="calWho">All houses</div>
       </div>
@@ -3013,11 +3013,11 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
   <div class="pmodal-scrim sheet-scrim" id="budgetScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Money</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Money</h4></div>
 <div class="sheet-body">
 <div class="info-body" id="budgetBody"></div>
 </div>
-</div>
+<div class="sheet-foot"><button class="btn btn-secondary btn-block" id="budgetDoneBtn" onclick="closeBudget()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="costLineScrim">
@@ -3833,15 +3833,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.383.0 - House back left, dates one line';
+const PLUMB_VERSION='2.385.0 - Money Done is bottom';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789030000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.383.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789050000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.385.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6951,7 +6951,7 @@ teamLegacy:[
 {sel:'#budgetScrim .bgt-tot',title:'Your budget \u2014 private',body:'Money your team sees and nobody else. This build sits 800 dollars from budget with one line over \u2014 and every cost can flow straight into QuickBooks.',
   acts:[{do:()=>tourGoto('build','subs')},{tap:'#budgetCard .overall',do:()=>{try{buildSeg('schedule',document.querySelector('[data-b=schedule]'));}catch(e){}try{openBudget();}catch(e){}}}]},
  {sel:'#billingCard',bubSide:'tb',title:'Homeowner invoices',body:'The other side of the money \u2014 upgrades, credits, and invoices the homeowner approves with one tap. The ledger below always knows where every dollar stands.',
-  acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetScrim .sheet-head button',do:()=>{try{closeBudget();}catch(e){}}}],
+  acts:[{do:()=>{tourGoto('build','schedule');try{openBudget();}catch(e){}}},{tap:'#budgetDoneBtn',do:()=>{try{closeBudget();}catch(e){}}}],
   task:{payoff:'What the homeowner owes, what the homeowner has paid, what is waiting on the homeowner. Always current. Never another spreadsheet.',
     steps:[
       {t:()=>document.querySelector('#billingCard [onclick]')||document.getElementById('billingCard'),
@@ -10053,7 +10053,7 @@ function renderBudget(){
   </div>
   ${moneyActionsHTML()}
   <div class="seg" id="costGroupSeg"><button class="${_costGroup==='stage'?'on':''}" onclick="setCostGroup('stage')">By stage</button><button class="${_costGroup==='trade'?'on':''}" onclick="setCostGroup('trade')">By trade</button></div>`;
-  if(isWideBudget()){document.getElementById('budgetBody').innerHTML=h+budgetTableHTML(p)+moneyBillHTML(p);return;}
+  if(isWideBudget()){document.getElementById('budgetBody').innerHTML=h+budgetTableHTML(p)+moneyBillHTML(p);try{labelHouseBack(document.getElementById('budgetDoneBtn'),'Done');}catch(e){}return;}
   if(!lines.length)h+='<div class="empty">No budget lines yet. Add one \u2014 or copy another house from More.</div>';
   const groups=[];
   if(_costGroup==='stage'){STAGES.forEach(s=>groups.push({key:s.id,label:s.name}));}
@@ -10074,6 +10074,7 @@ function renderBudget(){
     un.forEach(a=>{h+=`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${qbBadge(a)}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`;});
   }
   document.getElementById('budgetBody').innerHTML=h+moneyBillHTML(p);
+  try{labelHouseBack(document.getElementById('budgetDoneBtn'),'Done');}catch(e){}
 }
 function moneyBillHTML(p){
   const invs=(p.invoices||[]).slice().reverse();
@@ -14912,13 +14913,17 @@ function renderCal(){
     +'</div>';
   const emptyMonth=(calIsClient()&&!monthBs.length)?'<div class="empty mt-3 ml-1 mr-1 mb-0">No crews on the calendar this month.</div>':'';
   const suggHTML='';
-  const addBtn=calIsClient()?'':(calIsSub()
-    ?'<div class="money-actions"><button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Block time off</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>'
-    :'<div class="money-actions"><button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Schedule a crew</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>');
+  const calBack='<button class="btn btn-secondary" id="calDoneBtn" onclick="closeCal()"><span>Done</span></button>';
+  const addBtn=calIsClient()
+    ?'<div class="money-actions">'+calBack+'</div>'
+    :(calIsSub()
+      ?'<div class="money-actions">'+calBack+'<button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Block time off</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>'
+      :'<div class="money-actions">'+calBack+'<button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Schedule a crew</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>');
   el.innerHTML='<div class="cal-wrap"><div class="cal-main">'+chips+moveBanner+banner+wxBanner
     +`<div class="cal-nav"><div class="m">${calMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</div><div class="btns"><button onclick="calNav(-1)">\u2039</button><button class="today" onclick="calToday()">Today</button><button onclick="calNav(1)">\u203a</button></div></div>`
     +'<div class="cal-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>'
-    +'<div class="cal-grid">'+grid+'</div>'+emptyMonth+'</div><div class="cal-side">'+legend+suggHTML+addBtn+'</div></div>';}
+    +'<div class="cal-grid">'+grid+'</div>'+emptyMonth+'</div><div class="cal-side">'+legend+suggHTML+addBtn+'</div></div>';
+  try{labelHouseBack(document.getElementById('calDoneBtn'),'Done');}catch(e){}}
 function openDay(ts){calDay=ts;renderDay();document.getElementById('dayScrim').classList.add('show');}
 function closeDay(){document.getElementById('dayScrim').classList.remove('show');}
 function renderDay(){
