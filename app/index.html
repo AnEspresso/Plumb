@@ -642,8 +642,8 @@
   body.on-house-desk nav{display:none !important;}
   body.on-house-desk #hdrSync{display:none;}
   body.on-house-desk #backBtn{display:none !important;}
-  body.on-house-desk #deskBack{display:inline-flex;}
-  body.on-house-desk main{padding-bottom:calc(var(--s-1)*16);}
+  body.on-house-desk #deskBar{display:flex;}
+  body.on-house-desk main{padding-bottom:calc(56px + env(safe-area-inset-bottom) + var(--s-3));}
   body.on-house-desk #budgetCard,body.on-house-desk #billingCard{display:none;}
   body.on-house-desk #filesPhotos > .add-sub-btn{display:none;}
   body[data-desk="progress"] #view-build .seg-top,
@@ -1233,7 +1233,7 @@
     body:has(.overview.show) nav{display:none;}
     body.on-house-desk nav{display:none !important;}
     body.on-house-desk header{margin-left:0;}
-    body.on-house-desk main{padding-left:0;padding-bottom:calc(var(--s-1)*11);}
+    body.on-house-desk main{padding-left:0;padding-bottom:calc(56px + env(safe-area-inset-bottom) + var(--s-3));}
     body.on-house-desk .overview{left:0;}
     body:has(.overview.show) .overview{left:0;}
     /* ── sync status lives in the rail foot; the header pill is gone on desktop ── */
@@ -1980,10 +1980,10 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 .money-actions{display:flex;gap:var(--s-3);margin:var(--s-4) 0;align-items:stretch;}
 .money-actions .btn-primary{flex:1;}
 #calBody .money-actions{margin-top:var(--s-4);}
-#calBody .money-actions #calDoneBtn,#budgetScrim #budgetDoneBtn,#deskBack{min-width:88px;}
-#budgetScrim .sheet-foot .money-actions{margin:0;}
-#deskBack{display:none;position:fixed;left:var(--s-5);right:auto;top:auto;bottom:max(var(--s-5),env(safe-area-inset-bottom));z-index:var(--z-nav);min-width:88px;}
-body.on-house-desk #deskBack{display:flex;}
+#calBody .money-actions #calDoneBtn{min-width:88px;}
+.leave-bar{display:flex;align-items:center;justify-content:center;margin-top:var(--s-2);padding-top:var(--s-2);border-top:1px solid var(--line);}
+.leave-bar > .btn:only-child,#deskBack,#budgetDoneBtn{min-width:220px;width:min(72vw,280px);justify-content:center;}
+#deskBar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:var(--z-nav);align-items:center;justify-content:center;padding:var(--s-2) var(--s-5) calc(var(--s-2) + env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid var(--line);}
 #infoBody .pkt-strip{background:transparent;padding:0;margin:0 0 var(--s-4);border-radius:0;}
 #infoBody .pkt-strip.warn,#infoBody .pkt-strip.ok{background:transparent;}
 #infoBody .pkt-strip .st{font-size:var(--t-xl);}
@@ -3022,7 +3022,7 @@ body.on-house-desk #deskBack{display:flex;}
 <div class="sheet-body">
 <div class="info-body" id="budgetBody"></div>
 </div>
-<div class="sheet-foot"><div class="money-actions"><button class="btn btn-secondary" id="budgetDoneBtn" onclick="closeBudget()"><span>Done</span></button></div></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" id="budgetDoneBtn" onclick="closeBudget()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="costLineScrim">
@@ -3248,23 +3248,23 @@ body.on-house-desk #deskBack{display:flex;}
 
   <div class="pmodal-scrim u-m8 sheet-scrim" id="houseScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4 id="houseTitle" class="hs-title-btn" onclick="houseSwitchStreet()">This job</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4 id="houseTitle" class="hs-title-btn" onclick="houseSwitchStreet()">This job</h4></div>
 <div class="sheet-body">
 <div id="houseSub" class="hs-sub"></div>
       <div class="info-body" id="houseBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-go flex-1 btn btn-primary" onclick="closeHouse()">Done</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" id="houseDoneBtn" onclick="closeHouse()"><span>Done</span></button></div></div>
   </div>
 
   <div class="pmodal-scrim u-m9 sheet-scrim" id="logPickScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Field Notes</h4><button type="button" class="btn btn-quiet" onclick="dismissParent(this)">Done</button></div>
+      <div class="sheet-head"><h4>Field Notes</h4></div>
 <div class="sheet-body">
 <div class="fn-tag">Log photos and notes from the field.</div>
       <div class="fn-ask">Which house are you at?</div>
       <div class="pick-list" id="logPickBody"></div>
 </div>
-<div class="row2 mt-3 sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeLogPick()">Cancel</button></div></div>
+<div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeLogPick()">Done</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="infoScrim">
@@ -3591,8 +3591,8 @@ body.on-house-desk #deskBack{display:flex;}
 
   <div class="scrim sheet-scrim" id="scrim" onclick="closeSheet()"></div>
   <div class="sheet" id="sheet">
-    <div class="grip-hit sheet-handle" onclick="closeSheet()"><div class="grip"></div></div>
-    <div class="sheet-head"><h3 id="sheetTitle">New entry</h3><button type="button" class="btn btn-quiet" onclick="closeSheet()">Done</button></div>
+    <div class="grip-hit sheet-handle" onclick="closeSheet()"></div>
+    <div class="sheet-head"><h3 id="sheetTitle">New entry</h3></div>
     <div class="sub" id="sheetSub">Photo first — everything else is optional.</div>
     <div class="photo-drop" id="drop" onclick="dropPickPhoto()">
       <div class="ph" id="dropPh">
@@ -3838,15 +3838,15 @@ body.on-house-desk #deskBack{display:flex;}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.387.0 - Progress House is really bottom';
+const PLUMB_VERSION='2.391.0 - Field Notes one handle';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789070000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.387.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789110000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.391.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -17927,6 +17927,6 @@ if('serviceWorker' in navigator){
   sheet.addEventListener('touchend',end);sheet.addEventListener('touchcancel',end);
 })();
 </script>
-<button class="btn btn-secondary" id="deskBack" onclick="backToHouse()">House</button>
+<div id="deskBar"><button class="btn btn-secondary" id="deskBack" onclick="backToHouse()">House</button></div>
 </body>
 </html>

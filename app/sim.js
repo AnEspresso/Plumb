@@ -2172,8 +2172,11 @@ t('Coming up rows still open a booking', $("String(renderToday)").indexOf('openB
 t('Your houses keeps the sort pills for the tour', $("!!document.getElementById('ovSortRow')")===true&&$("String(renderOvSortRow)").indexOf('data-sort')>=0);
 t('Find a street lives with Your houses', SRC.indexOf('id="ovSearch"')>SRC.indexOf('id="ovBuildsHd"')&&$("document.getElementById('ovSearch').placeholder")==='Find a street');
 t('calendar House back is bottom row', SRC.indexOf('const calBack=')>=0&&SRC.indexOf('id="calDoneBtn" onclick="closeCal()"')>=0&&SRC.split('id="calview"')[1].split('id="calBody"')[0].indexOf('id="calDoneBtn"')<0);
-t('money Done is a bottom pill', SRC.split('id="budgetScrim"')[1].split('id="costLineScrim"')[0].indexOf('id="budgetDoneBtn"')>=0&&SRC.split('id="budgetScrim"')[1].split('id="costLineScrim"')[0].indexOf('btn-block')<0);
-t('progress House is the bottom desk pill', SRC.indexOf('id="deskBack"')>=0&&SRC.indexOf('body.on-house-desk #backBtn')>=0&&SRC.indexOf('body.on-house-desk #deskBack')>=0&&SRC.split('id="deskBack"')[0].slice(-80).indexOf('<header>')<0);
+t('progress House sits on a paper bar', SRC.indexOf('id="deskBar"')>=0&&SRC.indexOf('id="deskBack"')>=0&&SRC.indexOf('body.on-house-desk #deskBar')>=0);
+t('money Done is a bottom pill', SRC.split('id="budgetScrim"')[1].split('id="costLineScrim"')[0].indexOf('id="budgetDoneBtn"')>=0&&SRC.split('id="budgetScrim"')[1].split('id="costLineScrim"')[0].indexOf('leave-bar')>=0);
+t('leave bar is the shared bottom exit', SRC.indexOf('.leave-bar{')>=0&&SRC.split('id="houseScrim"')[1].split('id="logPickScrim"')[0].indexOf('id="houseDoneBtn"')>=0&&SRC.split('id="houseScrim"')[1].split('id="logPickScrim"')[0].indexOf('btn-quiet')<0);
+t('Field Notes pick uses the leave bar', SRC.split('id="logPickScrim"')[1].split('id="infoScrim"')[0].indexOf('leave-bar')>=0&&SRC.split('id="logPickScrim"')[1].split('id="infoScrim"')[0].indexOf('btn-quiet')<0);
+t('Field Notes has one pull handle', SRC.indexOf('id="sheet"')>=0&&SRC.split('id="sheet"')[1].split('id="lightbox"')[0].indexOf('class="grip"')<0&&SRC.split('id="sheet"')[1].split('id="lightbox"')[0].indexOf('sheet-handle')>=0);
 
 S('4A list screens');
 asBuilder();
