@@ -2858,7 +2858,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <p id="nyAskQ" class="fs-md lh-145 c-ink mt-0 ml-1 mr-1 mb-3 fw-6"></p>
       <textarea id="nyAskText" class="td-q w-full" rows="3" placeholder="Your answer"></textarea>
 </div>
-<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="nyAskClose()">Close</button><button class="b1 b-go btn btn-primary" onclick="nyAskSend()">Send</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="nyAskClose()">Close</button><button class="b1 b-go btn btn-primary" id="nyAskGo" onclick="nyAskSend()">Send</button></div></div>
   </div>
 
   <div class="pmodal-scrim u-m4 sheet-scrim sheet-2" id="pkLogScrim">
@@ -3867,15 +3867,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.402.0 - Inspection dates and answer bar';
+const PLUMB_VERSION='2.403.0 - Question thread stays put';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789220000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.402.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789230000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.403.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -15706,6 +15706,17 @@ function packetHTML(p,tradeId){
     });
   }
 
+  const qBks=(p.bookings||[]).filter(function(b){return b.trade===tradeId&&(b.pkQs||[]).length;});
+  if(isBuilder&&qBks.length){
+    h+='<div class="sec"><h2>Questions</h2></div>';
+    qBks.forEach(function(b){
+      (b.pkQs||[]).forEach(function(x,i){
+        const sub=(b.subName?b.subName+' \u00b7 ':'')+(x.a?('You: '+x.a):'Needs an answer');
+        h+=row(x.text||'Question',sub,x.a?'Answered':'Open','nyOpenAsk(\''+String(p.id)+'\',\''+String(b.id)+'\','+i+')','',x.a?'ok':'warn');
+      });
+    });
+  }
+
   const so=packetSignoff(p,tradeId);
   const bSigned=!!(so.builder&&so.builder.at), hSigned=!!(so.homeowner&&so.homeowner.at);
   if(!isClient){
@@ -16708,7 +16719,9 @@ function inbDraw(){
   el.innerHTML=rows.map(function(r){
     if(_inbMode==='pk'){
       const when=r.t?pkWhen(r.t):'';
-      return '<div class="pkt-sel mt-2"><div class="ps-h"><b>'+esc(pkKind(r))+'</b><span class="ps-c">'+esc(when)+'</span></div>'
+      const can=r.kind==='answer'&&r.pid&&r.bid;
+      const go=can?(' onclick="closePkLog();nyOpenAsk(\''+String(r.pid)+'\',\''+String(r.bid)+'\','+Number(r.qi||0)+')"'):'';
+      return '<div class="pkt-sel mt-2"'+go+'><div class="ps-h"><b>'+esc(pkKind(r))+'</b><span class="ps-c">'+esc(when)+'</span></div>'
         +'<div class="td-meta mt-1">'+esc(r.who||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div>'
         +(r.detail?'<div class="td-quote mt-1">'+esc(r.detail)+'</div>':'')
         +'</div>';
@@ -16779,13 +16792,14 @@ function nyOpenAsk(pid,bid,qi){
   const q=qs[i]||{};
   _nyAsk={pid:String(p.id),bid:String(b.id),qi:i<0?0:i};_nyHo=null;
   document.getElementById('nyAskTitle').textContent='Question';
-  document.getElementById('nyAskText').placeholder='Your answer';
+  document.getElementById('nyAskText').placeholder=q.a?'Add more or change this':'Your answer';
   document.getElementById('nyAskWho').textContent=(b.subName||'Crew')+' \u00b7 '+(p.street||p.name||'');
   document.getElementById('nyAskQ').textContent=q.text?('\u201c'+q.text+'\u201d'):'This crew asked a question.';
-  document.getElementById('nyAskText').value='';
+  document.getElementById('nyAskText').value=q.a||'';
+  const go=document.getElementById('nyAskGo');if(go)go.textContent=q.a?'Update':'Send';
   document.getElementById('nyAskScrim').classList.add('show');
   nyAskKb();
-  setTimeout(function(){try{document.getElementById('nyAskText').focus();nyAskKb();}catch(e){}},80);
+  if(!q.a)setTimeout(function(){try{document.getElementById('nyAskText').focus();nyAskKb();}catch(e){}},80);
 }
 function nyAskKb(){
   const el=document.getElementById('nyAskScrim');if(!el)return;
@@ -16813,7 +16827,7 @@ function nyAskSend(){
   if(!_nyAsk)return;
   const v=(document.getElementById('nyAskText').value||'').trim().slice(0,300);
   if(!v){toast('Type the answer');return;}
-  const hold=_nyAsk;nyAskClose();
+  const hold=_nyAsk;
   const t=document.getElementById('nyQText');
   if(t)t.value=v;
   else {const n=document.createElement('textarea');n.id='nyQText';n.value=v;n.style.display='none';document.body.appendChild(n);}
@@ -16842,11 +16856,13 @@ function nySendAnswer(pid,bid,qi){
     q[qi].a=v;q[qi].at=Date.now();
     _pkStamp(p,b,{resp:b.pkResp||null,q:q});
     _nyQKey='';
-    try{pkLogAdd({kind:'answer',who:b.subName||'Crew',pid:p.id,site:p.street||p.name||'',detail:'\u201c'+(q[qi].text||'Question')+'\u201d \u2192 '+v});}catch(e){}
+    try{pkLogAdd({kind:'answer',who:b.subName||'Crew',pid:p.id,bid:b.id,qi:qi,site:p.street||p.name||'',detail:'\u201c'+(q[qi].text||'Question')+'\u201d \u2192 '+v});}catch(e){}
     toast('Answered '+(b.subName||'the crew')+' at '+(p.street||p.name||'the site'));
     try{bkRenderGuestRow(p,b);}catch(e){}
     try{renderToday();}catch(e){}
     try{renderOvCards();}catch(e){}
+    try{if(navPacketStillOpen())refreshPacket();}catch(e){}
+    try{if(_nyAsk&&String(_nyAsk.pid)===String(p.id)&&String(_nyAsk.bid)===String(b.id))nyOpenAsk(p.id,b.id,qi);}catch(e){}
   };
   if(appMode()==='real'&&b.pkToken&&_pkDb()){
     _bkPacketDoc(b,function(g){if(!g){toast('Could not reach the packet');return;}

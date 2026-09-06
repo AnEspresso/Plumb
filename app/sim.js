@@ -1035,6 +1035,9 @@ t('inspection date on the packet is short', (function(){
   return typeof c.insp==='string'&&!/\d{4}-\d{2}-\d{2}/.test(c.insp);
 })());
 t('answer sheet lifts for the keyboard', SRC.indexOf('function nyAskKb')>=0&&SRC.indexOf('visualViewport')>=0);
+t('answer sheet stays after send', $("String(nyAskSend)").indexOf('nyAskClose()')<0&&$("String(nySendAnswer)").indexOf('nyOpenAsk')>=0);
+t('install packet lists questions', $("String(packetHTML)").indexOf('Questions')>=0&&$("String(packetHTML)").indexOf('nyOpenAsk')>=0);
+t('decisions reopen an answer', $("String(inbDraw)").indexOf('nyOpenAsk')>=0&&$("String(nySendAnswer)").indexOf('bid:b.id')>=0);
 t('preview does not invent an empty documents section the crew will not see', (function(){
   $("window.__packetFixture=Object.assign(JSON.parse(JSON.stringify(_gpSnap||{}))||{},{docs:[],resp:null,q:[],specs:[],ctx:{},site:'X',builder:'B',sub:'S',tradeLabel:'T',start:Date.now(),end:Date.now(),expires:Date.now()+86400000})");
   $("renderGuestPacket('preview')");

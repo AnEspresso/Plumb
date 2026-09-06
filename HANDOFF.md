@@ -1,4 +1,6 @@
-**v2.402.0 is live.** Packet inspection dates read Jul 8. Answer sheet lifts above the keyboard.
+**v2.403.0 is live.** Question thread stays after Send. Reopen from Decisions or the install packet.
+
+
 
 
 
