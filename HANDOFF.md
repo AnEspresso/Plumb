@@ -1,4 +1,6 @@
-**v2.408.0 is live.** Punch lines start with a capital. Filter chips wrap instead of clipping.
+**v2.409.0 is live.** Filter pills are 48px. Briefcase says Add a house. Scrim count is pinned at 64.
+
+
 
 
 

@@ -1205,7 +1205,7 @@ t('invoice compose hides Done', SRC.split('function renderInvoices')[1].slice(0,
 t('Field Notes chips start outline', SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf("class=\"chip\"+")>=0||SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf("class=\"chip\"")>=0);
 t('Scan and Website are dashed', SRC.indexOf('.qf-btn')>=0&&SRC.split('.qf-btn{')[1].split('}')[0].indexOf('dashed')>=0);
 t('desk home shows the month', SRC.indexOf('function ovDesk')>=0&&SRC.indexOf('body.classList.toggle(\'ov-desk\'')>=0&&SRC.indexOf('function renderOvWeek')>=0);
-t('thumbs get 44px pills', SRC.indexOf('pointer: coarse')>=0&&SRC.split('@media (pointer: coarse)')[1].slice(0,500).indexOf('44px')>=0);
+t('thumbs get tap-height pills', /\.ov-sortpill\{[^}]*min-height:var\(--tap\)/.test(SRC.replace(/\s+/g,' '))&&!/\.ov-sortpill\{[^}]*min-height:36px/.test(SRC.replace(/\s+/g,' '))&&!/\.ov-sortpill\{[^}]*min-height:44px/.test(SRC.replace(/\s+/g,' ')));
 t('Workbench sits above sheets', SRC.indexOf('.tour-bubble,.devpanel{z-index:var(--z-tour)')>=0&&SRC.split('#devDot{')[1].slice(0,180).indexOf('z-index:var(--z-')>=0&&SRC.split('async function openDev')[1].slice(0,900).indexOf('devRunCensus')>=0);
 t('four office roles exist', SRC.indexOf('const ROLE_MACROS=')>=0&&SRC.indexOf('superintendent:{')>=0&&SRC.indexOf('moneyCo:0')>=0);
 t('PM does not get company money by default', /pm:\{[^}]*moneyCo:0/.test(SRC));
@@ -2304,6 +2304,20 @@ t('password reset sheet has a handle', SRC.split('id="pwResetScrim"')[1].split('
 t('welcome sheet has a handle', SRC.split('id="welcomeScrim"')[1].split('id="')[0].indexOf('sheet-handle')>=0);
 t('chips use tap height', /\.chip\{[^}]*min-height:var\(--tap\)/.test(SRC.replace(/\s+/g,' ')));
 t('segs use tap height', /\.seg button\{[^}]*min-height:var\(--tap\)/.test(SRC.replace(/\s+/g,' ')));
+t('pills use tap height once', (function(){
+  const compact=SRC.replace(/\s+/g,' ');
+  const base=/\.ov-sortpill\{[^}]*min-height:var\(--tap\)/.test(compact);
+  const old=/\.ov-sortpill\{[^}]*min-height:36px/.test(compact)||/\.ov-sortpill\{[^}]*min-height:44px/.test(compact);
+  return base&&!old;
+})());
+t('briefcase says Add a house', $("String(renderCompany)").indexOf('Add a house')>=0&&$("String(renderCompany)").indexOf('Add a job')<0);
+t('start sheet says Add a house', $("String(renderStart)").indexOf("Add a house")>=0&&$("String(renderStart)").indexOf("Add a job")<0);
+t('scrim census is pinned', (function(){
+  const ids=[];
+  SRC.replace(/id="([^"]*Scrim)"/g,function(_,id){if(ids.indexOf(id)<0)ids.push(id);});
+  const leave=['legalDocScrim','guestScrim','siteMenuScrim'];
+  return ids.length===64&&leave.every(function(id){return ids.indexOf(id)>=0;});
+})());
 t('chips center their label', SRC.indexOf('justify-content:center')>=0&&SRC.indexOf('#fieldKindChips .chip')>=0);
 t('pickers say house not site', SRC.indexOf("title:'Which house?'")>=0&&SRC.indexOf("title:'Which site?'")<0);
 
