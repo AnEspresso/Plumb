@@ -1,4 +1,6 @@
-**v2.406.0 is live.** Edit houses says Off the book. Edit sheet talks about Progress, not the Build tab.
+**v2.407.0 is live.** Edit houses says Off book, one line.
+
+
 
 
 

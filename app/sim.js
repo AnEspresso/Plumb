@@ -1044,7 +1044,7 @@ t('briefcase opens Decisions', $("String(renderCompany)").indexOf('openPkLog')>=
 t('field notes sit on the home bar', SRC.indexOf('id="ovCapture"')>=0&&$("String(renderToday)").indexOf('ovCapture')>=0);
 t('gear sits above the capture bar', SRC.indexOf('body:has(.overview.show) #devDot')>=0&&SRC.split('body:has(.overview.show) #devDot')[1].slice(0,80).indexOf('116px')>=0);
 t('edit houses has three equal actions', SRC.indexOf('.es-acts{')>=0&&SRC.split('.es-acts{')[1].slice(0,80).indexOf('1fr 1fr 1fr')>=0);
-t('edit houses says Off the book', $("String(renderEditSites)").indexOf('Off the book')>=0&&$("String(renderEditSites)").indexOf('Done with this house')<0);
+t('edit houses says Off book', $("String(renderEditSites)").indexOf('Off book')>=0&&$("String(renderEditSites)").indexOf('Off the book')<0);
 t('edit sheet talks Progress not Build tab', $("String(renderImport)").indexOf('Progress on this house')>=0&&$("String(renderImport)").indexOf('Build tab')<0);
 t('decisions sheet is titled Decisions', $("String(openInb)").indexOf("'Decisions'")>=0);
 t('preview does not invent an empty documents section the crew will not see', (function(){
