@@ -1045,6 +1045,9 @@ t('preview packet body uses the same rows as p.html', (function(){
   const ok=html.indexOf('hero-n')>=0&&html.indexOf('House ready')>=0&&html.indexOf('row-aside')>=0&&html.toLowerCase().indexOf('install specs')>=0;
   $("_gpPendingSend=null");$("closeGuestPreview()");
   return ok;})());
+t('packet link copy does not wrap', SRC.indexOf('code-box pkt-url')>=0);
+t('review packet closes the schedule sheet', $("String(bkOpenPacket)").indexOf('closeBk()')>=0&&$("String(bkOpenPacket)").indexOf('openPacket')>=0);
+t('gear hides when a sheet is up', SRC.indexOf('body:has([id$="Scrim"].show) #devDot')>=0);
 setTimeout(function(){},0);
 $("window.__packetFixture="+JSON.stringify(snap));
 $("renderGuestPacket('fixture-test')");
@@ -1213,6 +1216,8 @@ t('guest packet page is under 50 KB', fs.statSync(path.join(__dirname,'p.html'))
   t('guest packet has no lbl', !/class="[^"]*\blbl\b/.test(PHTML));
   t('guest packet uses rows', PHTML.indexOf('row-title')>=0&&PHTML.indexOf('class="sec"')>=0);
   t('guest packet uses the system', PHTML.indexOf('--tap')>=0&&PHTML.indexOf('btn-primary')>=0);
+  t('guest packet does not repaint while asking', PHTML.indexOf('function busy()')>=0&&PHTML.indexOf('function apply(g)')>=0&&PHTML.indexOf('if(busy())return')>=0);
+  t('guest packet calendar sits above the phone chrome', PHTML.indexOf('cal-acts')>=0&&PHTML.indexOf('padding-bottom:calc(var(--s-8)')>=0);
   const i=PHTML.indexOf('initializeApp'),a=PHTML.indexOf('appCheck'),f=PHTML.indexOf('firebase.firestore()');
   t('guest packet App Check after initializeApp', i>=0&&a>i&&f>a);
 })();
@@ -2298,6 +2303,7 @@ t('booking packet is a row', $("String(bkRenderPacket)").indexOf('row-tap')>=0&&
 t('booking delete is danger', SRC.indexOf('id="bkDelete"')>=0&&SRC.indexOf('btn btn-danger btn-block mt-2 hide" id="bkDelete"')>=0);
 t('day sheet uses rows', $("String(renderDay)").indexOf('row-title')>=0&&$("String(renderDay)").indexOf('Text this link')>=0);
 $('closeBk()');
+$("_houseResume=null");
 $("calSiteFilter='p8'");
 $("calCrewFilter=''");
 $("calDay=new Date(2026,8,7).getTime()");

@@ -1,4 +1,6 @@
-**v2.399.0 is live.** Packet preview: one black button — Text this link on the action bar. Crew taps stay visible, not primary.
+**v2.400.0 is live.** Review packet opens the install packet. Preview bar clears the heading. Gear hides on sheets. Packet URL does not wrap. Ask and Preferences stay open on the texted page.
+
+
 
 
 

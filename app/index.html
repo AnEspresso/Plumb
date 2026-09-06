@@ -359,6 +359,7 @@
     border:1px solid rgba(233,227,215,.25);background:rgba(21,19,15,.82);color:var(--mist);font-size:var(--t-sm);line-height:1;
     display:none;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.22);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
   #devDot.show{display:flex;}
+  body:has([id$="Scrim"].show) #devDot{display:none!important;}
   .dev-head{padding:max(var(--s-4),env(safe-area-inset-top)) var(--s-6) var(--s-4);display:flex;align-items:center;justify-content:space-between;
     border-bottom:1px solid rgba(255,255,255,.08);}
   .dev-head .t{font-family:'Source Serif 4',Georgia,serif;font-size:var(--t-xl);font-weight:500;display:flex;align-items:center;gap:9px;}
@@ -444,7 +445,7 @@
   #guestScrim{position:fixed;inset:0;z-index:var(--z-toast);background:var(--paper);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;}
   #guestScrim.show{display:block;}
   .gp-wrap{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + var(--s-6)) var(--s-5) calc(env(safe-area-inset-bottom) + var(--s-7));}
-  #guestScrim.on-preview .gp-wrap{padding-bottom:calc(72px + env(safe-area-inset-bottom));}
+  #guestScrim.on-preview .gp-wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom));}
   .gp-brand{display:flex;align-items:center;gap:var(--s-2);font-family:var(--f-mark);font-weight:500;font-size:var(--t-lg);color:var(--ink);margin-bottom:var(--s-4);}
   .gp-brand .dot{width:7px;height:7px;border-radius:50%;background:var(--oak);box-shadow:0 0 0 4px rgba(176,137,90,.14);}
   .gp-preview{background:var(--bark);color:var(--cream);font-size:var(--t-xs);font-weight:600;border-radius:var(--r-sm);padding:var(--s-2) var(--s-3);margin-bottom:var(--s-3);text-align:center;}
@@ -496,7 +497,7 @@
   .gp-d.end.mid-l{background:linear-gradient(90deg,rgba(176,137,90,.16) 50%,transparent 50%);}
   .gp-d.start span,.gp-d.end span{background:var(--ink);color:var(--foam);box-shadow:none;}
   .gp-d span{display:flex;align-items:center;justify-content:center;width:32px;height:32px;margin:0 auto;border-radius:50%;position:relative;}
-  .gp-cal-acts{display:flex;align-items:center;justify-content:space-between;margin-top:var(--s-3);}
+  .gp-cal-acts{display:flex;align-items:center;justify-content:space-between;margin-top:var(--s-3);padding-bottom:calc(var(--s-8) + env(safe-area-inset-bottom));}
   .gp-cal-reset{border:0;background:var(--ink);color:var(--foam);border-radius:999px;padding:var(--s-2) var(--s-4);font:inherit;font-size:var(--t-sm);font-weight:600;cursor:pointer;}
   .gp-cal-ok{width:42px;height:42px;border-radius:50%;border:0;background:var(--oak);color:var(--white);font-size:var(--t-lg);cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .gp-chosen{display:block;width:100%;border:0;background:transparent;font-family:'Source Serif 4',Georgia,serif;font-size:var(--t-xl);font-weight:600;letter-spacing:-.01em;color:var(--ink);text-align:center;padding:var(--s-1) var(--s-1) var(--s-3);cursor:pointer;}
@@ -571,6 +572,7 @@
   .mr-item .n{font-size:var(--t-sm);font-weight:600;color:var(--ink);}
   .mr-item .d{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1);}
   .code-box{font-family:ui-monospace,Menlo,monospace;font-size:var(--t-xl);letter-spacing:.08em;text-align:center;background:var(--surface-2);border-radius:var(--r-sm);padding:var(--s-4);cursor:pointer;-webkit-user-select:all;user-select:all;}
+  .code-box.pkt-url{font-size:var(--t-sm);letter-spacing:0;text-align:left;white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .qf-row{display:flex;gap:7px;margin-bottom:var(--s-3);}
   .qf-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:1.5px dashed var(--oak);background:transparent;color:var(--oak);border-radius:var(--r-sm);padding:var(--s-2) var(--s-1);cursor:pointer;font-family:inherit;font-size:var(--t-xs);font-weight:600;transition:border-color .15s ease,transform .12s ease;}
   .qf-btn:active{transform:scale(.96);background:var(--surface-2);}
@@ -3865,15 +3867,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.399.0 - Preview has one black button';
+const PLUMB_VERSION='2.400.0 - Packet review, bars, and Ask stay put';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789190000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.399.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789200000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.400.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -14815,7 +14817,9 @@ function calVisibleBookings(){
 function calVisibleAvail(){
   if(calIsClient())return [];
   if(calCrewFilter)return allAvail().filter(a=>a.subName===calCrewFilter);
-  return allAvail().filter(a=>calMine(a));}
+  let av=allAvail().filter(a=>calMine(a));
+  if(calSiteFilter!=='all')av=av.filter(a=>a.p&&String(a.p.id)===String(calSiteFilter));
+  return av;}
 function openCal(keepCrew){
   saveScroll('home');
   if(!keepCrew)calCrewFilter='';
@@ -15163,7 +15167,14 @@ function bkRenderPacket(){
 function bkOpenPacket(){
   const pid=document.getElementById('bkSite').value;const trade=bkSelTrade();
   if(!pid||!trade){toast('Pick a crew first');return;}
-  openSubPacket(pid,trade);}
+  const p=state.projects.find(x=>String(x.id)===String(pid));if(!p){toast('Pick a house');return;}
+  const subName=(document.getElementById('bkSub')||{}).value||'';
+  const sb=(p.subs||[]).find(s=>s.name===subName&&s.specialty===trade)||(p.subs||[]).find(s=>s.specialty===trade);
+  try{closeBk();}catch(e){}
+  try{Data.setActive(pid);}catch(e){}
+  if(sb)openPacket(sb.id);
+  else showInfo('Install packet \u2014 '+(specLabel(trade)||'crew'),packetHTML(p,trade));
+}
 function bkSyncBtns(){
   try{
     const siteSel=document.getElementById('bkSite'),subSel=document.getElementById('bkSub');
@@ -15570,6 +15581,7 @@ function packetMore(){
   openChoice({title:'Packet',items:items});
 }
 function packetHTML(p,tradeId){
+  const cap1=x=>String(x||'').charAt(0).toUpperCase()+String(x||'').slice(1);
   const tl=specLabel(tradeId);
   const sels=tradeSelections(p,tradeId);
   const gaps=tradeSpecGaps(p,tradeId);
@@ -15665,7 +15677,7 @@ function packetHTML(p,tradeId){
       h+=row(sel.item||'(unspecified)',sub,'','pktFillSpec('+sel.id+')','','');
     });
     openItems.forEach(function(it){
-      h+=row(it.cap,areaText(it.area)+(it.client?' \u00b7 raised by homeowner':'')+' \u00b7 on their scope','',isBuilder?('openRecord('+it.id+')'):'','','');
+      h+=row(cap1(it.cap),areaText(it.area)+(it.client?' \u00b7 raised by homeowner':'')+' \u00b7 on their scope','',isBuilder?('openRecord('+it.id+')'):'','','');
     });
     pinnedItems.forEach(function(it){
       h+=row(it.cap,areaText(it.area)+' \u00b7 pinned','','openRecord('+it.id+')','','');
@@ -15792,7 +15804,7 @@ function packetSnapshot(p,b){
       const sb=(p.subs||[]).find(x=>x.name===b.subName&&x.specialty===trade)||(p.subs||[]).find(x=>x.specialty===trade);
       c.readyOk=!!(sb&&sb.cleared);
       c.ready=c.readyOk?'House marked ready for you':'House not yet marked ready \u2014 confirm before mobilizing';
-      const open=(p.items||[]).filter(it=>it.crew===specLabel(trade)&&it.issue&&it.status==='open').map(it=>String(it.cap||'')).slice(0,4);
+      const open=(p.items||[]).filter(it=>it.crew===specLabel(trade)&&it.issue&&it.status==='open').map(it=>cap1(String(it.cap||''))).slice(0,4);
       if(open.length)c.openItems=open;
       /* Recent site history for context: this trade's own feed entries plus
          shared milestones, and the last daily-log lines. TEXT ONLY, by design:
@@ -15876,7 +15888,7 @@ function _sharePacketLink(snap,token){
   showInfo('Text this link',`<p class="mt-0 ml-0 mr-0 mb-2 fs-sm lh-15">Send this to <b>${who}</b>. If you cancel the share sheet, the link stays here.</p>
     ${num}
     <button class="b1 b-go w-full btn btn-primary" onclick="pkDoShare()">Text this link</button>
-    <div class="code-box mt-3" onclick="copyText('${url}')">${url}</div>
+    <div class="code-box pkt-url mt-3" onclick="copyText('${url}')">${url}</div>
     <div class="ta-c fs-xs c-ink-3 mt-1">Tap the link to copy</div>`);
 }
 function pkDoShare(){
@@ -15895,11 +15907,12 @@ function openGuestPreview(snap){window.__packetFixture=snap;renderGuestPacket('p
 let _gpSnap=null,_gpToken=null,_gpCalCursor=null,_bkCalCursor=null;
 let _gpUnsub=null,_gpTick=null,_gpPendingRemote=null;
 function _gpBusy(){
-  const chg=document.getElementById('gpChg'),ask=document.getElementById('gpAsk');
+  const chg=document.getElementById('gpChg'),ask=document.getElementById('gpAsk'),prefs=document.getElementById('gpPrefs');
   if(chg&&chg.classList.contains('show'))return true;
   if(ask&&ask.classList.contains('show'))return true;
+  if(prefs&&prefs.classList.contains('show'))return true;
   const ae=document.activeElement;
-  return !!(ae&&(ae.id==='gpNote'||ae.id==='gpQText'));
+  return !!(ae&&(ae.id==='gpNote'||ae.id==='gpQText'||ae.id==='gpPrefCal'));
 }
 function _gpCacheWrite(token,g){
   try{if(token&&token!=='preview'&&g)sessionStorage.setItem('plumb.gp.'+token,JSON.stringify(g));}catch(e){}
