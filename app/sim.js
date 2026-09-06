@@ -1046,7 +1046,7 @@ t('preview packet body uses the same rows as p.html', (function(){
   $("_gpPendingSend=null");$("closeGuestPreview()");
   return ok;})());
 t('packet link copy does not wrap', SRC.indexOf('code-box pkt-url')>=0);
-t('review packet closes the schedule sheet', $("String(bkOpenPacket)").indexOf('closeBk()')>=0&&$("String(bkOpenPacket)").indexOf('openPacket')>=0);
+t('review packet closes the schedule sheet', $("String(bkOpenPacket)").indexOf('closeBk()')>=0&&$("String(bkOpenPacket)").indexOf('openPacket')>=0&&$("String(bkOpenPacket)").indexOf('closeDay()')>=0);
 t('gear hides when a sheet is up', SRC.indexOf('body:has([id$="Scrim"].show) #devDot')>=0);
 setTimeout(function(){},0);
 $("window.__packetFixture="+JSON.stringify(snap));

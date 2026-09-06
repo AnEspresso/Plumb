@@ -1,4 +1,6 @@
-**v2.400.0 is live.** Review packet opens the install packet. Preview bar clears the heading. Gear hides on sheets. Packet URL does not wrap. Ask and Preferences stay open on the texted page.
+**v2.401.0 is live.** Review packet lands on top — the day sheet no longer covers it.
+
+
 
 
 
