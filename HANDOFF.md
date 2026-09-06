@@ -1,4 +1,6 @@
-**v2.407.0 is live.** Edit houses says Off book, one line.
+**v2.408.0 is live.** Punch lines start with a capital. Filter chips wrap instead of clipping.
+
+
 
 
 

@@ -966,8 +966,8 @@
   .ov-sortrow{display:flex;align-items:center;gap:8px;margin:0 0 var(--s-3);flex-wrap:wrap;}
   .ov-sortpills{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0;}
   .ov-allpill{display:none;}
-  .ov-inbtabs{display:flex;gap:6px;flex-wrap:wrap;overflow-x:visible;padding:var(--s-1) 0 var(--s-2);margin:0 0 var(--s-1);}
-  .ov-inbtabs .ov-sortpill{flex:0 0 auto;}
+  .ov-inbtabs{display:flex;gap:6px;flex-wrap:wrap;overflow:visible;padding:var(--s-1) 0 var(--s-2);margin:0 0 var(--s-1);}
+  .ov-inbtabs .ov-sortpill{flex:0 0 auto;white-space:nowrap;}
   .ov-search{width:100%;box-sizing:border-box;}
   .ov-openchip{margin-left:auto;white-space:nowrap;font-size:var(--t-xs);}
   .td-morebtn{display:block;width:100%;text-align:left;margin:var(--s-2) 0 var(--s-1);font-family:inherit;font-size:var(--t-sm);font-weight:700;color:var(--oak);background:none;border:none;cursor:pointer;padding:var(--s-3) var(--s-1);min-height:44px;letter-spacing:.01em;}
@@ -3880,15 +3880,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.407.0 - Off book on one line';
+const PLUMB_VERSION='2.408.0 - Punch lines and filter chips';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789270000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.407.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789280000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.408.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5236,7 +5236,7 @@ function renderIssues(){
   document.getElementById('issueList').innerHTML=fil.map((it,i)=>`
     <div class="item tappable" id="issue-${it.id}" style="animation-delay:${i*55}ms" onclick="openRecord(${it.id})">
       <div class="thumb">${thumbHTML(it)}</div>
-      <div class="body"><div class="cap">${esc(it.cap)}</div>
+      <div class="body"><div class="cap">${esc(upFirst(it.cap))}</div>
         <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div>
       <button onclick='event.stopPropagation();toggleIssue(${it.id})' title="${issueFilter==='open'?'Mark done':'Reopen'}" style="align-self:center;border:none;background:transparent;cursor:pointer;color:${issueFilter==='open'?'var(--sage)':'var(--ink-3)'}">
@@ -8206,6 +8206,7 @@ function _siteWhisper(p){
   }
   return best;
 }
+function upFirst(s){s=String(s||'');if(!s)return s;return s.charAt(0).toUpperCase()+s.slice(1);}
 function _nyIssues(projs){
   const today=dayStart(Date.now());const horizon=today+14*864e5;
   const issues=[];const seen={};
@@ -8255,7 +8256,7 @@ function _nyIssues(projs){
         const gaps=tradeSpecGaps(p,trade).length;
         const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'packet not signed off';
         issues.push({kind:'Spec still open',pid:p.id,site:p.street||p.name,trade:trade,pri:1,lvl:'warn',ts:b.start,
-          line:why,go:`openPacketFor('${p.id}','${trade}')`});
+          line:upFirst(why),go:`openPacketFor('${p.id}','${trade}')`});
       }
     });
   });
@@ -8271,7 +8272,7 @@ function _nyIssues(projs){
     _nyHomeownerItems(p).forEach(function(it){
       const kind=it.kind==='idea'?'Idea':'Concern';
       issues.push({kind:'Homeowner wrote you',pid:p.id,site:p.street||p.name||'',trade:'',pri:2,lvl:'msg',ts:it.t||today,
-        line:'Homeowner \u00b7 '+kind+(it.cap?(' \u00b7 '+_tdClip(it.cap,48)):''),
+        line:'Homeowner \u00b7 '+kind+(it.cap?(' \u00b7 '+upFirst(_tdClip(it.cap,48))):''),
         go:`nyOpenHomeowner('${p.id}',${it.id})`});
     });
   });
@@ -8286,7 +8287,7 @@ function _nyIssues(projs){
       const kn=(typeof FIELD_KINDS!=='undefined'&&FIELD_KINDS.find(function(k){return k.id===it.fieldKind;}))||null;
       const kind=kn?kn.n:(it.area||'Open item');
       issues.push({kind:kind,pid:p.id,site:p.street||p.name||'',trade:'',pri:0,lvl:'warn',ts:it.t||today,
-        line:it.cap||kind,go:`nyOpenItem('${p.id}',${it.id})`});
+        line:upFirst(it.cap||kind),go:`nyOpenItem('${p.id}',${it.id})`});
     });
   });
   return issues;
