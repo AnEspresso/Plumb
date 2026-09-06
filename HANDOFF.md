@@ -1,4 +1,6 @@
-**v2.405.0 is live.** Gear sits above the capture bar. Edit houses has three equal actions. Decisions is titled Decisions.
+**v2.406.0 is live.** Edit houses says Off the book. Edit sheet talks about Progress, not the Build tab.
+
+
 
 
 

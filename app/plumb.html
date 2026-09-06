@@ -3880,15 +3880,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.405.0 - Gear, Edit houses, Decisions title';
+const PLUMB_VERSION='2.406.0 - Off the book, Progress copy';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789250000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.405.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789260000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.406.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6575,7 +6575,7 @@ function renderImport(){
     ? `<button class="b1 b-go w-full mt-3 btn btn-primary" onclick="impDoneEdit()">Done</button>`
     : `<button class="b1 b-go w-full mt-3 btn btn-primary" onclick="startConverge()">Done \u2014 looks good</button>`;
   el.innerHTML=`
-    <p class="mt-0 ml-0 mr-0 mb-1 c-ink-2 fs-sm lh-15">${_importEdit?'Update <b>'+esc(site)+'</b>.':'<b>'+esc(site)+'</b> created.'} Where is the build right now? We\u2019ll mark everything before it complete so your Build tab is accurate.</p>
+    <p class="mt-0 ml-0 mr-0 mb-1 c-ink-2 fs-sm lh-15">${_importEdit?'Update <b>'+esc(site)+'</b>.':'<b>'+esc(site)+'</b> created.'} Where is the build right now? We\u2019ll mark everything before it complete so Progress on this house is accurate.</p>
     <select id="impStage" onchange="impSetStage()" class="mb-3">
       ${SS.map(s=>`<option value="${s.id}"${s.id===curId?' selected':''}>${esc(s.name)}</option>`).join('')}
       <option value="__done"${curId==='__done'?' selected':''}>Finished / punch list</option>
@@ -6769,7 +6769,7 @@ function renderEditSites(){
     const sub=[p.street?esc(p.name):'',esc([p.city,p.state].filter(Boolean).join(', '))].filter(Boolean).join(' \u00b7 ')+(p.doneAt?' \u00b7 Finished':'');
     const done=p.doneAt
       ?'<button class="btn btn-secondary" onclick="markHouseDone(\''+p.id+'\',false)">Put back on the book</button>'
-      :'<button class="btn btn-secondary" onclick="askHouseDone(\''+p.id+'\')">Done with this house</button>';
+      :'<button class="btn btn-secondary" onclick="askHouseDone(\''+p.id+'\')">Off the book</button>';
     return '<div class="es-card"><div class="n">'+title+'</div>'+(sub?('<div class="d">'+sub+'</div>'):'')
       +'<div class="es-acts">'+done+'<button class="btn btn-secondary" onclick="openImportFor(\''+p.id+'\')">Edit</button><button class="btn btn-danger" onclick="deleteSite(\''+p.id+'\')">Delete</button></div></div>';
   }).join('')
