@@ -1,4 +1,6 @@
-**v2.404.0 is live.** Edit a house Done returns home. Edit houses cards stack. Decisions is in the briefcase. Field notes sits on the bottom of home.
+**v2.405.0 is live.** Gear sits above the capture bar. Edit houses has three equal actions. Decisions is titled Decisions.
+
+
 
 
 

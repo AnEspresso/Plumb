@@ -1042,6 +1042,9 @@ t('edit a house Done returns home', $("String(impDoneEdit)").indexOf('showOvervi
 t('edit houses cards stack', $("String(renderEditSites)").indexOf('es-card')>=0&&$("String(renderEditSites)").indexOf('es-acts')>=0);
 t('briefcase opens Decisions', $("String(renderCompany)").indexOf('openPkLog')>=0);
 t('field notes sit on the home bar', SRC.indexOf('id="ovCapture"')>=0&&$("String(renderToday)").indexOf('ovCapture')>=0);
+t('gear sits above the capture bar', SRC.indexOf('body:has(.overview.show) #devDot')>=0&&SRC.split('body:has(.overview.show) #devDot')[1].slice(0,80).indexOf('116px')>=0);
+t('edit houses has three equal actions', SRC.indexOf('.es-acts{')>=0&&SRC.split('.es-acts{')[1].slice(0,80).indexOf('1fr 1fr 1fr')>=0);
+t('decisions sheet is titled Decisions', $("String(openInb)").indexOf("'Decisions'")>=0);
 t('preview does not invent an empty documents section the crew will not see', (function(){
   $("window.__packetFixture=Object.assign(JSON.parse(JSON.stringify(_gpSnap||{}))||{},{docs:[],resp:null,q:[],specs:[],ctx:{},site:'X',builder:'B',sub:'S',tradeLabel:'T',start:Date.now(),end:Date.now(),expires:Date.now()+86400000})");
   $("renderGuestPacket('preview')");

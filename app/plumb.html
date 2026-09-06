@@ -956,12 +956,13 @@
     border-top:1px solid var(--line);background:var(--paper);}
   .ov-capture[hidden]{display:none !important;}
   .ov-capture .ov-field{margin:0;width:100%;}
-  body:has(.overview.show) #devDot{bottom:calc(72px + env(safe-area-inset-bottom));}
+  body:has(.overview.show) #devDot{bottom:calc(116px + env(safe-area-inset-bottom));}
   .es-card{border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s-3);margin-bottom:var(--s-2);}
   .es-card .n{font-weight:650;font-size:var(--t-md);line-height:1.3;}
   .es-card .d{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1);line-height:1.4;}
-  .es-acts{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-3);}
-  .es-acts .btn{flex:1 1 auto;min-height:var(--tap);}
+  .es-acts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--s-2);margin-top:var(--s-3);}
+  .es-acts .btn{min-height:var(--tap);min-width:0;width:100%;padding-left:var(--s-2);padding-right:var(--s-2);}
+  .es-acts .btn-danger{border:1px solid var(--clay);background:var(--surface);}
   .ov-sortrow{display:flex;align-items:center;gap:8px;margin:0 0 var(--s-3);flex-wrap:wrap;}
   .ov-sortpills{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0;}
   .ov-allpill{display:none;}
@@ -1964,7 +1965,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 .sheet-handle{width:40px;height:4px;border-radius:999px;background:var(--line);margin:0 auto var(--s-4);}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);margin-bottom:var(--s-4);}
 .sheet-head h2{flex:1;font-size:var(--t-xl);}
-.sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 calc(var(--s-5)*-1);padding:0 var(--s-5);}
+.sheet-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 calc(var(--s-5)*-1);padding:0 var(--s-5);}
 .sheet-foot{margin-top:var(--s-4);padding-top:var(--s-4);border-top:1px solid var(--line-2);}
 @media (min-width:700px){
   .sheet-scrim{align-items:center;}
@@ -2019,7 +2020,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 .money-actions .btn-primary{flex:1;}
 #calBody .money-actions{margin-top:var(--s-4);}
 #calBody .money-actions #calDoneBtn{min-width:88px;}
-.leave-bar{display:flex;align-items:center;justify-content:center;margin-top:var(--s-2);padding:var(--s-2) 0 calc(var(--s-2) + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
+.leave-bar{display:flex;align-items:center;justify-content:center;flex:none;margin-top:var(--s-2);padding:var(--s-2) 0 calc(var(--s-2) + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
 .leave-bar > .btn:only-child,#deskBack,#budgetDoneBtn{min-width:220px;width:min(72vw,280px);justify-content:center;}
 .action-bar{display:flex;align-items:stretch;gap:var(--s-3);margin-top:var(--s-2);padding:var(--s-2) 0 calc(var(--s-2) + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
 .action-bar .btn-primary{flex:1;justify-content:center;}
@@ -3879,15 +3880,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.404.0 - Home capture and edit houses';
+const PLUMB_VERSION='2.405.0 - Gear, Edit houses, Decisions title';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789240000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.404.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789250000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.405.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -16780,7 +16781,7 @@ function openInb(mode,pid){
     if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All houses';
     if(sub)sub.textContent=p?'What still needs you on this house.':'Most time-sensitive first. Search or filter by type.';
   }else{
-    if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'All houses';
+    if(ttl)ttl.textContent=p?(p.street||p.name||'This house'):'Decisions';
     if(sub)sub.textContent=p?'Dates confirmed and answers sent on this house.':'Dates you confirmed and answers you sent.';
   }
   inbDraw();
