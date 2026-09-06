@@ -1030,6 +1030,11 @@ t('excavation falls back to the grading or building permit', (function(){
 t('inspection lines carry readable labels and casing', (function(){
   const c=JSON.parse($("JSON.stringify((packetSnapshot(state.projects[0],{trade:'excav',subName:'Ironhill Excavating',start:Date.now(),end:Date.now()+86400000,note:'',id:'x'})).ctx)"));
   return typeof c.insp==='string'&&c.insp.indexOf('Site / pre-construction')===0&&/: [A-Z]/.test(c.insp);})());
+t('inspection date on the packet is short', (function(){
+  const c=JSON.parse($("JSON.stringify((packetSnapshot(state.projects[0],{trade:'excav',subName:'Ironhill Excavating',start:Date.now(),end:Date.now()+86400000,note:'',id:'x'})).ctx)"));
+  return typeof c.insp==='string'&&!/\d{4}-\d{2}-\d{2}/.test(c.insp);
+})());
+t('answer sheet lifts for the keyboard', SRC.indexOf('function nyAskKb')>=0&&SRC.indexOf('visualViewport')>=0);
 t('preview does not invent an empty documents section the crew will not see', (function(){
   $("window.__packetFixture=Object.assign(JSON.parse(JSON.stringify(_gpSnap||{}))||{},{docs:[],resp:null,q:[],specs:[],ctx:{},site:'X',builder:'B',sub:'S',tradeLabel:'T',start:Date.now(),end:Date.now(),expires:Date.now()+86400000})");
   $("renderGuestPacket('preview')");
@@ -1218,6 +1223,7 @@ t('guest packet page is under 50 KB', fs.statSync(path.join(__dirname,'p.html'))
   t('guest packet uses the system', PHTML.indexOf('--tap')>=0&&PHTML.indexOf('btn-primary')>=0);
   t('guest packet does not repaint while asking', PHTML.indexOf('function busy()')>=0&&PHTML.indexOf('function apply(g)')>=0&&PHTML.indexOf('if(busy())return')>=0);
   t('guest packet calendar sits above the phone chrome', PHTML.indexOf('cal-acts')>=0&&PHTML.indexOf('padding-bottom:calc(var(--s-8)')>=0);
+  t('guest packet pretty-prints inspection dates', PHTML.indexOf('function fmtIso')>=0);
   const i=PHTML.indexOf('initializeApp'),a=PHTML.indexOf('appCheck'),f=PHTML.indexOf('firebase.firestore()');
   t('guest packet App Check after initializeApp', i>=0&&a>i&&f>a);
 })();

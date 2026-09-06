@@ -3867,15 +3867,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.401.0 - Review packet is on top';
+const PLUMB_VERSION='2.402.0 - Inspection dates and answer bar';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789210000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.401.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789220000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.402.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -15801,7 +15801,7 @@ function packetSnapshot(p,b){
       const ik=PK_INSP[trade];
       const iv=ik&&(p.inspections||{})[ik];
       if(iv){const meta=((p.inspMeta||{})[ik])||{};
-        c.insp=(PK_INSP_LBL[ik]||cap1(ik))+': '+cap1(iv)+(meta.date?(' \u00b7 '+meta.date):'');}
+        c.insp=(PK_INSP_LBL[ik]||cap1(ik))+': '+cap1(iv)+(meta.date?(' \u00b7 '+gpFmtIso(meta.date)):'');}
       const sb=(p.subs||[]).find(x=>x.name===b.subName&&x.specialty===trade)||(p.subs||[]).find(x=>x.specialty===trade);
       c.readyOk=!!(sb&&sb.cleared);
       c.ready=c.readyOk?'House marked ready for you':'House not yet marked ready \u2014 confirm before mobilizing';
@@ -16755,7 +16755,8 @@ function nyOpenHomeowner(pid,rid){
   document.getElementById('nyAskQ').textContent=it.cap?('\u201c'+it.cap+'\u201d'):'The homeowner wrote you.';
   const ta=document.getElementById('nyAskText');ta.value=it.reply||'';ta.placeholder='Your answer. The homeowner sees this';
   document.getElementById('nyAskScrim').classList.add('show');
-  setTimeout(function(){try{ta.focus();}catch(e){}},80);
+  nyAskKb();
+  setTimeout(function(){try{ta.focus();nyAskKb();}catch(e){}},80);
 }
 function nyHoSend(){
   if(!_nyHo)return;
@@ -16783,9 +16784,30 @@ function nyOpenAsk(pid,bid,qi){
   document.getElementById('nyAskQ').textContent=q.text?('\u201c'+q.text+'\u201d'):'This crew asked a question.';
   document.getElementById('nyAskText').value='';
   document.getElementById('nyAskScrim').classList.add('show');
-  setTimeout(function(){try{document.getElementById('nyAskText').focus();}catch(e){}},80);
+  nyAskKb();
+  setTimeout(function(){try{document.getElementById('nyAskText').focus();nyAskKb();}catch(e){}},80);
 }
-function nyAskClose(){_nyAsk=null;_nyHo=null;const el=document.getElementById('nyAskScrim');if(el)el.classList.remove('show');try{houseMaybeResume();}catch(e){}}
+function nyAskKb(){
+  const el=document.getElementById('nyAskScrim');if(!el)return;
+  const sheet=el.querySelector('.sheet');
+  if(!el.classList.contains('show')){
+    el.style.paddingBottom='';
+    if(sheet)sheet.style.maxHeight='';
+    return;
+  }
+  const vv=window.visualViewport;
+  if(!vv)return;
+  const kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop));
+  el.style.paddingBottom=kb?kb+'px':'';
+  if(sheet)sheet.style.maxHeight=Math.round(vv.height*0.92)+'px';
+}
+try{
+  if(window.visualViewport){
+    visualViewport.addEventListener('resize',nyAskKb);
+    visualViewport.addEventListener('scroll',nyAskKb);
+  }
+}catch(e){}
+function nyAskClose(){_nyAsk=null;_nyHo=null;const el=document.getElementById('nyAskScrim');if(el)el.classList.remove('show');nyAskKb();try{houseMaybeResume();}catch(e){}}
 function nyAskSend(){
   if(_nyHo){nyHoSend();return;}
   if(!_nyAsk)return;

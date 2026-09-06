@@ -1,4 +1,6 @@
-**v2.401.0 is live.** Review packet lands on top — the day sheet no longer covers it.
+**v2.402.0 is live.** Packet inspection dates read Jul 8. Answer sheet lifts above the keyboard.
+
+
 
 
 
