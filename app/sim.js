@@ -1038,6 +1038,10 @@ t('answer sheet lifts for the keyboard', SRC.indexOf('function nyAskKb')>=0&&SRC
 t('answer sheet stays after send', $("String(nyAskSend)").indexOf('nyAskClose()')<0&&$("String(nySendAnswer)").indexOf('nyOpenAsk')>=0);
 t('install packet lists questions', $("String(packetHTML)").indexOf('Questions')>=0&&$("String(packetHTML)").indexOf('nyOpenAsk')>=0);
 t('decisions reopen an answer', $("String(inbDraw)").indexOf('nyOpenAsk')>=0&&$("String(nySendAnswer)").indexOf('bid:b.id')>=0);
+t('edit a house Done returns home', $("String(impDoneEdit)").indexOf('showOverview')>=0&&$("String(impDoneEdit)").indexOf('openSiteFromOverview')<0);
+t('edit houses cards stack', $("String(renderEditSites)").indexOf('es-card')>=0&&$("String(renderEditSites)").indexOf('es-acts')>=0);
+t('briefcase opens Decisions', $("String(renderCompany)").indexOf('openPkLog')>=0);
+t('field notes sit on the home bar', SRC.indexOf('id="ovCapture"')>=0&&$("String(renderToday)").indexOf('ovCapture')>=0);
 t('preview does not invent an empty documents section the crew will not see', (function(){
   $("window.__packetFixture=Object.assign(JSON.parse(JSON.stringify(_gpSnap||{}))||{},{docs:[],resp:null,q:[],specs:[],ctx:{},site:'X',builder:'B',sub:'S',tradeLabel:'T',start:Date.now(),end:Date.now(),expires:Date.now()+86400000})");
   $("renderGuestPacket('preview')");
@@ -2175,17 +2179,11 @@ $('closeChoice()');
 $('closeBudget()');
 $('showOverview()');
 $('renderToday()');
-t('overview today has one Field Notes primary', $("document.querySelectorAll('#ovToday .btn-primary').length")===0&&$("!!document.querySelector('#ovToday .ov-field')")===true);
+t('overview today has one Field Notes primary', $("document.querySelectorAll('#ovToday .btn-primary').length")===0&&$("!!document.querySelector('#ovCapture .ov-field')")===true);
 t('Needs you on first screen is at most three', $("document.querySelectorAll('#ovToday .ny-home-row').length")<=3);
-t('Field Notes card is on home after Needs you', (function(){
-  const h=$("document.getElementById('ovToday').innerHTML");
-  const ny=h.indexOf('Needs you');
-  const fn=h.indexOf('ov-field');
-  const cu=h.indexOf('Coming up');
-  return ny>=0&&fn>ny&&(cu<0||cu>fn)&&$("!!document.querySelector('#ovToday .ov-field')")===true;
-})());
+t('Field Notes card is on home after Needs you', $("!!document.querySelector('#ovCapture .ov-field')")===true&&$("document.getElementById('ovToday').innerHTML").indexOf('Needs you')>=0);
 t('Field Notes button has words', (function(){
-  const txt=$("(function(){var el=document.querySelector('#ovToday .ov-field');return el?String(el.textContent||''):'';})()");
+  const txt=$("(function(){var el=document.querySelector('#ovCapture .ov-field');return el?String(el.textContent||''):'';})()");
   return txt.indexOf('Write a field note')>=0&&txt.indexOf('Photo, note, or a problem')>=0;
 })());
 t('Field Notes button is full width in source', SRC.indexOf('.ov-field{')>=0&&SRC.split('.ov-field{')[1].slice(0,280).indexOf('width:100%')>=0&&SRC.indexOf('min-height:var(--tap)')>=0);

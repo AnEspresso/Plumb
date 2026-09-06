@@ -195,11 +195,11 @@ async function tappable(page,sel){
   t('overview renders all ten site cards',cards===10,cards);
   const nyN=await page.evaluate(()=>document.querySelectorAll('#ovToday .ny-home-row').length);
   t('first screen shows at most three Needs-you rows',nyN<=3,nyN);
-  await page.evaluate(()=>{const el=document.querySelector('#ovToday .ov-field');if(el)el.scrollIntoView({block:'center'});});
-  const fnTap=await tappable(page,'#ovToday .ov-field');
+  await page.evaluate(()=>{const el=document.querySelector('#ovCapture .ov-field');if(el)el.scrollIntoView({block:'center'});});
+  const fnTap=await tappable(page,'#ovCapture .ov-field');
   t('Field Notes card tappable',fnTap.ok,fnTap.why);
   const fnMeta=await page.evaluate(()=>{
-    const el=document.querySelector('#ovToday .ov-field');
+    const el=document.querySelector('#ovCapture .ov-field');
     if(!el)return {ok:false,why:'missing'};
     const r=el.getBoundingClientRect();
     const cs=getComputedStyle(el);
@@ -212,7 +212,7 @@ async function tappable(page,sel){
   });
   t('Field Notes is a labelled full-width primary',fnMeta.ok,fnMeta.why);
   const fnMark=await page.evaluate(()=>{
-    const svg=document.querySelector('#ovToday .ov-field svg.cam');
+    const svg=document.querySelector('#ovCapture .ov-field svg.cam');
     if(!svg)return {ok:false,why:'missing'};
     const r=svg.getBoundingClientRect();
     return {ok:r.width>=80&&r.height>=50,why:'w='+Math.round(r.width)+' h='+Math.round(r.height)};

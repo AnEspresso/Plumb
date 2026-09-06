@@ -949,8 +949,19 @@
   .ss-k{font-size:var(--t-sm);font-weight:600;color:var(--ink-3);letter-spacing:.02em;}
   .ov-logout{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:var(--s-2) var(--s-3);font-family:inherit;
     font-size:var(--t-sm);font-weight:600;color:var(--ink-2);cursor:pointer;}
-  .ov-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:var(--s-2) var(--s-6) calc(var(--s-8)*2 + var(--s-2)*7);}
+  .ov-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:var(--s-2) var(--s-6) var(--s-4);}
   .ov-foot-spacer{display:none;}
+  .ov-capture{flex:none;display:flex;align-items:center;justify-content:center;
+    padding:var(--s-2) var(--s-5) calc(var(--s-2) + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);background:var(--paper);}
+  .ov-capture[hidden]{display:none !important;}
+  .ov-capture .ov-field{margin:0;width:100%;}
+  body:has(.overview.show) #devDot{bottom:calc(72px + env(safe-area-inset-bottom));}
+  .es-card{border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s-3);margin-bottom:var(--s-2);}
+  .es-card .n{font-weight:650;font-size:var(--t-md);line-height:1.3;}
+  .es-card .d{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1);line-height:1.4;}
+  .es-acts{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-3);}
+  .es-acts .btn{flex:1 1 auto;min-height:var(--tap);}
   .ov-sortrow{display:flex;align-items:center;gap:8px;margin:0 0 var(--s-3);flex-wrap:wrap;}
   .ov-sortpills{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0;}
   .ov-allpill{display:none;}
@@ -2619,6 +2630,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="ov-foot-spacer" aria-hidden="true"></div>
       </div>
     </div>
+    <div class="ov-capture" id="ovCapture" hidden></div>
   </div>
 
   <!-- ───── SUBCONTRACTOR VIEW (restricted) ───── -->
@@ -3867,15 +3879,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.403.0 - Question thread stays put';
+const PLUMB_VERSION='2.404.0 - Home capture and edit houses';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789230000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.403.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789240000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.404.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6537,8 +6549,9 @@ function openImport(){_importSiteId=null;_importEdit=false;renderImport();docume
 function openImportFor(siteId){
   const p=(state.projects||[]).find(x=>String(x.id)===String(siteId));if(!p)return;
   _importSiteId=String(siteId);_importEdit=true;_startConverge=null;
-  Data.setActive(p.id);renderAll();
+  Data.setActive(p.id);
   try{closeEditSites();}catch(e){}
+  try{showOverview();}catch(e){}
   renderImport();document.getElementById('startScrim').classList.add('show');}
 function renderImport(){
   const el=document.getElementById('startBody');if(!el)return;
@@ -6575,7 +6588,7 @@ function renderImport(){
     <input id="impPhotoInput" type="file" accept="image/*" multiple class="hide" onchange="impPhotosPicked(this)">
     ${doneBtn}`;
 }
-function impDoneEdit(){const id=_importSiteId;_importSiteId=null;_importEdit=false;closeStart();if(id){Data.setActive(id);openSiteFromOverview(id);}toast('Updated');}
+function impDoneEdit(){_importSiteId=null;_importEdit=false;closeStart();try{showOverview();}catch(e){}toast('Updated');}
 function impCreateSite(){
   const v=(document.getElementById('impSite')||{value:''}).value.trim();
   if(!v){toast('Name the job first');return;}
@@ -6694,6 +6707,7 @@ function renderCompany(){
   let rows='';
   if(canGate('schedule'))rows+=SET_GEAR_ROW('Trades Calendar','Crew schedule across every job','closeCompany();openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
   if(canGate('people'))rows+=SET_GEAR_ROW('People','Team, homeowners, and crews','closeCompany();openPeopleMode(\'team\')','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 1 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>');
+  rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeCompany();openPkLog()','<path d="M9 11l2.5 2.5L16 9"/><rect x="3.5" y="4" width="17" height="16" rx="3"/>');
   if(canGate('moneyCo'))rows+=SET_GEAR_ROW('Invoices','Bill homeowners & track payments','closeCompany();invoicesFromSettings()','<path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2zM9 8h6M9 12h6"/>');
   if(canGate('jobs'))rows+=SET_GEAR_ROW('Add a job','New build, or bring an existing one in','closeCompany();openStart()','<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>');
   el.innerHTML=rows||'<div class="empty">Nothing here for this role.</div>';}
@@ -6749,8 +6763,17 @@ function openEditSites(){renderEditSites();document.getElementById('esScrim').cl
 function closeEditSites(){document.getElementById('esScrim').classList.remove('show');}
 function renderEditSites(){
   const el=document.getElementById('esBody');if(!el)return;
-  el.innerHTML=(state.projects||[]).map(p=>`<div class="day-row avr cur-d"><div class="flex-1"><div class="n">${esc(p.street||p.name)}</div><div class="d">${[p.street?esc(p.name):'',esc([p.city,p.state].filter(Boolean).join(', '))].filter(Boolean).join(' · ')}${p.doneAt?' \u00b7 Finished':''}</div></div><button class="lpay btn btn-quiet" onclick="${p.doneAt?`markHouseDone('${p.id}',false)`:`askHouseDone('${p.id}')`}">${p.doneAt?'Put back on the book':'Done with this house'}</button><button class="lpay btn btn-quiet" onclick="openImportFor('${p.id}')">Edit</button><button class="lpay c-clay btn btn-quiet" onclick="deleteSite('${p.id}')">Delete</button></div>`).join('')
-    +`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeEditSites();openStart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a new or existing house\u2026</button>`;}
+  el.innerHTML=(state.projects||[]).map(function(p){
+    const title=esc(p.street||p.name);
+    const sub=[p.street?esc(p.name):'',esc([p.city,p.state].filter(Boolean).join(', '))].filter(Boolean).join(' \u00b7 ')+(p.doneAt?' \u00b7 Finished':'');
+    const done=p.doneAt
+      ?'<button class="btn btn-secondary" onclick="markHouseDone(\''+p.id+'\',false)">Put back on the book</button>'
+      :'<button class="btn btn-secondary" onclick="askHouseDone(\''+p.id+'\')">Done with this house</button>';
+    return '<div class="es-card"><div class="n">'+title+'</div>'+(sub?('<div class="d">'+sub+'</div>'):'')
+      +'<div class="es-acts">'+done+'<button class="btn btn-secondary" onclick="openImportFor(\''+p.id+'\')">Edit</button><button class="btn btn-danger" onclick="deleteSite(\''+p.id+'\')">Delete</button></div></div>';
+  }).join('')
+    +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeEditSites();openStart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a new or existing house\u2026</button>';
+}
 function openHoAccess(){
   const se=document.getElementById('hoSearch');se.value='';
   se.style.display=(state.projects||[]).length>10?'':'none';
@@ -8552,7 +8575,11 @@ function renderToday(){
   const typing=document.getElementById('nyQText');
   const keep=typing&&document.activeElement===typing?{v:typing.value,s:typing.selectionStart}:null;
   const projs=liveProjects();
-  if(!projs.length){el.innerHTML='';el.style.display='none';return;}
+  if(!projs.length){
+    el.innerHTML='';el.style.display='none';
+    const cap0=document.getElementById('ovCapture');if(cap0){cap0.hidden=true;cap0.innerHTML='';}
+    return;
+  }
   el.style.display='';
   try{pkSweep();}catch(e){}
   const needs=needsYouItems(projs);
@@ -8565,7 +8592,6 @@ function renderToday(){
   }else{
     h+='<div class="empty"><b>Nothing needs you</b>Crews are booked, decisions are in.</div>';
   }
-  if(canGate('field'))h+='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#CDB48C" stroke-width="2"/><path d="M52 20V15h24v5" fill="none" stroke="#CDB48C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#CDB48C" stroke-width="1.9"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#3A342B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="2.2"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Write a field note<small>Photo, note, or a problem</small></span></button>';
   if(soon.length){
     h+='<div class="sec"><h2>Coming up</h2><button type="button" class="sec-act" onclick="openCal()">Calendar</button></div>';
     h+='<div class="ov-coming">';
@@ -8590,6 +8616,13 @@ function renderToday(){
     }
   }catch(e){}
   el.innerHTML=h;if(keep){const n=document.getElementById('nyQText');if(n){n.value=keep.v;try{n.focus();n.selectionStart=n.selectionEnd=keep.s;}catch(e){}}}
+  const cap=document.getElementById('ovCapture');
+  if(cap){
+    if(canGate('field')){
+      cap.innerHTML='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#CDB48C" stroke-width="2"/><path d="M52 20V15h24v5" fill="none" stroke="#CDB48C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#CDB48C" stroke-width="1.9"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#3A342B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="2.2"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Write a field note<small>Photo, note, or a problem</small></span></button>';
+      cap.hidden=false;
+    }else{cap.innerHTML='';cap.hidden=true;}
+  }
 }
 let _ovMonth=null;
 function ovDesk(){try{if(window.matchMedia('(min-width:1100px)').matches)return true;}catch(e){}return (window.innerWidth||0)>=1100;}
