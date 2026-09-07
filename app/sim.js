@@ -2231,6 +2231,13 @@ t('Photos has one primary', $("document.querySelectorAll('#filesPhotos .btn-prim
 $('renderSettings()');
 t('Settings body has no extra primary', $("document.querySelectorAll('#settingsBody .btn-primary').length")===0);
 t('Settings Sign out is danger', ($("document.querySelector('#settingsBody .btn-danger')")&&$("document.querySelector('#settingsBody .btn-danger').textContent")||'').indexOf('Sign out')>=0);
+t('overview keeps the briefcase', SRC.indexOf('id="ovCompanyBtn"')>=0);
+t('overview header has no Sign out', (function(){
+  const head=SRC.split('id="overview"')[1].split('id="ovToday"')[0];
+  return head.indexOf('liveSignOut')<0&&head.indexOf('Sign out')<0&&head.indexOf('logout()')<0;
+})());
+t('Settings has one liveSignOut', $("String(renderSettings)").split('liveSignOut').length===2);
+t('overview status is meta', SRC.split('id="overview"')[1].split('id="ovToday"')[0].indexOf('class="meta" id="ovSync"')>=0);
 t('Crews list has no Packet button', $("String(renderSubs)").indexOf('openPacket')<0&&$("document.querySelectorAll('#subList .btn-quiet').length")===0);
 t('Crew detail still opens the packet', $("String(openSubDetail)").indexOf("openPacket")>=0&&$("String(openSubDetail)").indexOf('Open packet')>=0);
 t('Crew detail packet is the primary', $("String(openSubDetail)").indexOf('btn-primary')>=0&&$("String(openSubDetail)").indexOf('editSubFromDetail')>=0);

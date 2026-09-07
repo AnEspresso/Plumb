@@ -928,6 +928,7 @@
   .ov-head .wm{font-family:'Fraunces',Georgia,serif;font-size:var(--t-xl);font-weight:500;display:flex;align-items:center;gap:9px;letter-spacing:-.01em;}
   .ov-head .wm .dot{width:7px;height:7px;border-radius:50%;background:var(--oak);box-shadow:0 0 0 4px rgba(176,137,90,.14);}
   .ov-head .who{font-size:var(--t-sm);color:var(--ink-3);margin-top:var(--s-1);font-weight:500;}
+  .ov-head .meta{margin-top:2px;}
   .hdr-actions{display:flex;gap:8px;align-items:center;flex:none;}
   .hdr-col{display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex:none;}
   .seg-top{margin-bottom:var(--sp-4);}
@@ -2614,8 +2615,9 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div>
         <div class="wm"><span class="dot"></span>SitePlumb</div>
         <div class="who" id="ovWho">Builder</div>
+        <div class="meta" id="ovSync">On this device</div>
       </div>
-      <div class="hdr-col"><div class="hdr-actions"><button class="ov-logout py-2 px-2 btn btn-secondary" id="ovCompanyBtn" onclick="openCompany()" title="Company"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="ov-logout btn btn-secondary" onclick="logout()">Sign out</button></div><span class="syncpill" id="ovSync"><span class="sd"></span>On this device</span></div>
+      <div class="hdr-actions"><button class="ov-logout py-2 px-2 btn btn-secondary" id="ovCompanyBtn" onclick="openCompany()" title="Company"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div>
     </div>
     <div class="ov-body">
       <aside id="ovWeek" class="ov-week" hidden></aside>
@@ -3877,15 +3879,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.410.0 - Calendar chrome';
+const PLUMB_VERSION='2.411.0 - Quiet header';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789300000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.410.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789310000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.411.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6748,7 +6750,7 @@ function renderSettings(){
   try{if(_evNeeded())rows+=SET_LIST_ROW('Confirm your email','Unconfirmed - this is what makes Forgot password work','closeSettings();evOpenFromSettings()');}catch(e){}
   rows+=SET_LIST_ROW('Privacy & legal','Policies, your data & account deletion','closeSettings();openLegal()');
   rows+='<div class="list-danger">';
-  rows+='<button type="button" class="btn btn-danger btn-block" onclick="closeSettings();logout()">Sign out</button>';
+  rows+='<button type="button" class="btn btn-danger btn-block" onclick="closeSettings();liveSignOut()">Sign out</button>';
   try{
     if(_isLiveAccount())rows+='<button type="button" class="btn btn-danger btn-block" onclick="closeSettings();openDeleteAccount()">Delete account</button>';
     else if(state.session&&state.session.mode==='real'&&(laProfile()||{}).provider==='local')rows+='<button type="button" class="btn btn-danger btn-block" onclick="closeSettings();eraseLocalAccount()">Delete account</button>';
@@ -9649,7 +9651,8 @@ function renderDevErrors(){
 function setSync(s){syncStatus=s;
   const live=(typeof Sync!=='undefined'&&Sync.on&&appMode()==='real');   // demo is local-only: a telemetry connection is not cross-device site sync
   const label=s==='syncing'?'Saving…':s==='offline'?'Offline · saved here':(s==='synced'&&live)?'Synced · live':'On this device';
-  document.querySelectorAll('.syncpill').forEach(el=>{el.className='syncpill'+(s==='syncing'?' syncing':s==='offline'?' offline':(s==='synced'&&live?' live':''));el.innerHTML='<span class="sd"></span>'+label;});}
+  document.querySelectorAll('.syncpill').forEach(el=>{el.className='syncpill'+(s==='syncing'?' syncing':s==='offline'?' offline':(s==='synced'&&live?' live':''));el.innerHTML='<span class="sd"></span>'+label;});
+  const ov=document.getElementById('ovSync');if(ov)ov.textContent=label;}
 function queueSync(){if(typeof Sync==='undefined'||!Sync.ready())return;const online=(typeof navigator!=='undefined')?navigator.onLine!==false:true;
   if(!online){setSync('offline');return;}setSync('syncing');clearTimeout(syncTimer);
   syncTimer=setTimeout(async()=>{try{await Sync._pushOne(P());setSync('synced');}catch(e){setSync('offline');

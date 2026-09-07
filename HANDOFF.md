@@ -1,4 +1,6 @@
-**v2.410.0 is live.** Calendar: Needs attention rows, chips All houses / One house / Free crews, title Calendar.
+**v2.411.0 is live.** Home header is two icons and quiet status. Sign out lives in Settings.
+
+
 
 
 
