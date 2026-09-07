@@ -1,4 +1,6 @@
-**v2.409.0 is live.** Filter pills are 48px. Briefcase says Add a house. Scrim count is pinned at 64.
+**v2.410.0 is live.** Calendar: Needs attention rows, chips All houses / One house / Free crews, title Calendar.
+
+
 
 
 
