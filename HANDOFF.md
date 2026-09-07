@@ -1,4 +1,6 @@
-**v2.412.0 is live.** Guest packet paints house, trade and dates from the URL before Firebase.
+**v2.413.0 is live.** Homeowner and crew invites skip the builder role picker — the invite sets who you are.
+
+
 
 
 

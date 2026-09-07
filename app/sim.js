@@ -1785,6 +1785,19 @@ t('the bar instructs rather than promising to open the app',
 t('boot stands the full-screen nudge down when the bar takes the screen',
   SRC.indexOf('if(!_invBarUp)maybeNudgeInstall()')>=0&&SRC.indexOf('_invBarUp=maybeInviteBar()')>=0);
 
+t('homeowner invite link names the role', $("(function(){const p=P();p.invites=p.invites||[];p.invites.push({code:'PB-HOTEST1',role:'client',status:'open'});const u=plumbInviteLink('PB-HOTEST1');p.invites=p.invites.filter(i=>i.code!=='PB-HOTEST1');return u.indexOf('invite=PB-HOTEST1')>=0&&u.indexOf('r=client')>=0;})()")===true);
+t('crew invite link names the role', $("(function(){const p=P();p.invites=p.invites||[];p.invites.push({code:'PB-CRTEST1',role:'sub',status:'open'});const u=plumbInviteLink('PB-CRTEST1');p.invites=p.invites.filter(i=>i.code!=='PB-CRTEST1');return u.indexOf('r=sub')>=0;})()")===true);
+t('invite signup does not stamp a builder role from the picker', SRC.indexOf("const rpRole=invCode?'':")>=0);
+$("window.__snapLa={m:laMode,inv:document.getElementById('laInvite').value,role:document.getElementById('laRoleRow').style.display,hint:document.getElementById('laJoinHint').style.display}");
+$("laMode='signup';document.getElementById('laInvite').value='';_invRoleHint='';syncInviteSignupChrome()");
+t('signup without an invite still shows Your role', $("document.getElementById('laRoleRow').style.display")!=='none');
+$("document.getElementById('laInvite').value='PB-HOTEST1';_invRoleHint='client';syncInviteSignupChrome()");
+t('signup with an invite hides Your role', $("document.getElementById('laRoleRow').style.display")==='none');
+t('homeowner invite says joining as the homeowner', $("document.getElementById('laJoinHint').textContent.toLowerCase()").indexOf('homeowner')>=0);
+t('the join hint shows on invite signup', $("document.getElementById('laJoinHint').style.display")!=='none');
+$("(function(){const s=window.__snapLa;laMode=s.m;document.getElementById('laInvite').value=s.inv;document.getElementById('laRoleRow').style.display=s.role;document.getElementById('laJoinHint').style.display=s.hint;_invRoleHint='';delete window.__snapLa;})()");
+
+
 // cleanup: leave nothing for the fuzz below
 $("['plumbPendingInvite','plumb.mode','plumb.liveAuth'].forEach(k=>localStorage.removeItem(k))");
 $("sessionStorage.removeItem('plumbInvBarOff')");

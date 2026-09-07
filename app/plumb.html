@@ -2583,8 +2583,9 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
               </select>
               <div class="la-hint">Your role — warnings like missing install specs are addressed to the responsible party.</div>
             </div>
+            <div class="la-hint ta-c" id="laJoinHint" style="display:none">This invite already sets who you are.</div>
             <div class="la-fld" id="laInviteRow" style="display:none">
-              <input id="laInvite" placeholder="Invite code (e.g. PB-XXXXXXX)" autocapitalize="characters" autocomplete="off">
+              <input id="laInvite" placeholder="Invite code (e.g. PB-XXXXXXX)" autocapitalize="characters" autocomplete="off" oninput="syncInviteSignupChrome()">
               <button class="la-link mt-2 ml-0 mr-0 mb-0 fs-xs btn btn-quiet" type="button" onclick="lainvPaste()">Paste code</button>
               <div class="la-hint">From your builder — joins you to their job site as the crew or homeowner.</div>
             </div>
@@ -3879,15 +3880,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.412.0 - Packet paints first';
+const PLUMB_VERSION='2.413.0 - Invite sets the role';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789320000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.412.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789330000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.413.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5813,10 +5814,10 @@ function liveAuthToggle(){laMode=laMode==='signin'?'signup':'signin';laErr('');
   document.getElementById('laNameRow').style.display=laMode==='signup'?'':'none';
   document.getElementById('laPass2Row').style.display=laMode==='signup'?'':'none';
   try{document.getElementById('laPass2').value='';}catch(e){}
-  document.getElementById('laRoleRow').style.display=laMode==='signup'?'':'none';
   document.getElementById('laGo').textContent=laMode==='signup'?'Create account':'Sign in';
   document.getElementById('laToggle').textContent=laMode==='signup'?'I have an account — sign in':'Create account';
-  const pw=document.getElementById('laPass');pw.autocomplete=laMode==='signup'?'new-password':'current-password';}
+  const pw=document.getElementById('laPass');pw.autocomplete=laMode==='signup'?'new-password':'current-password';
+  syncInviteSignupChrome();}
 function laRenderState(){const p=laProfile();const signed=document.getElementById('laSignedIn'),form=document.getElementById('laForm');if(!signed||!form)return;
   if(p){signed.style.display='';form.style.display='none';
     document.getElementById('laSignedTxt').innerHTML='Signed in as <b>'+esc(p.name||p.email)+'</b> · '+esc(RP_ROLES[p.rpRole]||'')+(p.provider==='local'?'<br><span class="fs-xs u-m14">Device-only account — connect sync for a real one</span>':'');}
@@ -5897,7 +5898,8 @@ async function liveAuthSubmit(){
   const email=(document.getElementById('laEmail').value||'').trim().toLowerCase();
   const pass=document.getElementById('laPass').value||'';
   const name=(document.getElementById('laName').value||'').trim();
-  const rpRole=document.getElementById('laRole').value||'owner';
+  const invCode=(document.getElementById('laInvite')||{value:''}).value.trim();
+  const rpRole=invCode?'':(document.getElementById('laRole').value||'owner');
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){laErr('Enter a valid email address.');return;}
   if(laMode==='signup'&&!name){laErr('Enter your name.');return;}
   if(laMode==='signup'&&pass.length<8){laErr('Password must be at least 8 characters.');return;}
@@ -5917,7 +5919,6 @@ async function liveAuthSubmit(){
         cred=await firebase.auth().signInWithEmailAndPassword(email,pass);
       }
       const prof={provider:'firebase',uid:cred.user.uid,email,emailVerified:!!cred.user.emailVerified,name:laMode==='signup'?name:(cred.user.displayName||email),rpRole:laMode==='signup'?rpRole:( (laProfile()&&laProfile().email===email&&laProfile().rpRole)||rpRole)};
-      const invCode=(document.getElementById('laInvite')||{value:''}).value.trim();
       if(invCode){const m=await redeemInvite(invCode,prof);if(m===false)return;if(m){prof.member=m;if(m.rpRole)prof.rpRole=m.rpRole;if(m.gates)prof.gates=m.gates;_invClearHandoff();}}
       else{const old=laProfile();if(old&&old.email===email&&old.member)prof.member=old.member;}
       laSaveProfile(prof);laEnter(prof);
@@ -13846,10 +13847,50 @@ function inviteMatchesSub(inv,sub){
   if(inv.subId)return String(inv.subId)===String(sub.id);
   return inv.name===sub.name; // legacy invite without subId
 }
+function inviteRoleForCode(code){
+  code=String(code||'').trim().toUpperCase();
+  if(!code)return '';
+  try{
+    for(const p of (state.projects||[])){
+      const inv=(p.invites||[]).find(i=>String(i.code||'').toUpperCase()===code);
+      if(inv)return inv.role||'';
+    }
+    const t=(typeof laTeamInvites==='function'?laTeamInvites():[]).find(i=>String(i.code||'').toUpperCase()===code);
+    if(t)return 'team';
+  }catch(e){}
+  return '';
+}
+let _invRoleHint='';
+function inviteJoinLabel(r){
+  r=String(r||'').toLowerCase();
+  if(r==='client')return 'You\u2019re joining as the homeowner.';
+  if(r==='sub')return 'You\u2019re joining as the crew.';
+  if(r==='team')return 'You\u2019re joining the builder\u2019s team.';
+  return 'This invite already sets who you are.';
+}
+function syncInviteSignupChrome(){
+  const has=!!(((document.getElementById('laInvite')||{}).value||'').trim()||(typeof invPendingCode==='function'&&invPendingCode()));
+  const roleRow=document.getElementById('laRoleRow');
+  const hint=document.getElementById('laJoinHint');
+  if(has){
+    if(roleRow)roleRow.style.display='none';
+    if(hint){
+      const r=_invRoleHint||((typeof URLSearchParams==='function'?(new URLSearchParams(location.search||'').get('r')||''):''));
+      hint.textContent=inviteJoinLabel(r);
+      hint.style.display=laMode==='signup'?'':'none';
+    }
+  }else{
+    if(roleRow)roleRow.style.display=laMode==='signup'?'':'none';
+    if(hint)hint.style.display='none';
+  }
+}
 function plumbInviteLink(code){
   try{
     const base=location.origin+location.pathname.replace(/[^/]*$/,'');
-    return base+'?invite='+encodeURIComponent(code);
+    let url=base+'?invite='+encodeURIComponent(code);
+    const r=inviteRoleForCode(code);
+    if(r)url+='&r='+encodeURIComponent(r);
+    return url;
   }catch(e){return '';}
 }
 async function shareInvite(code){
@@ -13890,7 +13931,7 @@ async function lainvPaste(){
   try{
     if(navigator.clipboard&&navigator.clipboard.readText){
       const t=String((await navigator.clipboard.readText())||'').trim();
-      if(t){inp.value=t.toUpperCase();inp.focus();toast('Code pasted');return;}
+      if(t){inp.value=t.toUpperCase();inp.focus();try{syncInviteSignupChrome();}catch(e){}toast('Code pasted');return;}
     }
   }catch(e){}
   inp.focus();
@@ -13901,7 +13942,9 @@ function invPendingCode(){try{
 function _invClearHandoff(){
   try{localStorage.removeItem('plumbPendingInvite');}catch(e){}
   try{history.replaceState(null,'',location.origin+location.pathname);}catch(e){}
-  try{const b=document.getElementById('invBar');if(b)b.classList.remove('show');}catch(e){}}
+  try{const b=document.getElementById('invBar');if(b)b.classList.remove('show');}catch(e){}
+  _invRoleHint='';
+  try{syncInviteSignupChrome();}catch(e){}}
 function invBarDismiss(){
   try{const b=document.getElementById('invBar');if(b)b.classList.remove('show');}catch(e){}
   try{sessionStorage.setItem('plumbInvBarOff','1');}catch(e){}}
@@ -13944,6 +13987,7 @@ function consumeInviteLink(){
     let code=(params.get('invite')||'').trim();
     if(!code)code=(localStorage.getItem('plumbPendingInvite')||'').trim();
     if(!code)return;
+    _invRoleHint=(params.get('r')||'').trim();
     try{setMode('real');}catch(e){}
     const row=document.getElementById('laInviteRow');if(row)row.style.display='';
     const fld=document.getElementById('laInvite');if(fld)fld.value=code.toUpperCase();
@@ -13952,6 +13996,7 @@ function consumeInviteLink(){
     // returning users have a saved profile → keep Sign in; new users → Create account
     const known=!!laProfile();
     try{if(!known&&laMode==='signin'&&typeof liveAuthToggle==='function')liveAuthToggle();}catch(e){}
+    try{syncInviteSignupChrome();}catch(e){}
     toast(known?'Invite code filled \u2014 sign in to join':'Invite code filled \u2014 create your account to join');
     try{const fe=document.getElementById('laEmail');if(fe&&!known)setTimeout(()=>{try{fe.focus();}catch(e){}},200);}catch(e){}
     /* The code STAYS in the address bar on purpose - see invPendingCode above.
