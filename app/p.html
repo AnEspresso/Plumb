@@ -106,14 +106,42 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:600;line-height:var(--lh-tight);
 .spec-kv .gap{color:var(--clay);font-style:italic}
 .rem{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);font-size:var(--t-sm);color:var(--ink-2)}
 .rem input{width:auto;min-height:auto}
+.btn[disabled]{opacity:.45;pointer-events:none}
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js"></script>
 </head>
 <body>
 <div class="wrap" id="body"><div class="empty">Opening your packet…</div></div>
 <div class="toast" id="toast"></div>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search||"");
+  var house=(q.get("h")||"").trim();
+  var trade=(q.get("t")||"").trim();
+  var s=Number(q.get("s")||0);
+  var e=Number(q.get("e")||0);
+  if(!house&&!trade&&!s)return;
+  function esc(x){return String(x||"").replace(/[&<>"']/g,function(c){return {"&":"&"+"amp;","<":"&"+"lt;",">":"&"+"gt;",'"':"&"+"quot;","'":"&#39;"}[c];});}
+  function dates(a,b){
+    if(!a)return "Dates coming";
+    var o={month:"short",day:"numeric"};
+    var A=new Date(Number(a)).toLocaleDateString(undefined,o);
+    var B=new Date(Number(b||a)).toLocaleDateString(undefined,o);
+    return A===B?A:A+" \u2013 "+B;
+  }
+  var el=document.getElementById("body");if(!el)return;
+  el.innerHTML='<div class="brand wordmark"><span class="dot"></span>SitePlumb</div>'
+    +'<div class="card"><div class="hero-n">'+esc(dates(s,e))+'</div>'
+    +'<div class="hero-l">'+esc(house)+'</div>'
+    +(trade?('<div class="hero-s">'+esc(trade)+'</div>'):'')
+    +'</div>'
+    +'<button class="btn btn-primary btn-block" disabled>These dates work</button>';
+  window.__gpUrlPainted=true;
+  window.__gpPaintedAt=performance.now();
+})();
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js"></script>
 <script>
 (function(){
 var CFG={apiKey:"AIzaSyBSu0L0yqURyQOx57LZnj4EdS_9rhWxrwo",authDomain:"plumb-467a0.firebaseapp.com",projectId:"plumb-467a0",storageBucket:"plumb-467a0.firebasestorage.app",messagingSenderId:"746860454898",appId:"1:746860454898:web:67e0b710d48ba55f90016b"};
@@ -154,6 +182,10 @@ function db(){
   return firebase.firestore();
 }
 function fail(msg){
+  if(window.__gpUrlPainted){
+    toast(msg);
+    return;
+  }
   document.getElementById("body").innerHTML='<div class="brand wordmark"><span class="dot"></span>SitePlumb</div><div class="empty"><b>This packet will not open</b>'+msg+'</div><button class="btn btn-primary btn-block" onclick="location.reload()">Try again</button>';
 }
 function row(title,sub,aside,asideCls){
@@ -373,7 +405,8 @@ function listen(){
   },4000);
 }
 function boot(){
-  if(!TOKEN){fail("This link is missing its packet. Reply to the text you got and your builder will send a fresh one.");return;}
+  if(window.__packetFixture){apply(window.__packetFixture);return;}
+  if(!TOKEN){if(window.__gpUrlPainted)return;fail("This link is missing its packet. Reply to the text you got and your builder will send a fresh one.");return;}
   var t0=Date.now(),tries=0,wait=20000;
   (function look(){
     var d=db();

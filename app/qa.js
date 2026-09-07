@@ -490,6 +490,55 @@ async function tappable(page,sel){
   t('guest question renders in the thread', await guest.evaluate(()=>document.getElementById('gpBody').innerHTML.includes('Gas or electric water heater?')&&document.getElementById('gpBody').innerHTML.includes('will get back to you')));
   await shot(guest,'13-guest-question');
 
+  /* ══ p.html itself: URL-first paint and fixture ══ */
+  const pFix=await prepPage(browser);
+  await pFix.evaluateOnNewDocument(()=>{
+    window.__packetFixture={v:1,t:Date.now(),expires:Date.now()+10*864e5,
+      site:'288 Calderwood Ln \u00b7 Ferndale',builder:'Demo Builder',sub:'Clearwater Plumbing',
+      trade:'plumb',tradeLabel:'Plumbing',start:Date.now()+3*864e5,end:Date.now()+5*864e5,
+      note:'Rough-in \u2014 gate code 4417',
+      specs:[{item:'Brushed brass / matte black',cat:'Plumbing Fixtures',room:'Whole House',
+        rows:[{k:'Finish',v:'Brushed brass / matte black'},{k:'Valve height',gap:'builder'}]}],
+      docs:['Mechanical / HVAC Layout.pdf'],siteId:'p2',bookingId:'bk_p2a',resp:null,
+      ctx:{ready:'House marked ready for you',readyOk:true,permit:'Plumbing Permit: Issued',insp:'rough plumb inspection: scheduled',
+        history:[{d:'Jul 30',text:'Roof dried-in, windows and exterior doors installed'},{d:'Jul 28',text:'Framing topped out, trusses set and braced'}]}};
+  });
+  await pFix.goto('http://localhost:'+PORT+'/p.html?packet=qa',{waitUntil:'load'});
+  await new Promise(r=>setTimeout(r,400));
+  t('p.html fixture paints the hero', await pFix.evaluate(()=>{
+    const n=document.querySelector('.hero-n');
+    const l=document.querySelector('.hero-l');
+    return !!(n&&n.textContent.trim()&&l&&l.textContent.indexOf('Calderwood')>=0);
+  }));
+  const pPrim=await tappable(pFix,'#body .btn-primary');
+  t('p.html primary tappable', pPrim.ok, pPrim.why);
+  t('p.html primary is These dates work', await pFix.evaluate(()=>{
+    const el=document.querySelector('#body .btn-primary');
+    return !!(el&&(el.textContent||'').indexOf('These dates work')>=0);
+  }));
+  await pFix.evaluate(()=>gpConfirm());
+  await new Promise(r=>setTimeout(r,200));
+  t('p.html confirm offers the calendar', await pFix.evaluate(()=>document.body.innerHTML.indexOf('Confirmed.')>=0&&document.body.innerHTML.indexOf('Add to my calendar')>=0));
+  await pFix.evaluate(()=>gpAddToCal());
+  await new Promise(r=>setTimeout(r,150));
+  t('p.html calendar chooser offers device and Google', await pFix.evaluate(()=>{const h=document.getElementById('gpCalPick');return h&&h.classList.contains('show')&&h.innerHTML.indexOf('Google Calendar')>=0;}));
+  await shot(pFix,'14-phtml-packet');
+
+  const pFast=await prepPage(browser);
+  await pFast.setRequestInterception(true);
+  pFast.on('request',req=>{
+    if(req.resourceType()==='document')req.continue();
+    else req.abort();
+  });
+  await pFast.goto('http://localhost:'+PORT+'/p.html?h=288%20Calderwood%20Ln&t=Excavation&s=1757376000000&e=1757980800000',{waitUntil:'domcontentloaded'});
+  const urlPaint=await pFast.evaluate(()=>{
+    const n=document.querySelector('.hero-n');
+    const l=document.querySelector('.hero-l');
+    return {dates:(n&&n.textContent||'').trim(),house:(l&&l.textContent||'').trim(),at:window.__gpPaintedAt||0,painted:!!window.__gpUrlPainted};
+  });
+  t('p.html paints dates from the URL with network blocked', !!(urlPaint.painted&&/Sep|Sept|9/.test(urlPaint.dates)&&urlPaint.house.indexOf('Calderwood')>=0), JSON.stringify(urlPaint));
+  t('p.html dates on screen under 300ms', urlPaint.at>0&&urlPaint.at<=300, String(urlPaint.at));
+
   /* ══ ACCESSIBILITY (axe-core): no critical violations allowed ══ */
   await page.evaluate(()=>{try{demoRole('builder');showOverview();}catch(e){}});
   await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});

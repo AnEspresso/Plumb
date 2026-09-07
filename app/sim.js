@@ -1227,6 +1227,7 @@ t('Field Notes does not auto-open the camera', SRC.indexOf('function openFieldNo
 t('Field Notes drop waits', SRC.indexOf('function dropPickPhoto')>=0&&SRC.indexOf('function _fnArmDrop')>=0&&SRC.indexOf('_fnSheetOrder(true)')>=0);
 t('packet share keeps the link', SRC.indexOf('function pkDoShare')>=0&&SRC.indexOf('Text this link')>=0);
 t('new packet links point at the light page', SRC.indexOf('app/p.html?packet=')>=0);
+t('packet link carries house and dates', $("String(_sharePacketLink)").indexOf('&h=')>=0&&$("String(_sharePacketLink)").indexOf('&s=')>=0);
 t('old packet arrival still works', SRC.indexOf('_PACKET_ON_ARRIVAL')>=0);
 t('guest packet page is under 50 KB', fs.statSync(path.join(__dirname,'p.html')).size<50000);
 (function(){
@@ -1238,6 +1239,7 @@ t('guest packet page is under 50 KB', fs.statSync(path.join(__dirname,'p.html'))
   t('guest packet does not repaint while asking', PHTML.indexOf('function busy()')>=0&&PHTML.indexOf('function apply(g)')>=0&&PHTML.indexOf('if(busy())return')>=0);
   t('guest packet calendar sits above the phone chrome', PHTML.indexOf('cal-acts')>=0&&PHTML.indexOf('padding-bottom:calc(var(--s-8)')>=0);
   t('guest packet pretty-prints inspection dates', PHTML.indexOf('function fmtIso')>=0);
+  t('guest packet paints the hero from the URL', PHTML.indexOf('__gpUrlPainted')>=0&&PHTML.indexOf('__packetFixture')>=0);
   const i=PHTML.indexOf('initializeApp'),a=PHTML.indexOf('appCheck'),f=PHTML.indexOf('firebase.firestore()');
   t('guest packet App Check after initializeApp', i>=0&&a>i&&f>a);
 })();

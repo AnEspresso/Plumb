@@ -1,4 +1,6 @@
-**v2.411.0 is live.** Home header is two icons and quiet status. Sign out lives in Settings.
+**v2.412.0 is live.** Guest packet paints house, trade and dates from the URL before Firebase.
+
+
 
 
 
