@@ -287,10 +287,10 @@ const decCount=$("(()=>{const p=clientProj();const sels=p.selections||[];const d
 t('Decisions stat equals union invariant', decCount===1?cl.includes('One thing still needs you'):cl.includes(String(decCount)+' still need you'),'shown-rows='+decShown+' union='+decCount);
 // pending items refuse sign-off; selected items sign
 asClient('p1');
-$("Data.updateSelection("+simSelId+",{status:'pending'})");
+asBuilder();$("Data.updateSelection("+simSelId+",{status:'pending'})");asClient('p1');
 $("clientSignoff("+simSelId+")");
 t('pending blocks sign-off',$("state.projects[0].selections.find(s=>s.id==="+simSelId+").approved")===false);
-$("Data.updateSelection("+simSelId+",{status:'selected'})");
+asBuilder();$("Data.updateSelection("+simSelId+",{status:'selected'})");asClient('p1');
 $("clientSignoff("+simSelId+")");
 const signed=$("state.projects[0].selections.find(s=>s.id==="+simSelId+").signed");
 t('sign-off recorded with buyer names',!!(signed&&signed.by&&signed.by.length),JSON.stringify(signed));
@@ -303,10 +303,10 @@ cl=clientHTML('p1','home');
 const outStr='$'+Math.abs(ledO.out).toLocaleString();
 t('Home Outstanding equals ledger.out',cl.includes(outStr),outStr);
 // install-question gate: installed items ask nothing of the homeowner
-$("Data.updateSelection("+simSelId+",{status:'installed'})");
+asBuilder();$("Data.updateSelection("+simSelId+",{status:'installed'})");asClient('p1');
 cl=clientHTML('p1','specs');
 t('installed item asks no install questions',!(new RegExp('data-sid="'+simSelId+'"').test(cl)));
-$("Data.updateSelection("+simSelId+",{status:'selected'})"); // restore for fuzz variety
+asBuilder();$("Data.updateSelection("+simSelId+",{status:'selected'})");asClient('p1'); // restore for fuzz variety
 
 /* ════ 4 · BILLING LIFECYCLE (p3 Whitaker INV-002) ════ */
 S('billing');
@@ -816,7 +816,7 @@ asBuilder();$("state.activeId='p2'");
 S('server plumbing');
 asBuilder();$("state.activeId='p2'");
 t('fnCall + qb surface defined', $("typeof fnCall")==='function'&&$("typeof qbExportNow")==='function'&&$("typeof qbRefreshStatus")==='function');
-t('fnCall refuses when signed out of Firebase', await $("fnCall('qbStatus',{}).then(()=>'ok',e=>e.message)")==='sign in first');
+t('fnCall refuses cloud actions on an unconfigured test host', /disabled/.test(await $("fnCall('qbStatus',{}).then(()=>'ok',e=>e.message)")));
 t('qb gated OFF in demo mode', $('qbEligible()')===false);
 $('renderBudget()');
 t('no QuickBooks button in a demo budget', !el('budgetBody').innerHTML.includes('Send new costs to QuickBooks'));
@@ -947,7 +947,7 @@ t('snapshot expiry outlives the booking', snap.expires>snap.end&&snap.expires>Da
 t('snapshot docs are sub-audience names only', Array.isArray(snap.docs)&&snap.docs.every(d=>typeof d==='string'));
 // guest render from a fixture (exactly the offline/QA path)
 $("window.__packetFixture="+JSON.stringify(snap));
-$("renderGuestPacket('fixture-test')");
+$("renderGuestPacket('preview')");
 t('guest page renders with both decision buttons', el('gpBody').innerHTML.indexOf('These dates work')>=0&&el('gpBody').innerHTML.indexOf('Suggest different dates')>=0);
 t('guest page shows the specs it was sent', el('gpBody').innerHTML.toLowerCase().indexOf('install specs')>=0);
 t('guest overlay is showing', $("document.getElementById('guestScrim').classList.contains('show')")===true);
@@ -1069,10 +1069,10 @@ t('review packet closes the schedule sheet', $("String(bkOpenPacket)").indexOf('
 t('gear hides when a sheet is up', SRC.indexOf('body:has([id$="Scrim"].show) #devDot')>=0);
 setTimeout(function(){},0);
 $("window.__packetFixture="+JSON.stringify(snap));
-$("renderGuestPacket('fixture-test')");
+$("renderGuestPacket('preview')");
 $("gpToggleAsk()");
 $("document.getElementById('gpQText').value='Is the water heater gas or electric?'");
-$("gpSendQuestion()");
+await $("gpSendQuestion()");
 t('guest question appends to the thread and renders', (function(){const q=JSON.parse($("JSON.stringify(_gpSnap.q)"));return q.length===1&&q[0].text.indexOf('water heater')>=0&&el('gpBody').innerHTML.indexOf('will get back to you')>=0;})());
 t('builder thread offers Answer and Share for an open question', (function(){const h=$("_bkQHTML(state.projects[1],state.projects[1].bookings[0],_gpSnap)");return h.indexOf('Answer')>=0&&h.indexOf('Share with homeowner')>=0;})());
 $("_gpSnap.q[0].a='Gas - 3/4 line is stubbed'");
@@ -1226,7 +1226,9 @@ t('Needs You includes open field issues', SRC.indexOf('nyOpenItem')>=0&&SRC.inde
 t('Field Notes does not auto-open the camera', SRC.indexOf('function openFieldNote')>=0&&SRC.indexOf("openFieldNote();")>=0&&SRC.split('function openFieldNote')[1].split('function openSheet')[0].indexOf('.click()')<0);
 t('Field Notes drop waits', SRC.indexOf('function dropPickPhoto')>=0&&SRC.indexOf('function _fnArmDrop')>=0&&SRC.indexOf('_fnSheetOrder(true)')>=0);
 t('packet share keeps the link', SRC.indexOf('function pkDoShare')>=0&&SRC.indexOf('Text this link')>=0);
-t('new packet links point at the light page', SRC.indexOf('app/p.html?packet=')>=0);
+$("_sharePacketLink({site:'QA house',tradeLabel:'Plumbing',start:Date.now(),end:Date.now()},'pk_qa')");
+t('new packet links point at the light page on this host', $("window._pkLastShare.url").startsWith('https://sim.test/p.html?packet=pk_qa'));
+$('closeInfo()');
 t('packet link carries house and dates', $("String(_sharePacketLink)").indexOf('&h=')>=0&&$("String(_sharePacketLink)").indexOf('&s=')>=0);
 t('old packet arrival still works', SRC.indexOf('_PACKET_ON_ARRIVAL')>=0);
 t('guest packet page is under 50 KB', fs.statSync(path.join(__dirname,'p.html')).size<50000);
@@ -1376,7 +1378,7 @@ t('waiting shows ask this crew again', $("String(_bkBriefHTML)").indexOf('Ask th
 t('the tapped reason leads the booking', $("String(_nyIssues)").indexOf("openBk('${p.id}|${b.id}','wait')")>=0&&$("String(openBk)").indexOf('_bkLead')>=0&&$("String(bkLeadOrder)").indexOf('appendChild')>=0);
 t('booking alerts have a gap', $("!!document.getElementById('bkAlerts')")===true&&$("document.documentElement.innerHTML").indexOf('.bk-alerts{display:flex;flex-direction:column;gap:12px')>=0);
 t('the packet link sits after the review', $("!!document.getElementById('bkSendLink')")===true&&$("String(bkRenderGuestRow)").indexOf('sendGuestPacket')<0&&$("String(bkRenderSendLink)").indexOf('sendGuestPacket')>=0);
-t('a sent packet updates live', $("String(persist)").indexOf('pkPublishSoon')>=0&&$("String(pkPublishOne)").indexOf("update(")>=0&&$("String(pkPublishOne)").indexOf('resp')<0&&$("String(_gpListen)").indexOf('onSnapshot')>=0);
+t('a sent packet updates live', $("String(persist)").indexOf('pkPublishSoon')>=0&&$("String(pkPublishOne)").indexOf("update(")>=0&&$("Object.keys(packetPublicPatch({}))").every(k=>!['resp','q'].includes(k))&&$("String(_gpListen)").indexOf('onSnapshot')>=0);
 t('packet updates say what changed', $("typeof pkDiffWhat")==='function'&&$("String(_gpRender)").indexOf('gp-updated')>=0&&$("String(pkPublishOne)").indexOf('lastChange')>=0&&$("typeof pkOfferTellThem")==='function');
 t('double-booked names the dates', $("typeof _dblWhere")==='function'&&$("String(_bkBriefHTML)").indexOf('_dblWhere')>=0&&$("String(_bkBriefHTML)").indexOf('See their calendar')>=0&&$("typeof openCalCrew")==='function'&&$("String(calVisibleBookings)").indexOf('calCrewFilter')>=0);
 t('builder creates the company record if the first read is refused', $("String(Org._adopt)").indexOf('org create')>=0&&$("String(Org._adopt)").indexOf('this.push')>=0);
@@ -1436,7 +1438,7 @@ t('a date change whispers on the house card', (function(){
 t('the packet page keeps listening after it opens', $("String(renderGuestPacket)").indexOf('_gpListen')>=0&&$("String(_gpListen)").indexOf('onSnapshot')>=0);
 t('a painted packet is not wiped on a slow retry', $("String(renderGuestPacket)").indexOf('painted')>=0&&$("String(renderGuestPacket)").indexOf('20000')>=0);
 t('answers are stamped onto the booking so Needs You can show them', $("String(_pkStamp)").indexOf('pkQs')>=0);
-t('the live packet is refreshed with new docs and specs', $("typeof pkPublishOne")==='function'&&$("String(pkPublishOne)").indexOf('docs')>=0&&$("String(persist)").indexOf('pkPublishSoon')>=0&&$("String(pkPublishOne)").indexOf('.resp')<0);
+t('the live packet is refreshed with new docs and specs', $("typeof pkPublishOne")==='function'&&$("Object.keys(packetPublicPatch({}))").includes('docs')&&$("String(persist)").indexOf('pkPublishSoon')>=0&&$("String(pkPublishOne)").indexOf('.resp')<0);
 
 
 /* ════ 14l · PRIVACY & LEGAL + ACCOUNT DELETION ════ */

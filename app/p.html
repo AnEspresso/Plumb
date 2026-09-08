@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="runtime.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#F2EEE6">
 <meta name="robots" content="noindex">
@@ -157,10 +158,10 @@ function busy(){
   var ae=document.activeElement;
   return !!(ae&&(ae.id==="gpNote"||ae.id==="gpQText"||ae.id==="gpPrefCal"));
 }
-function sig(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||"",start:x.start,end:x.end,ctx:x.ctx||null,lastChange:x.lastChange||""});}
+function sig(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||"",start:x.start,end:x.end,ctx:x.ctx||null,release:x.release||null,lastChange:x.lastChange||""});}
 function apply(g){
   if(!g)return;
-  if((g.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}
+  if(g.revoked||(g.expires||0)<Date.now()){_snap=g;fail("This link is no longer current. Ask your builder for current instructions.",true);return;}
   if(_snap&&sig(g)===sig(_snap))return;
   if(busy()){_pending=g;return;}
   _snap=g;paint();
@@ -173,6 +174,7 @@ function fmtWin(w){if(!w)return "";var o={month:"short",day:"numeric"};var a=new
 function rangeLabel(sv,ev){if(!sv)return "Choose dates";var a=new Date(sv+"T12:00:00"),b=new Date((ev||sv)+"T12:00:00");var f=function(d){return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});};return sv===(ev||sv)?f(a):f(a)+" \u2013 "+f(b);}
 function fmtIso(s){return String(s||"").replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g,function(_,y,m,d){return new Date(Number(y),Number(m)-1,Number(d)).toLocaleDateString(undefined,{month:"short",day:"numeric"});});}
 function db(){
+  if(!window.PlumbRuntime||window.PlumbRuntime.kind!=='production')return null;
   if(typeof firebase==="undefined"||!firebase.firestore)return null;
   if(!firebase.apps.length)firebase.initializeApp(CFG);
   if(!_ck){
@@ -181,8 +183,8 @@ function db(){
   }
   return firebase.firestore();
 }
-function fail(msg){
-  if(window.__gpUrlPainted){
+function fail(msg,force){
+  if(window.__gpUrlPainted&&!force){
     toast(msg);
     return;
   }
@@ -194,6 +196,7 @@ function row(title,sub,aside,asideCls){
 function paint(){
   var g=_snap,body=document.getElementById("body");
   if(!g){fail("This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.");return;}
+  if(g.revoked||(g.expires||0)<Date.now()){fail("This link is no longer current. Ask your builder for current instructions.",true);return;}
   var dates=fmtWin({start:(g.resp&&g.resp.start)||g.start,end:(g.resp&&g.resp.end)||g.end});
   var h="";
   h+='<div class="brand wordmark"><span class="dot"></span>SitePlumb</div>';
@@ -243,6 +246,7 @@ function paint(){
     h+=cx.history.map(function(x){return row(x.text,esc(x.d),"","");}).join("");
   }
   if((g.specs||[]).length){
+    h+=row((g.release&&g.release.label)||"Approval status needs review",(g.release&&g.release.approved)?"Use these details after the site is marked ready.":"Do not install until your builder releases these instructions.","",(g.release&&g.release.approved)?"ok":"warn");
     h+='<div class="sec"><h2>Install specs</h2></div>';
     h+=g.specs.map(function(sel){
       var rows=(sel.rows||[]).map(function(r){return r.gap
@@ -341,12 +345,20 @@ window.gpToggleChange=function(){
   if(s)s.value=g.start?iso(g.start):"";if(en)en.value=(g.end||g.start)?iso(g.end||g.start):"";
   _cur=g.start?new Date(new Date(g.start).getFullYear(),new Date(g.start).getMonth(),1):null;gpRenderCal();
 };
-function writeResp(resp){
-  _snap.resp=resp;
-  var d=db();
-  if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({resp:resp}).catch(function(){toast("Could not save \u2014 try again with a bar of signal");});}catch(e){toast("Could not save");}}
-  paint();
+var _saving=false,_questionDraft=null;
+async function savePatch(patch,localPatch){
+  if(_saving)return false;
+  _saving=true;
+  try{
+    if(!_snap||_snap.revoked||(_snap.expires||0)<Date.now())throw new Error('Link no longer current');
+    var d=db();
+    if(!d||!TOKEN)throw new Error('No connection');
+    await d.collection('packets').doc(String(TOKEN)).update(patch);
+    Object.assign(_snap,localPatch||patch);paint();return true;
+  }catch(e){toast('Not saved — your draft is here. Reconnect and try again.');return false;}
+  finally{_saving=false;}
 }
+function writeResp(resp){return savePatch({resp:resp});}
 window.gpConfirm=function(){writeResp({status:"confirmed",t:Date.now()});};
 window.gpSendChange=function(){
   var sv=(document.getElementById("gpStart")||{}).value,ev=(document.getElementById("gpEnd")||{}).value;
@@ -357,13 +369,13 @@ window.gpSendChange=function(){
 };
 window.gpToggleAsk=function(){var e=document.getElementById("gpAsk");if(!e)return;e.classList.toggle("show");if(!e.classList.contains("show"))flushPending();};
 window.gpTogglePrefs=function(){var e=document.getElementById("gpPrefs");if(!e)return;try{var sel=document.getElementById("gpPrefCal");if(sel)sel.value=calPref();}catch(err){}e.classList.toggle("show");if(!e.classList.contains("show"))flushPending();};
-window.gpSendQuestion=function(){
+window.gpSendQuestion=async function(){
   var txt=((document.getElementById("gpQText")||{}).value||"").trim().slice(0,300);
   if(!txt){toast("Type the question");return;}
-  _snap.q=(_snap.q||[]).concat([{text:txt,t:Date.now()}]);
-  var d=db();
-  if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({q:_snap.q}).catch(function(){toast("Could not send \u2014 try again with a bar of signal");});}catch(e){toast("Could not send");}}
-  paint();
+  if(!_questionDraft||_questionDraft.text!==txt)_questionDraft={id:'q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,9),text:txt,t:Date.now()};
+  if(typeof firebase==='undefined'||!firebase.firestore.FieldValue){toast('Not sent — reconnect and try again.');return;}
+  var q=_questionDraft,questions=(_snap.q||[]).filter(function(x){return x.id!==q.id;}).concat([q]);
+  if(await savePatch({q:firebase.firestore.FieldValue.arrayUnion(q)},{q:questions}))_questionDraft=null;
 };
 function ics(g){
   var d=function(ts){var x=new Date(ts),p=function(v){return String(v).padStart(2,"0");};return x.getFullYear()+p(x.getMonth()+1)+p(x.getDate());};
@@ -412,7 +424,7 @@ function boot(){
     var d=db();
     if(!d){if(Date.now()-t0<wait){setTimeout(look,150);return;}fail("This link needs a connection to open. Get a bar of signal and tap Try again.");return;}
     d.collection("packets").doc(String(TOKEN)).get().then(function(x){
-      if(x&&x.exists){_snap=x.data();if((_snap.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}paint();listen();return;}
+      if(x&&x.exists){_snap=x.data();if(_snap.revoked||(_snap.expires||0)<Date.now()){paint();return;}paint();listen();return;}
       if(++tries<8&&Date.now()-t0<wait){setTimeout(look,350);return;}
       fail("This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.");
     }).catch(function(){

@@ -1,0 +1,8 @@
+node_modules
+screenshots/
+dist-qa/
+.firebase/
+*.log
+.env
+.env.*
+functions/.env

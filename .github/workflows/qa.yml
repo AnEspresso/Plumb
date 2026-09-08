@@ -14,9 +14,23 @@ on:
     paths:
       - 'app/**'
       - '.github/workflows/qa.yml'
+      - 'tests/**'
+      - 'qa/**'
+      - 'scripts/build-qa-preview.mjs'
+      - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
 
 jobs:
+  communication-loop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci --ignore-scripts
+      - run: npm run test:loop
+
   ritual:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: app } }
@@ -80,6 +94,7 @@ jobs:
           node qa-smoke.js
 
   verify-live:
+    if: github.ref == 'refs/heads/main'
     # Is the LIVE site complete and self-consistent, and at least as new as the
     # commit under test? Deliberately NOT a byte-compare against this commit:
     # a later push (or a re-run of an old run) makes live legitimately differ,
