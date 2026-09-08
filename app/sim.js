@@ -2313,7 +2313,7 @@ $("openPacket((P().subs.find(function(s){return /Timberline/i.test(s.name);})||P
 })();
 $('closeInfo()');
 $("openPacket((P().subs.find(function(s){return /Fine Line/i.test(s.name);})||P().subs[0]).id)");
-t('Fine Line primary asks for instruction approval', ((el('infoBody')&&el('infoBody').querySelector('.btn-primary')&&el('infoBody').querySelector('.btn-primary').textContent)||'').indexOf('Approve instructions')>=0);
+t('Fine Line primary asks to complete missing details', ((el('infoBody')&&el('infoBody').querySelector('.btn-primary')&&el('infoBody').querySelector('.btn-primary').textContent)||'').indexOf('Complete details')>=0);
 $('closeInfo()');
 t('rewritten screens dropped eyebrow and lbl', (function(){
   const fns=['renderDocs','renderSubs','renderSettings','renderPhotos','renderDayLog'];

@@ -249,6 +249,7 @@ test('overpayment on fully invoiced choices is shown as credit rather than a zer
 test('builder packet presents approval before sharing and stops showing review deadlines once approved',()=>{const h=boot();try{
  h.run("P().subs=[{name:'QA Plumbing',specialty:'plumb',specsDue:Date.now()-864e5,cleared:true}]");
  let html=h.run("packetHTML(P(),'plumb')");assert.match(html,/Approve instructions/);assert.doesNotMatch(html,/>Text this link<|Ready for this trade/);
+ h.run("P().selections[0].spec.finish=''");assert.match(h.run("packetHTML(P(),'plumb')"),/Complete details/);h.run("P().selections[0].spec.finish='brushed brass'");
  approveBoth(h);h.run("state.session={role:'builder',name:'QA builder'}");html=h.run("packetHTML(P(),'plumb')");
  assert.match(html,/>Text this link</);assert.doesNotMatch(html,/Overdue|review due|Ready for this trade/);
  h.run("state.session={role:'client',site:P().id,name:'QA homeowner'}");html=h.run("packetHTML(P(),'plumb')");
