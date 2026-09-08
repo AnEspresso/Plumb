@@ -44,6 +44,18 @@ The focused suite now includes the exact Matte Black → Polished Black sequence
 
 ## Validation
 
+### Mobile screenshot follow-up (2.416.0)
+
+The 33 phone screenshots showed a correct visible revision-approval sequence but duplicated role headers, a stale homeowner request after signing, a distant approval action, and a misleading builder attention label.
+
+- Role overlays now start at the top of their already-offset device container, removing the second QA-toolbar offset that exposed the builder header.
+- Homeowner approval and withdrawal refresh the underlying current page immediately.
+- The homeowner approval action sits beside Close in the sheet footer, outside the scrolling details. It retains the exact-revision check, disappears after signing or when required details are missing, and cannot carry into another information sheet. Revised packets say Approve changes. Homeowner section spacing is tighter.
+- Builder attention uses Approval needed when fields are complete; Spec still open remains reserved for missing answers. Packet task lists exclude their own approval request.
+- Test steps now cover the targeted phone retest. Preview packaging also includes the favicon referenced by the legal pages.
+
+The focused suite passes 29 tests; the final shared-footer cleanup also passes its targeted rerun. The broad simulator reports 911 checks, with 909 passing and the same two existing tour/spotlight failures below. Browser layout gates remain outstanding: this static Site has no compatible supervised development server, and no alternate browser-control path was used. No pixel baselines were blessed. The screenshots and local role switching do not prove cross-device delivery or crew acknowledgement.
+
 Run from the repository root:
 
 ```sh

@@ -255,3 +255,60 @@ test('builder packet presents approval before sharing and stops showing review d
  h.run("state.session={role:'client',site:P().id,name:'QA homeowner'}");html=h.run("packetHTML(P(),'plumb')");
  assert.doesNotMatch(html,/>Signed<\/button>/);assert.match(html,/Withdraw my approval/);
 }finally{h.close();}});
+
+test('homeowner approval and withdrawal refresh the underlying page and keep one action in the fixed footer',()=>{const h=boot();try{
+ h.run("P().subs=[{id:22,name:'QA Plumbing',specialty:'plumb',cleared:Date.now()}];state.session={role:'client',site:P().id,name:'QA homeowner'};clientGo('specs');openClientPacket('plumb')");
+ const doc=h.w.document, body=doc.getElementById('clBody'), foot=doc.getElementById('infoFoot');
+ assert.match(body.textContent,/Install packets to approve/);
+ assert.equal(foot.querySelector('.btn-primary').textContent,'Approve instructions');
+ assert.equal(doc.querySelectorAll('#infoScrim [data-packet-approve]').length,1);
+ assert.equal(doc.querySelector('#infoBody [data-packet-approve]'),null);
+ assert.equal(foot.closest('.sheet-body'),null,'approval stays outside the scrolling content');
+ foot.querySelector('.btn-primary').click();
+ assert.equal(h.run("!!packetSignoff(P(),'plumb').homeowner"),true);
+ assert.doesNotMatch(body.textContent,/Install packets to approve/,'page updates without navigation or reload');
+ assert.equal(foot.querySelector('.btn-primary'),null);
+ assert.match(doc.getElementById('infoBody').textContent,/Your builder reviews next/);
+ h.run("closeInfo();openClientPacket('plumb')");
+ const withdraw=[...doc.querySelectorAll('#infoBody button')].find(b=>b.textContent==='Withdraw my approval');
+ withdraw.click();
+ assert.equal(h.run("!!packetSignoff(P(),'plumb').homeowner"),false);
+ assert.match(body.textContent,/Install packets to approve/);
+ assert.ok(foot.querySelector('.btn-primary'));
+ for(const own of [false,true]){
+  h.run("openClientPacket('plumb')");
+  h.run("showInfo('Another sheet','<p>Unrelated information</p>',"+own+")");
+  assert.equal(foot.querySelector('.btn-primary'),null,'an unrelated sheet cannot inherit an approval action');
+  assert.ok(foot.classList.contains('leave-bar'));
+ }
+}finally{h.close();}});
+
+test('the fixed approval action refuses changed instructions and disappears when required details are missing',()=>{const h=boot();try{
+ approveBoth(h);
+ h.run("state.session={role:'builder',name:'QA builder'};Data.updateSelection(9001,{spec:Object.assign({},P().selections[0].spec,{finish:'Matte Black'})});state.session={role:'client',site:P().id,name:'QA homeowner'};openClientPacket('plumb')");
+ const doc=h.w.document, foot=doc.getElementById('infoFoot');
+ assert.equal(foot.querySelector('.btn-primary').textContent,'Approve changes');
+ h.run("P().selections[0].spec.finish='Polished Black'");
+ foot.querySelector('.btn-primary').click();
+ assert.equal(h.run("!!packetSignoff(P(),'plumb').homeowner"),false);
+ assert.match(doc.getElementById('toast').textContent,/changed/);
+ assert.match(doc.getElementById('infoBody').textContent,/Polished Black/);
+ foot.querySelector('.btn-primary').click();
+ assert.equal(h.run("!!packetSignoff(P(),'plumb').homeowner"),true);
+ assert.equal(h.run("packetReady(P(),'plumb')"),false,'builder must still approve the revision');
+ h.run("P().selections[0].spec.finish='';refreshPacket()");
+ assert.equal(foot.querySelector('.btn-primary'),null);
+}finally{h.close();}});
+
+test('builder attention labels distinguish missing specifications from pending approvals',()=>{const h=boot();try{
+ h.run("P().subs=[{id:22,name:'QA Plumbing',specialty:'plumb',cleared:Date.now()}];P().bookings[0].start=dayStart(Date.now())+3*864e5;P().bookings[0].end=dayStart(Date.now())+4*864e5");
+ const issues=()=>JSON.parse(h.run("JSON.stringify(_nyIssues([P()]).filter(x=>x.go===\"openPacketFor('\"+P().id+\"','plumb')\"))"));
+ assert.ok(issues().some(x=>x.kind==='Approval needed'&&x.line==='Homeowner and builder approval pending'));
+ h.run("state.session={role:'client',site:P().id,name:'QA homeowner'};setPacketSignoff(P(),'plumb','homeowner',true,packetApprovalKey(P(),'plumb'));state.session={role:'builder',name:'QA builder'}");
+ assert.ok(issues().some(x=>x.kind==='Approval needed'&&x.line==='Builder approval pending'));
+ assert.equal(h.run("pktAsk(P(),'plumb').some(x=>String(x.go).startsWith('openPacketFor('))"),false,'packet does not link back to its own approval request');
+ h.run("P().selections[0].spec.finish=''");
+ assert.ok(issues().some(x=>x.kind==='Spec still open'));
+ h.run("P().selections[0].spec.finish='Matte Black'");approveBoth(h);
+ assert.equal(issues().length,0);
+}finally{h.close();}});

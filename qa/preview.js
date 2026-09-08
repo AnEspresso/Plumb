@@ -19,11 +19,11 @@
     s.projects=[p];s.activeId=p.id;s.session={role:'builder',name:'QA Builder'};return s;
   };
   window.qaGuide=function(){showInfo('Try the shower decision',
-    '<p>1. Choose <b>Homeowner</b> → Selections. Enter <b>Matte Black</b> for Finish, submit, then review and sign the Plumbing packet.</p>'+
-    '<p>2. Choose <b>Builder</b>, open the Plumbing packet and sign. The selection should now say <b>Approved</b>. In <b>Crew</b>, check that the instructions are approved.</p>'+
+    '<p>1. Choose <b>Homeowner</b> → Selections. Enter <b>Matte Black</b> for Finish and submit. Open the Plumbing packet: <b>Approve instructions</b> should stay at the bottom while you scroll. Approve, then Close. The approval request should disappear immediately.</p>'+
+    '<p>2. Choose <b>Builder</b>. Needs you should say <b>Approval needed</b>. Open the Plumbing packet and approve. The selection should now say <b>Approved</b>. In <b>Crew</b>, check that the instructions are approved.</p>'+
     '<p>3. As <b>Builder</b>, open the shower spec and change Finish to <b>Polished Black</b>. Save. The packet should show <b>Matte Black → Polished Black</b> and require both approvals again.</p>'+
     '<p>4. Approve the changes as <b>Homeowner</b>. The packet should say <b>Builder approval pending</b>, including in Crew. Approve as Builder, then check Crew sees the new finish and approved instructions.</p>'+
-    '<p>5. Check that Test steps stays accessible on your phone. The sample balance is <b>$650</b> everywhere. Optional: change Rough-in dimension from <b>3.0</b> to <b>3.5 in — QA sample</b> and repeat the review.</p>'+
+    '<p>5. Homeowner and Crew should each show just one SitePlumb header, with Test steps accessible above it. The sample balance is <b>$650</b> everywhere. Optional: reopen your signed packet and <b>Withdraw my approval</b>; the review request should return.</p>'+
     '<p class="c-ink-3">Sample data only. Changes last for this visit. Start over or reload to reset. This preview does not send messages or connect accounts.</p>'+
     '<button class="btn btn-primary btn-block" onclick="closeInfo();openPacketFor(P().id,\'plumb\')">Open Plumbing packet</button>');};
   // Keep preview navigation inside the sample experience, including share buttons.

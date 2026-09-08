@@ -29,6 +29,8 @@ const manifest=JSON.parse(fs.readFileSync(path.join(root,'app/manifest.json'),'u
 manifest.name='SitePlumb · QA preview';manifest.short_name='Plumb QA';manifest.start_url='./?demo=1';
 fs.writeFileSync(path.join(out,'app/manifest.json'),JSON.stringify(manifest,null,2)+'\n');
 for(const name of ['apple-touch-icon.png','icon-192.png','icon-512.png','icon-maskable-512.png'])fs.copyFileSync(path.join(root,name),path.join(out,name));
+// The legal pages reference their favicon beside the page.
+fs.copyFileSync(path.join(root,'icon-192.png'),path.join(out,'app/icon-192.png'));
 fs.cpSync(path.join(root,'app/tour-audio'),path.join(out,'app/tour-audio'),{recursive:true});
 const fonts=[['fraunces','Fraunces',[500]],['source-serif-4','Source Serif 4',[400,500,600,700]],['hanken-grotesk','Hanken Grotesk',[400,500,600,700]]];
 let css='';fs.mkdirSync(path.join(out,'app/fonts'),{recursive:true});

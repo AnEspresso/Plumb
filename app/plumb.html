@@ -1755,7 +1755,8 @@
 .exc-actions{display:flex;max-width:100%;flex-wrap:wrap;gap:6px;flex:none;}
 body.on-excursion .exc-banner{display:flex;}
 body.on-excursion .device{margin-top:var(--qa-bar-height,52px);height:calc(100dvh - var(--qa-bar-height,52px));}
-body.on-excursion #clientview,body.on-excursion #subview{top:var(--qa-bar-height,52px);}
+/* These absolute role views are already inside the offset .device. */
+body.on-excursion #clientview,body.on-excursion #subview{top:0;}
 @media(max-width:760px){.exc-k{display:none;}.exc-banner{justify-content:center;}.exc-actions{justify-content:center;}}
 body.on-excursion header{padding-top:var(--s-3);}
 @media(max-width:420px){.exc-k{display:none;}}
@@ -2041,6 +2042,8 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 #infoBody .pkt-strip{background:transparent;padding:0;margin:0 0 var(--s-4);border-radius:0;}
 #infoBody .pkt-strip.warn,#infoBody .pkt-strip.ok{background:transparent;}
 #infoBody .pkt-strip .st{font-size:var(--t-xl);}
+#infoBody:has([data-client-packet]) .sec{margin-top:var(--s-4);}
+#infoFoot.action-bar .btn{min-width:0;padding:var(--s-2) var(--s-3);line-height:1.25;overflow-wrap:anywhere;}
 .bgt-tot .hero{margin:0;padding:0;}
 .ov-today > .sec:first-child{margin-top:0;}
 .ov-houses-tools{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-3);flex-wrap:wrap;}
@@ -3890,15 +3893,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.415.0 - Clear approvals QA';
+const PLUMB_VERSION='2.416.0 - Mobile review QA';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789330000002;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.415.0-qa';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789330000003;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.416.0-qa';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5321,13 +5324,22 @@ function toastAction(msg,label,fn,ms){const t=document.getElementById('toast');t
 function showInfo(title,bodyHTML,own){
   document.getElementById('infoTitle').textContent=title;document.getElementById('infoBody').innerHTML=bodyHTML;
   const sc=document.getElementById('infoScrim');sc.classList.toggle('info-own',!!own);sc.classList.add('show');
+  syncInfoFoot();
+}
+function syncInfoFoot(){
   try{
     const foot=document.getElementById('infoFoot');
-    if(foot&&!own){
+    if(foot){
+      const clientPacket=!!document.querySelector('#infoBody [data-client-packet]');
+      const approve=!document.getElementById('infoScrim').classList.contains('info-own')&&document.querySelector('#infoBody [data-packet-approve]');
       const fromH=typeof fromTheHouse==='function'&&fromTheHouse();
       const hasGo=!!document.querySelector('#infoBody .b-go');
-      const label=fromH?'House':(hasGo?'Done':'Got it');
+      const label=clientPacket?'Close':(fromH?'House':(hasGo?'Done':'Got it'));
+      foot.className=(approve?'action-bar':'leave-bar')+' sheet-foot';
       foot.innerHTML='<button class="btn btn-secondary" onclick="closeInfo()"><span>'+label+'</span></button>';
+      // Move the existing action out of the scrolling body: one approval button,
+      // with the same revision check, always reachable beside Close.
+      if(approve){approve.classList.remove('mt-3');foot.appendChild(approve);}
     }
   }catch(e){}
 }
@@ -8392,7 +8404,7 @@ function _nyIssues(projs){
       if(!packetReady(p,trade)){seen[key]=1;
         const gaps=tradeSpecGaps(p,trade).length;
         const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):packetReviewLabel(p,trade);
-        issues.push({kind:'Spec still open',pid:p.id,site:p.street||p.name,trade:trade,pri:1,lvl:'warn',ts:b.start,
+        issues.push({kind:gaps?'Spec still open':'Approval needed',pid:p.id,site:p.street||p.name,trade:trade,pri:1,lvl:'warn',ts:b.start,
           line:upFirst(why),go:`openPacketFor('${p.id}','${trade}')`});
       }
     });
@@ -15717,7 +15729,7 @@ function toggleDocInPacket(tradeId,name){
 function packetReady(p,tradeId){return tradeSpecGaps(p,tradeId).length===0&&packetSignedBoth(p,tradeId);}
 let _pktCtx=null;
 function refreshPacket(){if(!_pktCtx)return;const p=state.projects.find(x=>String(x.id)===String(_pktCtx.pid));if(!p)return;
-  const body=document.getElementById('infoBody');if(body)body.innerHTML=packetHTML(p,_pktCtx.trade);}
+  const body=document.getElementById('infoBody');if(body){body.innerHTML=packetHTML(p,_pktCtx.trade);syncInfoFoot();}}
 let _pktLogCtx=null;
 function openPacketLog(pid,tradeId){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
@@ -15762,7 +15774,9 @@ function closePktLog(){document.getElementById('pktLogScrim').classList.remove('
 function pktSignBuilder(pid,trade){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
   const cur=packetSignoff(p,trade).builder;setPacketSignoff(p,trade,'builder',!cur,_packetReviewKeys[String(p.id)+'|'+trade+'|builder']);refreshPacket();}
 function pktSignHomeowner(pid,trade){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
-  const cur=packetSignoff(p,trade).homeowner;setPacketSignoff(p,trade,'homeowner',!cur,_packetReviewKeys[String(p.id)+'|'+trade+'|client']);refreshPacket();}
+  const cur=packetSignoff(p,trade).homeowner;
+  if(setPacketSignoff(p,trade,'homeowner',!cur,_packetReviewKeys[String(p.id)+'|'+trade+'|client'])!==false)renderClient();
+  refreshPacket();}
 function pktFillSpec(selId){if(_pktCtx)try{Data.setActive(_pktCtx.pid);}catch(e){}openSpec(selId);}
 function pktGoBook(pid,subName){if(_pktCtx)try{Data.setActive(pid);}catch(e){}nyBookSub(pid,subName);}
 function pktGoReady(pid,tradeId){
@@ -15785,7 +15799,7 @@ function pktAsk(p,tradeId){
   const sb=(p.subs||[]).find(function(x){return x.specialty===tradeId;});
   _nyIssues([p]).forEach(function(it){
     if(String(it.pid)!==String(p.id)||it.cross)return;
-    if(it.kind==='Spec still open'||it.kind==='Site not ready')return;
+    if(it.kind==='Spec still open'||it.kind==='Approval needed'||it.kind==='Site not ready')return;
     if(it.trade){if(it.trade!==tradeId)return;}
     else{
       const hay=String(it.line||'')+' '+String(it.kind||'');
@@ -15880,7 +15894,7 @@ function packetHTML(p,tradeId){
     return '<div class="row'+tap+'"'+onclick+'><div class="row-main"><div class="row-title">'+esc(title)+'</div>'+(sub?('<div class="row-sub">'+esc(sub)+'</div>'):'')+'</div>'+a+(go?'<span class="row-chev">\u203a</span>':'')+'</div>';
   };
   let h='';
-  h+='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+' install packet</div></div>';
+  h+='<div class="pkt-head"'+(isClient?' data-client-packet':'')+'><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+' install packet</div></div>';
   h+='<div class="pkt-strip '+(warn?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
 
   h+=packetChangesHTML(p,tradeId);
@@ -16002,7 +16016,7 @@ function packetHTML(p,tradeId){
   }else{
     h+='<div class="sec"><h2>Your sign-off</h2></div>';
     h+=row('Homeowner',hSigned?('Signed '+fmtDue(so.homeowner.at)):(raw.homeowner?'Details changed — review again':'Review the specs above, then sign off'),hSigned?'Signed':'','','',hSigned?'ok':'');
-    if(!hSigned&&!gaps.length)h+='<button class="btn btn-primary btn-block mt-3" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">'+(raw.homeowner?'Approve changes':'Sign off')+'</button>';
+    if(!hSigned&&!gaps.length)h+='<button data-packet-approve class="btn btn-primary btn-block mt-3" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">'+(packetChanges(p,tradeId).length?'Approve changes':'Approve instructions')+'</button>';
     if(hSigned)h+='<button class="btn btn-quiet btn-block mt-2" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">Withdraw my approval</button>';
     h+='<button class="btn btn-secondary btn-block mt-2" onclick="openIdea()">Add a note for your builder</button>';
   }
@@ -17000,6 +17014,7 @@ function inbTabLabel(t){
     'The crew declined':'Declined',
     'They\u2019re blocked':'Blocked',
     'Spec still open':'Specs',
+    'Approval needed':'Approvals',
     'Double-booked':'Overlap',
     'Date change':'Dates',
     'Question':'Question'
