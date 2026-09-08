@@ -900,7 +900,7 @@
   .cl-sign{flex:0 0 auto;border:1px solid var(--oak);background:transparent;color:var(--oak);border-radius:var(--r-sm);padding:var(--s-2) var(--s-3);font-family:inherit;font-size:var(--t-xs);font-weight:700;cursor:pointer;white-space:nowrap;}
   .cl-sign:active{transform:scale(.97);}
   .cl-info{font-size:var(--t-xs);color:var(--ink-3);flex:0 0 auto;font-weight:600;}
-  .approve-ro{flex:0 0 auto;display:flex;align-items:center;gap:5px;font-size:var(--t-xs);font-weight:700;padding:var(--s-2) var(--s-2);border-radius:var(--r-sm);white-space:nowrap;}
+  .approve-ro{border:0;font-family:inherit;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;gap:5px;font-size:var(--t-xs);font-weight:700;padding:var(--s-2) var(--s-2);border-radius:var(--r-sm);white-space:nowrap;}
   .approve-ro.on{color:var(--sage);background:rgba(122,132,94,.12);}
   .approve-ro.off{color:var(--ink-3);background:var(--surface-2);}
   .cl-photogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:var(--s-2);}
@@ -1743,18 +1743,20 @@
 .cal-door .bgt-chev{margin-left:auto}
 .exc-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:var(--z-toast);background:var(--bark);color:var(--cream);
   font-size:var(--t-sm);font-weight:600;padding:var(--s-2) var(--s-2);
-  align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;}
+  align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
 .exc-k{opacity:.85;white-space:nowrap;flex:none;}
-.exc-roles{display:inline-flex;background:rgba(231,220,198,.10);border:1px solid rgba(231,220,198,.22);border-radius:999px;padding:var(--s-1);flex:none;}
+.exc-roles{display:inline-flex;max-width:100%;flex-wrap:wrap;justify-content:center;background:rgba(231,220,198,.10);border:1px solid rgba(231,220,198,.22);border-radius:999px;padding:var(--s-1);flex:none;}
 .exc-roles button{background:none;border:none;border-radius:999px;color:rgba(231,220,198,.75);
   font-family:inherit;font-size:var(--t-xs);font-weight:700;padding:var(--s-1) var(--s-2);cursor:pointer;}
 .exc-roles button.on{background:var(--oak);color:var(--night);}
 .exc-exit,.exc-reset{background:rgba(231,220,198,.14);border:1px solid rgba(231,220,198,.3);color:var(--cream);
   border-radius:999px;padding:var(--s-1) var(--s-3);font-family:inherit;font-size:var(--t-xs);font-weight:700;cursor:pointer;white-space:nowrap;flex:none;}
 .exc-reset{background:none;}
-.exc-actions{display:flex;gap:6px;flex:none;}
+.exc-actions{display:flex;max-width:100%;flex-wrap:wrap;gap:6px;flex:none;}
 body.on-excursion .exc-banner{display:flex;}
-body.on-excursion .device{margin-top:calc(var(--s-8) + var(--s-1));height:calc(100dvh - 52px);}
+body.on-excursion .device{margin-top:var(--qa-bar-height,52px);height:calc(100dvh - var(--qa-bar-height,52px));}
+body.on-excursion #clientview,body.on-excursion #subview{top:var(--qa-bar-height,52px);}
+@media(max-width:760px){.exc-k{display:none;}.exc-banner{justify-content:center;}.exc-actions{justify-content:center;}}
 body.on-excursion header{padding-top:var(--s-3);}
 @media(max-width:420px){.exc-k{display:none;}}
 /* Role views own the full window whenever shown — demo AND production, identical. */
@@ -1957,7 +1959,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
 .sheet-scrim.show{display:flex;}
 .sheet-scrim.sheet-2{z-index:var(--z-sheet-2);}           /* a sheet over a sheet */
-.sheet{width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;
+.sheet{width:100%;max-width:560px;max-height:92vh;max-height:92dvh;display:flex;flex-direction:column;
   background:var(--paper);border-radius:var(--r-lg) var(--r-lg) 0 0;
   padding:var(--s-3) var(--s-5) calc(var(--s-6) + env(safe-area-inset-bottom));
   box-shadow:var(--shadow-lift);animation:sheet-up .22s ease-out;}
@@ -1966,10 +1968,16 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);margin-bottom:var(--s-4);}
 .sheet-head h2{flex:1;font-size:var(--t-xl);}
 .sheet-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 calc(var(--s-5)*-1);padding:0 var(--s-5);}
+.sheet-head,.sheet-handle,.sheet-foot{flex-shrink:0;}
+.sheet-body{padding-bottom:var(--s-3);scroll-padding-block:var(--s-3);}
+.pkt-changes{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:var(--s-3) 0;margin:var(--s-3) 0;overflow-wrap:anywhere;}
+.pkt-change{margin-top:var(--s-2);}
+.pkt-changes summary{cursor:pointer;margin-top:var(--s-2);color:var(--ink-2);}
+body.on-excursion .sheet{max-height:calc(100dvh - var(--qa-bar-height,52px) - 16px);}
 .sheet-foot{margin-top:var(--s-4);padding-top:var(--s-4);border-top:1px solid var(--line-2);}
 @media (min-width:700px){
   .sheet-scrim{align-items:center;}
-  .sheet{border-radius:var(--r-lg);max-height:88vh;}
+  .sheet{border-radius:var(--r-lg);max-height:88vh;max-height:88dvh;}
 }
 
 /* ── 6. Segmented control and chips ───────────────────────────────── */
@@ -3882,15 +3890,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.414.0 - Communication loop QA';
+const PLUMB_VERSION='2.415.0 - Clear approvals QA';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789330000001;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.414.0-qa';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789330000002;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.415.0-qa';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5024,6 +5032,97 @@ function packetApprovalKey(p,trade){
     notes:p.selNotes||'',docs:(p.docs||[]).filter(d=>docInPacket(p,trade,d)).map(d=>({name:d.n||'',id:d.fileId||'',url:d.fileUrl||'',revision:d.revision||0})),
     bookings:(p.bookings||[]).filter(b=>b.trade===trade&&(b.status||'')!=='declined').map(b=>({id:b.id,start:b.start,end:b.end,note:b.note||'',crew:b.subName||''})).sort((a,b)=>String(a.id).localeCompare(String(b.id)))});
 }
+
+/* A packet review replaces a second selection sign-off for its routed choices.
+   Legacy, unrouted selections keep their existing approval flow. */
+function selectionReviewTrades(p,s){
+  const trades=[...new Set((p.subs||[]).map(x=>x.specialty).concat((p.bookings||[]).filter(b=>b.status!=='declined').map(b=>b.trade),Object.keys(p.packetSignoff||{})))];
+  return trades.filter(tr=>(SUB_SEL_CATS[tr]||[]).includes(s.cat));
+}
+function selectionHomeownerApproved(p,s){
+  const trades=selectionReviewTrades(p,s);
+  return trades.length?trades.every(tr=>!!packetSignoff(p,tr).homeowner):!!s.approved;
+}
+function selectionReviewState(p,s){
+  const trades=selectionReviewTrades(p,s);
+  if(!trades.length)return {approved:!!s.approved,label:s.approved?'Signed':'Awaiting',trade:null};
+  const trade=trades.find(tr=>!packetReady(p,tr))||trades[0];
+  const approved=trades.every(tr=>packetReady(p,tr));
+  return {approved,trade,label:approved?'Approved':tradeSpecGaps(p,trade).length?'Needs answers':packetSignoff(p,trade).homeowner?'Builder review':'Review needed'};
+}
+function openSelectionReview(id){
+  const p=(state.session||{}).role==='client'?clientProj():P(),s=(p.selections||[]).find(x=>String(x.id)===String(id));if(!s)return;
+  const r=selectionReviewState(p,s);
+  if(r.trade){if((state.session||{}).role==='client')openClientPacket(r.trade);else openPacketFor(p.id,r.trade);}
+  else if((state.session||{}).role==='client')clientSignoff(id);
+  else if(s.approved)openSignoffInfo(id);else toast('The homeowner signs off from their login');
+}
+function packetReviewLabel(p,trade){
+  if(tradeSpecGaps(p,trade).length)return 'Details needed before approval';
+  const so=packetSignoff(p,trade);
+  if(so.builder&&so.homeowner)return 'Instructions approved';
+  if(so.homeowner)return 'Builder approval pending';
+  if(so.builder)return 'Homeowner approval pending';
+  return 'Homeowner and builder approval pending';
+}
+function previousPacketApproval(p,trade){
+  const current=packetApprovalKey(p,trade),raw=(p.packetSignoff||{})[trade]||{};
+  const entries=['builder','homeowner'].map(who=>({who,signature:raw[who]})).concat((p.packetApprovalHistory||[]).filter(x=>x.trade===trade));
+  const versions=new Map();
+  entries.forEach(x=>{const sig=x.signature;if(!sig||!sig.key||sig.key===current)return;
+    const v=versions.get(sig.key)||{key:sig.key,at:0,who:new Set()};v.at=Math.max(v.at,Number(sig.at)||0);v.who.add(x.who);versions.set(sig.key,v);});
+  const ordered=[...versions.values()].sort((a,b)=>b.at-a.at);
+  const previous=ordered.find(v=>v.who.has('builder')&&v.who.has('homeowner'))||ordered[0];
+  if(!previous)return null;
+  try{return JSON.parse(previous.key);}catch(e){return null;}
+}
+function packetChanges(p,trade){
+  const before=previousPacketApproval(p,trade);if(!before)return [];
+  const after=JSON.parse(packetApprovalKey(p,trade)),changes=[];
+  const val=x=>x==null||x===''?'Not set':String(x);
+  const add=(item,field,old,next)=>{if(instructionJSON(old)!==instructionJSON(next))changes.push({item,field,before:val(old),after:val(next)});};
+  const oldS=new Map((before.selections||[]).map(x=>[String(x.id),x]));
+  after.selections.forEach(n=>{const old=oldS.get(String(n.id));oldS.delete(String(n.id));const item=n.item||n.cat||'Selection';
+    if(!old){changes.push({item,field:'Selection',before:'Not in packet',after:'Added'});return;}
+    ['item','cat','room','note'].forEach(k=>add(item,({item:'Item',cat:'Category',room:'Room',note:'Note'})[k],old[k],n[k]));
+    if((state.session||{}).role!=='subs')add(item,'Price',selMoney(old.price)||'Included',selMoney(n.price)||'Included');
+    const fields=specFields(n);
+    [...new Set(Object.keys(old.spec||{}).concat(Object.keys(n.spec||{})))].forEach(k=>add(item,(fields.find(f=>f.key===k)||{}).label||k,(old.spec||{})[k]||'',(n.spec||{})[k]||''));
+    const oldC=old.specCustom||[],newC=n.specCustom||[];
+    for(let i=0;i<Math.max(oldC.length,newC.length);i++){const a=oldC[i]||{},b=newC[i]||{};
+      add(item,b.label||a.label||'Custom detail',a.value||'',b.value||'');
+      if(a.label&&b.label&&a.label!==b.label)add(item,'Detail name',a.label,b.label);
+      if(a.who!==b.who||!!a.required!==!!b.required)add(item,'Responsibility / requirement',oldC[i]?(a.who||'builder')+(a.required?' · required':' · optional'):'Not set',newC[i]?(b.who||'builder')+(b.required?' · required':' · optional'):'Removed');
+    }
+  });
+  oldS.forEach(o=>changes.push({item:o.item||o.cat||'Selection',field:'Selection',before:'In packet',after:'Removed'}));
+  add('Packet','Instructions',before.notes,after.notes);
+  if(instructionJSON(before.docs||[])!==instructionJSON(after.docs||[])){
+    changes.push({item:'Packet',field:'Drawings / documents',before:(before.docs||[]).map(d=>d.name).join(', ')||'None',after:(after.docs||[]).map(d=>d.name).join(', ')||'None'});
+    if(changes[changes.length-1].before===changes[changes.length-1].after)changes[changes.length-1].after+=' — file or revision changed';
+  }
+  const oldB=new Map((before.bookings||[]).map(x=>[String(x.id),x]));
+  (after.bookings||[]).forEach(n=>{const o=oldB.get(String(n.id));oldB.delete(String(n.id));
+    if(!o){changes.push({item:n.crew||'Crew',field:'Booking',before:'Not scheduled',after:fmtWin(n)});return;}
+    add(n.crew||'Crew','Crew',o.crew,n.crew);
+    if(o.start!==n.start||o.end!==n.end)changes.push({item:n.crew||'Crew',field:'Dates',before:fmtWin(o),after:fmtWin(n)});
+    add(n.crew||'Crew','Scope',o.note,n.note);
+  });
+  oldB.forEach(o=>changes.push({item:o.crew||'Crew',field:'Booking',before:fmtWin(o),after:'Removed'}));
+  return changes;
+}
+function packetChangesHTML(p,trade){
+  const changes=packetChanges(p,trade);if(!changes.length)return '';
+  const row=c=>'<div class="pkt-change"><div class="row-sub">'+esc(c.item)+'</div><b>'+esc(c.field)+'</b>: '+esc(c.before)+' → '+esc(c.after)+'</div>';
+  return '<section class="pkt-changes" aria-label="Changes since previous approval"><b>Changes since previous approval</b>'+changes.slice(0,3).map(row).join('')+(changes.length>3?'<details><summary>Show '+(changes.length-3)+' more changes</summary>'+changes.slice(3).map(row).join('')+'</details>':'')+'</section>';
+}
+function clearanceWhen(value){
+  // Older fixtures contain booleans, not dates. Never turn true into January 1970.
+  return typeof value==='number'&&Number.isFinite(value)&&value>=946684800000&&value<=Date.now()?(' '+timeAgo(value)):'';
+}
+function balanceLabel(out){return out < -0.005?'Credit balance':out > 0.005?'Still to pay':'Balance';}
+function unbilledLabel(out){return out < -0.005?'Invoiced above net change':'Not yet invoiced';}
+
 function specFieldEditable(who){const r=(state.session||{}).role;return r==='builder'||(r==='client'&&who==='homeowner');}
 function selectionPatchAllowed(s,patch){
   const role=(state.session||{}).role;
@@ -5440,7 +5539,7 @@ function renderSiteSummary(){
   // what the job is waiting on (mirror the Decisions \u2018Waiting on\u2019 pane)
   const items=ovItems(p).filter(it=>it.issue&&it.status==='open').length;
   const sels=(p.selections||[]);const SI=st=>{const i=SEL_STATUS.indexOf(st);return i<0?0:i;};
-  const awaiting=sels.filter(s=>SI(s.status)>=1&&!s.approved).length;
+  const awaiting=sels.filter(s=>SI(s.status)>=1&&!selectionHomeownerApproved(P(),s)).length;
   const extra=[...new Set(sels.map(s=>s.cat||'Other'))].filter(c=>!SEL_CATS.includes(c));
   const pendingCats=[...SEL_CATS,...extra].filter(c=>!sels.some(s=>(s.cat||'Other')===c)).length;
   const waiting=items+awaiting+pendingCats;
@@ -8292,7 +8391,7 @@ function _nyIssues(projs){
       if(!tradeSelections(p,trade).length)return;
       if(!packetReady(p,trade)){seen[key]=1;
         const gaps=tradeSpecGaps(p,trade).length;
-        const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'packet not signed off';
+        const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):packetReviewLabel(p,trade);
         issues.push({kind:'Spec still open',pid:p.id,site:p.street||p.name,trade:trade,pri:1,lvl:'warn',ts:b.start,
           line:upFirst(why),go:`openPacketFor('${p.id}','${trade}')`});
       }
@@ -9726,7 +9825,7 @@ function renderSubView(){
       (projs.map((p,i)=>{const tr=subTradeFor(p);const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open').length;
         return `<div class="ov-card ${open?'attn':''}" style="animation-delay:${i*60}ms" onclick="openSubSite('${p.id}')">
           <div class="ct"><div><div class="st">${esc(p.street||p.name)}</div><div class="nm">${esc(tr.label)}${p.city?' · '+esc(p.city):''}</div></div>
-          <span class="ov-open ${tr.cleared?'clean':''}">${tr.cleared?'Cleared':'Waiting'}</span></div>
+          <span class="ov-open ${tr.cleared?'clean':''}">${!packetReady(p,tr.id)?'Approval needed':tr.cleared?'Site ready':'Waiting'}</span></div>
           <div class="foot"><span>${open?open+' open item'+(open===1?'':'s'):'no open items'}</span></div></div>`;}).join('')
        ||'<div class="empty">No houses assigned to you yet.</div>')+'</div>';
     setSync(syncStatus);return;
@@ -9745,7 +9844,7 @@ function renderSubView(){
     setSync(syncStatus);return;
   }
   if(subTab==='packet'){
-    body.innerHTML=head+packetHTML(p,tr.id);
+    body.innerHTML=head.replace(/<h2 class="title-sheet">[\s\S]*?<\/h2>/,'')+packetHTML(p,tr.id);
     setSync(syncStatus);return;
   }
   const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open');
@@ -9755,12 +9854,13 @@ function renderSubView(){
   const _svToday=dayStart(Date.now());
   const _svBookings=(p.bookings||[]).filter(b=>b.subName===_svMyName&&(b.status||'confirmed')!=='declined'&&b.end>=_svToday).sort((a,b)=>a.start-b.start);
   const needConfirm=_svBookings.filter(function(b){const st=bkStatus(b);return st==='pending'||st==='modified';});
-  const stripSt=open.length?(open.length+' still '+(open.length===1?'needs':'need')+' you'):(tr.cleared?'Cleared to start':'Waiting for the go-ahead');
+  const stripSt=open.length?(open.length+' still '+(open.length===1?'needs':'need')+' you'):(!packetReady(p,tr.id)?'Instructions need approval':(tr.cleared?'Instructions approved · site marked ready':'Waiting for site readiness'));
   const meta=[];
-  if(tr.cleared)meta.push('Your builder marked '+tr.label+' ready '+timeAgo(tr.cleared));
+  if(tr.cleared)meta.push('Your builder marked '+tr.label+' ready'+clearanceWhen(tr.cleared));
   else meta.push('You will see a notice here when this house is ready for '+tr.label);
+  if(!packetReady(p,tr.id))meta.push('Do not install yet. '+packetReviewLabel(p,tr.id)+'.');
   if(_svBookings[0])meta.push('Next on this house · '+fmtWin(_svBookings[0]));
-  let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
+  let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length||!packetReady(p,tr.id)?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   const facts=[];
   needConfirm.forEach(function(b){facts.push({k:fmtWin(b),m:'Confirm, change dates, or say you cannot make it',go:'svBkConfirm(\''+p.id+'\',\''+b.id+'\')'});});
   open.forEach(function(it){facts.push({k:it.cap||'Open item',m:areaText(it.area)||tr.label,go:''});});
@@ -10694,6 +10794,18 @@ try{window.addEventListener('message',ev=>{if(ev&&ev.data==='qb-connected'){toas
    live state live under SEPARATE storage keys, so entering is a mode flip; the
    suspend flag only drives the banner and crash recovery. ── */
 function onExcursion(){try{return !!localStorage.getItem('plumbSuspend');}catch(e){return false;}}
+let _excResizeObserver=null;
+function syncExcursionBar(){
+  const bar=document.getElementById('excBanner');if(!bar)return;
+  const height=Math.ceil(bar.getBoundingClientRect().height);
+  if(height>0)document.documentElement.style.setProperty('--qa-bar-height',height+'px');
+}
+function observeExcursionBar(){
+  syncExcursionBar();
+  if(!_excResizeObserver&&typeof ResizeObserver!=='undefined'){
+    _excResizeObserver=new ResizeObserver(syncExcursionBar);_excResizeObserver.observe(document.getElementById('excBanner'));
+  }
+}
 function enterDemo(opts){
   opts=opts||{};
   if(document.getElementById('tourCatch'))return;
@@ -10710,7 +10822,7 @@ function enterDemo(opts){
   try{const p2=(state.projects||[]).find(p=>String(p.id)==='p2');
     if(p2){if(Array.isArray(p2.items))p2.items=p2.items.filter(it=>!it.tour);
       if(Array.isArray(p2.docs))p2.docs=p2.docs.filter(d=>!d.tour);}}catch(e){}
-  document.body.classList.add('on-excursion');
+  document.body.classList.add('on-excursion');observeExcursionBar();
   _keepScrollY.home=0;_keepScrollY.house=0;_keepScrollY.packet=0;_keepScrollY.site=0;
   /* Zero install chrome during a demo. The nudge timer arms at page load and
      can fire AFTER the demo starts - an Add to Home Screen sheet sliding over
@@ -12383,7 +12495,7 @@ function renderClient(){
   else next='Your home is complete \ud83c\udf89';
   const led=clientLedger(p);const usd=n=>'$'+Math.abs(n).toLocaleString();
   const sels=p.selections||[];
-  const decisions=sels.filter(s=>!s.approved||s.status==='pending');
+  const decisions=sels.filter(s=>!selectionHomeownerApproved(p,s)||s.status==='pending');
   const openQs=sels.filter(s=>s.status!=='installed'&&specStatus(s).homeownerPending.length);
   const decisionCount=new Set([...decisions,...openQs].map(s=>s.id)).size;
   const T=clientTab;let h='';
@@ -12396,13 +12508,13 @@ function renderClient(){
     meta.push(p.street||p.name||'Your house');
     if(stageName)meta.push('Now building \u00b7 '+stageName);
     if(nb)meta.push((nbTrade?specLabel(nbTrade):'Crew')+' \u00b7 '+_fmtD(nb.start));
-    meta.push('Still to pay \u00b7 '+usd(led.out));
+    meta.push(balanceLabel(led.out)+' \u00b7 '+usd(led.out));
     h+='<div class="pkt-strip '+(decisionCount?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div><div class="meta">'+esc(track.txt)+(meta.length?('<br>'+meta.map(esc).join('<br>')):'')+'</div></div>';
     const facts=[];
     decisions.forEach(function(s){
-      facts.push({k:s.item||'A finish to sign off',m:(s.cat||'')+(s.room&&s.room!=='—'?' \u00b7 '+s.room:''),go:'clientGo(\'specs\')'});
+      facts.push({k:(s.item||'A finish')+(specStatus(s).homeownerPending.length?' needs your answer':' needs your review'),m:(s.cat||'')+(s.room&&s.room!=='—'?' \u00b7 '+s.room:''),go:'clientGo(\'specs\')'});
     });
-    openQs.forEach(function(s){
+    openQs.filter(s=>!decisions.some(d=>d.id===s.id)).forEach(function(s){
       facts.push({k:(s.item||'A finish')+' needs your answer',m:'Selections',go:'clientGo(\'specs\')'});
     });
     (p.invoices||[]).filter(invNeedsOK).forEach(function(inv){
@@ -12475,10 +12587,10 @@ function renderClient(){
         ${bs.invPaid>0.005?`<div class="lr"><span>${loose>0.005?'Paid on invoices':'Paid'}</span><b class="cr">−${usd(bs.invPaid)}</b></div>`:''}
         ${(Math.abs(bs.unbilled)>0.005||loose>0.005)
           ?`<div class="lr"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>
-            ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
+            ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>${unbilledLabel(bs.unbilled)}</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
             ${loose>0.005?`<div class="lr"><span>Credit on account</span><b class="cr">−${usd(loose)}</b></div>`:''}
-            <div class="lr out"><span>Still to pay</span><b class="${bs.out<0?'cr':''}">${bs.out<0?'−':''}${usd(bs.out)}</b></div>`
-          :`<div class="lr out"><span>Balance due</span><b class="${bs.balanceDue>0?'':'cr'}">${usd(bs.balanceDue)}</b></div>`}
+            <div class="lr out"><span>${balanceLabel(bs.out)}</span><b class="${bs.out<0?'cr':''}">${usd(bs.out)}</b></div>`
+          :`<div class="lr out"><span>${balanceLabel(bs.out)}</span><b class="${bs.out<0?'cr':''}">${usd(bs.out)}</b></div>`}
       </div>`;
     const invs=(p.invoices||[]).filter(i=>{const s=invState(i);return s!=='void'&&s!=='draft';}).slice().reverse();
     if(invs.length){
@@ -12498,7 +12610,7 @@ function renderClient(){
             <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
             ${selTimelineRO(s)}
           </div>
-          ${s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Signed':'Sign off'}</button>`}
+          ${selectionReviewTrades(p,s).length?`<button class="cl-sign" onclick="openSelectionReview(${s.id})">${selectionHomeownerApproved(p,s)?'View approval':'Review packet'}</button>`:s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Signed':'Sign off'}</button>`}
         </div>`;}).join('');
     }).join(''):'<div class="empty">No selections recorded yet.</div>';
   }
@@ -12518,6 +12630,7 @@ function clientSaveSpec(id){const p=clientProj();const s=(p.selections||[]).find
   if(!any){toast('Enter at least one answer');return;}
   if(!Data.updateSelection(id,{spec,specCustom:custom}))return;logEvent('clientSpecAnswered',(s.item||'')+' · '+(s.cat||''));renderClient();toast('Answers submitted to your builder');}
 function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
+  if(selectionReviewTrades(p,s).length){openSelectionReview(id);return;}
   if(s.status==='pending'){toast('Your builder is still preparing this option');return;}
   const now=!s.approved;const patch={approved:now,signed:now?{date:todayStr(),by:(p.buyers&&p.buyers.length?p.buyers:['Homeowner'])}:null};Data.updateSelection(id,patch);logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
   renderClient();toast(now?'Signed off — thank you':'Sign-off removed');}
@@ -12566,13 +12679,13 @@ function ledgerDetailHTML(p){
   h+=`<div class="ld-sub"><span>Total credits</span><b class="cr">\u2212${usd(crs)}</b></div>`;
   h+=`<div class="ld-tot"><span>Net change</span><b class="${net<0?'cr':''}">${net<0?'\u2212':''}${usd(net)}</b></div>`;
   h+=`<div class="ld-sub"><span>Invoiced</span><b>${usd(bs.billed)}</b></div>`;
-  if(Math.abs(bs.unbilled)>0.005)h+=`<div class="ld-sub"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`;
+  if(Math.abs(bs.unbilled)>0.005)h+=`<div class="ld-sub"><span>${unbilledLabel(bs.unbilled)}</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`;
   h+=`<div class="ld-sec">Payments received</div>`;
   h+=payRows.length?payRows.map(r=>`<div class="ld-li"><div class="ld-d"><div class="ld-n">${esc(r.n)}</div><div class="ld-m">${esc(r.m||'')}</div></div><b class="cr">\u2212${usd(r.amt)}</b></div>`).join(''):`<div class="ld-empty">No payments recorded yet.</div>`;
   if(payRows.length)h+=`<div class="ld-sub"><span>Total received</span><b class="cr">\u2212${usd(paid)}</b></div>`;
   if(loose>0.005)h+=`<div class="fs-xs c-ink-3 mt-1 ml-1 mr-1 mb-1 lh-145">Includes ${usd(loose)} credit on account — received but not yet applied to an invoice.</div>`;
   if(Math.abs(bs.unbilled)>0.005||loose>0.005)h+=`<div class="ld-sub"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>`;
-  h+=`<div class="ld-tot big"><span>Amount outstanding</span><b class="${out<0?'cr':''}">${out<0?'\u2212':''}${usd(out)}</b></div>`;
+  h+=`<div class="ld-tot big"><span>${balanceLabel(out)}</span><b class="${out<0?'cr':''}">${usd(out)}</b></div>`;
   return h;
 }
 function openLedgerDetail(){document.getElementById('ledgerBody').innerHTML=ledgerDetailHTML(P());document.getElementById('ledgerScrim').classList.add('show');}
@@ -12878,7 +12991,7 @@ function selTimelineRO(s){
 }
 let _selFilter=null;
 function selIdx(st){const i=SEL_STATUS.indexOf(st);return i<0?0:i;}
-function selMatchesFilter(s){if(!_selFilter)return true;const k={selected:1,ordered:2,delivered:3,installed:4}[_selFilter];if(k!=null)return selIdx(s.status)>=k;if(_selFilter==='pending')return selIdx(s.status)<1;if(_selFilter==='awaiting')return selIdx(s.status)>=1&&!s.approved;return true;}
+function selMatchesFilter(s){if(!_selFilter)return true;const k={selected:1,ordered:2,delivered:3,installed:4}[_selFilter];if(k!=null)return selIdx(s.status)>=k;if(_selFilter==='pending')return selIdx(s.status)<1;if(_selFilter==='awaiting')return selIdx(s.status)>=1&&!selectionHomeownerApproved(P(),s);return true;}
 const SEL_FILTER_LABELS={selected:'Selected or later',ordered:'Ordered or later',delivered:'Delivered or later',installed:'Installed',pending:'Pending selection',awaiting:'Awaiting sign-off'};
 function setSelFilter(f){_selFilter=(_selFilter===f?null:f);renderSelections();}
 function renderSelections(){
@@ -12892,7 +13005,7 @@ function renderSelections(){
     const idxOf=st=>{const i=SEL_STATUS.indexOf(st);return i<0?0:i;};
     const reached=k=>sels.filter(s=>idxOf(s.status)>=k).length; // selections that have reached at least stage k
     const pending=total-reached(1);                              // on the list, no selection made yet (work to do)
-    const awaiting=sels.filter(s=>idxOf(s.status)>=1&&!s.approved).length; // selected but not signed off
+    const awaiting=sels.filter(s=>idxOf(s.status)>=1&&!selectionHomeownerApproved(P(),s)).length; // selected but not signed off
     const prog=[['selected',reached(1)],['ordered',reached(2)],['delivered',reached(3)],['installed',reached(4)]];
     cnt.innerHTML=`<div class="sel-counts">`+
       prog.map(([st,v])=>`<div class="sc ${st==='installed'?'done':''}${_selFilter===st?' on':''}${v?' tap':''}"${v?` onclick="setSelFilter('${st}')"`:''}><div class="n">${v}<span class="tot">/${total}</span></div><div class="l">${SEL_LABEL[st]}</div></div>`).join('')+
@@ -12920,10 +13033,10 @@ function renderSelections(){
       ${bs.invPaid>0.005?`<div class="lr"><span>${loose>0.005?'Paid on invoices':'Paid'}</span><b class="cr">−${usd(bs.invPaid)}</b></div>`:''}
       ${(Math.abs(bs.unbilled)>0.005||loose>0.005)
         ?`<div class="lr"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>
-          ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
+          ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>${unbilledLabel(bs.unbilled)}</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
           ${loose>0.005?`<div class="lr"><span>Credit on account</span><b class="cr">−${usd(loose)}</b></div>`:''}
-          <div class="lr out"><span>Amount outstanding</span><b class="${bs.out<0?'cr':''}">${bs.out<0?'−':''}${usd(bs.out)}</b></div>`
-        :`<div class="lr out"><span>Balance due</span><b class="${bs.balanceDue>0?'':'cr'}">${usd(bs.balanceDue)}</b></div>`}
+          <div class="lr out"><span>${balanceLabel(bs.out)}</span><b class="${bs.out<0?'cr':''}">${usd(bs.out)}</b></div>`
+        :`<div class="lr out"><span>${balanceLabel(bs.out)}</span><b class="${bs.out<0?'cr':''}">${usd(bs.out)}</b></div>`}
       <div class="ldr-hint">Tap for itemized breakdown ›</div>
     </div>`;
   } else sum.innerHTML='';
@@ -12945,7 +13058,7 @@ function renderSelections(){
           ${selTimeline(s)}
           <div class="spec-line">${specChipHTML(s)}</div>
         </div>
-        <span class="approve-ro ${s.approved?'on':'off'}" onclick="${s.approved?`openSignoffInfo(${s.id})`:`toast('The homeowner signs off from their login')`}" title="${s.approved?'View homeowner sign-off':'Awaiting homeowner sign-off'}">${s.approved?'✓ Signed':'Awaiting'}</span>
+        <button class="approve-ro ${selectionReviewState(P(),s).approved?'on':'off'}" onclick="openSelectionReview(${s.id})" title="Review approval">${selectionReviewState(P(),s).label}</button>
         <button class="sel-rm" onclick="removeSel(${s.id})">${ICON.trash}</button>
       </div>`;}).join('');
   };
@@ -13409,7 +13522,7 @@ function renderInvoices(){
   const bs=billingSummary(p);
   const summary=(live.length||Math.abs(bs.unbilled)>0.005?`<div class="sel-ledger mb-3">
       <div class="lr"><span>Invoiced</span><b>${invUsd(bs.billed)}</b></div>
-      ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'':'+'}${invUsd(bs.unbilled)}</b></div>`:''}
+      ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>${unbilledLabel(bs.unbilled)}</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'':'+'}${invUsd(bs.unbilled)}</b></div>`:''}
       <div class="lr"><span>Paid</span><b>${invUsd(bs.paid)}</b></div>
       <div class="lr out"><span>Balance due on invoices</span><b class="${bs.balanceDue>0?'up':''}">${invUsd(bs.balanceDue)}</b></div>
     </div>`:'');
@@ -14526,7 +14639,7 @@ function openReady(stageId){readyStageId=stageId;const st=STAGES.find(s=>s.id===
   const matches=P().subs.filter(s=>trades.includes(s.specialty));
   document.getElementById('readyList').innerHTML=matches.length?matches.map(s=>`
     <div class="ready-sub" onclick="clearSub('${s.id}')">
-      <div class="si"><div class="n">${esc(s.name)}</div><div class="d">${s.phone?esc(s.phone):specLabel(s.specialty)}${s.cleared?' · cleared '+timeAgo(s.cleared):''}</div></div>
+      <div class="si"><div class="n">${esc(s.name)}</div><div class="d">${s.phone?esc(s.phone):specLabel(s.specialty)}${s.cleared?' · site marked ready'+clearanceWhen(s.cleared):''}</div></div>
       <span class="go">${s.cleared?'✓ Notified':'Notify →'}</span>
     </div>`).join(''):`<div class="empty">No ${tradeLabelOf(st)} sub yet — add one so you can schedule this stage.<br>Add one from the Crews list.</div>`;
   document.getElementById('readyScrim').classList.add('show');}
@@ -15739,16 +15852,19 @@ function packetHTML(p,tradeId){
   const due=dueState(sb&&sb.specsDue);
   _pktCtx={pid:p.id,trade:tradeId};
   const bkWin=(p.bookings||[]).filter(function(b){return b.trade===tradeId&&(!sb||b.subName===sb.name)&&(b.status||'confirmed')!=='declined'&&b.end>=dayStart(Date.now());}).sort(function(a,b){return a.start-b.start;})[0];
-  const siteOk=!(sb)||!!sb.cleared;
+  const siteOk=!!(sb&&sb.cleared);
   const warn=gaps.length>0||!siteOk||!packetSignedBoth(p,tradeId);
   const permName=PK_PERMIT[tradeId];
   const perm=permName&&(p.permits||[]).find(function(x){return x.name===permName;});
   const ik=PK_INSP[tradeId];const iv=ik&&(p.inspections||{})[ik];
-  let stripSt=gaps.length? (gaps.length+' still open') : (!packetSignedBoth(p,tradeId)?'Details entered \u2014 approval pending':(siteOk?'Ready for this trade':'Approved \u2014 site not marked ready'));
+  const stripSt=packetReviewLabel(p,tradeId);
   const meta=[];
   if(bkWin)meta.push((isClient?tl+' scheduled':'Scheduled')+' '+fmtWin(bkWin)+(bkWin.note?(' \u2014 '+bkWin.note):''));
   else meta.push('No dates on the calendar');
-  if(due)meta.push(due.label+' \u00b7 answers due '+fmtDue(due.ts));
+  if(due&&!packetReady(p,tradeId))meta.push(due.label+' \u00b7 review due '+fmtDue(due.ts));
+  meta.push(siteOk?'Site marked ready by builder':'Site readiness not yet confirmed');
+  if(!gaps.length){const so=packetSignoff(p,tradeId);if(isClient&&so.homeowner&&!so.builder)meta.push('You have approved. Your builder reviews next.');else if(isBuilder&&so.builder&&!so.homeowner)meta.push('You have approved. The homeowner reviews next.');}
+  if(!packetReady(p,tradeId)&&sess.role==='subs')meta.push('Do not install from these instructions until both approvals are complete.');
   if(perm)meta.push(permName+': '+perm.status);
   else if(permName&&isBuilder)meta.push(permName+' not on the board');
   if(iv)meta.push((PK_INSP_LBL[ik]||ik)+': '+iv);
@@ -15767,9 +15883,15 @@ function packetHTML(p,tradeId){
   h+='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+' install packet</div></div>';
   h+='<div class="pkt-strip '+(warn?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
 
+  h+=packetChangesHTML(p,tradeId);
   const bk=isBuilder&&bkWin;
   if(isBuilder){
-    if(bk)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="sendGuestPacket(\''+p.id+'\',\''+bk.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
+    if(!packetSignoff(p,tradeId).builder){
+      const action=gaps.length?('pktFillSpec('+gaps[0].id+')'):('pktSignBuilder(\''+p.id+'\',\''+esc(tradeId)+'\')');
+      h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="'+action+'">'+(gaps.length?'Complete details':'Approve instructions')+'</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
+    }
+    else if(bk&&packetReady(p,tradeId))h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="sendGuestPacket(\''+p.id+'\',\''+bk.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
+    else if(bk)h+='<div class="money-actions"><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
     else if(sb)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="pktGoBook(\''+p.id+'\',\''+esc(sb.name)+'\')">Schedule this crew</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
     else h+='<div class="money-actions"><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
   }
@@ -15862,23 +15984,26 @@ function packetHTML(p,tradeId){
   }
 
   const so=packetSignoff(p,tradeId);
+  const raw=(p.packetSignoff||{})[tradeId]||{};
+  const previous=who=>raw[who]?'Details changed — review again':'Not signed yet';
   const bSigned=!!(so.builder&&so.builder.at), hSigned=!!(so.homeowner&&so.homeowner.at);
   if(!isClient){
     h+='<div class="sec"><h2>Sign-off</h2></div>';
     if(sels.length&&gaps.length){
       h+='<div class="pkt-foot">Sign-off opens when every required answer is in.</div>';
     }else{
-      const bSub=bSigned?('Signed by '+(so.builder.by===sess.name?'you':so.builder.by)+' \u00b7 '+fmtDue(so.builder.at)):'Not signed yet';
-      const hSub=hSigned?('Signed by '+so.homeowner.by+' \u00b7 '+fmtDue(so.homeowner.at)):'Not signed yet';
+      const bSub=bSigned?('Signed by '+(so.builder.by===sess.name?'you':so.builder.by)+' \u00b7 '+fmtDue(so.builder.at)):previous('builder');
+      const hSub=hSigned?('Signed by '+so.homeowner.by+' \u00b7 '+fmtDue(so.homeowner.at)):previous('homeowner');
       if(isBuilder)h+=row('Builder / team',bSub,bSigned?'Signed':'Sign','pktSignBuilder(\''+p.id+'\',\''+esc(tradeId)+'\')','',bSigned?'ok':'');
       else h+=row('Builder / team',bSub,bSigned?'Signed':'Pending','','',bSigned?'ok':'');
       h+=row('Homeowner',hSub,hSigned?'Signed':'Pending','','',hSigned?'ok':(!gaps.length?'warn':''));
-      if(!gaps.length&&bSigned&&hSigned)h+='<div class="pkt-banner ok mt-2"><b>Packet finalized.</b> '+(isBuilder?'Clear to send.':'Build to this.')+'</div>';
+      if(!gaps.length&&bSigned&&hSigned)h+='<div class="pkt-banner ok mt-2"><b>Instructions approved.</b> '+(isBuilder?'Ready to share with the crew.':(siteOk?'Follow these instructions and the agreed site schedule.':'Wait for your builder to confirm the site is ready.'))+'</div>';
     }
   }else{
     h+='<div class="sec"><h2>Your sign-off</h2></div>';
-    h+=row('Homeowner',hSigned?('Signed '+fmtDue(so.homeowner.at)):'Review the specs above, then sign off',hSigned?'Signed':'','','',hSigned?'ok':'');
-    h+='<button class="btn btn-primary btn-block mt-3" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">'+(hSigned?'Signed':'Sign off')+'</button>';
+    h+=row('Homeowner',hSigned?('Signed '+fmtDue(so.homeowner.at)):(raw.homeowner?'Details changed — review again':'Review the specs above, then sign off'),hSigned?'Signed':'','','',hSigned?'ok':'');
+    if(!hSigned&&!gaps.length)h+='<button class="btn btn-primary btn-block mt-3" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">'+(raw.homeowner?'Approve changes':'Sign off')+'</button>';
+    if(hSigned)h+='<button class="btn btn-quiet btn-block mt-2" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">Withdraw my approval</button>';
     h+='<button class="btn btn-secondary btn-block mt-2" onclick="openIdea()">Add a note for your builder</button>';
   }
   if(isBuilder&&sb){
@@ -17124,7 +17249,7 @@ function renderDecisions(){
   const items=visibleItems().filter(it=>it.issue&&it.status==='open').sort((a,b)=>b.t-a.t);
   const sels=(P().selections||[]);
   const SI=st=>{const i=SEL_STATUS.indexOf(st);return i<0?0:i;};
-  const awaiting=sels.filter(s=>SI(s.status)>=1&&!s.approved);
+  const awaiting=sels.filter(s=>SI(s.status)>=1&&!selectionHomeownerApproved(P(),s));
   const extra=[...new Set(sels.map(s=>s.cat||'Other'))].filter(c=>!SEL_CATS.includes(c));
   const pendingCats=[...SEL_CATS,...extra].filter(c=>!sels.some(s=>(s.cat||'Other')===c));
   let h='';

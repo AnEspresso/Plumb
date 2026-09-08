@@ -155,10 +155,16 @@ test('built preview boots the sample house, keeps roles usable, and makes no ext
   }});
   await new Promise(r=>dom.window.addEventListener('load',()=>setTimeout(r,80),{once:true}));
   const w=dom.window;assert.equal(w.inspect('P().id'),'qa-shower');assert.equal(w.inspect('fbConfig()'),null);
+  assert.equal(w.inspect('billingSummary(P()).out'),650);
+  assert.equal(w.inspect('billingSummary(P()).billed'),0);
+  assert.equal(w.inspect('billingSummary(P()).paid'),0);
+  assert.equal(w.inspect('P().selections[0].spec.roughin'),'3.0 in — QA sample');
+  assert.equal(w.inspect('typeof P().subs[0].cleared'),'number');
   w.demoRole('client');assert.equal(w.inspect('state.session.role'),'client');w.openSpec(9901);
   assert.ok([...w.document.querySelectorAll('#specBody input')].some(x=>x.readOnly));
   w.demoRole('subs');assert.equal(w.inspect('state.session.name'),'QA Plumbing');w.demoRole('builder');w.qaGuide();
-  assert.match(w.document.getElementById('infoBody').textContent,/Try|Choose|Homeowner/);assert.deepEqual(external,[]);
+  assert.match(w.document.getElementById('infoBody').textContent,/Matte Black → Polished Black/);
+  assert.match(w.document.getElementById('infoBody').textContent,/\$650/);assert.deepEqual(external,[]);
  }finally{if(dom)dom.window.close();fs.rmSync(dir,{recursive:true,force:true});}
 });
 
@@ -168,4 +174,83 @@ test('an expired or revoked packet replaces cached instructions and refuses resp
  assert.doesNotMatch(h.w.document.getElementById('gpBody').textContent,/QA shower valve/);
  let calls=0;h.w.testDB={collection:()=>({doc:()=>({update:async()=>{calls++;}})})};h.run('_pkDb=()=>window.testDB');
  assert.equal(await h.run("_gpWriteResp({status:'confirmed'})"),false);assert.equal(calls,0);
+}finally{h.close();}});
+
+function approveBoth(h){
+ h.run("state.session={role:'builder',name:'QA builder'};setPacketSignoff(P(),'plumb','builder',true,packetApprovalKey(P(),'plumb'));state.session={role:'client',site:P().id,name:'QA homeowner'};setPacketSignoff(P(),'plumb','homeowner',true,packetApprovalKey(P(),'plumb'))");
+}
+test('the photographed finish-change sequence has one approval source and a stable before/after summary',()=>{const h=boot();try{
+ h.run("Data.updateSelection(9001,{spec:Object.assign({},P().selections[0].spec,{finish:'Matte Black'})})");approveBoth(h);
+ h.run("state.session={role:'builder',name:'QA builder'};renderSelections()");
+ assert.equal(h.w.document.querySelector('[data-sel="9001"] .approve-ro').textContent,'Approved');
+ assert.equal(h.run('selectionHomeownerApproved(P(),P().selections[0])'),true);
+ h.run("Data.updateSelection(9001,{spec:Object.assign({},P().selections[0].spec,{finish:'Polished Black'})})");
+ let html=h.run("packetHTML(P(),'plumb')");assert.match(html,/Matte Black → Polished Black/);assert.match(html,/Homeowner and builder approval pending/);assert.match(html,/Details changed — review again/);
+ h.run("state.session={role:'client',site:P().id,name:'QA homeowner'};setPacketSignoff(P(),'plumb','homeowner',true,packetApprovalKey(P(),'plumb'));clientGo('home')");
+ assert.doesNotMatch(h.w.document.getElementById('clBody').textContent,/QA shower valve needs your review/);
+ h.run("state.session={role:'subs',name:'QA Plumbing'}");html=h.run("packetHTML(P(),'plumb')");
+ assert.match(html,/Builder approval pending/);assert.match(html,/Matte Black → Polished Black/);assert.match(html,/Do not install/);
+ h.run("state.session={role:'builder',name:'QA builder'};setPacketSignoff(P(),'plumb','builder',true,packetApprovalKey(P(),'plumb'))");
+ assert.match(h.run("packetHTML(P(),'plumb')"),/Instructions approved/);
+ assert.match(h.run("packetHTML(P(),'plumb')"),/Matte Black → Polished Black/);
+ h.run("Data.updateSelection(9001,{spec:Object.assign({},P().selections[0].spec,{finish:'Brushed Nickel'})})");
+ assert.match(h.run("packetHTML(P(),'plumb')"),/Polished Black → Brushed Nickel/);
+ assert.doesNotMatch(h.run("packetHTML(P(),'plumb')"),/Matte Black → Brushed Nickel/);
+}finally{h.close();}});
+test('a routed selection never falls back to its stale legacy approval or requests a duplicate sign-off',()=>{const h=boot();try{
+ h.run('P().selections[0].approved=true');assert.equal(h.run('selectionHomeownerApproved(P(),P().selections[0])'),false);
+ h.run("state.session={role:'client',site:P().id,name:'QA homeowner'};clientGo('specs')");
+ const card=[...h.w.document.querySelectorAll('#clBody .sel-row')].find(x=>x.textContent.includes('QA shower valve'));
+ assert.equal(card.querySelector('button').textContent,'Review packet');assert.match(card.querySelector('button').getAttribute('onclick'),/openSelectionReview/);
+ h.run("P().selections[0].spec.finish='';clientGo('home')");
+ const requests=[...h.w.document.querySelectorAll('#clBody .pkt-or')].filter(x=>x.textContent.includes('QA shower valve'));
+ assert.equal(requests.length,1);assert.match(requests[0].textContent,/needs your answer/);
+}finally{h.close();}});
+test('multiple affected packet approvals are all required, while unrouted legacy choices retain their flow',()=>{const h=boot();try{
+ h.run("P().selections[0].cat='Other';P().subs=[];P().bookings=[];P().selections[0].approved=true");
+ assert.equal(h.run('selectionHomeownerApproved(P(),P().selections[0])'),true);
+ h.run("P().selections[0].cat='Plumbing Fixtures';P().bookings=[{id:'a',trade:'plumb'},{id:'b',trade:'qa-other'}];SUB_SEL_CATS['qa-other']=['Plumbing Fixtures'];P().selections[0].approved=true");
+ approveBoth(h);assert.equal(h.run('selectionHomeownerApproved(P(),P().selections[0])'),false);
+ assert.equal(h.run('selectionReviewState(P(),P().selections[0]).approved'),false);
+}finally{h.close();}});
+test('change summaries escape user text, cover dimensions/dates/documents, and never reveal prices to a crew',()=>{const h=boot();try{
+ approveBoth(h);
+ h.run("state.session={role:'builder',name:'QA builder'};Data.updateSelection(9001,{price:777,spec:Object.assign({},P().selections[0].spec,{roughin:'<img src=x onerror=alert(1)>'})});P().bookings[0].start+=864e5;P().docs=[{n:'New drawing',trade:'plumb',fileId:'b'}]");
+ let html=h.run("packetHTML(P(),'plumb')");assert.match(html,/Rough-in dimension/);assert.match(html,/&lt;img/);assert.match(html,/Dates/);assert.match(html,/New drawing/);assert.match(html,/777/);
+ h.run("state.session={role:'subs',name:'QA Plumbing'}");html=h.run("packetHTML(P(),'plumb')");assert.doesNotMatch(html,/777|\$650|<img src=x/);assert.match(html,/Rough-in dimension/);
+}finally{h.close();}});
+test('crew home distinguishes legacy site readiness from current instruction approval and handles unknown dates',()=>{const h=boot();try{
+ h.run("P().subs=[{id:22,name:'QA Plumbing',specialty:'plumb',cleared:true}];state.session={role:'subs',name:'QA Plumbing'};openSubSite(P().id)");
+ let body=h.w.document.getElementById('svBody').textContent;assert.match(body,/Instructions need approval/);assert.doesNotMatch(body,/\d+d ago|Cleared to start/);
+ approveBoth(h);h.run("state.session={role:'subs',name:'QA Plumbing'};openSubSite(P().id)");
+ assert.match(h.w.document.getElementById('svBody').textContent,/Instructions approved · site marked ready/);
+ h.run("P().subs[0].cleared=null");assert.match(h.run("packetHTML(P(),'plumb')"),/Wait for your builder to confirm the site is ready/);
+ for(const value of ['true','false','null','NaN','1',String(Date.now()+864e5)])assert.equal(h.run('clearanceWhen('+value+')'),'');
+ assert.match(h.run('clearanceWhen(Date.now())'),/just now/);
+}finally{h.close();}});
+test('credit, amount owed, and zero balance agree on homeowner home, both ledgers and the detail sheet',()=>{const h=boot();try{
+ h.run("P().invoices=[];P().selections[0].price=650;P().payments=[{amount:3000}]");
+ for(const [amount,label,value] of [[3000,'Credit balance','$2,350'],[0,'Still to pay','$650'],[650,'Balance','$0']]){
+  h.run(`P().payments=[{amount:${amount}}];state.session={role:'client',site:P().id,name:'QA homeowner'};clientGo('home')`);
+  assert.ok(h.w.document.getElementById('clBody').textContent.includes(label+' · '+value));
+  h.run("clientGo('specs')");let total=h.w.document.querySelector('#clBody .lr.out').textContent;assert.equal(total,label+value);
+  h.run("state.session={role:'builder',name:'QA builder'};renderSelections()");total=h.w.document.querySelector('#selSummary .lr.out').textContent;assert.equal(total,label+value);
+  assert.match(h.run('ledgerDetailHTML(P())'),new RegExp(label));
+ }
+ h.run("P().invoices=[{status:'sent',total:4800,items:[{selId:9001,amount:4800}],payments:[]}];clientTab='specs';state.session={role:'client',site:P().id,name:'QA homeowner'};renderClient()");
+ assert.match(h.w.document.getElementById('clBody').textContent,/Invoiced above net change/);
+}finally{h.close();}});
+test('overpayment on fully invoiced choices is shown as credit rather than a zero invoice balance',()=>{const h=boot();try{
+ h.run("P().payments=[];P().invoices=[{status:'sent',total:650,items:[{selId:9001,amount:650}],payments:[{amount:800}]}];state.session={role:'client',site:P().id,name:'QA homeowner'};clientGo('specs')");
+ assert.equal(h.w.document.querySelector('#clBody .lr.out').textContent,'Credit balance$150');
+ h.run("state.session={role:'builder',name:'QA builder'};renderSelections()");
+ assert.equal(h.w.document.querySelector('#selSummary .lr.out').textContent,'Credit balance$150');
+}finally{h.close();}});
+test('builder packet presents approval before sharing and stops showing review deadlines once approved',()=>{const h=boot();try{
+ h.run("P().subs=[{name:'QA Plumbing',specialty:'plumb',specsDue:Date.now()-864e5,cleared:true}]");
+ let html=h.run("packetHTML(P(),'plumb')");assert.match(html,/Approve instructions/);assert.doesNotMatch(html,/>Text this link<|Ready for this trade/);
+ approveBoth(h);h.run("state.session={role:'builder',name:'QA builder'}");html=h.run("packetHTML(P(),'plumb')");
+ assert.match(html,/>Text this link</);assert.doesNotMatch(html,/Overdue|review due|Ready for this trade/);
+ h.run("state.session={role:'client',site:P().id,name:'QA homeowner'}");html=h.run("packetHTML(P(),'plumb')");
+ assert.doesNotMatch(html,/>Signed<\/button>/);assert.match(html,/Withdraw my approval/);
 }finally{h.close();}});

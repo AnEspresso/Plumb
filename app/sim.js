@@ -283,7 +283,7 @@ const simSelId=$("state.projects[0].selections.reduce((m,s)=>Math.max(m,s.id),0)
 let cl=clientHTML('p1','home');
 t('homeowner sees new decision',cl.includes('Sim skylight'));
 const decShown=(cl.match(/class="cl-dec"/g)||[]).length;
-const decCount=$("(()=>{const p=clientProj();const sels=p.selections||[];const d=sels.filter(s=>!s.approved||s.status==='pending');const q=sels.filter(s=>s.status!=='installed'&&specStatus(s).homeownerPending.length);return new Set([...d,...q].map(s=>s.id)).size;})()");
+const decCount=$("(()=>{const p=clientProj();const sels=p.selections||[];const d=sels.filter(s=>!selectionHomeownerApproved(p,s)||s.status==='pending');const q=sels.filter(s=>s.status!=='installed'&&specStatus(s).homeownerPending.length);return new Set([...d,...q].map(s=>s.id)).size;})()");
 t('Decisions stat equals union invariant', decCount===1?cl.includes('One thing still needs you'):cl.includes(String(decCount)+' still need you'),'shown-rows='+decShown+' union='+decCount);
 // pending items refuse sign-off; selected items sign
 asClient('p1');
@@ -2307,13 +2307,13 @@ $("openPacket((P().subs.find(function(s){return /Timberline/i.test(s.name);})||P
   const primary=(body&&body.querySelector('.btn-primary')&&body.querySelector('.btn-primary').textContent)||'';
   const titles=[...((body&&body.querySelectorAll('.row-title'))||[])].map(function(n){return n.textContent||'';});
   const txt=(body&&body.textContent)||'';
-  t('Timberline primary is Schedule this crew', primary.indexOf('Schedule this crew')>=0, primary);
+  t('Timberline primary asks for instruction approval', primary.indexOf('Approve instructions')>=0, primary);
   t('Timberline does not repeat not booked', titles.every(function(x){return x.indexOf('not booked')<0&&x!=='No dates on the calendar';}), titles.join(' | '));
   t('unbooked packet does not say empty truck over a spec', txt.indexOf('Nothing in the packet for the truck')<0||txt.indexOf('For the truck')<0);
 })();
 $('closeInfo()');
 $("openPacket((P().subs.find(function(s){return /Fine Line/i.test(s.name);})||P().subs[0]).id)");
-t('Fine Line primary is Text this link', ((el('infoBody')&&el('infoBody').querySelector('.btn-primary')&&el('infoBody').querySelector('.btn-primary').textContent)||'').indexOf('Text this link')>=0);
+t('Fine Line primary asks for instruction approval', ((el('infoBody')&&el('infoBody').querySelector('.btn-primary')&&el('infoBody').querySelector('.btn-primary').textContent)||'').indexOf('Approve instructions')>=0);
 $('closeInfo()');
 t('rewritten screens dropped eyebrow and lbl', (function(){
   const fns=['renderDocs','renderSubs','renderSettings','renderPhotos','renderDayLog'];
