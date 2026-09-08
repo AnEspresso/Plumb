@@ -900,7 +900,7 @@
   .cl-sign{flex:0 0 auto;border:1px solid var(--oak);background:transparent;color:var(--oak);border-radius:var(--r-sm);padding:var(--s-2) var(--s-3);font-family:inherit;font-size:var(--t-xs);font-weight:700;cursor:pointer;white-space:nowrap;}
   .cl-sign:active{transform:scale(.97);}
   .cl-info{font-size:var(--t-xs);color:var(--ink-3);flex:0 0 auto;font-weight:600;}
-  .approve-ro{flex:0 0 auto;display:flex;align-items:center;gap:5px;font-size:var(--t-xs);font-weight:700;padding:var(--s-2) var(--s-2);border-radius:var(--r-sm);white-space:nowrap;}
+  .approve-ro{border:0;font-family:inherit;cursor:pointer;flex:0 0 auto;display:flex;align-items:center;gap:5px;font-size:var(--t-xs);font-weight:700;padding:var(--s-2) var(--s-2);border-radius:var(--r-sm);white-space:nowrap;}
   .approve-ro.on{color:var(--sage);background:rgba(122,132,94,.12);}
   .approve-ro.off{color:var(--ink-3);background:var(--surface-2);}
   .cl-photogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:var(--s-2);}
@@ -1743,18 +1743,21 @@
 .cal-door .bgt-chev{margin-left:auto}
 .exc-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:var(--z-toast);background:var(--bark);color:var(--cream);
   font-size:var(--t-sm);font-weight:600;padding:var(--s-2) var(--s-2);
-  align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;}
+  align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
 .exc-k{opacity:.85;white-space:nowrap;flex:none;}
-.exc-roles{display:inline-flex;background:rgba(231,220,198,.10);border:1px solid rgba(231,220,198,.22);border-radius:999px;padding:var(--s-1);flex:none;}
+.exc-roles{display:inline-flex;max-width:100%;flex-wrap:wrap;justify-content:center;background:rgba(231,220,198,.10);border:1px solid rgba(231,220,198,.22);border-radius:999px;padding:var(--s-1);flex:none;}
 .exc-roles button{background:none;border:none;border-radius:999px;color:rgba(231,220,198,.75);
   font-family:inherit;font-size:var(--t-xs);font-weight:700;padding:var(--s-1) var(--s-2);cursor:pointer;}
 .exc-roles button.on{background:var(--oak);color:var(--night);}
 .exc-exit,.exc-reset{background:rgba(231,220,198,.14);border:1px solid rgba(231,220,198,.3);color:var(--cream);
   border-radius:999px;padding:var(--s-1) var(--s-3);font-family:inherit;font-size:var(--t-xs);font-weight:700;cursor:pointer;white-space:nowrap;flex:none;}
 .exc-reset{background:none;}
-.exc-actions{display:flex;gap:6px;flex:none;}
+.exc-actions{display:flex;max-width:100%;flex-wrap:wrap;gap:6px;flex:none;}
 body.on-excursion .exc-banner{display:flex;}
-body.on-excursion .device{margin-top:calc(var(--s-8) + var(--s-1));height:calc(100dvh - 52px);}
+body.on-excursion .device{margin-top:var(--qa-bar-height,52px);height:calc(100dvh - var(--qa-bar-height,52px));}
+/* These absolute role views are already inside the offset .device. */
+body.on-excursion #clientview,body.on-excursion #subview{top:0;}
+@media(max-width:760px){.exc-k{display:none;}.exc-banner{justify-content:center;}.exc-actions{justify-content:center;}}
 body.on-excursion header{padding-top:var(--s-3);}
 @media(max-width:420px){.exc-k{display:none;}}
 /* Role views own the full window whenever shown — demo AND production, identical. */
@@ -1831,9 +1834,11 @@ body.on-tour .tour-card{display:block;}
 .jc-ov{color:var(--clay)}
 .jc-un{color:var(--sage)}
 </style>
+  <script src="runtime.js"></script>
   <!-- Backend sync. Packet links load the SDK immediately so the first read is attested. Everyone else keeps defer. -->
   <script>
   (function(){
+    if(!window.PlumbRuntime||window.PlumbRuntime.kind==='local')return;
     var pk=false;try{pk=/[?&]packet=/.test(location.search);}catch(e){}
     var b='https://www.gstatic.com/firebasejs/10.12.5/';
     var f=['firebase-app-compat.js','firebase-auth-compat.js','firebase-firestore-compat.js','firebase-storage-compat.js','firebase-messaging-compat.js','firebase-app-check-compat.js'];
@@ -1955,7 +1960,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
   -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
 .sheet-scrim.show{display:flex;}
 .sheet-scrim.sheet-2{z-index:var(--z-sheet-2);}           /* a sheet over a sheet */
-.sheet{width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;
+.sheet{width:100%;max-width:560px;max-height:92vh;max-height:92dvh;display:flex;flex-direction:column;
   background:var(--paper);border-radius:var(--r-lg) var(--r-lg) 0 0;
   padding:var(--s-3) var(--s-5) calc(var(--s-6) + env(safe-area-inset-bottom));
   box-shadow:var(--shadow-lift);animation:sheet-up .22s ease-out;}
@@ -1964,10 +1969,16 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);margin-bottom:var(--s-4);}
 .sheet-head h2{flex:1;font-size:var(--t-xl);}
 .sheet-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 calc(var(--s-5)*-1);padding:0 var(--s-5);}
+.sheet-head,.sheet-handle,.sheet-foot{flex-shrink:0;}
+.sheet-body{padding-bottom:var(--s-3);scroll-padding-block:var(--s-3);}
+.pkt-changes{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:var(--s-3) 0;margin:var(--s-3) 0;overflow-wrap:anywhere;}
+.pkt-change{margin-top:var(--s-2);}
+.pkt-changes summary{cursor:pointer;margin-top:var(--s-2);color:var(--ink-2);}
+body.on-excursion .sheet{max-height:calc(100dvh - var(--qa-bar-height,52px) - 16px);}
 .sheet-foot{margin-top:var(--s-4);padding-top:var(--s-4);border-top:1px solid var(--line-2);}
 @media (min-width:700px){
   .sheet-scrim{align-items:center;}
-  .sheet{border-radius:var(--r-lg);max-height:88vh;}
+  .sheet{border-radius:var(--r-lg);max-height:88vh;max-height:88dvh;}
 }
 
 /* ── 6. Segmented control and chips ───────────────────────────────── */
@@ -2031,6 +2042,8 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 #infoBody .pkt-strip{background:transparent;padding:0;margin:0 0 var(--s-4);border-radius:0;}
 #infoBody .pkt-strip.warn,#infoBody .pkt-strip.ok{background:transparent;}
 #infoBody .pkt-strip .st{font-size:var(--t-xl);}
+#infoBody:has([data-client-packet]) .sec{margin-top:var(--s-4);}
+#infoFoot.action-bar .btn{min-width:0;padding:var(--s-2) var(--s-3);line-height:1.25;overflow-wrap:anywhere;}
 .bgt-tot .hero{margin:0;padding:0;}
 .ov-today > .sec:first-child{margin-top:0;}
 .ov-houses-tools{display:flex;align-items:center;gap:var(--s-2);margin:0 0 var(--s-3);flex-wrap:wrap;}
@@ -3880,15 +3893,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.413.0 - Invite sets the role';
+const PLUMB_VERSION='2.416.0 - Mobile review QA';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789330000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.413.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789330000003;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.416.0-qa';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5009,6 +5022,133 @@ function persist(){try{if(state.session)state.session.role=normRole(state.sessio
    At go-live, only the bodies here change to Firestore granular writes /
    listeners — call houses and the rest of the app stay exactly as they are.
    ──────────────────────────────────────────────────────────────────── */
+/* The instruction identity excludes delivery/status chatter. Approvals cover
+   exact content, not a mutable boolean. Historical signatures remain intact. */
+function instructionJSON(value){
+  if(Array.isArray(value))return '['+value.map(instructionJSON).join(',')+']';
+  if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+instructionJSON(value[k])).join(',')+'}';
+  return JSON.stringify(value===undefined?null:value);
+}
+function selectionInstruction(s){return {id:s.id,item:s.item||'',cat:s.cat||'',room:s.room||'',price:s.price==null?null:s.price,note:s.note||'',spec:s.spec||{},specCustom:s.specCustom||[]};}
+function packetApprovalKey(p,trade){
+  return instructionJSON({selections:tradeSelections(p,trade).map(selectionInstruction).sort((a,b)=>String(a.id).localeCompare(String(b.id))),
+    notes:p.selNotes||'',docs:(p.docs||[]).filter(d=>docInPacket(p,trade,d)).map(d=>({name:d.n||'',id:d.fileId||'',url:d.fileUrl||'',revision:d.revision||0})),
+    bookings:(p.bookings||[]).filter(b=>b.trade===trade&&(b.status||'')!=='declined').map(b=>({id:b.id,start:b.start,end:b.end,note:b.note||'',crew:b.subName||''})).sort((a,b)=>String(a.id).localeCompare(String(b.id)))});
+}
+
+/* A packet review replaces a second selection sign-off for its routed choices.
+   Legacy, unrouted selections keep their existing approval flow. */
+function selectionReviewTrades(p,s){
+  const trades=[...new Set((p.subs||[]).map(x=>x.specialty).concat((p.bookings||[]).filter(b=>b.status!=='declined').map(b=>b.trade),Object.keys(p.packetSignoff||{})))];
+  return trades.filter(tr=>(SUB_SEL_CATS[tr]||[]).includes(s.cat));
+}
+function selectionHomeownerApproved(p,s){
+  const trades=selectionReviewTrades(p,s);
+  return trades.length?trades.every(tr=>!!packetSignoff(p,tr).homeowner):!!s.approved;
+}
+function selectionReviewState(p,s){
+  const trades=selectionReviewTrades(p,s);
+  if(!trades.length)return {approved:!!s.approved,label:s.approved?'Signed':'Awaiting',trade:null};
+  const trade=trades.find(tr=>!packetReady(p,tr))||trades[0];
+  const approved=trades.every(tr=>packetReady(p,tr));
+  return {approved,trade,label:approved?'Approved':tradeSpecGaps(p,trade).length?'Needs answers':packetSignoff(p,trade).homeowner?'Builder review':'Review needed'};
+}
+function openSelectionReview(id){
+  const p=(state.session||{}).role==='client'?clientProj():P(),s=(p.selections||[]).find(x=>String(x.id)===String(id));if(!s)return;
+  const r=selectionReviewState(p,s);
+  if(r.trade){if((state.session||{}).role==='client')openClientPacket(r.trade);else openPacketFor(p.id,r.trade);}
+  else if((state.session||{}).role==='client')clientSignoff(id);
+  else if(s.approved)openSignoffInfo(id);else toast('The homeowner signs off from their login');
+}
+function packetReviewLabel(p,trade){
+  if(tradeSpecGaps(p,trade).length)return 'Details needed before approval';
+  const so=packetSignoff(p,trade);
+  if(so.builder&&so.homeowner)return 'Instructions approved';
+  if(so.homeowner)return 'Builder approval pending';
+  if(so.builder)return 'Homeowner approval pending';
+  return 'Homeowner and builder approval pending';
+}
+function previousPacketApproval(p,trade){
+  const current=packetApprovalKey(p,trade),raw=(p.packetSignoff||{})[trade]||{};
+  const entries=['builder','homeowner'].map(who=>({who,signature:raw[who]})).concat((p.packetApprovalHistory||[]).filter(x=>x.trade===trade));
+  const versions=new Map();
+  entries.forEach(x=>{const sig=x.signature;if(!sig||!sig.key||sig.key===current)return;
+    const v=versions.get(sig.key)||{key:sig.key,at:0,who:new Set()};v.at=Math.max(v.at,Number(sig.at)||0);v.who.add(x.who);versions.set(sig.key,v);});
+  const ordered=[...versions.values()].sort((a,b)=>b.at-a.at);
+  const previous=ordered.find(v=>v.who.has('builder')&&v.who.has('homeowner'))||ordered[0];
+  if(!previous)return null;
+  try{return JSON.parse(previous.key);}catch(e){return null;}
+}
+function packetChanges(p,trade){
+  const before=previousPacketApproval(p,trade);if(!before)return [];
+  const after=JSON.parse(packetApprovalKey(p,trade)),changes=[];
+  const val=x=>x==null||x===''?'Not set':String(x);
+  const add=(item,field,old,next)=>{if(instructionJSON(old)!==instructionJSON(next))changes.push({item,field,before:val(old),after:val(next)});};
+  const oldS=new Map((before.selections||[]).map(x=>[String(x.id),x]));
+  after.selections.forEach(n=>{const old=oldS.get(String(n.id));oldS.delete(String(n.id));const item=n.item||n.cat||'Selection';
+    if(!old){changes.push({item,field:'Selection',before:'Not in packet',after:'Added'});return;}
+    ['item','cat','room','note'].forEach(k=>add(item,({item:'Item',cat:'Category',room:'Room',note:'Note'})[k],old[k],n[k]));
+    if((state.session||{}).role!=='subs')add(item,'Price',selMoney(old.price)||'Included',selMoney(n.price)||'Included');
+    const fields=specFields(n);
+    [...new Set(Object.keys(old.spec||{}).concat(Object.keys(n.spec||{})))].forEach(k=>add(item,(fields.find(f=>f.key===k)||{}).label||k,(old.spec||{})[k]||'',(n.spec||{})[k]||''));
+    const oldC=old.specCustom||[],newC=n.specCustom||[];
+    for(let i=0;i<Math.max(oldC.length,newC.length);i++){const a=oldC[i]||{},b=newC[i]||{};
+      add(item,b.label||a.label||'Custom detail',a.value||'',b.value||'');
+      if(a.label&&b.label&&a.label!==b.label)add(item,'Detail name',a.label,b.label);
+      if(a.who!==b.who||!!a.required!==!!b.required)add(item,'Responsibility / requirement',oldC[i]?(a.who||'builder')+(a.required?' · required':' · optional'):'Not set',newC[i]?(b.who||'builder')+(b.required?' · required':' · optional'):'Removed');
+    }
+  });
+  oldS.forEach(o=>changes.push({item:o.item||o.cat||'Selection',field:'Selection',before:'In packet',after:'Removed'}));
+  add('Packet','Instructions',before.notes,after.notes);
+  if(instructionJSON(before.docs||[])!==instructionJSON(after.docs||[])){
+    changes.push({item:'Packet',field:'Drawings / documents',before:(before.docs||[]).map(d=>d.name).join(', ')||'None',after:(after.docs||[]).map(d=>d.name).join(', ')||'None'});
+    if(changes[changes.length-1].before===changes[changes.length-1].after)changes[changes.length-1].after+=' — file or revision changed';
+  }
+  const oldB=new Map((before.bookings||[]).map(x=>[String(x.id),x]));
+  (after.bookings||[]).forEach(n=>{const o=oldB.get(String(n.id));oldB.delete(String(n.id));
+    if(!o){changes.push({item:n.crew||'Crew',field:'Booking',before:'Not scheduled',after:fmtWin(n)});return;}
+    add(n.crew||'Crew','Crew',o.crew,n.crew);
+    if(o.start!==n.start||o.end!==n.end)changes.push({item:n.crew||'Crew',field:'Dates',before:fmtWin(o),after:fmtWin(n)});
+    add(n.crew||'Crew','Scope',o.note,n.note);
+  });
+  oldB.forEach(o=>changes.push({item:o.crew||'Crew',field:'Booking',before:fmtWin(o),after:'Removed'}));
+  return changes;
+}
+function packetChangesHTML(p,trade){
+  const changes=packetChanges(p,trade);if(!changes.length)return '';
+  const row=c=>'<div class="pkt-change"><div class="row-sub">'+esc(c.item)+'</div><b>'+esc(c.field)+'</b>: '+esc(c.before)+' → '+esc(c.after)+'</div>';
+  return '<section class="pkt-changes" aria-label="Changes since previous approval"><b>Changes since previous approval</b>'+changes.slice(0,3).map(row).join('')+(changes.length>3?'<details><summary>Show '+(changes.length-3)+' more changes</summary>'+changes.slice(3).map(row).join('')+'</details>':'')+'</section>';
+}
+function clearanceWhen(value){
+  // Older fixtures contain booleans, not dates. Never turn true into January 1970.
+  return typeof value==='number'&&Number.isFinite(value)&&value>=946684800000&&value<=Date.now()?(' '+timeAgo(value)):'';
+}
+function balanceLabel(out){return out < -0.005?'Credit balance':out > 0.005?'Still to pay':'Balance';}
+function unbilledLabel(out){return out < -0.005?'Invoiced above net change':'Not yet invoiced';}
+
+function specFieldEditable(who){const r=(state.session||{}).role;return r==='builder'||(r==='client'&&who==='homeowner');}
+function selectionPatchAllowed(s,patch){
+  const role=(state.session||{}).role;
+  if(role==='builder')return true;
+  if(role!=='client'||String(clientProj().id)!==String(P().id))return false;
+  if(Object.keys(patch).some(k=>!['spec','specCustom','approved','signed'].includes(k)))return false;
+  const owned=specFields(s).filter(f=>f.who==='homeowner'&&!f.custom).map(f=>f.key);
+  if(patch.spec&&Object.keys(Object.assign({},s.spec,patch.spec)).some(k=>!owned.includes(k)&&String(patch.spec[k]||'')!==String((s.spec||{})[k]||'')))return false;
+  if(patch.specCustom){const before=s.specCustom||[],after=patch.specCustom;
+    if(after.length!==before.length)return false;
+    if(after.some((v,i)=>{const b=before[i];return v.label!==b.label||v.who!==b.who||!!v.required!==!!b.required||(b.who!=='homeowner'&&v.value!==b.value);}))return false;}
+  return true;
+}
+function updateSelectionRevision(s,patch){
+  if(!selectionPatchAllowed(s,patch)){toast('Your builder reviews changes to these details');return null;}
+  const next=Object.assign({},s,patch),changed=instructionJSON(selectionInstruction(s))!==instructionJSON(selectionInstruction(next));
+  if(changed){
+    next.revisionHistory=(s.revisionHistory||[]).concat([{revision:s.specRevision||1,instruction:selectionInstruction(s),signed:s.signed||null,at:Date.now(),by:(state.session||{}).name||''}]);
+    next.specRevision=(s.specRevision||1)+1;next.approved=false;next.signed=null;
+  }
+  Object.assign(s,next);return s;
+}
+
 const Data = {
   backend:false,                          // flip true when Firestore is wired
   commit(){ persist(); },                 // single persistence choke point → becomes the Firestore write boundary
@@ -5028,7 +5168,7 @@ const Data = {
   saveLog(date,text,share){ const p=P(); p.logs=p.logs||[]; const ex=p.logs.find(l=>l.date===date); if(ex){ex.text=text;ex.t=Date.now();if(share!==undefined)ex.share=share;} else {p.logs.unshift({date,t:Date.now(),text,share:!!share});} this.commit(); },
   /* selections */
   addSelection(sel){ P().selections.push(sel); this.commit(); return sel; },
-  updateSelection(id,patch){ const s=P().selections.find(x=>x.id===id); if(s)Object.assign(s,patch); this.commit(); return s; },
+  updateSelection(id,patch){ const s=P().selections.find(x=>x.id===id); if(!s||!updateSelectionRevision(s,patch))return null; this.commit(); return s; },
   removeSelection(id){ P().selections=P().selections.filter(x=>x.id!==id); this.commit(); },
   setSelNotes(text){ P().selNotes=text; this.commit(); },
   addPayment(pmt){ P().payments=P().payments||[]; P().payments.push(pmt); this.commit(); return pmt; },
@@ -5184,13 +5324,22 @@ function toastAction(msg,label,fn,ms){const t=document.getElementById('toast');t
 function showInfo(title,bodyHTML,own){
   document.getElementById('infoTitle').textContent=title;document.getElementById('infoBody').innerHTML=bodyHTML;
   const sc=document.getElementById('infoScrim');sc.classList.toggle('info-own',!!own);sc.classList.add('show');
+  syncInfoFoot();
+}
+function syncInfoFoot(){
   try{
     const foot=document.getElementById('infoFoot');
-    if(foot&&!own){
+    if(foot){
+      const clientPacket=!!document.querySelector('#infoBody [data-client-packet]');
+      const approve=!document.getElementById('infoScrim').classList.contains('info-own')&&document.querySelector('#infoBody [data-packet-approve]');
       const fromH=typeof fromTheHouse==='function'&&fromTheHouse();
       const hasGo=!!document.querySelector('#infoBody .b-go');
-      const label=fromH?'House':(hasGo?'Done':'Got it');
+      const label=clientPacket?'Close':(fromH?'House':(hasGo?'Done':'Got it'));
+      foot.className=(approve?'action-bar':'leave-bar')+' sheet-foot';
       foot.innerHTML='<button class="btn btn-secondary" onclick="closeInfo()"><span>'+label+'</span></button>';
+      // Move the existing action out of the scrolling body: one approval button,
+      // with the same revision check, always reachable beside Close.
+      if(approve){approve.classList.remove('mt-3');foot.appendChild(approve);}
     }
   }catch(e){}
 }
@@ -5402,7 +5551,7 @@ function renderSiteSummary(){
   // what the job is waiting on (mirror the Decisions \u2018Waiting on\u2019 pane)
   const items=ovItems(p).filter(it=>it.issue&&it.status==='open').length;
   const sels=(p.selections||[]);const SI=st=>{const i=SEL_STATUS.indexOf(st);return i<0?0:i;};
-  const awaiting=sels.filter(s=>SI(s.status)>=1&&!s.approved).length;
+  const awaiting=sels.filter(s=>SI(s.status)>=1&&!selectionHomeownerApproved(P(),s)).length;
   const extra=[...new Set(sels.map(s=>s.cat||'Other'))].filter(c=>!SEL_CATS.includes(c));
   const pendingCats=[...SEL_CATS,...extra].filter(c=>!sels.some(s=>(s.cat||'Other')===c)).length;
   const waiting=items+awaiting+pendingCats;
@@ -8254,8 +8403,8 @@ function _nyIssues(projs){
       if(!tradeSelections(p,trade).length)return;
       if(!packetReady(p,trade)){seen[key]=1;
         const gaps=tradeSpecGaps(p,trade).length;
-        const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):'packet not signed off';
-        issues.push({kind:'Spec still open',pid:p.id,site:p.street||p.name,trade:trade,pri:1,lvl:'warn',ts:b.start,
+        const why=gaps?(gaps+' spec'+(gaps===1?'':'s')+' still open'):packetReviewLabel(p,trade);
+        issues.push({kind:gaps?'Spec still open':'Approval needed',pid:p.id,site:p.street||p.name,trade:trade,pri:1,lvl:'warn',ts:b.start,
           line:upFirst(why),go:`openPacketFor('${p.id}','${trade}')`});
       }
     });
@@ -8836,6 +8985,7 @@ const PLUMB_APPCHECK_SITEKEY = '6Ld2CBEtAAAAAILz47udzE6taSP4lLYT0CDNnfHK';
    Workbench field overrides it (clear the field to fall back to this default). */
 const PLUMB_VAPID = 'BO8LtWn5UFruEvCqBbl_Ghl2gUJr-aClDyegoZmPlEj1fx9W6L5mXMXwdEpl6syqYCpMDF1pJo3_UZaHl05D87s';
 function fbConfig(){
+  if(!window.PlumbRuntime||window.PlumbRuntime.kind!=='production')return null;
   if(PLUMB_FIREBASE_CONFIG&&PLUMB_FIREBASE_CONFIG.projectId)return PLUMB_FIREBASE_CONFIG;
   try{const c=localStorage.getItem('plumb.fb.config');if(c){const o=JSON.parse(c);if(o&&o.projectId)return o;}}catch(e){}
   return null;
@@ -9687,7 +9837,7 @@ function renderSubView(){
       (projs.map((p,i)=>{const tr=subTradeFor(p);const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open').length;
         return `<div class="ov-card ${open?'attn':''}" style="animation-delay:${i*60}ms" onclick="openSubSite('${p.id}')">
           <div class="ct"><div><div class="st">${esc(p.street||p.name)}</div><div class="nm">${esc(tr.label)}${p.city?' · '+esc(p.city):''}</div></div>
-          <span class="ov-open ${tr.cleared?'clean':''}">${tr.cleared?'Cleared':'Waiting'}</span></div>
+          <span class="ov-open ${tr.cleared?'clean':''}">${!packetReady(p,tr.id)?'Approval needed':tr.cleared?'Site ready':'Waiting'}</span></div>
           <div class="foot"><span>${open?open+' open item'+(open===1?'':'s'):'no open items'}</span></div></div>`;}).join('')
        ||'<div class="empty">No houses assigned to you yet.</div>')+'</div>';
     setSync(syncStatus);return;
@@ -9706,7 +9856,7 @@ function renderSubView(){
     setSync(syncStatus);return;
   }
   if(subTab==='packet'){
-    body.innerHTML=head+packetHTML(p,tr.id);
+    body.innerHTML=head.replace(/<h2 class="title-sheet">[\s\S]*?<\/h2>/,'')+packetHTML(p,tr.id);
     setSync(syncStatus);return;
   }
   const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open');
@@ -9716,12 +9866,13 @@ function renderSubView(){
   const _svToday=dayStart(Date.now());
   const _svBookings=(p.bookings||[]).filter(b=>b.subName===_svMyName&&(b.status||'confirmed')!=='declined'&&b.end>=_svToday).sort((a,b)=>a.start-b.start);
   const needConfirm=_svBookings.filter(function(b){const st=bkStatus(b);return st==='pending'||st==='modified';});
-  const stripSt=open.length?(open.length+' still '+(open.length===1?'needs':'need')+' you'):(tr.cleared?'Cleared to start':'Waiting for the go-ahead');
+  const stripSt=open.length?(open.length+' still '+(open.length===1?'needs':'need')+' you'):(!packetReady(p,tr.id)?'Instructions need approval':(tr.cleared?'Instructions approved · site marked ready':'Waiting for site readiness'));
   const meta=[];
-  if(tr.cleared)meta.push('Your builder marked '+tr.label+' ready '+timeAgo(tr.cleared));
+  if(tr.cleared)meta.push('Your builder marked '+tr.label+' ready'+clearanceWhen(tr.cleared));
   else meta.push('You will see a notice here when this house is ready for '+tr.label);
+  if(!packetReady(p,tr.id))meta.push('Do not install yet. '+packetReviewLabel(p,tr.id)+'.');
   if(_svBookings[0])meta.push('Next on this house · '+fmtWin(_svBookings[0]));
-  let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
+  let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length||!packetReady(p,tr.id)?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   const facts=[];
   needConfirm.forEach(function(b){facts.push({k:fmtWin(b),m:'Confirm, change dates, or say you cannot make it',go:'svBkConfirm(\''+p.id+'\',\''+b.id+'\')'});});
   open.forEach(function(it){facts.push({k:it.cap||'Open item',m:areaText(it.area)||tr.label,go:''});});
@@ -10655,6 +10806,18 @@ try{window.addEventListener('message',ev=>{if(ev&&ev.data==='qb-connected'){toas
    live state live under SEPARATE storage keys, so entering is a mode flip; the
    suspend flag only drives the banner and crash recovery. ── */
 function onExcursion(){try{return !!localStorage.getItem('plumbSuspend');}catch(e){return false;}}
+let _excResizeObserver=null;
+function syncExcursionBar(){
+  const bar=document.getElementById('excBanner');if(!bar)return;
+  const height=Math.ceil(bar.getBoundingClientRect().height);
+  if(height>0)document.documentElement.style.setProperty('--qa-bar-height',height+'px');
+}
+function observeExcursionBar(){
+  syncExcursionBar();
+  if(!_excResizeObserver&&typeof ResizeObserver!=='undefined'){
+    _excResizeObserver=new ResizeObserver(syncExcursionBar);_excResizeObserver.observe(document.getElementById('excBanner'));
+  }
+}
 function enterDemo(opts){
   opts=opts||{};
   if(document.getElementById('tourCatch'))return;
@@ -10671,7 +10834,7 @@ function enterDemo(opts){
   try{const p2=(state.projects||[]).find(p=>String(p.id)==='p2');
     if(p2){if(Array.isArray(p2.items))p2.items=p2.items.filter(it=>!it.tour);
       if(Array.isArray(p2.docs))p2.docs=p2.docs.filter(d=>!d.tour);}}catch(e){}
-  document.body.classList.add('on-excursion');
+  document.body.classList.add('on-excursion');observeExcursionBar();
   _keepScrollY.home=0;_keepScrollY.house=0;_keepScrollY.packet=0;_keepScrollY.site=0;
   /* Zero install chrome during a demo. The nudge timer arms at page load and
      can fire AFTER the demo starts - an Add to Home Screen sheet sliding over
@@ -12344,7 +12507,7 @@ function renderClient(){
   else next='Your home is complete \ud83c\udf89';
   const led=clientLedger(p);const usd=n=>'$'+Math.abs(n).toLocaleString();
   const sels=p.selections||[];
-  const decisions=sels.filter(s=>!s.approved||s.status==='pending');
+  const decisions=sels.filter(s=>!selectionHomeownerApproved(p,s)||s.status==='pending');
   const openQs=sels.filter(s=>s.status!=='installed'&&specStatus(s).homeownerPending.length);
   const decisionCount=new Set([...decisions,...openQs].map(s=>s.id)).size;
   const T=clientTab;let h='';
@@ -12357,13 +12520,13 @@ function renderClient(){
     meta.push(p.street||p.name||'Your house');
     if(stageName)meta.push('Now building \u00b7 '+stageName);
     if(nb)meta.push((nbTrade?specLabel(nbTrade):'Crew')+' \u00b7 '+_fmtD(nb.start));
-    meta.push('Still to pay \u00b7 '+usd(led.out));
+    meta.push(balanceLabel(led.out)+' \u00b7 '+usd(led.out));
     h+='<div class="pkt-strip '+(decisionCount?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div><div class="meta">'+esc(track.txt)+(meta.length?('<br>'+meta.map(esc).join('<br>')):'')+'</div></div>';
     const facts=[];
     decisions.forEach(function(s){
-      facts.push({k:s.item||'A finish to sign off',m:(s.cat||'')+(s.room&&s.room!=='—'?' \u00b7 '+s.room:''),go:'clientGo(\'specs\')'});
+      facts.push({k:(s.item||'A finish')+(specStatus(s).homeownerPending.length?' needs your answer':' needs your review'),m:(s.cat||'')+(s.room&&s.room!=='—'?' \u00b7 '+s.room:''),go:'clientGo(\'specs\')'});
     });
-    openQs.forEach(function(s){
+    openQs.filter(s=>!decisions.some(d=>d.id===s.id)).forEach(function(s){
       facts.push({k:(s.item||'A finish')+' needs your answer',m:'Selections',go:'clientGo(\'specs\')'});
     });
     (p.invoices||[]).filter(invNeedsOK).forEach(function(inv){
@@ -12436,10 +12599,10 @@ function renderClient(){
         ${bs.invPaid>0.005?`<div class="lr"><span>${loose>0.005?'Paid on invoices':'Paid'}</span><b class="cr">−${usd(bs.invPaid)}</b></div>`:''}
         ${(Math.abs(bs.unbilled)>0.005||loose>0.005)
           ?`<div class="lr"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>
-            ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
+            ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>${unbilledLabel(bs.unbilled)}</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
             ${loose>0.005?`<div class="lr"><span>Credit on account</span><b class="cr">−${usd(loose)}</b></div>`:''}
-            <div class="lr out"><span>Still to pay</span><b class="${bs.out<0?'cr':''}">${bs.out<0?'−':''}${usd(bs.out)}</b></div>`
-          :`<div class="lr out"><span>Balance due</span><b class="${bs.balanceDue>0?'':'cr'}">${usd(bs.balanceDue)}</b></div>`}
+            <div class="lr out"><span>${balanceLabel(bs.out)}</span><b class="${bs.out<0?'cr':''}">${usd(bs.out)}</b></div>`
+          :`<div class="lr out"><span>${balanceLabel(bs.out)}</span><b class="${bs.out<0?'cr':''}">${usd(bs.out)}</b></div>`}
       </div>`;
     const invs=(p.invoices||[]).filter(i=>{const s=invState(i);return s!=='void'&&s!=='draft';}).slice().reverse();
     if(invs.length){
@@ -12459,7 +12622,7 @@ function renderClient(){
             <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
             ${selTimelineRO(s)}
           </div>
-          ${s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Signed':'Sign off'}</button>`}
+          ${selectionReviewTrades(p,s).length?`<button class="cl-sign" onclick="openSelectionReview(${s.id})">${selectionHomeownerApproved(p,s)?'View approval':'Review packet'}</button>`:s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Signed':'Sign off'}</button>`}
         </div>`;}).join('');
     }).join(''):'<div class="empty">No selections recorded yet.</div>';
   }
@@ -12477,8 +12640,9 @@ function clientSaveSpec(id){const p=clientProj();const s=(p.selections||[]).find
   document.querySelectorAll('#clBody input[data-sid="'+id+'"]').forEach(inp=>{const v=inp.value.trim();if(!v)return;any=true;const k=inp.getAttribute('data-key');
     if(/^c\d+$/.test(k)){const idx=+k.slice(1);if(custom[idx])custom[idx].value=v;}else spec[k]=v;});
   if(!any){toast('Enter at least one answer');return;}
-  Data.updateSelection(id,{spec,specCustom:custom});logEvent('clientSpecAnswered',(s.item||'')+' · '+(s.cat||''));renderClient();toast('Answers submitted to your builder');}
+  if(!Data.updateSelection(id,{spec,specCustom:custom}))return;logEvent('clientSpecAnswered',(s.item||'')+' · '+(s.cat||''));renderClient();toast('Answers submitted to your builder');}
 function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
+  if(selectionReviewTrades(p,s).length){openSelectionReview(id);return;}
   if(s.status==='pending'){toast('Your builder is still preparing this option');return;}
   const now=!s.approved;const patch={approved:now,signed:now?{date:todayStr(),by:(p.buyers&&p.buyers.length?p.buyers:['Homeowner'])}:null};Data.updateSelection(id,patch);logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
   renderClient();toast(now?'Signed off — thank you':'Sign-off removed');}
@@ -12527,13 +12691,13 @@ function ledgerDetailHTML(p){
   h+=`<div class="ld-sub"><span>Total credits</span><b class="cr">\u2212${usd(crs)}</b></div>`;
   h+=`<div class="ld-tot"><span>Net change</span><b class="${net<0?'cr':''}">${net<0?'\u2212':''}${usd(net)}</b></div>`;
   h+=`<div class="ld-sub"><span>Invoiced</span><b>${usd(bs.billed)}</b></div>`;
-  if(Math.abs(bs.unbilled)>0.005)h+=`<div class="ld-sub"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`;
+  if(Math.abs(bs.unbilled)>0.005)h+=`<div class="ld-sub"><span>${unbilledLabel(bs.unbilled)}</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`;
   h+=`<div class="ld-sec">Payments received</div>`;
   h+=payRows.length?payRows.map(r=>`<div class="ld-li"><div class="ld-d"><div class="ld-n">${esc(r.n)}</div><div class="ld-m">${esc(r.m||'')}</div></div><b class="cr">\u2212${usd(r.amt)}</b></div>`).join(''):`<div class="ld-empty">No payments recorded yet.</div>`;
   if(payRows.length)h+=`<div class="ld-sub"><span>Total received</span><b class="cr">\u2212${usd(paid)}</b></div>`;
   if(loose>0.005)h+=`<div class="fs-xs c-ink-3 mt-1 ml-1 mr-1 mb-1 lh-145">Includes ${usd(loose)} credit on account — received but not yet applied to an invoice.</div>`;
   if(Math.abs(bs.unbilled)>0.005||loose>0.005)h+=`<div class="ld-sub"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>`;
-  h+=`<div class="ld-tot big"><span>Amount outstanding</span><b class="${out<0?'cr':''}">${out<0?'\u2212':''}${usd(out)}</b></div>`;
+  h+=`<div class="ld-tot big"><span>${balanceLabel(out)}</span><b class="${out<0?'cr':''}">${usd(out)}</b></div>`;
   return h;
 }
 function openLedgerDetail(){document.getElementById('ledgerBody').innerHTML=ledgerDetailHTML(P());document.getElementById('ledgerScrim').classList.add('show');}
@@ -12765,7 +12929,7 @@ function tradeSpecGaps(p,tradeId){return tradeSelections(p,tradeId).filter(s=>!s
 let _specId=null,_specCustomDraft=[];
 function specChipHTML(s){const st=specStatus(s);let cls,txt;
   if(!st.total){cls='gen';txt='＋ Add spec';}
-  else if(st.complete){cls='ok';txt='✓ Spec ready';}
+  else if(st.complete){cls='gen';txt='Details entered';}
   else if(st.homeownerPending.length){cls='ho';txt=st.homeownerPending.length+' for homeowner';}
   else{cls='warn';txt=st.requiredMissing.length+' to confirm';}
   return `<span class="spec-chip ${cls}" onclick="event.stopPropagation();openSpec(${s.id})">${txt}</span>`;}
@@ -12790,29 +12954,29 @@ function renderSpecEditor(s){
   const grp=who=>{const items=f.filter(x=>x.who===who);if(!items.length)return '';
     return `<div class="sec"><h2>${who==='homeowner'?'Homeowner decides':'Builder / field decides'}</h2></div>`+items.map(x=>`
       <div class="spec-fld"><label>${esc(x.label)}${x.required?'<span class="req">required</span>':''}</label>
-      <input data-key="${x.key}" value="${esc(x.value)}" placeholder="${who==='homeowner'?'Homeowner to confirm…':'Enter detail…'}"></div>`).join('');};
+      <input data-key="${x.key}" ${specFieldEditable(who)?'':'readonly aria-readonly="true"'} value="${esc(x.value)}" placeholder="${who==='homeowner'?'Homeowner to confirm…':'Enter detail…'}"></div>`).join('');};
   document.getElementById('specBody').innerHTML=
     (f.length?grp('builder')+grp('homeowner'):'<div class="empty">No template for this category yet — add custom fields below.</div>')+
     `<div class="sec"><h2>Custom fields</h2></div><div id="specCustomList"></div>
-     <button class="add-sub-btn mt-2 btn btn-secondary" onclick="addSpecCustom()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add custom field</button>`;
+     <button class="add-sub-btn mt-2 btn btn-secondary" onclick="addSpecCustom()" ${(state.session||{}).role==='builder'?'':'hidden'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add custom field</button>`;
   renderSpecCustomList();}
 function syncSpecCustomDraft(){_specCustomDraft=[...document.querySelectorAll('#specCustomList .spec-crow')].map(r=>({label:r.querySelector('.sc-label').value,who:r.querySelector('.sc-who').value,required:r.querySelector('.sc-req').checked,value:r.querySelector('.sc-val').value}));}
-function addSpecCustom(){syncSpecCustomDraft();_specCustomDraft.push({label:'',who:'builder',required:false,value:''});renderSpecCustomList();}
-function removeSpecCustom(i){syncSpecCustomDraft();_specCustomDraft.splice(i,1);renderSpecCustomList();}
+function addSpecCustom(){if((state.session||{}).role!=='builder')return;syncSpecCustomDraft();_specCustomDraft.push({label:'',who:'builder',required:false,value:''});renderSpecCustomList();}
+function removeSpecCustom(i){if((state.session||{}).role!=='builder')return;syncSpecCustomDraft();_specCustomDraft.splice(i,1);renderSpecCustomList();}
 function renderSpecCustomList(){const el=document.getElementById('specCustomList');if(!el)return;const _eW=()=>setTimeout(()=>enhanceWithin('specCustomList'),0);_eW();
   el.innerHTML=_specCustomDraft.map((c,i)=>`<div class="spec-crow">
-    <input class="sc-label" placeholder="Field name (e.g. Niche size)" value="${esc(c.label)}">
-    <input class="sc-val" placeholder="Answer (optional)" value="${esc(c.value)}">
-    <div class="sc-opts"><select class="sc-who" id="scwho_${i}" data-ss-title="Who decides"><option value="builder"${c.who!=='homeowner'?' selected':''}>Builder</option><option value="homeowner"${c.who==='homeowner'?' selected':''}>Homeowner</option></select>
+    <input class="sc-label" ${(state.session||{}).role==='builder'?'':'readonly'} placeholder="Field name (e.g. Niche size)" value="${esc(c.label)}">
+    <input class="sc-val" ${specFieldEditable(c.who)?'':'readonly'} placeholder="Answer (optional)" value="${esc(c.value)}">
+    <div class="sc-opts" ${(state.session||{}).role==='builder'?'':'hidden'}><select class="sc-who" id="scwho_${i}" data-ss-title="Who decides"><option value="builder"${c.who!=='homeowner'?' selected':''}>Builder</option><option value="homeowner"${c.who==='homeowner'?' selected':''}>Homeowner</option></select>
     <label class="sc-reqlbl"><input type="checkbox" class="sc-req"${c.required?' checked':''}>Required</label>
     <button class="sc-rm" onclick="removeSpecCustom(${i})" aria-label="Remove">✕</button></div></div>`).join('')
     ||'<div class="fld-hint m-0">No custom fields. Add one for anything the template doesn’t cover.</div>';}
 function saveSpec(){const s=(P().selections||[]).find(x=>x.id===_specId);if(!s){closeSpec();return;}
   const spec=Object.assign({},s.spec||{});
-  document.querySelectorAll('#specBody input[data-key]').forEach(inp=>{spec[inp.getAttribute('data-key')]=inp.value.trim();});
+  document.querySelectorAll('#specBody input[data-key]').forEach(inp=>{const key=inp.getAttribute('data-key');if(specFields(s).some(f=>f.key===key&&specFieldEditable(f.who)))spec[key]=inp.value.trim();});
   syncSpecCustomDraft();
   const custom=_specCustomDraft.map(c=>({label:(c.label||'').trim(),who:c.who==='homeowner'?'homeowner':'builder',required:!!c.required,value:(c.value||'').trim()})).filter(c=>c.label);
-  Data.updateSelection(_specId,{spec,specCustom:custom});
+  if(!Data.updateSelection(_specId,{spec,specCustom:custom}))return;
   logEvent('specSaved',(s.item||'')+' · '+(s.cat||''));
   closeSpec();try{renderSelections();}catch(e){}toast('Spec saved');}
 function openSpecBlock(sub,gaps){closeReady();if(sub){openPacket(sub.id);return;}}
@@ -12839,7 +13003,7 @@ function selTimelineRO(s){
 }
 let _selFilter=null;
 function selIdx(st){const i=SEL_STATUS.indexOf(st);return i<0?0:i;}
-function selMatchesFilter(s){if(!_selFilter)return true;const k={selected:1,ordered:2,delivered:3,installed:4}[_selFilter];if(k!=null)return selIdx(s.status)>=k;if(_selFilter==='pending')return selIdx(s.status)<1;if(_selFilter==='awaiting')return selIdx(s.status)>=1&&!s.approved;return true;}
+function selMatchesFilter(s){if(!_selFilter)return true;const k={selected:1,ordered:2,delivered:3,installed:4}[_selFilter];if(k!=null)return selIdx(s.status)>=k;if(_selFilter==='pending')return selIdx(s.status)<1;if(_selFilter==='awaiting')return selIdx(s.status)>=1&&!selectionHomeownerApproved(P(),s);return true;}
 const SEL_FILTER_LABELS={selected:'Selected or later',ordered:'Ordered or later',delivered:'Delivered or later',installed:'Installed',pending:'Pending selection',awaiting:'Awaiting sign-off'};
 function setSelFilter(f){_selFilter=(_selFilter===f?null:f);renderSelections();}
 function renderSelections(){
@@ -12853,7 +13017,7 @@ function renderSelections(){
     const idxOf=st=>{const i=SEL_STATUS.indexOf(st);return i<0?0:i;};
     const reached=k=>sels.filter(s=>idxOf(s.status)>=k).length; // selections that have reached at least stage k
     const pending=total-reached(1);                              // on the list, no selection made yet (work to do)
-    const awaiting=sels.filter(s=>idxOf(s.status)>=1&&!s.approved).length; // selected but not signed off
+    const awaiting=sels.filter(s=>idxOf(s.status)>=1&&!selectionHomeownerApproved(P(),s)).length; // selected but not signed off
     const prog=[['selected',reached(1)],['ordered',reached(2)],['delivered',reached(3)],['installed',reached(4)]];
     cnt.innerHTML=`<div class="sel-counts">`+
       prog.map(([st,v])=>`<div class="sc ${st==='installed'?'done':''}${_selFilter===st?' on':''}${v?' tap':''}"${v?` onclick="setSelFilter('${st}')"`:''}><div class="n">${v}<span class="tot">/${total}</span></div><div class="l">${SEL_LABEL[st]}</div></div>`).join('')+
@@ -12881,10 +13045,10 @@ function renderSelections(){
       ${bs.invPaid>0.005?`<div class="lr"><span>${loose>0.005?'Paid on invoices':'Paid'}</span><b class="cr">−${usd(bs.invPaid)}</b></div>`:''}
       ${(Math.abs(bs.unbilled)>0.005||loose>0.005)
         ?`<div class="lr"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>
-          ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
+          ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>${unbilledLabel(bs.unbilled)}</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
           ${loose>0.005?`<div class="lr"><span>Credit on account</span><b class="cr">−${usd(loose)}</b></div>`:''}
-          <div class="lr out"><span>Amount outstanding</span><b class="${bs.out<0?'cr':''}">${bs.out<0?'−':''}${usd(bs.out)}</b></div>`
-        :`<div class="lr out"><span>Balance due</span><b class="${bs.balanceDue>0?'':'cr'}">${usd(bs.balanceDue)}</b></div>`}
+          <div class="lr out"><span>${balanceLabel(bs.out)}</span><b class="${bs.out<0?'cr':''}">${usd(bs.out)}</b></div>`
+        :`<div class="lr out"><span>${balanceLabel(bs.out)}</span><b class="${bs.out<0?'cr':''}">${usd(bs.out)}</b></div>`}
       <div class="ldr-hint">Tap for itemized breakdown ›</div>
     </div>`;
   } else sum.innerHTML='';
@@ -12906,7 +13070,7 @@ function renderSelections(){
           ${selTimeline(s)}
           <div class="spec-line">${specChipHTML(s)}</div>
         </div>
-        <span class="approve-ro ${s.approved?'on':'off'}" onclick="${s.approved?`openSignoffInfo(${s.id})`:`toast('The homeowner signs off from their login')`}" title="${s.approved?'View homeowner sign-off':'Awaiting homeowner sign-off'}">${s.approved?'✓ Signed':'Awaiting'}</span>
+        <button class="approve-ro ${selectionReviewState(P(),s).approved?'on':'off'}" onclick="openSelectionReview(${s.id})" title="Review approval">${selectionReviewState(P(),s).label}</button>
         <button class="sel-rm" onclick="removeSel(${s.id})">${ICON.trash}</button>
       </div>`;}).join('');
   };
@@ -13370,7 +13534,7 @@ function renderInvoices(){
   const bs=billingSummary(p);
   const summary=(live.length||Math.abs(bs.unbilled)>0.005?`<div class="sel-ledger mb-3">
       <div class="lr"><span>Invoiced</span><b>${invUsd(bs.billed)}</b></div>
-      ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'':'+'}${invUsd(bs.unbilled)}</b></div>`:''}
+      ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>${unbilledLabel(bs.unbilled)}</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'':'+'}${invUsd(bs.unbilled)}</b></div>`:''}
       <div class="lr"><span>Paid</span><b>${invUsd(bs.paid)}</b></div>
       <div class="lr out"><span>Balance due on invoices</span><b class="${bs.balanceDue>0?'up':''}">${invUsd(bs.balanceDue)}</b></div>
     </div>`:'');
@@ -14487,7 +14651,7 @@ function openReady(stageId){readyStageId=stageId;const st=STAGES.find(s=>s.id===
   const matches=P().subs.filter(s=>trades.includes(s.specialty));
   document.getElementById('readyList').innerHTML=matches.length?matches.map(s=>`
     <div class="ready-sub" onclick="clearSub('${s.id}')">
-      <div class="si"><div class="n">${esc(s.name)}</div><div class="d">${s.phone?esc(s.phone):specLabel(s.specialty)}${s.cleared?' · cleared '+timeAgo(s.cleared):''}</div></div>
+      <div class="si"><div class="n">${esc(s.name)}</div><div class="d">${s.phone?esc(s.phone):specLabel(s.specialty)}${s.cleared?' · site marked ready'+clearanceWhen(s.cleared):''}</div></div>
       <span class="go">${s.cleared?'✓ Notified':'Notify →'}</span>
     </div>`).join(''):`<div class="empty">No ${tradeLabelOf(st)} sub yet — add one so you can schedule this stage.<br>Add one from the Crews list.</div>`;
   document.getElementById('readyScrim').classList.add('show');}
@@ -15492,11 +15656,21 @@ function selDeadline(p,sel){let best=null;(p.subs||[]).forEach(sb=>{
    doc still lives in the Docs tab, it's just not pushed to the sub. The sub sees
    the finished packet (no toggles) only once specs are confirmed and both have
    signed. ── */
-function packetSignoff(p,tradeId){return ((p.packetSignoff||{})[tradeId])||{};}
+function packetSignoff(p,tradeId){
+  const raw=((p.packetSignoff||{})[tradeId])||{},key=packetApprovalKey(p,tradeId),out={};
+  ['builder','homeowner'].forEach(who=>{if(raw[who]&&raw[who].key===key)out[who]=raw[who];});return out;
+}
 function packetSignedBoth(p,tradeId){const s=packetSignoff(p,tradeId);return !!(s.builder&&s.builder.at&&s.homeowner&&s.homeowner.at);}
-function setPacketSignoff(p,tradeId,who,on){
+let _packetReviewKeys={};
+function setPacketSignoff(p,tradeId,who,on,expectedKey){
+  const role=(state.session||{}).role;
+  if((who==='builder'&&role!=='builder')||(who==='homeowner'&&(role!=='client'||String(clientProj().id)!==String(p.id)))){toast('This decision belongs to the other person');return false;}
+  if(on&&expectedKey!==packetApprovalKey(p,tradeId)){toast('These details changed — review them before signing');return false;}
+  if(on&&tradeSpecGaps(p,tradeId).length){toast('Complete the required details before signing');return false;}
   p.packetSignoff=p.packetSignoff||{};p.packetSignoff[tradeId]=p.packetSignoff[tradeId]||{};
-  if(on){const sess=state.session||{};p.packetSignoff[tradeId][who]={by:sess.name||(who==='homeowner'?'Homeowner':'Builder'),at:Date.now()};}
+  const old=p.packetSignoff[tradeId][who];
+  if(old){p.packetApprovalHistory=p.packetApprovalHistory||[];p.packetApprovalHistory.push({trade:tradeId,who:who,signature:JSON.parse(JSON.stringify(old)),archivedAt:Date.now()});}
+  if(on){const sess=state.session||{};p.packetSignoff[tradeId][who]={by:sess.name||(who==='homeowner'?'Homeowner':'Builder'),at:Date.now(),key:packetApprovalKey(p,tradeId),uid:((sess.auth||{}).uid)||null};}
   else delete p.packetSignoff[tradeId][who];
   persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}
 function docHiddenSet(p,tradeId){return ((p.docHidden||{})[tradeId])||[];}
@@ -15555,7 +15729,7 @@ function toggleDocInPacket(tradeId,name){
 function packetReady(p,tradeId){return tradeSpecGaps(p,tradeId).length===0&&packetSignedBoth(p,tradeId);}
 let _pktCtx=null;
 function refreshPacket(){if(!_pktCtx)return;const p=state.projects.find(x=>String(x.id)===String(_pktCtx.pid));if(!p)return;
-  const body=document.getElementById('infoBody');if(body)body.innerHTML=packetHTML(p,_pktCtx.trade);}
+  const body=document.getElementById('infoBody');if(body){body.innerHTML=packetHTML(p,_pktCtx.trade);syncInfoFoot();}}
 let _pktLogCtx=null;
 function openPacketLog(pid,tradeId){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
@@ -15598,9 +15772,11 @@ function renderPacketLog(){
   document.getElementById('pktLogBody').innerHTML=h;}
 function closePktLog(){document.getElementById('pktLogScrim').classList.remove('show');_pktLogCtx=null;if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}}
 function pktSignBuilder(pid,trade){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
-  const cur=packetSignoff(p,trade).builder;setPacketSignoff(p,trade,'builder',!cur);refreshPacket();}
+  const cur=packetSignoff(p,trade).builder;setPacketSignoff(p,trade,'builder',!cur,_packetReviewKeys[String(p.id)+'|'+trade+'|builder']);refreshPacket();}
 function pktSignHomeowner(pid,trade){const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
-  const cur=packetSignoff(p,trade).homeowner;setPacketSignoff(p,trade,'homeowner',!cur);refreshPacket();}
+  const cur=packetSignoff(p,trade).homeowner;
+  if(setPacketSignoff(p,trade,'homeowner',!cur,_packetReviewKeys[String(p.id)+'|'+trade+'|client'])!==false)renderClient();
+  refreshPacket();}
 function pktFillSpec(selId){if(_pktCtx)try{Data.setActive(_pktCtx.pid);}catch(e){}openSpec(selId);}
 function pktGoBook(pid,subName){if(_pktCtx)try{Data.setActive(pid);}catch(e){}nyBookSub(pid,subName);}
 function pktGoReady(pid,tradeId){
@@ -15623,7 +15799,7 @@ function pktAsk(p,tradeId){
   const sb=(p.subs||[]).find(function(x){return x.specialty===tradeId;});
   _nyIssues([p]).forEach(function(it){
     if(String(it.pid)!==String(p.id)||it.cross)return;
-    if(it.kind==='Spec still open'||it.kind==='Site not ready')return;
+    if(it.kind==='Spec still open'||it.kind==='Approval needed'||it.kind==='Site not ready')return;
     if(it.trade){if(it.trade!==tradeId)return;}
     else{
       const hay=String(it.line||'')+' '+String(it.kind||'');
@@ -15676,6 +15852,7 @@ function packetMore(){
   openChoice({title:'Packet',items:items});
 }
 function packetHTML(p,tradeId){
+  _packetReviewKeys[String(p.id)+'|'+tradeId+'|'+(state.session||{}).role]=packetApprovalKey(p,tradeId);
   const cap1=x=>String(x||'').charAt(0).toUpperCase()+String(x||'').slice(1);
   const tl=specLabel(tradeId);
   const sels=tradeSelections(p,tradeId);
@@ -15689,16 +15866,19 @@ function packetHTML(p,tradeId){
   const due=dueState(sb&&sb.specsDue);
   _pktCtx={pid:p.id,trade:tradeId};
   const bkWin=(p.bookings||[]).filter(function(b){return b.trade===tradeId&&(!sb||b.subName===sb.name)&&(b.status||'confirmed')!=='declined'&&b.end>=dayStart(Date.now());}).sort(function(a,b){return a.start-b.start;})[0];
-  const siteOk=!(sb)||!!sb.cleared;
-  const warn=gaps.length>0||!siteOk;
+  const siteOk=!!(sb&&sb.cleared);
+  const warn=gaps.length>0||!siteOk||!packetSignedBoth(p,tradeId);
   const permName=PK_PERMIT[tradeId];
   const perm=permName&&(p.permits||[]).find(function(x){return x.name===permName;});
   const ik=PK_INSP[tradeId];const iv=ik&&(p.inspections||{})[ik];
-  let stripSt=gaps.length? (gaps.length+' still open') : (siteOk?'Ready for this trade':'Specs confirmed \u2014 site not marked ready');
+  const stripSt=packetReviewLabel(p,tradeId);
   const meta=[];
   if(bkWin)meta.push((isClient?tl+' scheduled':'Scheduled')+' '+fmtWin(bkWin)+(bkWin.note?(' \u2014 '+bkWin.note):''));
   else meta.push('No dates on the calendar');
-  if(due)meta.push(due.label+' \u00b7 answers due '+fmtDue(due.ts));
+  if(due&&!packetReady(p,tradeId))meta.push(due.label+' \u00b7 review due '+fmtDue(due.ts));
+  meta.push(siteOk?'Site marked ready by builder':'Site readiness not yet confirmed');
+  if(!gaps.length){const so=packetSignoff(p,tradeId);if(isClient&&so.homeowner&&!so.builder)meta.push('You have approved. Your builder reviews next.');else if(isBuilder&&so.builder&&!so.homeowner)meta.push('You have approved. The homeowner reviews next.');}
+  if(!packetReady(p,tradeId)&&sess.role==='subs')meta.push('Do not install from these instructions until both approvals are complete.');
   if(perm)meta.push(permName+': '+perm.status);
   else if(permName&&isBuilder)meta.push(permName+' not on the board');
   if(iv)meta.push((PK_INSP_LBL[ik]||ik)+': '+iv);
@@ -15714,12 +15894,18 @@ function packetHTML(p,tradeId){
     return '<div class="row'+tap+'"'+onclick+'><div class="row-main"><div class="row-title">'+esc(title)+'</div>'+(sub?('<div class="row-sub">'+esc(sub)+'</div>'):'')+'</div>'+a+(go?'<span class="row-chev">\u203a</span>':'')+'</div>';
   };
   let h='';
-  h+='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+' install packet</div></div>';
+  h+='<div class="pkt-head"'+(isClient?' data-client-packet':'')+'><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+' install packet</div></div>';
   h+='<div class="pkt-strip '+(warn?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
 
+  h+=packetChangesHTML(p,tradeId);
   const bk=isBuilder&&bkWin;
   if(isBuilder){
-    if(bk)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="sendGuestPacket(\''+p.id+'\',\''+bk.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
+    if(!packetSignoff(p,tradeId).builder){
+      const action=gaps.length?('pktFillSpec('+gaps[0].id+')'):('pktSignBuilder(\''+p.id+'\',\''+esc(tradeId)+'\')');
+      h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="'+action+'">'+(gaps.length?'Complete details':'Approve instructions')+'</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
+    }
+    else if(bk&&packetReady(p,tradeId))h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="sendGuestPacket(\''+p.id+'\',\''+bk.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
+    else if(bk)h+='<div class="money-actions"><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
     else if(sb)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="pktGoBook(\''+p.id+'\',\''+esc(sb.name)+'\')">Schedule this crew</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
     else h+='<div class="money-actions"><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
   }
@@ -15812,23 +15998,26 @@ function packetHTML(p,tradeId){
   }
 
   const so=packetSignoff(p,tradeId);
+  const raw=(p.packetSignoff||{})[tradeId]||{};
+  const previous=who=>raw[who]?'Details changed — review again':'Not signed yet';
   const bSigned=!!(so.builder&&so.builder.at), hSigned=!!(so.homeowner&&so.homeowner.at);
   if(!isClient){
     h+='<div class="sec"><h2>Sign-off</h2></div>';
     if(sels.length&&gaps.length){
       h+='<div class="pkt-foot">Sign-off opens when every required answer is in.</div>';
     }else{
-      const bSub=bSigned?('Signed by '+(so.builder.by===sess.name?'you':so.builder.by)+' \u00b7 '+fmtDue(so.builder.at)):'Not signed yet';
-      const hSub=hSigned?('Signed by '+so.homeowner.by+' \u00b7 '+fmtDue(so.homeowner.at)):'Not signed yet';
+      const bSub=bSigned?('Signed by '+(so.builder.by===sess.name?'you':so.builder.by)+' \u00b7 '+fmtDue(so.builder.at)):previous('builder');
+      const hSub=hSigned?('Signed by '+so.homeowner.by+' \u00b7 '+fmtDue(so.homeowner.at)):previous('homeowner');
       if(isBuilder)h+=row('Builder / team',bSub,bSigned?'Signed':'Sign','pktSignBuilder(\''+p.id+'\',\''+esc(tradeId)+'\')','',bSigned?'ok':'');
       else h+=row('Builder / team',bSub,bSigned?'Signed':'Pending','','',bSigned?'ok':'');
       h+=row('Homeowner',hSub,hSigned?'Signed':'Pending','','',hSigned?'ok':(!gaps.length?'warn':''));
-      if(!gaps.length&&bSigned&&hSigned)h+='<div class="pkt-banner ok mt-2"><b>Packet finalized.</b> '+(isBuilder?'Clear to send.':'Build to this.')+'</div>';
+      if(!gaps.length&&bSigned&&hSigned)h+='<div class="pkt-banner ok mt-2"><b>Instructions approved.</b> '+(isBuilder?'Ready to share with the crew.':(siteOk?'Follow these instructions and the agreed site schedule.':'Wait for your builder to confirm the site is ready.'))+'</div>';
     }
   }else{
     h+='<div class="sec"><h2>Your sign-off</h2></div>';
-    h+=row('Homeowner',hSigned?('Signed '+fmtDue(so.homeowner.at)):'Review the specs above, then sign off',hSigned?'Signed':'','','',hSigned?'ok':'');
-    h+='<button class="btn btn-primary btn-block mt-3" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">'+(hSigned?'Signed':'Sign off')+'</button>';
+    h+=row('Homeowner',hSigned?('Signed '+fmtDue(so.homeowner.at)):(raw.homeowner?'Details changed — review again':'Review the specs above, then sign off'),hSigned?'Signed':'','','',hSigned?'ok':'');
+    if(!hSigned&&!gaps.length)h+='<button data-packet-approve class="btn btn-primary btn-block mt-3" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">'+(packetChanges(p,tradeId).length?'Approve changes':'Approve instructions')+'</button>';
+    if(hSigned)h+='<button class="btn btn-quiet btn-block mt-2" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">Withdraw my approval</button>';
     h+='<button class="btn btn-secondary btn-block mt-2" onclick="openIdea()">Add a note for your builder</button>';
   }
   if(isBuilder&&sb){
@@ -15881,13 +16070,14 @@ function packetSnapshot(p,b){
       if(val)return {k:f.label,v:val};
       if(f.required)return {k:f.label,gap:(f.who==='homeowner'?'homeowner':'builder')};
       return null;}).filter(Boolean);
-    return {item:sel.item||'',cat:sel.cat||'',room:(sel.room&&sel.room!=='\u2014')?sel.room:'',rows:rows};
+    return {selectionId:String(sel.id),revision:sel.specRevision||1,item:sel.item||'',cat:sel.cat||'',room:(sel.room&&sel.room!=='\u2014')?sel.room:'',rows:rows};
   });
   /* Default-deny: only documents the builder explicitly routed to this trade
      travel. An untagged contract or lien waiver never rides along. */
   const docs=(p.docs||[]).filter(d=>docAudSub(d)&&docInPacket(p,trade,d)).map(d=>String(d.n||''));
   const sess=state.session||{};
-  return {v:1,t:Date.now(),
+  return {v:2,t:Date.now(),
+    release:{approved:packetReady(p,trade),label:packetReady(p,trade)?'Approved instructions':'Hold \u2014 approval needed'},
     expires:Math.max((b.end||Date.now())+3*864e5,Date.now()+7*864e5),
     site:String(p.street||p.name||'')+((p.city)?(' \u00b7 '+p.city):''),
     builder:String(sess.name||'Your builder'),
@@ -15955,13 +16145,15 @@ function sendGuestPacket(pid,bid){
   _gpPendingSend={pid:String(p.id),bid:String(b.id)};
   openGuestPreview(snap);
 }
-let _gpPendingSend=null;
+let _gpPendingSend=null,_gpPublishing=false;
 function gpApproveSend(){
+  if((state.session||{}).role!=='builder'){toast('Your builder prepares the crew link');return;}
   const ps=_gpPendingSend;if(!ps){toast('Nothing to send');return;}
   const p=state.projects.find(x=>String(x.id)===ps.pid);
   const b=p&&(p.bookings||[]).find(x=>String(x.id)===ps.bid);
   if(!p||!b){toast('Booking not found');return;}
-  const snap=_gpSnap;
+  const snap=packetSnapshot(p,b);
+  if(instructionJSON({specs:snap.specs,start:snap.start,end:snap.end,note:snap.note,docs:snap.docs})!==instructionJSON({specs:_gpSnap.specs,start:_gpSnap.start,end:_gpSnap.end,note:_gpSnap.note,docs:_gpSnap.docs})){openGuestPreview(snap);toast('The packet changed \u2014 review these details first');return;}
   if(appMode()!=='real'){
     const token=b.pkToken||('demo_'+String(b.id));
     if(!b.pkToken)updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});
@@ -15970,20 +16162,42 @@ function gpApproveSend(){
     toast('Link is ready to copy. Texts send in Live mode.');
     return;
   }
-  const token=_pkToken();
   const db=_pkDb();if(!db){toast('Connecting \u2014 try again in a moment');return;}
+  if(_gpPublishing)return;_gpPublishing=true;
+  const token=b.pkToken||_pkToken();
+  db.collection('packets').doc(token).get({source:'server'}).then(async d=>{
+    const existing=d.exists?d.data():null;
+    const now=packetSnapshot(p,b);
+    const reviewed=x=>instructionJSON({specs:x.specs,start:x.start,end:x.end,note:x.note,docs:x.docs,release:x.release});
+    if(reviewed(now)!==reviewed(snap)){openGuestPreview(now);throw new Error('The packet changed — review these details first');}
+    if(b.pkToken&&(!existing||existing.revoked))throw new Error('This link is unavailable. Create a new booking to replace it.');
+    if(existing&&(String(existing.siteId)!==String(p.id)||String(existing.bookingId)!==String(b.id)||existing.trade!==b.trade||existing.sub!==b.subName))throw new Error('This link belongs to a different crew or booking');
+    if(existing&&(existing.expires||0)<Date.now()){const e=new Error('This link has expired');e.code='packet-expired';throw e;}
+    if(existing){await pkPublishOne(p,b,existing,false);if(b.pkPublishError)throw new Error(b.pkPublishError);}
+    else await db.collection('packets').doc(token).set(snap);
+    updateBooking(p,b.id,{pkToken:token,pkSent:b.pkSent||Date.now(),pkLinkReadyAt:Date.now()});
+    _gpPendingSend=null;closeGuestPreview();
+    try{_pkListenAll();bkRenderGuestRow(p,b);}catch(e){}
+    _sharePacketLink(snap,token);logEvent('packetLinkReady',snap.tradeLabel+' \u00b7 '+snap.site);
+  }).catch(e=>{
+    if(e.code==='packet-expired'){openConfirm({title:'Refresh this expired link?',body:'The same crew can use the same link again. Their questions and replies will stay with it.',okLabel:'Refresh link',onConfirm:()=>gpRenewExpiredLink(p,b,snap)});}
+    else toast(e.message||'Could not prepare the link — try again');})
+    .finally(()=>{_gpPublishing=false;});
+}
+async function gpRenewExpiredLink(p,b,reviewed){
+  if((state.session||{}).role!=='builder'||appMode()!=='real')return;
+  const db=_pkDb();if(!db){toast('Reconnect and try again');return;}
   try{
-    db.collection('packets').doc(token).set(snap)
-      .then(()=>{updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});try{_pkListenAll();}catch(e){}
-        try{_pkPubLast[String(p.id)+'|'+String(b.id)+'|'+token]=JSON.stringify({docs:snap.docs||[],specs:snap.specs||[],ctx:snap.ctx||{},note:snap.note||'',start:snap.start,end:snap.end,site:snap.site});}catch(e){}
-        _gpPendingSend=null;closeGuestPreview();
-        try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(b.id)));}catch(e){}
-        _sharePacketLink(snap,token);logEvent('packetLinkSent',snap.tradeLabel+' \u00b7 '+snap.site);})
-      .catch(e=>{toast('Could not create the link \u2014 check your connection');});
-  }catch(e){toast('Could not create the link');}
+    const token=b.pkToken,ref=db.collection('packets').doc(String(token)),d=await ref.get({source:'server'}),g=d.exists&&d.data();
+    if(!g||g.revoked||String(g.siteId)!==String(p.id)||String(g.bookingId)!==String(b.id)||g.trade!==b.trade||g.sub!==b.subName)throw new Error('This link cannot be refreshed');
+    const fresh=packetSnapshot(p,b);
+    if(instructionJSON(packetPublicPatch(fresh))!==instructionJSON(packetPublicPatch(reviewed))){openGuestPreview(fresh);throw new Error('The packet changed — review it before refreshing the link');}
+    await ref.update(Object.assign(packetPublicPatch(fresh),{expires:fresh.expires,lastChange:'Link refreshed with current instructions',lastChangeT:Date.now()}));
+    b.pkPublishError=null;persistLocalOnly();gpApproveSend();
+  }catch(e){toast(e.message||'Could not refresh the link');}
 }
 function _sharePacketLink(snap,token){
-  const url='https://siteplumb.com/app/p.html?packet='+encodeURIComponent(token)
+  const url=new URL('p.html',location.href).href+'?packet='+encodeURIComponent(token)
     +'&h='+encodeURIComponent(snap.site||'')
     +'&t='+encodeURIComponent(snap.tradeLabel||'')
     +'&s='+encodeURIComponent(String(snap.start||''))
@@ -16032,8 +16246,8 @@ function _gpCacheRead(token){
 }
 function _gpApplyRemote(g){
   if(!g)return;
-  if((g.expires||0)<Date.now())return;
-  const sig=function(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||'',start:x.start,end:x.end,ctx:x.ctx||null,lastChange:x.lastChange||'',lastChangeT:x.lastChangeT||0});};
+  if(g.revoked||(g.expires||0)<Date.now()){_gpSnap=g;_gpRender();return;}
+  const sig=function(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||'',start:x.start,end:x.end,ctx:x.ctx||null,release:x.release||null,lastChange:x.lastChange||'',lastChangeT:x.lastChangeT||0});};
   if(sig(g)===sig(_gpSnap))return;
   if(_gpBusy()){_gpPendingRemote=g;return;}
   _gpSnap=g;_gpCacheWrite(_gpToken,g);_gpRender();
@@ -16079,7 +16293,7 @@ function renderGuestPacket(token){
   const take=d=>{
     if(d&&d.exists){
       _gpSnap=d.data();
-      if((_gpSnap.expires||0)<Date.now()){fail('This link has expired. Reply to the text you got and your builder will send a fresh one.');return;}
+      if(_gpSnap.revoked||(_gpSnap.expires||0)<Date.now()){_gpRender();return false;}
       _gpCacheWrite(tok,_gpSnap);_gpRender();_gpListen();return false;}
     return true;};
   const t0=Date.now();const waitMs=(window.__pkWaitMs||20000);
@@ -16117,6 +16331,7 @@ function _gpRender(){
   const sc=document.getElementById('guestScrim');
   if(sc)sc.classList.toggle('on-preview',!!preview);
   const dates=fmtWin({start:(g.resp&&g.resp.start)||g.start,end:(g.resp&&g.resp.end)||g.end});
+  if(g.revoked||(g.expires||0)<Date.now()){document.getElementById('gpBody').innerHTML='<div class="gp-err">This link is no longer current. Ask your builder for current instructions.</div>';return;}
   let h='';
   h+='<div class="gp-brand wordmark"><span class="dot"></span>SitePlumb</div>';
   if(!preview&&(g.lastChange||(g.changes&&g.changes[0]))){
@@ -16172,6 +16387,7 @@ function _gpRender(){
     h+=cx.history.map(x=>_gpRow(x.text,esc(x.d),'','')).join('');
   }
   if((g.specs||[]).length){
+    h+='<div class="row"><div class="row-main"><div class="row-title">'+esc((g.release&&g.release.label)||'Approval status needs review')+'</div><div class="row-sub">'+((g.release&&g.release.approved)?'Use these details after the site is marked ready.':'Do not install until your builder releases these instructions.')+'</div></div></div>';
     h+='<div class="sec"><h2>Install specs</h2></div>';
     h+=g.specs.map(sel=>{
       const rows=(sel.rows||[]).map(r=>r.gap
@@ -16305,29 +16521,38 @@ function gpToggleChange(){
   _gpCalCursor=g.start?new Date(new Date(g.start).getFullYear(),new Date(g.start).getMonth(),1):null;
   gpRenderCal();
 }
-function _gpWriteResp(resp){
-  _gpSnap.resp=resp;
-  if(_gpToken&&_gpToken!=='preview'){
-    const db=_pkDb();
-    if(db){try{db.collection('packets').doc(String(_gpToken)).update({resp:resp}).catch(function(e){trapError('caught',e&&e.message,'_gpWriteResp');});}catch(e){trapError('caught',e&&e.message,'_gpWriteResp');}}
-  }
-  _gpRender();
+let _gpSaving=false,_gpQuestionDraft=null;
+async function _gpSavePatch(patch,localPatch){
+  if(_gpSaving)return false;
+  _gpSaving=true;
+  try{
+    if(!_gpSnap||_gpSnap.revoked||(_gpSnap.expires||0)<Date.now())throw new Error('Link no longer current');
+    if(_gpToken&&_gpToken!=='preview'){
+      const db=_pkDb();if(!db)throw new Error('No connection');
+      await db.collection('packets').doc(String(_gpToken)).update(patch);
+    }
+    Object.assign(_gpSnap,localPatch||patch);_gpRender();return true;
+  }catch(e){toast('Not saved — your draft is here. Reconnect and try again.');return false;}
+  finally{_gpSaving=false;}
 }
+function _gpWriteResp(resp){return _gpSavePatch({resp:resp});}
 function gpConfirm(){_gpWriteResp({status:'confirmed',t:Date.now()});}
 function gpToggleAsk(){const e=document.getElementById('gpAsk');if(e)e.classList.toggle('show');}
 function gpTogglePrefs(){const e=document.getElementById('gpPrefs');if(!e)return;
   /* reflect the live saved value - the section renders before a choice is made */
   try{const sel=document.getElementById('gpPrefCal');if(sel)sel.value=_gpCalPref();}catch(err){}
   e.classList.toggle('show');}
-function gpSendQuestion(){
-  const txt=(document.getElementById('gpQText').value||'').trim().slice(0,300);
+async function gpSendQuestion(){
+  const txt=((document.getElementById('gpQText')||{}).value||'').trim().slice(0,300);
   if(!txt){toast('Type the question');return;}
-  _gpSnap.q=(_gpSnap.q||[]).concat([{text:txt,t:Date.now()}]);
+  if(!_gpQuestionDraft||_gpQuestionDraft.text!==txt)_gpQuestionDraft={id:'q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,9),text:txt,t:Date.now()};
+  const q=_gpQuestionDraft,questions=(_gpSnap.q||[]).filter(x=>x.id!==q.id).concat([q]);
+  let patch={q:questions};
   if(_gpToken&&_gpToken!=='preview'){
-    const db=_pkDb();
-    if(db){try{db.collection('packets').doc(String(_gpToken)).update({q:_gpSnap.q}).catch(function(e){trapError('caught',e&&e.message,'gpSendQuestion');});}catch(e){trapError('caught',e&&e.message,'gpSendQuestion');}}
+    if(typeof firebase==='undefined'||!firebase.firestore.FieldValue){toast('Not sent — reconnect and try again.');return;}
+    patch={q:firebase.firestore.FieldValue.arrayUnion(q)};
   }
-  _gpRender();
+  if(await _gpSavePatch(patch,{q:questions}))_gpQuestionDraft=null;
 }
 function gpSendChange(){
   const sv=(document.getElementById('gpStart')||{}).value,ev=(document.getElementById('gpEnd')||{}).value;
@@ -16409,8 +16634,9 @@ function _bkBriefHTML(p,b){
 function _bkGuestStatusHTML(p,b,g){
   const r=(g&&g.resp)||(b&&b.pkResp)||null;
   const sent=b&&b.pkSent;
-  if(g===false)return 'Link sent \u00b7 expired or replaced';
-  if(!r)return 'Link sent '+(sent?new Date(sent).toLocaleDateString():'')+' \u00b7 waiting for a reply';
+  if(b&&b.pkPublishError)return '<b class="c-clay">'+esc(b.pkPublishError)+'</b>';
+  if(g===false)return 'Link ready \u00b7 expired or replaced';
+  if(!r)return 'Link ready '+(sent?new Date(sent).toLocaleDateString():'')+' \u00b7 waiting for a reply';
   if(r.status==='confirmed')
     return '<b class="c-sage">Confirmed'+(g&&g.sub?(' by '+esc(g.sub)):'')+'</b>'+(r.t?(' \u00b7 '+new Date(r.t).toLocaleDateString()):'');
   if(r.status==='change')
@@ -16422,7 +16648,7 @@ function _bkGuestStatusHTML(p,b,g){
       +(r.note?'<div class="gp-sub mt-1 ml-0 mr-0 mb-0">\u201c'+esc(r.note)+'\u201d</div>':'')
       +(r.start?'<button class="gp-btn go mt-3 ml-0 mr-0 mb-0" onclick="nyReviewDates(\''+String(p.id)+'\',\''+String(b.id)+'\','+r.start+','+(r.end||r.start)+')">Confirm these dates</button>':'')
       +'</div>';
-  return 'Link sent '+(sent?new Date(sent).toLocaleDateString():'')+' \u00b7 waiting for a reply';
+  return 'Link ready '+(sent?new Date(sent).toLocaleDateString():'')+' \u00b7 waiting for a reply';
 }
 function bkRenderSendLink(p,b){
   const el=document.getElementById('bkSendLink');if(!el)return;
@@ -16546,7 +16772,7 @@ function _pkStamp(p,b,g){
 function _pkPushLive(p,b,g){
   try{pkPublishOne(p,b,g,false);}catch(e){}
 }
-let _pkPubTimer=null,_pkPubLast={},_pkPubNotify=null;
+let _pkPubTimer=null,_pkPubLast={},_pkPubNotify=null,_pkPubInFlight={};
 function pkDiffWhat(prev,fresh){
   if(!prev||!fresh)return '';
   const bits=[];
@@ -16588,46 +16814,37 @@ function pkPublishNow(){
     (p.bookings||[]).forEach(function(b){if(b.pkToken)pkPublishOne(p,b,null,true);});
   });
 }
-function pkPublishOne(p,b,g,offer){
-  if(!p||!b||!b.pkToken)return;
-  if(appMode()!=='real')return;
-  const db=_pkDb();if(!db)return;
-  const fresh=packetSnapshot(p,b);
-  const patch={
-    docs:fresh.docs||[],specs:fresh.specs||[],ctx:fresh.ctx||{},
-    note:fresh.note||'',start:fresh.start,end:fresh.end,
-    site:fresh.site,tradeLabel:fresh.tradeLabel,
-    expires:fresh.expires,t:Date.now()
-  };
+function packetPublicPatch(fresh){return {docs:fresh.docs||[],specs:fresh.specs||[],ctx:fresh.ctx||{},release:fresh.release,
+  note:fresh.note||'',start:fresh.start,end:fresh.end,site:fresh.site,tradeLabel:fresh.tradeLabel};}
+async function pkPublishOne(p,b,g,offer){
+  if(!p||!b||!b.pkToken||appMode()!=='real'||(state.session||{}).role!=='builder')return;
+  const db=_pkDb();if(!db){b.pkPublishError='Instructions have not reached this crew. Retry when connected.';persistLocalOnly();return;}
   const key=String(p.id)+'|'+String(b.id)+'|'+String(b.pkToken);
-  const sig=JSON.stringify({docs:patch.docs,specs:patch.specs,ctx:patch.ctx,note:patch.note,start:patch.start,end:patch.end,site:patch.site});
-  if(_pkPubLast[key]===sig)return;
-  let prev=null;
-  try{if(_pkPubLast[key])prev=JSON.parse(_pkPubLast[key]);}catch(e){}
-  if(!prev&&g)prev={docs:g.docs||[],specs:g.specs||[],ctx:g.ctx||{},note:g.note||'',start:g.start,end:g.end,site:g.site};
-  if(g&&!prev){
-    const same=function(a,c){return JSON.stringify(a||null)===JSON.stringify(c||null);};
-    if(same(fresh.docs,g.docs)&&same(fresh.specs,g.specs)&&same(fresh.ctx,g.ctx)&&String(fresh.note||'')===String(g.note||'')&&fresh.start===g.start&&fresh.end===g.end&&String(fresh.site||'')===String(g.site||'')){
-      _pkPubLast[key]=sig;return;
+  if(_pkPubInFlight[key])return _pkPubInFlight[key];
+  const work=(async function(){
+    try{
+      if(!g){const doc=await db.collection('packets').doc(String(b.pkToken)).get({source:'server'});if(!doc.exists)throw new Error('Packet not found');g=doc.data();}
+      if(g.revoked||(g.expires||0)<Date.now())throw new Error('Packet expired or revoked');
+      if(String(g.siteId)!==String(p.id)||String(g.bookingId)!==String(b.id)||g.trade!==b.trade||g.sub!==b.subName)throw new Error('Packet scope changed; prepare a replacement');
+      const fresh=packetSnapshot(p,b);
+      const patch=packetPublicPatch(fresh);
+      const sig=instructionJSON(patch);
+      const prev={};Object.keys(patch).forEach(k=>{prev[k]=g[k];});
+      if(instructionJSON(prev)===sig){_pkPubLast[key]=sig;b.pkPublishError=null;return;}
+      const what=pkDiffWhat(g,fresh)||'Approval status changed';
+      patch.lastChange=what;patch.lastChangeT=Date.now();
+      patch.changes=[{what:what,t:patch.lastChangeT}].concat(g.changes||[]);
+      // Do not mutate expiry, response or questions when publishing instructions.
+      await db.collection('packets').doc(String(b.pkToken)).update(patch);
+      _pkPubLast[key]=sig;b.pkPublishError=null;b.pkPublishedAt=Date.now();persistLocalOnly();
+      if(offer&&what){_pkPubNotify={pid:String(p.id),bid:String(b.id),what:what,t:patch.lastChangeT,site:fresh.site,sub:b.subName||'',token:String(b.pkToken)};}
+    }catch(e){
+      b.pkPublishError='Instructions have not reached this crew. Retry when connected.';
+      persistLocalOnly();trapError('packet-publish',e.message||String(e),'pkPublishOne');
     }
-  }
-  const what=pkDiffWhat(prev,fresh);
-  _pkPubLast[key]=sig;
-  if(!what&&prev)return;
-  if(what){
-    const now=Date.now();
-    patch.lastChange=what;
-    patch.lastChangeT=now;
-    patch.changes=[{what:what,t:now}];
-  }
-  try{
-    db.collection('packets').doc(String(b.pkToken)).update(patch).then(function(){
-      if(offer&&what&&prev){
-        _pkPubNotify={pid:String(p.id),bid:String(b.id),what:what,t:patch.lastChangeT||Date.now(),site:fresh.site,sub:b.subName||'',token:String(b.pkToken)};
-        try{pkOfferTellThem();}catch(e){}
-      }
-    }).catch(function(){});
-  }catch(e){}
+  })();
+  _pkPubInFlight[key]=work;
+  try{await work;}finally{delete _pkPubInFlight[key];}
 }
 function pkOfferTellThem(){
   const n=_pkPubNotify;if(!n)return;
@@ -16646,11 +16863,11 @@ function pkOfferTellThem(){
     onConfirm:function(){
       const hold=_pkPubNotify;_pkPubNotify=null;
       if(!hold)return;
-      const url='https://siteplumb.com/app/p.html?packet='+hold.token;
+      const url=new URL('p.html',location.href).href+'?packet='+encodeURIComponent(hold.token);
       const msg='Update on '+hold.site+': '+hold.what+' ('+pkWhen(hold.t)+'). Same link: '+url;
       if(navigator.share){navigator.share({text:msg}).catch(function(){_smsOrCopy(msg);});}
       else _smsOrCopy(msg);
-      logEvent('packetUpdateTold',hold.what);
+      logEvent('packetUpdateShareOpened',hold.what);
     },
     onCancel:function(){_pkPubNotify=null;}
   });
@@ -16797,6 +17014,7 @@ function inbTabLabel(t){
     'The crew declined':'Declined',
     'They\u2019re blocked':'Blocked',
     'Spec still open':'Specs',
+    'Approval needed':'Approvals',
     'Double-booked':'Overlap',
     'Date change':'Dates',
     'Question':'Question'
@@ -17046,7 +17264,7 @@ function renderDecisions(){
   const items=visibleItems().filter(it=>it.issue&&it.status==='open').sort((a,b)=>b.t-a.t);
   const sels=(P().selections||[]);
   const SI=st=>{const i=SEL_STATUS.indexOf(st);return i<0?0:i;};
-  const awaiting=sels.filter(s=>SI(s.status)>=1&&!s.approved);
+  const awaiting=sels.filter(s=>SI(s.status)>=1&&!selectionHomeownerApproved(P(),s));
   const extra=[...new Set(sels.map(s=>s.cat||'Other'))].filter(c=>!SEL_CATS.includes(c));
   const pendingCats=[...SEL_CATS,...extra].filter(c=>!sels.some(s=>(s.cat||'Other')===c));
   let h='';
@@ -17230,8 +17448,9 @@ function pickChip(el){
 let deferredPrompt=null;
 function isStandalone(){try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(e){return false;}}
 /* ── SitePlumb server (Cloud Functions): callable-lite protocol ── */
-const FN_BASE='https://us-central1-plumb-467a0.cloudfunctions.net/';
+const FN_BASE=window.PlumbRuntime&&window.PlumbRuntime.functionsBase;
 async function fnCall(name,data){
+  if(!FN_BASE)throw new Error('Cloud actions are disabled in this preview');
   const u=(typeof firebase!=='undefined'&&firebase.auth&&firebase.auth().currentUser);
   if(!u)throw new Error('sign in first');
   const tok=await u.getIdToken();

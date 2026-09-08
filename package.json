@@ -1,0 +1,21 @@
+{
+  "name": "siteplumb-qa",
+  "private": true,
+  "scripts": {
+    "test:loop": "node --test tests/communication-loop.test.cjs",
+    "test:sim": "node app/sim.js",
+    "test:surfaces": "node scripts/sheet-contract.mjs && node scripts/contact-sheet.mjs",
+    "preview:build": "node scripts/build-qa-preview.mjs"
+  },
+  "devDependencies": {
+    "@fontsource/fraunces": "^5.3.0",
+    "@fontsource/hanken-grotesk": "^5.3.0",
+    "@fontsource/source-serif-4": "^5.3.0",
+    "axe-core": "^4.13.0",
+    "jsdom": "^26.1.0",
+    "pixelmatch": "^6.0.0",
+    "playwright": "^1.58.2",
+    "pngjs": "^7.0.0",
+    "puppeteer": "^24.43.1"
+  }
+}
