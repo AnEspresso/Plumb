@@ -6,3 +6,6 @@ dist-qa/
 .env
 .env.*
 functions/.env
+
+dist-staging/
+qa/staging/node_modules/

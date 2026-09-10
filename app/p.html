@@ -161,7 +161,7 @@ function busy(){
 function sig(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||"",start:x.start,end:x.end,ctx:x.ctx||null,release:x.release||null,lastChange:x.lastChange||""});}
 function apply(g){
   if(!g)return;
-  if(g.revoked||(g.expires||0)<Date.now()){_snap=g;fail("This link is no longer current. Ask your builder for current instructions.",true);return;}
+  if(g.revoked||(g.expires||0)<Date.now()){_pending=null;_snap=g;fail("This link is no longer current. Ask your builder for current instructions.",true);return;}
   if(_snap&&sig(g)===sig(_snap))return;
   if(busy()){_pending=g;return;}
   _snap=g;paint();
@@ -403,17 +403,29 @@ window.gpCalGoogle=function(remember){
     +"&details="+encodeURIComponent(String(g.note||""));
   try{window.open(u,"_blank");}catch(e){}
 };
+function receive(x,server){
+  var cached=x&&x.metadata&&(x.metadata.fromCache||x.metadata.hasPendingWrites);
+  if(x&&x.exists){
+    if(cached&&_snap&&_snap.revoked)return;
+    apply(x.data());
+  }else if(x&&!cached&&(server||(x.metadata&&x.metadata.fromCache===false))){
+    apply({revoked:true,expires:0});
+  }
+}
+function readError(e){
+  if(e&&/(^|\/)(permission-denied|unauthenticated)$/.test(e.code||''))apply({revoked:true,expires:0});
+}
 function listen(){
   try{if(_unsub){_unsub();}}catch(e){}
   _unsub=null;
   if(!TOKEN)return;
   var d=db();
-  if(d){try{_unsub=d.collection("packets").doc(String(TOKEN)).onSnapshot(function(x){if(x&&x.exists)apply(x.data());});}catch(e){}}
+  if(d){try{_unsub=d.collection("packets").doc(String(TOKEN)).onSnapshot({includeMetadataChanges:true},function(x){receive(x,false);},readError);}catch(e){}}
   if(!_tick)_tick=setInterval(function(){
     if(document.visibilityState!=="visible")return;
     if(busy())return;
     var d2=db();if(!d2)return;
-    d2.collection("packets").doc(String(TOKEN)).get().then(function(x){if(x.exists)apply(x.data());}).catch(function(){});
+    d2.collection("packets").doc(String(TOKEN)).get({source:'server'}).then(function(x){receive(x,true);}).catch(readError);
   },4000);
 }
 function boot(){
@@ -423,11 +435,13 @@ function boot(){
   (function look(){
     var d=db();
     if(!d){if(Date.now()-t0<wait){setTimeout(look,150);return;}fail("This link needs a connection to open. Get a bar of signal and tap Try again.");return;}
-    d.collection("packets").doc(String(TOKEN)).get().then(function(x){
+    d.collection("packets").doc(String(TOKEN)).get({source:'server'}).then(function(x){
+      if(x&&!x.exists){receive(x,true);return;}
       if(x&&x.exists){_snap=x.data();if(_snap.revoked||(_snap.expires||0)<Date.now()){paint();return;}paint();listen();return;}
       if(++tries<8&&Date.now()-t0<wait){setTimeout(look,350);return;}
       fail("This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.");
-    }).catch(function(){
+    }).catch(function(e){
+      readError(e);if(_snap&&_snap.revoked)return;
       if(++tries<10&&Date.now()-t0<wait){setTimeout(look,400);return;}
       fail("This link needs a connection to open. Get a bar of signal and tap Try again.");
     });

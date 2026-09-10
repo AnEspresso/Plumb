@@ -1,0 +1,31 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path');
+const {buildSync}=require('esbuild');
+const {PROJECT,DEMO,ORIGIN,SITE_KEY}=require('./functions/config.cjs');
+const root=path.resolve(__dirname,'../..');
+function build(mode='staging'){
+ if(!['emulator','staging'].includes(mode))throw Error('Unknown build mode');
+ const out=path.join(root,'dist-staging',mode);fs.rmSync(out,{recursive:true,force:true});fs.mkdirSync(path.join(out,'app'),{recursive:true});
+ const firebase=mode==='emulator'?{projectId:DEMO,apiKey:'fake-emulator-key',appId:'1:123:web:staging'}:{apiKey:'AIzaSyCcPm-FneYxIammQSnvH55lBsBMER7HE2g',authDomain:'siteplumb-staging.firebaseapp.com',projectId:PROJECT,storageBucket:'siteplumb-staging.firebasestorage.app',messagingSenderId:'625071693246',appId:'1:625071693246:web:3c749d78ca9b83be146def'};
+ const config={mode,firebase,siteKey:mode==='staging'?SITE_KEY:null};
+ let html=fs.readFileSync(path.join(root,'app/index.html'),'utf8');
+ const boot='(async function init(){';if(html.split(boot).length!==2)throw Error('Legacy startup anchor changed');
+ html=html.replace(boot,boot+'\n if(window.PlumbStagingConfig)return;');
+ html=html.replace("if('serviceWorker' in navigator){","if(!window.PlumbStagingConfig && 'serviceWorker' in navigator){");
+ html=html.replace('<head>','<head><script>window.PlumbStagingConfig='+JSON.stringify(config)+';</script>');
+ html=html.replace(/<link[^>]+href="https:\/\/fonts\.(googleapis|gstatic)\.com[^>]*>/g,'');
+ const shell='<main id="stagingRoot"><div class="brand">SitePlumb</div><p>Staging</p><h1>Your current instructions</h1><form id="stagingLogin"><label>Email<input id="stagingEmail" type="email" autocomplete="username" required></label><label>Password<input id="stagingPassword" type="password" autocomplete="current-password" required></label><button class="btn btn-primary" id="stagingSubmit">Sign in</button></form><div id="stagingAccount" hidden><button class="btn btn-secondary" id="stagingRefresh">Refresh assignments</button><button class="btn btn-secondary" id="stagingLogout">Sign out</button></div><p id="stagingMessage" role="status">Checking staging configuration…</p><div id="assignments"></div><div id="packetActions"></div></main>';
+ const css='body> :not(#stagingRoot):not(#infoScrim):not(#specScrim):not(#toast):not(script):not(style){display:none!important}body{overflow:auto!important}#stagingRoot{max-width:640px;margin:0 auto;padding:32px 24px;font-family:inherit}#stagingRoot h1{font-size:28px;margin:28px 0}#stagingRoot label{display:block;margin:16px 0}#stagingRoot input{display:block;box-sizing:border-box;width:100%;padding:12px;margin-top:8px}#stagingRoot button{margin:8px 8px 8px 0;max-width:100%;white-space:normal}#stagingMessage{margin:20px 0}#infoScrim .sheet,#specScrim .sheet{max-height:90dvh}.sheet-foot{flex-shrink:0}';
+ html=html.replace('</body>',shell+'<style>'+css+'</style><script src="staging-sdk.js"></script><script src="staging-adapter.js"></script></body>');
+ fs.writeFileSync(path.join(out,'app/index.html'),html);fs.writeFileSync(path.join(out,'app/runtime.js'),"window.PlumbRuntime=Object.freeze({kind:'local',config:()=>null,functionsBase:null});");
+ fs.copyFileSync(path.join(__dirname,'web/adapter.js'),path.join(out,'app/staging-adapter.js'));
+ buildSync({entryPoints:[path.join(__dirname,'web/sdk.js')],bundle:true,format:'iife',outfile:path.join(out,'app/staging-sdk.js'),logLevel:'silent'});
+ const csp="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://www.recaptcha.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseappcheck.googleapis.com https://us-central1-siteplumb-staging.cloudfunctions.net https://www.google.com https://www.recaptcha.net; frame-src https://www.google.com https://www.recaptcha.net; img-src 'self' data:; object-src 'none'; base-uri 'self'";
+ const fnOut=path.join(out,'functions');fs.mkdirSync(fnOut);for(const name of ['config.cjs','service.cjs','index.cjs'])fs.copyFileSync(path.join(__dirname,'functions',name),path.join(fnOut,name));
+ fs.writeFileSync(path.join(fnOut,'package.json'),JSON.stringify({name:'siteplumb-staging-functions',private:true,main:'index.cjs',engines:{node:'22'},dependencies:{'firebase-admin':'12.6.0','firebase-functions':'6.1.0'}},null,2));
+ fs.copyFileSync(path.join(__dirname,'firestore.rules'),path.join(out,'firestore.rules'));
+ fs.writeFileSync(path.join(out,'firebase.json'),JSON.stringify({functions:[{source:'functions',codebase:'staging-packets',runtime:'nodejs22'}],firestore:{rules:'firestore.rules'},hosting:{site:PROJECT,public:'app',headers:[{source:'**',headers:[{key:'Cache-Control',value:'no-store'},{key:'Content-Security-Policy',value:csp}]}]}},null,2));
+ fs.writeFileSync(path.join(out,'candidate.json'),JSON.stringify({project:PROJECT,origin:ORIGIN,mode,releaseReady:false,reason:'Source reconstruction requires fresh qualification; IAM, fixtures, hosted runtime and rollback review remain pending.'},null,2));
+ return {out,config};
+}
+module.exports={build};if(require.main===module)console.log(build(process.argv[2]||'staging'));

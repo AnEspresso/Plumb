@@ -25,7 +25,8 @@
     '<p>4. Approve the changes as <b>Homeowner</b>. The packet should say <b>Builder approval pending</b>, including in Crew. Approve as Builder, then check Crew sees the new finish and approved instructions.</p>'+
     '<p>5. Homeowner and Crew should each show just one SitePlumb header, with Test steps accessible above it. The sample balance is <b>$650</b> everywhere. Optional: reopen your signed packet and <b>Withdraw my approval</b>; the review request should return.</p>'+
     '<p class="c-ink-3">Sample data only. Changes last for this visit. Start over or reload to reset. This preview does not send messages or connect accounts.</p>'+
-    '<button class="btn btn-primary btn-block" onclick="closeInfo();openPacketFor(P().id,\'plumb\')">Open Plumbing packet</button>');};
+    '<button class="btn btn-primary btn-block" onclick="closeInfo();openPacketFor(P().id,\'plumb\')">Open Plumbing packet</button>'+
+    '<button class="btn btn-secondary btn-block" onclick="qaOpenCrewChecks()">Crew-link checks</button>');};
   // Keep preview navigation inside the sample experience, including share buttons.
   exitDemoToApp=function(){toast('This preview uses sample data. Choose a role above.');};
   pkDoShare=function(){toast('Test preview — no message was sent.');};

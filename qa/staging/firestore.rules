@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn(){return request.auth!=null;}
+  function member(h){return get(/databases/$(database)/documents/houses/$(h)/members/$(request.auth.uid)).data;}
+  function house(h){return get(/databases/$(database)/documents/houses/$(h)).data;}
+  function allowed(h){
+   let m=member(h);
+   let company=house(h).companyId;
+   return signedIn() && m.active==true && m.companyId==company &&
+    (m.role in ['homeowner','crew'] || (m.role in ['owner','gc','pm','employee'] &&
+     get(/databases/$(database)/documents/companies/$(company)/members/$(request.auth.uid)).data.active==true));
+  }
+  function office(h){return allowed(h) && member(h).role!='crew';}
+  match /houses/{h} {
+   allow get: if office(h);
+   match /packets/{p} {
+    allow get: if office(h);
+    match /revisions/{r} {
+     allow get: if office(h);
+     match /approvals/{role} {allow get: if office(h);}
+    }
+    match /proposals/{proposal} {
+     allow get: if office(h);
+     allow create: if allowed(h) && member(h).role=='homeowner' &&
+      request.resource.data.keys().hasOnly(['uid','revision','field','value','createdAt']) &&
+      request.resource.data.uid==request.auth.uid && request.resource.data.createdAt==request.time &&
+      request.resource.data.revision==get(/databases/$(database)/documents/houses/$(h)/packets/$(p)).data.currentRevision &&
+      request.resource.data.field is string && request.resource.data.field.size()>0 && request.resource.data.field.size()<=120 &&
+      request.resource.data.value is string && request.resource.data.value.size()<=2000;
+    }
+   }
+  }
+  // Discovery, memberships, authoritative writes, legacy bearer links and all
+  // unspecified paths are server-only. Crew uses a redacted authenticated read.
+  match /{document=**} {allow read,write: if false;}
+ }
+}

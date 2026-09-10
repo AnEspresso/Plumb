@@ -109,11 +109,11 @@ test('in-app crew response stays unsaved on failure and can be retried',async()=
  assert.equal(await h.run("_gpWriteResp({status:'confirmed',t:100})"),false);assert.equal(h.run('_gpSnap.resp'),null);
  assert.equal(await h.run("_gpWriteResp({status:'confirmed',t:100})"),true);assert.equal(h.run('_gpSnap.resp.status'),'confirmed');
 }finally{h.close();}});
-function guestBoot(update){
+function guestBoot(update,onSnapshot){
  const fixture={site:'QA sample home',siteId:'qa-house',bookingId:'qa-booking',trade:'plumb',tradeLabel:'Plumbing',sub:'QA Plumbing',builder:'QA Builder',start:Date.now(),end:Date.now(),expires:Date.now()+86400000,q:[],resp:null,specs:[{item:'QA valve',rows:[]}],release:{approved:false,label:'Hold — approval needed'}};
- const dom=new JSDOM(fs.readFileSync(path.join(app,'p.html'),'utf8'),{url:'https://qa.invalid/app/p.html?packet=pk_test',runScripts:'dangerously',virtualConsole:new VirtualConsole(),beforeParse(w){
+ const dom=new JSDOM(fs.readFileSync(path.join(app,'p.html'),'utf8').replace('boot();\n})();','window.guestInspect=c=>eval(c);boot();\n})();'),{url:'https://qa.invalid/app/p.html?packet=pk_test',runScripts:'dangerously',virtualConsole:new VirtualConsole(),beforeParse(w){
   w.__packetFixture=fixture;w.PlumbRuntime={kind:'production'};
-  const firestore=()=>({collection:()=>({doc:()=>({update})})});
+  const firestore=()=>({collection:()=>({doc:()=>({update,onSnapshot})})});
   firestore.FieldValue={arrayUnion:q=>({union:q})};w.firebase={apps:[{}],firestore};
  }});return {w:dom.window,fixture,close:()=>dom.window.close()};
 }
@@ -312,3 +312,49 @@ test('builder attention labels distinguish missing specifications from pending a
  h.run("P().selections[0].spec.finish='Matte Black'");approveBoth(h);
  assert.equal(issues().length,0);
 }finally{h.close();}});
+
+for(const loss of ['missing','permission-denied']){
+ test('in-app guest clears instructions after authoritative access loss: '+loss,async()=>{const h=boot();try{
+  let next,error,writes=0;
+  h.w.testDB={collection:()=>({doc:()=>({onSnapshot:(opts,n,e)=>{assert.equal(opts.includeMetadataChanges,true);next=n;error=e;return ()=>{};},update:async()=>{writes++;}})})};
+  h.run("_gpToken='pk_qa';_gpSnap=packetSnapshot(P(),P().bookings[0]);_gpCacheWrite(_gpToken,_gpSnap);_gpRender();_pkDb=()=>window.testDB;_gpListen();_gpPendingRemote=_gpSnap");
+  if(loss==='missing')next({exists:false,metadata:{fromCache:false}});else error({code:'permission-denied'});
+  assert.match(h.w.document.getElementById('gpBody').textContent,/no longer current/);
+  assert.doesNotMatch(h.w.document.getElementById('gpBody').textContent,/QA shower valve/);
+  assert.equal(h.run('_gpPendingRemote'),null);
+  assert.equal(h.run("_gpCacheRead('pk_qa').revoked"),true);
+  assert.equal(await h.run("_gpWriteResp({status:'confirmed'})"),false);assert.equal(writes,0);
+ }finally{h.close();}});
+ test('standalone guest clears instructions after authoritative access loss: '+loss,async()=>{
+  let next,error,writes=0;
+  const h=guestBoot(async()=>{writes++;},(opts,n,e)=>{assert.equal(opts.includeMetadataChanges,true);next=n;error=e;return ()=>{};});try{
+   h.w.guestInspect('listen();_pending=_snap');
+   if(loss==='missing')next({exists:false,metadata:{fromCache:false}});else error({code:'permission-denied'});
+   assert.match(h.w.document.getElementById('body').textContent,/no longer current/);
+   assert.doesNotMatch(h.w.document.getElementById('body').textContent,/QA valve/);
+   assert.equal(h.w.guestInspect('_pending'),null);
+   h.w.gpConfirm();await new Promise(r=>setTimeout(r,0));assert.equal(writes,0);
+  }finally{h.close();}
+ });
+}
+
+test('cache misses and transient read errors do not revoke either guest; cached data cannot undo access loss',()=>{
+ const h=boot(),g=guestBoot(async()=>{});try{
+  h.run("_gpToken='pk_qa';_gpSnap=packetSnapshot(P(),P().bookings[0]);_gpRender();window.oldGuest=_gpSnap");
+  g.w.guestInspect('window.oldGuest=_snap');
+  for(const code of ['unavailable','deadline-exceeded']){
+   h.run("_gpReceive({exists:false,metadata:{fromCache:true}},false);_gpReadError({code:"+JSON.stringify(code)+"})");
+   g.w.guestInspect("receive({exists:false,metadata:{fromCache:true}},false);readError({code:"+JSON.stringify(code)+"})");
+  }
+  assert.match(h.w.document.getElementById('gpBody').textContent,/QA shower valve/);
+  assert.match(g.w.document.getElementById('body').textContent,/QA valve/);
+  h.run("_gpReceive({exists:false,metadata:{fromCache:false}},false);_gpReceive({exists:true,metadata:{fromCache:true},data:()=>window.oldGuest},false)");
+  g.w.guestInspect("receive({exists:false,metadata:{fromCache:false}},false);receive({exists:true,metadata:{fromCache:true},data:()=>window.oldGuest},false)");
+  assert.match(h.w.document.getElementById('gpBody').textContent,/no longer current/);
+  assert.match(g.w.document.getElementById('body').textContent,/no longer current/);
+  h.run("_gpReceive({exists:true,metadata:{fromCache:false},data:()=>window.oldGuest},true)");
+  g.w.guestInspect("receive({exists:true,metadata:{fromCache:false},data:()=>window.oldGuest},true)");
+  assert.match(h.w.document.getElementById('gpBody').textContent,/QA shower valve/);
+  assert.match(g.w.document.getElementById('body').textContent,/QA valve/);
+ }finally{h.close();g.close();}
+});

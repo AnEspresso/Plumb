@@ -1,5 +1,48 @@
 # SitePlumb communication-loop QA branch
 
+## Current evidence and continuation — 2026-09-08
+
+This section supersedes older test-status statements below; older sections describe their historical code passes.
+
+- GitHub PR #1 was inspected: open, draft, base `main`, head `codex/siteplumb-communication-loop-qa` at `051b2a82dbde2632f0ddc4bb235bb7825f31b065`. The starting local checkout matched and was clean.
+- The latest native ChatGPT cloud-browser sample run passed all seven approval/revision checkpoints: Matte Black answer, homeowner approval, builder inspection before actual approval, crew dual approval, Finish changed through Install spec sheet, both approvals invalidated with the exact Finish change history and a do-not-install hold, homeowner-only reapproval with the hold retained, and final builder reapproval with Polished Black visible to Crew.
+- These are one-session, fake-data UI results. The 390×844 and 430×932 viewport checks were NOT RUN because resizing was unavailable. Actual iPhone Safari, independent accounts/devices, notification delivery, acknowledgment, installation evidence, verification, and backend security remain unproven.
+- Reviewed `SitePlumb-Grok-Implementation-Prompts.md` (version 4), the historical simulated-week report (version 1), and the newer `SitePlumb-QA-Report-2026-09-08.md`. Contradictory older browser reports do not override the newer seven-check evidence.
+
+### Focused next fix: packet access loss
+
+Local regression tests reproduced stale crew instructions after a server-confirmed missing packet in both guest surfaces. Permission-denied listener errors also left prior instructions visible; the standalone page did not register an error callback. This is local mocked-persistence evidence, not a live permission-bypass test.
+
+The follow-up patch:
+- Handles server-confirmed missing packets and permission-denied/unauthenticated reads in both guest pages.
+- Removes instructions and response controls with the existing “This link is no longer current” recovery message.
+- Clears deferred remote updates and replaces the in-app session cache with an unavailable marker, preventing deferred/cached content from undoing known access loss.
+- Requests server reads for initial loads and polling and includes listener metadata changes, so an authoritative missing result is distinguished from an empty offline cache.
+- Retains transient connection failures as connection failures; a cache miss alone is not proof of revocation. This patch does not yet establish complete offline freshness/release labeling.
+
+Five focused regressions cover both views, missing records, denied access, blocked replies, deferred/cache invalidation, transient errors, and fresh-server recovery. The four initial loss cases failed on the starting code and passed after the patch. All 34 focused regressions pass after the change. Inline JavaScript parsing and canonical index/plumb parity pass. Trade isolation passes 3,000 generated configurations and three fault injections. No public-preview or production deployment is part of this patch; the browser evidence above describes the previously hosted sample, not this new code.
+
+### Backend foundation remains the next larger milestone
+
+Source review confirms the gap identified in the prior plan:
+- Approvals and revision histories are currently computed/stored through client mutation paths (`Data.updateSelection`, packet approval keys, sync writes).
+- Checked-in rules allow a live-house client to write the whole `sel` record; they do not constrain individual technical fields or revision history. Non-live site records use broad signed-in access. These source rules cannot prove the actual deployed policy.
+- No explicit `packets` match exists in the checked-in rules. Existing functions include packet reply push handling, but no authoritative revision/approval transaction command. Do not deploy the checked-in rules as a guessed fix.
+
+Implement this foundation before adding acknowledgment/verification UI:
+1. Reconcile actual staging rules and legacy site/company memberships, including explicit employee/PM capabilities and trade assignments. Use an isolated staging project with synthetic records; no production reads or configuration changes are authorized here.
+2. Add server-owned immutable instruction snapshots, scoped work-item identity and current-revision pointer. Keep prior snapshots/history and stable crew-link/Q&A identity.
+3. Add authenticated transactional commands for proposals, material edits, approval, withdrawal and release, using expected revision and idempotency keys. Reject stale actions. Homeowner technical edits remain proposals until an authorized expert accepts them.
+4. Enforce direct-write denial for server-owned instruction/approval/audit records, scoped reads, and explicit role capabilities. Test cross-house, cross-company and wrong-trade attempts at the database boundary.
+5. Migrate or explicitly supersede legacy links; never invent historical approvals. Add per-revision acknowledgment, installation reports and independent verification on this authority foundation.
+
+Dedicated staging identity/configuration and deployed-rule evidence have not been established in this chat. Emulator/code preparation can continue without production access; live backend qualification requires that separate environment. A local UI or mocked-persistence pass must never be labeled server authorization verified.
+
+### Governing product direction
+
+Preserve the existing stack and calm design. SitePlumb removes remembering, translating, chasing and reconciling. Ask the right unanswered question of the right person; reuse confirmed context; prepare expert decisions; carry out authorized routine follow-through; show one clear next action. Keep uncertain AI output as proposals. Judge changes by work removed and new effort introduced. The seven transitions are internal machinery, not statuses users administer. Support design intent and future performance evidence using practical language about comfort, durability, energy use, operating cost, material waste, maintenance and build quality.
+
+
 This is the first reliability milestone toward the product vision, not a production release or a claim of 9/10 readiness. Preserve the existing house, book, office, typography, palette, and compact sheets. The software should prepare decisions and surface exceptions; users should not manage seven manual workflow statuses.
 
 ## Isolation

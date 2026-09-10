@@ -15,11 +15,17 @@ function isolate(html){
  .replace('</head>','<link rel="stylesheet" href="fonts.css"></head>');
 }
 let html=isolate(fs.readFileSync(path.join(root,'app/index.html'),'utf8'));
-html=html.replace('</body>','<script src="qa-preview.js"></script></body>');
+html=html.replace('</body>','<script src="qa-crew-checks.js"></script><script src="qa-preview.js"></script></body>');
 fs.writeFileSync(path.join(out,'app/index.html'),html);
 fs.writeFileSync(path.join(out,'app/plumb.html'),html);
-fs.writeFileSync(path.join(out,'app/p.html'),isolate(fs.readFileSync(path.join(root,'app/p.html'),'utf8')));
+let guest=isolate(fs.readFileSync(path.join(root,'app/p.html'),'utf8'));
+const guestBoot='boot();\n})();';
+if(guest.split(guestBoot).length!==2)throw Error('Standalone guest QA hook must match exactly once');
+guest=guest.replace('<script src="runtime.js"></script>','<script src="runtime.js"></script><script src="qa-crew-checks.js"></script>')
+ .replace(guestBoot,"window.qaCrewChecks({surface:'Standalone',reset:function(g){_pending=null;_snap=null;apply(g);},receive:receive,deny:readError});\n})();");
+fs.writeFileSync(path.join(out,'app/p.html'),guest);
 fs.copyFileSync(path.join(root,'qa/preview.js'),path.join(out,'app/qa-preview.js'));
+fs.copyFileSync(path.join(root,'qa/crew-link-checks.js'),path.join(out,'app/qa-crew-checks.js'));
 // Forced local, even if someone accidentally serves this bundle on a live host.
 fs.writeFileSync(path.join(out,'app/runtime.js'),"window.PlumbRuntime=Object.freeze({kind:'local',config:function(){return null;},functionsBase:null});\n");
 // Retain the existing shell's registration contract without caching an old preview.

@@ -6261,7 +6261,7 @@ if(_PACKET_ON_ARRIVAL){
     const t0=Date.now();
     (function attempt(){
       const db=(typeof _pkDb==='function')?_pkDb():null;   /* same init path, App Check and all */
-      if(db){db.collection('packets').doc(String(_PACKET_ON_ARRIVAL)).get().then(resolve,reject);return;}
+      if(db){db.collection('packets').doc(String(_PACKET_ON_ARRIVAL)).get({source:'server'}).then(resolve,reject);return;}
       if(Date.now()-t0>(window.__pkWaitMs||20000)){reject(new Error('sdk-timeout'));return;}
       setTimeout(attempt,120);
     })();
@@ -16246,11 +16246,24 @@ function _gpCacheRead(token){
 }
 function _gpApplyRemote(g){
   if(!g)return;
-  if(g.revoked||(g.expires||0)<Date.now()){_gpSnap=g;_gpRender();return;}
+  if(g.revoked||(g.expires||0)<Date.now()){_gpPendingRemote=null;_gpSnap=g;_gpCacheWrite(_gpToken,g);_gpRender();return;}
   const sig=function(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||'',start:x.start,end:x.end,ctx:x.ctx||null,release:x.release||null,lastChange:x.lastChange||'',lastChangeT:x.lastChangeT||0});};
   if(sig(g)===sig(_gpSnap))return;
   if(_gpBusy()){_gpPendingRemote=g;return;}
   _gpSnap=g;_gpCacheWrite(_gpToken,g);_gpRender();
+}
+// Only authoritative absence/access denial retires a packet; cache misses are not deletion.
+function _gpReceive(d,server){
+  const cached=d&&d.metadata&&(d.metadata.fromCache||d.metadata.hasPendingWrites);
+  if(d&&d.exists){
+    if(cached&&_gpSnap&&_gpSnap.revoked)return;
+    _gpApplyRemote(d.data());
+  }else if(d&&!cached&&(server||(d.metadata&&d.metadata.fromCache===false))){
+    _gpApplyRemote({revoked:true,expires:0});
+  }
+}
+function _gpReadError(e){
+  if(e&&/(^|\/)(permission-denied|unauthenticated)$/.test(e.code||''))_gpApplyRemote({revoked:true,expires:0});
 }
 function _gpUnlisten(){
   try{if(_gpUnsub){_gpUnsub();}}catch(e){trapError('caught',e&&e.message,'_gpUnlisten');}
@@ -16261,7 +16274,7 @@ function _gpListen(){
   if(!_gpToken||_gpToken==='preview')return;
   const db=_pkDb();
   if(db){
-    try{_gpUnsub=db.collection('packets').doc(String(_gpToken)).onSnapshot(function(d){if(d&&d.exists)_gpApplyRemote(d.data());},function(e){trapError('caught',e&&e.message,'_gpListen.snap');});}catch(e){trapError('caught',e&&e.message,'_gpListen');}
+    try{_gpUnsub=db.collection('packets').doc(String(_gpToken)).onSnapshot({includeMetadataChanges:true},function(d){_gpReceive(d,false);},function(e){_gpReadError(e);trapError('caught',e&&e.message,'_gpListen.snap');});}catch(e){trapError('caught',e&&e.message,'_gpListen');}
   }
   if(!_gpTick)_gpTick=setInterval(function(){
     if(typeof document!=='undefined'&&document.visibilityState!=='visible')return;
@@ -16269,7 +16282,7 @@ function _gpListen(){
     if(_gpBusy())return;
     if(_gpPendingRemote){const g=_gpPendingRemote;_gpPendingRemote=null;_gpApplyRemote(g);return;}
     const db2=_pkDb();if(!db2)return;
-    db2.collection('packets').doc(String(_gpToken)).get().then(function(d){if(d.exists)_gpApplyRemote(d.data());}).catch(function(e){trapError('caught',e&&e.message,'_gpListen.poll');});
+    db2.collection('packets').doc(String(_gpToken)).get({source:'server'}).then(function(d){_gpReceive(d,true);}).catch(function(e){_gpReadError(e);trapError('caught',e&&e.message,'_gpListen.poll');});
   },4000);
 }
 function renderGuestPacket(token){
@@ -16291,6 +16304,7 @@ function renderGuestPacket(token){
     body.innerHTML='<div class="gp-brand"><span class="dot"></span>SitePlumb</div><div class="gp-err">'+msg+'</div>'
     +'<button class="gp-btn go mw-320 mx-auto" onclick="renderGuestPacket(\''+tok+'\')">Try again</button>';};
   const take=d=>{
+    if(d&&!d.exists){_gpReceive(d,true);return false;}
     if(d&&d.exists){
       _gpSnap=d.data();
       if(_gpSnap.revoked||(_gpSnap.expires||0)<Date.now()){_gpRender();return false;}
@@ -16303,11 +16317,12 @@ function renderGuestPacket(token){
     if(!db){
       if(Date.now()-t0<waitMs){setTimeout(look,150);return;}
       fail('This link needs a connection to open. Get a bar of signal and tap Try again.');return;}
-    db.collection('packets').doc(String(token)).get().then(function(d){
+    db.collection('packets').doc(String(token)).get({source:'server'}).then(function(d){
       if(take(d)===false)return;
       if(++tries<8&&Date.now()-t0<waitMs){setTimeout(look,350);return;}
       fail('This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.');
-    }).catch(function(){
+    }).catch(function(e){
+      _gpReadError(e);if(_gpSnap&&_gpSnap.revoked)return;
       if(++tries<10&&Date.now()-t0<waitMs){setTimeout(look,400);return;}
       fail('This link needs a connection to open. Get a bar of signal and tap Try again.');
     });
