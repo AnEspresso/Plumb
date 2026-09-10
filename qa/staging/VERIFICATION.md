@@ -14,9 +14,11 @@ Candidate reconstructed from saved specifications, based on fc338dc. No cloud de
 | Callable authentication/origin/disabled account | PASS | Exported Firebase callable middleware, Express harness, Auth emulator tokens |
 | Existing spec-sheet bridge | PASS | JSDOM with simulated transport: Finish payload, Note preserved, hold visible, offline clear |
 | Existing approval-loop regressions | PASS | 34/34 existing tests on Node 24.19.0 |
-| Reconstructed staging suite | PASS | 9/9 tests on Node 22.23.2; Auth and Firestore emulators |
+| Reconstructed staging suite | PASS | 11/11 tests on Node 22.23.2; Auth and Firestore emulators; latest integration follow-up |
 | Cloud candidate build | PASS | Undeployed output targets siteplumb-staging and registered App Check key |
-| Complete browser SDK integration | NOT RUN | Requires further local qualification |
+| Local Web SDK integration | PASS | Actual bundled SDK sign-in → discovery → packet → Finish answers → signatures → Polished Black revision → hold → reapproval, using JSDOM and local emulators |
+| Account switch / revoked membership | PASS | Sign-out clears packet; revoked crew membership clears previously approved instructions on refresh |
+| Rendered browser SDK integration | NOT RUN | Browser loading, browser-enforced CORS, layout and hosted App Check are not established by JSDOM |
 | Managed Functions runtime, hosted App Check issuance | NOT RUN | No deployment |
 | Native-browser sample post-release checks | NOT RUN | No new public release |
 | Mobile viewport and actual Safari | NOT RUN | No browser/device test performed |
@@ -24,3 +26,5 @@ Candidate reconstructed from saved specifications, based on fc338dc. No cloud de
 The first callable harness attempt failed because raw Node HTTP requests lack the Express request interface expected by Firebase middleware. The corrected harness uses Express; the final Node 22 run passed. No backend behavior was bypassed to make this pass.
 
 These results do not replace historical direct native-browser evidence from the existing public sample. The new candidate remains releaseReady: false. Remaining cloud setup, full integration and rollback requirements are listed in README.md.
+
+The SDK follow-up found a visible status mismatch: the builder row retained “Sign” after its legacy inline action was removed. The staging adapter now displays the server's “Pending” status and removes the inactive row arrow. The actual approval remains in the footer. The stricter integration assertion passes in the final 11-test run. No source under app/ was changed by this follow-up.

@@ -8,9 +8,9 @@ Implemented: immutable instruction snapshots, revision-bound signatures, expecte
 
 From this directory, `npm ci` installs locked dependencies and `npm test` runs local Auth/Firestore emulator checks using fake data. `node build.cjs staging` builds an undeployed candidate. Its manifest deliberately says releaseReady: false.
 
-The callable tests exercise the exported onCall middleware through an Express HTTP harness with real Auth emulator tokens. The DOM test uses simulated command transport. Neither is a native-browser test or qualification of Google's managed Functions runtime.
+The callable tests exercise the exported onCall middleware through an Express HTTP harness with real Auth emulator tokens. The basic DOM test uses simulated command transport. The SDK integration tests use the actual bundled Firebase Web SDK, real Auth emulator sign-in, and the actual callable middleware/Firestore emulator through the existing spec sheet and approval footer in JSDOM. They verify the revision sequence, account clearing, and revoked membership. The harness supplies browser fetch globals and an Origin header. None of these tests is a rendered native-browser test or qualification of Google's managed Functions runtime.
 
-Still required before release: full browser SDK-to-callable integration, runtime dependency-lock review, staging service-account/IAM and fixture preparation, rollback preparation, and approved deployment followed by native-browser hosted App Check/sign-in/revision checks. Node version used and fresh results are recorded separately in this directory.
+Still required before release: runtime dependency-lock review, staging service-account/IAM and fixture preparation, rollback preparation, and approved deployment followed by native-browser hosted App Check/sign-in/revision checks. The local SDK-to-callable sequence has passed; actual browser loading, CORS enforcement, layout and cloud App Check remain unverified. Node version used and fresh results are recorded separately in this directory.
 
 No service account, IAM grant, cloud fixture or deployment is created by these files. Existing cloud deny-all rules remain untouched. Production remains untouched.
 

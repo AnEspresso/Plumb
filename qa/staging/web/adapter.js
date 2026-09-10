@@ -65,6 +65,8 @@
   // offered by this bounded staging slice. Authorization remains server-side.
   t.content.querySelectorAll('button,[onclick]').forEach(el=>{const action=el.getAttribute('onclick')||'';
    if(/^pktFillSpec\(/.test(action)){if(current.role==='crew')el.removeAttribute('onclick');return;}
+   if(/^pktSignBuilder\(/.test(action)){const label=el.querySelector('.row-aside');if(label)label.textContent=current.approvals.builder.status;}
+   el.classList.remove('row-tap');el.querySelector('.row-chev')?.remove();
    if(el.tagName==='BUTTON')el.remove();else el.removeAttribute('onclick');
   });
   const notice=document.createElement('p');notice.className='pkt-banner '+(current.approved?'ok':'warn');notice.textContent=current.status;t.content.prepend(notice);
