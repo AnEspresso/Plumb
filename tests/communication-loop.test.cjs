@@ -155,6 +155,7 @@ test('built preview boots the sample house, keeps roles usable, and makes no ext
   }});
   await new Promise(r=>dom.window.addEventListener('load',()=>setTimeout(r,80),{once:true}));
   const w=dom.window;assert.equal(w.inspect('P().id'),'qa-shower');assert.equal(w.inspect('fbConfig()'),null);
+  assert.match(w.document.getElementById('ovToday').textContent,/Keep the build moving/);
   assert.equal(w.inspect('billingSummary(P()).out'),650);
   assert.equal(w.inspect('billingSummary(P()).billed'),0);
   assert.equal(w.inspect('billingSummary(P()).paid'),0);

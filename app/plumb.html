@@ -2434,6 +2434,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 .exc-banner{z-index:var(--z-nav);}
 .tour-catch,.tc-p,.tour-holeframe,.tour-bubble,.devpanel{z-index:var(--z-tour);}
 </style>
+<link rel="stylesheet" href="workspace.css">
 </head>
 <body>
 <div class="device">
@@ -12586,7 +12587,7 @@ function renderClient(){
       h+=`<div class="cl-needs"><div class="cn-h">Decisions needed before install</div><div class="cn-sub">Your builder needs these confirmed so the crew is not guessing on site.</div>`+
         needs.map(s=>{const hp=specStatus(s).homeownerPending;
           return `<div class="cn-item" id="cldec-${s.id}"><div class="cn-t">${esc(s.item||'(selection)')} <span class="cn-c">${esc(s.cat||'')}${s.room&&s.room!=='—'?' · '+esc(s.room):''}</span></div>`+
-            hp.map(x=>`<div class="cn-fld"><label>${esc(x.label)}</label><input data-sid="${s.id}" data-key="${x.key}" placeholder="Your choice…"></div>`).join('')+
+            hp.map(x=>`<div class="cn-fld"><label for="answer-${s.id}-${x.key}">${esc(x.label)}</label><input id="answer-${s.id}-${x.key}" data-sid="${s.id}" data-key="${x.key}" placeholder="Your choice…"></div>`).join('')+
             `<button class="cl-submit" onclick="clientSaveSpec(${s.id})">Submit answers</button></div>`;}).join('')+`</div>`;
     }
     const bs=billingSummary(p);const loose=bs.paid-bs.invPaid;
@@ -18341,5 +18342,6 @@ if('serviceWorker' in navigator){
 })();
 </script>
 <div id="deskBar"><button class="btn btn-secondary" id="deskBack" onclick="backToHouse()">House</button></div>
+<script src="workspace.js"></script>
 </body>
 </html>

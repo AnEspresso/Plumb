@@ -7,7 +7,7 @@
     const s=original(),p=s.projects.find(x=>x.id==='p2')||s.projects[0];
     p.id='qa-shower';p.name='QA · Cedar House';p.street='42 Sample Lane';p.city='Example Town';p.buyers=['QA Homeowner'];
     p.subs=[{id:9902,name:'QA Plumbing',specialty:'plumb',cleared:Date.now(),phone:'',email:'',specsDue:Date.now()+864e5}];
-    p.invites=[];p.packetSignoff={};p.packetApprovalHistory=[];p.docs=[];p.payments=[];p.invoices=[];
+    p.items=[];p.logs=[];p.invites=[];p.packetSignoff={};p.packetApprovalHistory=[];p.docs=[];p.payments=[];p.invoices=[];
     p.selNotes='Sample project. All dimensions and products are for software testing only.';
     const sel={id:9901,cat:'Plumbing Fixtures',room:'Primary Bath',item:'QA shower valve',price:650,status:'selected',approved:false,spec:{}};
     specFields(sel).forEach(f=>{if(f.who==='builder')sel.spec[f.key]='QA field detail';});
@@ -15,6 +15,7 @@
     sel.spec.roughin='3.0 in — QA sample';
     sel.spec.loc='Shower wall A — QA sample';
     p.selections=[sel];
+    p.workspaceRecords=[];p.buildBrief={priorities:'A calm, comfortable home. Durable finishes that are easy to care for.',look:'Warm natural materials, simple lines, and dark hardware.',tradeoffs:'Invest in the things we touch every day. Keep maintenance simple.'};
     p.bookings=[{id:'qa-plumbing',trade:'plumb',subName:'QA Plumbing',start:dayStart(Date.now())+3*864e5,end:dayStart(Date.now())+4*864e5,note:'QA shower valve install — sample only',status:'confirmed'}];
     s.projects=[p];s.activeId=p.id;s.session={role:'builder',name:'QA Builder'};return s;
   };
