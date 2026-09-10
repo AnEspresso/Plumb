@@ -48,5 +48,8 @@ for(const [pkg,family,weights] of fonts)for(const weight of weights)for(const st
  css+=`@font-face{font-family:'${family}';font-style:${style};font-weight:${weight};font-display:swap;src:url('fonts/${file}') format('woff2')}\n`;
 }
 fs.writeFileSync(path.join(out,'app/fonts.css'),css);
-fs.writeFileSync(path.join(out,'index.html'),`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta http-equiv="refresh" content="0;url=app/?demo=1"><title>SitePlumb · Sample workspace</title></head><body><a href="app/?demo=1">Open the SitePlumb sample workspace</a></body></html>`);
+// An explicit release path lets reviewers identify a coherent sample bundle.
+const releasePath='workspace-20260910';
+fs.cpSync(path.join(out,'app'),path.join(out,releasePath),{recursive:true});
+fs.writeFileSync(path.join(out,'index.html'),`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta http-equiv="refresh" content="0;url=${releasePath}/?demo=1"><title>SitePlumb · Sample workspace</title></head><body><a href="${releasePath}/?demo=1">Open the SitePlumb sample workspace</a></body></html>`);
 console.log('QA preview built: '+out);
