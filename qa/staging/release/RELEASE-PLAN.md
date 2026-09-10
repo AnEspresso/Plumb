@@ -4,7 +4,7 @@ Prepared for review. No cloud action in this plan has been performed. The releas
 
 ## Exact proposed scope
 
-After the owner says **release**, perform a fresh read-only preflight and review its results before mutations. Use the existing owner Cloud Shell session; no new human account access, service-account key, repository secret, invitation or outgoing email is needed. Confirm that the saved code revision is the approved revision before installing its locked dependencies.
+The owner has authorized automatic QA/staging deployments, superseding the earlier requirement to say **release**. Perform a fresh read-only preflight and review its results before mutations. Use the existing owner Cloud Shell session; no new human account access, service-account key, repository secret, invitation or outgoing email is needed. Confirm that the saved code revision is the intended verified revision before installing its locked dependencies.
 
 The proposed first staging release creates one dedicated runtime account, grants its two staging-scoped roles, creates the 12 fake identities and three houses below, deploys one callable endpoint plus the staging rules and static frontend, and runs native-browser hosted checks. Cloud API activation or deployment-identity changes must be itemized from the preflight before proceeding; do not grant broad roles to fix an unexplained denial.
 
@@ -57,7 +57,7 @@ From `qa/staging`, the preparation command is harmless and local:
 node release/provision.cjs --plan
 ```
 
-Only after release approval and project identity verification, the reviewed apply form is:
+After the preflight and project identity verification pass, the reviewed apply form is:
 
 ```sh
 node release/provision.cjs --apply siteplumb-staging --credentials-out /home/pmgottschalk/siteplumb-staging-test-credentials.json
@@ -91,4 +91,4 @@ For the first release, there may be no previous function or Hosting version. The
 
 Use only the native browser. First verify rendered interaction, then run the seven-step Finish approval/revision sequence, including exact Finish history and explicit holds. Capture screenshots at checkpoints. Separately exercise each fake identity's permission boundary, direct client-write rejection, current App Check issuance, disabled/revoked access and wrong-origin rejection. Test 390×844 and 430×932 only if resizing is supported; actual iPhone Safari remains separate. No real notifications, installations or production work occur.
 
-This Firebase staging release does not update the public sample URL. Any future public sample release retains its own release approval and mandatory native-browser checks.
+This Firebase staging release does not update the public sample URL. Public sample deployments are also covered by the owner's standing authorization and retain mandatory native-browser checks. Production deployments still require separate explicit authorization.

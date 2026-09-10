@@ -6,6 +6,8 @@ Recorded from the owner's instruction on September 10, 2026:
 
 The current authorized review destination is `AnEspresso/Plumb`, branch `codex/staging-recovery-appcheck`. Save future authorized work there without another conversational publication approval. Verify the remote branch and source contents, and preserve concurrent work.
 
-This is permission to save review-branch updates, not permission to merge, deploy, alter production, grant cloud access, send messages or invite people. Existing task-specific boundaries still apply. Releases continue to require the owner's “release” instruction and the requested native-browser post-deployment checks.
+The owner subsequently authorized both review-branch uploads and QA/staging deployments automatically. The earlier requirement to wait for the word “release” no longer applies to QA or staging. Continue the required preflight, validation and native-browser post-deployment checks, and report concrete blockers rather than asking for the same authorization again.
+
+Production deployments and changes, merging into production branches, sending real messages, inviting people and unrelated access changes remain outside this standing authorization. Preserve existing task-specific scope and production isolation. Do not treat the authorization as evidence that cloud access, release prerequisites or tests are already satisfied.
 
 End responses with working, done or blocked, and state whether anything is still running.

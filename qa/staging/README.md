@@ -18,4 +18,4 @@ Unimplemented or unproven: acknowledgments, installation evidence, independent v
 
 Offline clears displayed instructions and requires refresh. A failed save preserves the unsent form, which still needs reconciliation after loading current instructions.
 
-Publishing requires the user's “release.” Each public sample release requires new native-browser checks. This reconstruction has not been released.
+The owner has authorized automatic review-branch uploads and QA/staging deployments; no further “release” prompt is required for those destinations. Each QA/staging release still requires the planned verification and native-browser checks. Production remains outside this authorization. This reconstruction has not been released.
