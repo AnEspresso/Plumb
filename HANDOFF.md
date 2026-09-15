@@ -1,4 +1,35 @@
-**v2.413.0 is live.** Homeowner and crew invites skip the builder role picker — the invite sets who you are.
+**v2.415.0 is live.** Home features the next packet; Needs you and Field Notes stay. Packet shows spec diffs. Sign-off drops on required details, add/remove selection, and packet-doc change — not on dates, prices, or notes.
+
+**PARKED 2026-09-15 — Astra workspace overlay, do not merge.** Peter + Astra + Grok agreed: keep the workflow, put it in *this* app, retire the overlay. Preview was https://siteplumb-qa.pmgottschalk.chatgpt.site/workspace-20260910/ (2.416 + workspace.js). Not a replacement PWA. Not a second brand.
+
+GitHub (read only, do not merge):
+- `codex/siteplumb-communication-loop-qa` @ `051b2a82` — pre-overlay engine (key, diff, withdraw, holds, link/retry). **No clean whole-commit lift** — those commits also mix finance UI, QA infra, and date/doc hashing we do not want.
+- `codex/staging-recovery-appcheck` @ `cab87fa` — overlay + `qa/staging/`. Staging is a **spec**, not a deploy.
+- `main` is 2.415.0.
+
+Regressions Astra named (existing-app suite, not staging-security tests):
+- QA branch: **29**.
+- Staging-recovery source: **34** = those 29 + 5 access-loss (in-app + standalone guest, missing + permission-denied, plus cache/transient must not revoke).
+
+Steal later, into paper/oak/clay, phone-first, capture stays:
+1. Home = one next packet; other urgent work still discoverable.
+2. Revision integrity live (not demo): instruction snapshot, approvals, later crew ack / evidence / verify, server-enforced.
+3. Durable build brief (priorities, look, tradeoffs) across devices.
+4. Homeowner: decisions first, money folded.
+5. AI / performance tradeoffs only when they remove work.
+
+Fingerprint boundary (broader is not better):
+- DROP sign-off: required install details; add/remove a selection on that packet; packet-doc replace/revision bump.
+- DO NOT drop: booking dates/crew/expiry; prices/invoices; field notes; optional unused specs; brief; admin audience.
+Same texted link still republishes live specs. Sign-off is what falls away.
+When un-parked: port behaviors against **our tree**, do not cherry-pick their commits. First ship (2.415) is next-packet home + spec diff. Ack/verify and brief after that, with rules.
+
+Do not merge workspace.js / workspace.css. Do not hide #ovCapture. Do not reskin sage. Do not deploy qa/staging as-is.
+
+---
+
+**v2.414.0 ready to ship.** Can't mark Installed without homeowner sign-off. Spec changes drop packet signatures. Guest packet stays live; sign-off no longer applies.
+
 
 
 

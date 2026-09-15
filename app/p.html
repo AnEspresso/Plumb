@@ -39,6 +39,7 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:600;line-height:var(--lh-tight);
 .brand{display:flex;align-items:center;gap:var(--s-2);font-size:var(--t-lg);margin-bottom:var(--s-4)}
 .brand .dot{width:7px;height:7px;border-radius:50%;background:var(--oak);box-shadow:0 0 0 4px rgba(176,137,90,.14)}
 .updated{background:rgba(111,123,88,.12);border:1px solid rgba(111,123,88,.28);border-radius:var(--r-sm);padding:var(--s-3);margin:0 0 var(--s-4);font-size:var(--t-sm);line-height:1.45}
+.updated.warn{background:rgba(176,96,74,.12);border-color:rgba(176,96,74,.35)}
 .updated .when{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1)}
 .sec{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s-3);margin:var(--s-7) 0 var(--s-3);}
 .sec h2{font-size:var(--t-xl);}
@@ -197,7 +198,9 @@ function paint(){
   var dates=fmtWin({start:(g.resp&&g.resp.start)||g.start,end:(g.resp&&g.resp.end)||g.end});
   var h="";
   h+='<div class="brand wordmark"><span class="dot"></span>SitePlumb</div>';
-  if(g.lastChange||(g.changes&&g.changes[0])){
+  if(g.stale){
+    h+='<div class="updated warn"><div><b>Specs on this page are current.</b> A required detail changed after send, so sign-off no longer applies. Do not treat this as approved to install until your builder signs again.</div></div>';
+  }else if(g.lastChange||(g.changes&&g.changes[0])){
     var ch=(g.changes&&g.changes[0])||{what:g.lastChange,t:g.lastChangeT||g.t};
     var when=ch.t?new Date(ch.t).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
     h+='<div class="updated"><div>'+esc(ch.what||"Packet updated")+'</div>'+(when?('<div class="when">'+esc(when)+"</div>"):"")+"</div>";
