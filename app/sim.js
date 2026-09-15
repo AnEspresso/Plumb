@@ -748,7 +748,8 @@ t('issues header matches segment vocabulary', el('view-decisions').innerHTML.inc
 // homeowner side
 $("state.activeId='p2'");
 const CH=clientHTML('p2','home');
-t('homeowner sees still to pay on Selections, not a fake To pay door', CH.includes('Selections')&&CH.includes('still to pay')&&!CH.includes('>To pay<')&&!/<div class="k">To pay<\/div>/.test(CH)&&!CH.includes('Outstanding'));
+t('homeowner sees still to pay on Costs, not a fake To pay door', CH.includes('Selections')&&CH.includes('still to pay')&&CH.includes('openClientMoney()')&&!CH.includes('>To pay<')&&!/<div class="k">To pay<\/div>/.test(CH)&&!CH.includes('Outstanding'));
+t('homeowner Selections door is finishes', CH.includes('Your finishes')&&!/onclick="clientGo\('specs'\)"[\s\S]{0,120}still to pay/.test(CH));
 t('homeowner Schedule opens House calendar', CH.includes('openClientCal()')&&CH.includes('Crews on this house'));
 t('homeowner stats are tappable doors', CH.includes('hs-door')&&CH.includes('On this house')&&CH.includes('Selections'));
 t('Share an idea sits beside Raise a concern', CH.includes('Raise a concern')&&CH.includes('Share an idea'));
@@ -1826,6 +1827,11 @@ t('saving the brief does not drop packet signatures', $("(function(){state.sessi
 t('packet snapshot carries the brief', $("(function(){const p=state.projects.find(x=>x.id==='p2');p.buildBrief={priorities:'Keep the oak.',look:'Black windows.',tradeoffs:'Spend on kitchen.',by:'You',at:Date.now()};const b=(p.bookings||[])[0]||{id:'sim',trade:'windows',subName:'x',start:Date.now(),end:Date.now()};const snap=packetSnapshot(p,Object.assign({trade:'windows'},b));return snap.brief&&snap.brief.priorities==='Keep the oak.';})()")===true);
 t('house briefing shows the build brief', $("(function(){state.session={role:'builder',name:'You'};state.activeId='p2';const p=state.projects.find(x=>x.id==='p2');p.buildBrief={priorities:'Keep the oak at the drive.',look:'',tradeoffs:'',by:'You',at:Date.now()};return houseHTML(p).indexOf('Build brief')>=0&&houseHTML(p).indexOf('Keep the oak at the drive')>=0;})()")===true);
 t('guest packet names this house from the brief', SRC.indexOf('This house')>=0&&SRC.indexOf('g.brief')>=0);
+t('homeowner money is folded', SRC.indexOf('function toggleClientMoney')>=0&&SRC.indexOf('function openClientMoney')>=0&&SRC.indexOf('Costs & payments')>=0);
+t('homeowner specs fold money after selections', $("(function(){state.session={role:'client',site:'p2'};clientTab='specs';_clientMoneyOpen=false;renderClient();const h=document.getElementById('clBody').innerHTML;const sel=h.indexOf('Your selections');const money=h.indexOf('clMoney');const led=h.indexOf('sel-ledger');return sel>=0&&money>sel&&led<0;})()")===true);
+t('opening costs shows the ledger', $("(function(){state.session={role:'client',site:'p2'};openClientMoney();const h=document.getElementById('clBody').innerHTML;_clientMoneyOpen=false;clientTab='home';return h.indexOf('sel-ledger')>=0&&h.indexOf('clMoney')>=0;})()")===true);
+
+
 
 
 

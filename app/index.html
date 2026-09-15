@@ -3898,7 +3898,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.417.0 - Build brief on the house';
+const PLUMB_VERSION='2.418.0 - Decisions first, money folded';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3906,7 +3906,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1789499606410;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.417.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.418.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9923,11 +9923,46 @@ function subCapture(pid){Data.setActive(pid);openSheet();}
 /* ════════ homeowner (client) view ════════ */
 function clientProj(){const s=state.session;return (s&&s.site&&state.projects.find(x=>x.id===s.site))||P();}
 let clientTab='home';
-function showClientView(){const s=state.session;if(s&&s.site)Data.setActive(s.site);clientTab='home';
+let _clientMoneyOpen=false;
+function showClientView(){const s=state.session;if(s&&s.site)Data.setActive(s.site);clientTab='home';_clientMoneyOpen=false;
   ['home','progress','specs','docs'].forEach(x=>{const b=document.getElementById('cltab-'+x);if(b)b.classList.toggle('on',x==='home');});
   document.getElementById('clientview').classList.add('show');const b=document.getElementById('clBody');if(b)b.scrollTop=0;renderClient();}
-function clientGo(t){clientTab=t;['home','progress','specs','docs'].forEach(x=>{const b=document.getElementById('cltab-'+x);if(b)b.classList.toggle('on',x===t);});
+function clientGo(t){clientTab=t;if(t!=='specs')_clientMoneyOpen=false;['home','progress','specs','docs'].forEach(x=>{const b=document.getElementById('cltab-'+x);if(b)b.classList.toggle('on',x===t);});
   const bd=document.getElementById('clBody');if(bd)bd.scrollTop=0;renderClient();}
+function toggleClientMoney(){
+  _clientMoneyOpen=!_clientMoneyOpen;
+  renderClient();
+  try{const el=document.getElementById('clMoney');if(el&&_clientMoneyOpen)el.scrollIntoView({block:'nearest'});}catch(e){}
+}
+function openClientMoney(){_clientMoneyOpen=true;clientGo('specs');
+  try{const el=document.getElementById('clMoney');if(el)el.scrollIntoView({block:'nearest'});}catch(e){}}
+function clientStillToPayLine(n){return '$'+Math.abs(Number(n)||0).toLocaleString()+' still to pay';}
+function clientCostsHTML(p){
+  const bs=billingSummary(p);const usd=n=>'$'+Math.abs(n).toLocaleString();
+  const loose=bs.paid-bs.invPaid;
+  let ledger='<div class="sel-ledger">';
+  ledger+='<div class="lr"><span>Upgrades</span><b class="up">+'+usd(bs.ups)+'</b></div>';
+  if(bs.crs)ledger+='<div class="lr"><span>Credits</span><b class="cr">\u2212'+usd(bs.crs)+'</b></div>';
+  ledger+='<div class="lr net"><span>Net change</span><b class="'+(bs.net<0?'cr':'')+'">'+(bs.net<0?'\u2212':'')+usd(bs.net)+'</b></div>';
+  ledger+='<div class="lr"><span>Invoiced</span><b>'+usd(bs.billed)+'</b></div>';
+  if(bs.invPaid>0.005)ledger+='<div class="lr"><span>'+(loose>0.005?'Paid on invoices':'Paid')+'</span><b class="cr">\u2212'+usd(bs.invPaid)+'</b></div>';
+  if(Math.abs(bs.unbilled)>0.005||loose>0.005){
+    ledger+='<div class="lr"><span>Balance due on invoices</span><b>'+usd(bs.balanceDue)+'</b></div>';
+    if(Math.abs(bs.unbilled)>0.005)ledger+='<div class="lr"><span>Not yet invoiced</span><b class="'+(bs.unbilled<0?'cr':'up')+'">'+(bs.unbilled<0?'\u2212':'+')+usd(bs.unbilled)+'</b></div>';
+    if(loose>0.005)ledger+='<div class="lr"><span>Credit on account</span><b class="cr">\u2212'+usd(loose)+'</b></div>';
+    ledger+='<div class="lr out"><span>Still to pay</span><b class="'+(bs.out<0?'cr':'')+'">'+(bs.out<0?'\u2212':'')+usd(bs.out)+'</b></div>';
+  }else{
+    ledger+='<div class="lr out"><span>Balance due</span><b class="'+(bs.balanceDue>0?'':'cr')+'">'+usd(bs.balanceDue)+'</b></div>';
+  }
+  ledger+='</div>';
+  const invs=(p.invoices||[]).filter(function(i){const s=invState(i);return s!=='void'&&s!=='draft';}).slice().reverse();
+  let invoices='';
+  if(invs.length){
+    invoices='<div class="sec"><h2>Invoices</h2></div>';
+    invoices+=invs.map(function(inv){const st=invState(inv);return '<div class="subrow cur-p" onclick="openInvoiceDetail(\''+p.id+'\',\''+inv.id+'\',\'client\')"><div class="si"><div class="n">'+esc(inv.no)+' \u00b7 '+esc(inv.title)+'</div><div class="d">'+invUsd(inv.total)+((st==='partial'||st==='overdue')?' \u00b7 '+invUsd(invBalance(inv))+' left':'')+(inv.due&&st!=='paid'?(st==='overdue'?' \u00b7 <b style="color:var(--clay)">past due '+esc(inv.due)+'</b>':' \u00b7 due '+esc(inv.due)):'')+(st==='sent'?' \u00b7 <b style="color:var(--clay)">needs your OK</b>':'')+'</div></div>'+invStatusChip(st)+'</div>';}).join('');
+  }
+  return {line:clientStillToPayLine(bs.out),ledger:ledger,invoices:invoices,needOK:(p.invoices||[]).filter(invNeedsOK)};
+}
 /* Unified site billing: one balance shared by selections + invoices.
    Charges = selection upcharges/credits + ad-hoc invoice lines (no selId, non-void).
    Paid    = loose payments + every non-void invoice's payments. So recording a
@@ -12506,7 +12541,6 @@ function renderClient(){
     meta.push(p.street||p.name||'Your house');
     if(stageName)meta.push('Now building \u00b7 '+stageName);
     if(nb)meta.push((nbTrade?specLabel(nbTrade):'Crew')+' \u00b7 '+_fmtD(nb.start));
-    meta.push('Still to pay \u00b7 '+usd(led.out));
     h+='<div class="pkt-strip '+(decisionCount?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div><div class="meta">'+esc(track.txt)+(meta.length?('<br>'+meta.map(esc).join('<br>')):'')+'</div></div>';
     h+=buildBriefRowHTML(p);
     const facts=[];
@@ -12535,11 +12569,12 @@ function renderClient(){
     }
     h+='<div class="hs-band">On this house</div><div class="hs-doors">';
     h+='<button class="hs-door" onclick="openClientCal()"><div class="k">Schedule</div><div class="m">Crews on this house</div></button>';
-    h+='<button class="hs-door" onclick="clientGo(\'specs\')"><div class="k">Selections</div><div class="m">Your finishes'+(led.out>0.005?(' \u00b7 '+usd(Math.max(0,led.out))+' still to pay'):'')+'</div></button>';
+    h+='<button class="hs-door" onclick="clientGo(\'specs\')"><div class="k">Selections</div><div class="m">Your finishes</div></button>';
     h+='</div>';
     h+='<div class="hs-band">The rest of this house</div><div class="hs-doors">';
     h+='<button class="hs-door" onclick="clientGo(\'progress\')"><div class="k">Updates</div><div class="m">Photos and notes your builder shares</div></button>';
     h+='<button class="hs-door" onclick="clientGo(\'docs\')"><div class="k">Documents</div><div class="m">Drawings and PDFs</div></button>';
+    h+='<button class="hs-door" onclick="openClientMoney()"><div class="k">Costs & payments</div><div class="m">'+esc(clientStillToPayLine(led.out))+'</div></button>';
     h+='</div>';
     h+='<div class="row2 gap-2 mt-4 ml-0 mr-0 mb-2"><button class="cl-concern" onclick="openConcern()">Raise a concern</button><button class="cl-concern" onclick="openIdea()">Share an idea</button></div>';
   }
@@ -12576,25 +12611,14 @@ function renderClient(){
             hp.map(x=>`<div class="cn-fld"><label>${esc(x.label)}</label><input data-sid="${s.id}" data-key="${x.key}" placeholder="Your choice…"></div>`).join('')+
             `<button class="cl-submit" onclick="clientSaveSpec(${s.id})">Submit answers</button></div>`;}).join('')+`</div>`;
     }
-    const bs=billingSummary(p);const loose=bs.paid-bs.invPaid;
-    h+=`<div class="sec"><h2>Your investment</h2></div>
-      <div class="sel-ledger">
-        <div class="lr"><span>Upgrades</span><b class="up">+${usd(bs.ups)}</b></div>
-        ${bs.crs?`<div class="lr"><span>Credits</span><b class="cr">−${usd(bs.crs)}</b></div>`:''}
-        <div class="lr net"><span>Net change</span><b class="${bs.net<0?'cr':''}">${bs.net<0?'−':''}${usd(bs.net)}</b></div>
-        <div class="lr"><span>Invoiced</span><b>${usd(bs.billed)}</b></div>
-        ${bs.invPaid>0.005?`<div class="lr"><span>${loose>0.005?'Paid on invoices':'Paid'}</span><b class="cr">−${usd(bs.invPaid)}</b></div>`:''}
-        ${(Math.abs(bs.unbilled)>0.005||loose>0.005)
-          ?`<div class="lr"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>
-            ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
-            ${loose>0.005?`<div class="lr"><span>Credit on account</span><b class="cr">−${usd(loose)}</b></div>`:''}
-            <div class="lr out"><span>Still to pay</span><b class="${bs.out<0?'cr':''}">${bs.out<0?'−':''}${usd(bs.out)}</b></div>`
-          :`<div class="lr out"><span>Balance due</span><b class="${bs.balanceDue>0?'':'cr'}">${usd(bs.balanceDue)}</b></div>`}
-      </div>`;
-    const invs=(p.invoices||[]).filter(i=>{const s=invState(i);return s!=='void'&&s!=='draft';}).slice().reverse();
-    if(invs.length){
-      h+=`<div class="sec"><h2>Invoices</h2></div>`;
-      h+=invs.map(inv=>{const st=invState(inv);return `<div class="subrow cur-p" onclick="openInvoiceDetail('${p.id}','${inv.id}','client')"><div class="si"><div class="n">${esc(inv.no)} · ${esc(inv.title)}</div><div class="d">${invUsd(inv.total)}${(st==='partial'||st==='overdue')?' · '+invUsd(invBalance(inv))+' left':''}${inv.due&&st!=='paid'?(st==='overdue'?' · <b style=\"color:var(--clay)\">past due '+esc(inv.due)+'</b>':' · due '+esc(inv.due)):''}${st==='sent'?' · <b style=\"color:var(--clay)\">needs your OK</b>':''}</div></div>${invStatusChip(st)}</div>`;}).join('');}
+    const costs=clientCostsHTML(p);
+    if(costs.needOK.length){
+      h+='<div class="cl-needs"><div class="cn-h">Invoices to OK</div><div class="cn-sub">Your builder sent these. Open each and OK the charges.</div>';
+      costs.needOK.forEach(function(inv){
+        h+='<div class="cn-item cur-p" onclick="openInvoiceDetail(\''+p.id+'\',\''+inv.id+'\',\'client\')"><div class="cn-t">'+esc(inv.no)+' \u00b7 '+esc(inv.title)+' <span class="cn-c">needs your OK</span></div></div>';
+      });
+      h+='</div>';
+    }
     h+=`<div class="sec"><h2>Your selections</h2></div>`;
     const cats=SEL_CATS.filter(c=>sels.some(s=>(s.cat||'Other')===c));
     const extra=[...new Set(sels.map(s=>s.cat||'Other'))].filter(c=>!SEL_CATS.includes(c));
@@ -12612,6 +12636,8 @@ function renderClient(){
           ${s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Signed':'Sign off'}</button>`}
         </div>`;}).join('');
     }).join(''):'<div class="empty">No selections recorded yet.</div>';
+    h+='<div class="sec" id="clMoney"><h2>Costs & payments</h2><button type="button" class="sec-act" onclick="toggleClientMoney()">'+(_clientMoneyOpen?'Hide':esc(costs.line))+'</button></div>';
+    if(_clientMoneyOpen){h+=costs.ledger;h+=costs.invoices;}
   }
 
   else if(T==='docs'){
