@@ -158,7 +158,7 @@ function busy(){
   var ae=document.activeElement;
   return !!(ae&&(ae.id==="gpNote"||ae.id==="gpQText"||ae.id==="gpPrefCal"));
 }
-function sig(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||"",start:x.start,end:x.end,ctx:x.ctx||null,lastChange:x.lastChange||""});}
+function sig(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||"",start:x.start,end:x.end,ctx:x.ctx||null,lastChange:x.lastChange||"",signed:!!x.signed,stale:!!x.stale,work:x.work||null});}
 function apply(g){
   if(!g)return;
   if((g.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}
@@ -258,6 +258,25 @@ function paint(){
     h+='<div class="sec"><h2>Documents on file</h2></div>';
     h+=g.docs.map(function(n){return row(n,"Need a file? Reply to the text.","","");}).join("");
   }
+  var gw=g.work||{};
+  var gAck=!!(gw.ack&&gw.ack.at), gInst=!!(gw.installed&&gw.installed.at), gVer=!!(gw.verified&&gw.verified.at);
+  if(g.stale||g.signed===false){
+    h+='<div class="sec"><h2>On site</h2></div>';
+    h+=row("Install","Do not treat this as approved to install until your builder signs again.","Hold","warn");
+  }else if(g.signed){
+    h+='<div class="sec"><h2>On site</h2></div>';
+    if(gVer){
+      h+='<div class="ok"><b>Work matches these instructions.</b> Your builder verified.</div>';
+    }else if(gInst){
+      h+='<div class="ok"><b>Work recorded.</b> Your builder reviews next.</div>';
+    }else if(gAck){
+      h+='<div class="ok"><b>You have these instructions.</b></div>';
+      h+='<div class="field"><label>What was installed</label><textarea id="gpWorkNote" rows="2" placeholder="What you put in, and what you checked"></textarea></div>';
+      h+='<button class="btn btn-secondary btn-block" onclick="gpRecordInstall()">Record what was installed</button>';
+    }else{
+      h+='<button class="btn btn-primary btn-block" onclick="gpAck()">I have these instructions</button>';
+    }
+  }
   h+='<div class="sec"><h2>Questions</h2></div>';
   var qs=g.q||[];
   h+=qs.length?qs.map(function(x){
@@ -351,6 +370,22 @@ function writeResp(resp){
   paint();
 }
 window.gpConfirm=function(){writeResp({status:"confirmed",t:Date.now()});};
+function writeWork(part,extra){
+  if(!_snap||_snap.stale||_snap.signed===false){toast("Sign-off no longer applies");return;}
+  var w=Object.assign({},_snap.work||{});
+  if(part==="installed"&&!(w.ack&&w.ack.at)){toast("Confirm the instructions first");return;}
+  w[part]=Object.assign({by:(_snap.sub||"Crew"),at:Date.now()},extra||{});
+  _snap.work=w;
+  var d=db();
+  if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({work:w}).catch(function(){toast("Could not save \u2014 try again with a bar of signal");});}catch(e){toast("Could not save");}}
+  paint();
+}
+window.gpAck=function(){writeWork("ack");toast("Instructions confirmed");};
+window.gpRecordInstall=function(){
+  var note=((document.getElementById("gpWorkNote")||{}).value||"").trim().slice(0,300);
+  if(!note){toast("Add a note");return;}
+  writeWork("installed",{note:note});toast("Work recorded");
+};
 window.gpSendChange=function(){
   var sv=(document.getElementById("gpStart")||{}).value,ev=(document.getElementById("gpEnd")||{}).value;
   var st=sv?Date.parse(sv+"T12:00:00"):null;var en=ev?Date.parse(ev+"T12:00:00"):st;

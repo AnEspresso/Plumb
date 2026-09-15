@@ -1,28 +1,30 @@
-**v2.415.0 is live.** Home features the next packet; Needs you and Field Notes stay. Packet shows spec diffs. Sign-off drops on required details, add/remove selection, and packet-doc change — not on dates, prices, or notes.
+**v2.416.0 is live.** Crew confirms the current packet, records what was installed, and the builder verifies. Spec changes drop confirm the same way they drop sign-off. Dates, prices, and notes do not. Same texted link stays live. Field Notes stay. Overlay stayed out. Guest confirm on the texted link needs the packet rules published in Firebase (work field).
+
+**v2.415.0** Home features the next packet; Needs you and Field Notes stay. Packet shows spec diffs. Sign-off drops on required details, add/remove selection, and packet-doc change — not on dates, prices, or notes.
 
 **PARKED 2026-09-15 — Astra workspace overlay, do not merge.** Peter + Astra + Grok agreed: keep the workflow, put it in *this* app, retire the overlay. Preview was https://siteplumb-qa.pmgottschalk.chatgpt.site/workspace-20260910/ (2.416 + workspace.js). Not a replacement PWA. Not a second brand.
 
 GitHub (read only, do not merge):
 - `codex/siteplumb-communication-loop-qa` @ `051b2a82` — pre-overlay engine (key, diff, withdraw, holds, link/retry). **No clean whole-commit lift** — those commits also mix finance UI, QA infra, and date/doc hashing we do not want.
 - `codex/staging-recovery-appcheck` @ `cab87fa` — overlay + `qa/staging/`. Staging is a **spec**, not a deploy.
-- `main` is 2.415.0.
+- `main` is 2.416.0.
 
 Regressions Astra named (existing-app suite, not staging-security tests):
 - QA branch: **29**.
 - Staging-recovery source: **34** = those 29 + 5 access-loss (in-app + standalone guest, missing + permission-denied, plus cache/transient must not revoke).
 
 Steal later, into paper/oak/clay, phone-first, capture stays:
-1. Home = one next packet; other urgent work still discoverable.
-2. Revision integrity live (not demo): instruction snapshot, approvals, later crew ack / evidence / verify, server-enforced.
+1. Home = one next packet; other urgent work still discoverable. **Shipped 2.415.**
+2. Revision integrity: instruction snapshot + approvals **shipped 2.415**; crew ack / evidence / verify **shipped 2.416 (client)**; server-enforced still later.
 3. Durable build brief (priorities, look, tradeoffs) across devices.
 4. Homeowner: decisions first, money folded.
 5. AI / performance tradeoffs only when they remove work.
 
 Fingerprint boundary (broader is not better):
-- DROP sign-off: required install details; add/remove a selection on that packet; packet-doc replace/revision bump.
+- DROP sign-off and crew confirm: required install details; add/remove a selection on that packet; packet-doc replace/revision bump.
 - DO NOT drop: booking dates/crew/expiry; prices/invoices; field notes; optional unused specs; brief; admin audience.
-Same texted link still republishes live specs. Sign-off is what falls away.
-When un-parked: port behaviors against **our tree**, do not cherry-pick their commits. First ship (2.415) is next-packet home + spec diff. Ack/verify and brief after that, with rules.
+Same texted link still republishes live specs. Sign-off and confirm are what fall away.
+When un-parked: port behaviors against **our tree**, do not cherry-pick their commits. Next: durable brief, then money folded. Rules still need Publish in Firebase for guest work.
 
 Do not merge workspace.js / workspace.css. Do not hide #ovCapture. Do not reskin sage. Do not deploy qa/staging as-is.
 
@@ -334,6 +336,8 @@ Recent arc:
 
 | Version | What shipped |
 |---|---|
+| 2.416 | Crew confirms the current packet, records what was installed, builder verifies. Spec changes drop confirm with sign-off |
+| 2.415 | Home features the next packet. Packet names required-detail changes after a previous approval |
 | 2.201 | Demo expanded 4 → 10 sites, one per build stage, full selections + money, reseeds on every entry |
 | 2.202 | Demo role chips follow the active site instead of hardcoding Calderwood |
 | 2.203–2.204 | Privacy/Terms open in an in-app sheet (z-index 220, above the demo banner); demo survives service-worker reloads |

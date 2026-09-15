@@ -1,0 +1,56 @@
+SitePlumb — Firestore rules addition for guest sub packet links
+================================================================
+
+WHAT THIS DOES
+The app now writes packet snapshots to a top-level "packets" collection.
+Each doc id is an unguessable 34-character token — the link IS the key,
+the same pattern as a Google Docs share link. These rules make that safe:
+
+  - Anyone holding a token can READ that one doc, only until it expires.
+  - Nobody can LIST the collection (tokens cannot be discovered).
+  - Only signed-in builders can CREATE packets.
+  - A guest can UPDATE only the "resp" field (their confirm / change
+    request), the "q" field (their questions, capped at ten), and the
+    "work" field (crew confirm / what was installed), only before expiry.
+    Signed-in builders can update the rest so the same link stays live.
+
+WHERE TO PASTE
+Firebase console -> Build -> Firestore Database -> Rules tab.
+Inside your existing  match /databases/{database}/documents {  block,
+alongside your other match rules, add this block, then press Publish:
+
+    match /packets/{token} {
+      allow get: if resource.data.expires is int
+                 && resource.data.expires > request.time.toMillis();
+      allow list: if false;
+      allow create: if request.auth != null
+                 && request.resource.data.expires is int
+                 && request.resource.data.resp == null;
+      allow update: if resource.data.expires is int
+                 && resource.data.expires > request.time.toMillis()
+                 && (
+                   request.auth != null
+                   || request.resource.data.diff(resource.data)
+                        .affectedKeys().hasOnly(['resp','q','work'])
+                 )
+                 && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['resp'])
+                      || request.resource.data.resp.status in ['confirmed','change'])
+                 && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['q'])
+                      || request.resource.data.q.size() <= 10);
+      allow delete: if request.auth != null;
+    }
+
+AFTER PUBLISHING — 60-SECOND VERIFY
+1. In the app, open any real booking -> "Text the packet link…" and send
+   it to yourself.
+2. Open the link in Safari (or any browser, even signed out): the packet
+   page should load.
+3. Tap "These dates work" — then reopen the booking in the app: it should
+   show "Confirmed".
+If step 2 shows the expired-link message immediately, the rules block was
+not published — re-check the Rules tab.
+
+NOTE
+App Check stays enforced exactly as it is today; guests pass App Check
+automatically because they are running the real app from siteplumb.com.
+No Cloud Function changes. No index needed (single-doc gets only).

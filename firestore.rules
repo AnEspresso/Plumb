@@ -92,5 +92,26 @@ service cloud.firestore {
     // QuickBooks tokens + OAuth states are server-only secrets.
     match /qb/{uid} { allow read, write: if false; }
     match /qbStates/{stateId} { allow read, write: if false; }
+
+    match /packets/{token} {
+      allow get: if resource.data.expires is int
+                 && resource.data.expires > request.time.toMillis();
+      allow list: if false;
+      allow create: if signedIn()
+                 && request.resource.data.expires is int
+                 && request.resource.data.resp == null;
+      allow update: if resource.data.expires is int
+                 && resource.data.expires > request.time.toMillis()
+                 && (
+                   signedIn()
+                   || request.resource.data.diff(resource.data)
+                        .affectedKeys().hasOnly(['resp','q','work'])
+                 )
+                 && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['resp'])
+                      || request.resource.data.resp.status in ['confirmed','change'])
+                 && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['q'])
+                      || request.resource.data.q.size() <= 10);
+      allow delete: if signedIn();
+    }
   }
 }
