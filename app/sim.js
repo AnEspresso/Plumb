@@ -223,7 +223,7 @@ t('client attaches only its five colls', $("__g.attached.join()")==='items,bk,se
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
-t('SEED_VERSION 20',$('SEED_VERSION')===20);
+t('SEED_VERSION 21',$('SEED_VERSION')===21);
 t('10 seed sites',$('state.projects.length')===10);
 t('no boot errors',w.__thrown.length===0,w.__thrown[0]);
 
@@ -1819,6 +1819,14 @@ t('signed packet cannot be marked Installed until crew confirms', $("(function()
 t('acked packet can be marked Installed', $("(function(){const p=state.projects.find(x=>x.id==='p2');state.session={role:'subs',name:'Timberline Framing'};pktSetWork(p.id,'windows','ack');state.session={role:'builder',name:'You'};state.activeId='p2';const s=(p.selections||[]).find(x=>x.cat==='Windows'&&x.approved);if(!s)return false;const was=s.status;s.status='ordered';setSelStatus(s.id,'installed');const ok=s.status==='installed';s.status=was;delete p.packetWork.windows;return ok;})()")===true);
 t('verify waits for recorded work', $("(function(){const p=state.projects.find(x=>x.id==='p2');p.packetWork=p.packetWork||{};delete p.packetWork.windows;state.session={role:'subs',name:'Timberline Framing'};pktSetWork(p.id,'windows','ack');state.session={role:'builder',name:'You'};const blocked=!pktSetWork(p.id,'windows','verified');state.session={role:'subs',name:'Timberline Framing'};pktSetWork(p.id,'windows','installed',{note:'Casements set plumb'});state.session={role:'builder',name:'You'};const ok=pktSetWork(p.id,'windows','verified',{note:'Matches'});const w=packetWork(p,'windows');delete p.packetWork.windows;return blocked&&ok&&!!(w.verified&&w.verified.at);})()")===true);
 t('guest packet offers crew confirm', SRC.indexOf('I have these instructions')>=0&&SRC.indexOf('function gpAck')>=0);
+t('build brief lives on the house', SRC.indexOf('function saveBuildBrief')>=0&&SRC.indexOf('id="briefScrim"')>=0&&SRC.indexOf('What matters most')>=0);
+t('homeowner and builder can save the brief', $("(function(){state.session={role:'builder',name:'You'};state.activeId='p2';const p=state.projects.find(x=>x.id==='p2');const hold=JSON.stringify(p.buildBrief||null);openBuildBrief('p2');document.getElementById('briefPriorities').value='Keep the oak and the quiet.';document.getElementById('briefLook').value='Black windows, oak floors.';document.getElementById('briefTradeoffs').value='Spend on the kitchen.';const ok=saveBuildBrief();const saved=p.buildBrief&&p.buildBrief.priorities==='Keep the oak and the quiet.';p.buildBrief=hold?JSON.parse(hold):undefined;return ok&&saved;})()")===true);
+t('crew cannot save the brief', $("(function(){state.session={role:'subs',name:'Timberline Framing'};state.activeId='p2';const p=state.projects.find(x=>x.id==='p2');const hold=JSON.stringify(p.buildBrief||null);openBuildBrief('p2');document.getElementById('briefPriorities').value='Crew rewrite';const blocked=!saveBuildBrief();const unchanged=JSON.stringify(p.buildBrief||null)===hold;p.buildBrief=hold?JSON.parse(hold):undefined;state.session={role:'builder',name:'You'};return blocked&&unchanged;})()")===true);
+t('saving the brief does not drop packet signatures', $("(function(){state.session={role:'builder',name:'You'};state.activeId='p2';const p=state.projects.find(x=>x.id==='p2');if(!packetSignedBoth(p,'windows'))return false;const hold=JSON.stringify(p.buildBrief||null);openBuildBrief('p2');document.getElementById('briefPriorities').value='New priorities for this house.';const ok=saveBuildBrief();const kept=packetSignedBoth(p,'windows')&&!packetIsStale(p,'windows');p.buildBrief=hold?JSON.parse(hold):undefined;return ok&&kept;})()")===true);
+t('packet snapshot carries the brief', $("(function(){const p=state.projects.find(x=>x.id==='p2');p.buildBrief={priorities:'Keep the oak.',look:'Black windows.',tradeoffs:'Spend on kitchen.',by:'You',at:Date.now()};const b=(p.bookings||[])[0]||{id:'sim',trade:'windows',subName:'x',start:Date.now(),end:Date.now()};const snap=packetSnapshot(p,Object.assign({trade:'windows'},b));return snap.brief&&snap.brief.priorities==='Keep the oak.';})()")===true);
+t('house briefing shows the build brief', $("(function(){state.session={role:'builder',name:'You'};state.activeId='p2';const p=state.projects.find(x=>x.id==='p2');p.buildBrief={priorities:'Keep the oak at the drive.',look:'',tradeoffs:'',by:'You',at:Date.now()};return houseHTML(p).indexOf('Build brief')>=0&&houseHTML(p).indexOf('Keep the oak at the drive')>=0;})()")===true);
+t('guest packet names this house from the brief', SRC.indexOf('This house')>=0&&SRC.indexOf('g.brief')>=0);
+
 
 
 
@@ -2362,7 +2370,7 @@ t('scrim census is pinned', (function(){
   const ids=[];
   SRC.replace(/id="([^"]*Scrim)"/g,function(_,id){if(ids.indexOf(id)<0)ids.push(id);});
   const leave=['legalDocScrim','guestScrim','siteMenuScrim'];
-  return ids.length===64&&leave.every(function(id){return ids.indexOf(id)>=0;});
+  return ids.length===65&&leave.every(function(id){return ids.indexOf(id)>=0;});
 })());
 t('chips center their label', SRC.indexOf('justify-content:center')>=0&&SRC.indexOf('#fieldKindChips .chip')>=0);
 t('pickers say house not site', SRC.indexOf("title:'Which house?'")>=0&&SRC.indexOf("title:'Which site?'")<0);

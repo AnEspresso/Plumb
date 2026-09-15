@@ -3023,6 +3023,19 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 <div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeSelNotes()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveSelNotes()">Save</button></div></div>
   </div>
 
+  <div class="pmodal-scrim sheet-scrim sheet-2" id="briefScrim">
+    <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
+      <div class="sheet-head"><h4>Build brief</h4></div>
+<div class="sheet-body">
+<p class="fs-sm c-ink-3 mt-0 ml-0 mr-0 mb-3">What this house is after. Every phone on this job sees it.</p>
+<div class="field"><label>What matters most</label><textarea id="briefPriorities" rows="3" placeholder="A quiet house. Easy to keep. Room for everyone."></textarea></div>
+<div class="field"><label>Look</label><textarea id="briefLook" rows="2" placeholder="Materials, colors, spaces you want"></textarea></div>
+<div class="field"><label>Tradeoffs</label><textarea id="briefTradeoffs" rows="3" placeholder="Where to spend. What can stay simple."></textarea></div>
+<p class="fs-xs c-ink-3 mt-0 ml-0 mr-0 mb-0" id="briefBy"></p>
+</div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeBuildBrief()">Done</button><button class="b1 b-go btn btn-primary" id="briefSave" onclick="saveBuildBrief()">Save</button></div></div>
+  </div>
+
   <!-- generic info / demo prompt modal -->
   <div class="pmodal-scrim sheet-scrim" id="startScrim">
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
@@ -3885,7 +3898,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.416.0 - Crew confirms the packet';
+const PLUMB_VERSION='2.417.0 - Build brief on the house';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3893,7 +3906,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1789499606410;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.416.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.417.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4026,7 +4039,7 @@ function permitStatusFor(i,n,r){const phase=n>1?i/(n-1):0;if(r>=phase+0.15)retur
 function normalizePermits(p){if(p.permits)p.permits=p.permits.filter(pm=>!LEGACY_INSP_PERMITS.has(pm.name));if(p._permitsSeeded)return;const SS=stagesFor(p);const done=SS.filter(s=>p.stageDone&&p.stageDone[s.id]).length;const r=done/SS.length;const ex={};(p.permits||[]).forEach(pm=>{ex[pm.name]=pm.status;});p.permits=DEFAULT_PERMITS.map((name,i)=>({name,status:ex[name]||(done===0?'Not started':permitStatusFor(i,DEFAULT_PERMITS.length,r))}));p._permitsSeeded=true;}
 const SW={oak:'#C7A878,#9A7544',slate:'#8C9AA6,#5E6B78',dove:'#E4DFD5,#C9C2B4',clay:'#C08068,#9A5A44',sage:'#9AA47E,#717C55',dark:'#54504A,#33302B'};
 
-const SEED_VERSION=20; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
+const SEED_VERSION=21; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
 function sampleState(){
   const D=864e5; // one day in ms
   const ds=n=>{const x=new Date(Date.now()-n*D);const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());};
@@ -4080,6 +4093,7 @@ function sampleState(){
         payments:[],
         invoices:[{id:'inv_p1_1',no:'INV-001',title:'Exterior selections',due:ds(-10),items:[{label:'Fiber-cement siding upgrade — Exterior',amount:1200,selId:2}],total:1200,status:'sent',t:Date.now()-6*D,sentBy:'You',payments:[{id:'ip1',amount:600,date:ds(12),note:'Upgrade deposit'}]}],
         selNotes:'Homeowner to confirm cabinet color before framing. Standard lighting and plumbing-fixture allowances apply.',
+        buildBrief:{priorities:'Keep the oak. A quiet house they can live in for a long time.',look:'Black-clad windows, white oak floors, painted shaker kitchen.',tradeoffs:'Spend on windows and the kitchen. Lighting and fixtures stay on allowance until they pick.',by:'You',at:Date.now()-10*D},
         jurisdiction:{city:'Troy, MI',system:'BS&A Online',portalUrl:'https://bsaonline.com',inbox:'5120-linden-ridge-ct@inbox.plumb.app',feed:[
           {id:'f1',t:Date.now()-12e6,kind:'permit',ref:'Building Permit',status:'Issued',text:'Building Permit issued (BS&A status change)',applied:true},
           {id:'f2',t:Date.now()-5e6,kind:'inspection',ref:'site',status:'scheduled',text:'Footing / soil inspection scheduled — tomorrow AM',applied:false}
@@ -4150,6 +4164,7 @@ function sampleState(){
         invoices:[{id:'inv_p2_1',no:'INV-001',title:'Selections — kitchen & baths',due:ds(-6),items:[{label:'Quartz countertops upgrade',amount:1850,selId:3},{label:'Marble hex tile — primary bath',amount:600,selId:5},{label:'Plumbing fixtures — brass/black',amount:850,selId:6},{label:'Crown moulding — main floor',amount:1500,selId:8}],total:4800,status:'sent',t:Date.now()-9*D,sentBy:'You',payments:[{id:'ip1',amount:1000,date:ds(45),note:'Upgrade deposit'},{id:'ip2',amount:2000,date:ds(8),note:'Partial payment'}]}],
         payments:[],
         selNotes:'All-electric mechanicals. Crown at main floor only. Lighting allowance standard — homeowner sign-off pending on dining pendant.',
+        buildBrief:{priorities:'A quiet retreat that is easy to keep. The oak at the drive stays.',look:'Black-clad windows, dove-white kitchen, oak floors. Brass and black in the baths.',tradeoffs:'Spend on windows and the kitchen. Lighting stays on the allowance until they sign the dining pendant.',by:'You',at:Date.now()-20*D},
         jurisdiction:{city:'Ferndale, MI',system:'AccessMyGov',portalUrl:'https://www.accessmygov.com',inbox:'288-calderwood-ln@inbox.plumb.app',feed:[
           {id:'f1',t:Date.now()-20*D,kind:'inspection',ref:'foundation',status:'passed',text:'Foundation inspection passed',applied:true},
           {id:'f2',t:Date.now()-7e6,kind:'inspection',ref:'roughin',status:'scheduled',text:'Framing / rough-in inspection scheduled — Thu AM window',applied:false}
@@ -8481,6 +8496,85 @@ function logPickHouse(pid){
   openFieldNote();
 }
 function closeLogPick(){const el=document.getElementById('logPickScrim');if(el)el.classList.remove('show');}
+function buildBrief(p){
+  const b=(p&&p.buildBrief)||{};
+  return {
+    priorities:String(b.priorities||'').trim(),
+    look:String(b.look||'').trim(),
+    tradeoffs:String(b.tradeoffs||'').trim(),
+    by:String(b.by||'').trim(),
+    at:b.at||0
+  };
+}
+function buildBriefFilled(p){
+  const b=buildBrief(p);
+  return !!(b.priorities||b.look||b.tradeoffs);
+}
+function buildBriefLine(p){
+  const b=buildBrief(p);
+  const line=b.priorities||b.look||b.tradeoffs;
+  if(line)return line.length>120?line.slice(0,117)+'\u2026':line;
+  return (state.session&&state.session.role==='subs')?'Not written yet':'What matters, the look, the tradeoffs';
+}
+function buildBriefRowHTML(p){
+  if(!p)return '';
+  return '<div class="pkt-ask" onclick="openBuildBrief(\''+String(p.id)+'\')"><div><div class="k">Build brief</div><div class="m">'+esc(buildBriefLine(p))+'</div></div><span class="td-chev">\u203a</span></div>';
+}
+function buildBriefReadHTML(p){
+  const b=buildBrief(p);if(!buildBriefFilled(p))return '';
+  const row=function(title,sub){return '<div class="row"><div class="row-main"><div class="row-title">'+esc(title)+'</div>'+(sub?('<div class="row-sub">'+esc(sub)+'</div>'):'')+'</div></div>';};
+  let h='<div class="sec"><h2>This house</h2></div>';
+  if(b.priorities)h+=row('What matters most',b.priorities);
+  if(b.look)h+=row('Look',b.look);
+  if(b.tradeoffs)h+=row('Tradeoffs',b.tradeoffs);
+  return h;
+}
+let _briefPid=null;
+function openBuildBrief(pid){
+  const p=state.projects.find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  _briefPid=String(p.id);
+  const b=buildBrief(p);
+  const pr=document.getElementById('briefPriorities');
+  const lk=document.getElementById('briefLook');
+  const tr=document.getElementById('briefTradeoffs');
+  const by=document.getElementById('briefBy');
+  const sv=document.getElementById('briefSave');
+  if(pr)pr.value=b.priorities;
+  if(lk)lk.value=b.look;
+  if(tr)tr.value=b.tradeoffs;
+  const can=(state.session||{}).role==='builder'||(state.session||{}).role==='client';
+  if(pr)pr.readOnly=!can;if(lk)lk.readOnly=!can;if(tr)tr.readOnly=!can;
+  if(sv)sv.style.display=can?'':'none';
+  if(by){
+    if(b.at)by.textContent='Last saved'+(b.by?(' by '+b.by):'')+' \u00b7 '+fmtDue(b.at);
+    else by.textContent=can?'Saved on every phone on this job.':'The crew reads this. They do not change it.';
+  }
+  document.getElementById('briefScrim').classList.add('show');
+}
+function closeBuildBrief(){document.getElementById('briefScrim').classList.remove('show');_briefPid=null;}
+function saveBuildBrief(){
+  const pid=_briefPid;const p=state.projects.find(function(x){return String(x.id)===String(pid);});if(!p)return false;
+  const sess=state.session||{};
+  if(sess.role!=='builder'&&sess.role!=='client'){toast('Your builder and the homeowner write this');return false;}
+  const val=function(id){const el=document.getElementById(id);return el?String(el.value||'').trim():'';};
+  p.buildBrief={
+    priorities:val('briefPriorities').slice(0,3000),
+    look:val('briefLook').slice(0,1000),
+    tradeoffs:val('briefTradeoffs').slice(0,3000),
+    by:sess.name||(sess.role==='client'?'Homeowner':'Builder'),
+    at:Date.now()
+  };
+  persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}
+  try{pkPublishSoon();}catch(e){}
+  logEvent('buildBrief',p.street||p.name||'house');
+  toast('Build brief saved');
+  closeBuildBrief();
+  try{if(houseStillOpen())renderHouse();}catch(e){}
+  try{if(document.getElementById('clientview')&&document.getElementById('clientview').classList.contains('show'))renderClient();}catch(e){}
+  try{if(document.getElementById('subview')&&document.getElementById('subview').classList.contains('show'))renderSubView();}catch(e){}
+  try{refreshPacket();}catch(e){}
+  return true;
+}
 function renderHouse(){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(_housePid);});
   const ttl=document.getElementById('houseTitle');const sub=document.getElementById('houseSub');const body=document.getElementById('houseBody');
@@ -8519,6 +8613,7 @@ function houseHTML(p){
     if(isBuilder&&canGate('moneyJob')&&money&&money.indexOf('No money')<0)meta.push(money);
   }
   let h='<div class="pkt-strip '+(n?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
+  h+=buildBriefRowHTML(p);
   if(issues.length){
     _houseFacts=issues;
     const cap=3;const truncated=!_houseOpenAll&&issues.length>cap;
@@ -9775,6 +9870,7 @@ function renderSubView(){
   else meta.push('You will see a notice here when this house is ready for '+tr.label);
   if(_svBookings[0])meta.push('Next on this house · '+fmtWin(_svBookings[0]));
   let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
+  h+=buildBriefRowHTML(p);
   const facts=[];
   needConfirm.forEach(function(b){facts.push({k:fmtWin(b),m:'Confirm, change dates, or say you cannot make it',go:'svBkConfirm(\''+p.id+'\',\''+b.id+'\')'});});
   open.forEach(function(it){facts.push({k:it.cap||'Open item',m:areaText(it.area)||tr.label,go:''});});
@@ -12412,6 +12508,7 @@ function renderClient(){
     if(nb)meta.push((nbTrade?specLabel(nbTrade):'Crew')+' \u00b7 '+_fmtD(nb.start));
     meta.push('Still to pay \u00b7 '+usd(led.out));
     h+='<div class="pkt-strip '+(decisionCount?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div><div class="meta">'+esc(track.txt)+(meta.length?('<br>'+meta.map(esc).join('<br>')):'')+'</div></div>';
+    h+=buildBriefRowHTML(p);
     const facts=[];
     decisions.forEach(function(s){
       facts.push({k:s.item||'A finish to sign off',m:(s.cat||'')+(s.room&&s.room!=='—'?' \u00b7 '+s.room:''),go:'clientGo(\'specs\')'});
@@ -15958,6 +16055,7 @@ function packetHTML(p,tradeId){
   let h='';
   h+='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+' install packet</div></div>';
   h+='<div class="pkt-strip '+(warn?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
+  h+=buildBriefReadHTML(p);
 
   const bk=isBuilder&&bkWin;
   if(isBuilder){
@@ -16157,6 +16255,7 @@ function packetSnapshot(p,b){
     specs:sels,docs:docs,siteId:String(p.id),bookingId:String(b.id),resp:null,q:[],
     signed:packetSignedBoth(p,trade),stale:packetIsStale(p,trade),specAt:tradeSpecFingerprint(p,trade),
     work:packetWork(p,trade),
+    brief:buildBriefFilled(p)?{priorities:buildBrief(p).priorities,look:buildBrief(p).look,tradeoffs:buildBrief(p).tradeoffs}:null,
     ctx:(function(){
       const c={};
       const cap1=x=>String(x||'').charAt(0).toUpperCase()+String(x||'').slice(1);
@@ -16396,6 +16495,13 @@ function _gpRender(){
   h+='<div class="hero-s">'+esc(g.tradeLabel)+' \u00b7 '+esc(g.sub)+' \u00b7 from '+esc(g.builder)+'</div>';
   if(g.note)h+='<div class="hero-s">'+esc(g.note)+'</div>';
   h+='</div>';
+  const gb=g.brief||{};
+  if(gb.priorities||gb.look||gb.tradeoffs){
+    h+='<div class="sec"><h2>This house</h2></div>';
+    if(gb.priorities)h+=_gpRow('What matters most',esc(gb.priorities),'','');
+    if(gb.look)h+=_gpRow('Look',esc(gb.look),'','');
+    if(gb.tradeoffs)h+=_gpRow('Tradeoffs',esc(gb.tradeoffs),'','');
+  }
   if(g.resp&&g.resp.status==='confirmed'){
     h+='<div class="ok"><b>Confirmed.</b> You said these dates work'+(g.resp.t?(' \u00b7 '+new Date(g.resp.t).toLocaleDateString()):'')+'.</div>';
     h+='<button class="btn btn-primary btn-block" onclick="gpAddToCal()">Add to my calendar</button>';
@@ -16879,6 +16985,7 @@ function pkDiffWhat(prev,fresh){
     const pr=prev.ctx&&prev.ctx.readyOk,fr=fresh.ctx&&fresh.ctx.readyOk;
     if(!!pr!==!!fr)bits.push(fr?'House marked ready':'House readiness changed');
     if(JSON.stringify((prev.ctx&&prev.ctx.openItems)||[])!==JSON.stringify((fresh.ctx&&fresh.ctx.openItems)||[]))bits.push('Open items updated');
+    if(JSON.stringify(prev.brief||null)!==JSON.stringify(fresh.brief||null))bits.push('Build brief updated');
   }catch(e){}
   if(!bits.length)return '';
   if(bits.length===1)return bits[0];

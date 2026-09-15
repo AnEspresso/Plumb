@@ -210,6 +210,13 @@ function paint(){
   h+='<div class="hero-s">'+esc(g.tradeLabel)+' \u00b7 '+esc(g.sub)+' \u00b7 from '+esc(g.builder)+'</div>';
   if(g.note)h+='<div class="hero-s">'+esc(g.note)+'</div>';
   h+='</div>';
+  var gb=g.brief||{};
+  if(gb.priorities||gb.look||gb.tradeoffs){
+    h+='<div class="sec"><h2>This house</h2></div>';
+    if(gb.priorities)h+=row("What matters most",esc(gb.priorities),"","");
+    if(gb.look)h+=row("Look",esc(gb.look),"","");
+    if(gb.tradeoffs)h+=row("Tradeoffs",esc(gb.tradeoffs),"","");
+  }
   if(g.resp&&g.resp.status==="confirmed"){
     h+='<div class="ok"><b>Confirmed.</b> You said these dates work'+(g.resp.t?(" \u00b7 "+new Date(g.resp.t).toLocaleDateString()):"")+".</div>";
     h+='<button class="btn btn-primary btn-block" onclick="gpAddToCal()">Add to my calendar</button>';
