@@ -3,7 +3,7 @@
 
 **v2.417.0 is live.** Build brief on the house: what matters most, the look, and the tradeoffs. Builder and homeowner write it. Crew reads it. It rides the house to every phone. Specs and sign-off stay put. Field Notes stay. Overlay stayed out.
 
-**v2.416.0** Crew confirms the current packet, records what was installed, and the builder verifies. Spec changes drop confirm the same way they drop sign-off. Dates, prices, and notes do not. Same texted link stays live. Field Notes stay. Overlay stayed out. Guest confirm on the texted link needs the packet rules published in Firebase (work field).
+**v2.416.0** Crew confirms the current packet, records what was installed, and the builder verifies. Spec changes drop confirm the same way they drop sign-off. Dates, prices, and notes do not. Same texted link stays live. Field Notes stay. Overlay stayed out. Guest confirm on a texted link is live (packet rules published).
 
 **v2.415.0** Home features the next packet; Needs you and Field Notes stay. Packet shows spec diffs. Sign-off drops on required details, add/remove selection, and packet-doc change — not on dates, prices, or notes.
 
@@ -29,7 +29,8 @@ Fingerprint boundary (broader is not better):
 - DROP sign-off and crew confirm: required install details; add/remove a selection on that packet; packet-doc replace/revision bump.
 - DO NOT drop: booking dates/crew/expiry; prices/invoices; field notes; optional unused specs; brief; admin audience.
 Same texted link still republishes live specs. Sign-off and confirm are what fall away.
-When un-parked: port behaviors against **our tree**, do not cherry-pick their commits. Next: AI only when it removes work. Rules still need Publish in Firebase for guest work.
+When un-parked: port behaviors against **our tree**, do not cherry-pick their commits. Next: AI only when it removes work. Guest packet work is published in Firebase.
+
 
 Do not merge workspace.js / workspace.css. Do not hide #ovCapture. Do not reskin sage. Do not deploy qa/staging as-is.
 
