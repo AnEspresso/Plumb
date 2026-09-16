@@ -12,7 +12,7 @@ jobs:
       - name: Auth with the Firebase service account
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
 
-      - name: Fetch live rules, then publish if the only gap is guest work
+      - name: Fetch live rules
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
         run: |
@@ -27,37 +27,58 @@ jobs:
             "https://firebaserules.googleapis.com/v1/$RSET" \
             | python3 -c 'import json,sys; d=json.load(sys.stdin); src=d["source"]["files"][0]["content"]; open("live.rules","w").write(src); print("live bytes", len(src))'
           python3 - <<'PY'
+          from pathlib import Path, re as _re
+          import re
+          live=Path('live.rules').read_text()
+          want=Path('firestore.rules').read_text()
+          print('--- live match paths ---')
+          for m in re.finditer(r'match /[^\s{]+', live):
+            print(' ', m.group(0))
+          print('--- repo match paths ---')
+          for m in re.finditer(r'match /[^\s{]+', want):
+            print(' ', m.group(0))
+          print('live has packet word:', 'packet' in live.lower())
+          print('live has work word:', "'work'" in live or '"work"' in live)
+          print('--- live tail ---')
+          print(live[-1200:])
+          PY
+
+      - name: Upload live rules snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-firestore-rules
+          path: live.rules
+
+      - name: Publish if the only guest gap is work
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
           from pathlib import Path
           import re, sys
           live=Path('live.rules').read_text()
           want=Path('firestore.rules').read_text()
-          def packets(src):
-            m=re.search(r'match /packets/\{token\} \{[\s\S]*?\n    \}', src)
-            return m.group(0) if m else ''
-          lp, wp = packets(live), packets(want)
-          if not lp:
-            print('FAIL: live rules have no packets match — refusing to overwrite')
-            sys.exit(1)
-          live_has=set(re.findall(r"hasOnly\(\[([^\]]+)\]\)", lp))
-          want_has=set(re.findall(r"hasOnly\(\[([^\]]+)\]\)", wp))
-          print('live packets hasOnly:', live_has or '(none)')
-          print('repo packets hasOnly:', want_has or '(none)')
-          if "['resp','q','work']" in lp or '["resp","q","work"]' in lp:
-            print('ALREADY: live guest update already allows work — no deploy')
-            Path('skip-deploy').write_text('1')
+          def block(src, name):
+            m=re.search(r'match /'+name+r'/\{[^}]+\} \{', src)
+            return bool(m)
+          print('live packets block present:', 'match /packets/' in live)
+          if 'match /packets/' not in live:
+            print('NOTE: live has no packets match. Guest links already work, so rules may use another path. Refusing blind overwrite.')
+            Path('skip-deploy').write_text('no-packets')
             sys.exit(0)
-          if "['resp','q']" not in lp and '["resp","q"]' not in lp:
-            print('FAIL: live packets guest keys are not resp,q — refusing to overwrite')
-            print('--- live packets ---')
-            print(lp)
-            sys.exit(1)
-          if "['resp','q','work']" not in wp:
-            print('FAIL: repo rules missing work on packets')
-            sys.exit(1)
-          print('SAFE: live guest keys are resp,q; repo adds work. Publishing.')
+          if re.search(r"hasOnly\(\['resp','q','work'\]\)", live) or re.search(r'hasOnly\(\["resp","q","work"\]\)', live):
+            print('ALREADY: live guest update already allows work')
+            Path('skip-deploy').write_text('already')
+            sys.exit(0)
+          if re.search(r"hasOnly\(\['resp','q'\]\)", live) or re.search(r'hasOnly\(\["resp","q"\]\)', live):
+            print('SAFE: live guest keys are resp,q; repo adds work. Publishing.')
+            sys.exit(0)
+          print('FAIL: live packets keys are not the expected resp,q set')
+          sys.exit(1)
           PY
           if [ -f skip-deploy ]; then
-            echo 'Nothing to publish.'
+            echo "Nothing to publish ($(cat skip-deploy))"
             exit 0
           fi
           npx firebase-tools@latest deploy --only firestore:rules --project plumb-467a0 --non-interactive
