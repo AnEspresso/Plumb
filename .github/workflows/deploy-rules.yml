@@ -1,0 +1,64 @@
+name: Deploy Firestore rules
+# Publishes firestore.rules to plumb-467a0. Does not deploy functions or storage.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Auth with the Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+
+      - name: Fetch live rules, then publish if the only gap is guest work
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: |
+          set -euo pipefail
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
+          TOKEN=$(gcloud auth print-access-token)
+          REL=$(curl -sS -H "Authorization: Bearer $TOKEN" \
+            "https://firebaserules.googleapis.com/v1/projects/plumb-467a0/releases/cloud.firestore")
+          echo "$REL" | python3 -c 'import json,sys; d=json.load(sys.stdin); print("live release", d.get("rulesetName","?"), d.get("createTime","?"))'
+          RSET=$(echo "$REL" | python3 -c 'import json,sys; print(json.load(sys.stdin)["rulesetName"])')
+          curl -sS -H "Authorization: Bearer $TOKEN" \
+            "https://firebaserules.googleapis.com/v1/$RSET" \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); src=d["source"]["files"][0]["content"]; open("live.rules","w").write(src); print("live bytes", len(src))'
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, sys
+          live=Path('live.rules').read_text()
+          want=Path('firestore.rules').read_text()
+          def packets(src):
+            m=re.search(r'match /packets/\{token\} \{[\s\S]*?\n    \}', src)
+            return m.group(0) if m else ''
+          lp, wp = packets(live), packets(want)
+          if not lp:
+            print('FAIL: live rules have no packets match — refusing to overwrite')
+            sys.exit(1)
+          live_has=set(re.findall(r"hasOnly\(\[([^\]]+)\]\)", lp))
+          want_has=set(re.findall(r"hasOnly\(\[([^\]]+)\]\)", wp))
+          print('live packets hasOnly:', live_has or '(none)')
+          print('repo packets hasOnly:', want_has or '(none)')
+          if "['resp','q','work']" in lp or '["resp","q","work"]' in lp:
+            print('ALREADY: live guest update already allows work — no deploy')
+            Path('skip-deploy').write_text('1')
+            sys.exit(0)
+          if "['resp','q']" not in lp and '["resp","q"]' not in lp:
+            print('FAIL: live packets guest keys are not resp,q — refusing to overwrite')
+            print('--- live packets ---')
+            print(lp)
+            sys.exit(1)
+          if "['resp','q','work']" not in wp:
+            print('FAIL: repo rules missing work on packets')
+            sys.exit(1)
+          print('SAFE: live guest keys are resp,q; repo adds work. Publishing.')
+          PY
+          if [ -f skip-deploy ]; then
+            echo 'Nothing to publish.'
+            exit 0
+          fi
+          npx firebase-tools@latest deploy --only firestore:rules --project plumb-467a0 --non-interactive
+          echo 'PUBLISHED firestore.rules'
