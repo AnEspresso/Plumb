@@ -94,6 +94,18 @@ service cloud.firestore {
     match /qbStates/{stateId} { allow read, write: if false; }
 
     match /packets/{token} {
+      function guestWorkOk() {
+        return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['work'])
+          || (
+            resource.data.signed == true
+            && resource.data.stale != true
+            && resource.data.specAt is string
+            && resource.data.specAt.size() > 0
+            && request.resource.data.work.keys().hasOnly(['fp', 'ack', 'installed'])
+            && request.resource.data.work.fp is string
+            && request.resource.data.work.fp == resource.data.specAt
+          );
+      }
       allow get: if resource.data.expires is int
                  && resource.data.expires > request.time.toMillis();
       allow list: if false;
@@ -104,8 +116,11 @@ service cloud.firestore {
                  && resource.data.expires > request.time.toMillis()
                  && (
                    signedIn()
-                   || request.resource.data.diff(resource.data)
-                        .affectedKeys().hasOnly(['resp','q','work'])
+                   || (
+                     request.resource.data.diff(resource.data)
+                       .affectedKeys().hasOnly(['resp','q','work'])
+                     && guestWorkOk()
+                   )
                  )
                  && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['resp'])
                       || request.resource.data.resp.status in ['confirmed','change'])

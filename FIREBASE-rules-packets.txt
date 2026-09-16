@@ -12,7 +12,10 @@ the same pattern as a Google Docs share link. These rules make that safe:
   - A guest can UPDATE only the "resp" field (their confirm / change
     request), the "q" field (their questions, capped at ten), and the
     "work" field (crew confirm / what was installed), only before expiry.
-    Signed-in builders can update the rest so the same link stays live.
+    Guest work must carry fp equal to the packet's specAt, the packet
+    must be signed and not stale, and work may only include fp, ack,
+    and installed. Signed-in builders can update the rest so the same
+    link stays live.
 
 WHERE TO PASTE
 Firebase console -> Build -> Firestore Database -> Rules tab.
@@ -20,6 +23,18 @@ Inside your existing  match /databases/{database}/documents {  block,
 alongside your other match rules, add this block, then press Publish:
 
     match /packets/{token} {
+      function guestWorkOk() {
+        return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['work'])
+          || (
+            resource.data.signed == true
+            && resource.data.stale != true
+            && resource.data.specAt is string
+            && resource.data.specAt.size() > 0
+            && request.resource.data.work.keys().hasOnly(['fp', 'ack', 'installed'])
+            && request.resource.data.work.fp is string
+            && request.resource.data.work.fp == resource.data.specAt
+          );
+      }
       allow get: if resource.data.expires is int
                  && resource.data.expires > request.time.toMillis();
       allow list: if false;
@@ -30,8 +45,11 @@ alongside your other match rules, add this block, then press Publish:
                  && resource.data.expires > request.time.toMillis()
                  && (
                    request.auth != null
-                   || request.resource.data.diff(resource.data)
-                        .affectedKeys().hasOnly(['resp','q','work'])
+                   || (
+                     request.resource.data.diff(resource.data)
+                       .affectedKeys().hasOnly(['resp','q','work'])
+                     && guestWorkOk()
+                   )
                  )
                  && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['resp'])
                       || request.resource.data.resp.status in ['confirmed','change'])

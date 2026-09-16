@@ -378,9 +378,10 @@ function writeResp(resp){
 }
 window.gpConfirm=function(){writeResp({status:"confirmed",t:Date.now()});};
 function writeWork(part,extra){
-  if(!_snap||_snap.stale||_snap.signed===false){toast("Sign-off no longer applies");return;}
-  var w=Object.assign({},_snap.work||{});
+  if(!_snap||_snap.stale||_snap.signed===false||!_snap.specAt){toast("Sign-off no longer applies");return;}
+  var w=Object.assign({},_snap.work||{},{fp:_snap.specAt});
   if(part==="installed"&&!(w.ack&&w.ack.at)){toast("Confirm the instructions first");return;}
+  delete w.verified;
   w[part]=Object.assign({by:(_snap.sub||"Crew"),at:Date.now()},extra||{});
   _snap.work=w;
   var d=db();
