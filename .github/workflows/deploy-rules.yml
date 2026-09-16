@@ -64,17 +64,21 @@ jobs:
             return bool(m)
           print('live packets block present:', 'match /packets/' in live)
           if 'match /packets/' not in live:
-            print('NOTE: live has no packets match. Guest links already work, so rules may use another path. Refusing blind overwrite.')
+            print('NOTE: live has no packets match. Refusing blind overwrite.')
             Path('skip-deploy').write_text('no-packets')
             sys.exit(0)
-          if re.search(r"hasOnly\(\['resp','q','work'\]\)", live) or re.search(r'hasOnly\(\["resp","q","work"\]\)', live):
-            print('ALREADY: live guest update already allows work')
+          live_bound='guestWorkOk' in live and 'work.fp' in live and 'resource.data.specAt' in live
+          want_bound='guestWorkOk' in want and 'work.fp' in want
+          print('live bound to specAt:', live_bound)
+          print('repo bound to specAt:', want_bound)
+          if live_bound:
+            print('ALREADY: live guest work is bound to current specs')
             Path('skip-deploy').write_text('already')
             sys.exit(0)
-          if re.search(r"hasOnly\(\['resp','q'\]\)", live) or re.search(r'hasOnly\(\["resp","q"\]\)', live):
-            print('SAFE: live guest keys are resp,q; repo adds work. Publishing.')
+          if want_bound and 'match /packets/' in live:
+            print('SAFE: live packets exist; repo binds guest work to specAt. Publishing.')
             sys.exit(0)
-          print('FAIL: live packets keys are not the expected resp,q set')
+          print('FAIL: live packets keys are not the expected set')
           sys.exit(1)
           PY
           if [ -f skip-deploy ]; then
