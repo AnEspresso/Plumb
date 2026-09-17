@@ -1,4 +1,4 @@
-**v2.420.0 ready to ship.** Ink of 2.419: confirm stays bound to current specs whether the crew is signed in or not. A homeowner cannot rewrite builder details. A crew cannot delete the builder's records or open the spec editor. Money-off PMs stay out of costs. Notices stay on the account that heard them. Exit example shows the sign-in door. The brief rides the same texted link. Field Notes stay. Overlay stayed out. Packet rules publish with this build.
+**v2.421.0 ready to ship.** Confirm sits above the sheet that asked for it — Field Notes delete is no longer behind the note. Closing a question or booking from Needs You returns to that list. Privacy from Legal returns to Legal; from the door it does not. After a spec change, the old→new line and the crew hold stay until both have signed. Overlay stayed out. Capture stays. Same texted link.
 
 
 
@@ -18,7 +18,7 @@
 GitHub (read only, do not merge):
 - `codex/siteplumb-communication-loop-qa` @ `051b2a82` — pre-overlay engine (key, diff, withdraw, holds, link/retry). **No clean whole-commit lift** — those commits also mix finance UI, QA infra, and date/doc hashing we do not want.
 - `codex/staging-recovery-appcheck` @ `cab87fa` — overlay + `qa/staging/`. Staging is a **spec**, not a deploy.
-- `main` is 2.419.0. 2.420.0 is ready to ship.
+- `main` is 2.420.0. 2.421.0 is ready to ship.
 
 Regressions Astra named (existing-app suite, not staging-security tests):
 - QA branch: **29**.
