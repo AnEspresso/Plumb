@@ -1229,6 +1229,9 @@ t('homeowner listens stay homeowner', SRC.split('function siteRoleFor')[1].slice
 t('homeowner settings hide company', SRC.split('function renderSettings')[1].slice(0,500).indexOf("hat!=='client'")>=0);
 t('selections keep the house', SRC.indexOf('let _clientHold=null')>=0&&SRC.indexOf('function clientRetryHouse')>=0);
 t('hat is remembered on the account', SRC.indexOf('hatRole')>=0&&SRC.indexOf("collection('users').doc(cred.user.uid).get()")>=0);
+t('A-Z is by street name not house number', SRC.indexOf('function streetAzKey')>=0&&SRC.split('function renderOvCards')[1].slice(0,2500).indexOf('streetAzKey(a).localeCompare')>=0);
+t('homeowner House sits at the bottom', SRC.indexOf('id="clHouseBar"')>=0&&SRC.split('function renderClient')[1].slice(0,1800).indexOf("clHouseBar")>=0);
+t('homeowner schedule is above the paper', SRC.indexOf('#calview{z-index:var(--z-sheet);}')>=0);
 t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter')>=0&&SRC.split('function openNotifyCenter')[1].split('const Org=')[0].indexOf('Send a test')>=0&&SRC.indexOf('function pushTest')>=0);
 t('push test targets this phone', SRC.indexOf("fnCall('notifyTest',{token:tok})")>=0&&SRC.indexOf('listenForeground')>=0);
 t('Notify object is closed', SRC.split('listenForeground(){')[1].split('function navFor')[0].indexOf('};')>=0);
@@ -1275,7 +1278,7 @@ t('walk hear tools', SRC.indexOf('function tourTrace')>=0&&SRC.indexOf('function
 t('walk see tools', SRC.indexOf('function tourSeeSnap')>=0&&SRC.indexOf('__tourSee')>=0);
 t('the house list pills are Needs You, decisions, A-Z', $("SORTLABELS.recent")==='Recent decisions'&&$("String(renderOvSortRow)").indexOf('ov-allpill')<0);
 t('coming up rest of week is Calendar', $("String(renderToday)").indexOf('openCal')>=0&&$("String(renderToday)").indexOf('comingUpItems')>=0&&$("String(renderToday)").indexOf('Calendar')>=0);
-t('the day sheet sits over the calendar', SRC.indexOf('#dayScrim,#idleScrim,#invScrim,#payScrim{z-index:var(--z-sheet-2);}')>=0&&SRC.indexOf('#calview{z-index:var(--z-nav);}')>=0&&SRC.indexOf('--z-sheet-2:210')>=0&&SRC.indexOf('--z-nav:100')>=0);
+t('the day sheet sits over the calendar', SRC.indexOf('#dayScrim,#idleScrim,#invScrim,#payScrim{z-index:var(--z-sheet-2);}')>=0&&SRC.indexOf('#calview{z-index:var(--z-sheet);}')>=0&&SRC.indexOf('--z-sheet-2:210')>=0&&SRC.indexOf('--z-nav:100')>=0);
 t('back to a list keeps your place', $("String(nyOpenHouse)").indexOf("saveScroll('home')")>=0&&$("String(houseLeave)").indexOf("saveScroll('house')")>=0&&$("String(showOverview)").indexOf('applyScroll')>=0&&$("String(closeHouse)").indexOf("applyScroll('home')")>=0);
 t('A-Z keeps the portfolio card', $("String(renderOvCards)").indexOf('localeCompare')>=0&&$("String(renderOvCards)").indexOf('nyCardBits')>=0);
 t('tapping a house card opens the briefing on home', (function(){
@@ -2311,7 +2314,7 @@ t('Field Notes mark is 82 by 56', (function(){
 t('Coming up rows still open a booking', $("String(renderToday)").indexOf('openBk')>=0&&$("String(renderToday)").indexOf('ov-coming')>=0);
 t('Your houses keeps the sort pills for the tour', $("!!document.getElementById('ovSortRow')")===true&&$("String(renderOvSortRow)").indexOf('data-sort')>=0);
 t('Find a street lives with Your houses', SRC.indexOf('id="ovSearch"')>SRC.indexOf('id="ovBuildsHd"')&&$("document.getElementById('ovSearch').placeholder")==='Find a street');
-t('calendar House back is bottom row', SRC.indexOf('const calBack=')>=0&&SRC.indexOf('id="calDoneBtn" onclick="closeCal()"')>=0&&SRC.split('id="calview"')[1].split('id="calBody"')[0].indexOf('id="calDoneBtn"')<0);
+t('calendar House back is bottom row', SRC.indexOf('id="calFoot"')>=0&&SRC.indexOf('id="calDoneBtn" onclick="closeCal()"')>=0&&SRC.split('id="calview"')[1].split('id="calBody"')[0].indexOf('id="calDoneBtn"')<0);
 t('progress House sits on a paper bar', SRC.indexOf('id="deskBar"')>=0&&SRC.indexOf('id="deskBack"')>=0&&SRC.indexOf('body.on-house-desk #deskBar')>=0);
 t('money Done is a bottom pill', SRC.split('id="budgetScrim"')[1].split('id="costLineScrim"')[0].indexOf('id="budgetDoneBtn"')>=0&&SRC.split('id="budgetScrim"')[1].split('id="costLineScrim"')[0].indexOf('leave-bar')>=0);
 t('leave bar is the shared bottom exit', SRC.indexOf('.leave-bar{')>=0&&SRC.split('id="houseScrim"')[1].split('id="logPickScrim"')[0].indexOf('id="houseDoneBtn"')>=0&&SRC.split('id="houseScrim"')[1].split('id="logPickScrim"')[0].indexOf('btn-quiet')<0);

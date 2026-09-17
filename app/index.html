@@ -1171,7 +1171,7 @@
 
   /* ───── crew view ───── */
   .subview{position:absolute;inset:0;background:var(--paper);display:none;flex-direction:column;overflow:hidden;}
-  #calview{z-index:var(--z-nav);}   /* the calendar opens above sub/client site views */
+  #calview{z-index:var(--z-sheet);}   /* the calendar opens above sub/client site views */
   .subview.show{display:flex;}
   .sv-head{padding:max(var(--s-5),env(safe-area-inset-top)) var(--s-6) var(--s-4);display:flex;align-items:flex-start;justify-content:space-between;flex:0 0 auto;}
   .sv-head .wm{font-family:'Fraunces',Georgia,serif;font-size:var(--t-xl);font-weight:500;display:flex;align-items:center;gap:9px;}
@@ -2422,7 +2422,8 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 .pmodal-scrim.sheet-2,.ss-scrim{z-index:var(--z-sheet-2);}
 .sitemenu-scrim,.sitemenu{z-index:var(--z-sheet);}
 .scrim,.sheet{z-index:var(--z-sheet);}
-.login,.overview,.subview,#calview{z-index:var(--z-nav);}
+.login,.overview,.subview{z-index:var(--z-nav);}
+#calview{z-index:var(--z-sheet);}
 .lightbox,.install-gate,#guestScrim,#legalDocScrim,.invbar,.toast{z-index:var(--z-toast);}
 .exc-banner{z-index:var(--z-nav);}
 .tour-catch,.tc-p,.tour-holeframe,.tour-bubble,.devpanel{z-index:var(--z-tour);}
@@ -2650,6 +2651,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       </div>
     </div>
     <div class="sv-body" id="calBody"></div>
+    <div class="leave-bar" id="calFoot"><button type="button" class="btn btn-secondary" id="calDoneBtn" onclick="closeCal()"><span>Done</span></button></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="hoScrim">
@@ -2790,6 +2792,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <div class="hdr-actions"><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="ov-logout btn btn-secondary" onclick="logout()">Sign out</button></div>
     </div>
     <div class="sv-body" id="clBody"></div>
+    <div class="leave-bar" id="clHouseBar" hidden><button type="button" class="btn btn-secondary" onclick="clientGo('home')"><span>House</span></button></div>
     <div class="cl-nav hide">
       <div class="tabs">
         <button class="tab on" id="cltab-home" onclick="clientGo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg><span>Home</span></button>
@@ -3899,15 +3902,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.426.0 - The homeowner stays a homeowner';
+const PLUMB_VERSION='2.427.0 - House at the bottom';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789684699336;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.426.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789685983361;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.427.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8138,6 +8141,7 @@ function houseCall(p){
   const core=noNum.replace(/\s+(Lane|Ln|Drive|Dr|Avenue|Ave|Street|St|Road|Rd|Court|Ct|Way|Row|Boulevard|Blvd)\.?$/i,'');
   return (core.split(/\s+/)[0]||s);
 }
+function streetAzKey(p){return String((p&&(p.street||p.name))||'').replace(/^\d+\s+/,'').toLowerCase();}
 function markHouseDone(pid,on){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
   if(on===false){delete p.doneAt;p.doneAskUntil=0;persist();logEvent('houseOnBook',p.street||p.name);toast(houseCall(p)+' is on the book again');}
@@ -8584,7 +8588,7 @@ function openLogPick(){
   saveScroll('home');
   const hs=document.getElementById('houseScrim');
   if(hs&&hs.classList.contains('show')&&_housePid){logPickHouse(_housePid);return;}
-  const ps=(visibleProjects()||[]).slice().sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
+  const ps=(visibleProjects()||[]).slice().sort(function(a,b){return streetAzKey(a).localeCompare(streetAzKey(b));});
   if(!ps.length){toast('Add a house first');return;}
   if(ps.length===1){logPickHouse(ps[0].id);return;}
   const el=document.getElementById('logPickBody');if(!el)return;
@@ -9024,12 +9028,12 @@ function renderOvCards(){
       return tb-ta;
     });
   }else{
-    list.sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
+    list.sort(function(a,b){return streetAzKey(a).localeCompare(streetAzKey(b));});
   }
   list=list.filter(match);
   let finished=done.filter(match);
   if(_ovSort==='attn'&&!q)finished=[];
-  else finished.sort(function(a,b){return String(a.street||a.name||'').localeCompare(String(b.street||b.name||''));});
+  else finished.sort(function(a,b){return streetAzKey(a).localeCompare(streetAzKey(b));});
   let head='';
   if(projs.length&&!q){
     if(_ovSort==='recent'){
@@ -12664,6 +12668,7 @@ function renderClient(){
   const p=clientProj();
   if(!p){
     try{document.getElementById('clWho').textContent='Homeowner';}catch(e){}
+    try{const bar=document.getElementById('clHouseBar');if(bar)bar.setAttribute('hidden','');}catch(e){}
     const b=document.getElementById('clBody');
     if(b)b.innerHTML='<div class="empty py-4 px-3">Waiting for your builder to share this house. Stay here — it appears as soon as they confirm.</div><div class="px-3"><button type="button" class="btn btn-secondary btn-block" onclick="clientRetryHouse()">Try again</button></div>';
     return;}
@@ -12697,8 +12702,7 @@ function renderClient(){
   const decisionCount=new Set([...decisions,...openQs].map(s=>s.id)).size;
   const T=clientTab;let h='';
   h+=`<div class="mt-0 ml-0 mr-0 mb-3"><span class="syncpill"><span class="sd"></span>On this device</span></div>`;
-  const houseBack='<button class="sv-back" onclick="clientGo(\'home\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>House</button>';
-
+  try{const bar=document.getElementById('clHouseBar');if(bar){if(T==='home')bar.setAttribute('hidden','');else bar.removeAttribute('hidden');}}catch(e){}
   if(T==='home'){
     const stripSt=decisionCount?(decisionCount===1?'One thing still needs you':(decisionCount+' still need you')):'All clear on this house';
     const meta=[];
@@ -12744,7 +12748,6 @@ function renderClient(){
   }
 
   else if(T==='progress'){
-    h+=houseBack;
     const logT=d=>{const a=(d||'').split('-').map(Number);return a.length===3?new Date(a[0],a[1]-1,a[2]).getTime():0;};
     const sharedRecs=(p.items||[]).filter(it=>(!it.sample||state.showSamples)&&it.share).map(it=>({t:it.t||0,kind:'rec',it}));
     const sharedLogs=(p.logs||[]).filter(l=>l.share).map(l=>({t:l.t||logT(l.date),kind:'log',l}));
@@ -12757,7 +12760,6 @@ function renderClient(){
   }
 
   else if(T==='specs'){
-    h+=houseBack;
     h+=`<button class="cl-concern" onclick="openIdea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg>Share an idea, inspiration, or quote</button>`;
     // packets whose specs are confirmed and awaiting the homeowner's sign-off
     const signTrades=[...new Set((p.subs||[]).map(sb=>sb.specialty))].filter(tr=>{
@@ -12805,7 +12807,6 @@ function renderClient(){
   }
 
   else if(T==='docs'){
-    h+=houseBack;
     h+=`<div class="sec"><h2>Documents</h2></div>`;
     h+=(p.docs||[]).filter(docAudClient).map(d=>`<div class="doc" onclick="openDocFile('${p.id}','${esc(d.fileId||'')}','${esc(d.fileUrl||'')}')"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/></svg></div><div class="info"><div class="n">${esc(d.n)}</div><div class="m">${esc(d.m)}</div></div><div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div></div>`).join('')||`<div class="empty">No documents shared yet.</div>`;
   }
@@ -15396,7 +15397,7 @@ function openCal(keepCrew){
   }
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   document.getElementById('calview').classList.add('show');renderCal();
-  try{labelHouseBack(document.getElementById('calDoneBtn'),'Done');}catch(e){}}
+  try{const b=document.getElementById('calDoneBtn');if(b){const sp=b.querySelector('span');if(sp)sp.textContent=calIsClient()?'House':'Done';}}catch(e){}}
 function openClientCal(){
   const p=clientProj();
   if(p){try{Data.setActive(p.id);}catch(e){}calSiteFilter=String(p.id);}
@@ -15531,17 +15532,16 @@ function renderCal(){
     +'</div>';
   const emptyMonth=(calIsClient()&&!monthBs.length)?'<div class="empty mt-3 ml-1 mr-1 mb-0">No crews on the calendar this month.</div>':'';
   const suggHTML='';
-  const calBack='<button class="btn btn-secondary" id="calDoneBtn" onclick="closeCal()"><span>Done</span></button>';
   const addBtn=calIsClient()
-    ?'<div class="money-actions">'+calBack+'</div>'
+    ?''
     :(calIsSub()
-      ?'<div class="money-actions">'+calBack+'<button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Block time off</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>'
-      :'<div class="money-actions">'+calBack+'<button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Schedule a crew</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>');
+      ?'<div class="money-actions"><button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Block time off</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>'
+      :'<div class="money-actions"><button class="btn btn-primary btn-block" onclick="openBk(null,Date.now())">Schedule a crew</button><button class="btn btn-secondary" onclick="calMore()" aria-label="More calendar actions">More</button></div>');
   el.innerHTML='<div class="cal-wrap"><div class="cal-main">'+chips+moveBanner+banner+wxBanner
     +`<div class="cal-nav"><div class="m">${calMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</div><div class="btns"><button onclick="calNav(-1)">\u2039</button><button class="today" onclick="calToday()">Today</button><button onclick="calNav(1)">\u203a</button></div></div>`
     +'<div class="cal-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>'
     +'<div class="cal-grid">'+grid+'</div>'+emptyMonth+'</div><div class="cal-side">'+legend+suggHTML+addBtn+'</div></div>';
-  try{labelHouseBack(document.getElementById('calDoneBtn'),'Done');}catch(e){}}
+  try{const b=document.getElementById('calDoneBtn');if(b){const sp=b.querySelector('span');if(sp)sp.textContent=calIsClient()?'House':'Done';}}catch(e){}}
 function openDay(ts){calDay=ts;renderDay();document.getElementById('dayScrim').classList.add('show');}
 function closeDay(){document.getElementById('dayScrim').classList.remove('show');}
 function renderDay(){
