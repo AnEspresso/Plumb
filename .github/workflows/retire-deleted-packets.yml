@@ -1,0 +1,24 @@
+name: Retire leftover packets
+# Closes guest links for deleted houses and the Astra Ink Test 2421 leftover.
+# Does not print tokens. Manual only.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Auth with the Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+
+      - name: Retire leftover packets
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: |
+          set -euo pipefail
+          npm i --no-audit --no-fund firebase-admin >/dev/null
+          node scripts/retire-deleted-packets.mjs
