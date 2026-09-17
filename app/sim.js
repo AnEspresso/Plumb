@@ -1791,6 +1791,12 @@ t('boot stands the full-screen nudge down when the bar takes the screen',
 t('homeowner invite link names the role', $("(function(){const p=P();p.invites=p.invites||[];p.invites.push({code:'PB-HOTEST1',role:'client',status:'open'});const u=plumbInviteLink('PB-HOTEST1');p.invites=p.invites.filter(i=>i.code!=='PB-HOTEST1');return u.indexOf('invite=PB-HOTEST1')>=0&&u.indexOf('r=client')>=0;})()")===true);
 t('crew invite link names the role', $("(function(){const p=P();p.invites=p.invites||[];p.invites.push({code:'PB-CRTEST1',role:'sub',status:'open'});const u=plumbInviteLink('PB-CRTEST1');p.invites=p.invites.filter(i=>i.code!=='PB-CRTEST1');return u.indexOf('r=sub')>=0;})()")===true);
 t('invite signup does not stamp a builder role from the picker', SRC.indexOf("const rpRole=invCode?'':")>=0);
+t('company signup roles are the four builder hats', $("Object.keys(RP_ROLES).sort().join(',')")==='office,owner,pm,superintendent');
+t('Your role picker has no homeowner or crew option', $("Array.from(document.getElementById('laRole').options).map(o=>o.value).join(',')")==='owner,pm,superintendent,office');
+t('signup role hint points homeowners and crew at the invite', $("document.querySelector('#laRoleRow .la-hint').textContent").toLowerCase().indexOf('invite')>=0);
+t('live sign-out returns to the splash', SRC.indexOf('function showSplash()')>=0&&$("String(liveSignOut)").indexOf('showSplash()')>=0);
+t('delete account returns to the splash', $("String(delAcctExecute)").indexOf('showSplash()')>=0);
+t('sign-out persists before dropping the profile', $("String(liveSignOut)").indexOf('Data.setSession(null)')<$("String(liveSignOut)").indexOf("removeItem('plumb.liveAuth')"));
 $("window.__snapLa={m:laMode,inv:document.getElementById('laInvite').value,role:document.getElementById('laRoleRow').style.display,hint:document.getElementById('laJoinHint').style.display}");
 $("laMode='signup';document.getElementById('laInvite').value='';_invRoleHint='';syncInviteSignupChrome()");
 t('signup without an invite still shows Your role', $("document.getElementById('laRoleRow').style.display")!=='none');
@@ -2321,7 +2327,8 @@ t('Crews list uses rows', $("document.querySelectorAll('#subList .row').length")
 t('Photos has one primary', $("document.querySelectorAll('#filesPhotos .btn-primary').length")===1);
 $('renderSettings()');
 t('Settings body has no extra primary', $("document.querySelectorAll('#settingsBody .btn-primary').length")===0);
-t('Settings Sign out is danger', ($("document.querySelector('#settingsBody .btn-danger')")&&$("document.querySelector('#settingsBody .btn-danger').textContent")||'').indexOf('Sign out')>=0);
+t('Settings Sign out is not delete', $("(function(){const b=Array.from(document.querySelectorAll('#settingsBody button')).find(x=>x.textContent==='Sign out');return !!(b&&b.classList.contains('btn-secondary')&&!b.classList.contains('btn-danger'));})()"));
+t('Settings Delete account is danger', $("(function(){const b=Array.from(document.querySelectorAll('#settingsBody button')).find(x=>/Delete account/.test(x.textContent));return !b||b.classList.contains('btn-danger');})()"));
 t('overview keeps the briefcase', SRC.indexOf('id="ovCompanyBtn"')>=0);
 t('overview header has no Sign out', (function(){
   const head=SRC.split('id="overview"')[1].split('id="ovToday"')[0];
@@ -2329,6 +2336,20 @@ t('overview header has no Sign out', (function(){
 })());
 t('Settings has one liveSignOut', $("String(renderSettings)").split('liveSignOut').length===2);
 t('overview status is meta', SRC.split('id="overview"')[1].split('id="ovToday"')[0].indexOf('class="meta" id="ovSync"')>=0);
+$("window.__snapSplash={ses:JSON.stringify(state.session),ov:document.getElementById('overview').classList.contains('show'),login:document.getElementById('login').classList.contains('hide')}");
+$("document.getElementById('login').classList.add('hide')");
+$('showOverview()');
+$('logout()');
+t('demo sign-out returns to the splash', $("document.getElementById('login').classList.contains('hide')")===false&&$("document.getElementById('overview').classList.contains('show')")===false);
+$("document.getElementById('login').classList.add('hide')");
+$('showOverview()');
+$("window.__liveOutDone=false;liveSignOut().then(function(){window.__liveOutDone=true;},function(){window.__liveOutDone=true;})");
+await new Promise(function(res){
+  const t0=Date.now();
+  (function tick(){if(w.__liveOutDone||Date.now()-t0>2500)res();else setTimeout(tick,30);})();
+});
+t('live sign-out returns to the splash too', $("document.getElementById('login').classList.contains('hide')")===false&&$("document.getElementById('overview').classList.contains('show')")===false);
+$("(function(){const s=window.__snapSplash;state.session=JSON.parse(s.ses);document.getElementById('overview').classList.toggle('show',!!s.ov);document.getElementById('login').classList.toggle('hide',!!s.login);delete window.__snapSplash;})()");
 t('Crews list has no Packet button', $("String(renderSubs)").indexOf('openPacket')<0&&$("document.querySelectorAll('#subList .btn-quiet').length")===0);
 t('Crew detail still opens the packet', $("String(openSubDetail)").indexOf("openPacket")>=0&&$("String(openSubDetail)").indexOf('Open packet')>=0);
 t('Crew detail packet is the primary', $("String(openSubDetail)").indexOf('btn-primary')>=0&&$("String(openSubDetail)").indexOf('editSubFromDetail')>=0);

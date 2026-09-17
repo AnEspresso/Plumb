@@ -1,3 +1,5 @@
+**v2.423.0 is live.** Sign out and delete account return you to the door. Homeowners and crew still join with an invite — they are not a company role. Overlay stayed out. Capture stays. Same texted link.
+
 **v2.422.0 is live.** The cloud holds membership, money, specs, and confirm. A homeowner cannot add people to the house, rewrite builder details, or mark Installed without the crew’s current confirm. Money-off team cannot touch costs. A deleted house takes its texted link with it. The crew you opened is the crew you book. Overlay stayed out. Capture stays. Same texted link.
 
 **v2.421.0 is live.** Confirm sits above the sheet that asked for it — Field Notes delete is no longer behind the note. Closing a question or booking from Needs You returns to that list. Privacy from Legal returns to Legal; from the door it does not. After a spec change, the old→new line and the crew hold stay until both have signed. Overlay stayed out. Capture stays. Same texted link.
@@ -21,7 +23,7 @@
 GitHub (read only, do not merge):
 - `codex/siteplumb-communication-loop-qa` @ `051b2a82` — pre-overlay engine (key, diff, withdraw, holds, link/retry). **No clean whole-commit lift** — those commits also mix finance UI, QA infra, and date/doc hashing we do not want.
 - `codex/staging-recovery-appcheck` @ `cab87fa` — overlay + `qa/staging/`. Staging is a **spec**, not a deploy.
-- `main` is 2.422.0.
+**v2.423.0 is live.** Sign out and delete account return you to the door. Homeowners and crew still join with an invite — they are not a company role. Overlay stayed out. Capture stays. Same texted link.
 
 Regressions Astra named (existing-app suite, not staging-security tests):
 - QA branch: **29**.
