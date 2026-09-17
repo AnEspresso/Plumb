@@ -149,8 +149,8 @@ t('stale meta from an old device cannot wipe bookings', (function(){
     const meta={id:p.id,name:p.name,bookings:[]};
     Object.keys(meta).forEach(k=>{if(!SYNC_COLLS.some(c=>c.f===k))p[k]=meta[k];});
     return p.bookings.length;})()`)===$("state.projects[1].bookings.length");})());
-t('siteRoleFor: members map wins over session role',
-  $("state.session={role:'client',auth:{uid:'uX'}};siteRoleFor({members:{uX:'sub'}})") === 'sub');
+t('siteRoleFor: session homeowner hat wins',
+  $("state.session={role:'client',auth:{uid:'uX'}};siteRoleFor({members:{uX:'sub'}})") === 'client');
 t('siteRoleFor: falls back to session subs->sub',
   $("state.session={role:'subs'};siteRoleFor({})") === 'sub');
 t('siteRoleFor: falls back to session client->client',
@@ -1219,11 +1219,16 @@ t('sheet contract exists', SRC.indexOf('function sheetContract')>=0&&SRC.indexOf
 t('sheet contract ignores picker pills', SRC.split('function sheetContract')[1].slice(0,1200).indexOf('ov-sortpill')>=0&&SRC.split('function sheetContract')[1].slice(0,1200).indexOf('actionBlacks')>=0);
 t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Open this house')>=0);
 t('adding a house opens that house', SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("openSiteFromOverview")>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf('showOverview()')>=0);
-t('homeowner waits for the share', SRC.indexOf('Waiting for your builder to share this house')>=0&&SRC.split('function clientProj')[1].slice(0,400).indexOf('return hit||null')>=0);
+t('homeowner waits for the share', SRC.indexOf('Waiting for your builder to share this house')>=0&&SRC.indexOf('function clientRetryHouse')>=0);
 t('a joined invite publishes that house', SRC.split('function approveClaim')[1].split('function redeemInvite')[0].indexOf('Sync._pushOne(p)')>=0&&SRC.split('function queueSync')[1].slice(0,900).indexOf('Sync.pushAll()')<0);
 t('saving one house does not upload the book', SRC.split('function queueSync')[1].slice(0,1200).indexOf('_syncDirty')>=0&&SRC.split('function queueSync')[1].slice(0,1200).indexOf('_pushOne')>=0);
 t('homeowner hat survives sign out', SRC.indexOf('function laSaveHat')>=0&&SRC.indexOf("localStorage.getItem('plumb.hats')")>=0&&SRC.split('function liveSignOut')[1].slice(0,700).indexOf('plumb.hats')<0);
 t('joined invites are stamped back onto the house', SRC.indexOf('function backfillJoinedInvites')>=0&&SRC.split('function backfillMemberships')[1].slice(0,500).indexOf('backfillJoinedInvites')>=0);
+t('a homeowner write does not stamp them builder', SRC.split('async _pushOne')[1].slice(0,1800).indexOf("sessRole==='builder'&&!mem[myUid]")>=0);
+t('homeowner listens stay homeowner', SRC.split('function siteRoleFor')[1].slice(0,400).indexOf("if(r==='client')return 'client'")>=0);
+t('homeowner settings hide company', SRC.split('function renderSettings')[1].slice(0,500).indexOf("hat!=='client'")>=0);
+t('selections keep the house', SRC.indexOf('let _clientHold=null')>=0&&SRC.indexOf('function clientRetryHouse')>=0);
+t('hat is remembered on the account', SRC.indexOf('hatRole')>=0&&SRC.indexOf("collection('users').doc(cred.user.uid).get()")>=0);
 t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter')>=0&&SRC.split('function openNotifyCenter')[1].split('const Org=')[0].indexOf('Send a test')>=0&&SRC.indexOf('function pushTest')>=0);
 t('push test targets this phone', SRC.indexOf("fnCall('notifyTest',{token:tok})")>=0&&SRC.indexOf('listenForeground')>=0);
 t('Notify object is closed', SRC.split('listenForeground(){')[1].split('function navFor')[0].indexOf('};')>=0);

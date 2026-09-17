@@ -1,0 +1,36 @@
+name: Heal a house member
+on:
+  workflow_dispatch:
+    inputs:
+      street:
+        description: Street substring to match
+        required: true
+      email:
+        description: Account email to stamp
+        required: true
+      role:
+        description: client, sub, or builder
+        required: true
+        default: client
+
+jobs:
+  heal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Auth with the Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+
+      - name: Heal
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          HEAL_STREET: ${{ github.event.inputs.street }}
+          HEAL_EMAIL: ${{ github.event.inputs.email }}
+          HEAL_ROLE: ${{ github.event.inputs.role }}
+        run: |
+          set -euo pipefail
+          npm i --no-audit --no-fund firebase-admin >/dev/null
+          node scripts/heal-member.mjs

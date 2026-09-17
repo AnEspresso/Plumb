@@ -3899,15 +3899,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.425.0 - Keep the hat';
+const PLUMB_VERSION='2.426.0 - The homeowner stays a homeowner';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789665572771;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.425.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789684699336;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.426.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5818,7 +5818,13 @@ async function mintTeamInvite(){
 let laMode='signin';
 function laProfile(){try{return JSON.parse(localStorage.getItem('plumb.liveAuth')||'null');}catch(e){return null;}}
 function laHats(){try{return JSON.parse(localStorage.getItem('plumb.hats')||'{}');}catch(e){return {};}}
-function laSaveHat(p){try{if(!p||!p.uid)return;const h=laHats();h[p.uid]={member:p.member||null,rpRole:p.rpRole||null,name:p.name||'',email:p.email||''};localStorage.setItem('plumb.hats',JSON.stringify(h));}catch(e){}}
+function laSaveHat(p){try{if(!p||!p.uid)return;const h=laHats();h[p.uid]={member:p.member||null,rpRole:p.rpRole||null,name:p.name||'',email:p.email||''};localStorage.setItem('plumb.hats',JSON.stringify(h));}catch(e){}
+  try{
+    if(!p||!p.uid||typeof firebase==='undefined'||!firebase.firestore||!firebase.apps.length)return;
+    const hatRole=(p.member&&p.member.role)||'';
+    const hatSite=(p.member&&p.member.siteId)||'';
+    firebase.firestore().collection('users').doc(p.uid).set({hatRole:hatRole,hatSite:hatSite,updatedAt:Date.now()},{merge:true});
+  }catch(e){}}
 function laSaveProfile(p){
   /* Saving a profile can change which account owns the live workspace. Swap the
      in-memory state to the new owner store the moment that happens — the old
@@ -5948,7 +5954,9 @@ async function liveAuthSubmit(){
       const prof={provider:'firebase',uid:cred.user.uid,email,emailVerified:!!cred.user.emailVerified,name:laMode==='signup'?name:(cred.user.displayName||email),rpRole:laMode==='signup'?rpRole:( (laProfile()&&laProfile().email===email&&laProfile().rpRole)||rpRole)};
       if(invCode){const m=await redeemInvite(invCode,prof);if(m===false)return;if(m){prof.member=m;if(m.rpRole)prof.rpRole=m.rpRole;if(m.gates)prof.gates=m.gates;_invClearHandoff();}}
       else{const old=laProfile();if(old&&old.email===email&&old.member)prof.member=old.member;
-        if(!prof.member&&prof.uid){const hat=laHats()[prof.uid];if(hat&&hat.member){prof.member=hat.member;if(hat.rpRole)prof.rpRole=hat.rpRole;if(hat.name)prof.name=hat.name;}}}
+        if(!prof.member&&prof.uid){const hat=laHats()[prof.uid];if(hat&&hat.member){prof.member=hat.member;if(hat.rpRole)prof.rpRole=hat.rpRole;if(hat.name)prof.name=hat.name;}}
+        if(!prof.member){try{const snap=await firebase.firestore().collection('users').doc(cred.user.uid).get();const d=snap.data()||{};
+          if(d.hatRole==='client'||d.hatRole==='sub'||d.hatRole==='team'){prof.member={role:d.hatRole,siteId:d.hatSite||'',rpRole:d.rpRole||'',gates:null};if(d.rpRole)prof.rpRole=d.rpRole;}}catch(e){}}}
       laSaveProfile(prof);laSaveHat(prof);laEnter(prof);
       if(laMode==='signup')try{_evAfterSignup(email);}catch(e){}
     }else{
@@ -6353,7 +6361,7 @@ function liveRoleFromSites(){
   if(!uid)return null;
   let sub=null,client=null;
   (state.projects||[]).forEach(function(p){
-    const r=p.members&&p.members[uid];
+    const r=(p.members&&p.members[uid])||((p.memberUids||[]).indexOf(uid)>=0&&(state.session&&state.session.member&&state.session.member.role))||'';
     const info=(p.memberInfo&&p.memberInfo[uid])||{};
     if(r==='sub'&&!sub)sub={role:'sub',siteId:String(p.id),name:info.name||'',trade:info.trade||'',email:info.email||''};
     if(r==='client'&&!client)client={role:'client',siteId:String(p.id),name:info.name||'',email:info.email||''};
@@ -6376,7 +6384,7 @@ function applyLiveRole(){
   }
   if(m.role==='client'&&s.role!=='client'){
     Data.setSession({role:'client',site:m.siteId,name:m.name||s.name||'',since:Date.now(),mode:'real',auth:s.auth,member:m});
-    try{const p=laProfile();if(p){p.member=m;laSaveProfile(p);}}catch(e){}
+    try{const p=laProfile();if(p){p.member=m;laSaveProfile(p);laSaveHat(p);}}catch(e){}
     try{document.getElementById('overview')?.classList.remove('show');}catch(e){}
     try{document.getElementById('subview')?.classList.remove('show');}catch(e){}
     try{showClientView();}catch(e){}
@@ -6802,8 +6810,10 @@ function renderCompany(){
 function renderSettings(){
   const el=document.getElementById('settingsBody');if(!el)return;
   const sess=state.session||{};const role=sess.role||'';
+  const hat=(sess.member&&sess.member.role)||'';
+  const onClient=!!(document.getElementById('clientview')&&document.getElementById('clientview').classList.contains('show'));
   let rows='';
-  if(role==='builder'){
+  if(role==='builder'&&hat!=='client'&&hat!=='sub'&&!onClient){
     rows+='<div class="sec"><h2>Company</h2></div>';
     rows+=SET_LIST_ROW('Company','People, calendar, invoices, new job','closeSettings();openCompany()');
     if(appMode()==='real'){
@@ -9191,7 +9201,8 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         const myUid=(state.session&&state.session.auth&&state.session.auth.uid)||this.uid||'';
         if((this.mode||'demo')==='live'){
           if(!myUid||this.authKind!=='account')return;        // only a real signed-in account may write live houses (anon/device would lock the doc)
-          if(!mem[myUid]){mem[myUid]='builder';}
+          const sessRole=(state.session&&state.session.role)||'';
+          if(sessRole==='builder'&&!mem[myUid])mem[myUid]='builder';
         }
         if(op.data)op.data.members=mem;
         this._cloudMembers=this._cloudMembers||{};this._cloudMembers[id]=mem;
@@ -9237,6 +9248,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           if(Object.keys(mem).length||uids.length){
             const still=!!(myUid&&(mem[myUid]||uids.indexOf(myUid)>=0));
             if(!still&&d.updatedBy!==this.deviceId){              // not (or no longer) a member
+              if((sess.role==='client'||sess.role==='subs')&&String(sess.site||'')===String(id))return;
               const idx=state.projects.findIndex(p=>String(p.id)===String(id));
               if(idx>=0){state.projects.splice(idx,1);                           // removal propagates: drop stale copy
                 if(String(state.activeId)===String(id))state.activeId=state.projects.length?state.projects[0].id:null;
@@ -9745,10 +9757,12 @@ const SYNC_COLLS=[
    map (the same thing the rules check), session role as fallback. Builder or
    unknown gets everything - over-subscribing is only safe for builders. ── */
 function siteRoleFor(p){
+  const r=state.session&&state.session.role;
+  if(r==='client')return 'client';
+  if(r==='subs')return 'sub';
   try{const s=state.session;const uid=(s&&s.auth&&s.auth.uid)||(Sync&&Sync.uid);
     if(uid&&p&&p.members&&p.members[uid])return p.members[uid];}catch(e){}
-  const r=state.session&&state.session.role;
-  return r==='subs'?'sub':(r==='client'?'client':'builder');
+  return 'builder';
 }
 function syncCollsFor(role){
   if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs');
@@ -10054,9 +10068,12 @@ function reopenSubItem(pid,id){Data.updateItem(pid,id,{status:'open'});logEvent(
 function subCapture(pid){Data.setActive(pid);openSheet();}
 
 /* ════════ homeowner (client) view ════════ */
+let _clientHold=null;
 function clientProj(){const s=state.session;
-  if(s&&s.site){const hit=(state.projects||[]).find(x=>String(x.id)===String(s.site));return hit||null;}
+  if(s&&s.site){const hit=(state.projects||[]).find(x=>String(x.id)===String(s.site));if(hit){_clientHold=hit;return hit;}
+    if(_clientHold&&String(_clientHold.id)===String(s.site))return _clientHold;return null;}
   return P();}
+function clientRetryHouse(){try{if(typeof Sync!=='undefined'){Sync.disconnect();if(fbConfig())Sync.init();}}catch(e){}renderClient();}
 let clientTab='home';
 let _clientMoneyOpen=false;
 function showClientView(){const s=state.session;if(s&&s.site)Data.setActive(s.site);clientTab='home';_clientMoneyOpen=false;
@@ -12648,7 +12665,7 @@ function renderClient(){
   if(!p){
     try{document.getElementById('clWho').textContent='Homeowner';}catch(e){}
     const b=document.getElementById('clBody');
-    if(b)b.innerHTML='<div class="empty py-4 px-3">Waiting for your builder to share this house. Stay here — it appears as soon as they confirm.</div>';
+    if(b)b.innerHTML='<div class="empty py-4 px-3">Waiting for your builder to share this house. Stay here — it appears as soon as they confirm.</div><div class="px-3"><button type="button" class="btn btn-secondary btn-block" onclick="clientRetryHouse()">Try again</button></div>';
     return;}
   document.getElementById('clWho').textContent='Homeowner · '+(p.street||p.name);
   const SS=stagesFor(p);

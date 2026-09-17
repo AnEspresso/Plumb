@@ -1,3 +1,5 @@
+**v2.426.0 is live.** A homeowner stays a homeowner — Selections is not a dead end, Settings is not Company, and signing back in does not empty the book. Overlay stayed out. Capture stays. Same texted link.
+
 **v2.425.0 is live.** Saving is one house, not the whole book. A homeowner keeps their hat after sign out. Another phone cannot overwrite who lives there. Overlay stayed out. Capture stays. Same texted link.
 
 **v2.424.0 is live.** The house you add is the house you open. A homeowner waits on screen until the builder shares it, and joining them publishes every house, not just the one in front of you. Overlay stayed out. Capture stays. Same texted link.
@@ -25,7 +27,7 @@
 GitHub (read only, do not merge):
 - `codex/siteplumb-communication-loop-qa` @ `051b2a82` — pre-overlay engine (key, diff, withdraw, holds, link/retry). **No clean whole-commit lift** — those commits also mix finance UI, QA infra, and date/doc hashing we do not want.
 - `codex/staging-recovery-appcheck` @ `cab87fa` — overlay + `qa/staging/`. Staging is a **spec**, not a deploy.
-- `main` is 2.425.0.
+- `main` is 2.426.0.
 
 Regressions Astra named (existing-app suite, not staging-security tests):
 - QA branch: **29**.

@@ -284,7 +284,7 @@ service cloud.firestore {
     match /users/{userId} {
       function okUserShape() {
         return request.resource.data.keys().hasOnly(
-                 ['name','email','rpRole','provider','fcm','tokens','t','createdAt','updatedAt'])
+                 ['name','email','rpRole','provider','fcm','tokens','t','createdAt','updatedAt','hatRole','hatSite'])
                && request.resource.size() < 50;
       }
       allow read: if signedIn() && uid() == userId;
