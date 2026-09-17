@@ -8,14 +8,13 @@ the same pattern as a Google Docs share link. These rules make that safe:
 
   - Anyone holding a token can READ that one doc, only until it expires.
   - Nobody can LIST the collection (tokens cannot be discovered).
-  - Only signed-in builders can CREATE packets.
-  - A guest can UPDATE only the "resp" field (their confirm / change
-    request), the "q" field (their questions, capped at ten), and the
-    "work" field (crew confirm / what was installed), only before expiry.
-    Guest work must carry fp equal to the packet's specAt, the packet
-    must be signed and not stale, and work may only include fp, ack,
-    and installed. Signed-in builders can update the rest so the same
-    link stays live.
+  - Only signed-in builders can CREATE packets, and must stamp createdBy.
+  - A guest (signed out or signed in) can UPDATE only resp, q, and work,
+    only before expiry. Guest work must carry fp equal to specAt, the
+    packet must be signed and not stale, work may only include fp, ack,
+    and installed, and installed requires a current ack. Signing in does
+    not skip that gate. The packet owner (createdBy) can update the rest
+    so the same link stays live.
 
 WHERE TO PASTE
 Firebase console -> Build -> Firestore Database -> Rules tab.
@@ -33,29 +32,45 @@ alongside your other match rules, add this block, then press Publish:
             && request.resource.data.work.keys().hasOnly(['fp', 'ack', 'installed'])
             && request.resource.data.work.fp is string
             && request.resource.data.work.fp == resource.data.specAt
+            && (
+              !request.resource.data.work.keys().hasAny(['installed'])
+              || (
+                request.resource.data.work.keys().hasAll(['ack'])
+                && request.resource.data.work.ack.keys().hasAll(['at'])
+                && request.resource.data.work.ack.at is int
+              )
+            )
+          );
+      }
+      function guestFieldsOk() {
+        return request.resource.data.diff(resource.data)
+                 .affectedKeys().hasOnly(['resp','q','work'])
+          && guestWorkOk()
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['resp'])
+               || request.resource.data.resp.status in ['confirmed','change'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['q'])
+               || request.resource.data.q.size() <= 10);
+      }
+      function packetPublisher() {
+        return request.auth != null
+          && (
+            (resource.data.createdBy == request.auth.uid
+              && request.resource.data.createdBy == resource.data.createdBy)
+            || (!resource.data.keys().hasAny(['createdBy'])
+              && request.resource.data.createdBy == request.auth.uid)
           );
       }
       allow get: if resource.data.expires is int
                  && resource.data.expires > request.time.toMillis();
       allow list: if false;
       allow create: if request.auth != null
+                 && request.resource.data.createdBy == request.auth.uid
                  && request.resource.data.expires is int
                  && request.resource.data.resp == null;
       allow update: if resource.data.expires is int
                  && resource.data.expires > request.time.toMillis()
-                 && (
-                   request.auth != null
-                   || (
-                     request.resource.data.diff(resource.data)
-                       .affectedKeys().hasOnly(['resp','q','work'])
-                     && guestWorkOk()
-                   )
-                 )
-                 && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['resp'])
-                      || request.resource.data.resp.status in ['confirmed','change'])
-                 && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['q'])
-                      || request.resource.data.q.size() <= 10);
-      allow delete: if request.auth != null;
+                 && (guestFieldsOk() || packetPublisher());
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
 AFTER PUBLISHING — 60-SECOND VERIFY
@@ -72,3 +87,5 @@ NOTE
 App Check stays enforced exactly as it is today; guests pass App Check
 automatically because they are running the real app from siteplumb.com.
 No Cloud Function changes. No index needed (single-doc gets only).
+ Crew bookings use a data.subName equality query; Firebase will offer
+the single-field index if it is not already automatic.

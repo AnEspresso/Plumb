@@ -1,4 +1,6 @@
-**v2.419.0 is live.** The cloud checks the packet before a crew confirm sticks. Confirm and recorded work must match the current specs. Old specs cannot authorize the new ones, even off the phone. Same texted link stays live. Field Notes stay. Overlay stayed out. Packet rules published with this build.
+**v2.420.0 ready to ship.** Ink of 2.419: confirm stays bound to current specs whether the crew is signed in or not. A homeowner cannot rewrite builder details. A crew cannot delete the builder's records or open the spec editor. Money-off PMs stay out of costs. Notices stay on the account that heard them. Exit example shows the sign-in door. The brief rides the same texted link. Field Notes stay. Overlay stayed out. Packet rules publish with this build.
+
+
 
 
 **v2.418.0 is live.** Homeowner: decisions first, money folded. Status strip and Selections are the work. Costs & payments sit under The rest of this house, and on Selections they stay closed until tapped. Invoice OK stays a decision. Field Notes stay. Overlay stayed out.
@@ -16,7 +18,7 @@
 GitHub (read only, do not merge):
 - `codex/siteplumb-communication-loop-qa` @ `051b2a82` — pre-overlay engine (key, diff, withdraw, holds, link/retry). **No clean whole-commit lift** — those commits also mix finance UI, QA infra, and date/doc hashing we do not want.
 - `codex/staging-recovery-appcheck` @ `cab87fa` — overlay + `qa/staging/`. Staging is a **spec**, not a deploy.
-- `main` is 2.419.0.
+- `main` is 2.419.0. 2.420.0 is ready to ship.
 
 Regressions Astra named (existing-app suite, not staging-security tests):
 - QA branch: **29**.

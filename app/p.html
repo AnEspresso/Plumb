@@ -158,7 +158,7 @@ function busy(){
   var ae=document.activeElement;
   return !!(ae&&(ae.id==="gpNote"||ae.id==="gpQText"||ae.id==="gpPrefCal"));
 }
-function sig(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||"",start:x.start,end:x.end,ctx:x.ctx||null,lastChange:x.lastChange||"",signed:!!x.signed,stale:!!x.stale,work:x.work||null});}
+function sig(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||"",start:x.start,end:x.end,ctx:x.ctx||null,lastChange:x.lastChange||"",signed:!!x.signed,stale:!!x.stale,work:x.work||null,brief:x.brief||null,specAt:x.specAt||""});}
 function apply(g){
   if(!g)return;
   if((g.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}
@@ -265,7 +265,7 @@ function paint(){
     h+='<div class="sec"><h2>Documents on file</h2></div>';
     h+=g.docs.map(function(n){return row(n,"Need a file? Reply to the text.","","");}).join("");
   }
-  var gw=g.work||{};
+  var gw=guestWorkOf(g);
   var gAck=!!(gw.ack&&gw.ack.at), gInst=!!(gw.installed&&gw.installed.at), gVer=!!(gw.verified&&gw.verified.at);
   if(g.stale||g.signed===false){
     h+='<div class="sec"><h2>On site</h2></div>';
@@ -371,28 +371,42 @@ window.gpToggleChange=function(){
   _cur=g.start?new Date(new Date(g.start).getFullYear(),new Date(g.start).getMonth(),1):null;gpRenderCal();
 };
 function writeResp(resp){
+  var prev=(_snap&&_snap.resp)||null;
   _snap.resp=resp;
   var d=db();
-  if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({resp:resp}).catch(function(){toast("Could not save \u2014 try again with a bar of signal");});}catch(e){toast("Could not save");}}
+  if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({resp:resp}).catch(function(){_snap.resp=prev;paint();toast("Could not save \u2014 try again with a bar of signal");});}catch(e){_snap.resp=prev;paint();toast("Could not save");}}
   paint();
 }
 window.gpConfirm=function(){writeResp({status:"confirmed",t:Date.now()});};
+function guestWorkOf(g){
+  var w=(g&&g.work)||{};
+  if(!g||!g.specAt||!w.fp||String(w.fp)!==String(g.specAt))return {};
+  if(!(w.ack||w.installed||w.verified))return {};
+  return w;
+}
 function writeWork(part,extra){
   if(!_snap||_snap.stale||_snap.signed===false||!_snap.specAt){toast("Sign-off no longer applies");return;}
-  var w=Object.assign({},_snap.work||{},{fp:_snap.specAt});
-  if(part==="installed"&&!(w.ack&&w.ack.at)){toast("Confirm the instructions first");return;}
-  delete w.verified;
-  w[part]=Object.assign({by:(_snap.sub||"Crew"),at:Date.now()},extra||{});
+  var cur=guestWorkOf(_snap);
+  var w;
+  if(part==="ack")w={fp:_snap.specAt,ack:Object.assign({by:(_snap.sub||"Crew"),at:Date.now()},extra||{})};
+  else{
+    if(part==="installed"&&!(cur.ack&&cur.ack.at)){toast("Confirm the instructions first");return;}
+    w=Object.assign({},cur,{fp:_snap.specAt});
+    delete w.verified;
+    w[part]=Object.assign({by:(_snap.sub||"Crew"),at:Date.now()},extra||{});
+  }
+  var prev=_snap.work;
   _snap.work=w;
   var d=db();
-  if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({work:w}).catch(function(){toast("Could not save \u2014 try again with a bar of signal");});}catch(e){toast("Could not save");}}
+  if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({work:w}).then(function(){toast(part==="ack"?"Instructions confirmed":"Work recorded");}).catch(function(){_snap.work=prev;paint();toast("Could not save \u2014 try again with a bar of signal");});}catch(e){_snap.work=prev;paint();toast("Could not save");}}
+  else toast(part==="ack"?"Instructions confirmed":"Work recorded");
   paint();
 }
-window.gpAck=function(){writeWork("ack");toast("Instructions confirmed");};
+window.gpAck=function(){writeWork("ack");};
 window.gpRecordInstall=function(){
   var note=((document.getElementById("gpWorkNote")||{}).value||"").trim().slice(0,300);
   if(!note){toast("Add a note");return;}
-  writeWork("installed",{note:note});toast("Work recorded");
+  writeWork("installed",{note:note});
 };
 window.gpSendChange=function(){
   var sv=(document.getElementById("gpStart")||{}).value,ev=(document.getElementById("gpEnd")||{}).value;
@@ -406,9 +420,10 @@ window.gpTogglePrefs=function(){var e=document.getElementById("gpPrefs");if(!e)r
 window.gpSendQuestion=function(){
   var txt=((document.getElementById("gpQText")||{}).value||"").trim().slice(0,300);
   if(!txt){toast("Type the question");return;}
-  _snap.q=(_snap.q||[]).concat([{text:txt,t:Date.now()}]);
+  var prev=_snap.q||[];
+  _snap.q=prev.concat([{text:txt,t:Date.now()}]);
   var d=db();
-  if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({q:_snap.q}).catch(function(){toast("Could not send \u2014 try again with a bar of signal");});}catch(e){toast("Could not send");}}
+  if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({q:_snap.q}).catch(function(){_snap.q=prev;paint();toast("Could not send \u2014 try again with a bar of signal");});}catch(e){_snap.q=prev;paint();toast("Could not send");}}
   paint();
 };
 function ics(g){

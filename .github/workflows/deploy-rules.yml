@@ -67,19 +67,15 @@ jobs:
             print('NOTE: live has no packets match. Refusing blind overwrite.')
             Path('skip-deploy').write_text('no-packets')
             sys.exit(0)
-          live_bound='guestWorkOk' in live and 'work.fp' in live and 'resource.data.specAt' in live
-          want_bound='guestWorkOk' in want and 'work.fp' in want
-          print('live bound to specAt:', live_bound)
-          print('repo bound to specAt:', want_bound)
-          if live_bound:
-            print('ALREADY: live guest work is bound to current specs')
+          if live.strip() == want.strip():
+            print('ALREADY: live rules match repo')
             Path('skip-deploy').write_text('already')
             sys.exit(0)
-          if want_bound and 'match /packets/' in live:
-            print('SAFE: live packets exist; repo binds guest work to specAt. Publishing.')
-            sys.exit(0)
-          print('FAIL: live packets keys are not the expected set')
-          sys.exit(1)
+          if 'guestWorkOk' not in want or 'match /packets/' not in want:
+            print('FAIL: repo rules missing packets/guestWorkOk')
+            sys.exit(1)
+          print('SAFE: live packets exist; repo rules differ. Publishing.')
+          sys.exit(0)
           PY
           if [ -f skip-deploy ]; then
             echo "Nothing to publish ($(cat skip-deploy))"

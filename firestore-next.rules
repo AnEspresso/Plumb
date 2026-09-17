@@ -3,54 +3,138 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
 
     match /sites/{siteId} {
       function isLive()   { return resource.data.mode == 'live'; }
       function stamped()  { return resource.data.memberUids != null; }
-      function isMember() { return stamped() && request.auth.uid in resource.data.memberUids; }
+      function isMember() { return stamped() && uid() in resource.data.memberUids; }
       function isBuilder(){ return resource.data.members != null
-                                   && resource.data.members[request.auth.uid] == 'builder'; }
+                                   && resource.data.members[uid()] == 'builder'; }
+      function infoOf() {
+        return resource.data.get('meta', {}).get('memberInfo', {}).get(uid(), {});
+      }
+      function isOwner() {
+        return isBuilder() && (
+          !resource.data.get('meta', {}).get('memberInfo', {}).keys().hasAny([uid()])
+          || infoOf().get('rpRole', '') == 'owner'
+          || infoOf().get('owner', false) == true
+        );
+      }
+      function membersHeld() {
+        return request.resource.data.members.diff(resource.data.members).affectedKeys().size() == 0
+          && request.resource.data.mode == resource.data.mode;
+      }
+      function metaChanged() {
+        return request.resource.data.meta.diff(resource.data.meta).affectedKeys();
+      }
+      function builderHouseOk() {
+        return isBuilder() && membersHeld() && !metaChanged().hasAny(['memberInfo','members','memberUids','mode']);
+      }
+      function clientHouseOk() {
+        return resource.data.members[uid()] == 'client'
+          && membersHeld()
+          && metaChanged().hasOnly(['buildBrief','packetSignoff','packetSpecAt','packetStale','packetPrevSpec','packetWork','t','updatedAt']);
+      }
+      function crewHouseOk() {
+        return resource.data.members[uid()] == 'sub'
+          && membersHeld()
+          && metaChanged().hasOnly(['packetWork','t','updatedAt']);
+      }
 
       allow read: if signedIn() && (!isLive() || isMember());
 
       allow create: if signedIn()
         && (request.resource.data.mode != 'live'
-            || (request.resource.data.members[request.auth.uid] == 'builder'
-                && request.auth.uid in request.resource.data.memberUids));
+            || (request.resource.data.members[uid()] == 'builder'
+                && uid() in request.resource.data.memberUids));
 
-      allow update: if signedIn() && (!isLive() || isBuilder());
+      allow update: if signedIn() && (
+        !isLive()
+        || isOwner()
+        || builderHouseOk()
+        || clientHouseOk()
+        || crewHouseOk()
+      );
       allow delete: if false;
 
       match /{recordColl}/{recordId} {
         function site()  { return get(/databases/$(database)/documents/sites/$(siteId)).data; }
         function sMem()  { return site().members; }
-        function sRole() { return sMem()[request.auth.uid]; }
+        function sRole() { return sMem()[uid()]; }
         function sScoped(){ return site().mode == 'live'; }
+        function rec() { return resource.data.get('data', {}); }
+        function recNew() { return request.resource.data.get('data', {}); }
+        function sInfo() {
+          return site().get('meta', {}).get('memberInfo', {}).get(uid(), {});
+        }
+        function moneyOk() {
+          return sRole() == 'builder' && (
+            !site().get('meta', {}).get('memberInfo', {}).keys().hasAny([uid()])
+            || sInfo().get('rpRole', '') == 'owner'
+            || sInfo().get('owner', false) == true
+            || sInfo().get('gates', {}).get('moneyJob', false) in [true, 1]
+            || sInfo().get('gates', {}).get('moneyCo', false) in [true, 1]
+          );
+        }
+        function specHeld(k) {
+          return rec().get('spec', {}).get(k, '') == recNew().get('spec', {}).get(k, '');
+        }
+        function clientSelOk() {
+          return recordColl == 'sel'
+            && specHeld('roughin')
+            && specHeld('mount')
+            && specHeld('mounting')
+            && specHeld('height')
+            && specHeld('supply')
+            && specHeld('drain')
+            && specHeld('location')
+            && specHeld('valve');
+        }
+        function crewOwnBk() {
+          return recordColl == 'bk'
+            && rec().get('subName', '') == sInfo().get('name', '')
+            && rec().get('subName', '') != '';
+        }
 
         allow read: if signedIn()
           && (!sScoped()
               || (recordColl == 'pmts' ? sRole() in ['builder','client']
-                  : recordColl in ['mail','costs'] ? sRole() == 'builder'
+                  : recordColl in ['mail','costs'] ? moneyOk()
+                  : recordColl == 'bk' && sRole() == 'sub' ? crewOwnBk()
                   : sRole() != null));
-        allow write: if signedIn()
+
+        allow create: if signedIn()
           && (!sScoped()
               || sRole() == 'builder'
-              || (sRole() == 'sub'    && recordColl in ['items','logs'])
+              || (sRole() == 'sub' && recordColl in ['items','logs'])
               || (sRole() == 'client' && recordColl in ['sel','items']));
+
+        allow update: if signedIn()
+          && (!sScoped()
+              || sRole() == 'builder'
+              || (sRole() == 'sub' && recordColl in ['items','logs'])
+              || (sRole() == 'client' && recordColl == 'items')
+              || (sRole() == 'client' && clientSelOk()));
+
+        allow delete: if signedIn()
+          && (!sScoped() || sRole() == 'builder');
       }
     }
 
     match /invites/{code} {
       allow get: if signedIn();
       allow list: if false;
-      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.createdBy == uid();
       allow update: if signedIn()
+        && resource.data.createdBy == uid()
+        && request.resource.data.createdBy == resource.data.createdBy
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revoked','revokedAt']);
       allow delete: if false;
 
-      match /claims/{uid} {
+      match /claims/{claimUid} {
         allow read: if signedIn();
-        allow create: if signedIn() && uid == request.auth.uid;
+        allow create: if signedIn() && claimUid == uid();
         allow update, delete: if false;
       }
     }
@@ -60,13 +144,13 @@ service cloud.firestore {
          so the builder who already holds the jobs can create the record. */
       allow get: if signedIn() && (
         !exists(/databases/$(database)/documents/orgs/$(orgId))
-        || resource.data.members[request.auth.uid] != null
+        || resource.data.members[uid()] != null
       );
       allow list: if false;
-      allow create: if signedIn() && request.resource.data.members[request.auth.uid] == 'builder';
+      allow create: if signedIn() && request.resource.data.members[uid()] == 'builder';
       allow update: if signedIn()
-        && resource.data.members[request.auth.uid] == 'builder'
-        && request.resource.data.members[request.auth.uid] == 'builder';
+        && resource.data.members[uid()] == 'builder'
+        && request.resource.data.members[uid()] == 'builder';
       allow delete: if false;
     }
 
@@ -76,21 +160,18 @@ service cloud.firestore {
                  ['name','email','rpRole','provider','fcm','tokens','t','createdAt','updatedAt'])
                && request.resource.size() < 50;
       }
-      allow read: if signedIn() && request.auth.uid == userId;
-      allow create, update: if signedIn() && request.auth.uid == userId && okUserShape();
+      allow read: if signedIn() && uid() == userId;
+      allow create, update: if signedIn() && uid() == userId && okUserShape();
       allow delete: if false;
     }
 
-    // Telemetry moved server-side (Cloud Functions with Admin SDK bypass rules).
-    // Clients get nothing: the header/body mismatch class of abuse dies here.
     match /telemetry/{deviceId} {
       allow read, write: if false;
       match /events/{eventId} {
         allow read, write: if false;
       }
     }
-    // QuickBooks tokens + OAuth states are server-only secrets.
-    match /qb/{uid} { allow read, write: if false; }
+    match /qb/{userId} { allow read, write: if false; }
     match /qbStates/{stateId} { allow read, write: if false; }
 
     match /packets/{token} {
@@ -104,29 +185,46 @@ service cloud.firestore {
             && request.resource.data.work.keys().hasOnly(['fp', 'ack', 'installed'])
             && request.resource.data.work.fp is string
             && request.resource.data.work.fp == resource.data.specAt
+            && (
+              !request.resource.data.work.keys().hasAny(['installed'])
+              || (
+                request.resource.data.work.keys().hasAll(['ack'])
+                && request.resource.data.work.ack.keys().hasAll(['at'])
+                && request.resource.data.work.ack.at is int
+              )
+            )
           );
       }
+      function guestFieldsOk() {
+        return request.resource.data.diff(resource.data)
+                 .affectedKeys().hasOnly(['resp','q','work'])
+          && guestWorkOk()
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['resp'])
+               || request.resource.data.resp.status in ['confirmed','change'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['q'])
+               || request.resource.data.q.size() <= 10);
+      }
+      function packetPublisher() {
+        return signedIn()
+          && (
+            (resource.data.createdBy == uid()
+              && request.resource.data.createdBy == resource.data.createdBy)
+            || (!resource.data.keys().hasAny(['createdBy'])
+              && request.resource.data.createdBy == uid())
+          );
+      }
+
       allow get: if resource.data.expires is int
                  && resource.data.expires > request.time.toMillis();
       allow list: if false;
       allow create: if signedIn()
+                 && request.resource.data.createdBy == uid()
                  && request.resource.data.expires is int
                  && request.resource.data.resp == null;
       allow update: if resource.data.expires is int
                  && resource.data.expires > request.time.toMillis()
-                 && (
-                   signedIn()
-                   || (
-                     request.resource.data.diff(resource.data)
-                       .affectedKeys().hasOnly(['resp','q','work'])
-                     && guestWorkOk()
-                   )
-                 )
-                 && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['resp'])
-                      || request.resource.data.resp.status in ['confirmed','change'])
-                 && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['q'])
-                      || request.resource.data.q.size() <= 10);
-      allow delete: if signedIn();
+                 && (guestFieldsOk() || packetPublisher());
+      allow delete: if signedIn() && resource.data.createdBy == uid();
     }
   }
 }
