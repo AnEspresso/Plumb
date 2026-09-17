@@ -3899,15 +3899,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.424.0 - The house you add';
+const PLUMB_VERSION='2.425.0 - Keep the hat';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789658620934;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.424.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789665572771;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.425.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5817,6 +5817,8 @@ async function mintTeamInvite(){
 }
 let laMode='signin';
 function laProfile(){try{return JSON.parse(localStorage.getItem('plumb.liveAuth')||'null');}catch(e){return null;}}
+function laHats(){try{return JSON.parse(localStorage.getItem('plumb.hats')||'{}');}catch(e){return {};}}
+function laSaveHat(p){try{if(!p||!p.uid)return;const h=laHats();h[p.uid]={member:p.member||null,rpRole:p.rpRole||null,name:p.name||'',email:p.email||''};localStorage.setItem('plumb.hats',JSON.stringify(h));}catch(e){}}
 function laSaveProfile(p){
   /* Saving a profile can change which account owns the live workspace. Swap the
      in-memory state to the new owner store the moment that happens — the old
@@ -5888,6 +5890,7 @@ async function laEnter(p){
   }else{
     Data.setSession({role:'builder',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole,gates:p.gates||null});
   }
+  try{laSaveHat(p);}catch(e){}
   logEvent('login','real · '+p.provider+' · '+(m?m.role:(p.rpRole||'')));
   /* Deterministic rebind: a connection made before this login is bound to the
      wrong uid (often anonymous) — its listeners watch the wrong membership and
@@ -5944,8 +5947,9 @@ async function liveAuthSubmit(){
       }
       const prof={provider:'firebase',uid:cred.user.uid,email,emailVerified:!!cred.user.emailVerified,name:laMode==='signup'?name:(cred.user.displayName||email),rpRole:laMode==='signup'?rpRole:( (laProfile()&&laProfile().email===email&&laProfile().rpRole)||rpRole)};
       if(invCode){const m=await redeemInvite(invCode,prof);if(m===false)return;if(m){prof.member=m;if(m.rpRole)prof.rpRole=m.rpRole;if(m.gates)prof.gates=m.gates;_invClearHandoff();}}
-      else{const old=laProfile();if(old&&old.email===email&&old.member)prof.member=old.member;}
-      laSaveProfile(prof);laEnter(prof);
+      else{const old=laProfile();if(old&&old.email===email&&old.member)prof.member=old.member;
+        if(!prof.member&&prof.uid){const hat=laHats()[prof.uid];if(hat&&hat.member){prof.member=hat.member;if(hat.rpRole)prof.rpRole=hat.rpRole;if(hat.name)prof.name=hat.name;}}}
+      laSaveProfile(prof);laSaveHat(prof);laEnter(prof);
       if(laMode==='signup')try{_evAfterSignup(email);}catch(e){}
     }else{
       const acc=laAccounts();
@@ -6380,7 +6384,21 @@ function applyLiveRole(){
   }
   return false;
 }
-function backfillMemberships(){if(appMode()!=='real')return;let ch=false;(state.projects||[]).forEach(p=>{if(ensureMembership(p))ch=true;});if(ch)persist();}
+function backfillJoinedInvites(p){
+  let ch=false;p.members=p.members||{};p.memberInfo=p.memberInfo||{};
+  (p.invites||[]).forEach(function(inv){
+    if(inv.status!=='joined'||!inv.uid)return;
+    const role=inv.role==='client'?'client':(inv.role==='sub'?'sub':null);if(!role)return;
+    if(p.members[inv.uid]!==role){
+      p.members[inv.uid]=role;
+      p.memberInfo[inv.uid]=Object.assign({},p.memberInfo[inv.uid]||{},{name:inv.name||'',trade:inv.trade||'',email:inv.email||''});
+      ch=true;}
+  });
+  return ch;}
+function backfillMemberships(){if(appMode()!=='real')return;let ch=false;(state.projects||[]).forEach(function(p){
+    if(ensureMembership(p))ch=true;
+    if(backfillJoinedInvites(p)){ch=true;try{_syncDirty.add(String(p.id));}catch(e){}}
+  });if(ch)persist();}
 /* v2.27 migration: older cloud site docs carry members only inside meta, where
    security rules can't see them. Builder devices stamp top-level members +
    memberUids onto every live site once, so member-scoped reads/queries work. */
@@ -6770,7 +6788,7 @@ const SET_GEAR_ROW=(label,desc,onclick,icon)=>`<button class="set-row" onclick="
 const SET_LIST_ROW=(label,desc,onclick)=>'<button type="button" class="row row-tap" onclick="'+onclick+'"><div class="row-main"><div class="row-title">'+label+'</div>'+(desc?'<div class="row-sub">'+desc+'</div>':'')+'</div><span class="row-chev">\u203a</span></button>';
 function openSettings(){try{tourPrefetch();tourUnlockAudio();}catch(e){}saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
 function closeSettings(){document.getElementById('settingsScrim').classList.remove('show');}
-function openCompany(){saveScroll('home');renderCompany();document.getElementById('companyScrim').classList.add('show');}
+function openCompany(){const r=state.session&&state.session.role;if(r==='client'||r==='subs')return;saveScroll('home');renderCompany();document.getElementById('companyScrim').classList.add('show');}
 function closeCompany(){document.getElementById('companyScrim').classList.remove('show');}
 function renderCompany(){
   const el=document.getElementById('companyBody');if(!el)return;
@@ -7899,8 +7917,10 @@ function approveClaim(code,uid,c){
     if(p.members[uid]!==role){
       p.members[uid]=role;
       p.memberInfo[uid]={name:c.name||inv.name||'',trade:inv.trade||'',email:c.email||''};
-      inv.status='joined';inv.uid=uid;persist();
-      try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}
+      inv.status='joined';inv.uid=uid;
+      try{_syncDirty.add(String(p.id));}catch(e){}
+      persist();
+      try{if(typeof Sync!=='undefined'&&Sync.ready())Sync._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync._pushOne');}
       toast((c.name||inv.name||'Invitee')+' joined '+(p.street||p.name));
       logEvent('memberJoined',role+' · '+(c.name||''));}
     return;}}
@@ -7953,7 +7973,9 @@ function logout(){
   Data.setSession(null);logEvent('logout','');
   showSplash();
 }
-function showOverview(){_ovAnimateTs=Date.now();try{exitHouseDesk();}catch(e){}document.getElementById('overview').classList.add('show');document.getElementById('backBtn').classList.remove('show');renderOverview();applyScroll('home');}
+function showOverview(){_ovAnimateTs=Date.now();try{exitHouseDesk();}catch(e){}document.getElementById('overview').classList.add('show');document.getElementById('backBtn').classList.remove('show');
+  try{const r=state.session&&state.session.role;const b=document.getElementById('ovCompanyBtn');if(b)b.style.display=(r==='client'||r==='subs')?'none':'';}catch(e){}
+  renderOverview();applyScroll('home');}
 function backToOverview(){
   if(_navStack.length){navPop();return;}
   try{exitHouseDesk();}catch(e){}
@@ -9064,8 +9086,9 @@ function fbConfig(){
   return null;
 }
 function appCheckKey(){try{const k=(localStorage.getItem('plumb.appcheck.sitekey')||'').trim();if(k)return k;}catch(e){}return PLUMB_APPCHECK_SITEKEY||null;}
-let syncStatus='local',syncTimer=null;
-const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},
+let syncStatus='local',syncTimer=null,_syncBusy=false,_syncAgain=false;
+const _syncDirty=typeof Set==='function'?new Set():{add:function(){},forEach:function(){},clear:function(){}};
+const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},
   _devId(){let d=null;try{d=localStorage.getItem('plumb.deviceId');}catch(e){}if(!d){d='dev_'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('plumb.deviceId',d);}catch(e){}}return d;},
   ready(){return this.on&&!!this.db;},
   async init(){
@@ -9156,7 +9179,11 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     const ops=diffSiteOps(sh,p);if(!ops.length)return;
     for(const op of ops){
       if(op.kind==='meta'){
-        const mem=Object.assign({},(op.data&&op.data.members)||{});
+        const local=Object.assign({},(op.data&&op.data.members)||{});
+        let prevMem={};try{prevMem=(JSON.parse(sh.meta||'{}').members)||{};}catch(e){prevMem={};}
+        const cloud=(this._cloudMembers&&this._cloudMembers[id])||{};
+        const mem=Object.assign({},cloud,local);
+        Object.keys(prevMem).forEach(function(u){if(!Object.prototype.hasOwnProperty.call(local,u))delete mem[u];});
         // v7 rules require the creator to be stamped as builder on a live site.
         // A freshly created/imported site stamps members in a later pass, so the
         // FIRST write could otherwise go up empty and be rejected. Stamp the
@@ -9164,8 +9191,10 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         const myUid=(state.session&&state.session.auth&&state.session.auth.uid)||this.uid||'';
         if((this.mode||'demo')==='live'){
           if(!myUid||this.authKind!=='account')return;        // only a real signed-in account may write live houses (anon/device would lock the doc)
-          if(!mem[myUid]){mem[myUid]='builder';if(op.data)op.data.members=mem;}
+          if(!mem[myUid]){mem[myUid]='builder';}
         }
+        if(op.data)op.data.members=mem;
+        this._cloudMembers=this._cloudMembers||{};this._cloudMembers[id]=mem;
         const payload={meta:op.data,id:p.id,mode:this.mode||'demo',updatedAt:Date.now(),updatedBy:this.deviceId,
           updatedByUid:myUid,
           members:mem,memberUids:Object.keys(mem)};                          // top-level copies: rules + scoped queries read these
@@ -9202,9 +9231,12 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
               persistLocalOnly();rerenderCurrent();toast('A house was deleted');}
             return;}
           const sess=state.session||{};const myUid=(sess.auth&&sess.auth.uid)||this.uid;
-          const mem=(d.meta&&d.meta.members)||null;
-          if(mem&&Object.keys(mem).length){
-            if((!myUid||!mem[myUid])&&d.updatedBy!==this.deviceId){              // not (or no longer) a member
+          const mem=Object.assign({},(d.meta&&d.meta.members)||{},d.members||{});
+          this._cloudMembers=this._cloudMembers||{};if(Object.keys(mem).length)this._cloudMembers[id]=mem;
+          const uids=Array.isArray(d.memberUids)?d.memberUids.slice():Object.keys(mem);
+          if(Object.keys(mem).length||uids.length){
+            const still=!!(myUid&&(mem[myUid]||uids.indexOf(myUid)>=0));
+            if(!still&&d.updatedBy!==this.deviceId){              // not (or no longer) a member
               const idx=state.projects.findIndex(p=>String(p.id)===String(id));
               if(idx>=0){state.projects.splice(idx,1);                           // removal propagates: drop stale copy
                 if(String(state.activeId)===String(id))state.activeId=state.projects.length?state.projects[0].id:null;
@@ -9889,11 +9921,26 @@ function setSync(s){syncStatus=s;
   document.querySelectorAll('.syncpill').forEach(el=>{el.className='syncpill'+(s==='syncing'?' syncing':s==='offline'?' offline':(s==='synced'&&live?' live':''));el.innerHTML='<span class="sd"></span>'+label;});
   const ov=document.getElementById('ovSync');if(ov)ov.textContent=label;}
 function queueSync(){if(typeof Sync==='undefined'||!Sync.ready())return;const online=(typeof navigator!=='undefined')?navigator.onLine!==false:true;
-  if(!online){setSync('offline');return;}setSync('syncing');clearTimeout(syncTimer);
-  syncTimer=setTimeout(async()=>{try{await Sync.pushAll();setSync('synced');}catch(e){setSync('offline');
-    try{if(e&&e.code==='permission-denied'){
-      let who='no-auth';try{const cu=firebase.auth().currentUser;if(cu)who=(cu.isAnonymous?'anon ':'account ')+cu.uid.slice(0,8);}catch(_){}
-      trapError('rules','Cloud write blocked as ['+who+'] · bound to ['+((Sync&&Sync.uid)?Sync.uid.slice(0,8):'none')+']: '+((e&&e.message)||'').slice(0,100),'queueSync');}}catch(_){}}},650);}
+  if(!online){setSync('offline');return;}
+  try{if(state.activeId)_syncDirty.add(String(state.activeId));}catch(e){}
+  setSync('syncing');clearTimeout(syncTimer);
+  syncTimer=setTimeout(async()=>{
+    if(_syncBusy){_syncAgain=true;return;}
+    _syncBusy=true;
+    try{
+      const ids=[];try{_syncDirty.forEach(function(x){ids.push(x);});_syncDirty.clear();}catch(e){}
+      if(!ids.length&&state.activeId)ids.push(String(state.activeId));
+      for(let i=0;i<ids.length;i++){
+        const p=(state.projects||[]).find(function(x){return String(x.id)===String(ids[i]);});
+        if(p)await Sync._pushOne(p);
+      }
+      setSync('synced');
+    }catch(e){setSync('offline');
+      try{if(e&&e.code==='permission-denied'){
+        let who='no-auth';try{const cu=firebase.auth().currentUser;if(cu)who=(cu.isAnonymous?'anon ':'account ')+cu.uid.slice(0,8);}catch(_){}
+        trapError('rules','Cloud write blocked as ['+who+'] · bound to ['+((Sync&&Sync.uid)?Sync.uid.slice(0,8):'none')+']: '+((e&&e.message)||'').slice(0,100),'queueSync');}}catch(_){}}
+    _syncBusy=false;if(_syncAgain){_syncAgain=false;queueSync();}
+  },650);}
 function pushToBackend(){return Sync.pushAll();}
 function subscribeBackend(){return Sync.subscribe();}
 if(typeof window!=='undefined'){window.addEventListener('online',()=>{if(Sync.ready()){setSync('syncing');queueSync();}else{try{if(fbConfig())Sync.init();}catch(e){}}try{CloudFiles.flush();}catch(e){}});window.addEventListener('offline',()=>{if(Sync.ready())setSync('offline');});}
