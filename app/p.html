@@ -161,6 +161,7 @@ function busy(){
 function sig(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||"",start:x.start,end:x.end,ctx:x.ctx||null,lastChange:x.lastChange||"",signed:!!x.signed,stale:!!x.stale,work:x.work||null,brief:x.brief||null,specAt:x.specAt||""});}
 function apply(g){
   if(!g)return;
+  if(g.revoked||g.siteDeleted){fail("This house is no longer on the book. Ask your builder if you still need the packet.");return;}
   if((g.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}
   if(_snap&&sig(g)===sig(_snap))return;
   if(busy()){_pending=g;return;}
@@ -473,12 +474,12 @@ function boot(){
     var d=db();
     if(!d){if(Date.now()-t0<wait){setTimeout(look,150);return;}fail("This link needs a connection to open. Get a bar of signal and tap Try again.");return;}
     d.collection("packets").doc(String(TOKEN)).get().then(function(x){
-      if(x&&x.exists){_snap=x.data();if((_snap.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}paint();listen();return;}
+      if(x&&x.exists){_snap=x.data();if(_snap.revoked||_snap.siteDeleted){fail("This house is no longer on the book. Ask your builder if you still need the packet.");return;}if((_snap.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}paint();listen();return;}
       if(++tries<8&&Date.now()-t0<wait){setTimeout(look,350);return;}
-      fail("This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.");
+      fail("This link is no longer available. Ask your builder if you still need it.");
     }).catch(function(){
       if(++tries<10&&Date.now()-t0<wait){setTimeout(look,400);return;}
-      fail("This link needs a connection to open. Get a bar of signal and tap Try again.");
+      fail("This link is no longer available. Ask your builder if you still need it.");
     });
   })();
 }

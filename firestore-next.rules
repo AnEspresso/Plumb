@@ -23,23 +23,98 @@ service cloud.firestore {
       }
       function membersHeld() {
         return request.resource.data.members.diff(resource.data.members).affectedKeys().size() == 0
-          && request.resource.data.mode == resource.data.mode;
+          && request.resource.data.mode == resource.data.mode
+          && request.resource.data.get('memberUids', []) == resource.data.get('memberUids', []);
       }
       function metaChanged() {
         return request.resource.data.meta.diff(resource.data.meta).affectedKeys();
       }
+      function rootMetaOnly() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['meta', 'updatedAt', 'updatedBy', 'updatedByUid', 'data']);
+      }
       function builderHouseOk() {
-        return isBuilder() && membersHeld() && !metaChanged().hasAny(['memberInfo','members','memberUids','mode']);
+        return isBuilder() && membersHeld() && rootMetaOnly()
+          && !metaChanged().hasAny(['memberInfo','members','memberUids','mode']);
+      }
+      function soBuilderHeld(t) {
+        return resource.data.meta.get('packetSignoff', {}).get(t, {}).get('builder', {})
+            == request.resource.data.meta.get('packetSignoff', {}).get(t, {}).get('builder', {});
+      }
+      function clientSignoffOk() {
+        return !metaChanged().hasAny(['packetSignoff'])
+          || (
+            request.resource.data.meta.get('packetSignoff', {})
+              .diff(resource.data.meta.get('packetSignoff', {})).affectedKeys()
+              .hasOnly(['excav','concrete','framing','roofing','siding','hvac','plumb','elec','insul','drywall','finish','floor','paint','landscape','cabinets','counter','windows','garage','gutters','lowvolt','fireplace','waterproof','septic','appliance','cleaning','demo','steel','stucco','general'])
+            && soBuilderHeld('excav') && soBuilderHeld('concrete') && soBuilderHeld('framing')
+            && soBuilderHeld('roofing') && soBuilderHeld('siding') && soBuilderHeld('hvac')
+            && soBuilderHeld('plumb') && soBuilderHeld('elec') && soBuilderHeld('insul')
+            && soBuilderHeld('drywall') && soBuilderHeld('finish') && soBuilderHeld('floor')
+            && soBuilderHeld('paint') && soBuilderHeld('landscape') && soBuilderHeld('cabinets')
+            && soBuilderHeld('counter') && soBuilderHeld('windows') && soBuilderHeld('garage')
+            && soBuilderHeld('gutters') && soBuilderHeld('lowvolt') && soBuilderHeld('fireplace')
+            && soBuilderHeld('waterproof') && soBuilderHeld('septic') && soBuilderHeld('appliance')
+            && soBuilderHeld('cleaning') && soBuilderHeld('demo') && soBuilderHeld('steel')
+            && soBuilderHeld('stucco') && soBuilderHeld('general')
+          );
+      }
+      function workShapeOk(oldW, newW, specAt) {
+        return newW.keys().hasOnly(['fp', 'ack', 'installed'])
+          && newW.fp is string
+          && newW.fp.size() > 0
+          && specAt is string
+          && specAt.size() > 0
+          && newW.fp == specAt
+          && newW.keys().hasAll(['ack'])
+          && newW.ack.keys().hasAll(['at'])
+          && newW.ack.at is int
+          && (
+            !newW.keys().hasAny(['installed'])
+            || (
+              newW.installed.keys().hasAll(['at'])
+              && newW.installed.at is int
+            )
+          )
+          && (
+            oldW.get('fp', '') == newW.fp
+            || (
+              (!oldW.keys().hasAny(['ack']) || newW.ack.at != oldW.get('ack', {}).get('at', 0))
+              && (
+                !newW.keys().hasAny(['installed'])
+                || !oldW.keys().hasAny(['installed'])
+                || newW.installed.at != oldW.get('installed', {}).get('at', 0)
+              )
+            )
+          );
+      }
+      function crewWorkOk() {
+        let t = infoOf().get('trade', '');
+        let oldW = resource.data.meta.get('packetWork', {});
+        let newW = request.resource.data.meta.get('packetWork', {});
+        let specAt = resource.data.meta.get('packetSpecAt', {}).get(t, '');
+        return t != ''
+          && (
+            !metaChanged().hasAny(['packetWork'])
+            || (
+              newW.diff(oldW).affectedKeys().hasOnly([t])
+              && workShapeOk(oldW.get(t, {}), newW.get(t, {}), specAt)
+            )
+          );
       }
       function clientHouseOk() {
         return resource.data.members[uid()] == 'client'
           && membersHeld()
-          && metaChanged().hasOnly(['buildBrief','packetSignoff','packetSpecAt','packetStale','packetPrevSpec','packetWork','t','updatedAt']);
+          && rootMetaOnly()
+          && metaChanged().hasOnly(['buildBrief','packetSignoff','packetSpecAt','packetStale','packetPrevSpec','t','updatedAt'])
+          && clientSignoffOk();
       }
       function crewHouseOk() {
         return resource.data.members[uid()] == 'sub'
           && membersHeld()
-          && metaChanged().hasOnly(['packetWork','t','updatedAt']);
+          && rootMetaOnly()
+          && metaChanged().hasOnly(['packetWork','t','updatedAt'])
+          && crewWorkOk();
       }
 
       allow read: if signedIn() && (!isLive() || isMember());
@@ -77,11 +152,36 @@ service cloud.firestore {
             || sInfo().get('gates', {}).get('moneyCo', false) in [true, 1]
           );
         }
+        function moneyColl() { return recordColl in ['costs', 'mail']; }
         function specHeld(k) {
           return rec().get('spec', {}).get(k, '') == recNew().get('spec', {}).get(k, '');
         }
+        function specNoTech(s) {
+          return !s.keys().hasAny(['roughin','mount','mounting','height','supply','drain','location','loc','valve']);
+        }
+        function customSlot(i) {
+          let arr = rec().get('specCustom', []);
+          let brr = recNew().get('specCustom', []);
+          let o = arr.size() > i ? arr[i] : {};
+          let n = brr.size() > i ? brr[i] : {};
+          return o == n
+            || (
+              o.get('who', '') == 'homeowner'
+              && n.get('who', '') == 'homeowner'
+              && o.get('label', '') == n.get('label', '')
+              && o.get('required', false) == n.get('required', false)
+            );
+        }
+        function specCustomOk() {
+          return rec().get('specCustom', []).size() == recNew().get('specCustom', []).size()
+            && customSlot(0) && customSlot(1) && customSlot(2) && customSlot(3)
+            && customSlot(4) && customSlot(5) && customSlot(6) && customSlot(7)
+            && customSlot(8) && customSlot(9) && customSlot(10) && customSlot(11);
+        }
         function clientSelOk() {
           return recordColl == 'sel'
+            && recNew().get('id', '') == rec().get('id', '')
+            && rec().get('id', '') != ''
             && specHeld('roughin')
             && specHeld('mount')
             && specHeld('mounting')
@@ -89,12 +189,33 @@ service cloud.firestore {
             && specHeld('supply')
             && specHeld('drain')
             && specHeld('location')
-            && specHeld('valve');
+            && specHeld('loc')
+            && specHeld('valve')
+            && specCustomOk()
+            && (recNew().get('status', '') != 'installed' || rec().get('status', '') == 'installed');
+        }
+        function clientSelCreateOk() {
+          return recordColl == 'sel'
+            && specNoTech(recNew().get('spec', {}))
+            && recNew().get('specCustom', []).size() == 0
+            && recNew().get('status', '') != 'installed';
         }
         function crewOwnBk() {
           return recordColl == 'bk'
             && rec().get('subName', '') == sInfo().get('name', '')
             && rec().get('subName', '') != '';
+        }
+        function crewBkRespOk() {
+          return crewOwnBk()
+            && recNew().get('subName', '') == rec().get('subName', '')
+            && recNew().get('trade', rec().get('trade', '')) == rec().get('trade', '')
+            && recNew().diff(rec()).affectedKeys().hasOnly(['status', 'start', 'end', 'note']);
+        }
+        function crewItemOk() {
+          return recordColl in ['items', 'logs']
+            && rec().get('by', '') == sInfo().get('name', '')
+            && rec().get('by', '') != ''
+            && recNew().get('by', '') == rec().get('by', '');
         }
 
         allow read: if signedIn()
@@ -106,19 +227,21 @@ service cloud.firestore {
 
         allow create: if signedIn()
           && (!sScoped()
-              || sRole() == 'builder'
+              || (sRole() == 'builder' && (!moneyColl() || moneyOk()))
               || (sRole() == 'sub' && recordColl in ['items','logs'])
-              || (sRole() == 'client' && recordColl in ['sel','items']));
+              || (sRole() == 'client' && recordColl == 'items')
+              || (sRole() == 'client' && clientSelCreateOk()));
 
         allow update: if signedIn()
           && (!sScoped()
-              || sRole() == 'builder'
-              || (sRole() == 'sub' && recordColl in ['items','logs'])
+              || (sRole() == 'builder' && (!moneyColl() || moneyOk()))
+              || (sRole() == 'sub' && crewItemOk())
+              || (sRole() == 'sub' && crewBkRespOk())
               || (sRole() == 'client' && recordColl == 'items')
               || (sRole() == 'client' && clientSelOk()));
 
         allow delete: if signedIn()
-          && (!sScoped() || sRole() == 'builder');
+          && (!sScoped() || (sRole() == 'builder' && (!moneyColl() || moneyOk())));
       }
     }
 
@@ -175,11 +298,26 @@ service cloud.firestore {
     match /qbStates/{stateId} { allow read, write: if false; }
 
     match /packets/{token} {
+      function workFresh() {
+        let o = resource.data.get('work', {});
+        let n = request.resource.data.work;
+        return o.get('fp', '') == n.fp
+          || (
+            (!o.keys().hasAny(['ack']) || n.get('ack', {}).get('at', 0) != o.get('ack', {}).get('at', 0))
+            && (
+              !n.keys().hasAny(['installed'])
+              || !o.keys().hasAny(['installed'])
+              || n.get('installed', {}).get('at', 0) != o.get('installed', {}).get('at', 0)
+            )
+          );
+      }
       function guestWorkOk() {
         return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['work'])
           || (
             resource.data.signed == true
             && resource.data.stale != true
+            && resource.data.get('revoked', false) != true
+            && resource.data.get('siteDeleted', false) != true
             && resource.data.specAt is string
             && resource.data.specAt.size() > 0
             && request.resource.data.work.keys().hasOnly(['fp', 'ack', 'installed'])
@@ -193,6 +331,7 @@ service cloud.firestore {
                 && request.resource.data.work.ack.at is int
               )
             )
+            && workFresh()
           );
       }
       function guestFieldsOk() {
@@ -213,17 +352,23 @@ service cloud.firestore {
               && request.resource.data.createdBy == uid())
           );
       }
+      function packetLive() {
+        return resource.data.expires is int
+          && resource.data.expires > request.time.toMillis()
+          && resource.data.get('revoked', false) != true
+          && resource.data.get('siteDeleted', false) != true;
+      }
 
-      allow get: if resource.data.expires is int
-                 && resource.data.expires > request.time.toMillis();
+      allow get: if packetLive();
       allow list: if false;
       allow create: if signedIn()
                  && request.resource.data.createdBy == uid()
                  && request.resource.data.expires is int
                  && request.resource.data.resp == null;
-      allow update: if resource.data.expires is int
-                 && resource.data.expires > request.time.toMillis()
-                 && (guestFieldsOk() || packetPublisher());
+      allow update: if (packetLive() && guestFieldsOk())
+                 || (signedIn() && packetPublisher()
+                     && resource.data.expires is int
+                     && resource.data.expires > request.time.toMillis());
       allow delete: if signedIn() && resource.data.createdBy == uid();
     }
   }

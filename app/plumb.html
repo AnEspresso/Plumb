@@ -3899,15 +3899,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.421.0 - Confirm on top, back to the list';
+const PLUMB_VERSION='2.422.0 - Cloud holds the book';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789499606410;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.421.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789645808366;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.422.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5041,7 +5041,7 @@ const Data = {
   setActive(id){ state.activeId=id; this.commit(); },
   addProject(p){ state.projects.push(p); this.commit(); return p; },
   /* items (records + flagged issues) */
-  addItem(it){ const p=P(); p.items.unshift(it); this.commit(); return it; },
+  addItem(it){ if(it&&!it.by)it.by=(state.session&&state.session.name)||''; const p=P(); p.items.unshift(it); this.commit(); return it; },
   updateItem(projId,id,patch){ const p=this.project(projId)||P(); const it=p.items.find(i=>i.id===id); if(it){Object.assign(it,patch);} this.commit(); return it; },
   removeItem(projId,id){ const p=this.project(projId)||P(); p.items=p.items.filter(i=>i.id!==id); this.commit(); },
   nextItemId(){ const p=P(); return p.nextId++; },
@@ -5226,8 +5226,8 @@ function navClear(){_navStack.length=0;}
 function navRestorePacket(){
   if(!_pktCtx)return;
   const p=state.projects.find(function(x){return String(x.id)===String(_pktCtx.pid);});if(!p)return;
-  const sb=(p.subs||[]).find(function(s){return s.specialty===_pktCtx.trade;});
-  if(sb)showInfo('Install packet \u2014 '+sb.name,packetHTML(p,_pktCtx.trade));
+  const sb=packetCrewOf(p,_pktCtx.trade,_pktCtx.subId);
+  if(sb)showInfo('Install packet \u2014 '+sb.name,packetHTML(p,_pktCtx.trade,sb.id));
   else{const el=document.getElementById('infoScrim');if(el)el.classList.add('show');try{refreshPacket();}catch(e){}}
 }
 function navPacketStillOpen(){const el=document.getElementById('infoScrim');return !!(el&&el.classList.contains('show')&&_pktCtx);}
@@ -6828,19 +6828,33 @@ function deleteSite(id){
   const label=p.street||p.name||'this house';
   confirmDelete({title:'Delete '+label+'?',body:'Every record, photo, selection and invoice for <b>'+esc(label)+'</b> goes with it, on every device. This cannot be undone.',onConfirm:()=>{
     const pid=p.id;
-    if(appMode()==='real'){
-      p.deleted=Date.now();
-      try{persist();}catch(e){}
-      try{Sync._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync._pushOne');}   // tombstone reaches the cloud; other devices drop it on receipt
-    }
-    state.projects=state.projects.filter(x=>String(x.id)!==String(pid));
-    if(!state.projects.length){state.activeId=null;}
-    else if(String(state.activeId)===String(pid))state.activeId=state.projects[0].id;
-    persistLocalOnly();
-    logEvent('siteDeleted',label);toast(label+' deleted');
-    try{closeSettings();}catch(e){}
-    try{if(state.projects.length){renderAll();updateHeader();}else{showOverview();}rerenderCurrent();}catch(e){}
-    try{if(document.getElementById('esScrim').classList.contains('show'))renderEditSites();}catch(e){}
+    const tokens=(p.bookings||[]).map(function(b){return b.pkToken;}).filter(Boolean);
+    const finish=function(linkClosed){
+      if(appMode()==='real'){
+        p.deleted=Date.now();
+        try{persist();}catch(e){}
+        try{Sync._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync._pushOne');}
+      }
+      state.projects=state.projects.filter(x=>String(x.id)!==String(pid));
+      if(!state.projects.length){state.activeId=null;}
+      else if(String(state.activeId)===String(pid))state.activeId=state.projects[0].id;
+      persistLocalOnly();
+      logEvent('siteDeleted',label);
+      toast(linkClosed!==false?label+' deleted':label+' deleted. The texted link may still open — try again with a bar of signal.');
+      try{closeSettings();}catch(e){}
+      try{if(state.projects.length){renderAll();updateHeader();}else{showOverview();}rerenderCurrent();}catch(e){}
+      try{if(document.getElementById('esScrim').classList.contains('show'))renderEditSites();}catch(e){}
+    };
+    const retire=function(){
+      if(appMode()!=='real'||!tokens.length){finish(true);return;}
+      const db=_pkDb();
+      if(!db){finish(false);return;}
+      const now=Date.now()-1;
+      Promise.all(tokens.map(function(t){
+        return db.collection('packets').doc(String(t)).update({expires:now,revoked:true,siteDeleted:true});
+      })).then(function(){finish(true);}).catch(function(){finish(false);});
+    };
+    retire();
   }});}
 function jumpToSubs(){try{go('subs');}catch(e){}}
 /* orientation: the short how-to for people who don't run company setup */
@@ -12971,10 +12985,9 @@ function selCanInstall(s){
   try{
     const p=P();
     const trades=tradesForSelCat(s.cat);
-    const need=trades.filter(function(tid){return packetSignedBoth(p,tid)||packetIsStale(p,tid);});
-    if(need.length&&!need.some(function(tid){return packetWorkAcked(p,tid);}))return false;
-  }catch(e){}
-  return true;
+    if(!trades.length)return true;
+    return trades.every(function(tid){return packetWorkAcked(p,tid);});
+  }catch(e){return false;}
 }
 function tradesForSelCat(cat){
   const out=[];
@@ -13110,7 +13123,10 @@ function specReadoutHTML(s){const st=specStatus(s);if(!st.total)return '';
   if(_mHO.length)h+=`<div class="sro-miss">Awaiting homeowner: ${_mHO.map(m=>esc(m.label)).join(', ')}</div>`;
   if(_mB.length)h+=`<div class="sro-miss">Awaiting builder: ${_mB.map(m=>esc(m.label)).join(', ')}</div>`;
   return h+'</div>';}
-function openSpec(id){const s=(P().selections||[]).find(x=>x.id===id);if(!s)return;_specId=id;
+function openSpec(id){
+  const sess=state.session||{};
+  if(sess.role==='subs'){toast('Ask your builder');return;}
+  const s=(P().selections||[]).find(x=>x.id===id);if(!s)return;_specId=id;
   _specCustomDraft=(s.specCustom||[]).map(c=>({label:c.label||'',who:c.who||'builder',required:!!c.required,value:c.value||''}));
   document.getElementById('specSub').textContent=(s.item||'(unspecified)')+' · '+(s.cat||'');
   renderSpecEditor(s);document.getElementById('specScrim').classList.add('show');}
@@ -15874,10 +15890,11 @@ function pktSetWork(pid,trade,part,extra){
   const isCrew=sess.role==='subs';
   const isBuilder=sess.role==='builder';
   if(isCrew){
-    const onHouse=(p.subs||[]).some(function(x){return x.name===sess.name;});
-    if(!onHouse){toast('This is not your packet');return false;}
-    const sb=(p.subs||[]).find(function(x){return x.specialty===trade;});
-    if(sb&&sb.name!==sess.name){toast('This is not your packet');return false;}
+    const onHouse=(p.subs||[]).filter(function(x){return x.name===sess.name;});
+    if(!onHouse.length){toast('This is not your packet');return false;}
+    const mine=onHouse.some(function(x){return x.specialty===trade;});
+    const someone=(p.subs||[]).some(function(x){return x.specialty===trade;});
+    if(someone&&!mine){toast('This is not your packet');return false;}
   }
   if(!packetSignedBoth(p,trade)||packetIsStale(p,trade)){toast('Sign-off no longer applies');return false;}
   if((part==='ack'||part==='installed')&&!isCrew){toast('The crew confirms these instructions');return false;}
@@ -15968,8 +15985,28 @@ function toggleDocInPacket(tradeId,name){
   try{refreshPacket();}catch(e){}}
 function packetReady(p,tradeId){return tradeSpecGaps(p,tradeId).length===0&&packetSignedBoth(p,tradeId);}
 let _pktCtx=null;
+function packetCrewOf(p,tradeId,subId){
+  if(subId){
+    const hit=(p.subs||[]).find(function(x){return String(x.id)===String(subId);});
+    if(hit)return hit;
+  }
+  if(_pktCtx&&_pktCtx.subId){
+    const held=(p.subs||[]).find(function(x){return String(x.id)===String(_pktCtx.subId);});
+    if(held)return held;
+  }
+  if(_pktCtx&&_pktCtx.subName){
+    const byName=(p.subs||[]).find(function(x){return x.name===_pktCtx.subName&&x.specialty===tradeId;});
+    if(byName)return byName;
+  }
+  const sess=state.session||{};
+  if(sess.role==='subs'&&sess.name){
+    const mine=(p.subs||[]).find(function(x){return x.name===sess.name&&x.specialty===tradeId;});
+    if(mine)return mine;
+  }
+  return (p.subs||[]).find(function(x){return x.specialty===tradeId;});
+}
 function refreshPacket(){if(!_pktCtx)return;const p=state.projects.find(x=>String(x.id)===String(_pktCtx.pid));if(!p)return;
-  const body=document.getElementById('infoBody');if(body)body.innerHTML=packetHTML(p,_pktCtx.trade);}
+  const body=document.getElementById('infoBody');if(body)body.innerHTML=packetHTML(p,_pktCtx.trade,_pktCtx.subId);}
 let _pktLogCtx=null;
 function openPacketLog(pid,tradeId){
   const p=state.projects.find(x=>String(x.id)===String(pid));if(!p)return;
@@ -16037,7 +16074,7 @@ function pktGoDocs(pid){if(_pktCtx)try{Data.setActive(pid);}catch(e){}addPacketD
 function pktAsk(p,tradeId){
   const out=[];
   const tl=specLabel(tradeId);
-  const sb=(p.subs||[]).find(function(x){return x.specialty===tradeId;});
+  const sb=packetCrewOf(p,tradeId);
   _nyIssues([p]).forEach(function(it){
     if(String(it.pid)!==String(p.id)||it.cross)return;
     if(it.kind==='Spec still open'||it.kind==='Site not ready')return;
@@ -16080,7 +16117,7 @@ function packetMore(){
   const p=state.projects.find(function(x){return String(x.id)===String(ctx.pid);})||P();
   if(!p)return;
   const tradeId=ctx.trade;
-  const sb=(p.subs||[]).find(function(x){return x.specialty===tradeId;});
+  const sb=packetCrewOf(p,tradeId,ctx.subId);
   const due=dueState(sb&&sb.specsDue);
   const items=[
     {label:'Add a document for this trade',fn:function(){addPacketDoc(tradeId);}},
@@ -16092,7 +16129,7 @@ function packetMore(){
   else if(inv&&inv.status!=='joined')items.push({label:'Share invite again',fn:function(){shareInvite(inv.code);}});
   openChoice({title:'Packet',items:items});
 }
-function packetHTML(p,tradeId){
+function packetHTML(p,tradeId,subId){
   const cap1=x=>String(x||'').charAt(0).toUpperCase()+String(x||'').slice(1);
   const tl=specLabel(tradeId);
   const sels=tradeSelections(p,tradeId);
@@ -16102,9 +16139,9 @@ function packetHTML(p,tradeId){
   const availDocs=allDocs.filter(function(d){return !docInPacket(p,tradeId,d);});
   const openItems=(p.items||[]).filter(function(it){return it.crew===tl&&it.issue&&it.status==='open';});
   const sess=state.session||{};const isBuilder=sess.role==='builder';const isClient=sess.role==='client';
-  const sb=(sess.role==='subs'&&sess.name&&(p.subs||[]).find(function(x){return x.name===sess.name;}))||(p.subs||[]).find(function(x){return x.specialty===tradeId;});
+  const sb=packetCrewOf(p,tradeId,subId);
   const due=dueState(sb&&sb.specsDue);
-  _pktCtx={pid:p.id,trade:tradeId};
+  _pktCtx={pid:p.id,trade:tradeId,subId:sb&&sb.id,subName:sb&&sb.name};
   const bkWin=(p.bookings||[]).filter(function(b){return b.trade===tradeId&&(!sb||b.subName===sb.name)&&(b.status||'confirmed')!=='declined'&&b.end>=dayStart(Date.now());}).sort(function(a,b){return a.start-b.start;})[0];
   const siteOk=!(sb)||!!sb.cleared;
   const warn=gaps.length>0||!siteOk;
@@ -16278,7 +16315,8 @@ function packetHTML(p,tradeId){
   return h;}
 function openPacket(subId){const sb=P().subs.find(x=>x.id===subId);if(!sb)return;
   logEvent('packetViewed',sb.name+' ('+specLabel(sb.specialty)+')');
-  showInfo('Install packet — '+sb.name,packetHTML(P(),sb.specialty));}
+  _pktCtx={pid:P().id,trade:sb.specialty,subId:sb.id,subName:sb.name};
+  showInfo('Install packet — '+sb.name,packetHTML(P(),sb.specialty,sb.id));}
 /* Invite the matched sub straight from their packet (#2). Sets the active site
    (the packet may be open for a non-active project), then runs the normal sub
    invite, which swaps the modal to show the shareable code. */
