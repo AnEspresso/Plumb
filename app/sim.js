@@ -1217,7 +1217,10 @@ t('Team pill stays on for roles', SRC.indexOf("peopleMode==='team'||peopleMode==
 t('role list uses a short line', SRC.indexOf('Everything except invoices')>=0&&SRC.indexOf('function roleSummary')>=0);
 t('sheet contract exists', SRC.indexOf('function sheetContract')>=0&&SRC.indexOf('function sheetCensusText')>=0&&SRC.indexOf('devRunCensus')>=0);
 t('sheet contract ignores picker pills', SRC.split('function sheetContract')[1].slice(0,1200).indexOf('ov-sortpill')>=0&&SRC.split('function sheetContract')[1].slice(0,1200).indexOf('actionBlacks')>=0);
-t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Go to the book')>=0);
+t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Open this house')>=0);
+t('adding a house opens that house', SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("openSiteFromOverview")>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf('showOverview()')>=0);
+t('homeowner waits for the share', SRC.indexOf('Waiting for your builder to share this house')>=0&&SRC.split('function clientProj')[1].slice(0,400).indexOf('return hit||null')>=0);
+t('a joined invite publishes every house', SRC.split('function approveClaim')[1].split('function redeemInvite')[0].indexOf('Sync.pushAll()')>=0&&SRC.split('function queueSync')[1].slice(0,500).indexOf('Sync.pushAll()')>=0);
 t('Notifications sheet can send a test', SRC.indexOf('function openNotifyCenter')>=0&&SRC.split('function openNotifyCenter')[1].split('const Org=')[0].indexOf('Send a test')>=0&&SRC.indexOf('function pushTest')>=0);
 t('push test targets this phone', SRC.indexOf("fnCall('notifyTest',{token:tok})")>=0&&SRC.indexOf('listenForeground')>=0);
 t('Notify object is closed', SRC.split('listenForeground(){')[1].split('function navFor')[0].indexOf('};')>=0);

@@ -3899,15 +3899,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.423.0 - Back to the door';
+const PLUMB_VERSION='2.424.0 - The house you add';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1789653433637;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.423.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1789658620934;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.424.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6572,10 +6572,11 @@ function afterHouseAdded(id,nBefore){
     if(!ho)b+='<button class="b1 b-go w-full btn btn-primary" onclick="closeInfo();inviteHomeownerFor(\''+id+'\')">Invite the homeowner</button>';
     b+='<button class="b1 b-cancel w-full mt-2 btn btn-secondary" onclick="closeInfo();openSiteFromOverview(\''+id+'\');setTimeout(function(){try{openAddSub();}catch(e){}},80)">Add a crew</button>';
     b+='<button class="b1 b-cancel w-full mt-2 btn btn-secondary" onclick="closeInfo();openNewSite()">Add another house</button>';
-    b+='<button class="la-link d-block mt-3 mb-0 mx-auto c-ink-3 btn btn-quiet" onclick="closeInfo();showOverview()">Go to the book</button>';
+    b+='<button class="la-link d-block mt-3 mb-0 mx-auto c-ink-3 btn btn-quiet" onclick="closeInfo();openSiteFromOverview(\''+id+'\')">Open this house</button>';
   }else{
-    b+='<button class="b1 b-go w-full btn btn-primary" onclick="closeInfo();openNewSite()">Add another house</button>';
-    b+='<button class="b1 b-cancel w-full mt-2 btn btn-secondary" onclick="closeInfo();showOverview()">Go to the book</button>';
+    b+='<button class="b1 b-go w-full btn btn-primary" onclick="closeInfo();openSiteFromOverview(\''+id+'\')">Open this house</button>';
+    b+='<button class="b1 b-cancel w-full mt-2 btn btn-secondary" onclick="closeInfo();openNewSite()">Add another house</button>';
+    b+='<button class="la-link d-block mt-3 mb-0 mx-auto c-ink-3 btn btn-quiet" onclick="closeInfo();showOverview()">All houses</button>';
   }
   showInfo(label+' is on the book',b,true);
   return true;
@@ -7899,6 +7900,7 @@ function approveClaim(code,uid,c){
       p.members[uid]=role;
       p.memberInfo[uid]={name:c.name||inv.name||'',trade:inv.trade||'',email:c.email||''};
       inv.status='joined';inv.uid=uid;persist();
+      try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}
       toast((c.name||inv.name||'Invitee')+' joined '+(p.street||p.name));
       logEvent('memberJoined',role+' · '+(c.name||''));}
     return;}}
@@ -9888,7 +9890,7 @@ function setSync(s){syncStatus=s;
   const ov=document.getElementById('ovSync');if(ov)ov.textContent=label;}
 function queueSync(){if(typeof Sync==='undefined'||!Sync.ready())return;const online=(typeof navigator!=='undefined')?navigator.onLine!==false:true;
   if(!online){setSync('offline');return;}setSync('syncing');clearTimeout(syncTimer);
-  syncTimer=setTimeout(async()=>{try{await Sync._pushOne(P());setSync('synced');}catch(e){setSync('offline');
+  syncTimer=setTimeout(async()=>{try{await Sync.pushAll();setSync('synced');}catch(e){setSync('offline');
     try{if(e&&e.code==='permission-denied'){
       let who='no-auth';try{const cu=firebase.auth().currentUser;if(cu)who=(cu.isAnonymous?'anon ':'account ')+cu.uid.slice(0,8);}catch(_){}
       trapError('rules','Cloud write blocked as ['+who+'] · bound to ['+((Sync&&Sync.uid)?Sync.uid.slice(0,8):'none')+']: '+((e&&e.message)||'').slice(0,100),'queueSync');}}catch(_){}}},650);}
@@ -10005,7 +10007,9 @@ function reopenSubItem(pid,id){Data.updateItem(pid,id,{status:'open'});logEvent(
 function subCapture(pid){Data.setActive(pid);openSheet();}
 
 /* ════════ homeowner (client) view ════════ */
-function clientProj(){const s=state.session;return (s&&s.site&&state.projects.find(x=>x.id===s.site))||P();}
+function clientProj(){const s=state.session;
+  if(s&&s.site){const hit=(state.projects||[]).find(x=>String(x.id)===String(s.site));return hit||null;}
+  return P();}
 let clientTab='home';
 let _clientMoneyOpen=false;
 function showClientView(){const s=state.session;if(s&&s.site)Data.setActive(s.site);clientTab='home';_clientMoneyOpen=false;
@@ -12593,7 +12597,12 @@ function igBrowser(){
 }
 try{window.addEventListener('appinstalled',()=>{try{document.getElementById('installGate').classList.remove('show');}catch(e){}});}catch(e){}
 function renderClient(){
-  const p=clientProj();if(!p)return;
+  const p=clientProj();
+  if(!p){
+    try{document.getElementById('clWho').textContent='Homeowner';}catch(e){}
+    const b=document.getElementById('clBody');
+    if(b)b.innerHTML='<div class="empty py-4 px-3">Waiting for your builder to share this house. Stay here — it appears as soon as they confirm.</div>';
+    return;}
   document.getElementById('clWho').textContent='Homeowner · '+(p.street||p.name);
   const SS=stagesFor(p);
   const ovPct=Math.round(SS.reduce((a,s,i)=>a+stageProgress(s,stageStatus(i)),0)/SS.length);

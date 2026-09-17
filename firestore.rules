@@ -143,6 +143,10 @@ service cloud.firestore {
         function sInfo() {
           return site().get('meta', {}).get('memberInfo', {}).get(uid(), {});
         }
+        function sMember() {
+          return sRole() != null
+            || uid() in site().get('memberUids', []);
+        }
         function moneyOk() {
           return sRole() == 'builder' && (
             !site().get('meta', {}).get('memberInfo', {}).keys().hasAny([uid()])
@@ -220,10 +224,10 @@ service cloud.firestore {
 
         allow read: if signedIn()
           && (!sScoped()
-              || (recordColl == 'pmts' ? sRole() in ['builder','client']
+              || (recordColl == 'pmts' ? sMember() && sRole() != 'sub'
                   : recordColl in ['mail','costs'] ? moneyOk()
                   : recordColl == 'bk' && sRole() == 'sub' ? crewOwnBk()
-                  : sRole() != null));
+                  : sMember()));
 
         allow create: if signedIn()
           && (!sScoped()
