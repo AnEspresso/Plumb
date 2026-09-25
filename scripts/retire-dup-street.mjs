@@ -38,6 +38,7 @@ const sites = await db.collection('sites').get();
 const group = [];
 sites.docs.forEach(function (d) {
   const data = d.data() || {};
+  const label = labelOf(data);
   const key = streetKey(label);
   if (!key) return;
   const hit = key === want || key.startsWith(want + ' ') || want.startsWith(key + ' ');
