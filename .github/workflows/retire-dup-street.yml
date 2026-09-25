@@ -1,0 +1,31 @@
+name: Retire an empty duplicate street
+on:
+  workflow_dispatch:
+    inputs:
+      street:
+        description: Street without the house number, lowercase, e.g. cottage ln
+        required: true
+        default: cottage ln
+      confirm:
+        description: 1 to delete the empty short name, otherwise dry run
+        required: true
+        default: "0"
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Auth with the Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+      - name: Retire
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          RETIRE_STREET: ${{ github.event.inputs.street }}
+          RETIRE_CONFIRM: ${{ github.event.inputs.confirm }}
+        run: |
+          set -euo pipefail
+          npm i --no-audit --no-fund firebase-admin >/dev/null
+          node scripts/retire-dup-street.mjs

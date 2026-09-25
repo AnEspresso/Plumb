@@ -184,13 +184,44 @@ exports.telemetryClear = onRequest(async (req, res) => {
 });
 
 /* ── Lock-screen push when a sub replies on a packet ── */
-const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const push = require('./lib/push');
+const { applyClaimToSite } = require('./lib/claimStamp');
 
 async function deliver(uids, notice) {
   const tokens = await push.tokensFor(db, uids);
   return push.sendPush(admin, tokens, notice);
 }
+
+/* A claim writes the house. The builder's phone is no longer the publisher. */
+exports.onInviteClaim = onDocumentCreated('invites/{code}/claims/{uid}', async (event) => {
+  const code = event.params.code;
+  const uid = event.params.uid;
+  const claim = (event.data && event.data.data && event.data.data()) || {};
+  const invSnap = await db.collection('invites').doc(code).get();
+  if (!invSnap.exists) return;
+  const invite = invSnap.data() || {};
+  invite.code = code;
+  if (invite.revoked) return;
+  let docs = [];
+  if (invite.role === 'team') {
+    const owner = String(invite.createdBy || '');
+    if (!owner) return;
+    const q = await db.collection('sites').where('memberUids', 'array-contains', owner).get();
+    docs = q.docs;
+  } else {
+    const siteId = String(invite.siteId || '');
+    if (!siteId) return;
+    const one = await db.collection('sites').doc(siteId).get();
+    if (!one.exists) return;
+    docs = [one];
+  }
+  for (const doc of docs) {
+    const patch = applyClaimToSite(doc.data() || {}, invite, uid, claim);
+    if (!patch) continue;
+    await doc.ref.set(Object.assign({ updatedAt: Date.now() }, patch), { merge: true });
+  }
+});
 
 exports.onPacketReply = onDocumentWritten('packets/{token}', async (event) => {
   const before = event.data.before.exists ? event.data.before.data() : null;

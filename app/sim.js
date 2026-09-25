@@ -1219,7 +1219,10 @@ t('sheet contract exists', SRC.indexOf('function sheetContract')>=0&&SRC.indexOf
 t('sheet contract ignores picker pills', SRC.split('function sheetContract')[1].slice(0,1200).indexOf('ov-sortpill')>=0&&SRC.split('function sheetContract')[1].slice(0,1200).indexOf('actionBlacks')>=0);
 t('second house sheet is short', SRC.indexOf('function afterHouseAdded')>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("if(first)")>=0&&SRC.indexOf('Open this house')>=0);
 t('adding a house opens that house', SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf("openSiteFromOverview")>=0&&SRC.split('function afterHouseAdded')[1].split('function openStart')[0].indexOf('showOverview()')>=0);
-t('homeowner waits for the share', SRC.indexOf('Waiting for your builder to share this house')>=0&&SRC.indexOf('function clientRetryHouse')>=0);
+t('homeowner waits for the share', SRC.indexOf('Waiting for your builder to share this house')>=0&&SRC.indexOf('Ask them to open SitePlumb')>=0);
+t('a decision opens that decision', SRC.indexOf("clientGo(\\'specs\\'")>=0&&SRC.indexOf('id="clsel-')>=0);
+t('build brief says Sent', SRC.indexOf("by.textContent='Sent.'")>=0&&SRC.indexOf('Not sent. Ask your builder')>=0);
+t('needs you names who', SRC.indexOf('function nyWhoSince')>=0);
 t('a joined invite publishes that house', SRC.split('function approveClaim')[1].split('function redeemInvite')[0].indexOf('Sync._pushOne(p)')>=0&&SRC.split('function queueSync')[1].slice(0,900).indexOf('Sync.pushAll()')<0);
 t('saving one house does not upload the book', SRC.split('function queueSync')[1].slice(0,1200).indexOf('_syncDirty')>=0&&SRC.split('function queueSync')[1].slice(0,1200).indexOf('_pushOne')>=0);
 t('homeowner hat survives sign out', SRC.indexOf('function laSaveHat')>=0&&SRC.indexOf("localStorage.getItem('plumb.hats')")>=0&&SRC.split('function liveSignOut')[1].slice(0,700).indexOf('plumb.hats')<0);
@@ -1255,7 +1258,7 @@ t('guest packet page is under 50 KB', fs.statSync(path.join(__dirname,'p.html'))
   t('guest packet calendar sits above the phone chrome', PHTML.indexOf('cal-acts')>=0&&PHTML.indexOf('padding-bottom:calc(var(--s-8)')>=0);
   t('guest packet pretty-prints inspection dates', PHTML.indexOf('function fmtIso')>=0);
   t('guest packet paints the hero from the URL', PHTML.indexOf('__gpUrlPainted')>=0&&PHTML.indexOf('__packetFixture')>=0);
-  t('guest packet marks stale instructions unusable', PHTML.indexOf('Specs on this page are current')>=0&&PHTML.indexOf('sign-off no longer applies')>=0&&PHTML.indexOf('updated warn')>=0);
+  t('guest packet marks stale instructions unusable', PHTML.indexOf('The spec changed')>=0&&PHTML.indexOf('old confirm does not count')>=0&&PHTML.indexOf('updated warn')>=0);
   t('guest packet offers crew confirm', PHTML.indexOf('I have these instructions')>=0&&PHTML.indexOf('gpAck')>=0);
   const i=PHTML.indexOf('initializeApp'),a=PHTML.indexOf('appCheck'),f=PHTML.indexOf('firebase.firestore()');
   t('guest packet App Check after initializeApp', i>=0&&a>i&&f>a);
@@ -1807,7 +1810,7 @@ t('crew invite link names the role', $("(function(){const p=P();p.invites=p.invi
 t('invite signup does not stamp a builder role from the picker', SRC.indexOf("const rpRole=invCode?'':")>=0);
 t('company signup roles are the four builder hats', $("Object.keys(RP_ROLES).sort().join(',')")==='office,owner,pm,superintendent');
 t('Your role picker has no homeowner or crew option', $("Array.from(document.getElementById('laRole').options).map(o=>o.value).join(',')")==='owner,pm,superintendent,office');
-t('signup role hint points homeowners and crew at the invite', $("document.querySelector('#laRoleRow .la-hint').textContent").toLowerCase().indexOf('invite')>=0);
+t('signup role hint points homeowners and crew at the text', $("document.getElementById('laJoinLine').textContent").toLowerCase().indexOf('text their builder sends')>=0);
 t('live sign-out returns to the splash', SRC.indexOf('function showSplash()')>=0&&$("String(liveSignOut)").indexOf('showSplash()')>=0);
 t('delete account returns to the splash', $("String(delAcctExecute)").indexOf('showSplash()')>=0);
 t('sign-out persists before dropping the profile', $("String(liveSignOut)").indexOf('Data.setSession(null)')<$("String(liveSignOut)").indexOf("removeItem('plumb.liveAuth')"));

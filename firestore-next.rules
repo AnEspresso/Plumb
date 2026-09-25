@@ -260,7 +260,11 @@ service cloud.firestore {
       allow delete: if false;
 
       match /claims/{claimUid} {
-        allow read: if signedIn();
+        function claimOwner() {
+          return signedIn()
+            && get(/databases/$(database)/documents/invites/$(code)).data.createdBy == uid();
+        }
+        allow read: if signedIn() && (claimUid == uid() || claimOwner());
         allow create: if signedIn() && claimUid == uid();
         allow update, delete: if false;
       }
