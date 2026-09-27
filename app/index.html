@@ -3906,15 +3906,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.428.0 - The claim writes the house';
+const PLUMB_VERSION='2.429.0 - An invited crew sees their own bookings';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790346188768;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.428.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790536420997;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.429.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -7929,12 +7929,15 @@ function approveClaim(code,uid,c){
     const role=inv.role==='client'?'client':'sub';
     if(p.members[uid]!==role){
       p.members[uid]=role;
-      p.memberInfo[uid]={name:c.name||inv.name||'',trade:inv.trade||'',email:c.email||''};
+      /* A crew is booked under the roster name - same order as the server stamp,
+         or this phone wins the last-writer race and undoes it. */
+      const jn=role==='sub'?(inv.name||c.name||''):(c.name||inv.name||'');
+      p.memberInfo[uid]={name:jn,trade:inv.trade||'',email:c.email||''};
       inv.status='joined';inv.uid=uid;
       try{_syncDirty.add(String(p.id));}catch(e){}
       persist();
       try{if(typeof Sync!=='undefined'&&Sync.ready())Sync._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync._pushOne');}
-      toast((c.name||inv.name||'Invitee')+' joined '+(p.street||p.name));
+      toast((jn||'Invitee')+' joined '+(p.street||p.name));
       logEvent('memberJoined',role+' · '+(c.name||''));}
     return;}}
 async function redeemInvite(code,prof){
@@ -9341,7 +9344,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       let q=this.db.collection('sites').doc(sid).collection(c.sub);
       try{
         if(siteRoleFor(p0)==='sub'&&c.sub==='bk'){
-          const nm=(state.session&&state.session.name)||'';
+          const nm=crewBkName(p0);
           if(nm)q=q.where('data.subName','==',nm);
         }
       }catch(e){}
@@ -9786,6 +9789,18 @@ function siteRoleFor(p){
   try{const s=state.session;const uid=(s&&s.auth&&s.auth.uid)||(Sync&&Sync.uid);
     if(uid&&p&&p.members&&p.members[uid])return p.members[uid];}catch(e){}
   return 'builder';
+}
+/* The rule crewOwnBk() compares a booking's subName with the name the server
+   stamped on this house (memberInfo[uid].name). Filter on exactly that value:
+   session.name comes from a different place on each sign-in path, and a filter
+   that contradicts the rule gets the whole listener refused. */
+function crewBkName(p){
+  try{
+    const u=(state.session&&state.session.auth&&state.session.auth.uid)||(typeof Sync!=='undefined'&&Sync.uid)||'';
+    const n=u&&p&&p.memberInfo&&p.memberInfo[u]&&p.memberInfo[u].name;
+    if(n)return String(n);
+  }catch(e){}
+  return (state.session&&state.session.name)||'';
 }
 function syncCollsFor(role){
   if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs');

@@ -1,0 +1,31 @@
+name: Restamp crew names (one-time repair)
+# Crews who joined before 2.429 were stamped with the name they typed, so they
+# see an empty schedule. This restamps them with the roster name from their
+# invite. Dry run unless you type WRITE. Safe to run again.
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: 'Type WRITE to change live data. Anything else is a dry run.'
+        required: false
+        default: 'dry run'
+
+jobs:
+  restamp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - name: Install firebase-admin
+        run: npm install --no-save --no-audit --no-fund firebase-admin@12
+
+      - name: Auth with the Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+
+      - name: Restamp
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          RESTAMP_CONFIRM: ${{ github.event.inputs.write == 'WRITE' && '1' || '0' }}
+        run: node scripts/restamp-crew-names.mjs

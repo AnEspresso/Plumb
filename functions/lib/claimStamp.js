@@ -23,8 +23,17 @@ function applyClaimToSite(site, invite, uid, claim) {
   if (cur === 'builder' && role !== 'builder') return null;
   members[uid] = role;
   const prev = info[uid] || {};
+  /* A crew is booked under the roster name on the invite, and the rule
+     crewOwnBk() matches booking.subName against this stamped name. Take the
+     roster name first for a crew, or a crew who typed their own name (or an
+     email) at signup sees an empty schedule. Homeowner and team keep what they
+     typed: they are not matched against bookings. */
+  const rosterFirst = role === 'sub';
+  const name = rosterFirst
+    ? (invite.name || claim.name || prev.name)
+    : (claim.name || invite.name || prev.name);
   info[uid] = Object.assign({}, prev, {
-    name: String(claim.name || invite.name || prev.name || '').slice(0, 80),
+    name: String(name || '').slice(0, 80),
     email: String(claim.email || prev.email || '').slice(0, 120),
     trade: String(invite.trade || prev.trade || ''),
   });

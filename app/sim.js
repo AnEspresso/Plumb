@@ -1224,6 +1224,47 @@ t('a decision opens that decision', SRC.indexOf("clientGo(\\'specs\\'")>=0&&SRC.
 t('build brief says Sent', SRC.indexOf("by.textContent='Sent.'")>=0&&SRC.indexOf('Not sent. Ask your builder')>=0);
 t('needs you names who', SRC.indexOf('function nyWhoSince')>=0);
 t('a joined invite publishes that house', SRC.split('function approveClaim')[1].split('function redeemInvite')[0].indexOf('Sync._pushOne(p)')>=0&&SRC.split('function queueSync')[1].slice(0,900).indexOf('Sync.pushAll()')<0);
+/* 2.429 - an invited crew saw an empty schedule. The claim carried what the
+   crew typed (or their email) and beat the roster name, so crewOwnBk() never
+   matched booking.subName. Every writer now stamps a crew with the roster name,
+   and the crew phone filters on exactly what the rule compares. */
+t('a joining crew is stamped with the roster name, not what they typed', (function(){
+  return $(`(function(){
+    const keep={projects:state.projects,activeId:state.activeId};
+    try{
+      state.projects=[{id:951,name:'Crew stamp',street:'Crew stamp',items:[],logs:[],docs:[],subs:[{id:'s1',name:'Clearwater Plumbing',specialty:'plumb'}],
+        stageDone:{},selections:[],payments:[],members:{},memberInfo:{},invites:[{code:'CRW1',role:'sub',status:'open',name:'Clearwater Plumbing',trade:'plumb'}]}];
+      approveClaim('CRW1','crewU',{name:'Mike Chen',email:'mike@gmail.com'});
+      const i=state.projects[0].memberInfo.crewU||{};
+      return i.name==='Clearwater Plumbing'&&state.projects[0].members.crewU==='sub';
+    }finally{state.projects=keep.projects;state.activeId=keep.activeId;}
+  })()`);
+})());
+t('a joining homeowner keeps their own name', (function(){
+  return $(`(function(){
+    const keep={projects:state.projects,activeId:state.activeId};
+    try{
+      state.projects=[{id:952,name:'Ho stamp',street:'Ho stamp',items:[],logs:[],docs:[],subs:[],stageDone:{},selections:[],payments:[],
+        members:{},memberInfo:{},invites:[{code:'HOM1',role:'client',status:'open',name:''}]}];
+      approveClaim('HOM1','hoU',{name:'Pat Smith',email:'pat@x.com'});
+      return (state.projects[0].memberInfo.hoU||{}).name==='Pat Smith';
+    }finally{state.projects=keep.projects;state.activeId=keep.activeId;}
+  })()`);
+})());
+t('crew bookings filter on the stamped name, not the session name', (function(){
+  return $(`(function(){
+    const keepS=state.session;
+    try{
+      state.session=Object.assign({},keepS||{},{role:'subs',name:'Mike Chen',auth:{uid:'crewU'}});
+      const p={memberInfo:{crewU:{name:'Clearwater Plumbing'}}};
+      if(typeof crewBkName!=='function')return false;
+      const a=crewBkName(p);
+      const b=crewBkName({memberInfo:{}});           /* nothing stamped yet: fall back to the session */
+      return a==='Clearwater Plumbing'&&b==='Mike Chen';
+    }finally{state.session=keepS;}
+  })()`);
+})());
+t('the crew bookings listener uses crewBkName', SRC.split('_attachColls(sid){')[1].slice(0,900).indexOf('crewBkName(p0)')>=0&&SRC.split('_attachColls(sid){')[1].slice(0,900).indexOf("state.session&&state.session.name)||'';")<0);
 t('saving one house does not upload the book', SRC.split('function queueSync')[1].slice(0,1200).indexOf('_syncDirty')>=0&&SRC.split('function queueSync')[1].slice(0,1200).indexOf('_pushOne')>=0);
 t('homeowner hat survives sign out', SRC.indexOf('function laSaveHat')>=0&&SRC.indexOf("localStorage.getItem('plumb.hats')")>=0&&SRC.split('function liveSignOut')[1].slice(0,700).indexOf('plumb.hats')<0);
 t('joined invites are stamped back onto the house', SRC.indexOf('function backfillJoinedInvites')>=0&&SRC.split('function backfillMemberships')[1].slice(0,500).indexOf('backfillJoinedInvites')>=0);

@@ -40,6 +40,32 @@ const crew = applyClaimToSite(
 assert.strictEqual(crew.members.c1, 'sub');
 assert.strictEqual(crew.meta.memberInfo.c1.trade, 'tile');
 
+/* A crew is booked under the roster name the builder chose. The rule
+   crewOwnBk() matches booking.subName against memberInfo[uid].name, so the
+   stamped name must be the roster name, never what the crew typed at signup
+   or their email. The old test passed invite.name === claim.name, which is
+   exactly how this slipped through. */
+const roster = { code: 'CR', role: 'sub', siteId: 'p1', trade: 'plumb', name: 'Clearwater Plumbing' };
+const crewSite = () => ({ members: { b1: 'builder' }, meta: { invites: [{ code: 'CR', role: 'sub', status: 'open' }] } });
+for (const typed of ['Mike Chen', 'Clearwater Plumbing LLC', 'mike@gmail.com', 'clearwater plumbing', '']) {
+  const got = applyClaimToSite(crewSite(), roster, 'c9', { name: typed, email: 'mike@gmail.com' });
+  assert.strictEqual(got.meta.memberInfo.c9.name, 'Clearwater Plumbing',
+    'crew who typed ' + JSON.stringify(typed) + ' must be stamped with the roster name');
+}
+/* A re-stamp of a crew already on the house keeps the roster name too. */
+const restamp = applyClaimToSite(
+  { members: { b1: 'builder', c9: 'sub' }, meta: { memberInfo: { c9: { name: 'Mike Chen', trade: 'plumb' } } } },
+  roster, 'c9', { name: 'Mike Chen' });
+assert.strictEqual(restamp.meta.memberInfo.c9.name, 'Clearwater Plumbing', 're-stamp heals a crew stamped with a typed name');
+/* An old crew invite that carried no name still falls back to what the crew sent. */
+const noRosterName = applyClaimToSite(crewSite(), { code: 'CR', role: 'sub', siteId: 'p1', trade: 'plumb' }, 'c9', { name: 'Lee' });
+assert.strictEqual(noRosterName.meta.memberInfo.c9.name, 'Lee', 'crew invite without a roster name keeps the claim name');
+/* Homeowner and team are unchanged: they are not matched against bookings. */
+const ho = applyClaimToSite({ members: { b1: 'builder' }, meta: {} }, { code: 'HO', role: 'client', siteId: 'p1' }, 'h1', { name: 'Pat Smith' });
+assert.strictEqual(ho.meta.memberInfo.h1.name, 'Pat Smith', 'homeowner keeps their own name');
+const tm = applyClaimToSite({ members: {}, meta: {} }, { code: 'TM', role: 'team', siteId: '', name: '' }, 't1', { name: 'Sam Lee' });
+assert.strictEqual(tm.meta.memberInfo.t1.name, 'Sam Lee', 'teammate keeps their own name');
+
 const rules = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
 const claims = rules.split('match /claims/{claimUid}')[1].split('match /orgs/')[0];
 assert.ok(claims.indexOf('claimUid == uid()') >= 0, 'claimer can read their claim');
