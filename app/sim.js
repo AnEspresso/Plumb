@@ -920,6 +920,9 @@ t('Homeowner chip: client view full, overview hidden, chip lit', $("state.sessio
 $("demoRole('subs')");
 t('Sub chip swaps cleanly', $("state.session.role")==='subs'&&$("document.getElementById('subview').classList.contains('show')")===true&&$("document.getElementById('clientview').classList.contains('show')")===false);
 $("demoRole('builder')");
+t('hat switcher says Crew, not Sub', $("document.querySelector('.exc-roles button[data-r=subs]').textContent")==='Crew'&&$("document.getElementById('role-subs').textContent.trim()")==='Crew');
+$("(function(){const _am=appMode;appMode=function(){return 'real';};try{peopleMode='invite';renderPeople();}finally{appMode=_am;}})()");
+t('invite choice says Crew, directory says Crews', (function(){const b=Array.from(D.querySelectorAll('#peopleScrim button')).map(x=>x.textContent.trim());return b.indexOf('Crew')>=0&&b.indexOf('Crews')>=0&&b.indexOf('Sub')<0&&b.indexOf('Subs')<0;})(), JSON.stringify(Array.from(D.querySelectorAll('#peopleScrim button')).map(x=>x.textContent.trim())));
 t('Builder chip returns home', $("state.session.role")==='builder'&&$("document.getElementById('overview').classList.contains('show')")===true);
 $('exitDemo()');$('exitDemoToApp()');
 // voice layer: guarded everywhere, mute round-trips

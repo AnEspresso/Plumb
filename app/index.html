@@ -2562,7 +2562,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
           </button>
           <button id="role-subs" onclick="setRole('subs')">
             <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6 2 2 6-6a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2z"/></svg>
-            Subs
+            Crew
           </button>
           <button id="role-client" onclick="setRole('client')">
             <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m11.4 11.6 9.6-9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
@@ -2674,7 +2674,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
       <div class="sheet-head"><h4>Crews</h4></div>
 <div class="sheet-body">
-<p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-sm">Your company roster. Every new site starts with these subs — add the crews you use again and again.</p>
+<p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-sm">Your company roster. Every new site starts with these crews — add the crews you use again and again.</p>
       <input id="rosterSearch" placeholder="Search crews…" autocapitalize="off" autocomplete="off" oninput="renderRoster()" class="mb-2" style="display:none">
       <div id="rosterList"></div>
       <button class="add-sub-btn mt-2 btn btn-secondary" onclick="openRosterAdd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a crew</button>
@@ -2691,7 +2691,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
       <div class="sheet-head"><h4>Idle &amp; Plan Ahead</h4></div>
 <div class="sheet-body">
-<input id="idleSearch" class="ov-search hide mb-2" placeholder="Search idle subs…" oninput="renderIdleSheet()">
+<input id="idleSearch" class="ov-search hide mb-2" placeholder="Search idle crews…" oninput="renderIdleSheet()">
       <div class="idle-scroll" id="idleBody"></div>
       <div id="idlePlan"></div>
 </div>
@@ -2712,7 +2712,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
       <div class="sheet-head"><h4>Idle houses</h4></div>
 <div class="sheet-body">
-<p class="fs-sm c-ink-3 mt-0 ml-1 mr-1 mb-3">Started but quiet — no scheduled subs, no recent log activity, no permits in motion. Longest-idle first.</p>
+<p class="fs-sm c-ink-3 mt-0 ml-1 mr-1 mb-3">Started but quiet — no scheduled crews, no recent log activity, no permits in motion. Longest-idle first.</p>
       <div class="info-body" id="idleSitesBody"></div>
 </div>
 <div class="leave-bar sheet-foot"><button class="btn btn-secondary" onclick="closeIdleSites()"><span>Done</span></button></div></div>
@@ -3440,11 +3440,11 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <div class="fld-label mt-2">Who can see it</div>
       <select id="docAud" class="fld-select" onchange="var w=document.getElementById('docAudWarn');if(w)w.style.display=(this.value==='homeowner'||this.value==='all')?'':'none'">
         <option value="team">Team only</option>
-        <option value="subs" selected>Team + subs</option>
+        <option value="subs" selected>Team + crews</option>
         <option value="homeowner">Team + homeowner</option>
-        <option value="all">Everyone (team, subs, homeowner)</option>
+        <option value="all">Everyone (team, crews, homeowner)</option>
       </select>
-      <div id="docAudWarn" class="fld-hint hide c-clay">⚠ The homeowner will see this document. Don’t share sub pricing, sub agreements, or internal cost sheets.</div>
+      <div id="docAudWarn" class="fld-hint hide c-clay">⚠ The homeowner will see this document. Don’t share crew pricing, crew agreements, or internal cost sheets.</div>
       <div class="fld-label mt-2">Status / note (optional)</div>
       <input id="docStatus" placeholder="e.g. Signed, Complete, Collecting…">
       <div class="fld-label mt-2">File (optional)</div>
@@ -3614,7 +3614,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <div class="seg seg-top">
         <button class="on" data-b="schedule" onclick="buildSeg('schedule',this)">Schedule</button>
         <button data-b="permits" onclick="buildSeg('permits',this)">Permits</button>
-        <button data-b="subs" onclick="buildSeg('subs',this)">Subs</button>
+        <button data-b="subs" onclick="buildSeg('subs',this)">Crews</button>
       </div>
       <div id="buildSchedule" class="build-pane">
         <button class="cal-door" onclick="calSiteFilter=String(state.activeId);openCal()">
@@ -3911,15 +3911,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.433.0 - The app links back to the site, Zoom setup, and hello@';
+const PLUMB_VERSION='2.434.0 - Crew wording everywhere it shows';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790618007007;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.433.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790619503524;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.434.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5502,7 +5502,7 @@ function renderNext(){
   if(gate)h+=`<div class="sr-d mt-2 ml-0 mr-0 mb-3 c-clay">Pre-booking \u2014 ${esc(gate.prev.name)} ${gate.labels.length>1?'inspections':'inspection'} still pending.</div>`;
   (function(){if(st.id==='site'||st.id==='demo')return;const _bp=(p.permits||[]).find(x=>x.name==='Building Permit');const _ps=_bp?_bp.status:'Not started';if(_ps==='Issued'||_ps==='Closed')return;h+=`<div class="sr-d mt-2 ml-0 mr-0 mb-3 c-clay">\u26a0 Building Permit: ${esc(_ps)} \u2014 usually needed before this work starts.</div>`;})();
   if(!_nextCands.length){
-    h+='<div class="empty py-2 px-0">No '+esc(tradeLabelOf(st))+' sub in your roster is free in the next three weeks.</div>'
+    h+='<div class="empty py-2 px-0">No '+esc(tradeLabelOf(st))+' crew in your roster is free in the next three weeks.</div>'
       +`<button class="add-sub-btn btn btn-secondary" onclick="closeNextSite();calSiteFilter='${p.id}';openBk(null,Date.now())">Open the scheduler anyway</button>`;
     body.innerHTML=h;return;}
   h+='<div class="seg seg-top">'
@@ -6493,7 +6493,7 @@ function openSetupReview(){
     `<p class="mt-0 ml-0 mr-0 mb-2"><b>${esc(pr.by||'A team member')}</b>${RP_ROLES[pr.rpRole]?' ('+esc(RP_ROLES[pr.rpRole])+')':''} set up the company. These choices apply to every new house — give them your OK or adjust them.</p>
      <div class="subrow"><div class="si"><div class="n">Company</div><div class="d">${esc(o.company||'—')}</div></div></div>
      <div class="subrow"><div class="si"><div class="n">Build style</div><div class="d">${esc(buildStyleLabel())}</div></div></div>
-     <div class="subrow"><div class="si"><div class="n">Sub roster</div><div class="d">${(o.subRoster||[]).length} compan${(o.subRoster||[]).length===1?'y':'ies'} pre-loaded on new sites</div></div></div>
+     <div class="subrow"><div class="si"><div class="n">Crew roster</div><div class="d">${(o.subRoster||[]).length} compan${(o.subRoster||[]).length===1?'y':'ies'} pre-loaded on new sites</div></div></div>
      ${(o.specTemplates&&Object.keys(o.specTemplates).length)?`<div class="subrow"><div class="si"><div class="n">Custom spec questions</div><div class="d">${Object.values(o.specTemplates).reduce((a,b)=>a+b.length,0)} across ${Object.keys(o.specTemplates).length} categor${Object.keys(o.specTemplates).length===1?'y':'ies'}</div></div></div>`:''}
      <button class="b1 b-go w-full mt-3 btn btn-primary" onclick="approveOrgPrefs()">Approve setup</button>
      <button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo();openSetup()">Adjust in the wizard…</button>`);}
@@ -6629,7 +6629,7 @@ function renderStart(){
     <p class="mt-0 ml-0 mr-0 mb-3 c-ink-2 fs-sm lh-15">${has?'Another house on the book, or bring one in that is already underway.':'Get your company into SitePlumb. Start with one job, or set the book up and add houses as you go.'}</p>
     <button class="start-door" onclick="startPath('import')">
       <div class="sd-ic"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></div>
-      <div><div class="t">A house I am already building</div><div class="d">Bring an in-flight job in \u2014 pull a sub from contacts, forward a permit, drop in site photos.</div></div></button>
+      <div><div class="t">A house I am already building</div><div class="d">Bring an in-flight job in \u2014 pull a crew from contacts, forward a permit, drop in site photos.</div></div></button>
     <button class="start-door" onclick="startPath('new')">
       <div class="sd-ic"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/><path d="M9 21v-7h6v7"/></svg></div>
       <div><div class="t">A new build starting soon</div><div class="d">Set it up clean before day one \u2014 street, city, and the house on the book.</div></div></button>
@@ -7028,7 +7028,7 @@ teamLegacy:[
  {sel:'#siteSummary',title:'The site at a glance',body:'A job opens calm: current stage and %, what it\u2019s waiting on, and who\u2019s next on site.',nav:()=>{try{const sp=state.projects||[];const pick=sp.find(p=>!p.sample)||sp[0];if(pick)openSiteFromOverview(pick.id);}catch(e){}}},
  {sel:'#siteSummary .ss-card:last-child',title:'Next on site',body:'The smart one: it suggests the best crews free across all your jobs for the work that\u2019s due \u2014 by who can start first, who has room, or who knows the house.'},
  {sel:'nav .tabs .tab[data-v="decisions"]',tap:true,title:'Needs You',body:'Everything the job is waiting on \u2014 open issues and selections in one list. Tap it to look.'},
- {sel:'nav .tabs .tab[data-v="build"]',tap:true,title:'Build',body:'Your schedule, permits and subs \u2014 the whole build in one place. Tap Build.'},
+ {sel:'nav .tabs .tab[data-v="build"]',tap:true,title:'Build',body:'Your schedule, permits and crews \u2014 the whole build in one place. Tap Build.'},
  {sel:'nav .tabs .tab[data-v="files"]',tap:true,title:'Files',body:'Photos and documents together, filed by date and trade. Tap Files.'},
  {title:'That\u2019s the tour',body:'Explore the demo freely \u2014 three sample homes at different stages. When you\u2019re ready, switch to Live to run your own jobs.',nav:()=>{try{go('log');}catch(e){}}}
 ],sub:[
@@ -7040,7 +7040,7 @@ teamLegacy:[
  {sel:'#subtab-selections',tap:true,title:'Your selections',body:'The selections that fall under your trade, confirmed before you build. Tap to see them.'},
  {title:'You\u2019re set',body:'That\u2019s your whole view. When a builder invites you to a real job, this is exactly how it\u2019ll look.'}
 ],grand:[
- {title:'Welcome to SitePlumb',body:'Group texts, lost photos, and \u2018did anyone tell the plumber?\u2019 Building runs on scattered information. SitePlumb gathers it into one living record \u2014 the daily story, the schedule, your subs, your homeowner, the money. Let\u2019s walk one example home.',
+ {title:'Welcome to SitePlumb',body:'Group texts, lost photos, and \u2018did anyone tell the plumber?\u2019 Building runs on scattered information. SitePlumb gathers it into one living record \u2014 the daily story, the schedule, your crews, your homeowner, the money. Let\u2019s walk one example home.',
   acts:[{do:()=>demoRole('builder')}]},
  {sel:'#siteSummary',title:'The site at a glance',body:'Every job opens calm: the stage you\u2019re in, the percent complete, what\u2019s waiting on you, and who\u2019s next on site. The answer to \u2018how\u2019s it going?\u2019 \u2014 before anyone has to ask.',
   acts:[{do:()=>demoRole('builder')},{tap:'#ovCards .ov-card[onclick*="p2"]',do:()=>{openSiteFromOverview('p2');go('log');}}]},
@@ -7074,7 +7074,7 @@ teamLegacy:[
        hint:'The Save entry button at the bottom of the sheet.',
        done:()=>{try{return !document.getElementById('sheet').classList.contains('show')&&(P().logs||[]).some(l=>String(l.text||'').includes('waste lines'));}catch(e){return false;}}}
     ]}},
-{sel:'#decWaiting',title:'Needs You',body:'Everything waiting on a person \u2014 sub questions, homeowner sign-offs, open issues \u2014 in one list. When this screen is empty, nobody on your job is stuck.',
+{sel:'#decWaiting',title:'Needs You',body:'Everything waiting on a person \u2014 crew questions, homeowner sign-offs, open issues \u2014 in one list. When this screen is empty, nobody on your job is stuck.',
   acts:[{tap:'nav .tab[data-v=decisions]',do:()=>tourGoto('decisions')},{tap:'[data-d=waiting]',jump:true,do:()=>{try{decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}}],
   after:async(tok)=>{
     await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
@@ -7109,13 +7109,13 @@ teamLegacy:[
 {sel:'#buildSchedule .overall .top',title:'Stages',body:'The build in construction order. Each stage tracks its own progress, photos, and records \u2014 mark one complete, and the whole picture updates for you and your homeowner.',
   acts:[{tap:'nav .tab[data-v=build]',do:()=>tourGoto('build','schedule')}],
   after:async(tok)=>{const st=[...document.querySelectorAll('#stageList .stage')].filter((_,k)=>k%2===0).slice(0,4);await tourPing(st,tok,650,document.querySelector('#buildSchedule .overall .top'));}},
- {sel:'#calview .pkt-banner, #calview .cal-grid',bubSide:'tl',title:'The trades calendar',body:'Every crew booking across every job \u2014 who\u2019s on site, and when. Double-bookings get flagged before they burn a day, and subs confirm with one tap.',
+ {sel:'#calview .pkt-banner, #calview .cal-grid',bubSide:'tl',title:'The trades calendar',body:'Every crew booking across every job \u2014 who\u2019s on site, and when. Double-bookings get flagged before they burn a day, and crews confirm with one tap.',
   acts:[{do:()=>tourGoto('build','schedule')},{tap:'.cal-door',do:()=>{try{calSiteFilter=state.activeId;openCal();}catch(e){}}}],
   after:async(tok)=>{await new Promise(r=>setTimeout(r,5600));if(!tourAlive(tok))return;
     await orbTo('#calDoneBtn',{tap:true});if(!tourAlive(tok))return;
     try{closeCal();}catch(e){}
     setTimeout(()=>{try{if(!tourAlive(tok))return;const d2=document.querySelector('.cal-door');if(d2){const r2=d2.getBoundingClientRect();if(r2&&r2.height)tourPlace(r2,true,undefined,true);orbTo(d2,{settle:true,rest:true});}}catch(e){}},420);}},
- {sel:'#buildPermits',title:'Permits, inspections & your subs',body:'Every permit and inspection, tracked from \u2018not started\u2019 to \u2018passed\u2019 \u2014 where your city posts results online, SitePlumb pulls them in. One tab over is your roster: who\u2019s cleared, who\u2019s booked, who owes you paperwork.',
+ {sel:'#buildPermits',title:'Permits, inspections & your crews',body:'Every permit and inspection, tracked from \u2018not started\u2019 to \u2018passed\u2019 \u2014 where your city posts results online, SitePlumb pulls them in. One tab over is your roster: who\u2019s cleared, who\u2019s booked, who owes you paperwork.',
   acts:[{do:()=>tourGoto('build','schedule')},{tap:'[data-b=permits]',do:()=>{try{buildSeg('permits',document.querySelector('[data-b=permits]'));}catch(e){}}}],
   after:async(tok)=>{
     await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
@@ -7655,7 +7655,7 @@ function peoplePills(){
   const onTeam=peopleMode==='team'||peopleMode==='roles'||peopleMode==='teaminvite';
   const pill=function(id,lab){const on=id==='team'?onTeam:(peopleMode===id);return '<button type="button" class="ov-sortpill'+(on?' on':'')+'" onclick="openPeopleMode(\''+id+'\')">'+lab+'</button>';};
   let h='<div class="ppl-nav"><div class="ov-sortpills ppl-dirs">'
-    +pill('team','Team')+pill('homeowner','Homeowners')+pill('subs','Subs')
+    +pill('team','Team')+pill('homeowner','Homeowners')+pill('subs','Crews')
     +'</div>';
   if(peopleMode!=='invite'&&peopleMode!=='teaminvite'&&peopleMode!=='roles') h+='<button type="button" class="ppl-invite" onclick="openPeopleMode(\'invite\')">Invite</button>';
   return h+'</div>';
@@ -7747,7 +7747,7 @@ function __renderPeople(){
     h+='<div class="ppl-three">';
     h+='<button class="b1 b-cancel btn btn-secondary" onclick="createInvite(\'team\')">Team</button>';
     h+='<button class="b1 b-cancel btn btn-secondary" onclick="inviteHomeownerFlow()">Homeowner</button>';
-    h+='<button class="b1 b-cancel btn btn-secondary" onclick="inviteSubFlow()">Sub</button>';
+    h+='<button class="b1 b-cancel btn btn-secondary" onclick="inviteSubFlow()">Crew</button>';
     h+='</div>';
     if(just&&just.code){
       h+='<div class="code-box" onclick="copyText(\''+just.code+'\')">'+just.code+'</div>';
@@ -7769,7 +7769,7 @@ function __renderPeople(){
         return `<div class="subrow"><div class="si"><div class="n">${esc(p.street||p.name)}${p.city?' \u00b7 '+esc(p.city):''}</div><div class="d">${status}</div></div>${action}</div>`;
       }).join(''):'<div class="empty">Create a house first, then invite its homeowner here.</div>')
       +'<div class="sec"><h2>House calendar in their portal</h2></div>'
-      +'<p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-xs">Fewer \u201cwho\u2019s coming tomorrow?\u201d calls — homeowners see crew days, never your notes or sub names. Turn it on for every home or just specific ones.</p>'
+      +'<p class="mt-0 ml-0 mr-0 mb-2 c-ink-3 fs-xs">Fewer \u201cwho\u2019s coming tomorrow?\u201d calls — homeowners see crew days, never your notes or crew names. Turn it on for every home or just specific ones.</p>'
       +hoRowsHTML('renderPeople');
     return;}
   if(peopleMode==='templates'){
@@ -8053,7 +8053,7 @@ function renderRoster(){
   document.getElementById('rosterList').innerHTML=hits.map(({r,i})=>{
     const t=SPECIALTIES.find(x=>x.id===r.trade);const col=(TRADE_COLORS[r.trade]||{}).bg||'var(--oak)';
     return `<div class="subrow"><div class="si"><div class="n">${esc(r.name)}</div><div class="d"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${col};margin-right:5px;vertical-align:-1px"></span>${esc((t||{}).label||'General')}</div></div><button class="rm" onclick="rosterDrop(${i})" title="Remove from roster">${ICON.trash}</button></div>`;}).join('')
-    ||`<div class="empty py-2 px-0">${q?'No one matches.':'No subs yet — add the trades you work with, ready for when a stage comes up.'}</div>`;
+    ||`<div class="empty py-2 px-0">${q?'No one matches.':'No crews yet — add the trades you work with, ready for when a stage comes up.'}</div>`;
   document.getElementById('rosterCount').textContent=all.length?(all.length+' crew'+(all.length===1?'':'s')+' \u00b7 every new house starts with them'):'';}
 function subsOnSite(){
   closeSubsRoster();
@@ -8084,7 +8084,7 @@ function inviteSubFlow(){
   const pickSub=p=>{
     const roster=(p.subs||[]);
     const subs=roster.filter(s=>!(p.invites||[]).some(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked'));
-    if(!roster.length){toast('No subs on '+(p.street||p.name)+' yet — add one first');return;}
+    if(!roster.length){toast('No crews on '+(p.street||p.name)+' yet — add one first');return;}
     if(!subs.length){toast('Everyone on '+(p.street||p.name)+' is already invited');return;}
     if(subs.length===1){closeSubsRoster();Data.setActive(p.id);createInvite('sub',subs[0].id);return;}
     openPick({title:'Invite which crew?',options:subs.map(s=>({id:s.id,label:s.name,sub:specLabel(s.specialty)})),
@@ -14193,7 +14193,7 @@ function openStageReview(id){
   rows+=srRow('info','Daily log & records',recs.length+' record'+(recs.length===1?'':'s')+' logged to '+st.areas.join(', ')+'.');
   const stageDocs=docs.filter(d=>d.trade&&trades.includes(d.trade));
   const genDocs=docs.filter(d=>!d.trade);
-  rows+=srRow(subs.length?'ok':'warn','Crews',subs.length?(subs.length+' for '+tradeNames+(clearedSubs.length?(' · '+clearedSubs.length+' cleared'):'')+'.'):('No subs added for '+tradeNames+'.'));
+  rows+=srRow(subs.length?'ok':'warn','Crews',subs.length?(subs.length+' for '+tradeNames+(clearedSubs.length?(' · '+clearedSubs.length+' cleared'):'')+'.'):('No crews added for '+tradeNames+'.'));
   rows+=srRow(selPending.length?'warn':(stageSels.length?'ok':'info'),'Selections',stageSels.length?(selPending.length?(selPending.length+' of '+stageSels.length+' not yet installed for '+tradeNames+'.'):('All '+stageSels.length+' selection'+(stageSels.length===1?'':'s')+' installed for '+tradeNames+'.')):('No selections recorded for '+tradeNames+'.'));
   const specGap=stageSels.filter(s=>!specComplete(s));
   rows+=srRow(specGap.length?'warn':(stageSels.length?'ok':'info'),'Install specs',stageSels.length?(specGap.length?(specGap.length+' of '+stageSels.length+' selection'+(stageSels.length===1?'':'s')+' missing required install details.'):'All selection specs confirmed.'):('No selections to spec for '+tradeNames+'.'));
@@ -15052,7 +15052,7 @@ function openReady(stageId){readyStageId=stageId;const st=STAGES.find(s=>s.id===
     <div class="ready-sub" onclick="clearSub('${s.id}')">
       <div class="si"><div class="n">${esc(s.name)}</div><div class="d">${s.phone?esc(s.phone):specLabel(s.specialty)}${s.cleared?' · cleared '+timeAgo(s.cleared):''}</div></div>
       <span class="go">${s.cleared?'✓ Notified':'Notify →'}</span>
-    </div>`).join(''):`<div class="empty">No ${tradeLabelOf(st)} sub yet — add one so you can schedule this stage.<br>Add one from the Crews list.</div>`;
+    </div>`).join(''):`<div class="empty">No ${tradeLabelOf(st)} crew yet — add one so you can schedule this stage.<br>Add one from the Crews list.</div>`;
   document.getElementById('readyScrim').classList.add('show');}
 function closeReady(){document.getElementById('readyScrim').classList.remove('show');if(navPacketStillOpen()){try{refreshPacket();}catch(e){}}try{houseMaybeResume();}catch(e){}}
 /* ── Calendar v2 (sub-level scheduling). Bookings are per-crew date
@@ -15379,7 +15379,7 @@ function renderIdleSheet(){
   h+=idle.length?idle.map(function(n){
       const blocked=av.some(function(a){return a.subName===n.name&&a.end>=mS&&a.start<=mE;});
       return '<div class="row row-tap" onclick="idleBook(\''+esc(n.name)+'\')"><div class="row-main"><div class="row-title">'+esc(n.name)+'</div><div class="row-sub">'+esc(specLabel(n.trade)||'')+(blocked?' \u00b7 blocked this month':'')+'</div></div><span class="row-aside">Schedule</span><span class="row-chev">\u203a</span></div>';}).join('')
-    :('<div class="empty py-1 px-0">'+(q?'No idle subs match \u201c'+esc(q)+'\u201d.':'Everyone has work this month.')+'</div>');
+    :('<div class="empty py-1 px-0">'+(q?'No idle crews match \u201c'+esc(q)+'\u201d.':'Everyone has work this month.')+'</div>');
   el.innerHTML=h;
   // Plan Ahead lives outside the scroll window so it's always visible
   const plan=document.getElementById('idlePlan');
@@ -15991,7 +15991,7 @@ function bkSave(){
     return;
   }
   if(clash.length){
-    openConfirm({title:'Another '+(specLabel(trade)||'sub')+' is already booked',
+    openConfirm({title:'Another '+(specLabel(trade)||'crew')+' is already booked',
       body:'You already have '+esc(clash[0])+' booked for '+esc(specLabel(trade)||'this trade')+' on '+esc(p.street||p.name)+'. Schedule '+esc(subName)+' as well?',
       okLabel:'Schedule anyway',cancelLabel:'Cancel',
       onConfirm:()=>packetGate(finalize)});
@@ -16156,12 +16156,12 @@ function docInPacket(p,tradeId,d){
 function docAud(d){return d&&d.aud?d.aud:'subs';}
 function docAudSub(d){const a=docAud(d);return a==='subs'||a==='all';}
 function docAudClient(d){const a=docAud(d);return a==='homeowner'||a==='all';}
-const DOC_AUD_LABEL={team:'Team only',subs:'Team + subs',homeowner:'Team + homeowner',all:'Everyone'};
+const DOC_AUD_LABEL={team:'Team only',subs:'Team + crews',homeowner:'Team + homeowner',all:'Everyone'};
 const DOC_AUD_ORDER=['team','subs','homeowner','all'];
 function cycleDocAud(i){const p=P();const d=(p.docs||[])[i];if(!d)return;
   const nx=DOC_AUD_ORDER[(DOC_AUD_ORDER.indexOf(docAud(d))+1)%DOC_AUD_ORDER.length];
   d.aud=nx;persist();renderDocs();
-  if(nx==='homeowner'||nx==='all')toast('\u26a0 The homeowner can now see this \u2014 avoid sub pricing or agreements');
+  if(nx==='homeowner'||nx==='all')toast('\u26a0 The homeowner can now see this \u2014 avoid crew pricing or agreements');
   else toast(DOC_AUD_LABEL[nx]);}
 
 function toggleDocInPacket(tradeId,name){
@@ -17274,7 +17274,7 @@ function _pkStamp(p,b,g){
     if(cur!==next){
       try{
         if((state.session||{}).role==='builder'&&typeof Notify!=='undefined'){
-          const site=p.street||p.name||'site';const who=b.subName||'A sub';
+          const site=p.street||p.name||'site';const who=b.subName||'A crew';
           if(r&&r.status==='confirmed'&&(!prevResp||prevResp.status!=='confirmed'))
             Notify.push('pkok:'+b.id+':'+(r.t||Date.now()),who+' confirmed \u2014 '+site,'Dates work',{pid:p.id,view:'schedule'},'builder');
           if(r&&r.status==='change'&&(!prevResp||prevResp.status!=='change'||prevResp.t!==r.t))
