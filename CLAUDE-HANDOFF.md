@@ -1,6 +1,6 @@
 # SitePlumb — handoff for a new model
 
-Written 2026-09-27 for Claude (or anyone else) who is asked to finish this product.
+Written 2026-09-27, corrected the same night after 2.429 and the rules suite shipped.
 Owner: Peter Gottschalk. The product is his. Do not redesign it to show you were here.
 
 This file is the current truth. Several older docs in the same tree are not.
@@ -43,16 +43,15 @@ is a custom-home builder.
 | Also allowed origin | `https://anespresso.github.io` |
 | This tree | marketing site at the repo root, app in `app/` |
 
-Source version, confirmed in this tree on 2026-09-27:
+Source version, live on https://siteplumb.com/app/ as of the evening of 2026-09-27:
 
-- `PLUMB_VERSION` = `2.428.0 - The claim writes the house`
-- `APP_VERSION` = `1790346188768`
-- `app/sw.js` cache = `plumb-v2.428.0`
-- `app/index.html` and `app/plumb.html` are byte-for-byte the same (18,860 lines)
+- `PLUMB_VERSION` = `2.429.0 - An invited crew sees their own bookings`
+- `APP_VERSION` = `1790536420997`
+- `app/sw.js` cache = `plumb-v2.429.0`
+- `app/index.html` and `app/plumb.html` stay byte-for-byte the same
 
-`HANDOFF.md` says `main` is 2.428.0. This sandbox copy had no `.git`, so do
-not assume every local note below is already on GitHub. Diff before you trust
-either side. The phone runs whatever GitHub Pages last published, and an
+`HANDOFF.md` in the repo may still say an older version. This file wins over
+that one. The phone runs whatever GitHub Pages last published, and an
 installed copy keeps the old service-worker cache until the cache name changes.
 
 ---
@@ -302,20 +301,30 @@ Cloud Functions (`functions/index.js`), project `plumb-467a0`:
 | `qbConnect` `qbCallback` `qbStatus` `qbDisconnect` `qbExportCosts` | QuickBooks sandbox |
 | `telemetryBeat` `telemetryEvent` `telemetryUsage` `telemetryClear` | Server-side only. The client cannot write telemetry. |
 
-`functions/lib/claimStamp.js` is the pure stamp. `claimStamp.test.js` checks
-that function and also checks that the rule *text* mentions the claim owner.
-The text check is not enough. `rulescheck.js` is the real one.
+`functions/lib/claimStamp.js` is the pure stamp. `functions/claimStamp.test.js`
+checks that function. Run it with `npm run claimstamp` from the repo root.
+The rule text check is not enough. `rulescheck.js` is the real one. A crew
+is stamped with the roster name on the invite, not the name they typed.
 
 ---
 
 ## 8. Security checks that actually ran
 
-On 2026-09-25, in this tree, `npm run rules` (from the repo root, not `app/`)
-started the Firestore emulator on port 8088 and ran `rulescheck.js` against
-`firestore.rules`.
+On the evening of 2026-09-27, GitHub Actions ran the suite from a clean
+checkout of `main` (workflow `Rules suite`, and again as the `test` job
+inside `Deploy Firestore rules`).
 
-Result: **96 invariants passed**, plus 8 documented gaps that still deny.
-No live house was touched.
+Result, production and staging, both times: **107 invariants passed**, plus
+8 documented gaps that still deny. No live house was touched. The deploy
+job then printed `ALREADY: live rules match repo` and published nothing.
+
+`npm run rules` and `npm run rules:next` live in the root `package.json`.
+`.github/workflows/rules.yml` runs them on a rules or functions change.
+`.github/workflows/deploy-rules.yml` calls that suite first. A failing
+suite cannot publish rules.
+
+The 96 count in older notes was a sandbox file that never reached GitHub.
+Do not quote it.
 
 The claim invariants, in particular:
 
@@ -354,6 +363,7 @@ green. Neither replaces the other.
 | 2.426 | Selections is not a dead end. Settings is not Company. Signing back in does not empty the book. |
 | 2.427 | House sits at the bottom of every homeowner page. A–Z sorts by street, not the house number. |
 | 2.428 | The claim writes the house on the server. The status line tells the truth. Delete lives under Privacy. A stale crew link says the old confirm does not count. |
+| 2.429 | An invited crew is stamped with the roster name, and the crew phone filters bookings on that same name. Crews who already joined are not rewritten by the app. A dry run on 2026-09-27 found 0 crews to rename. |
 
 Also already in the tree from 2.415–2.419, do not re-implement:
 
@@ -372,15 +382,18 @@ Do these in order. Do not start at the bottom because it is more interesting.
 
 ### A. Prove the live book before you add anything
 
-1. Confirm production is serving `2.428.0` / cache `plumb-v2.428.0`, not an
+1. Confirm production is serving `2.429.0` / cache `plumb-v2.429.0`, not an
    older installed copy. An old service worker looks like "your fix did nothing."
 2. Walk four hats. Scripts already exist: `scripts/front-door.mjs` (doors
    open), `scripts/whole-book.mjs` (doors used), `scripts/ink-the-book.mjs`
    (a business day on a throwaway house, then wipe). Read `FRONT-DOOR.md`,
    `WHOLE-BOOK.md`, `INK-THE-BOOK.md`.
-3. Re-run `node sim.js` from `app/` and `npm run rules` from the repo root.
-   Fix drift. Do not bless a red check by editing the assertion to match a
-   bug.
+3. `npm run rules` from the repo root was green on 2026-09-27 (107 + 8).
+   Re-run it if you touch rules. Do not bless a red check by editing the
+   assertion to match a bug. `node sim.js` from `app/` was 1011 and green
+   on the 2.429 push. The Chrome pixel job on that same push was red
+   (tour offer, calendar chooser, three pixel baselines). That is not a
+   rules failure. Do not re-bless pixels without a person looking.
 
 ### B. Holes that are still real
 
@@ -398,8 +411,10 @@ deployed. The HANDOFF queue is older than the code.
 4. **Estimating / takeoff** is the named gap against other builder software.
    It is the largest unbuilt feature. Do not start it until A is clean.
    If you do start it, it is a sheet in this book, not a new product.
-5. **Storage rules file missing from the repo.** Recover the live ruleset
-   into `storage.rules` so the emulator can enforce it. Do not widen it.
+5. **Storage rules file missing from the repo.** The suite now says
+   `STORAGE: SKIPPED` on every run. Recover the live ruleset into
+   `storage.rules` so the emulator can enforce it. Do not invent one.
+   Do not widen it. Not started.
 6. **Rules weight.** The 1000-expression ceiling. Only if a real owner
    update is being denied because evaluation gave up. Not as cleanup.
 7. **Two houses can share a street.** A retire script exists
@@ -513,7 +528,7 @@ Day one is read-only.
 3. Read `functions/index.js` `onInviteClaim` and `functions/lib/claimStamp.js`.
 4. Run sim and the rules suite. Write down the real counts.
 5. Open the live app and confirm the version string in Workbench or the
-   settings footer. If it is not 2.428.0, stop and say so.
+   settings footer. If it is not 2.429.0, stop and say so.
 6. Come back with a list of what is broken that you have seen, not a
    redesign. Peter will say which one to do.
 
@@ -527,7 +542,7 @@ pull request that reformats `index.html`.
 ```
 You are finishing SitePlumb, not replacing it.
 Read CLAUDE-HANDOFF.md before you touch a file. README.md is stale. Ignore it.
-The app is app/index.html (2.428.0). app/plumb.html must stay a byte copy.
+The app is app/index.html (2.429.0). app/plumb.html must stay a byte copy.
 app/p.html is the guest packet. app/sw.js cache must match SW_CACHE_EXPECTED.
 Paper, oak, clay. Capture stays. No overlay. No photo assistant. No Messages tab.
 Homeowners and crew join by invite. They are not signup roles.
