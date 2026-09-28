@@ -359,12 +359,11 @@ async function main() {
   await INV('storage: builder reads costs receipt', getBytes(ref(st.builder, 'live/sites/liveA/costs/receipt1')), true);
   await INV('storage: builder uploads costs receipt', uploadBytes(ref(st.builder, 'live/sites/liveA/costs/r2'), png, meta), true);
   await INV('storage: stranger DENIED costs receipt', getBytes(ref(st.stranger, 'live/sites/liveA/costs/receipt1')), false);
-  await GAP(NEXT ? 'STORAGE-COSTS: sub receipt read now DENIED' : 'STORAGE-COSTS: sub CAN read costs receipts under production storage rules (publish storage-next before receipt photos ship)',
-    getBytes(ref(st.sub, 'live/sites/liveA/costs/receipt1')), !NEXT);
-  await GAP(NEXT ? 'STORAGE-COSTS: client receipt read now DENIED' : 'STORAGE-COSTS: client CAN read costs receipts under production storage rules',
-    getBytes(ref(st.client, 'live/sites/liveA/costs/receipt1')), !NEXT);
-  await GAP(NEXT ? 'STORAGE-COSTS: sub receipt upload now DENIED' : 'STORAGE-COSTS: sub CAN write costs paths under production storage rules',
-    uploadBytes(ref(st.sub, 'live/sites/liveA/costs/r3'), png, meta), !NEXT);
+  /* Live since 2026-07-04: a costs receipt is builder-only. The old gaps
+     expected a crew to be able to read one. That hole is not in the ruleset. */
+  await INV('storage: sub DENIED costs receipt read', getBytes(ref(st.sub, 'live/sites/liveA/costs/receipt1')), false);
+  await INV('storage: client DENIED costs receipt read', getBytes(ref(st.client, 'live/sites/liveA/costs/receipt1')), false);
+  await INV('storage: sub DENIED costs receipt upload', uploadBytes(ref(st.sub, 'live/sites/liveA/costs/r3'), png, meta), false);
   const big = Buffer.alloc(26 * 1024 * 1024);
   await INV('storage: >25MB upload denied even for member', uploadBytes(ref(st.builder, 'live/sites/liveA/photos/big1'), big, meta), false);
   }

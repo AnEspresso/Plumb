@@ -1,0 +1,35 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() { return request.auth != null; }
+    function okUpload() {
+      return request.resource.size < 25 * 1024 * 1024
+             && request.resource.contentType.matches('image/.*|application/pdf');
+    }
+
+    match /demo/sites/{siteId}/{allPaths=**} {
+      allow read:  if signedIn();
+      allow write: if signedIn() && okUpload();
+    }
+
+    // Live files follow the app's exact layout {kind}/{fileId} (MediaSync.path).
+    // 'costs' receipts are builder-only; everything else stays member-wide.
+    match /live/sites/{siteId}/{kind}/{fileId} {
+      function site() {
+        return firestore.get(/databases/(default)/documents/sites/$(siteId)).data;
+      }
+      function role() { return site().members[request.auth.uid]; }
+      function isMember() {
+        return signedIn() && site().members != null && role() != null;
+      }
+      function kindOk() { return kind != 'costs' || role() == 'builder'; }
+      allow read:  if isMember() && kindOk();
+      allow write: if isMember() && kindOk() && okUpload();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
