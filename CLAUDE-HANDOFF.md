@@ -238,7 +238,7 @@ app/index.html     the app. Canonical.
 app/plumb.html     must match index.html exactly
 app/p.html         guest packet
 app/sw.js          cache name must equal SW_CACHE_EXPECTED
-app/sim.js         logic tests (jsdom). Last claimed green count was 1,007. Re-run; do not quote a stale count.
+app/sim.js         logic tests (jsdom). Last green count on the 2.429 push was 1,011.
 app/subfilter.js   crew cannot see another crew's work
 app/qa.js          real Chrome: hit targets, type, axe
 app/tokens.html    the visual law
@@ -315,8 +315,11 @@ checkout of `main` (workflow `Rules suite`, and again as the `test` job
 inside `Deploy Firestore rules`).
 
 Result, production and staging, both times: **107 invariants passed**, plus
-8 documented gaps that still deny. No live house was touched. The deploy
-job then printed `ALREADY: live rules match repo` and published nothing.
+8 documented gaps that still deny, before `storage.rules` was in the tree.
+Later the same night the live Storage rules were copied in and the suite
+ran again: **127 invariants passed**, plus the same 8 gaps, and uploads
+were included. No live house was touched. The deploy job then printed
+`ALREADY: live rules match repo` and published nothing.
 
 `npm run rules` and `npm run rules:next` live in the root `package.json`.
 `.github/workflows/rules.yml` runs them on a rules or functions change.
@@ -337,10 +340,10 @@ The claim invariants, in particular:
 - A stranger who merely holds the code cannot revoke the invite.
 - Another builder cannot revoke a code they did not send.
 
-`storage.rules` is named in `firebase.json` and is **not in this tree**.
-Storage checks are skipped until that file exists. Do not invent one and
-call it the deployed rules. Fetch the live storage ruleset before you edit
-storage behavior.
+`storage.rules` is the live ruleset, copied on 2026-09-27 from
+`firebase.storage/plumb-467a0.firebasestorage.app` (ruleset from July 4).
+`storage-next.rules` is the same bytes. Nothing published them back. A
+cost receipt is builder-only. Do not widen them.
 
 Sharp edge, do not "clean up" casually: some denied house updates hit
 Firestore's 1000-expression ceiling inside `clientSignoffOk` (every trade
@@ -348,7 +351,7 @@ is unrolled). They fail closed. An allow that the owner needs still
 passed in that run. Shrinking the rule is a security change, not a refactor.
 Do it only with the emulator suite green before and after.
 
-The 1,007 `sim.js` checks do not open Firestore. Both suites have to be
+The 1,011 `sim.js` checks do not open Firestore. Both suites have to be
 green. Neither replaces the other.
 
 ---
@@ -384,11 +387,11 @@ Do these in order. Do not start at the bottom because it is more interesting.
 
 1. Confirm production is serving `2.429.0` / cache `plumb-v2.429.0`, not an
    older installed copy. An old service worker looks like "your fix did nothing."
-2. Walk four hats. Scripts already exist: `scripts/front-door.mjs` (doors
-   open), `scripts/whole-book.mjs` (doors used), `scripts/ink-the-book.mjs`
-   (a business day on a throwaway house, then wipe). Read `FRONT-DOOR.md`,
-   `WHOLE-BOOK.md`, `INK-THE-BOOK.md`.
-3. `npm run rules` from the repo root was green on 2026-09-27 (107 + 8).
+2. Walk four hats. `scripts/front-door.mjs` is **not in the repo**, and
+   neither are `FRONT-DOOR.md`, `WHOLE-BOOK.md`, or `INK-THE-BOOK.md`.
+   `scripts/whole-book.mjs` and `scripts/ink-the-book.mjs` are. Do not
+   invent the missing script.
+3. `npm run rules` from the repo root was green on 2026-09-27 (127 + 8, uploads included).
    Re-run it if you touch rules. Do not bless a red check by editing the
    assertion to match a bug. `node sim.js` from `app/` was 1011 and green
    on the 2.429 push. The Chrome pixel job on that same push was red
@@ -411,10 +414,9 @@ deployed. The HANDOFF queue is older than the code.
 4. **Estimating / takeoff** is the named gap against other builder software.
    It is the largest unbuilt feature. Do not start it until A is clean.
    If you do start it, it is a sheet in this book, not a new product.
-5. **Storage rules file missing from the repo.** The suite now says
-   `STORAGE: SKIPPED` on every run. Recover the live ruleset into
-   `storage.rules` so the emulator can enforce it. Do not invent one.
-   Do not widen it. Not started.
+5. **Storage rules are in the repo.** Recovered from the live bucket on
+   2026-09-27. Do not invent a replacement. Do not widen them. There is
+   still no workflow that publishes Storage rules.
 6. **Rules weight.** The 1000-expression ceiling. Only if a real owner
    update is being denied because evaluation gave up. Not as cleanup.
 7. **Two houses can share a street.** A retire script exists
@@ -427,6 +429,14 @@ deployed. The HANDOFF queue is older than the code.
 9. **Firebase web config is baked into the HTML** so an invitee can connect.
    That is normal. Peter has said he may want to revisit it. Do not delete
    `PLUMB_FIREBASE_CONFIG` — that kills invites.
+
+10. **A closed builder phone may upload its old house on the next open.**
+    Read from the source on 2026-09-28. Not confirmed on a device. Do not
+    change sync until two builder phones on 2.429 run the five-minute test:
+    close Phone A, edit and delete on Phone B, open Phone A, see if Phone B
+    kept the edit and the delete. `scripts/heal-member.mjs` writes membership
+    and does not set `updatedBy`, so the phone that last saved the house can
+    ignore that write too.
 
 ### C. Not code
 
@@ -483,7 +493,7 @@ the home indicator) do not show up in jsdom. `qa.js` and a phone do.
 | (always) | `cd app && node sim.js` | The book still does what the checks say |
 | (always) | `cd app && node subfilter.js` | Crew isolation |
 | run the rules | `npm run rules` | Server refuses what it must |
-| run the Front Door Check | `node scripts/front-door.mjs` | Each hat can open the door |
+| (no such script) | `scripts/front-door.mjs` is not in the repo | Do not invent it |
 | run the Whole Book | `node scripts/whole-book.mjs` | Each hat can use the door and leave |
 | run Ink the Book | `node scripts/ink-the-book.mjs` | A day on a throwaway house, then wipe |
 | run the public face | `node scripts/public-face.mjs` | A stranger sees no version bar and no walk |
