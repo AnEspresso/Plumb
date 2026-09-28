@@ -1,10 +1,15 @@
 name: Deploy Firestore rules
 # Publishes firestore.rules to plumb-467a0. Does not deploy functions or storage.
+# The rules suite runs first. If it fails, nothing is published.
 on:
   workflow_dispatch: {}
 
 jobs:
+  test:
+    uses: ./.github/workflows/rules.yml
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +32,7 @@ jobs:
             "https://firebaserules.googleapis.com/v1/$RSET" \
             | python3 -c 'import json,sys; d=json.load(sys.stdin); src=d["source"]["files"][0]["content"]; open("live.rules","w").write(src); print("live bytes", len(src))'
           python3 - <<'PY'
-          from pathlib import Path, re as _re
+          from pathlib import Path
           import re
           live=Path('live.rules').read_text()
           want=Path('firestore.rules').read_text()

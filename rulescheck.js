@@ -16,10 +16,13 @@
  *               product decision. If a rules change flips one, this suite
  *               fails loudly so the change is deliberate, never accidental.
  *
- * RUN (emulator handles startup/teardown):
- *   ./node_modules/.bin/firebase emulators:exec --only firestore,storage \
- *       --project demo-plumb-rules "node rulescheck.js"
- * Must exit 0 (prints PASS). Part of the deploy ritual for any rules change.
+ * RUN from the repo root (the emulator handles startup and teardown):
+ *   npm run rules        production ruleset (firestore.rules)
+ *   npm run rules:next   staging ruleset (firestore-next.rules)
+ * Firestore emulator on port 8088, as firebase.json says. Never 8080, never
+ * the live project. Storage runs only when storage.rules is in the tree; until
+ * then that section is skipped and the report says so out loud.
+ * Must exit 0 (prints PASS). CI runs it on every rules change.
  */
 const fs = require('fs');
 const { initializeTestEnvironment, assertSucceeds, assertFails } =
@@ -31,12 +34,17 @@ const {
 const { ref, uploadBytes, getBytes } = require('firebase/storage');
 
 /* Profiles: default = PRODUCTION ruleset (firestore.rules, the published hardened
-   set); RULES_PROFILE=next = firestore-next.rules (adds builder-only 'costs').
+   set); RULES_PROFILE=next = firestore-next.rules, where a rules change is staged
+   before it is promoted. Today the two files are identical: the costs, telemetry
+   and invite hardening that used to live only in next has been promoted, so the
+   old "production still has this hole" gaps are invariants now in both profiles.
    The retired v7 ruleset and its GAP carve-outs are gone from the suite. */
 const NEXT = process.env.RULES_PROFILE === 'next';
 const HARD = true;
 const FS_RULES = NEXT ? 'firestore-next.rules' : 'firestore.rules';
 const ST_RULES = NEXT ? 'storage-next.rules' : 'storage.rules';
+const HAS_ST = fs.existsSync(ST_RULES);
+const { applyClaimToSite } = require('./functions/lib/claimStamp.js');
 const PROJECT = 'demo-plumb-rules';
 const U = {
   builder:  'uid-builder-owner',
@@ -46,6 +54,11 @@ const U = {
   stranger: 'uid-authed-stranger',
   otherBuilder: 'uid-other-builder', // owns liveB (cross-site isolation)
 };
+/* The house exactly as the server stamps it when a crew joins having typed
+   their own name at signup. The crew must still be matched by the roster name. */
+const JOIN = applyClaimToSite({ members: { [U.builder]: 'builder' }, meta: {} },
+  { code: 'CRWJ', role: 'sub', siteId: 'liveJoin', trade: 'plumb', name: 'Clearwater Plumbing' },
+  U.sub, { name: 'Mike Chen', email: 'mike@example.com' });
 
 const results = [];
 let testEnv;
@@ -99,14 +112,27 @@ async function seed() {
     await setDoc(doc(db, 'users/' + U.builder), { name: 'Owner', email: 'o@x.com' });
     await setDoc(doc(db, 'telemetry/deviceOfBuilder'), { owner: U.builder, hb: 1 });
     await setDoc(doc(db, 'telemetry/deviceOfBuilder/events/e1'), { ev: 'open' });
+    // liveCrew: crewOwnBk() matches booking.subName against the name stamped on the house
+    await setDoc(doc(db, 'sites/liveCrew'), {
+      mode: 'live', street: 'Live Crew',
+      members: { [U.builder]: 'builder', [U.sub]: 'sub' },
+      memberUids: [U.builder, U.sub],
+      meta: { memberInfo: { [U.sub]: { name: 'Clearwater Plumbing', trade: 'plumb' } } },
+    });
+    await setDoc(doc(db, 'sites/liveCrew/bk/b1'), { data: { subName: 'Clearwater Plumbing', trade: 'plumb' } });
+    await setDoc(doc(db, 'sites/liveCrew/bk/b2'), { data: { subName: 'Brightpath Electric', trade: 'elec' } });
+    // liveJoin: written by the real claim stamp, not by hand
+    await setDoc(doc(db, 'sites/liveJoin'), { mode: 'live', street: 'Live Join',
+      members: JOIN.members, memberUids: JOIN.memberUids, meta: JOIN.meta });
+    await setDoc(doc(db, 'sites/liveJoin/bk/b1'), { data: { subName: 'Clearwater Plumbing', trade: 'plumb' } });
   });
 }
 
 async function main() {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT,
-    firestore: { host: '127.0.0.1', port: 8080, rules: fs.readFileSync(FS_RULES, 'utf8') },
-    storage:   { host: '127.0.0.1', port: 9199, rules: fs.readFileSync(ST_RULES, 'utf8') },
+    firestore: { host: '127.0.0.1', port: 8088, rules: fs.readFileSync(FS_RULES, 'utf8') },
+    ...(HAS_ST ? { storage: { host: '127.0.0.1', port: 9199, rules: fs.readFileSync(ST_RULES, 'utf8') } } : {}),
   });
   await testEnv.clearFirestore();
   await seed();
@@ -115,8 +141,10 @@ async function main() {
   for (const k of Object.keys(U)) db[k] = testEnv.authenticatedContext(U[k]).firestore();
   db.unauth = testEnv.unauthenticatedContext().firestore();
   const st = {};
-  for (const k of Object.keys(U)) st[k] = testEnv.authenticatedContext(U[k]).storage();
-  st.unauth = testEnv.unauthenticatedContext().storage();
+  if (HAS_ST) {
+    for (const k of Object.keys(U)) st[k] = testEnv.authenticatedContext(U[k]).storage();
+    st.unauth = testEnv.unauthenticatedContext().storage();
+  }
 
   /* ══════════ SITES doc ══════════ */
   for (const [who, d] of [['builder', db.builder], ['builder2', db.builder2], ['sub', db.sub], ['client', db.client]])
@@ -198,10 +226,24 @@ async function main() {
   await INV('costs: sub DENIED write', setDoc(doc(db.sub, 'sites/liveA/costs/c3'), { x: 1 }), false);
   await INV('costs: client DENIED write', setDoc(doc(db.client, 'sites/liveA/costs/c4'), { x: 1 }), false);
   await INV('costs: stranger DENIED everything', getDoc(doc(db.stranger, 'sites/liveA/costs/r1')), false);
-  await GAP(NEXT ? 'COSTS: sub read now DENIED (margin privacy enforced)' : 'COSTS: production ruleset predates costs — sub CAN read (publish next-rules BEFORE any cost data exists)',
-    getDoc(doc(db.sub, 'sites/liveA/costs/r1')), !NEXT);
-  await GAP(NEXT ? 'COSTS: client read now DENIED' : 'COSTS: client CAN read under production ruleset (same publish-first note)',
-    getDoc(doc(db.client, 'sites/liveA/costs/r1')), !NEXT);
+  await INV('costs: sub DENIED read (margin privacy)', getDoc(doc(db.sub, 'sites/liveA/costs/r1')), false);
+  await INV('costs: client DENIED read', getDoc(doc(db.client, 'sites/liveA/costs/r1')), false);
+
+  /* ══════════ BOOKINGS (a crew sees only its own) ══════════ */
+  const bkQ = (d, site, name) => query(collection(d, `sites/${site}/bk`), where('data.subName', '==', name));
+  const exactly = (n, p) => p.then(r => { if (r.size !== n) throw new Error('expected ' + n + ' booking(s), saw ' + r.size); return r; });
+  await INV('bookings: crew reads own bookings, filtered to the stamped name',
+    exactly(1, getDocs(bkQ(db.sub, 'liveCrew', 'Clearwater Plumbing'))), true);
+  await INV('bookings: crew reads own booking by id', getDoc(doc(db.sub, 'sites/liveCrew/bk/b1')), true);
+  await INV('bookings: crew DENIED another crew\'s booking by id', getDoc(doc(db.sub, 'sites/liveCrew/bk/b2')), false);
+  await INV('bookings: crew DENIED a query for another crew', getDocs(bkQ(db.sub, 'liveCrew', 'Brightpath Electric')), false);
+  await INV('bookings: crew DENIED an unfiltered bookings query', getDocs(collection(db.sub, 'sites/liveCrew/bk')), false);
+  await INV('bookings: a filter that contradicts the stamped name is refused (why the crew phone filters on the stamp)',
+    getDocs(bkQ(db.sub, 'liveCrew', 'Mike Chen')), false);
+  await INV('bookings: builder reads every booking', exactly(2, getDocs(collection(db.builder, 'sites/liveCrew/bk'))), true);
+  await INV('bookings: stranger DENIED', getDocs(bkQ(db.stranger, 'liveCrew', 'Clearwater Plumbing')), false);
+  await INV('bookings: a crew who typed their own name at signup still sees their booking (claim stamp + rule, end to end)',
+    exactly(1, getDocs(bkQ(db.sub, 'liveJoin', (JOIN.meta.memberInfo[U.sub] || {}).name || ''))), true);
 
   /* ══════════ INVITES ══════════ */
   await INV('invites: get by exact code allowed signed-in', getDoc(doc(db.stranger, 'invites/SECRETCODE1')), true);
@@ -211,8 +253,14 @@ async function main() {
     setDoc(doc(db.builder, 'invites/NEWCODE1'), { createdBy: U.builder, site: 'liveA' }), true);
   await INV('invites: create claiming someone else denied',
     setDoc(doc(db.stranger, 'invites/NEWCODE2'), { createdBy: U.builder, site: 'liveA' }), false);
-  await INV('invites: revoke (revoked/revokedAt only) allowed',
-    updateDoc(doc(db.builder2, 'invites/SECRETCODE1'), { revoked: true, revokedAt: 1 }), true);
+  await INV('invites: another builder DENIED revoking a code they did not send',
+    updateDoc(doc(db.builder2, 'invites/SECRETCODE1'), { revoked: true, revokedAt: 1 }), false);
+  await INV('invites: stranger holding the code DENIED revoking it',
+    updateDoc(doc(db.stranger, 'invites/SECRETCODE1'), { revoked: true, revokedAt: 2 }), false);
+  await INV('invites: creator DENIED reassigning createdBy while revoking',
+    updateDoc(doc(db.builder, 'invites/SECRETCODE1'), { revoked: true, revokedAt: 3, createdBy: U.builder2 }), false);
+  await INV('invites: creator revokes own invite (revoked/revokedAt only)',
+    updateDoc(doc(db.builder, 'invites/SECRETCODE1'), { revoked: true, revokedAt: 4 }), true);
   await INV('invites: update touching other fields denied',
     updateDoc(doc(db.builder, 'invites/SECRETCODE1'), { trade: 'elec' }), false);
   await INV('invites: delete denied', deleteDoc(doc(db.builder, 'invites/SECRETCODE1')), false);
@@ -222,8 +270,22 @@ async function main() {
     setDoc(doc(db.stranger, `invites/SECRETCODE1/claims/${U.sub}`), { at: 1 }), false);
   await INV('claims: update denied (immutable)',
     updateDoc(doc(db.sub, `invites/SECRETCODE1/claims/${U.sub}`), { at: 2 }), false);
-  await GAP('INVITES: any signed-in holder of a code CAN revoke it (documented team-secret trade-off)',
-    updateDoc(doc(db.stranger, 'invites/SECRETCODE1'), { revoked: true, revokedAt: 2 }), true);
+  await INV('claims: delete denied (immutable)',
+    deleteDoc(doc(db.sub, `invites/SECRETCODE1/claims/${U.sub}`)), false);
+  await INV('claims: stranger DENIED creating a fresh claim under another uid',
+    setDoc(doc(db.stranger, `invites/SECRETCODE1/claims/${U.client}`), { at: 1 }), false);
+  await INV('claims: joiner reads own claim',
+    getDoc(doc(db.sub, `invites/SECRETCODE1/claims/${U.sub}`)), true);
+  await INV('claims: builder who sent the code reads the claim',
+    getDoc(doc(db.builder, `invites/SECRETCODE1/claims/${U.sub}`)), true);
+  await INV('claims: builder who sent the code lists claims',
+    getDocs(collection(db.builder, 'invites/SECRETCODE1/claims')), true);
+  await INV('claims: stranger DENIED read', getDoc(doc(db.stranger, `invites/SECRETCODE1/claims/${U.sub}`)), false);
+  await INV('claims: another builder on the house DENIED read (did not send the code)',
+    getDoc(doc(db.builder2, `invites/SECRETCODE1/claims/${U.sub}`)), false);
+  await INV('claims: signed-out DENIED read', getDoc(doc(db.unauth, `invites/SECRETCODE1/claims/${U.sub}`)), false);
+  await INV('claims: stranger DENIED list', getDocs(collection(db.stranger, 'invites/SECRETCODE1/claims')), false);
+  await INV('claims: another builder DENIED list', getDocs(collection(db.builder2, 'invites/SECRETCODE1/claims')), false);
 
   /* ══════════ ORGS ══════════ */
   await INV('orgs: member reads', getDoc(doc(db.builder, 'orgs/org1')), true);
@@ -252,29 +314,21 @@ async function main() {
   await INV('users: delete denied', deleteDoc(doc(db.builder, 'users/' + U.builder)), false);
 
   /* ══════════ TELEMETRY (header/body mismatch in deployed v7) ══════════ */
-  if(NEXT){
-    // Server phase: telemetry is server-only — every client path must DENY.
-    await INV('TELEMETRY(next): stranger read denied',
-      getDoc(doc(db.stranger, 'telemetry/deviceOfBuilder')), false);
-    await INV('TELEMETRY(next): stranger overwrite denied',
-      setDoc(doc(db.stranger, 'telemetry/deviceOfBuilder'), { hb: 999, owner: 'spoofed' }), false);
-    await INV('TELEMETRY(next): builder himself denied (server-only now)',
-      setDoc(doc(db.builder, 'telemetry/deviceOfBuilder'), { hb: 2 }), false);
-    await INV('TELEMETRY(next): event delete denied',
-      deleteDoc(doc(db.stranger, 'telemetry/deviceOfBuilder/events/e1')), false);
-    await INV('QB(next): tokens unreadable by their own user',
-      getDoc(doc(db.builder, 'qb/' + U.builder)), false);
-    await INV('QB(next): oauth states unwritable',
-      setDoc(doc(db.stranger, 'qbStates/forged'), { uid: U.stranger }), false);
-  } else {
-    await GAP('TELEMETRY: any signed-in CAN read any device\'s telemetry (v7 header claims deny)',
-      getDoc(doc(db.stranger, 'telemetry/deviceOfBuilder')), true);
-  await GAP('TELEMETRY: any signed-in CAN overwrite ANOTHER device\'s doc (v7 header claims own-doc-only)',
-    setDoc(doc(db.stranger, 'telemetry/deviceOfBuilder'), { hb: 999, owner: 'spoofed' }), true);
-  await GAP('TELEMETRY: any signed-in CAN delete another device\'s events',
-    deleteDoc(doc(db.stranger, 'telemetry/deviceOfBuilder/events/e1')), true);
-  }
+  // Telemetry, QuickBooks tokens and OAuth states are server-only: every client path denies.
+  await INV('TELEMETRY: stranger read denied',
+    getDoc(doc(db.stranger, 'telemetry/deviceOfBuilder')), false);
+  await INV('TELEMETRY: stranger overwrite denied',
+    setDoc(doc(db.stranger, 'telemetry/deviceOfBuilder'), { hb: 999, owner: 'spoofed' }), false);
+  await INV('TELEMETRY: builder himself denied (server-only now)',
+    setDoc(doc(db.builder, 'telemetry/deviceOfBuilder'), { hb: 2 }), false);
+  await INV('TELEMETRY: event delete denied',
+    deleteDoc(doc(db.stranger, 'telemetry/deviceOfBuilder/events/e1')), false);
+  await INV('QB: tokens unreadable by their own user',
+    getDoc(doc(db.builder, 'qb/' + U.builder)), false);
+  await INV('QB: oauth states unwritable',
+    setDoc(doc(db.stranger, 'qbStates/forged'), { uid: U.stranger }), false);
 
+  if (HAS_ST) {
   /* ══════════ STORAGE ══════════ */
   const png = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0, 0, 0, 0]);
   const meta = { contentType: 'image/png' };
@@ -311,6 +365,7 @@ async function main() {
     uploadBytes(ref(st.sub, 'live/sites/liveA/costs/r3'), png, meta), !NEXT);
   const big = Buffer.alloc(26 * 1024 * 1024);
   await INV('storage: >25MB upload denied even for member', uploadBytes(ref(st.builder, 'live/sites/liveA/photos/big1'), big, meta), false);
+  }
 
   /* ══════════ PROPAGATION round-trip (the app's exact live listener shape) ══════════ */
   // Member (sub persona) subscribes with array-contains OWN uid, then the
@@ -351,7 +406,8 @@ async function main() {
   const bad = results.filter(r => !r.ok);
   const inv = results.filter(r => r.tier === 'INVARIANT');
   const gaps = results.filter(r => r.tier === 'GAP');
-  console.log(`\nrulescheck [${NEXT ? 'NEXT draft (+costs)' : 'PRODUCTION'}]: ${inv.length} invariants + ${gaps.length} documented-gap assertions across 6 personas`);
+  console.log(`\nrulescheck [${NEXT ? 'NEXT (staging)' : 'PRODUCTION'}]: ${inv.length} invariants + ${gaps.length} documented-gap assertions across 6 personas`);
+  if (!HAS_ST) console.log('STORAGE: SKIPPED - ' + ST_RULES + ' is not in the tree, so nothing about uploads or file reads is proven here.');
   console.log('Documented gaps asserted as current deployed behavior:');
   gaps.forEach(g => console.log('  ~ ' + g.name));
   if (bad.length) {

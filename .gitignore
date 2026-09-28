@@ -1,0 +1,9 @@
+node_modules/
+firebase-debug.log
+firestore-debug.log
+storage-debug.log
+ui-debug.log
+*-debug.log
+.firebase/
+*.local.js
+*.local.mjs

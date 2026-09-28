@@ -1,0 +1,61 @@
+name: Rules suite
+# Proves the Firestore rules refuse what they must: a crew sees only its own
+# bookings, only the builder who sent an invite can revoke it or read its
+# claims, money and telemetry stay server-side. Runs on every rules change, and
+# deploy-rules.yml calls it first, so rules that fail it cannot be published.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'firestore-next.rules'
+      - 'storage.rules'
+      - 'storage-next.rules'
+      - 'rulescheck.js'
+      - 'firebase.json'
+      - 'package.json'
+      - 'functions/**'
+      - '.github/workflows/rules.yml'
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'firestore-next.rules'
+      - 'storage.rules'
+      - 'storage-next.rules'
+      - 'rulescheck.js'
+      - 'firebase.json'
+      - 'package.json'
+      - 'functions/**'
+      - '.github/workflows/rules.yml'
+  workflow_dispatch: {}
+  workflow_call: {}
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+
+      - name: Cache the Firestore emulator
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-15.31.0
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Claim stamp (the function the server runs when someone joins)
+        run: npm run claimstamp
+
+      - name: Rules - production (firestore.rules)
+        run: npm run rules
+
+      - name: Rules - staging (firestore-next.rules)
+        run: npm run rules:next
