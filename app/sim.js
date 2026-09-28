@@ -1514,6 +1514,11 @@ $('renderSettings()');
 t('settings shows the Privacy & legal row (builder)', el('settingsBody').innerHTML.indexOf('Privacy &amp; legal')>=0);
 asSub('Ray Delgado');$('renderSettings()');
 t('settings shows the row for subs too', el('settingsBody').innerHTML.indexOf('Privacy &amp; legal')>=0);
+const _zm='mailto:hello@siteplumb.com?subject=Zoom%20onboarding';
+const _setLinks=()=>Array.from(D.querySelectorAll('#settingsBody a.row')).map(x=>[x.querySelector('.row-title').textContent,x.querySelector('.row-sub').textContent,x.getAttribute('href'),x.getAttribute('target')||'']);
+t('settings links the site, Zoom setup, and hello@ above Privacy', JSON.stringify(_setLinks())===JSON.stringify([['Free Zoom setup','Your first house, set up with you on a call. Free while early.',_zm,''],['Email SitePlumb','hello@siteplumb.com','mailto:hello@siteplumb.com',''],['siteplumb.com','How SitePlumb works','https://siteplumb.com','_blank']])&&el('settingsBody').innerHTML.indexOf('siteplumb.com</div>')<el('settingsBody').innerHTML.indexOf('Privacy &amp; legal'), JSON.stringify(_setLinks()));
+t('sign-in offers the free Zoom setup under Just looking', (function(){const e=D.querySelector('.login-explore + a.login-explore');return !!(e&&e.previousElementSibling.textContent==='Just looking? Explore the example build'&&e.textContent==='New to SitePlumb? Get a free Zoom setup.'&&e.getAttribute('href')===_zm);})());
+t('demo bar ends with Like it? Free Zoom setup', (function(){const e=el('excBanner').lastElementChild;return !!(e&&e.tagName==='A'&&e.textContent==='Like it? Free Zoom setup'&&e.getAttribute('href')===_zm);})());
 asBuilder();
 // demo / no-live-account: hub offers policies but no server deletion
 $('openLegal()');
