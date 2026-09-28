@@ -1,6 +1,6 @@
 # SitePlumb — handoff for a new model
 
-Written 2026-09-27, corrected 2026-09-28 after 2.430 stopped practice-book uploads.
+Written 2026-09-27, corrected 2026-09-28 after 2.431 kept an unsent live photo queued.
 Owner: Peter Gottschalk. The product is his. Do not redesign it to show you were here.
 
 This file is the current truth. Several older docs in the same tree are not.
@@ -45,9 +45,9 @@ is a custom-home builder.
 
 Source version, pushed to main on the morning of 2026-09-28. The phone shows it after the Pages deploy and one reload:
 
-- `PLUMB_VERSION` = `2.430.0 - Practice photos stay on the phone`
-- `APP_VERSION` = `1790590992691`
-- `app/sw.js` cache = `plumb-v2.430.0`
+- `PLUMB_VERSION` = `2.431.0 - A waiting live photo is not dropped`
+- `APP_VERSION` = `1790595042005`
+- `app/sw.js` cache = `plumb-v2.431.0`
 - `app/index.html` and `app/plumb.html` stay byte-for-byte the same
 
 `HANDOFF.md` in the repo may still say an older version. This file wins over
@@ -238,7 +238,7 @@ app/index.html     the app. Canonical.
 app/plumb.html     must match index.html exactly
 app/p.html         guest packet
 app/sw.js          cache name must equal SW_CACHE_EXPECTED
-app/sim.js         logic tests (jsdom). Last green count on the 2.430 push was 1,015.
+app/sim.js         logic tests (jsdom). Last green count on the 2.431 push was 1,017.
 app/subfilter.js   crew cannot see another crew's work
 app/qa.js          real Chrome: hit targets, type, axe
 app/tokens.html    the visual law
@@ -372,6 +372,7 @@ green. Neither replaces the other.
 | 2.428 | The claim writes the house on the server. The status line tells the truth. Delete lives under Privacy. A stale crew link says the old confirm does not count. |
 | 2.429 | An invited crew is stamped with the roster name, and the crew phone filters bookings on that same name. Crews who already joined are not rewritten by the app. A dry run on 2026-09-27 found 0 crews to rename. |
 | 2.430 | A practice-book photo or document stays on the phone. It is not uploaded. A live house still uploads. |
+| 2.431 | A photo still waiting from the older app is not dropped when the practice book opens. It uploads only after the phone is back on a real house. |
 
 Also already in the tree from 2.415–2.419, do not re-implement:
 
@@ -390,7 +391,7 @@ Do these in order. Do not start at the bottom because it is more interesting.
 
 ### A. Prove the live book before you add anything
 
-1. Confirm production is serving `2.430.0` / cache `plumb-v2.430.0`, not an
+1. Confirm production is serving `2.431.0` / cache `plumb-v2.431.0`, not an
    older installed copy. An old service worker looks like "your fix did nothing."
 2. Walk four hats. `scripts/front-door.mjs` is **not in the repo**, and
    neither are `FRONT-DOOR.md`, `WHOLE-BOOK.md`, or `INK-THE-BOOK.md`.
@@ -398,8 +399,8 @@ Do these in order. Do not start at the bottom because it is more interesting.
    invent the missing script.
 3. `npm run rules` from the repo root was green on 2026-09-27 (127 + 8, uploads included).
    Re-run it if you touch rules. Do not bless a red check by editing the
-   assertion to match a bug. `node sim.js` from `app/` was 1015 and green
-   on the 2.430 push. The Chrome pixel job on the 2.429 push was red
+   assertion to match a bug. `node sim.js` from `app/` was 1017 and green
+   on the 2.431 push. The Chrome pixel job on the 2.429 push was red
    (tour offer, calendar chooser, three pixel baselines). That is not a
    rules failure. Do not re-bless pixels without a person looking.
 
@@ -437,7 +438,7 @@ deployed. The HANDOFF queue is older than the code.
 
 10. **A closed builder phone may upload its old house on the next open.**
     Read from the source on 2026-09-28. Not confirmed on a device. Do not
-    change sync until two builder phones on 2.430 run the five-minute test:
+    change sync until two builder phones on 2.431 run the five-minute test:
     close Phone A, edit and delete on Phone B, open Phone A, see if Phone B
     kept the edit and the delete. `scripts/heal-member.mjs` writes membership
     and does not set `updatedBy`, so the phone that last saved the house can
@@ -543,7 +544,7 @@ Day one is read-only.
 3. Read `functions/index.js` `onInviteClaim` and `functions/lib/claimStamp.js`.
 4. Run sim and the rules suite. Write down the real counts.
 5. Open the live app and confirm the version string in Workbench or the
-   settings footer. If it is not 2.430.0, stop and say so.
+   settings footer. If it is not 2.431.0, stop and say so.
 6. Come back with a list of what is broken that you have seen, not a
    redesign. Peter will say which one to do.
 
@@ -557,7 +558,7 @@ pull request that reformats `index.html`.
 ```
 You are finishing SitePlumb, not replacing it.
 Read CLAUDE-HANDOFF.md before you touch a file. README.md is stale. Ignore it.
-The app is app/index.html (2.430.0). app/plumb.html must stay a byte copy.
+The app is app/index.html (2.431.0). app/plumb.html must stay a byte copy.
 app/p.html is the guest packet. app/sw.js cache must match SW_CACHE_EXPECTED.
 Paper, oak, clay. Capture stays. No overlay. No photo assistant. No Messages tab.
 Homeowners and crew join by invite. They are not signup roles.
