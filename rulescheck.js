@@ -352,8 +352,9 @@ async function main() {
   await INV('storage: stranger DENIED read live file', getBytes(ref(st.stranger, 'live/sites/liveA/photos/seed1')), false);
   await INV('storage: unauth DENIED read live file', getBytes(ref(st.unauth, 'live/sites/liveA/photos/seed1')), false);
   await INV('storage: liveA sub DENIED read liveB file (cross-site)', getBytes(ref(st.sub, 'live/sites/liveB/docs/seed1')), false);
-  await INV('storage: signed-in reads demo file', getBytes(ref(st.stranger, 'demo/sites/demo1/photos/seed1')), true);
-  await INV('storage: signed-in uploads demo file', uploadBytes(ref(st.stranger, 'demo/sites/demo1/photos/u6'), png, meta), true);
+  await INV('storage: signed-in DENIED demo read (closed)', getBytes(ref(st.stranger, 'demo/sites/demo1/photos/seed1')), false);
+  await INV('storage: signed-in DENIED demo upload (closed)', uploadBytes(ref(st.stranger, 'demo/sites/demo1/photos/u6'), png, meta), false);
+  await INV('storage: builder DENIED demo upload (closed)', uploadBytes(ref(st.builder, 'demo/sites/demo1/photos/u6b'), png, meta), false);
   await INV('storage: unauth DENIED demo read', getBytes(ref(st.unauth, 'demo/sites/demo1/photos/seed1')), false);
   await INV('storage: path outside demo|live denied', uploadBytes(ref(st.builder, 'sites/liveA/photos/u7'), png, meta), false);
   await INV('storage: builder reads costs receipt', getBytes(ref(st.builder, 'live/sites/liveA/costs/receipt1')), true);
