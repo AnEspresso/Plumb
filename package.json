@@ -3,8 +3,8 @@
   "private": true,
   "description": "Repo-root tooling only. The app ships as static files from app/; nothing here is deployed.",
   "scripts": {
-    "rules": "firebase emulators:exec --only firestore --project demo-plumb-rules \"node rulescheck.js\"",
-    "rules:next": "RULES_PROFILE=next firebase emulators:exec --only firestore --project demo-plumb-rules \"node rulescheck.js\"",
+    "rules": "node scripts/rules.mjs",
+    "rules:next": "node scripts/rules.mjs --next",
     "claimstamp": "node functions/claimStamp.test.js"
   },
   "devDependencies": {

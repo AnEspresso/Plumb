@@ -43,7 +43,9 @@ const NEXT = process.env.RULES_PROFILE === 'next';
 const HARD = true;
 const FS_RULES = NEXT ? 'firestore-next.rules' : 'firestore.rules';
 const ST_RULES = NEXT ? 'storage-next.rules' : 'storage.rules';
-const HAS_ST = fs.existsSync(ST_RULES);
+/* Storage is tested only when the profile's storage file exists AND storage.rules
+   does: firebase.json names storage.rules, so without it the emulator never starts. */
+const HAS_ST = fs.existsSync(ST_RULES) && fs.existsSync('storage.rules');
 const { applyClaimToSite } = require('./functions/lib/claimStamp.js');
 const PROJECT = 'demo-plumb-rules';
 const U = {

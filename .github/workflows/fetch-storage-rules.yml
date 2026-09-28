@@ -1,0 +1,74 @@
+name: Fetch live Storage rules (read only)
+# storage.rules has never been in the repo, so nothing proves who can upload or
+# read files. This reads the Storage ruleset that is live on plumb-467a0 and
+# saves it as an artifact. It publishes nothing and changes nothing.
+#
+# Then: download the artifact (or copy the ruleset from the log), and upload it
+# to the repo root as storage.rules. That is inert - no workflow deploys
+# Storage rules - and the Rules suite runs on it by itself.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auth with the Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+
+      - name: Fetch the live Storage ruleset
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: |
+          set -euo pipefail
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
+          export TOKEN=$(gcloud auth print-access-token)
+          python3 - <<'PY'
+          import hashlib, json, os, re, sys, urllib.request
+          TOK = os.environ['TOKEN']
+          BASE = 'https://firebaserules.googleapis.com/v1/'
+          def get(path):
+              req = urllib.request.Request(BASE + path, headers={'Authorization': 'Bearer ' + TOK})
+              return json.load(urllib.request.urlopen(req))
+          rel, page = [], ''
+          while True:
+              d = get('projects/plumb-467a0/releases?pageSize=100' + ('&pageToken=' + page if page else ''))
+              rel += d.get('releases', [])
+              page = d.get('nextPageToken', '')
+              if not page:
+                  break
+          print('Releases on plumb-467a0:')
+          for r in rel:
+              print('  ', r['name'].split('/releases/', 1)[1], '->', r['rulesetName'].rsplit('/', 1)[1], r.get('updateTime', ''))
+          want = 'projects/plumb-467a0/releases/firebase.storage/plumb-467a0.firebasestorage.app'
+          st = [r for r in rel if r['name'] == want] or [r for r in rel if '/releases/firebase.storage/' in r['name']]
+          if not st:
+              print('FAIL: no Storage release on this project. Nothing to recover.')
+              sys.exit(1)
+          if len(st) > 1:
+              print('NOTE: more than one Storage release. Taking', st[0]['name'])
+          r = st[0]
+          rs = get(r['rulesetName'])
+          files = rs['source']['files']
+          src = files[0]['content']
+          open('storage.rules', 'w').write(src)
+          print()
+          print('Taken from   ', r['name'].split('/releases/', 1)[1])
+          print('Ruleset      ', r['rulesetName'].rsplit('/', 1)[1], 'created', rs.get('createTime', '?'))
+          print('Files in it  ', [f['name'] for f in files])
+          print('Bytes        ', len(src.encode()), '| sha256', hashlib.sha256(src.encode()).hexdigest()[:16])
+          print('Checks membership against Firestore:', 'firestore.get' in src or 'firestore.exists' in src)
+          print('Match paths:')
+          for m in re.finditer(r'match\s+(/\S+)\s*\{', src):
+              print('   ', m.group(1))
+          print()
+          print('=========== storage.rules (live) ===========')
+          print(src)
+          print('============================================')
+          PY
+
+      - name: Save it as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-storage-rules
+          path: storage.rules
