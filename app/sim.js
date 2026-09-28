@@ -2589,6 +2589,58 @@ $("calSiteFilter='all'");
 $('renderCal()');
 t('all houses still shows idle', ((el('calBody')&&el('calBody').textContent)||'').indexOf('idle this month')>=0);
 
+/* ════ 14p · PRACTICE PHOTOS STAY ON THE PHONE ════ */
+S('practice-photos');
+await $('(async()=>{'+
+  'window.__puts=0;window.__paths=[];'+
+  'window.firebase=window.firebase||{};'+
+  'firebase.storage=function(){return{ref:function(path){return{put:function(){window.__puts++;window.__paths.push(path);return Promise.resolve();},getDownloadURL:function(){return Promise.resolve("https://files.example/x");}}}}};'+
+  'var maps={photos:new Map(),docs:new Map()};'+
+  'db={transaction:function(name){var m=name==="docs"?maps.docs:maps.photos;var tx={objectStore:function(){return{'+
+    'put:function(v,k){m.set(k,v);},'+
+    'get:function(k){var rq={};queueMicrotask(function(){rq.result=m.has(k)?m.get(k):undefined;if(rq.onsuccess)rq.onsuccess();});return rq;},'+
+    'delete:function(k){m.delete(k);},'+
+    'getAllKeys:function(){var rq={};queueMicrotask(function(){rq.result=Array.from(m.keys());if(rq.onsuccess)rq.onsuccess();});return rq;},'+
+    'clear:function(){m.clear();}'+
+  '};}};Object.defineProperty(tx,"oncomplete",{set:function(fn){queueMicrotask(fn);}});Object.defineProperty(tx,"onerror",{set:function(){}});return tx;}};'+
+  'URL.createObjectURL=function(b){return "blob:sim/"+String(b);};URL.revokeObjectURL=function(){};'+
+  'localStorage.setItem("plumb.uploadQueue",JSON.stringify([{kind:"photos",siteId:"p1",id:"old-practice"},{kind:"docs",siteId:"pmadeup",id:"old-doc"}]));'+
+  'Sync.mode="demo";Sync.on=true;Sync.db={};'+
+  'CloudFiles.queue("photos","p1","ph-practice");'+
+  'CloudFiles.queue("docs","pmadeup","doc-practice");'+
+  'await CloudFiles.flush();'+
+  'window.__demoQ=localStorage.getItem("plumb.uploadQueue");'+
+  'window.__demoPuts=window.__puts;'+
+  'var p=state.projects.find(function(x){return x.id==="p1";});'+
+  'await idbPut("ph-reload","practice-bytes");'+
+  'Object.keys(photoURLs).forEach(function(k){delete photoURLs[k];});'+
+  'p.items.push({id:990001,photoId:"ph-reload",cap:"stays",sample:true});'+
+  'await hydrateHousePhotos(p);'+
+  'window.__reloaded=photoURLs["ph-reload"]||"";' +
+  'window.__still=await idbGet("ph-reload");'+
+  'p.items.pop();'+
+  'await idbPut("ph-live","live-bytes");'+
+  'await idbPutDoc("doc-live",{size:3});'+
+  'var live=state.projects[0];'+
+  'live.items.push({id:990002,photoId:"ph-live",cap:"live"});'+
+  'live.docs=live.docs||[];live.docs.push({id:"d990",fileId:"doc-live"});'+
+  'Sync.mode="live";CloudFiles._flushing=true;'+
+  'CloudFiles.queue("photos","liveHouse1","ph-live");'+
+  'CloudFiles.queue("docs","liveHouse1","doc-live");'+
+  'window.__queued=localStorage.getItem("plumb.uploadQueue");'+
+  'CloudFiles._flushing=false;'+
+  'await CloudFiles.flush();'+
+  'window.__liveQ=localStorage.getItem("plumb.uploadQueue");'+
+  'window.__livePuts=window.__puts;'+
+  'window.__livePaths=window.__paths.slice();'+
+  'live.items.pop();live.docs.pop();'+
+  'Sync.mode="demo";Sync.on=false;Sync.db=null;'+
+'})()');
+t('a waiting practice photo is dropped, not uploaded', $('__demoQ')==='[]' && $('__demoPuts')===0, $('__demoQ')+' puts='+$('__demoPuts'));
+t('a practice photo survives reload from IndexedDB', $('__still')==='practice-bytes' && String($('__reloaded')).indexOf('blob:sim/')===0, $('__reloaded'));
+t('a practice photo never reaches the uploader', JSON.parse($('__queued')||'[]').map(e=>e.id).sort().join(',')==='doc-live,ph-live' && String($("JSON.stringify(__livePaths)")).indexOf('demo/')<0, $('__queued'));
+t('a live photo and a live document still upload', $('__livePuts')===2 && JSON.parse($("JSON.stringify(__livePaths)")).join(',')==='live/sites/liveHouse1/photos/ph-live,live/sites/liveHouse1/docs/doc-live', JSON.stringify($('__livePaths')));
+
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');
 function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}

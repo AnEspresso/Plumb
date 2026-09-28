@@ -3906,15 +3906,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.429.0 - An invited crew sees their own bookings';
+const PLUMB_VERSION='2.430.0 - Practice photos stay on the phone';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790536420997;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.429.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790590992691;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.430.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9380,17 +9380,34 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
   _reArmed:{},
   disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._shadow={};this._notifReady={};clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
 };
-/* ── Step 6: cloud files. Uploads the already-downscaled photo (and doc files)
-   to Firebase Storage once sync is connected; stores the download URL on the
-   record so other devices can render it. Queue persists in localStorage and
-   retries on reconnect / online. Local IndexedDB stays the fast path. ── */
+/* ── Step 6: cloud files. A live house uploads the already-downscaled photo
+   (and doc files) once sync is connected, and stores the download URL on the
+   record. The practice book does not: its files stay in IndexedDB. The queue
+   persists in localStorage and retries on reconnect. ── */
 const CloudFiles={
   KEY:'plumb.uploadQueue',
   _q(){try{return JSON.parse(localStorage.getItem(this.KEY)||'[]');}catch(e){return[];}},
   _save(q){try{localStorage.setItem(this.KEY,JSON.stringify(q));}catch(e){}},
+  _sample(id){return /^p(?:[1-9]|10)$/.test(String(id||''));},
+  _live(){return typeof Sync!=='undefined'&&Sync.mode==='live';},
+  /* Upload only a file stamped for a live house. Practice files, the shared
+     sample houses, and anything queued before this rule are dropped, so
+     opening the real book later cannot send them. */
+  _keep(e){
+    if(!e||this._sample(e.siteId)||e.mode==='demo')return false;
+    if(e.mode==='live')return true;
+    if(!this._live())return false;
+    try{return (state.projects||[]).some(p=>String(p.id)===String(e.siteId)&&!p.sample);}catch(err){return false;}
+  },
+  _drain(){const q=this._q().filter(e=>this._keep(e));this._save(q);return q;},
   ready(){return Sync.ready()&&typeof firebase!=='undefined'&&!!firebase.storage;},
-  path(e){return (Sync.mode||'demo')+'/sites/'+e.siteId+'/'+e.kind+'/'+e.id;},
-  queue(kind,siteId,id){const q=this._q();if(!q.some(x=>x.id===id))q.push({kind,siteId:String(siteId),id});this._save(q);this.flush();},
+  path(e){return 'live/sites/'+e.siteId+'/'+e.kind+'/'+e.id;},
+  queue(kind,siteId,id){
+    if(!this._live()||this._sample(siteId)){this._drain();return;}
+    const q=this._drain();
+    if(!q.some(x=>x.id===id))q.push({kind,siteId:String(siteId),id,mode:'live'});
+    this._save(q);this.flush();
+  },
   _stamp(e){               // write the URL onto the owning record; true once applied
     if(!e.url)return false;
     if(e.kind==='photos'){
@@ -9404,9 +9421,11 @@ const CloudFiles={
   },
   _flushing:false,
   async flush(){
-    if(this._flushing)return;this._flushing=true;
+    if(this._flushing)return;
+    const q=this._drain();
+    if(!this._live()||!q.length)return;
+    this._flushing=true;
     try{
-      const q=this._q();if(!q.length)return;
       const keep=[];
       for(const e of q){
         try{
@@ -9422,7 +9441,7 @@ const CloudFiles={
           if(!this._stamp(e))keep.push(e);                       // uploaded before record saved — retry stamp
         }catch(err){keep.push(e);}
       }
-      this._save(keep);
+      this._save(keep.filter(e=>this._keep(e)));
       if(keep.length&&this.ready())setTimeout(()=>{this.flush();},5000);
     }finally{this._flushing=false;}
   }
