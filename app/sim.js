@@ -180,7 +180,7 @@ $("window.__g={gets:0,attached:[],errCbs:{}};"
  +"Sync.mode='live';Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._shadow={};Sync._notifReady={};Sync.unsub=[];"
  +"Sync._gateDelays=[0,15,30];Sync._reArmDelay=40;"
  +"window.__mkdb=denies=>({collection:()=>({doc:()=>({get:()=>{__g.gets++;return (__g.gets>denies)?Promise.resolve({exists:true}):Promise.reject({code:'permission-denied'});},"
- +"collection:sub=>({onSnapshot:(h,e)=>{__g.attached.push(sub);__g.errCbs[sub]=e;return ()=>{};}})})})});"
+ +"collection:sub=>({onSnapshot:(o,h,e)=>{if(typeof o==='function'){e=h;h=o;}__g.attached.push(sub);__g.errCbs[sub]=e;return ()=>{};}})})})});"
  +"state.session={role:'builder',auth:{uid:'uGate'}};true");
 // (1) gate defers: denied twice, lands on third try
 $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(2);Sync._subSite('gateA');true");
@@ -196,7 +196,7 @@ t('gave up after 3 attempts', $("__g.gets")===3);
 t('nothing attached on give-up', $("__g.attached.length")===0);
 t('give-up clears _listening (re-gate possible)', $("!Sync._listening['gateB']")===true);
 // (3) offline: unavailable attaches immediately on cache
-$("__g.gets=0;__g.attached=[];Sync.db={collection:()=>({doc:()=>({get:()=>{__g.gets++;return Promise.reject({code:'unavailable'});},collection:sub=>({onSnapshot:(h,e)=>{__g.attached.push(sub);__g.errCbs[sub]=e;return ()=>{};}})})})};Sync._subSite('gateC');true");
+$("__g.gets=0;__g.attached=[];Sync.db={collection:()=>({doc:()=>({get:()=>{__g.gets++;return Promise.reject({code:'unavailable'});},collection:sub=>({onSnapshot:(o,h,e)=>{if(typeof o==='function'){e=h;h=o;}__g.attached.push(sub);__g.errCbs[sub]=e;return ()=>{};}})})})};Sync._subSite('gateC');true");
 await new Promise(r=>setTimeout(r,80));
 t('offline attaches without retry ladder', $("__g.gets")===1&&$("__g.attached.length")===7);
 // (4) demo mode: gate is a no-op passthrough
@@ -222,6 +222,61 @@ await new Promise(r=>setTimeout(r,60));
 t('client attaches only its five colls', $("__g.attached.join()")==='items,bk,sel,logs,pmts');
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
+
+/* ════ 1d · STALE PHONE (a closed builder phone must not write its old copy over newer edits) ════ */
+S('stale-phone');
+// Phone A synced house stale1, then closed. Meanwhile phone B changed item i1,
+// deleted item i2 and renamed the house. A also made offline edits: i4 changed,
+// i3 added, phase changed. A reopens with its old copy.
+$(`(function(){
+  window.__s={writes:[],h:{}};
+  state.session={role:'builder',name:'You',auth:{uid:'uA'}};
+  Object.assign(Sync,{mode:'live',uid:'uA',authKind:'account',deviceId:'devA',on:true,_listening:{},_collGen:{},_reArmed:{},_notifReady:{},unsub:[],_held:{},_gateDelays:[0]});
+  const W=(path,d)=>{__s.writes.push(path);return Promise.resolve();};
+  const coll=sub=>({doc:id=>({set:d=>W(sub+'/'+id+' '+(d&&d.data&&d.data.v)),delete:()=>W('del '+sub+'/'+id)}),where:()=>coll(sub),
+    onSnapshot:(o,h)=>{if(typeof o==='function')h=o;__s.h[sub]=h;return ()=>{};}});
+  Sync.db={collection:()=>({where:()=>({onSnapshot:(o,h)=>{__s.h.sites=h;return ()=>{};}}),
+    doc:id=>({set:d=>W('site/'+id+' '+(d.meta&&d.meta.name)+' '+(d.meta&&d.meta.phase)),get:()=>Promise.resolve({exists:true}),collection:sub=>coll(sub)})})};
+  const empty={bookings:[],selections:[],logs:[],payments:[],mailReview:[],costs:[]};
+  const last=Object.assign({id:'stale1',name:'Old name',phase:'frame',members:{uA:'builder'},items:[{id:'i1',v:'v1'},{id:'i2',v:'v1'},{id:'i4',v:'v1'}]},JSON.parse(JSON.stringify(empty)));
+  const sh={meta:_syncHash(JSON.stringify(metaOf(last))),mk:{},mem:{uA:'builder'},colls:{items:{}}};
+  const lm=metaOf(last);Object.keys(lm).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(lm[k]));});
+  last.items.forEach(r=>{sh.colls.items[r.id]=_syncHash(JSON.stringify(r));});
+  localStorage.setItem(Sync._baseKey(),JSON.stringify({stale1:sh}));
+  state.projects.push(Object.assign({id:'stale1',name:'Old name',phase:'drywall',members:{uA:'builder'},
+    items:[{id:'i1',v:'v1'},{id:'i2',v:'v1'},{id:'i4',v:'v1b'},{id:'i3',v:'new'}]},JSON.parse(JSON.stringify(empty))));
+  window.__serverMeta=Object.assign(metaOf(last),{name:'New name'});
+  Sync._loadBase();Sync.subscribe();return true;})()`);
+await $("Sync.pushAll()");
+t('a reopened phone writes nothing before it has pulled', $("__s.writes.length")===0, $("__s.writes.join()"));
+$(`__s.h.sites({metadata:{fromCache:false},docs:[{id:'stale1'}],docChanges:()=>[{type:'added',doc:{id:'stale1',data:()=>({mode:'live',members:{uA:'builder'},memberUids:['uA'],meta:__serverMeta,updatedBy:'devB'})}}]});true`);
+await new Promise(r=>setTimeout(r,80));
+t('still nothing written until the records are pulled', $("__s.writes.length")===0, $("__s.writes.join()"));
+t('record listeners attached', $("!!__s.h.items"));
+$(`(function(){
+  const mk=(id,v)=>({id:id,data:()=>({data:{id:id,v:v},updatedBy:'devB'})});
+  const items=[mk('i1','v2'),mk('i4','v1')];
+  Object.keys(__s.h).forEach(k=>{if(k==='sites')return;
+    const docs=k==='items'?items:[];
+    __s.h[k]({metadata:{fromCache:false},docs:docs,docChanges:()=>docs.map(d=>({type:'added',doc:d}))});});
+  return true;})()`);
+await new Promise(r=>setTimeout(r,80));
+const stale=JSON.parse($("JSON.stringify(state.projects.find(p=>p.id==='stale1'))"));
+const wr=JSON.parse($("JSON.stringify(__s.writes)"));
+const iv=id=>{const r=(stale.items||[]).find(x=>x.id===id);return r?r.v:null;};
+t('the other phone\'s edit wins on this phone', iv('i1')==='v2', iv('i1'));
+t('a record deleted on the other phone stays deleted', iv('i2')===null);
+t('the other phone\'s rename wins', stale.name==='New name', stale.name);
+t('the old copy of an edited record is never uploaded', !wr.some(x=>/^items\/i1 /.test(x)), wr.join());
+t('a deleted record is never uploaded again', !wr.some(x=>/items\/i2/.test(x)), wr.join());
+t('the old house name is never uploaded', !wr.some(x=>/Old name/.test(x)), wr.join());
+t('this phone\'s offline edit still goes up', wr.indexOf('items/i4 v1b')>=0&&iv('i4')==='v1b', wr.join());
+t('a record added offline still goes up', wr.indexOf('items/i3 new')>=0, wr.join());
+t('an offline field edit is kept and sent with the new name', stale.phase==='drywall'&&wr.indexOf('site/stale1 New name drywall')>=0, wr.join());
+t('what this phone synced is saved for the next open', (function(){$("clearTimeout(Sync._baseT);Sync._saveBase()");return true;})());
+await new Promise(r=>setTimeout(r,450));
+t('the saved sync record holds fingerprints, not copies', (function(){const b=$("localStorage.getItem(Sync._baseKey())")||'';return b.indexOf('stale1')>=0&&b.indexOf('v1b')<0&&b.indexOf('New name')<0;})());
+$("state.projects=state.projects.filter(p=>p.id!=='stale1');localStorage.removeItem(Sync._baseKey());clearTimeout(Sync._baseT);state.session=null;Object.assign(Sync,{mode:null,db:null,on:false,uid:null,_listening:{},_collGen:{},_reArmed:{},_shadow:{},_held:{},_pulled:{},_onServer:{},_sitesPulled:false,_gateDelays:null,unsub:[]});delete window.__s;delete window.__serverMeta;true");
 
 t('SEED_VERSION 21',$('SEED_VERSION')===21);
 t('10 seed sites',$('state.projects.length')===10);
