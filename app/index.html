@@ -801,7 +801,7 @@
   /* Onboarding-era splash: one door (sign in). Demo machinery survives underneath
    for excursions + the tour, but the mode/role choosers never render. */
 .mode-seg,#demoControls{display:none !important;}
-.login-explore{display:block;margin:var(--s-4) auto 0;background:none;border:none;font-family:inherit;
+.login-explore{display:block;width:fit-content;margin:var(--s-4) auto 0;background:none;border:none;font-family:inherit;
   font-size:var(--t-sm);color:rgba(231,220,198,.55);text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
 .login-copy{position:static;width:100%;margin-top:var(--s-7);padding:var(--s-4) 0 calc(env(safe-area-inset-bottom,0) + var(--s-2));text-align:center;font-size:var(--t-xs);letter-spacing:.05em;color:rgba(231,220,198,.34);opacity:0;animation:fadeUp .6s ease 3.1s forwards;}
   .login-install{display:flex;align-items:center;justify-content:center;gap:7px;width:fit-content;margin:var(--s-3) auto 0;background:rgba(231,220,198,.1);border:1px solid rgba(231,220,198,.24);color:var(--cream);font-family:inherit;font-size:var(--t-sm);font-weight:600;padding:var(--s-3) var(--s-4);border-radius:var(--r);cursor:pointer;}
@@ -1756,10 +1756,13 @@
   border-radius:999px;padding:var(--s-1) var(--s-3);font-family:inherit;font-size:var(--t-xs);font-weight:700;cursor:pointer;white-space:nowrap;flex:none;}
 .exc-reset{background:none;}
 .exc-actions{display:flex;gap:6px;flex:none;}
+.exc-link{color:var(--cream);font-size:var(--t-xs);font-weight:700;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;flex:none;}
 body.on-excursion .exc-banner{display:flex;}
 body.on-excursion .device{margin-top:calc(var(--s-8) + var(--s-1));height:calc(100dvh - 52px);}
 body.on-excursion header{padding-top:var(--s-3);}
-@media(max-width:420px){.exc-k{display:none;}}
+@media(max-width:420px){.exc-k{display:none;}
+  .exc-banner{flex-wrap:wrap;row-gap:var(--s-1);}.exc-link{flex-basis:100%;text-align:center;}
+  body.on-excursion .device{margin-top:76px;height:calc(100dvh - 76px);}}
 /* Role views own the full window whenever shown — demo AND production, identical. */
 @media(min-width:900px){
   #clientview,#subview{left:0;}
@@ -2011,7 +2014,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 .row-aside.ok{color:var(--sage);}
 .row-thumb{flex:none;width:48px;height:48px;border-radius:var(--r-sm);overflow:hidden;background:var(--surface-2);}
 .row-thumb img,.row-thumb svg{width:100%;height:100%;object-fit:cover;display:block;}
-button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;}
+button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;}
 .add-sub-btn.btn-primary{border-style:solid;border-color:transparent;background:var(--ink);color:var(--surface);}
 .cell .area{position:absolute;left:0;right:0;bottom:0;padding:var(--s-4) var(--s-2) var(--s-2);font-size:var(--t-xs);font-weight:600;
   color:var(--white);background:linear-gradient(transparent, rgba(20,18,14,.55));}
@@ -2613,6 +2616,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
           Add App to Home Screen
         </button>
         <button class="login-explore" onclick="enterDemoGuided(true)">Just looking? Explore the example build</button>
+        <a class="login-explore mt-2" href="mailto:hello@siteplumb.com?subject=Zoom%20onboarding">New to SitePlumb? Get a free Zoom setup.</a>
       </div>
       <div class="login-copy">© 2026 SitePlumb · All rights reserved</div>
     </div>
@@ -3211,6 +3215,7 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
       <button class="exc-reset" onclick="resetDemo()">Start over</button>
       <button class="exc-exit" onclick="exitDemo()">Exit</button>
     </span>
+    <a class="exc-link" href="mailto:hello@siteplumb.com?subject=Zoom%20onboarding">Like it? Free Zoom setup</a>
   </div>
 
   <div id="tourOrb"></div>
@@ -3906,15 +3911,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.432.0 - The calendar button says Open calendar';
+const PLUMB_VERSION='2.433.0 - The app links back to the site, Zoom setup, and hello@';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790615602917;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.432.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790618007007;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.433.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6801,6 +6806,7 @@ function startConverge(){
 }
 const SET_GEAR_ROW=(label,desc,onclick,icon)=>`<button class="set-row" onclick="${onclick}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg><div class="flex-1"><div>${label}</div>${desc?`<div class="sr-d">${desc}</div>`:''}</div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="u-m16"><path d="M9 6l6 6-6 6"/></svg></button>`;
 const SET_LIST_ROW=(label,desc,onclick)=>'<button type="button" class="row row-tap" onclick="'+onclick+'"><div class="row-main"><div class="row-title">'+label+'</div>'+(desc?'<div class="row-sub">'+desc+'</div>':'')+'</div><span class="row-chev">\u203a</span></button>';
+const SET_LINK_ROW=(label,desc,href,blank)=>'<a class="row row-tap td-n" href="'+href+'"'+(blank?' target="_blank" rel="noopener"':'')+'><div class="row-main"><div class="row-title">'+label+'</div>'+(desc?'<div class="row-sub">'+desc+'</div>':'')+'</div><span class="row-chev">\u203a</span></a>';
 function openSettings(){try{tourPrefetch();tourUnlockAudio();}catch(e){}saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
 function closeSettings(){document.getElementById('settingsScrim').classList.remove('show');}
 function openCompany(){const r=state.session&&state.session.role;if(r==='client'||r==='subs')return;saveScroll('home');renderCompany();document.getElementById('companyScrim').classList.add('show');}
@@ -6853,6 +6859,12 @@ function renderSettings(){
   const _fbn=(state.feedback||[]).filter(f=>!f.done).length;
   rows+=SET_LIST_ROW('Report a problem or idea',_fbn?(_fbn+' open '+(_fbn===1?'item':'items')):'Share a bug or suggestion with the team','closeSettings();openFeedback()');
   try{if(_evNeeded())rows+=SET_LIST_ROW('Confirm your email','Unconfirmed - this is what makes Forgot password work','closeSettings();evOpenFromSettings()');}catch(e){}
+  if(role==='builder'&&hat!=='client'&&hat!=='sub'&&!onClient){
+    rows+=SET_LINK_ROW('Free Zoom setup','Your first house, set up with you on a call. Free while early.','mailto:hello@siteplumb.com?subject=Zoom%20onboarding');
+    rows+=SET_LINK_ROW('Email SitePlumb','hello@siteplumb.com','mailto:hello@siteplumb.com');
+    rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works','https://siteplumb.com',1);
+  }else if(role==='client'||hat==='client'||onClient)rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works for homeowners','https://siteplumb.com/homeowners.html',1);
+  else rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works','https://siteplumb.com',1);
   rows+=SET_LIST_ROW('Privacy & legal','Policies, your data & account deletion','closeSettings();openLegal()');
   rows+='<div class="list-danger">';
   rows+='<button type="button" class="btn btn-secondary btn-block" onclick="closeSettings();liveSignOut()">Sign out</button>';
