@@ -8,9 +8,10 @@ service firebase.storage {
              && request.resource.contentType.matches('image/.*|application/pdf');
     }
 
+    // Closed: the example build keeps practice photos on the phone (2.430+).
+    // Phones on 2.429 or older get a denied upload and keep them locally.
     match /demo/sites/{siteId}/{allPaths=**} {
-      allow read:  if signedIn();
-      allow write: if signedIn() && okUpload();
+      allow read, write: if false;
     }
 
     // Live files follow the app's exact layout {kind}/{fileId} (MediaSync.path).
