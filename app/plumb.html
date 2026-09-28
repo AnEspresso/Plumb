@@ -2572,6 +2572,8 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
         <select class="login-select" id="loginSelect"></select>
         <button class="login-enter btn btn-primary" id="loginEnter" onclick="doLogin()">Enter</button>
         </div>
+        <button class="login-explore" onclick="enterDemoGuided(true)">Just looking? Explore the example build</button>
+        <a class="login-explore mt-2 mb-5" href="mailto:hello@siteplumb.com?subject=Zoom%20onboarding">New to SitePlumb? Get a free Zoom setup.</a>
         <div id="realControls" style="display:none">
           <div class="lh">Your company</div>
           <div class="ls" id="laSub">Sign in to your private workspace. With sync connected this is a real account; otherwise it's stored on this device.</div>
@@ -2615,8 +2617,6 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><rect x="4" y="17" width="16" height="4" rx="1.5"/></svg>
           Add App to Home Screen
         </button>
-        <button class="login-explore" onclick="enterDemoGuided(true)">Just looking? Explore the example build</button>
-        <a class="login-explore mt-2" href="mailto:hello@siteplumb.com?subject=Zoom%20onboarding">New to SitePlumb? Get a free Zoom setup.</a>
       </div>
       <div class="login-copy">© 2026 SitePlumb · All rights reserved</div>
     </div>
@@ -3911,15 +3911,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.435.0 - A phone that was closed no longer writes its old copy over newer edits';
+const PLUMB_VERSION='2.436.0 - The example build link sits above sign in, so phones see it without scrolling';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790620695738;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.435.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790632422722;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.436.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
