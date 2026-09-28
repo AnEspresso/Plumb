@@ -6859,9 +6859,12 @@ function renderSettings(){
   const _fbn=(state.feedback||[]).filter(f=>!f.done).length;
   rows+=SET_LIST_ROW('Report a problem or idea',_fbn?(_fbn+' open '+(_fbn===1?'item':'items')):'Share a bug or suggestion with the team','closeSettings();openFeedback()');
   try{if(_evNeeded())rows+=SET_LIST_ROW('Confirm your email','Unconfirmed - this is what makes Forgot password work','closeSettings();evOpenFromSettings()');}catch(e){}
-  rows+=SET_LINK_ROW('Free Zoom setup','Your first house, set up with you on a call. Free while early.','mailto:hello@siteplumb.com?subject=Zoom%20onboarding');
-  rows+=SET_LINK_ROW('Email SitePlumb','hello@siteplumb.com','mailto:hello@siteplumb.com');
-  rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works','https://siteplumb.com',1);
+  if(role==='builder'&&hat!=='client'&&hat!=='sub'&&!onClient){
+    rows+=SET_LINK_ROW('Free Zoom setup','Your first house, set up with you on a call. Free while early.','mailto:hello@siteplumb.com?subject=Zoom%20onboarding');
+    rows+=SET_LINK_ROW('Email SitePlumb','hello@siteplumb.com','mailto:hello@siteplumb.com');
+    rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works','https://siteplumb.com',1);
+  }else if(role==='client'||hat==='client'||onClient)rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works for homeowners','https://siteplumb.com/homeowners.html',1);
+  else rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works','https://siteplumb.com',1);
   rows+=SET_LIST_ROW('Privacy & legal','Policies, your data & account deletion','closeSettings();openLegal()');
   rows+='<div class="list-danger">';
   rows+='<button type="button" class="btn btn-secondary btn-block" onclick="closeSettings();liveSignOut()">Sign out</button>';

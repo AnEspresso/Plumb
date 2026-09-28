@@ -1516,7 +1516,16 @@ asSub('Ray Delgado');$('renderSettings()');
 t('settings shows the row for subs too', el('settingsBody').innerHTML.indexOf('Privacy &amp; legal')>=0);
 const _zm='mailto:hello@siteplumb.com?subject=Zoom%20onboarding';
 const _setLinks=()=>Array.from(D.querySelectorAll('#settingsBody a.row')).map(x=>[x.querySelector('.row-title').textContent,x.querySelector('.row-sub').textContent,x.getAttribute('href'),x.getAttribute('target')||'']);
-t('settings links the site, Zoom setup, and hello@ above Privacy', JSON.stringify(_setLinks())===JSON.stringify([['Free Zoom setup','Your first house, set up with you on a call. Free while early.',_zm,''],['Email SitePlumb','hello@siteplumb.com','mailto:hello@siteplumb.com',''],['siteplumb.com','How SitePlumb works','https://siteplumb.com','_blank']])&&el('settingsBody').innerHTML.indexOf('siteplumb.com</div>')<el('settingsBody').innerHTML.indexOf('Privacy &amp; legal'), JSON.stringify(_setLinks()));
+{const _cv=el('clientview'),_cvOn=_cv.classList.contains('show');_cv.classList.remove('show');
+const _site=['siteplumb.com','How SitePlumb works','https://siteplumb.com','_blank'],_hoSite=['siteplumb.com','How SitePlumb works for homeowners','https://siteplumb.com/homeowners.html','_blank'];
+const _bldRows=[['Free Zoom setup','Your first house, set up with you on a call. Free while early.',_zm,''],['Email SitePlumb','hello@siteplumb.com','mailto:hello@siteplumb.com',''],_site];
+const _linksAs=(who,want)=>{$('renderSettings()');const got=_setLinks();t('settings links for '+who, JSON.stringify(got)===JSON.stringify(want)&&el('settingsBody').innerHTML.lastIndexOf('row-sub">'+want[want.length-1][1])<el('settingsBody').innerHTML.indexOf('Privacy &amp; legal'), JSON.stringify(got));};
+_linksAs('crew: site only',[_site]);
+asBuilder();_linksAs('builder: Zoom setup, hello@, site above Privacy',_bldRows);
+asClient('p3');_linksAs('homeowner: homeowners page only',[_hoSite]);
+$("state.session={role:'builder',name:'You',member:{role:'client'}}");_linksAs('builder account wearing the homeowner hat',[_hoSite]);
+$("state.session={role:'builder',name:'You',member:{role:'sub'}}");_linksAs('builder account wearing the crew hat',[_site]);
+asSub('Ray Delgado');if(_cvOn)_cv.classList.add('show');}
 t('sign-in offers the free Zoom setup under Just looking', (function(){const e=D.querySelector('.login-explore + a.login-explore');return !!(e&&e.previousElementSibling.textContent==='Just looking? Explore the example build'&&e.textContent==='New to SitePlumb? Get a free Zoom setup.'&&e.getAttribute('href')===_zm);})());
 t('demo bar ends with Like it? Free Zoom setup', (function(){const e=el('excBanner').lastElementChild;return !!(e&&e.tagName==='A'&&e.textContent==='Like it? Free Zoom setup'&&e.getAttribute('href')===_zm);})());
 asBuilder();
