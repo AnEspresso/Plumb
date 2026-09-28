@@ -3906,15 +3906,15 @@ button.row{width:100%;background:transparent;border:0;font:inherit;color:inherit
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.430.0 - Practice photos stay on the phone';
+const PLUMB_VERSION='2.431.0 - A waiting live photo is not dropped';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790590992691;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.430.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790595042005;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.431.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9390,13 +9390,14 @@ const CloudFiles={
   _save(q){try{localStorage.setItem(this.KEY,JSON.stringify(q));}catch(e){}},
   _sample(id){return /^p(?:[1-9]|10)$/.test(String(id||''));},
   _live(){return typeof Sync!=='undefined'&&Sync.mode==='live';},
-  /* Upload only a file stamped for a live house. Practice files, the shared
-     sample houses, and anything queued before this rule are dropped, so
-     opening the real book later cannot send them. */
+  /* A file uploads only for a live house. While the phone is in the practice
+     book, an unmarked entry from before this rule stays queued and is not
+     uploaded. A sample house is dropped immediately. Back in the real book,
+     an unmarked entry uploads only if that house is one of yours. */
   _keep(e){
     if(!e||this._sample(e.siteId)||e.mode==='demo')return false;
     if(e.mode==='live')return true;
-    if(!this._live())return false;
+    if(!this._live())return true;
     try{return (state.projects||[]).some(p=>String(p.id)===String(e.siteId)&&!p.sample);}catch(err){return false;}
   },
   _drain(){const q=this._q().filter(e=>this._keep(e));this._save(q);return q;},

@@ -2604,7 +2604,7 @@ await $('(async()=>{'+
     'clear:function(){m.clear();}'+
   '};}};Object.defineProperty(tx,"oncomplete",{set:function(fn){queueMicrotask(fn);}});Object.defineProperty(tx,"onerror",{set:function(){}});return tx;}};'+
   'URL.createObjectURL=function(b){return "blob:sim/"+String(b);};URL.revokeObjectURL=function(){};'+
-  'localStorage.setItem("plumb.uploadQueue",JSON.stringify([{kind:"photos",siteId:"p1",id:"old-practice"},{kind:"docs",siteId:"pmadeup",id:"old-doc"}]));'+
+  'localStorage.setItem("plumb.uploadQueue",JSON.stringify([{kind:"photos",siteId:"p1",id:"old-practice"},{kind:"docs",siteId:"pmadeup",id:"old-doc",mode:"demo"}]));'+
   'Sync.mode="demo";Sync.on=true;Sync.db={};'+
   'CloudFiles.queue("photos","p1","ph-practice");'+
   'CloudFiles.queue("docs","pmadeup","doc-practice");'+
@@ -2640,6 +2640,27 @@ t('a waiting practice photo is dropped, not uploaded', $('__demoQ')==='[]' && $(
 t('a practice photo survives reload from IndexedDB', $('__still')==='practice-bytes' && String($('__reloaded')).indexOf('blob:sim/')===0, $('__reloaded'));
 t('a practice photo never reaches the uploader', JSON.parse($('__queued')||'[]').map(e=>e.id).sort().join(',')==='doc-live,ph-live' && String($("JSON.stringify(__livePaths)")).indexOf('demo/')<0, $('__queued'));
 t('a live photo and a live document still upload', $('__livePuts')===2 && JSON.parse($("JSON.stringify(__livePaths)")).join(',')==='live/sites/liveHouse1/photos/ph-live,live/sites/liveHouse1/docs/doc-live', JSON.stringify($('__livePaths')));
+
+await $('(async()=>{'+
+  'window.__puts=0;window.__paths=[];CloudFiles._flushing=false;'+
+  'await idbPut("ph-legacy","legacy-bytes");'+
+  'state.projects.push({id:"legacyHouse",sample:false,items:[{id:1,photoId:"ph-legacy",cap:"legacy"}],docs:[]});'+
+  'localStorage.setItem("plumb.uploadQueue",JSON.stringify([{kind:"photos",siteId:"legacyHouse",id:"ph-legacy"},{kind:"photos",siteId:"p1",id:"old-sample"},{kind:"photos",siteId:"practiceOnly",id:"ph-practice-old"}]));'+
+  'Sync.mode="demo";Sync.on=true;Sync.db={};'+
+  'CloudFiles.queue("photos","p2","ph-new-practice");'+
+  'await CloudFiles.flush();'+
+  'window.__held=localStorage.getItem("plumb.uploadQueue");'+
+  'window.__heldPuts=window.__puts;'+
+  'Sync.mode="live";'+
+  'await CloudFiles.flush();'+
+  'window.__legPaths=window.__paths.slice();'+
+  'window.__legPuts=window.__puts;'+
+  'window.__legQ=localStorage.getItem("plumb.uploadQueue");'+
+  'state.projects=state.projects.filter(function(p){return p.id!=="legacyHouse";});'+
+  'Sync.mode="demo";Sync.on=false;Sync.db=null;'+
+'})()');
+t('an old live photo survives a practice photo and is not uploaded yet', JSON.parse($('__held')||'[]').map(e=>e.id).sort().join(',')==='ph-legacy,ph-practice-old' && $('__heldPuts')===0, $('__held'));
+t('that old live photo uploads once the real book is open', $('__legPuts')===1 && JSON.parse($("JSON.stringify(__legPaths)")).join(',')==='live/sites/legacyHouse/photos/ph-legacy' && $('__legQ')==='[]', JSON.stringify($('__legPaths'))+' '+$('__legQ'));
 
 /* ════ 15 · ACTION-ORDER FUZZ ════ */
 S('fuzz');
