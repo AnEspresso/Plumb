@@ -3917,15 +3917,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.440.0 - Field Notes opens on the house you are standing at, and houses can be pinned on the lot';
+const PLUMB_VERSION='2.441.0 - People opens up in the example build, and signed-in accounts can enter an invite code';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790700849793;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.440.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790709064697;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.441.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6886,6 +6886,7 @@ function renderSettings(){
   }
   rows+='<div class="sec"><h2>Account</h2></div>';
   const _fbn=(state.feedback||[]).filter(f=>!f.done).length;
+  if(_isLiveAccount())rows+=SET_LIST_ROW('I have an invite code','Join a house or a team with a code','closeSettings();openJoinCode()');
   rows+=SET_LIST_ROW('Report a problem or idea',_fbn?(_fbn+' open '+(_fbn===1?'item':'items')):'Share a bug or suggestion with the team','closeSettings();openFeedback()');
   try{if(_evNeeded())rows+=SET_LIST_ROW('Confirm your email','Unconfirmed - this is what makes Forgot password work','closeSettings();evOpenFromSettings()');}catch(e){}
   if(role==='builder'&&hat!=='client'&&hat!=='sub'&&!onClient){
@@ -7709,6 +7710,30 @@ function openInvitesHTML(skip){
   if(!rows.length)return '';
   rows.sort((a,b)=>b.t-a.t);
   return '<div class="sec"><h2>Open invites</h2></div>'+rows.map(r=>'<div class="subrow cur-p" onclick="shareInvite(\''+esc(r.code)+'\')"><div class="si"><div class="n">'+esc(r.n)+'</div><div class="d">Code '+esc(r.code)+' \u2014 tap to copy & share</div></div></div>').join('');}
+/* The example build shows a sample company instead of a dead end: the same
+   Team / Homeowners / Crews tabs, filled from the demo houses. Nothing here
+   makes a real code; the Invite buttons explain that and point to setting up. */
+function peopleDemoInvite(){toast('Invite codes work in your own builds, not the example. Tap Set up to start yours.');}
+function peopleDemoHTML(){
+  const mode=(peopleMode==='homeowner'||peopleMode==='subs')?peopleMode:(peopleMode==='invite'||!peopleMode?'invite':'team');
+  let h=peoplePills()
+    +'<div class="subrow"><div class="si"><div class="n">Example company</div><div class="d">These are sample people. In your own builds you invite real ones with a code.</div></div>'
+    +'<button class="lpay flex-none py-2 px-3 btn btn-quiet" onclick="closePeople();exitDemo()">Set up</button></div>';
+  if(mode==='invite'){
+    h+='<div class="ppl-invite-h">Invite</div><p class="mt-0 ml-0 mr-0 mb-3 c-ink-3 fs-sm">Who is this code for?</p><div class="ppl-three">'
+      +['Team','Homeowner','Crew'].map(n=>'<button class="b1 b-cancel btn btn-secondary" onclick="peopleDemoInvite()">'+n+'</button>').join('')+'</div>';
+    return h;}
+  if(mode==='team'){
+    h+='<div class="sec"><h2>Team</h2></div>'+EMPLOYEES.map(e=>'<div class="subrow"><div class="si"><div class="n">'+esc(e.name)+'</div><div class="d">'+esc(e.role)+'</div></div></div>').join('');
+    return h;}
+  if(mode==='homeowner'){
+    const ps=(state.projects||[]);
+    h+='<div class="sec"><h2>Portal access by house</h2></div>'+(ps.length?ps.map(p=>'<div class="subrow"><div class="si"><div class="n">'+esc(p.street||p.name)+(p.city?' \u00b7 '+esc(p.city):'')+'</div><div class="d">'+'Homeowner has the portal'+'</div></div></div>').join(''):'<div class="empty">No example houses.</div>');
+    return h;}
+  const crews={};(state.projects||[]).forEach(p=>(p.subs||[]).forEach(x=>{const k=x.name;if(!k)return;(crews[k]=crews[k]||{trade:x.specialty?specLabel(x.specialty):'',n:0}).n++;}));
+  const names=Object.keys(crews).sort();
+  h+='<div class="sec"><h2>Crews</h2></div>'+(names.length?names.map(n=>'<div class="subrow"><div class="si"><div class="n">'+esc(n)+'</div><div class="d">'+esc(crews[n].trade)+(crews[n].trade?' \u00b7 ':'')+crews[n].n+' house'+(crews[n].n===1?'':'s')+'</div></div></div>').join(''):'<div class="empty">No example crews.</div>');
+  return h;}
 let _ctNavDir='fwd';
 function renderPeople(__a,__b){
   setTimeout(()=>{try{enhanceSelect('tqWho');}catch(e){}},60);
@@ -7752,7 +7777,7 @@ function ctBackToCategories(){_ctNavDir='back';peopleMode='templates';renderPeop
 function __renderPeople(){
   const el=document.getElementById('peopleBody');if(!el)return;
   const title=document.getElementById('peopleTitle');
-  if(appMode()!=='real'){if(title)title.textContent='Live mode only';el.innerHTML='<div class="empty">This manages your real company in Live mode. The demo uses sample roles instead.</div>';return;}
+  if(appMode()!=='real'){if(title)title.textContent='People';el.innerHTML=peopleDemoHTML();return;}
   if(peopleMode==='roles'){
     if(title)title.textContent='People';
     el.innerHTML=peoplePills()+'<p class="mt-0 ml-0 mr-0 mb-3 c-ink-3 fs-sm">Defaults for each role. Tap one to change it.</p>'
@@ -7994,22 +8019,50 @@ function approveClaim(code,uid,c){
       toast((jn||'Invitee')+' joined '+(p.street||p.name));
       logEvent('memberJoined',role+' · '+(c.name||''));}
     return;}}
-async function redeemInvite(code,prof){
+async function redeemInvite(code,prof,err){
+  err=err||laErr;
   code=(code||'').trim().toUpperCase();if(!code)return null;
-  if(!fbConfig()){laErr('Invites need the synced build — ask your builder to send you the current link.');return false;}
-  if(!prof.uid){laErr('Invite codes need a real account — connect sync first.');return false;}
+  if(!fbConfig()){err('Invites need the synced build — ask your builder to send you the current link.');return false;}
+  if(!prof.uid){err('Invite codes need a real account — connect sync first.');return false;}
   try{
     if(!firebase.apps.length)firebase.initializeApp(fbConfig());
     const db=firebase.firestore();
     const doc=await db.collection('invites').doc(code).get();
-    if(!doc.exists){laErr('That invite code wasn\u2019t found — double-check it with your builder.');return false;}
+    if(!doc.exists){err('That invite code wasn\u2019t found — double-check it with your builder.');return false;}
     const inv=doc.data()||{};
-    if(inv.revoked){laErr('That invite was revoked by your builder — ask them for a new code.');return false;}
+    if(inv.revoked){err('Your builder canceled that code. Ask them for a new one.');return false;}
     await db.collection('invites').doc(code).collection('claims').doc(prof.uid).set({name:prof.name||'',email:prof.email||'',rpRole:prof.rpRole||'',t:Date.now()});
     const role=inv.role==='client'?'client':(inv.role==='team'?'team':'sub');
     return {code,siteId:String(inv.siteId||''),role,trade:inv.trade||'',name:inv.name||'',setup:!!inv.setup,rpRole:inv.rpRole||'',gates:inv.gates||null};
-  }catch(e){laErr('Couldn\u2019t redeem the invite: '+((e&&e.message)||'error'));return false;}
+  }catch(e){err('Couldn\u2019t use that code: '+((e&&e.message)||'error'));return false;}
 }
+/* Invite code for someone already signed in (the sign-in page's "I have an
+   invite code" is only there when signed out). Same redeem as sign-in, then
+   re-enter under the new role. An owner who already runs houses keeps their
+   company: one account is one role, so they're pointed to another email. */
+function openJoinCode(){
+  showInfo('I have an invite code','<p class="mt-0 ml-0 mr-0 mb-2">Enter the code your builder sent you.</p>'
+    +'<input id="jcCode" class="w-full" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Invite code (e.g. PB-XXXXXXX)" onkeydown="if(event.key===\'Enter\')joinCodeSubmit()">'
+    +'<div id="jcErr" class="la-err mt-2" style="display:none"></div>'
+    +'<button id="jcGo" class="b1 b-go w-full mt-3 btn btn-primary" onclick="joinCodeSubmit()">Join</button>');
+  setTimeout(()=>{try{document.getElementById('jcCode').focus();}catch(e){}},250);}
+function jcErr(msg){const e=document.getElementById('jcErr');if(!e)return;if(msg){e.textContent=msg;e.style.display='';}else e.style.display='none';}
+async function joinCodeSubmit(){
+  jcErr('');
+  const code=((document.getElementById('jcCode')||{}).value||'').trim();
+  if(!code){jcErr('Enter the code first.');return;}
+  const prof=laProfile();
+  if(!prof||!prof.uid){jcErr('Invite codes need a live account. Sign in first.');return;}
+  if(!prof.member&&(state.projects||[]).length){jcErr('This account runs its own company. To join another builder, sign out and sign in with a different email.');return;}
+  const btn=document.getElementById('jcGo');if(btn){btn.disabled=true;btn.textContent='\u2026';}
+  let m=null;
+  try{m=await redeemInvite(code,prof,jcErr);}finally{if(btn){btn.disabled=false;btn.textContent='Join';}}
+  if(!m)return;
+  prof.member=m;if(m.rpRole)prof.rpRole=m.rpRole;if(m.gates)prof.gates=m.gates;
+  try{_invClearHandoff();}catch(e){}
+  laSaveProfile(prof);laSaveHat(prof);
+  logEvent('inviteJoined',m.role+' \u00b7 '+code.toUpperCase());
+  closeInfo();laEnter(prof);}
 function setRole(r){r=normRole(r);loginRole=r;['builder','subs','client'].forEach(x=>{const b=document.getElementById('role-'+x);if(b)b.classList.toggle('on',x===r);});populateLoginSelect();}
 function populateLoginSelect(){
   const sel=document.getElementById('loginSelect');
