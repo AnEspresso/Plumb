@@ -42,7 +42,17 @@ async function lane(name,browserType){
   const js=c=>page.evaluate(c);
 
   t(name,'demo arrival shows the banner', await js("document.body.classList.contains('on-excursion')&&getComputedStyle(document.getElementById('excBanner')).display!=='none'"));
-  t(name,'tour offer appears', await js("document.getElementById('demoIntroScrim').classList.contains('show')"));
+  /* Since 2.387.0 the walk is QA/owner only (walkAllowed), so a public demo
+     arrival must NOT offer it. Same pair of checks as qa.js. */
+  t(name,'public demo arrival does not show the tour offer', await js("!document.getElementById('demoIntroScrim').classList.contains('show')"));
+  t(name,'tour offer appears when QA or owner is allowed', await js(`(function(){
+    const orig=walkAllowed;walkAllowed=function(){return true;};
+    try{sessionStorage.removeItem('plumbTourOffered');}catch(e){}
+    maybeOfferTour();
+    const shown=document.getElementById('demoIntroScrim').classList.contains('show');
+    walkAllowed=orig;
+    try{sessionStorage.removeItem('plumbTourOffered');}catch(e){}
+    return shown;})()`));
   await js("demoIntroExplore()");
 
   t(name,'ten site cards render', await js("(function(){demoRole('hillan');return document.querySelectorAll('#ovCards .ov-card').length;})()")===10);
