@@ -6296,6 +6296,20 @@ function closeLegalDoc(){
   if(_legalDocFromLegal){try{const ls=document.getElementById('legalScrim');if(ls)ls.classList.add('show');}catch(e){}}
   _legalDocFromLegal=false;}
 function legalOpenPrivacy(){openLegalDoc(LEGAL_URL.privacy);logEvent('legalOpened','privacy');}
+/* One short in-app note when the Privacy Policy changes materially (the policy's
+   "Changes to this policy" promise). Shown once per phone for real accounts, never
+   over a first-run or other open sheet; if something is open it waits for the next launch. */
+const PRIVACY_REV='2026-09-29';
+function privacyNoteSoon(){if(!(state.session&&state.session.mode==='real'))return;
+  try{if(localStorage.getItem('plumb.privacyRev')===PRIVACY_REV)return;}catch(e){return;}
+  clearTimeout(privacyNoteSoon._t);privacyNoteSoon._t=setTimeout(privacyNoteShow,5000);}
+function privacyNoteShow(){
+  try{if(localStorage.getItem('plumb.privacyRev')===PRIVACY_REV)return;}catch(e){return;}
+  if(!(state.session&&state.session.mode==='real'))return;
+  if(firstRunBusy()||document.querySelector('.sheet-scrim.show,.pmodal-scrim.show,#installGate.show,#infoScrim.show'))return;
+  try{localStorage.setItem('plumb.privacyRev',PRIVACY_REV);}catch(e){}
+  showInfo('Privacy Policy updated','<p class="mt-0 ml-0 mr-0 mb-2">We updated our Privacy Policy to cover optional location in Field Notes and the weather forecast.</p><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo();legalOpenPrivacy()">Read the policy</button>');
+  logEvent('privacyNote',PRIVACY_REV);}
 function legalOpenTerms(){openLegalDoc(LEGAL_URL.terms);logEvent('legalOpened','terms');}
 function openLegal(){
   const el=document.getElementById('legalBody');if(!el)return;
@@ -8016,6 +8030,7 @@ function doLogin(){
 function setChrome(dark){const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',dark?'#15130F':'#F2EEE6');document.body.classList.toggle('chrome-dark',dark);}
 function routeAfterLogin(){document.getElementById('login').classList.add('hide');setChrome(false);
   try{HouseGeo.soon();}catch(e){}
+  try{privacyNoteSoon();}catch(e){}
   try{setTimeout(maybeWelcome,400);}catch(e){}
   const role=state.session&&state.session.role;
   if(role==='subs')showSubView();else if(role==='client')showClientView();else showOverview();}
