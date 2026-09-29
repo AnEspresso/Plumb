@@ -964,6 +964,11 @@
   .es-acts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--s-2);margin-top:var(--s-3);}
   .es-acts .btn{min-height:var(--tap);min-width:0;width:100%;padding-left:var(--s-2);padding-right:var(--s-2);white-space:nowrap;}
   .es-acts .btn-danger{border:1px solid var(--clay);background:var(--surface);}
+  .es-pin{width:100%;margin-top:var(--s-2);min-height:var(--tap);}
+  .fn-loc-ask{margin:0 0 var(--s-3);padding:var(--s-3);border:1px solid var(--line);border-radius:12px;background:var(--surface);}
+  .fn-loc-q{font-size:var(--t-sm);color:var(--ink-2);margin-bottom:var(--s-2);}
+  .fn-loc-acts{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2);}
+  .fn-loc-acts .btn{min-height:var(--tap);min-width:0;width:100%;}
   .ov-sortrow{display:flex;align-items:center;gap:8px;margin:0 0 var(--s-3);flex-wrap:wrap;}
   .ov-sortpills{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0;}
   .ov-allpill{display:none;}
@@ -3912,15 +3917,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.439.0 - First-run sheets wait for your houses, and People lists every open invite code';
+const PLUMB_VERSION='2.440.0 - Field Notes opens on the house you are standing at, and houses can be pinned on the lot';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790698590249;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.439.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790700849793;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.440.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5636,6 +5641,7 @@ function saveNewSite(){const name=document.getElementById('nsName').value.trim()
         if(!_np.subs.some(x=>x.name===r.name)){_np.subs.push({id:'sub_'+Math.random().toString(36).slice(2,8),name:r.name,specialty:r.trade,phone:''});c=true;}});}
     if(a||b||c)persist();}}catch(e){}
   logEvent('siteCreated',street||name);closeNewSite();
+  try{HouseGeo.soon();}catch(e){}
   Data.setActive(id);                       // make the NEW site active before anything else
   if(_startConverge){renderAll();startConverge();return;}
   if(afterHouseAdded(id,nBefore))return;
@@ -6290,6 +6296,20 @@ function closeLegalDoc(){
   if(_legalDocFromLegal){try{const ls=document.getElementById('legalScrim');if(ls)ls.classList.add('show');}catch(e){}}
   _legalDocFromLegal=false;}
 function legalOpenPrivacy(){openLegalDoc(LEGAL_URL.privacy);logEvent('legalOpened','privacy');}
+/* One short in-app note when the Privacy Policy changes materially (the policy's
+   "Changes to this policy" promise). Shown once per phone for real accounts, never
+   over a first-run or other open sheet; if something is open it waits for the next launch. */
+const PRIVACY_REV='2026-09-29';
+function privacyNoteSoon(){if(!(state.session&&state.session.mode==='real'))return;
+  try{if(localStorage.getItem('plumb.privacyRev')===PRIVACY_REV)return;}catch(e){return;}
+  clearTimeout(privacyNoteSoon._t);privacyNoteSoon._t=setTimeout(privacyNoteShow,5000);}
+function privacyNoteShow(){
+  try{if(localStorage.getItem('plumb.privacyRev')===PRIVACY_REV)return;}catch(e){return;}
+  if(!(state.session&&state.session.mode==='real'))return;
+  if(firstRunBusy()||document.querySelector('.sheet-scrim.show,.pmodal-scrim.show,#installGate.show,#infoScrim.show'))return;
+  try{localStorage.setItem('plumb.privacyRev',PRIVACY_REV);}catch(e){}
+  showInfo('Privacy Policy updated','<p class="mt-0 ml-0 mr-0 mb-2">Field Notes can now use your phone\'s location to open on the house you\'re at, only if you allow it. The calendar forecast uses each house\'s city. Both are explained in the policy.</p><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo();legalOpenPrivacy()">Read the policy</button>');
+  logEvent('privacyNote',PRIVACY_REV);}
 function legalOpenTerms(){openLegalDoc(LEGAL_URL.terms);logEvent('legalOpened','terms');}
 function openLegal(){
   const el=document.getElementById('legalBody');if(!el)return;
@@ -6892,7 +6912,8 @@ function renderEditSites(){
       ?'<button class="btn btn-secondary" onclick="markHouseDone(\''+p.id+'\',false)">Put back on the book</button>'
       :'<button class="btn btn-secondary" onclick="askHouseDone(\''+p.id+'\')">Off book</button>';
     return '<div class="es-card"><div class="n">'+title+'</div>'+(sub?('<div class="d">'+sub+'</div>'):'')
-      +'<div class="es-acts">'+done+'<button class="btn btn-secondary" onclick="openImportFor(\''+p.id+'\')">Edit</button><button class="btn btn-danger" onclick="deleteSite(\''+p.id+'\')">Delete</button></div></div>';
+      +'<div class="es-acts">'+done+'<button class="btn btn-secondary" onclick="openImportFor(\''+p.id+'\')">Edit</button><button class="btn btn-danger" onclick="deleteSite(\''+p.id+'\')">Delete</button></div>'
+      +(HouseGeo.canWrite()&&navigator.geolocation?'<button type="button" class="btn btn-quiet es-pin" onclick="pinHouseHere(\''+p.id+'\')">Pin this house here</button>':'')+'</div>';
   }).join('')
     +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeEditSites();openStart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a new or existing house\u2026</button>';
 }
@@ -8008,6 +8029,8 @@ function doLogin(){
 }
 function setChrome(dark){const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',dark?'#15130F':'#F2EEE6');document.body.classList.toggle('chrome-dark',dark);}
 function routeAfterLogin(){document.getElementById('login').classList.add('hide');setChrome(false);
+  try{HouseGeo.soon();}catch(e){}
+  try{privacyNoteSoon();}catch(e){}
   try{setTimeout(maybeWelcome,400);}catch(e){}
   const role=state.session&&state.session.role;
   if(role==='subs')showSubView();else if(role==='client')showClientView();else showOverview();}
@@ -8173,8 +8196,8 @@ function isOffBook(p){return !!(p&&p.doneAt);}
    Field Notes and Invoices open straight onto the current house instead of
    asking which house first. */
 function housesAZ(){return (visibleProjects()||[]).slice().sort(function(a,b){return streetAzKey(a).localeCompare(streetAzKey(b));});}
-function houseSwitchHTML(p,fn){
-  return '<button type="button" class="set-row house-switch mt-0 mb-3 ml-0 mr-0" onclick="'+fn+'()"><div class="flex-1"><div>'+esc((p&&(p.street||p.name))||'House')+'</div><div class="sr-d">Change house</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="u-m16"><path d="M9 6l6 6-6 6"/></svg></button>';}
+function houseSwitchHTML(p,fn,sub){
+  return '<button type="button" class="set-row house-switch mt-0 mb-3 ml-0 mr-0" onclick="'+fn+'()"><div class="flex-1"><div>'+esc((p&&(p.street||p.name))||'House')+'</div><div class="sr-d">'+esc(sub||'Change house')+'</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="u-m16"><path d="M9 6l6 6-6 6"/></svg></button>';}
 function pickHouseThen(title,then){
   openPick({title:title,options:housesAZ().map(function(p){return {id:p.id,label:p.street||p.name,sub:p.city||''};}),
     onPick:function(id){try{Data.setActive(id);}catch(e){}try{renderAll();updateHeader();}catch(e){}then(id);}});}
@@ -8640,6 +8663,8 @@ function openLogPick(){
      first A-Z), and change it from the row at the top of the note. */
   const cur=P();
   logPickHouse((cur&&ps.some(function(x){return String(x.id)===String(cur.id);}))?cur.id:ps[0].id);
+  try{fnLocStart();}catch(e){}
+  try{HouseGeo.soon();}catch(e){}
 }
 function logPickHouse(pid){
   closeLogPick();
@@ -9372,7 +9397,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         }
         this._subSite(id);                                                    // attach record listeners (after project exists)
       });
-      if(changed){persistLocalOnly();rerenderCurrent();this._saveBase();try{firstRunHousesArrived();}catch(e){}}
+      if(changed){persistLocalOnly();rerenderCurrent();this._saveBase();try{firstRunHousesArrived();}catch(e){}try{HouseGeo.soon();}catch(e){}}
       if(!(snap.metadata&&snap.metadata.fromCache)){                  // the server's answer, not the phone's cache
         (snap.docs||[]).forEach(x=>{this._onServer[x.id]=true;});
         this._sitesPulled=true;this._flushHeld();}
@@ -18363,13 +18388,129 @@ function fnHouseRowSync(){
   const many=housesAZ().length>1;
   const tour=!!(document.getElementById('tourCatch')||window._tourHoldNext);
   if(!_fieldNote||!many||tour||fromTheHouse()){row.hidden=true;row.innerHTML='';return;}
-  row.innerHTML=houseSwitchHTML(P(),'fnChangeHouse');row.hidden=false;
+  const at=_fnLocAt&&P()&&String(_fnLocAt)===String(P().id);
+  row.innerHTML=houseSwitchHTML(P(),'fnChangeHouse',at?'At this house \u00b7 Change house':'')
+    +(_fnLocAsking?'<div class="fn-loc-ask"><div class="fn-loc-q">Open Field Notes on the house you\u2019re at? Uses your location.</div><div class="fn-loc-acts"><button type="button" class="btn btn-secondary" onclick="fnLocAnswer(false)">Not now</button><button type="button" class="btn btn-primary" onclick="fnLocAnswer(true)">Use location</button></div></div>':'');
+  row.hidden=false;
   const sub=document.getElementById('sheetSub');if(sub)sub.textContent='A label and a few words. Photo if you have one.';}
 function fnChangeHouse(){
+  _fnLocRun=null;_fnLocAt=null;   /* the person chose: a late location answer must not move the note */
   pickHouseThen('Field Notes \u2014 which house?',function(id){
     /* A photo already picked belongs to the house the note is saved to. */
     if(pendingPhotoId){try{CloudFiles.rehome('photos',pendingPhotoId,id);}catch(e){}}
     fnHouseRowSync();});}
+/* ── Field Notes opens on the house you're standing at ──
+   Each house gets a map position once (Google geocoding on the app's key, or
+   "Pin this house here" on the lot). The phone's own location is compared on
+   the phone and never saved or sent. */
+const HouseGeo={
+  R:150,        // metres: within this of a house counts as "at the house"
+  ACC:200,      // metres: a rougher phone reading can't tell houses apart
+  NEAR:30,      // metres: two houses this close together, don't guess
+  _denied:false,_busy:false,_tried:{},_t:null,err:'',
+  addrKey(p){return [p.street,p.city,p.state].map(function(x){return String(x||'').trim().toLowerCase();}).join('|');},
+  has(p){return !!(p&&p.geo&&isFinite(p.geo.lat)&&isFinite(p.geo.lng));},
+  canWrite(){const s=state.session||{};try{return appMode()==='real'&&s.role==='builder';}catch(e){return false;}},
+  needs(p){
+    if(!p||p.sample||p.deleted||!String(p.street||'').trim()||!String(p.city||'').trim())return false;
+    const k=this.addrKey(p);
+    if(p.geo&&p.geo.q===k)return false;
+    if(p.geoMiss===k)return false;
+    return !this._tried[k];},
+  async lookup(p){
+    const key=(typeof PLUMB_FIREBASE_CONFIG!=='undefined'&&PLUMB_FIREBASE_CONFIG.apiKey)||'';
+    if(!key){this.err='no key';return 'denied';}
+    const addr=[p.street,p.city,p.state].filter(Boolean).join(', ');
+    try{
+      const r=await fetch('https://maps.googleapis.com/maps/api/geocode/json?components=country:US&address='+encodeURIComponent(addr)+'&key='+encodeURIComponent(key));
+      const d=await r.json();
+      if(d.status==='REQUEST_DENIED'||d.status==='OVER_DAILY_LIMIT'){this.err=String(d.error_message||d.status).slice(0,140);return 'denied';}
+      if(d.status==='ZERO_RESULTS')return 'miss';
+      if(d.status!=='OK')return null;               // over the per-second limit or a hiccup: try another day
+      const hit=(d.results||[])[0];const g=hit&&hit.geometry;
+      /* Only a real address point. A new street Google doesn't know yet comes
+         back as the city or the road, which would match the wrong house. */
+      if(!g||!(g.location_type==='ROOFTOP'||g.location_type==='RANGE_INTERPOLATED'))return 'miss';
+      return {lat:+g.location.lat,lng:+g.location.lng};
+    }catch(e){return null;}},
+  soon(){if(this._denied||!this.canWrite())return;clearTimeout(this._t);this._t=setTimeout(()=>{this.fill();},3000);},
+  async fill(){
+    if(this._busy||this._denied||!this.canWrite())return;
+    if(typeof Sync!=='undefined'&&Sync.on&&!Sync._sitesPulled){this.soon();return;}
+    this._busy=true;
+    try{
+      for(const p of (state.projects||[]).slice()){
+        if(!this.needs(p))continue;
+        const k=this.addrKey(p);this._tried[k]=1;
+        const r=await this.lookup(p);
+        if(r==='denied'){this._denied=true;try{logEvent('geoDenied',this.err);}catch(e){}break;}
+        if(r==='miss'){p.geoMiss=k;try{persist();}catch(e){}continue;}
+        if(r&&isFinite(r.lat)){p.geo={lat:r.lat,lng:r.lng,src:'google',q:k};delete p.geoMiss;try{persist();}catch(e){}}
+        await new Promise(function(res){setTimeout(res,250);});
+      }
+    }finally{this._busy=false;}},
+  dist(a,b){const R=6371000,rad=Math.PI/180;const dLa=(b.lat-a.lat)*rad,dLo=(b.lng-a.lng)*rad;
+    const h=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLo/2)*Math.sin(dLo/2);
+    return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));},
+  match(pos,list){
+    if(!pos||!pos.coords||!(pos.coords.accuracy<=this.ACC))return null;
+    const me={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    const hs=(list||[]).filter(p=>this.has(p)).map(p=>({p:p,d:this.dist(me,p.geo)})).sort(function(a,b){return a.d-b.d;});
+    if(!hs.length||hs[0].d>this.R)return null;
+    if(hs[1]&&hs[1].d<=this.R&&this.dist(hs[0].p.geo,hs[1].p.geo)<this.NEAR)return null;
+    return hs[0].p;},
+  here(o){o=o||{};return new Promise(function(res){
+    if(!navigator.geolocation)return res(null);
+    let done=false;const fin=function(v){if(done)return;done=true;clearTimeout(t);res(v);};
+    const t=setTimeout(function(){fin(null);},o.wait||4500);
+    try{navigator.geolocation.getCurrentPosition(function(p){fin(p);},function(e){if(e&&e.code===1&&o.onDenied)try{o.onDenied();}catch(_){}fin(null);},
+      {enableHighAccuracy:true,timeout:o.timeout||4000,maximumAge:o.maxAge==null?120000:o.maxAge});}catch(e){fin(null);}
+  });}
+};
+let _fnLocRun=null,_fnLocAt=null,_fnLocAsking=false;
+function fnLocPref(){try{return localStorage.getItem('plumb.fnLoc')||'';}catch(e){return '';}}
+function fnLocSetPref(v){try{localStorage.setItem('plumb.fnLoc',v);}catch(e){}}
+function fnLocStart(){
+  _fnLocRun=null;_fnLocAt=null;_fnLocAsking=false;
+  if(!_fieldNote||fnLocPref()==='no'||!navigator.geolocation)return;
+  const ps=housesAZ();
+  if(ps.length<2||ps.filter(function(p){return HouseGeo.has(p);}).length<2)return;
+  const run={};_fnLocRun=run;
+  if(fnLocPref()!=='yes'){_fnLocAsking=true;fnHouseRowSync();return;}
+  fnLocLookup(run);}
+function fnLocAnswer(yes){
+  _fnLocAsking=false;fnLocSetPref(yes?'yes':'no');
+  try{logEvent('fnLocAsk',yes?'yes':'no');}catch(e){}
+  fnHouseRowSync();
+  if(yes&&_fnLocRun)fnLocLookup(_fnLocRun);}
+async function fnLocLookup(run){
+  const pos=await HouseGeo.here({onDenied:function(){fnLocSetPref('no');}});
+  /* Too late to move the note: the sheet closed, they chose a house, or they
+     already started writing or added a photo. */
+  if(run!==_fnLocRun||!_fieldNote)return;
+  const cap=document.getElementById('caption');
+  if((cap&&cap.value.trim())||pendingPhotoId)return;
+  const hit=HouseGeo.match(pos,housesAZ());
+  if(!hit)return;
+  if(!P()||String(P().id)!==String(hit.id)){
+    try{Data.setActive(hit.id);}catch(e){}
+    try{renderAll();updateHeader();}catch(e){}
+  }
+  _fnLocAt=hit.id;fnHouseRowSync();
+  try{logEvent('fnLocHit','');}catch(e){}}
+async function pinHouseHere(pid){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  if(!navigator.geolocation){toast('This phone can\u2019t share its location');return;}
+  toast('Finding where you are\u2026');
+  const pos=await HouseGeo.here({wait:15000,timeout:12000,maxAge:0});
+  if(!pos){toast('Couldn\u2019t get your location. Check that location is allowed for SitePlumb.');return;}
+  if(!(pos.coords.accuracy<=100)){toast('Your location is too rough right now. Try again outside.');return;}
+  p.geo={lat:pos.coords.latitude,lng:pos.coords.longitude,src:'pin',q:HouseGeo.addrKey(p),acc:Math.round(pos.coords.accuracy)};
+  delete p.geoMiss;
+  try{persist();}catch(e){}
+  try{logEvent('housePinned','');}catch(e){}
+  toast('Pinned '+(p.street||p.name)+' here');
+  try{renderEditSites();}catch(e){}}
 function _fnSheetOrder(noteFirst){
   const sheet=document.getElementById('sheet');
   const drop=document.getElementById('drop');
@@ -18389,7 +18530,7 @@ function _fnSheetOrder(noteFirst){
     sheet.insertBefore(drop, fl);
   }
 }
-function resetSheet(){pendingPhotoId=null;_fieldNote=false;_fieldKind='note';_fnDropArmed=true;clearTimeout(window._fnDropReady);document.getElementById('caption').value='';document.getElementById('flag').classList.remove('on');document.getElementById('shareToggle').classList.remove('on');
+function resetSheet(){pendingPhotoId=null;_fieldNote=false;_fnLocRun=null;_fnLocAt=null;_fnLocAsking=false;_fieldKind='note';_fnDropArmed=true;clearTimeout(window._fnDropReady);document.getElementById('caption').value='';document.getElementById('flag').classList.remove('on');document.getElementById('shareToggle').classList.remove('on');
   document.querySelectorAll('.sheet .chip').forEach(c=>{c.classList.remove('on');c.disabled=false;});
   syncAreaExclusivity(document.getElementById('areaChips'));
   const cs=document.getElementById('crewSelect');if(cs)cs.selectedIndex=0;
