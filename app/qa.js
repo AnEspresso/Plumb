@@ -309,7 +309,7 @@ async function tappable(page,sel){
     return {primary,titles,open:document.getElementById('infoScrim').classList.contains('show')};
   });
   t('Timberline packet is open',tl.open,JSON.stringify(tl));
-  t('Timberline primary follows the calendar',tl.primary.indexOf('Schedule this crew')>=0,tl.primary);
+  t('Timberline primary texts the packet even before a booking',tl.primary.indexOf('Text this link')>=0,tl.primary);
   t('Timberline does not repeat not booked',tl.titles.every(t=>t.indexOf('not booked')<0&&t!=='No dates on the calendar'),JSON.stringify(tl.titles));
   await page.evaluate(()=>{try{closeInfo();const s=(P().subs.find(x=>/Fine Line/i.test(x.name))||P().subs[0]);openPacket(s.id);}catch(e){}});
   await new Promise(r=>setTimeout(r,250));

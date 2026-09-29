@@ -3917,15 +3917,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.441.0 - People opens up in the example build, and signed-in accounts can enter an invite code';
+const PLUMB_VERSION='2.442.0 - Text the install packet in one tap, even before the crew is booked';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790709064697;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.441.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790716549746;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.442.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -14478,7 +14478,7 @@ function openPrompt(opts){
   opts=opts||{};_promptCb=opts.onOk||null;
   document.getElementById('promptTitle').textContent=opts.title||'Add';
   const body=document.getElementById('promptBody');
-  if(body){if(opts.body){body.textContent=opts.body;body.style.display='';}else{body.textContent='';body.style.display='none';}}
+  if(body){if(opts.body){body.textContent=opts.body;body.style.display='';body.classList.remove('hide');}else{body.textContent='';body.style.display='none';body.classList.add('hide');}}
   const inp=document.getElementById('promptInput');inp.placeholder=opts.placeholder||'';inp.value=opts.value||'';
   if(opts.inputmode)inp.setAttribute('inputmode',opts.inputmode);else inp.removeAttribute('inputmode');
   inp.type=opts.type||'text';
@@ -16526,6 +16526,27 @@ function pktAsk(p,tradeId){
   }
   return out;
 }
+/* Text the packet from the packet itself. A live booking sends as before;
+   with none, pick a start date here and it books pending (the crew confirms or
+   suggests new dates from the text), then opens the same preview. */
+function pktTextLink(pid){
+  const ctx=_pktCtx||{};
+  const p=state.projects.find(function(x){return String(x.id)===String(pid||ctx.pid);});if(!p)return;
+  const tradeId=ctx.trade;
+  const sb=packetCrewOf(p,tradeId,ctx.subId);if(!sb){toast('Add a crew for this trade first');return;}
+  const today=dayStart(Date.now());
+  const bk=(p.bookings||[]).filter(function(b){return b.trade===tradeId&&b.subName===sb.name&&(b.status||'confirmed')!=='declined'&&b.end>=today;}).sort(function(a,b){return a.start-b.start;})[0];
+  if(bk){sendGuestPacket(p.id,bk.id);return;}
+  openPrompt({title:'When should '+sb.name+' start?',body:'This date goes in the text. '+sb.name+' can confirm it or suggest another.',type:'date',value:dayKey(today+7*864e5),okLabel:'Next',onOk:function(v){
+    if(!v)return;
+    const ts=Date.parse(v+'T12:00:00');if(isNaN(ts)){toast('Pick a date');return;}
+    if(dayStart(ts)<today){toast('Pick today or a later date');return;}
+    const nb=addBooking(p,{subName:sb.name,trade:tradeId,start:ts,end:ts,note:''});
+    _bkArmSpecs(p,tradeId,ts);
+    try{if(navPacketStillOpen())refreshPacket();}catch(e){}
+    try{renderToday();}catch(e){}
+    sendGuestPacket(p.id,nb.id);}});
+}
 function packetMore(){
   const ctx=_pktCtx||{};
   const p=state.projects.find(function(x){return String(x.id)===String(ctx.pid);})||P();
@@ -16537,6 +16558,7 @@ function packetMore(){
     {label:'Add a document for this trade',fn:function(){addPacketDoc(tradeId);}},
     {label:'Pin a note or log day',fn:function(){openPacketLog(p.id,tradeId);}}
   ];
+  if(sb)items.push({label:'Schedule on the calendar',fn:function(){pktGoBook(p.id,sb.name);}});
   if(sb)items.push({label:due?'Change the deadline':'Set a specs deadline',fn:function(){setPacketDeadline(sb.id);}});
   const inv=sb&&(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
   if(sb&&!inv)items.push({label:'Invite '+sb.name+' to SitePlumb',fn:function(){invitePacketSub(p.id,sb.id);}});
@@ -16588,8 +16610,11 @@ function packetHTML(p,tradeId,subId){
 
   const bk=isBuilder&&bkWin;
   if(isBuilder){
-    if(bk)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="sendGuestPacket(\''+p.id+'\',\''+bk.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
-    else if(sb)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="pktGoBook(\''+p.id+'\',\''+esc(sb.name)+'\')">Schedule this crew</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
+    /* One tap to send (batch 5): Text this link is always the primary action
+       when a crew is on the packet. With no booking yet it asks for a start
+       date in place and books it pending, so the crew still confirms. */
+    if(!sb&&bk)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="sendGuestPacket(\''+p.id+'\',\''+bk.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
+    else if(sb)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="pktTextLink(\''+p.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
     else h+='<div class="money-actions"><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
   }
 
@@ -16724,7 +16749,7 @@ function packetHTML(p,tradeId,subId){
     const inv=(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
     if(inv&&inv.status==='joined')h+='<div class="pkt-foot mt-2"><b>'+esc(sb.name)+' is in SitePlumb.</b> They also see this packet live.</div>';
     else if(inv)h+='<div class="pkt-foot mt-2">Invite code <b>'+esc(inv.code)+'</b> \u2014 waiting for them to join.</div>';
-    if(!bk)h+='<div class="pkt-foot mt-2">Save a booking first. Then Text this link sends the packet to '+esc(sb.name)+'.</div>';
+    if(!bk)h+='<div class="pkt-foot mt-2">No dates yet. Text this link asks you for a start date, then '+esc(sb.name)+' can confirm it or suggest another.</div>';
   }
   return h;}
 function openPacket(subId){const sb=P().subs.find(x=>x.id===subId);if(!sb)return;
