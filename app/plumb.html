@@ -3912,15 +3912,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.438.0 - Field Notes and Invoices open straight onto the current house, with a row to change it';
+const PLUMB_VERSION='2.439.0 - First-run sheets wait for your houses, and People lists every open invite code';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790692273645;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.438.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790698590249;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.439.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5930,10 +5930,17 @@ async function laEnter(p){
   try{setTimeout(function(){try{applyLiveRole();}catch(e){}},1800);}catch(e){}
   try{
     if(appMode()==='real'){
-      const noSites=!(state.projects&&state.projects.length);
       const isOwner=!m; // invited subs/clients/team have a member role; owners don't
-      if(isOwner&&noSites&&!localStorage.getItem('plumb.startDone'))setTimeout(()=>{try{openOnboard();}catch(e){}},450);
-      else if((!m||(m.role==='team'&&m.setup))&&!localStorage.getItem('plumb.setupDone'))setTimeout(()=>{try{openSetup();}catch(e){}},450);
+      /* First-run sheets wait for the server's house list: on a new phone the
+         houses arrive a beat after sign-in, and an account that already has
+         houses must never see the first-house or setup sheets. */
+      const firstRun=()=>{const noSites=!(state.projects&&state.projects.length);
+        if(isOwner&&noSites&&!localStorage.getItem('plumb.startDone')){firstRunAuto('startScrim');openOnboard();return true;}
+        if(((isOwner&&noSites)||(m&&m.role==='team'&&m.setup))&&!localStorage.getItem('plumb.setupDone')){if(firstRunBusy())return true;firstRunAuto('setupScrim');openSetup();return true;}
+        return false;};
+      const noSites0=!(state.projects&&state.projects.length);
+      if(isOwner&&!localStorage.getItem('plumb.startDone')&&noSites0)firstRunWhenSettled(()=>{try{firstRun();}catch(e){}});
+      else if(((isOwner&&noSites0)||(m&&m.role==='team'&&m.setup))&&!localStorage.getItem('plumb.setupDone'))firstRunWhenSettled(()=>{try{firstRun();}catch(e){}});
       else if(p.rpRole==='owner'&&prefsPending())setTimeout(()=>{try{openSetupReview();}catch(e){}},450);
       else if(m&&walkAllowed()&&!localStorage.getItem('plumb.orientDone'))setTimeout(()=>{try{const _r=m.role==='client'?'client':(m.role==='team'?'team':'sub');if(_r==='team')startTeamTour();else startTour(_r);}catch(e){}},450);
     }
@@ -7670,6 +7677,17 @@ function roleSummary(id){
   const g=roleMacro(id);
   return GATE_KEYS.filter(function(k){return g[k.id];}).map(function(k){return k.n;}).join(' · ');
 }
+/* Every code still waiting to be used, so a code made earlier (or on another
+   phone) can be found and shared again from the first People screen. */
+function openInvitesHTML(skip){
+  const rows=[];
+  laTeamInvites().filter(i=>i.status==='open'&&i.code!==skip).forEach(i=>rows.push({code:i.code,t:i.t||0,
+    n:'Team'+(i.rpRole?' \u00b7 '+(RP_ROLES[i.rpRole]||'').split(' / ')[0]:'')+(i.setup?' \u00b7 with setup':'')}));
+  (state.projects||[]).forEach(p=>(p.invites||[]).filter(i=>i.status==='open'&&i.code!==skip).forEach(i=>rows.push({code:i.code,t:i.t||0,
+    n:(i.role==='client'?'Homeowner':(i.name||'Crew'))+' \u00b7 '+(p.street||p.name||'')})));
+  if(!rows.length)return '';
+  rows.sort((a,b)=>b.t-a.t);
+  return '<div class="sec"><h2>Open invites</h2></div>'+rows.map(r=>'<div class="subrow cur-p" onclick="shareInvite(\''+esc(r.code)+'\')"><div class="si"><div class="n">'+esc(r.n)+'</div><div class="d">Code '+esc(r.code)+' \u2014 tap to copy & share</div></div></div>').join('');}
 let _ctNavDir='fwd';
 function renderPeople(__a,__b){
   setTimeout(()=>{try{enhanceSelect('tqWho');}catch(e){}},60);
@@ -7756,6 +7774,7 @@ function __renderPeople(){
       h+='<button class="b1 b-go w-full mt-3 btn btn-primary" onclick="shareInvite(\''+just.code+'\')">Share</button>';
       h+='<p class="c-ink-3 fs-xs mt-3 ml-0 mr-0 mb-0 ta-c">'+esc(just.who||'Invite')+'</p>';
     }
+    h+=openInvitesHTML(just&&just.code);
     el.innerHTML=h;return;}
   if(peopleMode==='homeowner'){
     if(title)title.textContent='People';
@@ -9353,7 +9372,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         }
         this._subSite(id);                                                    // attach record listeners (after project exists)
       });
-      if(changed){persistLocalOnly();rerenderCurrent();this._saveBase();}
+      if(changed){persistLocalOnly();rerenderCurrent();this._saveBase();try{firstRunHousesArrived();}catch(e){}}
       if(!(snap.metadata&&snap.metadata.fromCache)){                  // the server's answer, not the phone's cache
         (snap.docs||[]).forEach(x=>{this._onServer[x.id]=true;});
         this._sitesPulled=true;this._flushHeld();}
@@ -11275,7 +11294,35 @@ function tourDemoDoc(){try{const p=state.projects.find(x=>String(x.id)==='p2');i
 function enterDemoGuided(fromSplash){if(!walkAllowed()){enterDemo();return;}enterDemo();startGrandTour();}
 
 /* ── Welcome fork: first live sign-in with an empty workspace ── */
+/* First-run sheets (welcome, first house, setup) only make sense for an empty
+   account. Wait until the server has answered with the house list (or a few
+   seconds pass offline), and close any that opened on their own once houses
+   arrive. */
+let _firstRunAuto={};
+function firstRunAuto(id){_firstRunAuto[id]=1;}
+function firstRunBusy(){return ['welcomeScrim','startScrim','setupScrim'].some(id=>{const e=document.getElementById(id);return e&&e.classList.contains('show');});}
+function firstRunSettled(){
+  try{if(appMode()!=='real'||!fbConfig())return true;}catch(e){return true;}
+  return typeof Sync!=='undefined'&&!!Sync._sitesPulled;}
+function firstRunWhenSettled(fn){
+  const t0=Date.now();
+  const tick=()=>{if(firstRunSettled()||Date.now()-t0>8000){fn();return;}setTimeout(tick,250);};
+  setTimeout(tick,450);}
+function firstRunHousesArrived(){
+  try{
+    if(!(state.projects&&state.projects.length))return;
+    const w=document.getElementById('welcomeScrim');
+    if(w&&w.classList.contains('show')&&_firstRunAuto.welcomeScrim){welcomeDone();}
+    const st=document.getElementById('startScrim');
+    if(st&&st.classList.contains('show')&&_firstRunAuto.startScrim){closeStart();}
+    const su=document.getElementById('setupScrim');
+    if(su&&su.classList.contains('show')&&_firstRunAuto.setupScrim&&!(state.session&&state.session.member)){closeSetup();}
+    const ns=document.getElementById('newSiteScrim');
+    if(ns&&ns.classList.contains('show')&&_firstRunAuto.startScrim&&!['nsStreet','nsName','nsCity'].some(i=>((document.getElementById(i)||{}).value||'').trim()))closeNewSite();
+    _firstRunAuto={};
+  }catch(e){}}
 function maybeWelcome(){
+  if(!firstRunSettled()){if(!maybeWelcome._w){maybeWelcome._w=1;firstRunWhenSettled(()=>{maybeWelcome._w=0;maybeWelcome();});}return;}
   try{
     if(!walkAllowed())return;
     if(_authActionPending())return;
@@ -11285,6 +11332,7 @@ function maybeWelcome(){
     if(localStorage.getItem('plumbWelcomed'))return;
     const w=document.getElementById('welcomeScrim');
     if(!w)return;
+    if(firstRunBusy())return;
     const tourBtn=w.querySelector('button.b-go');
     const ls=w.querySelector('.ls');
     if(walkAllowed()){
@@ -11294,6 +11342,7 @@ function maybeWelcome(){
       if(ls)ls.textContent='Your workspace is ready. Add the first house when you are.';
       if(tourBtn)tourBtn.style.display='none';
     }
+    firstRunAuto('welcomeScrim');
     w.classList.add('show');
   }catch(e){}
 }
