@@ -3045,7 +3045,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 <div class="field"><label>Tradeoffs</label><textarea id="briefTradeoffs" rows="3" placeholder="Where to spend. What can stay simple."></textarea></div>
 <p class="fs-xs c-ink-3 mt-0 ml-0 mr-0 mb-0" id="briefBy"></p>
 </div>
-<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeBuildBrief()">Done</button><button class="b1 b-go btn btn-primary" id="briefSave" onclick="saveBuildBrief()">Save</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" id="briefDoneBtn" onclick="closeBuildBrief()"><span>Done</span></button><button class="b1 b-go btn btn-primary" id="briefSave" onclick="saveBuildBrief()">Save</button></div></div>
   </div>
 
   <!-- generic info / demo prompt modal -->
@@ -3911,15 +3911,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.436.0 - The example build link sits above sign in, so phones see it without scrolling';
+const PLUMB_VERSION='2.437.0 - Schedule and Build brief say House when opened from a house; the invite bar goes away once you sign in';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790632422722;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.436.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790687685789;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.437.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5093,7 +5093,8 @@ const Data = {
   updateSub(id,patch){ const s=P().subs.find(x=>x.id===id); if(s)Object.assign(s,patch); this.commit(); return s; },
   removeSub(id){ P().subs=P().subs.filter(x=>x.id!==id); this.commit(); },
   /* session (→ Firebase Auth later) */
-  setSession(sess){ if(sess)sess.role=normRole(sess.role); state.session=sess; this.commit(); },
+  setSession(sess){ if(sess)sess.role=normRole(sess.role); state.session=sess; this.commit();
+    if(sess&&sess.mode==='real'){try{invBarHide();}catch(e){}} },   // signed in: the invite hand-off bar is done
   /* app meta */
   addFeedback(fb){ state.feedback.unshift(fb); this.commit(); return fb; },
   updateFeedback(id,patch){ const f=state.feedback.find(x=>x.id===id); if(f)Object.assign(f,patch); this.commit(); return f; },
@@ -8674,6 +8675,7 @@ function openBuildBrief(pid){
     if(b.at)by.textContent='Last saved'+(b.by?(' by '+b.by):'')+' \u00b7 '+fmtDue(b.at);
     else by.textContent=can?'Saved on every phone on this job.':'The crew reads this. They do not change it.';
   }
+  try{labelHouseBack(document.getElementById('briefDoneBtn'),'Done');}catch(e){}
   document.getElementById('briefScrim').classList.add('show');
 }
 function closeBuildBrief(){document.getElementById('briefScrim').classList.remove('show');_briefPid=null;}
@@ -14567,6 +14569,9 @@ function _invClearHandoff(){
   try{const b=document.getElementById('invBar');if(b)b.classList.remove('show');}catch(e){}
   _invRoleHint='';
   try{syncInviteSignupChrome();}catch(e){}}
+function invBarHide(){
+  _invBarShowing=false;
+  try{const b=document.getElementById('invBar');if(b)b.classList.remove('show');}catch(e){}}
 function invBarDismiss(){
   try{const b=document.getElementById('invBar');if(b)b.classList.remove('show');}catch(e){}
   try{sessionStorage.setItem('plumbInvBarOff','1');}catch(e){}}
@@ -14599,7 +14604,7 @@ function maybeInviteBar(){
     const s=document.getElementById('invBarS');
     if(s)s.textContent='Already have SitePlumb on your home screen? Copy the code, open SitePlumb there and paste it. If you do not have it yet, Add to home screen does both for you.';
     _invBarShowing=true;
-    setTimeout(()=>{try{bar.classList.add('show');}catch(e){}},700);
+    setTimeout(()=>{try{if(state.session){_invBarShowing=false;return;}bar.classList.add('show');}catch(e){}},700);
     logEvent('inviteBarShown','');
     return true;
   }catch(e){return false;}}
@@ -15380,6 +15385,10 @@ function bkSetStatus(p,id,st){const b=(p.bookings||[]).find(x=>x.id===id);if(!b)
   logEvent('bk'+st,b.subName);renderCal();try{renderDay();}catch(e){}try{if(calIsSub())renderSubView();}catch(e){}}
 function calIsSub(){return (state.session||{}).role==='subs';}
 function calIsClient(){return (state.session||{}).role==='client';}
+/* Opened from a house, the way out says House - same as every other door. */
+function calBackLabel(){const b=document.getElementById('calDoneBtn');if(!b)return;
+  if(calIsClient()){const sp=b.querySelector('span');if(sp)sp.textContent='House';}
+  else labelHouseBack(b,'Done');}
 let _calMove=null,_calPressT=null;
 function calPressStart(ev,ts){
   if(calIsClient()||_calMove)return;
@@ -15532,7 +15541,7 @@ function openCal(keepCrew){
   }
   if(calMonth===null){const n=new Date();calMonth=new Date(n.getFullYear(),n.getMonth(),1);}
   document.getElementById('calview').classList.add('show');renderCal();
-  try{const b=document.getElementById('calDoneBtn');if(b){const sp=b.querySelector('span');if(sp)sp.textContent=calIsClient()?'House':'Done';}}catch(e){}}
+  try{calBackLabel();}catch(e){}}
 function openClientCal(){
   const p=clientProj();
   if(p){try{Data.setActive(p.id);}catch(e){}calSiteFilter=String(p.id);}
@@ -15676,7 +15685,7 @@ function renderCal(){
     +`<div class="cal-nav"><div class="m">${calMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</div><div class="btns"><button onclick="calNav(-1)">\u2039</button><button class="today" onclick="calToday()">Today</button><button onclick="calNav(1)">\u203a</button></div></div>`
     +'<div class="cal-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>'
     +'<div class="cal-grid">'+grid+'</div>'+emptyMonth+'</div><div class="cal-side">'+legend+suggHTML+addBtn+'</div></div>';
-  try{const b=document.getElementById('calDoneBtn');if(b){const sp=b.querySelector('span');if(sp)sp.textContent=calIsClient()?'House':'Done';}}catch(e){}}
+  try{calBackLabel();}catch(e){}}
 function openDay(ts){calDay=ts;renderDay();document.getElementById('dayScrim').classList.add('show');}
 function closeDay(){document.getElementById('dayScrim').classList.remove('show');}
 function renderDay(){
