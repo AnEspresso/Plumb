@@ -7713,7 +7713,7 @@ function openInvitesHTML(skip){
 /* The example build shows a sample company instead of a dead end: the same
    Team / Homeowners / Crews tabs, filled from the demo houses. Nothing here
    makes a real code; the Invite buttons explain that and point to setting up. */
-function peopleDemoInvite(){toast('Invite codes work in your own builds, not the example');}
+function peopleDemoInvite(){toast('Invite codes work in your own builds, not the example. Tap Set up to start yours.');}
 function peopleDemoHTML(){
   const mode=(peopleMode==='homeowner'||peopleMode==='subs')?peopleMode:(peopleMode==='invite'||!peopleMode?'invite':'team');
   let h=peoplePills()
@@ -8030,11 +8030,11 @@ async function redeemInvite(code,prof,err){
     const doc=await db.collection('invites').doc(code).get();
     if(!doc.exists){err('That invite code wasn\u2019t found — double-check it with your builder.');return false;}
     const inv=doc.data()||{};
-    if(inv.revoked){err('That invite was revoked by your builder — ask them for a new code.');return false;}
+    if(inv.revoked){err('Your builder canceled that code. Ask them for a new one.');return false;}
     await db.collection('invites').doc(code).collection('claims').doc(prof.uid).set({name:prof.name||'',email:prof.email||'',rpRole:prof.rpRole||'',t:Date.now()});
     const role=inv.role==='client'?'client':(inv.role==='team'?'team':'sub');
     return {code,siteId:String(inv.siteId||''),role,trade:inv.trade||'',name:inv.name||'',setup:!!inv.setup,rpRole:inv.rpRole||'',gates:inv.gates||null};
-  }catch(e){err('Couldn\u2019t redeem the invite: '+((e&&e.message)||'error'));return false;}
+  }catch(e){err('Couldn\u2019t use that code: '+((e&&e.message)||'error'));return false;}
 }
 /* Invite code for someone already signed in (the sign-in page's "I have an
    invite code" is only there when signed out). Same redeem as sign-in, then
@@ -8053,7 +8053,7 @@ async function joinCodeSubmit(){
   if(!code){jcErr('Enter the code first.');return;}
   const prof=laProfile();
   if(!prof||!prof.uid){jcErr('Invite codes need a live account. Sign in first.');return;}
-  if(!prof.member&&(state.projects||[]).length){jcErr('This account runs its own company. To join another builder, sign in with a different email.');return;}
+  if(!prof.member&&(state.projects||[]).length){jcErr('This account runs its own company. To join another builder, sign out and sign in with a different email.');return;}
   const btn=document.getElementById('jcGo');if(btn){btn.disabled=true;btn.textContent='\u2026';}
   let m=null;
   try{m=await redeemInvite(code,prof,jcErr);}finally{if(btn){btn.disabled=false;btn.textContent='Join';}}
