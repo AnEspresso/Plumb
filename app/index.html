@@ -6308,7 +6308,7 @@ function privacyNoteShow(){
   if(!(state.session&&state.session.mode==='real'))return;
   if(firstRunBusy()||document.querySelector('.sheet-scrim.show,.pmodal-scrim.show,#installGate.show,#infoScrim.show'))return;
   try{localStorage.setItem('plumb.privacyRev',PRIVACY_REV);}catch(e){}
-  showInfo('Privacy Policy updated','<p class="mt-0 ml-0 mr-0 mb-2">We updated our Privacy Policy to cover optional location in Field Notes and the weather forecast.</p><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo();legalOpenPrivacy()">Read the policy</button>');
+  showInfo('Privacy Policy updated','<p class="mt-0 ml-0 mr-0 mb-2">Field Notes can now use your phone\'s location to open on the house you\'re at, only if you allow it. The calendar forecast uses each house\'s city. Both are explained in the policy.</p><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo();legalOpenPrivacy()">Read the policy</button>');
   logEvent('privacyNote',PRIVACY_REV);}
 function legalOpenTerms(){openLegalDoc(LEGAL_URL.terms);logEvent('legalOpened','terms');}
 function openLegal(){
