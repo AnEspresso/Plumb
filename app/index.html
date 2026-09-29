@@ -3668,6 +3668,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
     <div class="grip-hit sheet-handle" onclick="closeSheet()"></div>
     <div class="sheet-head"><h3 id="sheetTitle">New entry</h3></div>
     <div class="sub" id="sheetSub">Photo first — everything else is optional.</div>
+    <div id="fnHouseRow" hidden></div>
     <div class="photo-drop" id="drop" onclick="dropPickPhoto()">
       <div class="ph" id="dropPh">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>
@@ -3911,15 +3912,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.437.0 - Schedule and Build brief say House when opened from a house; the invite bar goes away once you sign in';
+const PLUMB_VERSION='2.438.0 - Field Notes and Invoices open straight onto the current house, with a row to change it';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790687685789;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.437.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790692273645;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.438.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8149,6 +8150,15 @@ function visibleProjects(){
   return state.projects;
 }
 function isOffBook(p){return !!(p&&p.doneAt);}
+/* One row that names the house a sheet is working on, with a tap to change it.
+   Field Notes and Invoices open straight onto the current house instead of
+   asking which house first. */
+function housesAZ(){return (visibleProjects()||[]).slice().sort(function(a,b){return streetAzKey(a).localeCompare(streetAzKey(b));});}
+function houseSwitchHTML(p,fn){
+  return '<button type="button" class="set-row house-switch mt-0 mb-3 ml-0 mr-0" onclick="'+fn+'()"><div class="flex-1"><div>'+esc((p&&(p.street||p.name))||'House')+'</div><div class="sr-d">Change house</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="u-m16"><path d="M9 6l6 6-6 6"/></svg></button>';}
+function pickHouseThen(title,then){
+  openPick({title:title,options:housesAZ().map(function(p){return {id:p.id,label:p.street||p.name,sub:p.city||''};}),
+    onPick:function(id){try{Data.setActive(id);}catch(e){}try{renderAll();updateHeader();}catch(e){}then(id);}});}
 function liveProjects(){return (visibleProjects()||[]).filter(function(p){return !isOffBook(p);});}
 function offBookProjects(){return (visibleProjects()||[]).filter(isOffBook);}
 function houseCall(p){
@@ -8607,11 +8617,10 @@ function openLogPick(){
   const ps=(visibleProjects()||[]).slice().sort(function(a,b){return streetAzKey(a).localeCompare(streetAzKey(b));});
   if(!ps.length){toast('Add a house first');return;}
   if(ps.length===1){logPickHouse(ps[0].id);return;}
-  const el=document.getElementById('logPickBody');if(!el)return;
-  el.innerHTML=ps.map(function(p){
-    return '<div class="day-row avr cur-p" onclick="logPickHouse(\''+String(p.id).replace(/'/g,'')+'\')"><div class="flex-1"><div class="n">'+esc(p.street||p.name||'House')+'</div>'+(p.city?('<div class="d">'+esc(p.city)+'</div>'):'')+'</div></div>';
-  }).join('');
-  document.getElementById('logPickScrim').classList.add('show');
+  /* No house to choose first: write on the house you were last on (or the
+     first A-Z), and change it from the row at the top of the note. */
+  const cur=P();
+  logPickHouse((cur&&ps.some(function(x){return String(x.id)===String(cur.id);}))?cur.id:ps[0].id);
 }
 function logPickHouse(pid){
   closeLogPick();
@@ -9487,6 +9496,14 @@ const CloudFiles={
     for(const p of state.projects){const d=(p.docs||[]).find(x=>x.fileId===e.id);
       if(d){if(d.fileUrl!==e.url){d.fileUrl=e.url;persist();}return true;}}
     return false;
+  },
+  /* Move a not-yet-stamped file to another house (Field Notes can change
+     house after the photo is picked). A copy already uploaded under the old
+     house is left there; the record only ever points at the new one. */
+  rehome(kind,id,siteId){
+    if(this._flushing){setTimeout(()=>{this.rehome(kind,id,siteId);},600);return;}
+    const q=this._drain().filter(e=>e.id!==id);this._save(q);
+    this.queue(kind,siteId,id);
   },
   _flushing:false,
   async flush(){
@@ -13643,13 +13660,16 @@ function invNeedsOK(inv){if(!inv||inv.status==='approved')return false;const st=
 function unbilledSelections(p){return (p.selections||[]).filter(x=>Number(x.price)&&SEL_STATUS.indexOf(x.status)>=1&&!x.invoicedIn);}
 function composeSelections(p){const editId=(_invDraft&&_invDraft.editId)||null;return (p.selections||[]).filter(x=>Number(x.price)&&SEL_STATUS.indexOf(x.status)>=1&&(!x.invoicedIn||x.invoicedIn===editId));}
 let invMode='list',_invDraft=null;
-function openInvoices(){if(!canGate('moneyCo')){toast('Invoices are off for this role');return;}invMode='list';renderInvoices();document.getElementById('invScrim').classList.add('show');}
+let _invAnyHouse=false;
+function openInvoices(anyHouse){if(!canGate('moneyCo')){toast('Invoices are off for this role');return;}_invAnyHouse=anyHouse===true;invMode='list';renderInvoices();document.getElementById('invScrim').classList.add('show');}
 function invoicesFromSettings(){
   const ps=state.projects||[];
-  if(ps.length<=1){openInvoices();return;}
+  openInvoices(ps.length>1);}
+function invChangeHouse(){
+  const ps=state.projects||[];
   openPick({title:'Invoices \u2014 which house?',
     options:ps.map(p=>({id:p.id,label:p.street||p.name,sub:((p.invoices||[]).length?(p.invoices.length+' invoice'+(p.invoices.length===1?'':'s')):'No invoices yet')+(p.city?' \u00b7 '+p.city:'')})),
-    onPick:id=>{Data.setActive(id);try{renderAll();updateHeader();}catch(e){}openInvoices();}});}
+    onPick:id=>{Data.setActive(id);try{renderAll();updateHeader();}catch(e){}_invDraft=null;renderInvoices();}});}
 function closeInvoices(){document.getElementById('invScrim').classList.remove('show');try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}
 function invCompose(editId){
   if(editId){const p=P();const inv=(p.invoices||[]).find(v=>v.id===editId);
@@ -13978,10 +13998,10 @@ function renderInvoices(){
     return;}
   const seg=`<div class="seg seg-top mb-3"><button class="${invMode==='ledger'?'on':''}" onclick="invSeg('ledger')">Ledger</button><button class="${invMode==='list'?'on':''}" onclick="invSeg('invoices')">Invoices</button><button class="${invMode==='payments'?'on':''}" onclick="invSeg('payments')">Payments</button></div>`;
   if(invMode==='ledger'){
-    el.innerHTML=seg+ledgerDetailHTML(p);
+    el.innerHTML=(_invAnyHouse?houseSwitchHTML(p,'invChangeHouse'):'')+seg+ledgerDetailHTML(p);
     return;}
   if(invMode==='payments'){
-    el.innerHTML=seg+paymentsListHTML(p)
+    el.innerHTML=(_invAnyHouse?houseSwitchHTML(p,'invChangeHouse'):'')+seg+paymentsListHTML(p)
       +`<div class="sec"><h2>Record a payment</h2></div>
         <input id="bpLabel" placeholder="e.g. Deposit, Draw #2" class="w-full">
         <div class="setup-roster-row mt-2"><input id="bpAmount" inputmode="decimal" placeholder="Amount"><input id="bpDate" type="date" class="fld-date flex-1"></div>
@@ -14000,7 +14020,7 @@ function renderInvoices(){
     </div>`:'');
   const _bset=billersOf(p);const _bsub=_bset.length?(_bset.length<=2?_bset.join(', '):_bset.length+' teammates')+' get alerts':'Whole team gets alerts';
   const ownerRow=`<div class="subrow cur-p mb-2" onclick="invMode='owner';renderInvoices()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(_bsub)}</div></div><span class="ed">Change</span></div>`;
-  el.innerHTML=seg+summary+ownerRow+(list.length?list.map(inv=>{const st=invState(inv);const bal=invBalance(inv);
+  el.innerHTML=(_invAnyHouse?houseSwitchHTML(p,'invChangeHouse'):'')+seg+summary+ownerRow+(list.length?list.map(inv=>{const st=invState(inv);const bal=invBalance(inv);
     return `<div class="subrow" style="cursor:pointer${st==='void'?';opacity:.6':''}" onclick="${st==='draft'?`invCompose('${inv.id}')`:`openInvoiceDetail('${p.id}','${inv.id}','builder')`}"><div class="si"><div class="n">${inv.no?esc(inv.no)+' · ':''}${esc(inv.title)}</div><div class="d">${inv.items.length} line${inv.items.length===1?'':'s'} · ${invUsd(inv.total)}${st==='partial'?' · '+invUsd(bal)+' left':''}${st==='draft'?' · not sent yet':st==='overdue'?' · <b class="c-clay">past due '+esc(inv.due)+'</b>':(inv.due&&st!=='paid'&&st!=='void'?' · due '+esc(inv.due):'')}</div></div>${invStatusChip(st)}</div>`;}).join('')
     :'<div class="empty py-2 px-0">No invoices yet — bill the homeowner for selection upcharges right here.</div>')
     +`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="invCompose()">New invoice…</button>`;}
@@ -18229,9 +18249,10 @@ function openFieldNote(){
   const dt=document.querySelector('#drop .t');if(dt)dt.textContent='Photo \u00b7 optional';
   _fnSheetOrder(true);
   _fnArmDrop();
+  try{fnHouseRowSync();}catch(e){}
   try{labelHouseBack(document.getElementById('sheetCancelBtn'),'Cancel');}catch(e){}
 }
-function openSheet(asLog,logDate){sheetIsLog=!!asLog;editingLogDate=asLog?(logDate||todayStr()):null;
+function openSheet(asLog,logDate){try{const _hr=document.getElementById('fnHouseRow');if(_hr){_hr.hidden=true;_hr.innerHTML='';}}catch(e){}sheetIsLog=!!asLog;editingLogDate=asLog?(logDate||todayStr()):null;
   if(asLog)_fieldNote=false;
   try{_fnSheetOrder(false);}catch(e){}
   if(!asLog&&!_fieldNote)_fieldNote=false;
@@ -18288,6 +18309,18 @@ function _fnArmDrop(){
     if(d)d.style.pointerEvents='';
   },480);
 }
+function fnHouseRowSync(){
+  const row=document.getElementById('fnHouseRow');if(!row)return;
+  const many=housesAZ().length>1;
+  const tour=!!(document.getElementById('tourCatch')||window._tourHoldNext);
+  if(!_fieldNote||!many||tour||fromTheHouse()){row.hidden=true;row.innerHTML='';return;}
+  row.innerHTML=houseSwitchHTML(P(),'fnChangeHouse');row.hidden=false;
+  const sub=document.getElementById('sheetSub');if(sub)sub.textContent='A label and a few words. Photo if you have one.';}
+function fnChangeHouse(){
+  pickHouseThen('Field Notes \u2014 which house?',function(id){
+    /* A photo already picked belongs to the house the note is saved to. */
+    if(pendingPhotoId){try{CloudFiles.rehome('photos',pendingPhotoId,id);}catch(e){}}
+    fnHouseRowSync();});}
 function _fnSheetOrder(noteFirst){
   const sheet=document.getElementById('sheet');
   const drop=document.getElementById('drop');
