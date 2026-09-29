@@ -3917,7 +3917,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.442.0 - Text the install packet in one tap, even before the crew is booked';
+const PLUMB_VERSION='2.442.0 - Text the install packet right from the packet, even before the crew is booked';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -16749,7 +16749,7 @@ function packetHTML(p,tradeId,subId){
     const inv=(p.invites||[]).find(function(i){return i.role==='sub'&&inviteMatchesSub(i,sb)&&i.status!=='revoked';});
     if(inv&&inv.status==='joined')h+='<div class="pkt-foot mt-2"><b>'+esc(sb.name)+' is in SitePlumb.</b> They also see this packet live.</div>';
     else if(inv)h+='<div class="pkt-foot mt-2">Invite code <b>'+esc(inv.code)+'</b> \u2014 waiting for them to join.</div>';
-    if(!bk)h+='<div class="pkt-foot mt-2">No dates yet. Text this link asks you for a start date, then '+esc(sb.name)+' can confirm it or suggest another.</div>';
+    if(!bk)h+='<div class="pkt-foot mt-2">No dates yet. When you tap Text this link, you pick a start date first. '+esc(sb.name)+' can confirm it or suggest another.</div>';
   }
   return h;}
 function openPacket(subId){const sb=P().subs.find(x=>x.id===subId);if(!sb)return;
