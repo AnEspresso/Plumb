@@ -83,8 +83,23 @@ function serve(root,port){
   });
 }
 
-async function prepPage(browser,{mobile=true,standalone=false}={}){
+async function prepPage(browser,{mobile=true,standalone=false,offline=false}={}){
   const page=await browser.newPage();
+  if(offline){
+    /* Local server only, so a fixture packet never reaches live Firebase.
+       Before this, gpConfirm() wrote to the real packets/qa doc; the write
+       was rejected, the page rolled back to unconfirmed, and the confirm,
+       calendar and ask checks failed whenever the rejection came back fast
+       (always on CI). The service worker is bypassed too, or it serves the
+       Firebase SDK from its cache without the request being seen here. */
+    await page.setBypassServiceWorker(true);
+    await page.setRequestInterception(true);
+    page.on('request',req=>{
+      const u=req.url();
+      if(u.startsWith('http://localhost:')||u.startsWith('data:')||u.startsWith('blob:'))req.continue();
+      else req.abort();
+    });
+  }
   if(mobile)await page.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
   else await page.setViewport({width:1280,height:900});
   page.on('pageerror',e=>failures.push('pageerror: '+String(e).slice(0,160)));
@@ -450,7 +465,7 @@ async function tappable(page,sel){
   await page.evaluate(()=>document.getElementById('qaSpecimen').remove());
 
   /* ══ GUEST PACKET PAGE: arrives from a text, one tap to answer ══ */
-  const guest=await prepPage(browser);
+  const guest=await prepPage(browser,{offline:true});
   await guest.evaluateOnNewDocument(()=>{
     window.__packetFixture={v:1,t:Date.now(),expires:Date.now()+10*864e5,
       site:'288 Calderwood Ln \u00b7 Ferndale',builder:'Demo Builder',sub:'Clearwater Plumbing',
@@ -491,7 +506,7 @@ async function tappable(page,sel){
   await shot(guest,'13-guest-question');
 
   /* ══ p.html itself: URL-first paint and fixture ══ */
-  const pFix=await prepPage(browser);
+  const pFix=await prepPage(browser,{offline:true});
   await pFix.evaluateOnNewDocument(()=>{
     window.__packetFixture={v:1,t:Date.now(),expires:Date.now()+10*864e5,
       site:'288 Calderwood Ln \u00b7 Ferndale',builder:'Demo Builder',sub:'Clearwater Plumbing',
