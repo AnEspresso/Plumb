@@ -55,6 +55,8 @@
 <p><b>Contacts you add.</b> Builders keep a roster of subcontractors: names, phone numbers, email addresses, trades, and company details. If you scan a business card, the text is read <b>on your device</b> — the card photo is not sent to a recognition service. To find a company's website, SitePlumb may send the company name or the email's domain to Google Places and Clearbit.</p>
 <p><b>Device and diagnostics.</b> A push-notification token if you turn notifications on; the app version, device type, and diagnostic events (which features ran, errors encountered) tied to a device identifier; and an offline copy of your workspace kept in your browser's storage so SitePlumb works without a connection.</p>
 <p><b>QuickBooks (optional).</b> If you connect QuickBooks, we store the connection tokens Intuit issues and a record of which costs were exported. We never see your QuickBooks password.</p>
+<p><b>Location (optional).</b> If you allow it, Field Notes uses your phone's location to open on the house you're at. That check happens on your phone, and your location is not saved or sent to us. To place each house on the map, SitePlumb sends its address to Google once and saves that map position with the house. A builder can also tap "Pin this house here" to save the phone's current position as the house's position.</p>
+<p><b>Weather.</b> To show the forecast, the calendar sends each house's city name to Open-Meteo, a free weather service. Only the city name is sent.</p>
 
 <div class="card"><p><b>What we don't do:</b> SitePlumb does not process payments — invoices and payment entries are records only, and money never moves through SitePlumb. We do not sell or rent your information, we do not share it with data brokers, and we do not show ads.</p></div>
 
@@ -63,7 +65,7 @@
 
 <h2>Who can see your content</h2>
 <p><b>Your project's members, by role.</b> The builder sees everything on their job sites. Homeowners and subcontractors see what their role permits — for example, the crew does not see homeowner invoices, and the homeowner sees their own house only. These limits are enforced by server-side security rules, not just by the app's screens.</p>
-<p><b>Service providers</b> that host and operate SitePlumb: Google Firebase and Google Cloud (database, file storage, authentication, notifications, server functions), Cloudflare (domain and email routing), and GitHub Pages (app delivery). Google Places and Clearbit receive only company-lookup queries as described above. Intuit is involved only if you connect QuickBooks. Each processes data to provide their service to us, under their own security commitments.</p>
+<p><b>Service providers</b> that host and operate SitePlumb: Google Firebase and Google Cloud (database, file storage, authentication, notifications, server functions), Cloudflare (domain and email routing), and GitHub Pages (app delivery). Google receives company-lookup queries and house addresses, as described above. Clearbit receives only company-lookup queries. Open-Meteo receives only city names, to show the weather. Intuit is involved only if you connect QuickBooks. Each processes data to provide their service to us, under their own security commitments.</p>
 <p><b>Legal requirements.</b> We may disclose information if required by law or to protect the rights, safety, or property of SitePlumb or its users.</p>
 
 <h2>Retention and deletion</h2>
