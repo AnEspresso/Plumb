@@ -3917,15 +3917,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.442.0 - Text the install packet right from the packet, even before the crew is booked';
+const PLUMB_VERSION='2.443.0 - Plain words when an invite code or sign-in does not go through';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790716549746;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.442.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790728107131;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.443.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5259,7 +5259,7 @@ function renderFeed(){
       <div class="body"><div class="cap">${esc(it.cap)}</div>
         <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div>
-    </div>`).join('')||`<div class="empty">No entries yet. Tap Capture to start the record.</div>`;
+    </div>`).join('')||`<div class="empty">No entries yet. Tap Add today\u2019s entry to start the record.</div>`;
 }
 function renderPhotos(){
   const wrap=document.getElementById('photoGroups');if(!wrap)return;
@@ -6006,7 +6006,7 @@ async function liveAuthSubmit(){
       :code==='auth/wrong-password'||code==='auth/invalid-credential'?'Email or password is incorrect.'
       :code==='auth/user-not-found'?'No account with that email — create one.'
       :code==='auth/weak-password'?'Password is too weak.'
-      :(e&&e.message)||'Sign-in failed.');
+      :authPlain(e,'Sign-in didn\u2019t work. Check your connection and try again.'));
   }finally{btn.disabled=false;btn.textContent=old;}
 }
 function laOk(msg){const e=document.getElementById('laErr');if(!e)return;
@@ -6022,6 +6022,15 @@ function authContinueUrl(){
   }catch(e){return 'https://siteplumb.com/app/';}
 }
 function authActionSettings(){return {url:authContinueUrl(),handleCodeInApp:true};}
+/* Plain words for Firebase errors. Never show the raw message (it reads like
+   "A network AuthError… (auth/network-request-failed)"); known codes get a
+   sentence, anything else gets the caller's fallback. */
+function authPlain(e,fallback){
+  const c=String((e&&e.code)||'').replace(/^(auth|firestore)\//,'');
+  if(c==='network-request-failed'||c==='unavailable'||c==='deadline-exceeded'||(typeof navigator!=='undefined'&&navigator.onLine===false))return 'No connection \u2014 try again when you\u2019re back online.';
+  if(c==='too-many-requests'||c==='resource-exhausted')return 'Too many attempts \u2014 wait a few minutes, then try again.';
+  if(c==='invalid-email')return 'That doesn\u2019t look like a valid email address.';
+  return fallback;}
 async function liveForgot(){
   const e=document.getElementById('laErr');if(e)e.classList.remove('ok');
   const email=(document.getElementById('laEmail').value||'').trim().toLowerCase();
@@ -6038,7 +6047,7 @@ async function liveForgot(){
         :code==='auth/invalid-email'?'That doesn\u2019t look like a valid email address.'
         :code==='auth/too-many-requests'?'Too many attempts — wait a few minutes, then try again.'
         :code==='auth/network-request-failed'?'No connection — try again when you\u2019re back online.'
-        :((err&&err.message)||'Couldn\u2019t send reset email.'));}
+        :authPlain(err,'Couldn\u2019t send the reset email. Try again in a minute.'));}
   }else{
     laErr('This is a device-only account (no sync connected), so there\u2019s no email to reset with. Create a new account, or connect sync for real accounts.');
   }
@@ -6235,7 +6244,7 @@ async function pwResetSave(){
   }catch(err){
     const c=(err&&err.code)||'';
     if(c==='auth/expired-action-code'||c==='auth/invalid-action-code'){_prShow('resend','That link expired while the page was open \u2014 enter your email for a fresh one.');}
-    else _prError(c==='auth/weak-password'?'Password is too weak.':((err&&err.message)||'Couldn\u2019t save the new password.'));
+    else _prError(c==='auth/weak-password'?'Password is too weak.':authPlain(err,'Couldn\u2019t save the new password. Try again in a minute.'));
   }finally{btn.disabled=false;btn.textContent=old;}}
 async function pwResetResend(){
   const email=(document.getElementById('prEmail').value||'').trim().toLowerCase();
@@ -6243,7 +6252,7 @@ async function pwResetResend(){
   const btn=document.getElementById('prResend');btn.disabled=true;
   try{await firebase.auth().sendPasswordResetEmail(email,authActionSettings());
     pwResetClose();toast('New link sent \u2014 check your email (and spam)');logEvent('pwResetRequested',email.replace(/^(.).*(@.*)$/,'$1\u2026$2'));}
-  catch(err){_prError((err&&err.code)==='auth/too-many-requests'?'Too many attempts \u2014 wait a few minutes.':((err&&err.message)||'Couldn\u2019t send.'));}
+  catch(err){_prError((err&&err.code)==='auth/too-many-requests'?'Too many attempts \u2014 wait a few minutes.':authPlain(err,'Couldn\u2019t send. Try again in a minute.'));}
   finally{btn.disabled=false;}}
 async function liveSignOut(){
   try{
@@ -8022,8 +8031,8 @@ function approveClaim(code,uid,c){
 async function redeemInvite(code,prof,err){
   err=err||laErr;
   code=(code||'').trim().toUpperCase();if(!code)return null;
-  if(!fbConfig()){err('Invites need the synced build — ask your builder to send you the current link.');return false;}
-  if(!prof.uid){err('Invite codes need a real account — connect sync first.');return false;}
+  if(!fbConfig()){err('This copy of SitePlumb can\u2019t take invite codes. Ask your builder to send you the current link.');return false;}
+  if(!prof.uid){err('Invite codes need a real account. Create one or sign in first.');return false;}
   try{
     if(!firebase.apps.length)firebase.initializeApp(fbConfig());
     const db=firebase.firestore();
@@ -8034,7 +8043,7 @@ async function redeemInvite(code,prof,err){
     await db.collection('invites').doc(code).collection('claims').doc(prof.uid).set({name:prof.name||'',email:prof.email||'',rpRole:prof.rpRole||'',t:Date.now()});
     const role=inv.role==='client'?'client':(inv.role==='team'?'team':'sub');
     return {code,siteId:String(inv.siteId||''),role,trade:inv.trade||'',name:inv.name||'',setup:!!inv.setup,rpRole:inv.rpRole||'',gates:inv.gates||null};
-  }catch(e){err('Couldn\u2019t use that code: '+((e&&e.message)||'error'));return false;}
+  }catch(e){trapError('caught',e&&(e.code||e.message),'redeemInvite');err(authPlain(e,'Couldn\u2019t check that code right now. Try again in a minute.'));return false;}
 }
 /* Invite code for someone already signed in (the sign-in page's "I have an
    invite code" is only there when signed out). Same redeem as sign-in, then
