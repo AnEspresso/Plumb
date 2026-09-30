@@ -9888,8 +9888,8 @@ function notifBlockedHTML(stand){
   const how=/iPhone|iPad/.test(ua)
     ?'On iPhone, open Settings \u2192 Notifications \u2192 SitePlumb, then turn on Allow Notifications.'
     :/Android/.test(ua)
-    ?'On Android, tap the lock next to the web address (or long-press the SitePlumb icon and tap App info), then Notifications \u2192 Allow.'
-    :'In your browser, click the lock next to the web address, then set Notifications to Allow.';
+    ?'On Android, tap the icon to the left of the web address (or long-press the SitePlumb icon and tap App info), then Notifications \u2192 Allow.'
+    :'In your browser, click the icon to the left of the web address, then set Notifications to Allow.';
   return '<div class="pkt-banner warn"><b>Notifications are off for SitePlumb on this device.</b> '+how+'</div>'
     +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="openNotifyCenter()">I turned them on \u2014 check again</button>'
     +'<p class="mt-2 ml-0 mr-0 mb-0 c-ink-3 fs-xs">Until then, new alerts still show up here under Recent.</p>';}
@@ -14711,7 +14711,7 @@ function inviteSendSheet(msg){
 function inviteCopyText(quiet){
   const msg=window._invMsg||'';
   copyTextNow(msg).then(function(){toast('Invite text copied. Paste it into a text or an email.');},
-    function(){if(!quiet)toast('Could not copy on this device \u2014 press and hold the text to copy it');});}
+    function(){if(!quiet)toast('Couldn\u2019t copy on this device. Select the text above and copy it.');});}
 /* On load, if the app was opened from an invite link, reveal and prefill the
    code field. Returning users land on Sign in; new users tap Create account —
    either way the code is already filled and submitted with their auth. */
@@ -16751,7 +16751,7 @@ function packetHTML(p,tradeId,subId){
   if(!isClient){
     h+='<div class="sec"><h2>Sign-off</h2></div>';
     if(sels.length&&gaps.length){
-      h+='<div class="pkt-foot">Sign-off opens when every required answer is in. '+(missRows.length===1?'The one still missing is':'The ones still missing are')+' listed above under \u201c'+missRows.length+' still '+(missRows.length===1?'needs':'need')+' an answer.\u201d'+(isBuilder?'':' Your builder or the homeowner fills '+(missRows.length===1?'it':'them')+' in, so ask your builder if it\u2019s holding up your start.')+'</div>';
+      h+='<div class="pkt-foot">Sign-off opens when every required answer is in. '+(missRows.length===1?'The missing one is listed above.':'The missing ones are listed above.')+(isBuilder?'':' Your builder or the homeowner answers '+(missRows.length===1?'it':'them')+'. If it\u2019s holding up your start, ask your builder.')+'</div>';
     }else{
       const bSub=bSigned?('Signed by '+(so.builder.by===sess.name?'you':so.builder.by)+' \u00b7 '+fmtDue(so.builder.at)):'Not signed yet';
       const hSub=hSigned?('Signed by '+so.homeowner.by+' \u00b7 '+fmtDue(so.homeowner.at)):'Not signed yet';
