@@ -2514,6 +2514,9 @@ t('packet leftover buttons left the list', $("String(packetHTML)").indexOf('add-
 t('packet lists are rows', $("String(packetHTML)").indexOf('row-tap')>=0);
 t('unbooked packet primary is Text this link', $("String(packetHTML)").indexOf('pktTextLink')>=0&&$("String(packetHTML)").indexOf('Save a booking first')<0&&$("String(packetMore)").indexOf('Schedule on the calendar')>=0);
 t('invite and sign-in errors never show the raw Firebase text', $("authPlain({code:'auth/network-request-failed',message:'A network AuthError'},'x')").indexOf('No connection')===0&&$("authPlain({code:'auth/internal-error',message:'raw'},'fallback')")==='fallback'&&$("String(redeemInvite)").indexOf('e.message))')<0&&$("String(redeemInvite)").indexOf('synced build')<0);
+t('notifications off says how to turn them back on', $("notifBlockedHTML(false)").indexOf('check again')>0&&$("notifBlockedHTML(false)").indexOf('Allow')>0);
+t('invite without a share sheet shows the text and where to paste it', $("String(shareInvite)").indexOf('inviteSendSheet')>0&&$("String(inviteSendSheet)").indexOf('sms:')>0&&$("String(inviteSendSheet)").indexOf('mailto:')>0);
+t('locked packet sign-off lists what is still missing', $("String(packetHTML)").indexOf('listed above under')>0&&$("String(packetHTML)").indexOf("isBuilder?'You':'Builder'")>0);
 t('packet send uses the live window', $("String(packetHTML)").indexOf('const bk=isBuilder&&bkWin')>=0);
 t('crew packet door keeps the tour id', SRC.indexOf('id="svPacket"')>=0);
 asBuilder();

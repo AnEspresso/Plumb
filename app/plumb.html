@@ -3917,15 +3917,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.443.0 - Plain words when an invite code or sign-in does not go through';
+const PLUMB_VERSION='2.444.0 - Say what is missing before sign-off, how to turn notifications back on, and where an invite goes';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790728107131;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.443.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790774420822;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.444.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9881,6 +9881,18 @@ function noticeRecentHTML(){
     return head+kids;
   }).join('');
 }
+/* Notifications denied used to say "Blocked" and stop there. Name the actual
+   switch for this device, give a way to re-check, and say what still works. */
+function notifBlockedHTML(stand){
+  const ua=(typeof navigator!=='undefined'&&navigator.userAgent)||'';
+  const how=/iPhone|iPad/.test(ua)
+    ?'On iPhone, open Settings \u2192 Notifications \u2192 SitePlumb, then turn on Allow Notifications.'
+    :/Android/.test(ua)
+    ?'On Android, tap the lock next to the web address (or long-press the SitePlumb icon and tap App info), then Notifications \u2192 Allow.'
+    :'In your browser, click the lock next to the web address, then set Notifications to Allow.';
+  return '<div class="pkt-banner warn"><b>Notifications are off for SitePlumb on this device.</b> '+how+'</div>'
+    +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="openNotifyCenter()">I turned them on \u2014 check again</button>'
+    +'<p class="mt-2 ml-0 mr-0 mb-0 c-ink-3 fs-xs">Until then, new alerts still show up here under Recent.</p>';}
 function openNotifyCenter(){
   const perm=Notify.permission();
   const a=Notify.list();
@@ -9890,7 +9902,7 @@ function openNotifyCenter(){
   else if(perm==='granted'){try{Notify.captureToken();}catch(e){}
     permRow='<div class="pkt-banner ok"><b>Notifications on.</b> Issues, deadlines, invoices, and packet replies.</div>'
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="pushTest()">Send a test</button>';}
-  else if(perm==='denied')permRow='<div class="pkt-banner warn"><b>Blocked.</b> Enable notifications for SitePlumb in your device settings, then come back.</div>';
+  else if(perm==='denied')permRow=notifBlockedHTML(stand);
   else permRow='<button class="b1 b-go w-full btn btn-primary" onclick="Notify.enable().then(()=>openNotifyCenter())">Turn on notifications</button>';
   showInfo('Notifications',permRow
     +(((state.session||{}).role==='builder')?`<div class="subrow cur-p mt-3" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span class="c-ink-3 fs-lg pl-1 u-m19">›</span></div>`:'')
@@ -14682,10 +14694,24 @@ async function shareInvite(code){
     'Easiest way \u2014 just tap this link, it sets everything up:\n'+link+'\n\n'+
     'Or enter it by hand. Open SitePlumb \u2192 Live \u2192 \u201cI have an invite code,\u201d then enter:\n\n'+
     code+'\n';
-  let copied=false;
-  try{if(navigator.share){await navigator.share({title:'Your SitePlumb invite',text:msg});return;}}catch(e){/* user closed the sheet */}
-  copyTextNow(code).then(function(){toast('Code copied — invite text ready to paste');},function(){toast('Could not copy on this device — long-press the code instead');});
+  try{if(navigator.share){await navigator.share({title:'Your SitePlumb invite',text:msg});return;}}catch(e){if(e&&e.name==='AbortError')return;/* user closed the sheet */}
+  inviteSendSheet(msg);
 }
+/* No share sheet (most computers): SitePlumb doesn't send the invite, so show
+   the whole text, say where it goes, and offer text / email / copy. */
+function inviteSendSheet(msg){
+  const enc=encodeURIComponent(msg);
+  window._invMsg=msg;
+  showInfo('Send this invite','<p class="mt-0 ml-0 mr-0 mb-2">SitePlumb doesn\u2019t send this for you. Paste it into a text or an email to the person you\u2019re inviting.</p>'
+    +'<textarea id="invMsgText" class="w-full" rows="7" readonly onclick="this.select()">'+esc(msg)+'</textarea>'
+    +'<button class="b1 b-go w-full mt-3 btn btn-primary" onclick="inviteCopyText()">Copy the invite text</button>'
+    +'<a class="btn btn-secondary w-full mt-2" style="text-decoration:none" href="sms:?&body='+enc+'">Text it</a>'
+    +'<a class="btn btn-secondary w-full mt-2" style="text-decoration:none" href="mailto:?subject='+encodeURIComponent('Your SitePlumb invite')+'&body='+enc+'">Email it</a>');
+  inviteCopyText(true);}
+function inviteCopyText(quiet){
+  const msg=window._invMsg||'';
+  copyTextNow(msg).then(function(){toast('Invite text copied. Paste it into a text or an email.');},
+    function(){if(!quiet)toast('Could not copy on this device \u2014 press and hold the text to copy it');});}
 /* On load, if the app was opened from an invite link, reveal and prefill the
    code field. Returning users land on Sign in; new users tap Create account —
    either way the code is already filled and submitted with their auth. */
@@ -16657,7 +16683,7 @@ function packetHTML(p,tradeId,subId){
   if(missRows.length||visAsks.length){
     h+='<div class="sec"><h2>'+(missRows.length?(missRows.length+' still '+(missRows.length===1?'needs':'need')+' an answer'):'Before you send this')+'</h2></div>';
     missRows.forEach(function(r){
-      const who=r.f.who==='homeowner'?'Homeowner':'You';
+      const who=r.f.who==='homeowner'?'Homeowner':(isBuilder?'You':'Builder');
       const sub=[r.sel.item||r.sel.cat||'',r.sel.room&&r.sel.room!=='\u2014'?r.sel.room:''].filter(Boolean).join(' \u00b7 ');
       h+=row(r.f.label,sub,who,isBuilder?('pktFillSpec('+r.sel.id+')'):'','','');
     });
@@ -16725,7 +16751,7 @@ function packetHTML(p,tradeId,subId){
   if(!isClient){
     h+='<div class="sec"><h2>Sign-off</h2></div>';
     if(sels.length&&gaps.length){
-      h+='<div class="pkt-foot">Sign-off opens when every required answer is in.</div>';
+      h+='<div class="pkt-foot">Sign-off opens when every required answer is in. '+(missRows.length===1?'The one still missing is':'The ones still missing are')+' listed above under \u201c'+missRows.length+' still '+(missRows.length===1?'needs':'need')+' an answer.\u201d'+(isBuilder?'':' Your builder or the homeowner fills '+(missRows.length===1?'it':'them')+' in, so ask your builder if it\u2019s holding up your start.')+'</div>';
     }else{
       const bSub=bSigned?('Signed by '+(so.builder.by===sess.name?'you':so.builder.by)+' \u00b7 '+fmtDue(so.builder.at)):'Not signed yet';
       const hSub=hSigned?('Signed by '+so.homeowner.by+' \u00b7 '+fmtDue(so.homeowner.at)):'Not signed yet';
