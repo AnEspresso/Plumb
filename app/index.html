@@ -6006,7 +6006,7 @@ async function liveAuthSubmit(){
       :code==='auth/wrong-password'||code==='auth/invalid-credential'?'Email or password is incorrect.'
       :code==='auth/user-not-found'?'No account with that email — create one.'
       :code==='auth/weak-password'?'Password is too weak.'
-      :authPlain(e,'Sign-in didn\u2019t work. Check your connection and try again.'));
+      :authPlain(e,'Sign-in didn\u2019t work. Try again in a minute.'));
   }finally{btn.disabled=false;btn.textContent=old;}
 }
 function laOk(msg){const e=document.getElementById('laErr');if(!e)return;
@@ -6252,7 +6252,7 @@ async function pwResetResend(){
   const btn=document.getElementById('prResend');btn.disabled=true;
   try{await firebase.auth().sendPasswordResetEmail(email,authActionSettings());
     pwResetClose();toast('New link sent \u2014 check your email (and spam)');logEvent('pwResetRequested',email.replace(/^(.).*(@.*)$/,'$1\u2026$2'));}
-  catch(err){_prError((err&&err.code)==='auth/too-many-requests'?'Too many attempts \u2014 wait a few minutes.':authPlain(err,'Couldn\u2019t send. Try again in a minute.'));}
+  catch(err){_prError((err&&err.code)==='auth/too-many-requests'?'Too many attempts \u2014 wait a few minutes, then try again.':authPlain(err,'Couldn\u2019t send a new link. Try again in a minute.'));}
   finally{btn.disabled=false;}}
 async function liveSignOut(){
   try{
