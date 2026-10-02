@@ -1,0 +1,77 @@
+name: Live walk
+# Manual only: Actions > Live walk > Run workflow. Walks the LIVE site with the
+# QA accounts and uploads screenshots, SCORE.json and the log as an artifact.
+# Sign-ins come from GitHub Secrets (repo Settings > Secrets and variables >
+# Actions); nothing is read from or written to the repo.
+# Note: ink-the-book adds and removes its own test houses in the live QA book.
+
+on:
+  workflow_dispatch:
+    inputs:
+      walk:
+        description: Which walk to run
+        type: choice
+        options: [book-walk, whole-book, ink-the-book, all]
+        default: book-walk
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-walk
+  cancel-in-progress: false
+
+jobs:
+  walk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      WALK_OUT: ${{ github.workspace }}/walk-out
+      QA_APPCHECK_DEBUG_TOKEN: ${{ secrets.QA_APPCHECK_DEBUG_TOKEN }}
+      QA_EMAIL: ${{ secrets.QA_EMAIL }}
+      QA_PASSWORD: ${{ secrets.QA_PASSWORD }}
+      QA_TEAM_EMAIL: ${{ secrets.QA_TEAM_EMAIL }}
+      QA_TEAM_PASSWORD: ${{ secrets.QA_TEAM_PASSWORD }}
+      QA_HOME_EMAIL: ${{ secrets.QA_HOME_EMAIL }}
+      QA_HOME_PASSWORD: ${{ secrets.QA_HOME_PASSWORD }}
+      QA_SUB_EMAIL: ${{ secrets.QA_SUB_EMAIL }}
+      QA_SUB_PASSWORD: ${{ secrets.QA_SUB_PASSWORD }}
+      QA_PACKET_URL: ${{ secrets.QA_PACKET_URL }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: '22' }
+      - name: Install Playwright Chromium
+        run: |
+          mkdir -p /tmp/pw && (cd /tmp/pw && npm init -y >/dev/null && npm i --no-audit --no-fund playwright >/dev/null)
+          ln -sfn /tmp/pw/node_modules node_modules
+          npx --prefix /tmp/pw playwright install --with-deps chromium
+      - name: Check the sign-ins are set
+        run: |
+          missing=""
+          for v in QA_APPCHECK_DEBUG_TOKEN QA_EMAIL QA_PASSWORD QA_TEAM_EMAIL QA_TEAM_PASSWORD QA_HOME_EMAIL QA_HOME_PASSWORD QA_SUB_EMAIL QA_SUB_PASSWORD; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ "${{ inputs.walk }}" = "whole-book" ] || [ "${{ inputs.walk }}" = "all" ]; then
+            [ -n "$QA_PACKET_URL" ] || missing="$missing QA_PACKET_URL"
+          fi
+          if [ -n "$missing" ]; then echo "Add these GitHub Secrets first:$missing"; exit 1; fi
+      - name: Walk
+        run: |
+          mkdir -p "$WALK_OUT"
+          if [ "${{ inputs.walk }}" = "all" ]; then walks="book-walk whole-book ink-the-book"; else walks="${{ inputs.walk }}"; fi
+          rc=0
+          for w in $walks; do
+            echo "::group::$w"
+            node "scripts/$w.mjs" 2>&1 | tee "$WALK_OUT/$w.log" || rc=1
+            echo "::endgroup::"
+          done
+          exit $rc
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-walk-${{ inputs.walk }}-${{ github.run_number }}
+          path: walk-out/
+          retention-days: 14
+          if-no-files-found: warn

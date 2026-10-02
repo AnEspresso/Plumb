@@ -5,28 +5,29 @@
  */
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { chromium } from "playwright";
+import { secret, outDir } from "./walk-secrets.mjs";
 
-const TOKEN = readFileSync("/workspace/.secrets/appcheck_debug_token", "utf8").trim();
+const TOKEN = secret("appcheck_debug_token");
 const HATS = {
   builder: {
-    email: readFileSync("/workspace/.secrets/qa_email", "utf8").trim(),
-    pass: readFileSync("/workspace/.secrets/qa_password", "utf8").trim(),
+    email: secret("qa_email"),
+    pass: secret("qa_password"),
   },
   team: {
-    email: readFileSync("/workspace/.secrets/qa_team_email", "utf8").trim(),
-    pass: readFileSync("/workspace/.secrets/qa_team_password", "utf8").trim(),
+    email: secret("qa_team_email"),
+    pass: secret("qa_team_password"),
   },
   home: {
-    email: readFileSync("/workspace/.secrets/qa_home_email", "utf8").trim(),
-    pass: readFileSync("/workspace/.secrets/qa_home_password", "utf8").trim(),
+    email: secret("qa_home_email"),
+    pass: secret("qa_home_password"),
   },
   sub: {
-    email: readFileSync("/workspace/.secrets/qa_sub_email", "utf8").trim(),
-    pass: readFileSync("/workspace/.secrets/qa_sub_password", "utf8").trim(),
+    email: secret("qa_sub_email"),
+    pass: secret("qa_sub_password"),
   },
 };
-const PACKET = readFileSync("/workspace/.secrets/qa_packet_url", "utf8").trim();
-const DIR = "/workspace/screenshots/whole-book";
+const PACKET = secret("qa_packet_url");
+const DIR = outDir("whole-book");
 mkdirSync(DIR, { recursive: true });
 const checks = [];
 const note = (name, ok, detail) => {
