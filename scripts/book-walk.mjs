@@ -5,27 +5,28 @@
  */
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { chromium } from "playwright";
+import { secret, outDir } from "./walk-secrets.mjs";
 
-const TOKEN = readFileSync("/workspace/.secrets/appcheck_debug_token", "utf8").trim();
+const TOKEN = secret("appcheck_debug_token");
 const HATS = {
   builder: {
-    email: readFileSync("/workspace/.secrets/qa_email", "utf8").trim(),
-    pass: readFileSync("/workspace/.secrets/qa_password", "utf8").trim(),
+    email: secret("qa_email"),
+    pass: secret("qa_password"),
   },
   team: {
-    email: readFileSync("/workspace/.secrets/qa_team_email", "utf8").trim(),
-    pass: readFileSync("/workspace/.secrets/qa_team_password", "utf8").trim(),
+    email: secret("qa_team_email"),
+    pass: secret("qa_team_password"),
   },
   home: {
-    email: readFileSync("/workspace/.secrets/qa_home_email", "utf8").trim(),
-    pass: readFileSync("/workspace/.secrets/qa_home_password", "utf8").trim(),
+    email: secret("qa_home_email"),
+    pass: secret("qa_home_password"),
   },
   sub: {
-    email: readFileSync("/workspace/.secrets/qa_sub_email", "utf8").trim(),
-    pass: readFileSync("/workspace/.secrets/qa_sub_password", "utf8").trim(),
+    email: secret("qa_sub_email"),
+    pass: secret("qa_sub_password"),
   },
 };
-const DIR = "/workspace/screenshots/book-walk";
+const DIR = outDir("book-walk");
 mkdirSync(DIR, { recursive: true });
 const checks = [];
 const note = (name, ok, detail) => {

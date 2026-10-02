@@ -2791,6 +2791,28 @@ for(let i=0;i<SEQS&&!fuzzFail;i++){
 }
 t(SEQS+' random sequences × '+LEN+' actions, no crash, invariants hold',!fuzzFail,fuzzFail);
 
+/* ════ N-4 EMULATOR GUARD: ?emu=1 only works on localhost ════ */
+(function(){
+  const a=SRC.indexOf('var _emuCache=null;'),b=SRC.indexOf('var _emuWired=false;');
+  if(a<0||b<0){t('emulator hook present',false,'hook not found');return;}
+  const code=SRC.slice(a,b);
+  function emuFor(host,search,stored){
+    const store={};if(stored)store['plumb.emu']='1';
+    const ss={getItem:k=>(k in store?store[k]:null),setItem:(k,v)=>{store[k]=String(v);},removeItem:k=>{delete store[k];}};
+    return new Function('location','sessionStorage','URLSearchParams',code+';return emuOn();')({hostname:host,search:search},ss,URLSearchParams);
+  }
+  t('emu: on for localhost ?emu=1',emuFor('localhost','?emu=1')===true);
+  t('emu: on for 127.0.0.1 ?emu=1',emuFor('127.0.0.1','?demo=1&emu=1')===true);
+  t('emu: off on siteplumb.com even with ?emu=1',emuFor('siteplumb.com','?emu=1')===false);
+  t('emu: off on siteplumb.com even if the tab remembered it',emuFor('siteplumb.com','',true)===false);
+  t('emu: off on lookalike hosts',emuFor('localhost.siteplumb.com','?emu=1')===false&&emuFor('anespresso.github.io','?emu=1')===false);
+  t('emu: off on localhost without the flag',emuFor('localhost','')===false);
+  t('emu: ?emu=0 turns it off on localhost',emuFor('localhost','?emu=0',true)===false);
+  t('emu: App Check is skipped only in emulator mode',/function appCheckKey\(\)\{if\(emuOn\(\)\)return null;/.test(SRC));
+  t('emu: every initializeApp is followed by emuWire()',(SRC.match(/firebase\.initializeApp\(/g)||[]).length===(SRC.match(/firebase\.initializeApp\([^;]*\);emuWire\(\);/g)||[]).length);
+  t('emu: running app is not in emulator mode',$("emuOn()")===false);
+})();
+
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');
 if(failures.length){

@@ -3917,15 +3917,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.444.0 - Say what is missing before sign-off, how to turn notifications back on, and where an invite goes';
+const PLUMB_VERSION='2.445.0 - Local emulator mode for testing (localhost only)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790774420822;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.444.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790967371853;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.445.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5970,7 +5970,7 @@ async function liveAuthSubmit(){
   const btn=document.getElementById('laGo');btn.disabled=true;const old=btn.textContent;btn.textContent='…';
   try{
     if(laFirebaseReady()){
-      if(!firebase.apps.length)firebase.initializeApp(fbConfig());
+      if(!firebase.apps.length)firebase.initializeApp(fbConfig());emuWire();
       let cred;
       if(laMode==='signup'){
         cred=await firebase.auth().createUserWithEmailAndPassword(email,pass);
@@ -6036,7 +6036,7 @@ async function liveForgot(){
   const email=(document.getElementById('laEmail').value||'').trim().toLowerCase();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){laErr('Enter your email above first, then tap Forgot password.');return;}
   if(laFirebaseReady()){
-    try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());
+    try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());emuWire();
       await firebase.auth().sendPasswordResetEmail(email,authActionSettings());
       const sender='noreply@siteplumb.com';
       laOk('If an account exists for '+email+', a reset link is on its way. It comes from '+sender+' — check spam or junk if it doesn\u2019t arrive in a minute or two. No email means no account exists under exactly this address.');
@@ -6136,7 +6136,7 @@ async function _evConsume(code){
   try{history.replaceState(null,'',location.origin+location.pathname);}catch(e){}
   try{setMode('real');}catch(e){}
   if(!(await _awaitFirebase(6000)))return;
-  try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());}catch(e){}
+  try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());emuWire();}catch(e){}
   logEvent('verifyLinkOpened','');
   try{
     await firebase.auth().applyActionCode(code);
@@ -6214,7 +6214,7 @@ async function consumeAuthAction(){
   try{history.replaceState(null,'',location.origin+location.pathname);}catch(e){}
   try{setMode('real');}catch(e){}
   if(!(await _awaitFirebase(6000))){toast('Connect sync to reset a password');return;}
-  try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());}catch(e){}
+  try{if(!firebase.apps.length)firebase.initializeApp(fbConfig());emuWire();}catch(e){}
   logEvent('pwResetLinkOpened','');
   try{
     const email=await firebase.auth().verifyPasswordResetCode(code);
@@ -8034,7 +8034,7 @@ async function redeemInvite(code,prof,err){
   if(!fbConfig()){err('This copy of SitePlumb can\u2019t take invite codes. Ask your builder to send you the current link.');return false;}
   if(!prof.uid){err('Invite codes need a real account. Create one or sign in first.');return false;}
   try{
-    if(!firebase.apps.length)firebase.initializeApp(fbConfig());
+    if(!firebase.apps.length)firebase.initializeApp(fbConfig());emuWire();
     const db=firebase.firestore();
     const doc=await db.collection('invites').doc(code).get();
     if(!doc.exists){err('That invite code wasn\u2019t found — double-check it with your builder.');return false;}
@@ -9238,6 +9238,37 @@ const PLUMB_FIREBASE_CONFIG = {
   "messagingSenderId":"746860454898",
   "appId":"1:746860454898:web:67e0b710d48ba55f90016b"
 };
+/* N-4 emulator hook. Add ?emu=1 to the URL on localhost (or 127.0.0.1) and the app
+   talks to the local Firebase emulators instead of production: Auth 9099,
+   Firestore 8088, Storage 9199, Functions 5001 (ports match firebase.json), and
+   App Check is skipped. The host check means it can never switch on at
+   siteplumb.com or any other real host, whatever the URL says. The choice is
+   remembered for the tab (sessionStorage) so in-app navigation keeps it. */
+var _emuCache=null;
+function emuLocalHost(){try{const h=String(location.hostname||'');return h==='localhost'||h==='127.0.0.1'||h==='[::1]'||h==='::1';}catch(e){return false;}}
+function emuOn(){
+  if(_emuCache===true||_emuCache===false)return _emuCache;
+  let on=false;
+  try{
+    if(emuLocalHost()){
+      const q=new URLSearchParams(location.search).get('emu');
+      if(q==='1'){on=true;try{sessionStorage.setItem('plumb.emu','1');}catch(e){}}
+      else if(q==='0'){try{sessionStorage.removeItem('plumb.emu');}catch(e){}}
+      else{try{on=sessionStorage.getItem('plumb.emu')==='1';}catch(e){}}
+    }
+  }catch(e){on=false;}
+  _emuCache=on;return on;
+}
+var _emuWired=false;
+function emuWire(){
+  if(_emuWired||!emuOn()||typeof firebase==='undefined'||!firebase.apps||!firebase.apps.length)return;
+  _emuWired=true;
+  try{firebase.auth().useEmulator('http://127.0.0.1:9099',{disableWarnings:true});}catch(e){console.warn('[SitePlumb] Auth emulator',e);}
+  try{firebase.firestore().useEmulator('127.0.0.1',8088);}catch(e){console.warn('[SitePlumb] Firestore emulator',e);}
+  try{if(firebase.storage)firebase.storage().useEmulator('127.0.0.1',9199);}catch(e){console.warn('[SitePlumb] Storage emulator',e);}
+  try{if(document.body&&!document.getElementById('emuBadge')){const b=document.createElement('div');b.id='emuBadge';b.textContent='EMULATOR';b.style.cssText='position:fixed;left:6px;bottom:6px;z-index:99999;font:700 10px/1 system-ui;padding:4px 6px;border-radius:4px;background:#b3261e;color:#fff;pointer-events:none;letter-spacing:.06em';document.body.appendChild(b);}}catch(e){}
+  console.info('[SitePlumb] Emulator mode: Auth 9099, Firestore 8088, Storage 9199, Functions 5001, App Check off');
+}
 /* App Check reCAPTCHA v3 site key. Public by design (it ships in the page) — safe to embed.
    Built in so every device/surface gets App Check automatically; the dev-panel field overrides it. */
 const PLUMB_APPCHECK_SITEKEY = '6Ld2CBEtAAAAAILz47udzE6taSP4lLYT0CDNnfHK';
@@ -9250,7 +9281,7 @@ function fbConfig(){
   try{const c=localStorage.getItem('plumb.fb.config');if(c){const o=JSON.parse(c);if(o&&o.projectId)return o;}}catch(e){}
   return null;
 }
-function appCheckKey(){try{const k=(localStorage.getItem('plumb.appcheck.sitekey')||'').trim();if(k)return k;}catch(e){}return PLUMB_APPCHECK_SITEKEY||null;}
+function appCheckKey(){if(emuOn())return null;try{const k=(localStorage.getItem('plumb.appcheck.sitekey')||'').trim();if(k)return k;}catch(e){}return PLUMB_APPCHECK_SITEKEY||null;}
 let syncStatus='local',syncTimer=null,_syncBusy=false,_syncAgain=false;
 const _syncDirty=typeof Set==='function'?new Set():{add:function(){},forEach:function(){},clear:function(){}};
 const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_pulled:{},_held:{},
@@ -9265,10 +9296,10 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     if(!cfg){this.err='No config — local only.';setSync('local');return false;}
     if(typeof firebase==='undefined'){this.err='Firebase SDK not loaded (offline?).';setSync('local');return false;}
     try{
-      if(!firebase.apps.length)firebase.initializeApp(cfg);
+      if(!firebase.apps.length)firebase.initializeApp(cfg);emuWire();
       try{const ak=appCheckKey();if(ak&&firebase.appCheck){firebase.appCheck().activate(ak,true);this.appCheck=true;}}catch(e){console.warn('[SitePlumb] App Check activate failed',e);}
       this.db=firebase.firestore();
-      try{await this.db.enablePersistence({synchronizeTabs:true});}catch(e){}
+      if(!emuOn()){try{await this.db.enablePersistence({synchronizeTabs:true});}catch(e){}}
       this.mode=appMode()==='real'?'live':'demo';
       const u=await this._ensureAuth();
       this.uid=u?u.uid:null;
@@ -16889,7 +16920,7 @@ function _pkDb(){
   try{
     if(typeof fbConfig!=='function'||!fbConfig())return null;
     if(typeof firebase==='undefined'||!firebase.firestore)return null;
-    if(!firebase.apps.length)firebase.initializeApp(fbConfig());
+    if(!firebase.apps.length)firebase.initializeApp(fbConfig());emuWire();
     /* App Check must be activated BEFORE the first Firestore call or the
        request goes out unattested and is denied - the exact order connect uses. */
     if(!_pkAppCheckOn){
@@ -18301,7 +18332,7 @@ function pickChip(el){
 let deferredPrompt=null;
 function isStandalone(){try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(e){return false;}}
 /* ── SitePlumb server (Cloud Functions): callable-lite protocol ── */
-const FN_BASE='https://us-central1-plumb-467a0.cloudfunctions.net/';
+const FN_BASE=emuOn()?'http://127.0.0.1:5001/'+(((typeof fbConfig==='function'&&fbConfig())||{}).projectId||'plumb-467a0')+'/us-central1/':'https://us-central1-plumb-467a0.cloudfunctions.net/';
 async function fnCall(name,data){
   const u=(typeof firebase!=='undefined'&&firebase.auth&&firebase.auth().currentUser);
   if(!u)throw new Error('sign in first');
