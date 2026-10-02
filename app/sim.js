@@ -2813,6 +2813,28 @@ t(SEQS+' random sequences × '+LEN+' actions, no crash, invariants hold',!fuzzFa
   t('emu: running app is not in emulator mode',$("emuOn()")===false);
 })();
 
+/* ════ RELEASE C · Money due + one house header (2.446.0) ════ */
+S('money-due');
+(function(){
+  const fake="{id:'zz',name:'Due Test',street:'1 Due St',selections:[{id:901,cat:'Tile',item:'Upgrade',price:5000,status:'selected'}],invoices:[{id:'i1',no:'INV-001',status:'sent',total:3000,payments:[{amount:1000}]}],payments:[],costs:[]}";
+  const html=$("moneyTotHTML("+fake+")");
+  const b=JSON.parse($("JSON.stringify(billingSummary("+fake+"))"));
+  t('money: fixture has charges not on an invoice',b.unbilled>0.005&&b.billed>0.005,JSON.stringify(b));
+  t('money: due = invoiced minus received on those invoices',b.balanceDue===b.billed-b.invPaid&&b.balanceDue===2000,JSON.stringify(b));
+  t('money: Money shows $2,000 due, not the uninvoiced total',/\$2,000(\.00)? due/.test(html)&&!/\$4,000(\.00)? due/.test(html),html.slice(-400));
+  t('money: received is the invoice payments, so the row adds up',/\$3,000(\.00)? invoiced &middot; \$1,000(\.00)? received/.test(html),html.slice(-400));
+  t('money: uninvoiced charges get their own line',/\$2,000(\.00)? not yet invoiced/.test(html),html.slice(-400));
+  t('money: no uninvoiced line when everything is invoiced',!/not yet invoiced/.test($("moneyTotHTML({id:'zy',name:'x',selections:[{id:902,price:3000}],invoices:[{id:'i2',status:'sent',total:3000,payments:[]}],payments:[],costs:[]})")));
+  t('money: old due (net minus all payments) is gone',SRC.indexOf('const owed=Math.max(0,bill.out)')<0&&SRC.indexOf('const owed=bill.balanceDue')>=0);
+})();
+(function(){
+  t('header: crew header has no Sign out',(function(){const h=SRC.split('id="subview"')[1].split('id="svBody"')[0];return h.indexOf('logout()')<0&&h.indexOf('Sign out')<0;})());
+  t('header: homeowner header has no Sign out',(function(){const h=SRC.split('id="clientview"')[1].split('id="clBody"')[0];return h.indexOf('logout()')<0&&h.indexOf('Sign out')<0;})());
+  t('header: crew and homeowner keep the Settings gear',SRC.split('id="subview"')[1].split('id="svBody"')[0].indexOf('openSettings()')>=0&&SRC.split('id="clientview"')[1].split('id="clBody"')[0].indexOf('openSettings()')>=0);
+  t('header: crew back to the list is one word',SRC.indexOf("'Your houses'}</button>")<0&&SRC.indexOf("backHouse?'House':'Houses'")>=0);
+  t('header: inside a house the wordmark steps aside for the address',SRC.indexOf('header:has(> #backBtn.show) .brand{display:none;}')>=0);
+})();
+
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');
 if(failures.length){

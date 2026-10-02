@@ -394,6 +394,17 @@
   /* site switcher + dropdown */
   .site-switch{border:none;background:transparent;cursor:pointer;font-family:inherit;text-align:right;padding:var(--s-1) 0 var(--s-1) var(--s-2);display:flex;flex-direction:column;align-items:flex-end;gap:2px;max-width:200px;}
   .site-switch:active{opacity:.6;}
+  /* Inside a house (back button showing) the address is the title: the
+     wordmark and tagline step aside, the switcher takes the row, and a long
+     street ellipsizes instead of running off the screen. Same at every width. */
+  header .site-switch{min-width:0;flex:0 1 auto;}header .ss-row{min-width:0;max-width:100%;}header .site-switch .wx{max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+  header:has(> #backBtn.show) .brand{display:none;}
+  header:has(> #backBtn.show){justify-content:flex-start;gap:var(--s-2);align-items:center;}
+  header:has(> #backBtn.show) .site-switch{flex:1 1 auto;min-width:0;max-width:none;align-items:flex-start;text-align:left;padding-left:0;}
+  header:has(> #backBtn.show) .ss-row{max-width:100%;min-width:0;}
+  header:has(> #backBtn.show) .ss-row .site{font-family:var(--f-serif);font-size:var(--t-xl);font-weight:600;max-width:none;min-width:0;}
+  header:has(> #backBtn.show) .site-switch .wx{max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+  header:has(> #backBtn.show) .back-btn{flex:0 0 auto;margin-top:0;}
   .ss-row{display:flex;align-items:center;gap:5px;}
   .ss-row .site{font-size:var(--t-sm);color:var(--ink);letter-spacing:.01em;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
   .ss-row .chev{width:14px;height:14px;color:var(--ink-3);flex:0 0 auto;transition:transform .3s;}
@@ -2781,7 +2792,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
         <div class="wm"><span class="dot"></span>SitePlumb</div>
         <div class="who" id="svWho">Crew</div>
       </div>
-      <div class="hdr-actions"><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="ov-logout btn btn-secondary" onclick="logout()">Sign out</button></div>
+      <div class="hdr-actions"><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div>
     </div>
     <div class="sv-body" id="svBody"></div>
     <div class="cl-nav hide" id="subNav">
@@ -2799,7 +2810,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
         <div class="wm"><span class="dot"></span>SitePlumb</div>
         <div class="who" id="clWho">Homeowner</div>
       </div>
-      <div class="hdr-actions"><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button class="ov-logout btn btn-secondary" onclick="logout()">Sign out</button></div>
+      <div class="hdr-actions"><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div>
     </div>
     <div class="sv-body" id="clBody"></div>
     <div class="leave-bar" id="clHouseBar" hidden><button type="button" class="btn btn-secondary" onclick="clientGo('home')"><span>House</span></button></div>
@@ -3917,15 +3928,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.445.0 - Local emulator mode for testing (localhost only)';
+const PLUMB_VERSION='2.446.0 - Money due counts invoices only, one house header for every role';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790967371853;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.445.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790977621969;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.446.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -10288,7 +10299,7 @@ function renderSubView(){
   const tr=subTradeFor(p);
   if(nav)nav.style.display='none';
   const backHouse=(subTab==='selections'||subTab==='docs'||subTab==='packet');
-  const head=`<button class="sv-back" onclick="${backHouse?'subGo(\'todo\')':'subBackToList()'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>${backHouse?'House':'Your houses'}</button>
+  const head=`<button class="sv-back" onclick="${backHouse?'subGo(\'todo\')':'subBackToList()'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>${backHouse?'House':'Houses'}</button>
    <h2 class="title-sheet">${esc(p.street||p.name)}</h2>`;
   if(subTab==='selections'){
     const myCats=SUB_SEL_CATS[tr.id]||[];const mySels=(p.selections||[]).filter(s=>myCats.includes(s.cat));
@@ -10692,9 +10703,13 @@ function moneyTotHTML(p){
     +'<div class="hero-s">'+invUsd(cs.budget)+' budget &middot; '+invUsd(cs.committed)+' signed &middot; '+invUsd(cs.spent)+' paid out</div>'
     +'</div>';
   if(bill.billed>0.005){
-    const owed=Math.max(0,bill.out);
+    /* Due is what the homeowner has been invoiced and not yet paid on those
+       invoices. Charges not on an invoice yet are shown on their own line, not
+       folded into due (P1-2). */
+    const owed=bill.balanceDue;
     h+='<div class="row"><div class="row-main"><div class="row-title">Homeowner</div>'
-      +'<div class="row-sub">'+invUsd(bill.billed)+' invoiced &middot; '+invUsd(bill.paid)+' received</div></div>'
+      +'<div class="row-sub">'+invUsd(bill.billed)+' invoiced &middot; '+invUsd(bill.invPaid)+' received</div>'
+      +(bill.unbilled>0.005?'<div class="row-sub mn-unbilled">'+invUsd(bill.unbilled)+' not yet invoiced</div>':'')+'</div>'
       +'<div class="row-aside'+(owed>0.005?' warn':'')+'">'+(owed>0.005?invUsd(owed)+' due':'Paid up')+'</div></div>';
   }
   return h;

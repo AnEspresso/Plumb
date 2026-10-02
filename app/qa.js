@@ -554,6 +554,29 @@ async function tappable(page,sel){
   t('p.html paints dates from the URL with network blocked', !!(urlPaint.painted&&/Sep|Sept|9/.test(urlPaint.dates)&&urlPaint.house.indexOf('Calderwood')>=0), JSON.stringify(urlPaint));
   t('p.html dates on screen under 300ms', urlPaint.at>0&&urlPaint.at<=300, String(urlPaint.at));
 
+  /* ══ HEADER FITS (P1-3): nothing in the header runs past the screen edge,
+     for every demo house as builder, and for crew and homeowner, at 320/375/390 ══ */
+  for(const w of [320,375,390]){
+    await page.setViewport({width:w,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
+    const over=await page.evaluate(async()=>{
+      const wait=ms=>new Promise(r=>setTimeout(r,ms));
+      const W=document.documentElement.clientWidth,bad=[];
+      const scan=tag=>{document.querySelectorAll('header *, .subview.show .sv-head *, .overview.show .ov-head *').forEach(el=>{
+        if(el.closest('svg')&&el.tagName.toLowerCase()!=='svg')return;
+        const r=el.getBoundingClientRect();if(!r.width||!r.height)return;
+        if(r.right>W+0.5||r.left<-0.5)bad.push(tag+' '+(el.id||String(el.className&&el.className.baseVal!==undefined?el.className.baseVal:el.className)||el.tagName)+' +'+Math.round(r.right-W));});};
+      try{demoRole('builder');}catch(e){}
+      for(const p of state.projects.map(x=>x.id)){try{demoRole('builder');openSiteFromOverview(p);}catch(e){}await wait(120);scan('builder '+p);}
+      try{demoRole('builder');state.activeId='p2';demoRole('subs');}catch(e){}await wait(200);scan('crew list');
+      try{subSel='p2';renderSubView();}catch(e){}await wait(150);scan('crew house');
+      try{demoRole('client');}catch(e){}await wait(200);scan('homeowner');
+      try{demoRole('builder');}catch(e){}
+      return bad;
+    });
+    t('header fits at '+w+'px for every house and role', over.length===0, over.slice(0,4).join(', '));
+  }
+  await page.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
+
   /* ══ ACCESSIBILITY (axe-core): no critical violations allowed ══ */
   await page.evaluate(()=>{try{demoRole('builder');showOverview();}catch(e){}});
   await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
