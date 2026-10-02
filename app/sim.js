@@ -2848,7 +2848,7 @@ S('release-d');
   t('codes: the generator really uses the crypto draw',$("(function(){var g=crypto.getRandomValues;crypto.getRandomValues=function(a){for(var i=0;i<a.length;i++)a[i]=i*8+1;return a;};try{return genInviteCode();}finally{crypto.getRandomValues=g;}})()")==='PB-3BKT3BKT3B');
   t('codes: every letter can come up',(function(){const seen=new Set();codes.forEach(c=>c.slice(3).split('').forEach(x=>seen.add(x)));return seen.size===32;})());
   t('codes: old 7-character codes still redeem (exact lookup, no length gate)',$("String(redeemInvite)").indexOf(".doc(code).get()")>=0&&!/code\.length/.test($("String(redeemInvite)")));
-  t('codes: the code field example shows the new length',SRC.indexOf('PB-XXXXXXX)')<0&&(SRC.match(/PB-XXXXXXXXXX\)/g)||[]).length===2);
+  t('codes: both code fields say the code starts with PB-',SRC.indexOf('PB-XXXXXXX')<0&&(SRC.match(/placeholder="Invite code \(starts with PB-\)"/g)||[]).length===2);
 })();
 (function(){
   /* Option B: the preview doc holds exactly two fields */

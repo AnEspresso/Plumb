@@ -2615,7 +2615,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
             <div class="la-hint ta-c" id="laJoinLine">Homeowners and crews join from the text their builder sends.</div>
             <div class="la-hint ta-c" id="laJoinHint" style="display:none">This invite already sets who you are.</div>
             <div class="la-fld" id="laInviteRow" style="display:none">
-              <input id="laInvite" placeholder="Invite code (e.g. PB-XXXXXXXXXX)" autocapitalize="characters" autocomplete="off" oninput="syncInviteSignupChrome()">
+              <input id="laInvite" placeholder="Invite code (starts with PB-)" autocapitalize="characters" autocomplete="off" oninput="syncInviteSignupChrome()">
               <button class="la-link mt-2 ml-0 mr-0 mb-0 fs-xs btn btn-quiet" type="button" onclick="lainvPaste()">Paste code</button>
               <div class="la-hint">From your builder — joins you to their job site as the crew or homeowner.</div>
             </div>
@@ -8109,7 +8109,7 @@ async function redeemInvite(code,prof,err){
    company: one account is one role, so they're pointed to another email. */
 function openJoinCode(){
   showInfo('I have an invite code','<p class="mt-0 ml-0 mr-0 mb-2">Enter the code your builder sent you.</p>'
-    +'<input id="jcCode" class="w-full" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Invite code (e.g. PB-XXXXXXXXXX)" onkeydown="if(event.key===\'Enter\')joinCodeSubmit()">'
+    +'<input id="jcCode" class="w-full" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Invite code (starts with PB-)" onkeydown="if(event.key===\'Enter\')joinCodeSubmit()">'
     +'<div id="jcErr" class="la-err mt-2" style="display:none"></div>'
     +'<button id="jcGo" class="b1 b-go w-full mt-3 btn btn-primary" onclick="joinCodeSubmit()">Join</button>');
   setTimeout(()=>{try{document.getElementById('jcCode').focus();}catch(e){}},250);}
