@@ -117,20 +117,29 @@ service cloud.firestore {
           && crewWorkOk();
       }
 
-      allow read: if signedIn() && (!isLive() || isMember());
+      /* P2-4 (Release D): a house that is not live is closed. The example
+         build keeps its practice houses on the phone (nothing in demo syncs),
+         so no client has a reason to read, create or write a non-live house
+         doc. A live house must also stay live: no write may flip its mode.
+         The memberships query (memberUids array-contains me, the shape every
+         app version listens with) cannot prove mode, so list stays scoped to
+         the person's own memberships; the app drops non-live docs it gets. */
+      allow get: if signedIn() && isLive() && isMember();
+      allow list: if signedIn() && isMember();
 
       allow create: if signedIn()
-        && (request.resource.data.mode != 'live'
-            || (request.resource.data.members[uid()] == 'builder'
-                && uid() in request.resource.data.memberUids));
+        && request.resource.data.mode == 'live'
+        && request.resource.data.members[uid()] == 'builder'
+        && uid() in request.resource.data.memberUids;
 
-      allow update: if signedIn() && (
-        !isLive()
-        || isOwner()
-        || builderHouseOk()
-        || clientHouseOk()
-        || crewHouseOk()
-      );
+      allow update: if signedIn() && isLive()
+        && request.resource.data.mode == 'live'
+        && (
+          isOwner()
+          || builderHouseOk()
+          || clientHouseOk()
+          || crewHouseOk()
+        );
       allow delete: if false;
 
       match /{recordColl}/{recordId} {
@@ -222,52 +231,96 @@ service cloud.firestore {
             && recNew().get('by', '') == rec().get('by', '');
         }
 
-        allow read: if signedIn()
-          && (!sScoped()
-              || (recordColl == 'pmts' ? sMember() && sRole() != 'sub'
-                  : recordColl in ['mail','costs'] ? moneyOk()
-                  : recordColl == 'bk' && sRole() == 'sub' ? crewOwnBk()
-                  : sMember()));
+        /* P2-4: records under a house that is not live are closed too. */
+        allow read: if signedIn() && sScoped()
+          && (recordColl == 'pmts' ? sMember() && sRole() != 'sub'
+              : recordColl in ['mail','costs'] ? moneyOk()
+              : recordColl == 'bk' && sRole() == 'sub' ? crewOwnBk()
+              : sMember());
 
-        allow create: if signedIn()
-          && (!sScoped()
-              || (sRole() == 'builder' && (!moneyColl() || moneyOk()))
+        allow create: if signedIn() && sScoped()
+          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
               || (sRole() == 'sub' && recordColl in ['items','logs'])
               || (sRole() == 'client' && recordColl == 'items')
               || (sRole() == 'client' && clientSelCreateOk()));
 
-        allow update: if signedIn()
-          && (!sScoped()
-              || (sRole() == 'builder' && (!moneyColl() || moneyOk()))
+        allow update: if signedIn() && sScoped()
+          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
               || (sRole() == 'sub' && crewItemOk())
               || (sRole() == 'sub' && crewBkRespOk())
               || (sRole() == 'client' && recordColl == 'items')
               || (sRole() == 'client' && clientSelOk()));
 
-        allow delete: if signedIn()
-          && (!sScoped() || (sRole() == 'builder' && (!moneyColl() || moneyOk())));
+        allow delete: if signedIn() && sScoped()
+          && sRole() == 'builder' && (!moneyColl() || moneyOk());
       }
     }
 
+    /* invites/{code} reads stay exactly as they were: get by code, signed in.
+       Never widen them - the doc holds the creator uid, house id, crew id and role. */
     match /invites/{code} {
+      function inviteDoc() { return /databases/$(database)/documents/invites/$(code); }
+      /* N-2 (Release D): one code, one person. The joiner flips claimed in the
+         same batch that writes their claim; once claimed (or revoked) nobody
+         else can claim it. */
+      function claimFlipOk() {
+        return resource.data.get('claimed', false) != true
+          && resource.data.get('revoked', false) != true
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed', 'claimedAt'])
+          && request.resource.data.claimed == true
+          && existsAfter(/databases/$(database)/documents/invites/$(code)/claims/$(uid()));
+      }
       allow get: if signedIn();
       allow list: if false;
-      allow create: if signedIn() && request.resource.data.createdBy == uid();
-      allow update: if signedIn()
-        && resource.data.createdBy == uid()
-        && request.resource.data.createdBy == resource.data.createdBy
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revoked','revokedAt']);
+      allow create: if signedIn() && request.resource.data.createdBy == uid()
+        && !request.resource.data.keys().hasAny(['claimed', 'claimedAt']);
+      allow update: if signedIn() && (
+        (resource.data.createdBy == uid()
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revoked','revokedAt']))
+        || claimFlipOk()
+      );
       allow delete: if false;
 
       match /claims/{claimUid} {
         function claimOwner() {
           return signedIn()
-            && get(/databases/$(database)/documents/invites/$(code)).data.createdBy == uid();
+            && get(inviteDoc()).data.createdBy == uid();
         }
         allow read: if signedIn() && (claimUid == uid() || claimOwner());
-        allow create: if signedIn() && claimUid == uid();
+        allow create: if signedIn() && claimUid == uid()
+          && get(inviteDoc()).data.get('claimed', false) != true
+          && getAfter(inviteDoc()).data.get('claimed', false) == true;
         allow update, delete: if false;
       }
+    }
+
+    /* Invite option B (Release D): what the join screen may show before the
+       person signs up - the builder's name and the street, nothing else. Get by
+       exact code only, never listed, and only while the invite is open. Written
+       by the builder who sent the invite; deleted on revoke and when the code
+       is used (the app and the Cloud Functions both do it). */
+    match /invitePreviews/{code} {
+      function inviteDoc() { return /databases/$(database)/documents/invites/$(code); }
+      function inviteIsMine() {
+        return signedIn() && exists(inviteDoc()) && get(inviteDoc()).data.createdBy == uid();
+      }
+      function inviteOpen() {
+        return exists(inviteDoc())
+          && get(inviteDoc()).data.get('revoked', false) != true
+          && get(inviteDoc()).data.get('claimed', false) != true;
+      }
+      allow get: if inviteOpen();
+      allow list: if false;
+      allow create: if inviteIsMine()
+        && request.resource.data.keys().hasOnly(['builder', 'street'])
+        && request.resource.data.keys().hasAll(['builder', 'street'])
+        && request.resource.data.builder is string
+        && request.resource.data.builder.size() <= 80
+        && request.resource.data.street is string
+        && request.resource.data.street.size() <= 120;
+      allow update: if false;
+      allow delete: if inviteIsMine();
     }
 
     match /orgs/{orgId} {

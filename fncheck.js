@@ -126,6 +126,8 @@ const server = http.createServer((req, res) => {
   await db.collection('telemetry').doc('devD').set({ uid: 'dU', device: 'devD' });
   await db.collection('telemetry').doc('devD').collection('events').add({ name: 'e', uid: 'dU', t: 1 });
   await db.collection('invites').doc('PB-1').collection('claims').doc('dU').set({ email: 'del@x.test', name: 'Del' });
+  await db.collection('invites').doc('PB-DEL2').set({ createdBy: 'dU', role: 'client', siteId: 'x' });
+  await db.collection('invitePreviews').doc('PB-DEL2').set({ builder: 'Del Homes', street: '1 Gone St' });
   const authMock = { deleted: [], async deleteUser(u) { this.deleted.push(u); } };
   const bucketMock = { prefixes: [], async deleteFiles(o) { this.prefixes.push(o.prefix); } };
 
@@ -144,6 +146,7 @@ const server = http.createServer((req, res) => {
   t('profile doc gone', !(await db.collection('users').doc('dU').get()).exists);
   t('uid-stamped telemetry gone (doc + events)', !(await db.collection('telemetry').doc('devD').get()).exists && (await db.collection('telemetry').doc('devD').collection('events').get()).empty);
   t('invite claim carrying their email gone', !(await db.collection('invites').doc('PB-1').collection('claims').doc('dU').get()).exists);
+  t('join-screen preview of an invite they sent gone', !(await db.collection('invitePreviews').doc('PB-DEL2').get()).exists);
   t('auth user deleted, exactly once, last', authMock.deleted.length === 1 && authMock.deleted[0] === 'dU');
 
   server.close();

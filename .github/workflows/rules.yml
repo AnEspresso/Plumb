@@ -2,7 +2,8 @@ name: Rules suite
 # Proves the Firestore rules refuse what they must: a crew sees only its own
 # bookings, only the builder who sent an invite can revoke it or read its
 # claims, money and telemetry stay server-side. Runs on every rules change, and
-# deploy-rules.yml calls it first, so rules that fail it cannot be published.
+# deploy-rules.yml (the only rules publish path) calls it first, so rules
+# that fail it cannot be published.
 on:
   push:
     branches: [main]

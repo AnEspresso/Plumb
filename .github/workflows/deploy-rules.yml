@@ -1,90 +1,80 @@
-name: Deploy Firestore rules
-# Publishes firestore.rules to plumb-467a0. Does not deploy functions or storage.
-# The rules suite runs first. If it fails, nothing is published.
+name: Publish rules (Firestore + Storage)
+# The only way security rules reach plumb-467a0. Since Release D nobody pastes
+# rules into the Firebase console - not Firestore, not Storage.
+#   - Manual only (workflow_dispatch). Never runs on push or pull request.
+#   - Publishes only from main, so what goes live is what was reviewed and merged.
+#   - The Rules suite (rules.yml) runs first. If it fails, nothing is published.
+#   - The publish job waits in the "rules-publish" GitHub Environment until a
+#     required reviewer (Peter) approves it. The deploy key is an environment
+#     secret (FIREBASE_RULES_DEPLOYER), so no other workflow or branch can use it.
+#   - firestore.rules and storage.rules go out together as one release, then
+#     both live rulesets are read back and must match the repo byte for byte
+#     (ignoring leading/trailing whitespace).
 on:
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-rules
+  cancel-in-progress: false
+
 jobs:
   test:
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/rules.yml
 
-  deploy:
+  publish:
     needs: test
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: rules-publish
     steps:
       - uses: actions/checkout@v4
 
-      - name: Auth with the Firebase service account
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-      - name: Fetch live rules
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+      - name: Auth with the rules deploy key
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_RULES_DEPLOYER }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Publish firestore.rules and storage.rules
+        run: npx --yes firebase-tools@15.31.0 deploy --only firestore:rules,storage --project plumb-467a0 --non-interactive
+
+      - name: Read the live rules back and compare with the repo
         run: |
           set -euo pipefail
-          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
           TOKEN=$(gcloud auth print-access-token)
-          REL=$(curl -sS -H "Authorization: Bearer $TOKEN" \
-            "https://firebaserules.googleapis.com/v1/projects/plumb-467a0/releases/cloud.firestore")
-          echo "$REL" | python3 -c 'import json,sys; d=json.load(sys.stdin); print("live release", d.get("rulesetName","?"), d.get("createTime","?"))'
-          RSET=$(echo "$REL" | python3 -c 'import json,sys; print(json.load(sys.stdin)["rulesetName"])')
-          curl -sS -H "Authorization: Bearer $TOKEN" \
-            "https://firebaserules.googleapis.com/v1/$RSET" \
-            | python3 -c 'import json,sys; d=json.load(sys.stdin); src=d["source"]["files"][0]["content"]; open("live.rules","w").write(src); print("live bytes", len(src))'
+          API=https://firebaserules.googleapis.com/v1
+          fetch() { # $1 release name, $2 output file
+            RSET=$(curl -fsS -H "Authorization: Bearer $TOKEN" "$API/projects/plumb-467a0/releases/$1" \
+              | python3 -c 'import json,sys; print(json.load(sys.stdin)["rulesetName"])')
+            curl -fsS -H "Authorization: Bearer $TOKEN" "$API/$RSET" \
+              | python3 -c 'import json,sys; open(sys.argv[1],"w").write(json.load(sys.stdin)["source"]["files"][0]["content"])' "$2"
+          }
+          fetch cloud.firestore live-firestore.rules
+          fetch firebase.storage/plumb-467a0.firebasestorage.app live-storage.rules
           python3 - <<'PY'
           from pathlib import Path
-          import re
-          live=Path('live.rules').read_text()
-          want=Path('firestore.rules').read_text()
-          print('--- live match paths ---')
-          for m in re.finditer(r'match /[^\s{]+', live):
-            print(' ', m.group(0))
-          print('--- repo match paths ---')
-          for m in re.finditer(r'match /[^\s{]+', want):
-            print(' ', m.group(0))
-          print('live has packet word:', 'packet' in live.lower())
-          print('live has work word:', "'work'" in live or '"work"' in live)
-          print('--- live tail ---')
-          print(live[-1200:])
+          import sys
+          bad = 0
+          for live, repo in (('live-firestore.rules', 'firestore.rules'), ('live-storage.rules', 'storage.rules')):
+            same = Path(live).read_text().strip() == Path(repo).read_text().strip()
+            print(('MATCH ' if same else 'DIFFERS ') + repo)
+            bad += 0 if same else 1
+          sys.exit(1 if bad else 0)
           PY
 
       - name: Upload live rules snapshot
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: live-firestore-rules
-          path: live.rules
-
-      - name: Publish if the only guest gap is work
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import re, sys
-          live=Path('live.rules').read_text()
-          want=Path('firestore.rules').read_text()
-          def block(src, name):
-            m=re.search(r'match /'+name+r'/\{[^}]+\} \{', src)
-            return bool(m)
-          print('live packets block present:', 'match /packets/' in live)
-          if 'match /packets/' not in live:
-            print('NOTE: live has no packets match. Refusing blind overwrite.')
-            Path('skip-deploy').write_text('no-packets')
-            sys.exit(0)
-          if live.strip() == want.strip():
-            print('ALREADY: live rules match repo')
-            Path('skip-deploy').write_text('already')
-            sys.exit(0)
-          if 'guestWorkOk' not in want or 'match /packets/' not in want:
-            print('FAIL: repo rules missing packets/guestWorkOk')
-            sys.exit(1)
-          print('SAFE: live packets exist; repo rules differ. Publishing.')
-          sys.exit(0)
-          PY
-          if [ -f skip-deploy ]; then
-            echo "Nothing to publish ($(cat skip-deploy))"
-            exit 0
-          fi
-          npx firebase-tools@latest deploy --only firestore:rules --project plumb-467a0 --non-interactive
-          echo 'PUBLISHED firestore.rules'
+          name: live-rules-after-publish
+          path: live-*.rules
+          if-no-files-found: ignore

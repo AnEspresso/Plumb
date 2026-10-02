@@ -2,7 +2,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const { applyClaimToSite } = require('./lib/claimStamp');
+const { applyClaimToSite, claimWins } = require('./lib/claimStamp');
 
 const client = applyClaimToSite(
   { members: { b1: 'builder' }, memberUids: ['b1'], meta: { invites: [{ code: 'AB', role: 'client', status: 'open' }] } },
@@ -66,10 +66,29 @@ assert.strictEqual(ho.meta.memberInfo.h1.name, 'Pat Smith', 'homeowner keeps the
 const tm = applyClaimToSite({ members: {}, meta: {} }, { code: 'TM', role: 'team', siteId: '', name: '' }, 't1', { name: 'Sam Lee' });
 assert.strictEqual(tm.meta.memberInfo.t1.name, 'Sam Lee', 'teammate keeps their own name');
 
+/* N-2: one code, one person. Pinned here and in rulescheck.js: if either side
+   starts letting a second person in on the same code, this fails. */
+assert.strictEqual(claimWins('a', [{ id: 'a', at: 5 }]), true, 'the only claim wins');
+assert.strictEqual(claimWins('b', [{ id: 'a', at: 5 }, { id: 'b', at: 9 }]), false, 'a second person on a used code is ignored');
+assert.strictEqual(claimWins('a', [{ id: 'b', at: 9 }, { id: 'a', at: 5 }]), true, 'the earliest claim wins whatever the list order');
+assert.strictEqual(claimWins('b', [{ id: 'a', at: 5 }, { id: 'b', at: 5 }]), false, 'a tie goes to one person only');
+assert.strictEqual(claimWins('a', [{ id: 'a', at: 5 }, { id: 'b', at: 5 }]), true, 'a tie goes to one person only (the other one)');
+assert.strictEqual(claimWins('c', [{ id: 'a', at: 5 }]), false, 'a claim not on the code never wins');
+assert.strictEqual(claimWins('', [{ id: '', at: 1 }]), false, 'no uid never wins');
+const fnSrc = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8');
+const onClaim = fnSrc.split("exports.onInviteClaim")[1].split('exports.')[0];
+assert.ok(/claimWins\(uid, claims\)/.test(onClaim) && onClaim.indexOf('claimWins') < onClaim.indexOf('applyClaimToSite'),
+  'onInviteClaim checks one-code-one-person before it stamps a house');
+assert.ok(/dropPreview\(code\)/.test(onClaim), 'a used code drops its join-screen preview');
+assert.ok(/exports\.onInviteClosed = onDocumentUpdated\('invites\/\{code\}'/.test(fnSrc), 'a revoked code drops its preview on the server');
+
 const rules = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
 const claims = rules.split('match /claims/{claimUid}')[1].split('match /orgs/')[0];
 assert.ok(claims.indexOf('claimUid == uid()') >= 0, 'claimer can read their claim');
 assert.ok(claims.indexOf('createdBy == uid()') >= 0, 'builder who sent it can read claims');
 assert.ok(!/allow read:\s*if signedIn\(\);\s*allow create/.test(claims), 'claims are not world-readable');
+assert.ok(/getAfter\(inviteDoc\(\)\)\.data\.get\('claimed', false\) == true/.test(claims)
+  && /get\(inviteDoc\(\)\)\.data\.get\('claimed', false\) != true/.test(claims),
+  'N-2: a claim needs the code unused before and marked used in the same write');
 
 console.log('claimStamp ok');

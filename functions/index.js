@@ -184,9 +184,15 @@ exports.telemetryClear = onRequest(async (req, res) => {
 });
 
 /* ── Lock-screen push when a sub replies on a packet ── */
-const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const push = require('./lib/push');
-const { applyClaimToSite } = require('./lib/claimStamp');
+const { applyClaimToSite, claimWins } = require('./lib/claimStamp');
+
+/* The join-screen preview (builder name + street) lives only while the code
+   is open. Best-effort: a missing doc is fine. */
+async function dropPreview(code) {
+  try { await db.collection('invitePreviews').doc(String(code)).delete(); } catch (e) {}
+}
 
 async function deliver(uids, notice) {
   const tokens = await push.tokensFor(db, uids);
@@ -203,6 +209,14 @@ exports.onInviteClaim = onDocumentCreated('invites/{code}/claims/{uid}', async (
   const invite = invSnap.data() || {};
   invite.code = code;
   if (invite.revoked) return;
+  /* N-2: one code, one person. Only the first claim on a code stamps a house. */
+  const claimSnap = await db.collection('invites').doc(code).collection('claims').get();
+  const claims = claimSnap.docs.map((d) => ({ id: d.id, at: d.createTime ? d.createTime.toMillis() : 0 }));
+  if (!claimWins(uid, claims)) return;
+  if (invite.claimed !== true) {
+    try { await invSnap.ref.update({ claimed: true, claimedAt: Date.now() }); } catch (e) {}
+  }
+  await dropPreview(code);
   let docs = [];
   if (invite.role === 'team') {
     const owner = String(invite.createdBy || '');
@@ -221,6 +235,15 @@ exports.onInviteClaim = onDocumentCreated('invites/{code}/claims/{uid}', async (
     if (!patch) continue;
     await doc.ref.set(Object.assign({ updatedAt: Date.now() }, patch), { merge: true });
   }
+});
+
+/* Revoked or used: the code is closed, so its join-screen preview goes. */
+exports.onInviteClosed = onDocumentUpdated('invites/{code}', async (event) => {
+  const before = (event.data && event.data.before && event.data.before.data()) || {};
+  const after = (event.data && event.data.after && event.data.after.data()) || {};
+  const closed = (d) => d.revoked === true || d.claimed === true;
+  if (!closed(after) || closed(before)) return;
+  await dropPreview(event.params.code);
 });
 
 exports.onPacketReply = onDocumentWritten('packets/{token}', async (event) => {

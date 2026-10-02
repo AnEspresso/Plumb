@@ -3,9 +3,9 @@ name: Fetch live Storage rules (read only)
 # read files. This reads the Storage ruleset that is live on plumb-467a0 and
 # saves it as an artifact. It publishes nothing and changes nothing.
 #
-# Then: download the artifact (or copy the ruleset from the log), and upload it
-# to the repo root as storage.rules. That is inert - no workflow deploys
-# Storage rules - and the Rules suite runs on it by itself.
+# Since Release D, storage.rules is in the repo and deploy-rules.yml ("Publish
+# rules") is the only way it goes live. Use this to check that live still
+# matches the repo. Never paste rules into the console.
 on:
   workflow_dispatch: {}
 

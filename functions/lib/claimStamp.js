@@ -49,4 +49,19 @@ function applyClaimToSite(site, invite, uid, claim) {
   return { members: members, memberUids: Object.keys(members), meta: meta };
 }
 
-module.exports = { applyClaimToSite };
+/* N-2 (Release D): one code, one person. The rules let only the first person
+   claim a code, and the server holds the same line on its own: of every claim
+   on a code, only the earliest (server create time, then uid) may stamp a
+   house. A claim that is not in the list, or loses, is ignored. */
+function claimWins(uid, claims) {
+  uid = String(uid || '');
+  if (!uid) return false;
+  const list = (claims || []).filter(function (c) { return c && c.id; }).slice();
+  if (!list.some(function (c) { return String(c.id) === uid; })) return false;
+  list.sort(function (a, b) {
+    return ((Number(a.at) || 0) - (Number(b.at) || 0)) || String(a.id).localeCompare(String(b.id));
+  });
+  return String(list[0].id) === uid;
+}
+
+module.exports = { applyClaimToSite, claimWins };
