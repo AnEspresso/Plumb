@@ -1,3 +1,31 @@
+# SitePlumb handoff
+
+## Current state (October 2, 2026)
+
+**v2.444.0 is live** at siteplumb.com/app. Main is the source of truth; the old `handoff` branch is retired.
+
+**How work ships.** Every change is a small pull request on `AnEspresso/Plumb`. Bots never push to `main`, never merge, and never publish Firestore or Storage rules. Peter approves; Projects Manager merges. App PRs bump `PLUMB_VERSION`, `APP_VERSION`, `SW_CACHE_EXPECTED` and `CACHE` in `app/sw.js`, and keep `app/index.html` byte-identical to `app/plumb.html`.
+
+**What the website serves.** The `Publish site` workflow (`.github/workflows/pages.yml`) builds the site from an allowlist in `scripts/build-site.sh` and deploys it to GitHub Pages. Only the marketing pages, `site.css`, images, icons, `CNAME`, the root retirement `sw.js`, and the app files a phone needs are public. Notes like this one, scripts, tests and old builds are not served. Pages must be set to deploy from **GitHub Actions** (repo Settings, Pages, Source). The old `publish/` folder of stale app copies is gone.
+
+**Secrets.** Never write a password, token or key into any file in this repo, including notes, handoffs and walk scripts. Secrets live only in GitHub Secrets and in the untracked `.secrets/` folder. The App Check debug token is a secret too. The `Secret scan` workflow runs gitleaks with `.gitleaks.toml` on every push and pull request and fails if a new commit contains a credential.
+
+**Testing.** In `app/`: `node sim.js` (jsdom, about 1045 checks) and `node qa.js` (real Chrome, 92 checks). CI runs them in `SitePlumb QA`; its `verify-live` job only passes after a merge has deployed.
+
+**Recent versions** (newest first; `git log` has the full list):
+- 2.444.0 says what is missing before packet sign-off, how to turn notifications back on, and where an invite goes.
+- 2.443.0 plain words for invite and sign-in errors; Agency's invite message rewrites.
+- 2.442.0 text the install packet in one tap, even before the crew is booked.
+- 2.441.0 People opens up in the example build; signed-in accounts can enter an invite code.
+- 2.440.0 Field Notes opens on the house you are at; Pin this house here.
+- 2.435.0 a phone that was closed pulls first and no longer writes its old copy over newer edits.
+- 2.434.0 Crew, not Sub, everywhere the app shows it.
+- 2.433.0 the app links back to the site.
+- 2.432.0 the calendar button says Open calendar.
+- 2.429.0 an invited crew sees their own bookings.
+
+## History (older entries, kept for context)
+
 **v2.428.0 is live.** A claim writes the house. The status line tells the truth. Delete lives under Privacy. A stale crew link says the old confirm does not count. Overlay stayed out. Capture stays. Same texted link. Field Note assist stays parked until this stamp is the one phones trust.
 
 **v2.427.0 is live.** House sits at the bottom of every homeowner page. A–Z is Cottage before Elmhurst, by the street, not the number. Overlay stayed out. Capture stays. Same texted link.
@@ -343,20 +371,20 @@ Restore:
 
 The black bar lists all three. Tap it, then download that zip.
 
-The black bar on the marketing page is the download door. It always shows this version and opens `/publish/` (Save the GitHub zip). `pack-github.py` writes the number so it cannot drift.
+(Retired: the black download bar and `/publish/` zips. The site is now published by the `Publish site` workflow.)
 
 **QA still to add** (pin — do in this order):
 1. Live packet link (guest page as the sub) — done
-2. Teammate account — done. `pmgottschalkqa+team@gmail.com` / `Pooperqa-team!?` (PM, Alex Rivera, all 10 sites). Also in `.secrets/qa_team_*`
-3. Homeowner signed in — done. `pmgottschalkqa+home@gmail.com` / `Pooperqa-home!?` (Jordan Calderwood, 288 Calderwood Ln). Also in `.secrets/qa_home_*`
-4. Signed-in sub — done. `pmgottschalkqa+sub@gmail.com` / `Pooperqa-sub!?` (Northwind Mechanical, HVAC, 288 Calderwood Ln). Also in `.secrets/qa_sub_*`
+2. Teammate account — done (PM role, all 10 sites). Sign-in lives only in `.secrets/qa_team_*` and GitHub Secrets.
+3. Homeowner signed in — done (288 Calderwood Ln). Sign-in lives only in `.secrets/qa_home_*` and GitHub Secrets.
+4. Signed-in sub — done (Northwind Mechanical, HVAC, 288 Calderwood Ln). Sign-in lives only in `.secrets/qa_sub_*` and GitHub Secrets.
 4. QuickBooks — done. QA login connected to Intuit sandbox “Sandbox Company US 066d”. Calderwood export: 5 sent, 4 already there, 0 failed.
 5. Push notification — **PIN: wait for a laptop.** In-app notices are live (2.239). Lock screen needs a Firebase CI token (`firebase login:ci`) then Grok deploys `onPacketReply` + `notifyTest`. Cannot be done on the phone. Ask Peter when he has a computer.
 
 
 **QA login:** The live QA account lives in `.secrets/qa_email` and `.secrets/qa_password` (never in the app or zip). Use it for real-mode live QA. Do not print the password. Do not put it in HANDOFF, the app, or the zip.
 
-**Ship rule:** A GitHub write token is stored in `.secrets/github_ship` (never in the app or zip). When Peter says ship, **ask for the ship password first**. Do not push until he replies with the password in `.secrets/ship_password`. Do not print the password. Do not put it in HANDOFF, the app, or the zip.
+**Ship rule (retired):** shipping is now a pull request that Peter approves. No ship password or write token goes in any file.
 
 Recent arc:
 

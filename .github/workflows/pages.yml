@@ -1,0 +1,58 @@
+name: Publish site
+# Deploys siteplumb.com from an artifact that holds ONLY the files listed in
+# scripts/build-site.sh, so repo notes, scripts and tests are never public.
+# Needs: repo Settings > Pages > Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the site from the allowlist
+        run: bash scripts/build-site.sh _site
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: _site }
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  check-live:
+    # Public pages answer, private files do not.
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check siteplumb.com
+        run: |
+          set -u
+          sleep 20
+          fail=0
+          for p in / /homeowners.html /app/ /app/index.html /app/p.html /app/privacy.html /app/terms.html /app/manifest.json /app/sw.js; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://siteplumb.com$p")
+            echo "$code $p"; [ "$code" = "200" ] || fail=1
+          done
+          for p in /HANDOFF.md /README.md /publish/APP-index.html /app/sim.js /app/qa.js /index.js /laws.js /firestore.rules; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://siteplumb.com$p")
+            echo "$code $p (should be 404)"; [ "$code" = "404" ] || fail=1
+          done
+          exit $fail

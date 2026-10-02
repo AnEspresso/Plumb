@@ -1,47 +1,29 @@
-# Plumb
+# SitePlumb
 
 **true to the build** — a field-management app for independent custom-home builders.
 
-Plumb keeps the daily record of a build in one place: dated job logs, jobsite photos, open items, the construction schedule with inspections and permits, subcontractor coordination, and a selection/spec sheet with upgrade-and-credit pricing. It runs as a single, installable web app — no accounts to provision, no servers to stand up to try it.
+SitePlumb keeps the daily record of a build in one place: field notes, jobsite photos, open items, the schedule with inspections, crew bookings and install packets, selections with upgrade and credit pricing, and money. It runs as a single installable web app.
 
-This build is a **demo**: it ships with three fictional sample projects so you can explore every screen. All data is local to your device.
-
----
-
-## Try it
-
-Open the published page on your phone (Add to Home Screen for the full-screen app experience), or open `index.html` in any modern browser.
-
-- **Builder** sign-in → portfolio of all sites, full access.
-- **Subcontractors** sign-in → a restricted view scoped to a trade's own sites and tasks.
-
-To reset the demo at any time: tap the small copyright text at the bottom five times, enter `plumb`, and use **Reload demo content**.
+SitePlumb is live at [siteplumb.com](https://siteplumb.com), with the app at [siteplumb.com/app](https://siteplumb.com/app/). Builders, their team, homeowners and crews sign in and share one live book per house through Firebase (Auth, Firestore, Storage, Cloud Functions). Anyone can try the example build at `/app/?demo=1` without an account.
 
 ---
 
-## What's inside
+## What's in this repo
 
-- **Daily log** — one dated entry per day, with editable history.
-- **Photos & open items** — capture with a note, area, and assignee; flag anything that needs a fix.
-- **Schedule** — evidence-based construction stages gated by the right inspections, with a per-site permit tracker.
-- **Selections** — finishes by trade section with upgrade/credit amounts, buyer sign-off, special instructions, and a live **upcharge ledger** (overages − credits − payments = amount outstanding).
-- **Installable PWA** — works offline once loaded; add it to a phone's home screen.
+- `index.html`, `homeowners.html`, `switch.html`, `pitch-a.html`, `site.css`, `img/` are the marketing site.
+- `app/` is the app: a single `index.html` (kept byte-identical to `plumb.html`), the guest packet page `p.html`, `sw.js`, `manifest.json`, privacy and terms, and tour audio. `sim.js` and `qa.js` are its tests.
+- `functions/` holds the Cloud Functions; `firestore.rules` and `storage.rules` are the security rules.
+- `scripts/` holds walk, QA and maintenance scripts. `.github/workflows/` holds CI.
+- `HANDOFF.md` is the working handoff for whoever picks up the code next.
 
----
+## Publishing
 
-## Tech
+The website is published by the `Publish site` workflow, which copies only the files listed in `scripts/build-site.sh` into a Pages artifact. Repo notes, scripts and tests are never served. GitHub Pages must be set to deploy from **GitHub Actions**.
 
-A single self-contained `index.html` (HTML/CSS/JS, no build step) plus a PWA `manifest.json`, a `sw.js` service worker for offline caching, and app icons. Data is stored on-device (localStorage for records, IndexedDB for photos). No backend yet — live multi-device sync is the next phase.
+## Rules for contributors
 
-### Run / host
-
-Any static host works. For GitHub Pages: put these files in a repo, then **Settings → Pages → deploy from `main`, `/root`**. The published URL is public; the demo intentionally contains no real or sensitive data.
-
----
-
-## Status
-
-Demo build (v0.5). Front end complete; the data layer is structured so a hosted backend (sync, accounts, permit-email parsing, push) can drop in without reworking the app.
+- Every change is a pull request; nothing is pushed straight to `main`.
+- Never write a password, token or key into any file here. Secrets live in GitHub Secrets or the untracked `.secrets/` folder. The `Secret scan` workflow checks every push.
 
 ---
 
