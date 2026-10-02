@@ -2835,6 +2835,95 @@ S('money-due');
   t('header: inside a house the wordmark steps aside for the address',SRC.indexOf('header:has(> #backBtn.show) .brand{display:none;}')>=0);
 })();
 
+/* ════ RELEASE D · invite codes, invite previews, one code one person (2.447.0) ════ */
+S('release-d');
+(function(){
+  /* N-1: stronger codes */
+  const codes=JSON.parse($("JSON.stringify(Array.from({length:400},function(){return genInviteCode();}))"));
+  t('codes: PB- plus 10 characters from the unambiguous alphabet',codes.every(c=>/^PB-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{10}$/.test(c)),codes.slice(0,3).join(' '));
+  t('codes: never 0, O, 1 or I',codes.every(c=>!/[01OI]/.test(c.slice(3))));
+  t('codes: 400 in a row, no repeats',new Set(codes).size===codes.length);
+  t('codes: the alphabet is 32 letters, so no letter is favored',$("INVITE_ALPHABET.length")===32&&new Set($("INVITE_ALPHABET").split('')).size===32);
+  t('codes: drawn from crypto.getRandomValues, not Math.random',$("String(genInviteCode)").indexOf('crypto.getRandomValues')>=0&&$("String(genInviteCode)").indexOf('Math.random')<0);
+  t('codes: the generator really uses the crypto draw',$("(function(){var g=crypto.getRandomValues;crypto.getRandomValues=function(a){for(var i=0;i<a.length;i++)a[i]=i*8+1;return a;};try{return genInviteCode();}finally{crypto.getRandomValues=g;}})()")==='PB-3BKT3BKT3B');
+  t('codes: every letter can come up',(function(){const seen=new Set();codes.forEach(c=>c.slice(3).split('').forEach(x=>seen.add(x)));return seen.size===32;})());
+  t('codes: old 7-character codes still redeem (exact lookup, no length gate)',$("String(redeemInvite)").indexOf(".doc(code).get()")>=0&&!/code\.length/.test($("String(redeemInvite)")));
+  t('codes: the code field example shows the new length',SRC.indexOf('PB-XXXXXXX)')<0&&(SRC.match(/PB-XXXXXXXXXX\)/g)||[]).length===2);
+})();
+(function(){
+  /* Option B: the preview doc holds exactly two fields */
+  const f=JSON.parse($("(function(){var k='plumb.orgPrefs',o=localStorage.getItem(k);localStorage.setItem(k,JSON.stringify({company:'Calder Homes'}));try{return JSON.stringify(invitePreviewFields({id:'p1',street:'12 Elm St',name:'Elm',members:{a:'builder'},invites:[{code:'X'}]}));}finally{if(o===null)localStorage.removeItem(k);else localStorage.setItem(k,o);}})()"));
+  t('preview: only the builder name and the street',Object.keys(f).sort().join(',')==='builder,street'&&f.builder==='Calder Homes'&&f.street==='12 Elm St',JSON.stringify(f));
+  t('preview: a team invite carries no street',JSON.parse($("JSON.stringify(invitePreviewFields(null))")).street==='');
+  t('preview: written right after the invite, for houses and teams',$("String(createInvite)").indexOf('writeInvitePreview(code,p)')>$("String(createInvite)").indexOf("collection('invites').doc(code).set(")&&$("String(mintTeamInvite)").indexOf('writeInvitePreview(code,null)')>$("String(mintTeamInvite)").indexOf("collection('invites').doc(code).set("));
+  t('preview: dropped when the invite is revoked',$("String(revokeInvite)").indexOf('dropInvitePreview(code)')>$("String(revokeInvite)").indexOf('revoked:true'));
+  t('preview: taking a crew or homeowner off a house closes the code in the cloud',$("String(removeSub)").indexOf('cloudCloseInvite(inv.code)')>=0&&$("String(removeHomeownerMember)").indexOf('cloudCloseInvite(inv.code)')>=0&&$("String(cloudCloseInvite)").indexOf('revoked:true')>=0&&$("String(cloudCloseInvite)").indexOf('dropInvitePreview(code)')>=0);
+  t('preview: the line sits above the email field',SRC.indexOf('id="laInvitePreview"')>0&&SRC.indexOf('id="laInvitePreview"')<SRC.indexOf('id="laEmail"'));
+  t('preview: words for each shape',$("invPreviewText({builder:'Calder Homes',street:'12 Elm St'})")==='Calder Homes invited you to 12 Elm St.'&&$("invPreviewText({builder:'',street:'12 Elm St'})")==='You\u2019re invited to 12 Elm St.'&&$("invPreviewText({builder:'Calder Homes',street:''})")==='Calder Homes invited you.'&&$("invPreviewText({})")==='');
+})();
+await $('(async()=>{'+
+  'var oDb=Sync.db,oOn=Sync.on,oSess=state.session,oCD=confirmDelete;window.__rd={reads:[],ops:[],auth:0};'+
+  'var fake={collection:function(c){return{doc:function(id){return{'+
+    'get:function(){window.__rd.reads.push(c+"/"+id);return Promise.resolve(c==="invitePreviews"&&id==="PB-ABCDEFGHJK"?{exists:true,data:function(){return{builder:"Calder Homes",street:"12 Elm St"};}}:{exists:false,data:function(){return{};}});},'+
+    'set:function(v,o){window.__rd.ops.push(["set",c+"/"+id,JSON.stringify(v)]);return Promise.resolve();},'+
+    'delete:function(){window.__rd.ops.push(["delete",c+"/"+id]);return Promise.resolve();}'+
+  '};}};}};'+
+  'try{'+
+    'state.session=null;Sync.db=fake;'+
+    'var inp=document.getElementById("laInvite");var oInp=inp.value;'+
+    'inp.value="pb-abcdefghjk";syncInviteSignupChrome();'+
+    'await new Promise(function(r){setTimeout(r,60);});'+
+    'var pe=document.getElementById("laInvitePreview");'+
+    'window.__rd.shown=pe.textContent;window.__rd.disp=pe.style.display;'+
+    'inp.value="PB-NOPREVIEW2";syncInviteSignupChrome();'+
+    'await new Promise(function(r){setTimeout(r,60);});'+
+    'window.__rd.gone=pe.style.display;'+
+    'inp.value=oInp;syncInviteSignupChrome();'+
+    'Sync.on=true;window.__rd.ops=[];'+
+    'confirmDelete=function(o){return o.onConfirm();};'+
+    'await revokeInvite("PB-REVOKE234");'+
+    'await new Promise(function(r){setTimeout(r,10);});'+
+    'window.__rd.revokeOps=window.__rd.ops.slice();window.__rd.ops=[];'+
+    'await writeInvitePreview("PB-WRITE2345",{street:"9 Oak Ave"});'+
+    'window.__rd.writeOps=window.__rd.ops.slice();'+
+  '}finally{Sync.db=oDb;Sync.on=oOn;state.session=oSess;confirmDelete=oCD;}'+
+'})()');
+(function(){
+  const r=JSON.parse($("JSON.stringify(window.__rd)"));
+  t('preview: read by exact code before sign-in, shown on the join screen',r.shown==='Calder Homes invited you to 12 Elm St.'&&r.disp!=='none',JSON.stringify(r).slice(0,200));
+  t('preview: the join screen reads only invitePreviews, never invites',r.reads.length>0&&r.reads.every(x=>x.indexOf('invitePreviews/')===0),r.reads.join(','));
+  t('preview: no preview, no line',r.gone==='none');
+  t('preview: revoke writes revoked, then deletes the preview',r.revokeOps.length===2&&r.revokeOps[0][0]==='set'&&r.revokeOps[0][1]==='invites/PB-REVOKE234'&&r.revokeOps[1][0]==='delete'&&r.revokeOps[1][1]==='invitePreviews/PB-REVOKE234',JSON.stringify(r.revokeOps));
+  t('preview: the doc written holds builder and street only',r.writeOps.length===1&&r.writeOps[0][1]==='invitePreviews/PB-WRITE2345'&&Object.keys(JSON.parse(r.writeOps[0][2])).sort().join(',')==='builder,street',JSON.stringify(r.writeOps));
+})();
+/* N-2: one code, one person, on the joiner's side */
+await $('(async()=>{'+
+  'var oFb=window.firebase;window.__n2={};'+
+  'function mk(inv,mineExists,batchFails){var log=[];var db={log:log,'+
+    'collection:function(c){return{doc:function(id){var ref={path:c+"/"+id,'+
+      'get:function(){if(c==="invites")return Promise.resolve({exists:!!inv,data:function(){return inv;}});return Promise.resolve({exists:false});},'+
+      'collection:function(sc){return{doc:function(u){return{path:c+"/"+id+"/"+sc+"/"+u,get:function(){return Promise.resolve({exists:mineExists});},set:function(v){log.push("set "+c+"/"+id+"/"+sc+"/"+u);return Promise.resolve();}};}};}};return ref;}};},'+
+    'batch:function(){var ops=[];return{update:function(r,v){ops.push("update "+r.path+" "+JSON.stringify(Object.keys(v)));},set:function(r,v){ops.push("set "+r.path);},commit:function(){if(batchFails){var e=new Error("denied");e.code="permission-denied";return Promise.reject(e);}ops.forEach(function(o){log.push("batch "+o);});return Promise.resolve();}};}'+
+  '};return db;}'+
+  'async function run(inv,mineExists,batchFails){var db=mk(inv,mineExists,batchFails);var msg="";'+
+    'window.firebase={apps:[1],firestore:function(){return db;}};'+
+    'var r=await redeemInvite("PB-N2TESTCODE",{uid:"uJ",name:"Jo",email:"jo@x.test"},function(m){msg=m;});'+
+    'return {ok:!!(r&&r.code),msg:msg,log:db.log};}'+
+  'try{'+
+    'window.__n2.used=await run({role:"client",siteId:"p1",claimed:true},false,false);'+
+    'window.__n2.fresh=await run({role:"client",siteId:"p1"},false,false);'+
+    'window.__n2.mine=await run({role:"client",siteId:"p1",claimed:true},true,false);'+
+    'window.__n2.oldRules=await run({role:"sub",siteId:"p1"},false,true);'+
+  '}finally{window.firebase=oFb;}'+
+'})()');
+(function(){
+  const n=JSON.parse($("JSON.stringify(window.__n2)"));
+  t('one code: a used code is refused in plain words',!n.used.ok&&n.used.msg==='That code was already used. Ask your builder for a new one.'&&n.used.log.length===0,JSON.stringify(n.used));
+  t('one code: the first person marks the code used in the same write as the claim',n.fresh.ok&&n.fresh.log.length===2&&n.fresh.log[0]==='batch update invites/PB-N2TESTCODE ["claimed","claimedAt"]'&&n.fresh.log[1]==='batch set invites/PB-N2TESTCODE/claims/uJ',JSON.stringify(n.fresh.log));
+  t('one code: the same person on another phone gets back in, no new write',n.mine.ok&&n.mine.log.length===0,JSON.stringify(n.mine));
+  t('one code: under the old rules the plain claim still goes through',n.oldRules.ok&&n.oldRules.log.length===1&&n.oldRules.log[0]==='set invites/PB-N2TESTCODE/claims/uJ',JSON.stringify(n.oldRules));
+})();
+
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');
 if(failures.length){

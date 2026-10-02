@@ -6,6 +6,8 @@
 
 **How work ships.** Every change is a small pull request on `AnEspresso/Plumb`. Bots never push to `main`, never merge, and never publish Firestore or Storage rules. Peter approves; Projects Manager merges. App PRs bump `PLUMB_VERSION`, `APP_VERSION`, `SW_CACHE_EXPECTED` and `CACHE` in `app/sw.js`, and keep `app/index.html` byte-identical to `app/plumb.html`.
 
+**How rules ship (since Release D, 2.447.0).** `firestore.rules` and `storage.rules` go live only through the `Publish rules (Firestore + Storage)` workflow (`.github/workflows/deploy-rules.yml`): run by hand from `main`, the Rules suite runs first, then it waits for Peter's approval in the `rules-publish` environment, publishes both files together, and checks live matches the repo. Nobody pastes rules into the Firebase console any more, Storage included. `FIREBASE-rules-packets.txt` is history.
+
 **What the website serves.** The `Publish site` workflow (`.github/workflows/pages.yml`) builds the site from an allowlist in `scripts/build-site.sh` and deploys it to GitHub Pages. Only the marketing pages, `site.css`, images, icons, `CNAME`, the root retirement `sw.js`, and the app files a phone needs are public. Notes like this one, scripts, tests and old builds are not served. Pages must be set to deploy from **GitHub Actions** (repo Settings, Pages, Source). The old `publish/` folder of stale app copies is gone.
 
 **Secrets.** Never write a password, token or key into any file in this repo, including notes, handoffs and walk scripts. Secrets live only in GitHub Secrets and in the untracked `.secrets/` folder. The App Check debug token is a secret too. The `Secret scan` workflow runs gitleaks with `.gitleaks.toml` on every push and pull request and fails if a new commit contains a credential.

@@ -29,7 +29,7 @@ const { initializeTestEnvironment, assertSucceeds, assertFails } =
   require('@firebase/rules-unit-testing');
 const {
   doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection,
-  query, where, onSnapshot,
+  query, where, onSnapshot, writeBatch,
 } = require('firebase/firestore');
 const { ref, uploadBytes, getBytes } = require('firebase/storage');
 
@@ -55,6 +55,7 @@ const U = {
   client:   'uid-client-invited',
   stranger: 'uid-authed-stranger',
   otherBuilder: 'uid-other-builder', // owns liveB (cross-site isolation)
+  demoMember: 'uid-demo-member',     // stamped on a non-live house (P2-4)
 };
 /* The house exactly as the server stamps it when a crew joins having typed
    their own name at signup. The crew must still be matched by the roster name. */
@@ -108,8 +109,23 @@ async function seed() {
     // demo1: shared demo sandbox
     await setDoc(doc(db, 'sites/demo1'), { mode: 'demo', street: 'Demo One' });
     await setDoc(doc(db, 'sites/demo1/items/r1'), { seeded: true });
+    // demoStamped: a non-live house that even names the stranger as its builder (P2-4)
+    await setDoc(doc(db, 'sites/demoStamped'), { mode: 'demo', street: 'Demo Stamped',
+      members: { [U.demoMember]: 'builder' }, memberUids: [U.demoMember] });
+    await setDoc(doc(db, 'sites/demoStamped/items/r1'), { seeded: true });
     // invites / orgs / users / telemetry
     await setDoc(doc(db, 'invites/SECRETCODE1'), { createdBy: U.builder, site: 'liveA', trade: 'plumb' });
+    await setDoc(doc(db, `invites/SECRETCODE1/claims/${U.sub}`), { name: 'Mike', at: 1 });
+    // Release D: open, used and revoked invites, each with a preview doc
+    await setDoc(doc(db, 'invites/OPENCODE2'), { createdBy: U.builder, role: 'client', siteId: 'liveA' });
+    await setDoc(doc(db, 'invitePreviews/OPENCODE2'), { builder: 'Calder Homes', street: '12 Elm St' });
+    await setDoc(doc(db, 'invites/USEDCODE3'), { createdBy: U.builder, role: 'sub', siteId: 'liveA', claimed: true });
+    await setDoc(doc(db, 'invitePreviews/USEDCODE3'), { builder: 'Calder Homes', street: '12 Elm St' });
+    await setDoc(doc(db, 'invites/REVOKED4'), { createdBy: U.builder, role: 'sub', siteId: 'liveA', revoked: true });
+    await setDoc(doc(db, 'invitePreviews/REVOKED4'), { builder: 'Calder Homes', street: '12 Elm St' });
+    await setDoc(doc(db, 'invites/CLAIMCODE5'), { createdBy: U.builder, role: 'sub', siteId: 'liveA' });
+    await setDoc(doc(db, 'invites/CLAIMCODE6'), { createdBy: U.builder, role: 'client', siteId: 'liveA' });
+    await setDoc(doc(db, 'invites/PREVCODE7'), { createdBy: U.builder, role: 'client', siteId: 'liveA' });
     await setDoc(doc(db, 'orgs/org1'), { members: { [U.builder]: 'builder', [U.builder2]: 'builder' } });
     await setDoc(doc(db, 'users/' + U.builder), { name: 'Owner', email: 'o@x.com' });
     await setDoc(doc(db, 'telemetry/deviceOfBuilder'), { owner: U.builder, hb: 1 });
@@ -155,8 +171,25 @@ async function main() {
   await INV('sites: unauth DENIED read liveA', getDoc(doc(db.unauth, 'sites/liveA')), false);
   await INV('sites: builder of liveA DENIED read liveB (cross-builder)', getDoc(doc(db.builder, 'sites/liveB')), false);
   await INV('sites: sub of liveA DENIED read liveB (cross-site)', getDoc(doc(db.sub, 'sites/liveB')), false);
-  await INV('sites: any signed-in reads demo', getDoc(doc(db.stranger, 'sites/demo1')), true);
+  /* P2-4 (Release D) flipped these: a house that is not live is closed to every
+     session. Before, any signed-in (even anonymous) session could read and write
+     one. The example build keeps practice houses on the phone, so nothing breaks. */
+  await INV('sites: P2-4 non-live house closed - signed-in DENIED read', getDoc(doc(db.stranger, 'sites/demo1')), false);
   await INV('sites: unauth DENIED read demo', getDoc(doc(db.unauth, 'sites/demo1')), false);
+  await INV('sites: P2-4 even a member stamped on a non-live house DENIED read', getDoc(doc(db.demoMember, 'sites/demoStamped')), false);
+  await INV('sites: P2-4 member stamped on a non-live house DENIED update', updateDoc(doc(db.demoMember, 'sites/demoStamped'), { street: 'x' }), false);
+  /* List stays member-scoped: the memberships query every app version listens
+     with cannot prove mode. Only someone already stamped on an old non-live doc
+     gets it back, the app drops it, and no one can stamp themselves onto one now. */
+  await GAP('P2-4: a person already stamped on an old non-live house still gets it from their own memberships query',
+    getDocs(query(collection(db.demoMember, 'sites'), where('memberUids', 'array-contains', U.demoMember)))
+      .then(r => { if (r.size !== 1) throw new Error('expected 1, saw ' + r.size); }), true);
+  await INV('sites: P2-4 signed-in DENIED update of a non-live house', updateDoc(doc(db.stranger, 'sites/demo1'), { street: 'x' }), false);
+  await INV('sites: P2-4 stranger DENIED taking over a non-live house by flipping it live',
+    updateDoc(doc(db.stranger, 'sites/demo1'), { mode: 'live', members: { [U.stranger]: 'builder' }, memberUids: [U.stranger] }), false);
+  await INV('sites: P2-4 create of a non-live house DENIED, even self-stamped',
+    setDoc(doc(db.stranger, 'sites/newDemo1'), { mode: 'demo', members: { [U.stranger]: 'builder' }, memberUids: [U.stranger] }), false);
+  await INV('sites: P2-4 create with no mode DENIED', setDoc(doc(db.stranger, 'sites/newDemo2'), { street: 'x' }), false);
 
   await INV('sites: builder updates liveA meta', updateDoc(doc(db.builder, 'sites/liveA'), { street: 'Live A upd' }), true);
   await INV('sites: second builder updates liveA meta', updateDoc(doc(db.builder2, 'sites/liveA'), { street: 'Live A upd2' }), true);
@@ -165,6 +198,7 @@ async function main() {
   await INV('sites: stranger DENIED update liveA meta', updateDoc(doc(db.stranger, 'sites/liveA'), { street: 'x' }), false);
   await INV('sites: sub DENIED self-promotion to builder', updateDoc(doc(db.sub, 'sites/liveA'), { [`members.${U.sub}`]: 'builder' }), false);
   await INV('sites: delete denied even to builder', deleteDoc(doc(db.builder, 'sites/liveA')), false);
+  await INV('sites: P2-4 owner DENIED flipping a live house to non-live', updateDoc(doc(db.builder, 'sites/liveA'), { mode: 'demo' }), false);
 
   await INV('sites: create live stamping SELF as builder allowed',
     setDoc(doc(db.builder, 'sites/newLive1'), { mode: 'live', members: { [U.builder]: 'builder' }, memberUids: [U.builder] }), true);
@@ -207,7 +241,11 @@ async function main() {
   await INV('records: client DENIED write logs', setDoc(doc(db.client, 'sites/liveA/logs/l3'), { note: 'x' }), false);
   await INV('records: client DENIED write pmts', setDoc(doc(db.client, 'sites/liveA/pmts/p4'), { amt: 0 }), false);
   await INV('records: stranger DENIED write items', setDoc(doc(db.stranger, 'sites/liveA/items/i4'), { x: 1 }), false);
-  await INV('records: demo records open to signed-in', setDoc(doc(db.stranger, 'sites/demo1/items/i5'), { x: 1 }), true);
+  /* P2-4 flipped: records under a non-live house were open to any signed-in session. */
+  await INV('records: P2-4 non-live house records DENIED write', setDoc(doc(db.stranger, 'sites/demo1/items/i5'), { x: 1 }), false);
+  await INV('records: P2-4 non-live house records DENIED read', getDoc(doc(db.stranger, 'sites/demo1/items/r1')), false);
+  await INV('records: P2-4 member stamped on a non-live house DENIED read', getDoc(doc(db.demoMember, 'sites/demoStamped/items/r1')), false);
+  await INV('records: P2-4 member stamped on a non-live house DENIED write', setDoc(doc(db.demoMember, 'sites/demoStamped/items/i6'), { x: 1 }), false);
 
   /* pmts read: server allows ANY member (incl. sub) to read money records; price hiding is display-only */
   await GAP(HARD ? 'MONEY: sub pmts read now DENIED at API level' : 'MONEY: sub CAN read pmts records at API level (price hiding is client-side only)',
@@ -266,8 +304,42 @@ async function main() {
   await INV('invites: update touching other fields denied',
     updateDoc(doc(db.builder, 'invites/SECRETCODE1'), { trade: 'elec' }), false);
   await INV('invites: delete denied', deleteDoc(doc(db.builder, 'invites/SECRETCODE1')), false);
-  await INV('claims: create own uid allowed',
-    setDoc(doc(db.sub, `invites/SECRETCODE1/claims/${U.sub}`), { at: 1 }), true);
+  await INV('invites: create with claimed already set denied',
+    setDoc(doc(db.builder, 'invites/NEWCODE3'), { createdBy: U.builder, site: 'liveA', claimed: true }), false);
+  /* Option B must never widen reads on invites/{code}: signed out still gets nothing. */
+  await INV('invites: option B - unauth still DENIED get of an open invite', getDoc(doc(db.unauth, 'invites/OPENCODE2')), false);
+  await INV('invites: option B - unauth still DENIED list', getDocs(collection(db.unauth, 'invites')), false);
+
+  /* ══════════ N-2: one code, one person ══════════ */
+  const claimBatch = (d, code, who) => {
+    const b = writeBatch(d);
+    b.update(doc(d, `invites/${code}`), { claimed: true, claimedAt: 1 });
+    b.set(doc(d, `invites/${code}/claims/${who}`), { name: who, t: 1 });
+    return b.commit();
+  };
+  await INV('claims: N-2 a bare claim that does not mark the code used is DENIED',
+    setDoc(doc(db.sub, `invites/CLAIMCODE5/claims/${U.sub}`), { at: 1 }), false);
+  await INV('claims: N-2 claim + mark used in one batch allowed (first person)',
+    claimBatch(db.sub, 'CLAIMCODE5', U.sub), true);
+  await INV('claims: N-2 second person DENIED - the code is used',
+    claimBatch(db.client, 'CLAIMCODE5', U.client), false);
+  await INV('claims: N-2 second person DENIED a bare claim too',
+    setDoc(doc(db.client, `invites/CLAIMCODE5/claims/${U.client}`), { at: 1 }), false);
+  await INV('invites: N-2 joiner cannot mark the code unused again',
+    updateDoc(doc(db.sub, 'invites/CLAIMCODE5'), { claimed: false }), false);
+  await INV('invites: N-2 builder cannot mark the code unused again',
+    updateDoc(doc(db.builder, 'invites/CLAIMCODE5'), { claimed: false }), false);
+  await INV('invites: N-2 stranger DENIED marking a code used without claiming it',
+    updateDoc(doc(db.stranger, 'invites/CLAIMCODE6'), { claimed: true, claimedAt: 1 }), false);
+  await INV('invites: N-2 joiner DENIED touching other fields while claiming', (() => {
+    const b = writeBatch(db.client);
+    b.update(doc(db.client, 'invites/CLAIMCODE6'), { claimed: true, claimedAt: 1, role: 'team' });
+    b.set(doc(db.client, `invites/CLAIMCODE6/claims/${U.client}`), { t: 1 });
+    return b.commit();
+  })(), false);
+  await INV('claims: N-2 a revoked code cannot be claimed',
+    claimBatch(db.client, 'SECRETCODE1', U.client), false);
+  await INV('claims: N-2 an already-used code cannot be claimed', claimBatch(db.client, 'USEDCODE3', U.client), false);
   await INV('claims: create under someone else\'s uid denied',
     setDoc(doc(db.stranger, `invites/SECRETCODE1/claims/${U.sub}`), { at: 1 }), false);
   await INV('claims: update denied (immutable)',
@@ -288,6 +360,43 @@ async function main() {
   await INV('claims: signed-out DENIED read', getDoc(doc(db.unauth, `invites/SECRETCODE1/claims/${U.sub}`)), false);
   await INV('claims: stranger DENIED list', getDocs(collection(db.stranger, 'invites/SECRETCODE1/claims')), false);
   await INV('claims: another builder DENIED list', getDocs(collection(db.builder2, 'invites/SECRETCODE1/claims')), false);
+
+  /* ══════════ INVITE PREVIEWS (option B) ══════════ */
+  await INV('previews: signed-out get by exact code allowed (join screen before sign-up)',
+    getDoc(doc(db.unauth, 'invitePreviews/OPENCODE2')), true);
+  await INV('previews: signed-in get by exact code allowed', getDoc(doc(db.stranger, 'invitePreviews/OPENCODE2')), true);
+  await INV('previews: holds only the builder name and the street', (async () => {
+    const snap = await getDoc(doc(db.unauth, 'invitePreviews/OPENCODE2'));
+    const keys = Object.keys(snap.data() || {}).sort().join(',');
+    if (keys !== 'builder,street') throw new Error('preview fields: ' + keys);
+  })(), true);
+  await INV('previews: signed-out LIST denied', getDocs(collection(db.unauth, 'invitePreviews')), false);
+  await INV('previews: signed-in LIST denied', getDocs(collection(db.stranger, 'invitePreviews')), false);
+  await INV('previews: builder LIST denied', getDocs(collection(db.builder, 'invitePreviews')), false);
+  await INV('previews: used code - preview unreadable', getDoc(doc(db.unauth, 'invitePreviews/USEDCODE3')), false);
+  await INV('previews: revoked code - preview unreadable', getDoc(doc(db.unauth, 'invitePreviews/REVOKED4')), false);
+  await INV('previews: no invite behind the code - unreadable', getDoc(doc(db.unauth, 'invitePreviews/NOSUCHCODE')), false);
+  await INV('previews: sender creates one with builder + street',
+    setDoc(doc(db.builder, 'invitePreviews/PREVCODE7'), { builder: 'Calder Homes', street: '9 Oak Ave' }), true);
+  await INV('previews: a third field is refused',
+    setDoc(doc(db.builder, 'invitePreviews/CLAIMCODE6'), { builder: 'Calder Homes', street: '9 Oak Ave', siteId: 'liveA' }), false);
+  await INV('previews: the creator uid is refused',
+    setDoc(doc(db.builder, 'invitePreviews/CLAIMCODE6'), { builder: 'Calder Homes', street: '9 Oak Ave', createdBy: U.builder }), false);
+  await INV('previews: a missing field is refused',
+    setDoc(doc(db.builder, 'invitePreviews/CLAIMCODE6'), { builder: 'Calder Homes' }), false);
+  await INV('previews: a non-text field is refused',
+    setDoc(doc(db.builder, 'invitePreviews/CLAIMCODE6'), { builder: 'Calder Homes', street: { siteId: 'liveA' } }), false);
+  await INV('previews: another builder DENIED creating one for an invite they did not send',
+    setDoc(doc(db.builder2, 'invitePreviews/CLAIMCODE6'), { builder: 'Other', street: '1 Main' }), false);
+  await INV('previews: stranger DENIED creating one', setDoc(doc(db.stranger, 'invitePreviews/CLAIMCODE6'), { builder: 'X', street: 'Y' }), false);
+  await INV('previews: signed-out DENIED creating one', setDoc(doc(db.unauth, 'invitePreviews/CLAIMCODE6'), { builder: 'X', street: 'Y' }), false);
+  await INV('previews: no preview without an invite behind it',
+    setDoc(doc(db.builder, 'invitePreviews/NOSUCHCODE'), { builder: 'X', street: 'Y' }), false);
+  await INV('previews: update denied (write once)',
+    setDoc(doc(db.builder, 'invitePreviews/PREVCODE7'), { builder: 'Calder Homes', street: '10 Oak Ave' }), false);
+  await INV('previews: stranger DENIED delete', deleteDoc(doc(db.stranger, 'invitePreviews/PREVCODE7')), false);
+  await INV('previews: another builder DENIED delete', deleteDoc(doc(db.builder2, 'invitePreviews/PREVCODE7')), false);
+  await INV('previews: sender deletes it (revoke)', deleteDoc(doc(db.builder, 'invitePreviews/PREVCODE7')), true);
 
   /* ══════════ ORGS ══════════ */
   await INV('orgs: member reads', getDoc(doc(db.builder, 'orgs/org1')), true);
@@ -341,6 +450,7 @@ async function main() {
     await uploadBytes(ref(s, 'demo/sites/demo1/photos/seed1'), png, meta);
     await uploadBytes(ref(s, 'live/sites/liveB/docs/seed1'), png, meta);
     await uploadBytes(ref(s, 'live/sites/liveA/costs/receipt1'), png, meta);
+    await uploadBytes(ref(s, 'live/sites/demoStamped/photos/seed1'), png, meta);
   });
 
   await INV('storage: member uploads image to live site', uploadBytes(ref(st.builder, 'live/sites/liveA/photos/u1'), png, meta), true);
@@ -357,6 +467,11 @@ async function main() {
   await INV('storage: builder DENIED demo upload (closed)', uploadBytes(ref(st.builder, 'demo/sites/demo1/photos/u6b'), png, meta), false);
   await INV('storage: unauth DENIED demo read', getBytes(ref(st.unauth, 'demo/sites/demo1/photos/seed1')), false);
   await INV('storage: path outside demo|live denied', uploadBytes(ref(st.builder, 'sites/liveA/photos/u7'), png, meta), false);
+  /* P2-4: files follow the house - a non-live house doc never opens its file path. */
+  await INV('storage: P2-4 member stamped on a non-live house DENIED upload',
+    uploadBytes(ref(st.demoMember, 'live/sites/demoStamped/photos/u8'), png, meta), false);
+  await INV('storage: P2-4 member stamped on a non-live house DENIED read',
+    getBytes(ref(st.demoMember, 'live/sites/demoStamped/photos/seed1')), false);
   await INV('storage: builder reads costs receipt', getBytes(ref(st.builder, 'live/sites/liveA/costs/receipt1')), true);
   await INV('storage: builder uploads costs receipt', uploadBytes(ref(st.builder, 'live/sites/liveA/costs/r2'), png, meta), true);
   await INV('storage: stranger DENIED costs receipt', getBytes(ref(st.stranger, 'live/sites/liveA/costs/receipt1')), false);

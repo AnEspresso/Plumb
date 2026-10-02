@@ -2599,6 +2599,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
             <button class="la-link btn btn-quiet" onclick="liveSignOut()">Sign out</button>
           </div>
           <div id="laForm">
+            <div class="la-signed" id="laInvitePreview" style="display:none"></div>
             <div class="la-fld" id="laNameRow" style="display:none"><input id="laName" placeholder="Your name" autocomplete="name"></div>
             <div class="la-fld"><input id="laEmail" type="email" placeholder="Email" autocomplete="email"></div>
             <div class="la-fld"><input id="laPass" type="password" placeholder="Password" autocomplete="current-password"></div>
@@ -2614,7 +2615,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
             <div class="la-hint ta-c" id="laJoinLine">Homeowners and crews join from the text their builder sends.</div>
             <div class="la-hint ta-c" id="laJoinHint" style="display:none">This invite already sets who you are.</div>
             <div class="la-fld" id="laInviteRow" style="display:none">
-              <input id="laInvite" placeholder="Invite code (e.g. PB-XXXXXXX)" autocapitalize="characters" autocomplete="off" oninput="syncInviteSignupChrome()">
+              <input id="laInvite" placeholder="Invite code (e.g. PB-XXXXXXXXXX)" autocapitalize="characters" autocomplete="off" oninput="syncInviteSignupChrome()">
               <button class="la-link mt-2 ml-0 mr-0 mb-0 fs-xs btn btn-quiet" type="button" onclick="lainvPaste()">Paste code</button>
               <div class="la-hint">From your builder — joins you to their job site as the crew or homeowner.</div>
             </div>
@@ -3928,15 +3929,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.446.0 - Money due counts invoices only, one house header for every role';
+const PLUMB_VERSION='2.447.0 - Invite codes are single use and show the house before sign-up';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790977621969;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.446.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790982578552;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.447.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5842,6 +5843,7 @@ async function mintTeamInvite(){
   const payload={code,role:'team',siteId:'',name:'',trade:'',setup:!!d.setup,mode:'live',createdBy:Sync.uid||'',t:Date.now(),rpRole:d.rpRole,gates:Object.assign({},d.gates)};
   try{await Sync.db.collection('invites').doc(code).set(payload);}
   catch(e){toast('Could not create invite — check connection');return;}
+  writeInvitePreview(code,null);
   const ti=laTeamInvites();ti.push({code,t:Date.now(),status:'open',setup:!!d.setup,rpRole:d.rpRole,gates:Object.assign({},d.gates)});laSaveTeamInvites(ti);
   try{watchClaims();}catch(e){}
   logEvent('inviteCreated','team · '+(d.rpRole||''));
@@ -6506,7 +6508,7 @@ function removeHomeownerMember(){
   const uid=inv&&inv.uid;
   confirmDelete({title:'Remove homeowner access?',body:'The homeowner loses the portal for <b>'+esc(p.street||p.name)+'</b> the next time that phone syncs.',onConfirm:()=>{
   if(uid&&p.members&&p.members[uid]){delete p.members[uid];if(p.memberInfo)delete p.memberInfo[uid];}
-  if(inv)inv.status='revoked';
+  if(inv){inv.status='revoked';cloudCloseInvite(inv.code);}
   persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}logEvent('memberRemoved','client');toast('Homeowner access removed');
   try{renderPeople();}catch(e){}}});}
 /* Per-site homeowner actions for the general Homeowners panel (item 14). They
@@ -7960,6 +7962,7 @@ function __renderPeople(){
 async function revokeInvite(code){
   confirmDelete({title:'Revoke invite?',body:'The code stops working immediately. Anyone who hasn\u2019t joined yet won\u2019t be able to.',onConfirm:async()=>{
   try{if(Sync.ready())await Sync.db.collection('invites').doc(code).set({revoked:true,revokedAt:Date.now()},{merge:true});}catch(e){toast('Couldn\u2019t reach the cloud — try again');return;}
+  dropInvitePreview(code);
   const ti=laTeamInvites();ti.forEach(i=>{if(i.code===code)i.status='revoked';});laSaveTeamInvites(ti);
   logEvent('inviteRevoked','team');toast('Invite revoked');
   try{renderPeople();}catch(e){}try{if(document.getElementById('setupScrim').classList.contains('show'))renderSetup();}catch(e){}}});}
@@ -7972,7 +7975,37 @@ function showInviteCode(code,who){
     +'<button class="b1 b-go w-full mt-3 btn btn-primary" onclick="shareInvite(\''+code+'\')">Share</button>'
     +'<p class="c-ink-3 fs-xs mt-3 ml-0 mr-0 mb-0 ta-c">'+esc(who||'Invite')+'</p>',true);
 }
-function genInviteCode(){return 'PB-'+Math.random().toString(36).slice(2,6).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase();}
+/* N-1 (Release D): PB- plus 10 characters from a 32-letter alphabet with no
+   0/O or 1/I, drawn with crypto.getRandomValues (50 bits; 256 is a multiple of
+   32, so no letter is favored). Old 7-character codes still redeem: lookup is
+   by the exact code. */
+const INVITE_ALPHABET='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function genInviteCode(){const a=new Uint8Array(10);crypto.getRandomValues(a);
+  let s='';for(let i=0;i<a.length;i++)s+=INVITE_ALPHABET[a[i]&31];
+  return 'PB-'+s;}
+/* Invite option B (Release D): invitePreviews/{code} holds only the builder's
+   name and the street, so the join screen can show whose house it is before
+   the person signs up. invites/{code} stays signed-in only. Best-effort: an
+   invite without a preview still works; the screen just shows less. */
+function invitePreviewFields(p){
+  let b='';try{b=String((orgPrefs()||{}).company||'').trim();}catch(e){}
+  if(!b){try{b=String((laProfile()||{}).name||'').trim();}catch(e){}}
+  const st=p?String(p.street||p.name||'').trim():'';
+  return {builder:b.slice(0,80),street:st.slice(0,120)};}
+function writeInvitePreview(code,p){
+  try{if(!Sync.ready()||!code)return Promise.resolve(false);
+    return Sync.db.collection('invitePreviews').doc(String(code)).set(invitePreviewFields(p)).then(function(){return true;},function(){return false;});}
+  catch(e){return Promise.resolve(false);}}
+function dropInvitePreview(code){
+  try{if(!Sync.ready()||!code)return Promise.resolve(false);
+    return Sync.db.collection('invitePreviews').doc(String(code)).delete().then(function(){return true;},function(){return false;});}
+  catch(e){return Promise.resolve(false);}}
+/* Taking a person or crew off a house closes their code in the cloud too, so
+   it cannot be used later and its preview goes. Best-effort, quiet. */
+function cloudCloseInvite(code){
+  try{if(!Sync.ready()||!code)return;
+    Sync.db.collection('invites').doc(String(code)).set({revoked:true,revokedAt:Date.now()},{merge:true}).catch(function(){});
+    dropInvitePreview(code);}catch(e){}}
 async function createInvite(role,subId,opts){opts=opts||{};
   if(appMode()!=='real'){toast('Invites work in Live mode');return;}
   if(!Sync.ready()){toast('Connect sync first (workbench)');return;}
@@ -7990,6 +8023,7 @@ async function createInvite(role,subId,opts){opts=opts||{};
   const code=genInviteCode();
   try{await Sync.db.collection('invites').doc(code).set({code,role,siteId:String(p.id),subId:subId2,name,trade,mode:'live',createdBy:Sync.uid||'',t:Date.now()});}
   catch(e){toast('Couldn\u2019t create invite — check connection');return;}
+  writeInvitePreview(code,p);
   p.invites=p.invites||[];p.invites.push({code,role,siteId:String(p.id),subId:subId2,name,trade,t:Date.now(),status:'open'});persist();
   try{watchClaims();}catch(e){}
   logEvent('inviteCreated',role+' · '+(name||'homeowner'));
@@ -8051,7 +8085,20 @@ async function redeemInvite(code,prof,err){
     if(!doc.exists){err('That invite code wasn\u2019t found — double-check it with your builder.');return false;}
     const inv=doc.data()||{};
     if(inv.revoked){err('Your builder canceled that code. Ask them for a new one.');return false;}
-    await db.collection('invites').doc(code).collection('claims').doc(prof.uid).set({name:prof.name||'',email:prof.email||'',rpRole:prof.rpRole||'',t:Date.now()});
+    /* N-2 (Release D): one code, one person. Your own earlier claim (another
+       phone, a reinstall) still lets you back in; anyone else's does not. */
+    const iref=db.collection('invites').doc(code);
+    const mine=iref.collection('claims').doc(prof.uid);
+    let had=false;try{const c=await mine.get();had=!!(c&&c.exists);}catch(e){}
+    if(!had){
+      if(inv.claimed===true){err('That code was already used. Ask your builder for a new one.');return false;}
+      const claim={name:prof.name||'',email:prof.email||'',rpRole:prof.rpRole||'',t:Date.now()};
+      try{const b=db.batch();b.update(iref,{claimed:true,claimedAt:Date.now()});b.set(mine,claim);await b.commit();}
+      catch(e){
+        if(!(e&&e.code==='permission-denied'))throw e;
+        await mine.set(claim);   // rules from before Release D: the plain claim still works there; once they are live it is refused
+      }
+    }
     const role=inv.role==='client'?'client':(inv.role==='team'?'team':'sub');
     return {code,siteId:String(inv.siteId||''),role,trade:inv.trade||'',name:inv.name||'',setup:!!inv.setup,rpRole:inv.rpRole||'',gates:inv.gates||null};
   }catch(e){trapError('caught',e&&(e.code||e.message),'redeemInvite');err(authPlain(e,'Couldn\u2019t check that code right now. Try again in a minute.'));return false;}
@@ -8062,7 +8109,7 @@ async function redeemInvite(code,prof,err){
    company: one account is one role, so they're pointed to another email. */
 function openJoinCode(){
   showInfo('I have an invite code','<p class="mt-0 ml-0 mr-0 mb-2">Enter the code your builder sent you.</p>'
-    +'<input id="jcCode" class="w-full" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Invite code (e.g. PB-XXXXXXX)" onkeydown="if(event.key===\'Enter\')joinCodeSubmit()">'
+    +'<input id="jcCode" class="w-full" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Invite code (e.g. PB-XXXXXXXXXX)" onkeydown="if(event.key===\'Enter\')joinCodeSubmit()">'
     +'<div id="jcErr" class="la-err mt-2" style="display:none"></div>'
     +'<button id="jcGo" class="b1 b-go w-full mt-3 btn btn-primary" onclick="joinCodeSubmit()">Join</button>');
   setTimeout(()=>{try{document.getElementById('jcCode').focus();}catch(e){}},250);}
@@ -14706,7 +14753,37 @@ function inviteJoinLabel(r){
   if(r==='team')return 'You\u2019re joining the builder\u2019s team.';
   return 'This invite already sets who you are.';
 }
+/* Invite option B: before sign-up, show whose house this is. Read by exact
+   code from invitePreviews (builder name + street only). No preview (an old
+   invite, a used or canceled code, no signal): the screen stays as it was. */
+let _invPrevCode='',_invPrevT=null;
+function invPreviewText(pv){
+  const b=String((pv&&pv.builder)||'').trim(),st=String((pv&&pv.street)||'').trim();
+  if(b&&st)return b+' invited you to '+st+'.';
+  if(st)return 'You\u2019re invited to '+st+'.';
+  if(b)return b+' invited you.';
+  return '';}
+function invPreviewShow(txt){const e=document.getElementById('laInvitePreview');if(!e)return;e.textContent=txt||'';e.style.display=txt?'':'none';}
+function invPreviewLoad(code){
+  code=String(code||'').trim().toUpperCase();
+  if(code===_invPrevCode)return;
+  _invPrevCode=code;clearTimeout(_invPrevT);invPreviewShow('');
+  if(!/^[A-Z0-9-]{6,40}$/.test(code))return;
+  const t0=Date.now();
+  const look=function(){
+    if(_invPrevCode!==code)return;
+    /* sync's connection once it is up (it opens the offline store first); after
+       a few seconds without it, the same signed-out reader packet links use */
+    const db=(typeof Sync!=='undefined'&&Sync.db)?Sync.db:(Date.now()-t0>4000?_pkDb():null);
+    if(!db){if(Date.now()-t0<20000)_invPrevT=setTimeout(look,200);return;}
+    db.collection('invitePreviews').doc(code).get().then(function(d){
+      if(_invPrevCode!==code)return;
+      invPreviewShow(d&&d.exists?invPreviewText(d.data()||{}):'');
+    },function(){});};
+  _invPrevT=setTimeout(look,code.length>=13?0:450);}
 function syncInviteSignupChrome(){
+  const _ic=(((document.getElementById('laInvite')||{}).value||'').trim())||(typeof invPendingCode==='function'?invPendingCode():'');
+  try{invPreviewLoad(_ic);}catch(e){}
   const has=!!(((document.getElementById('laInvite')||{}).value||'').trim()||(typeof invPendingCode==='function'&&invPendingCode()));
   const roleRow=document.getElementById('laRoleRow');
   const hint=document.getElementById('laJoinHint');
@@ -15330,7 +15407,7 @@ function editSubFromDetail(){const id=_detailSubId;closeSubDetail();if(id)openEd
 function removeSub(id){const s=P().subs.find(x=>x.id===id);if(!s)return;
   confirmDelete({title:'Remove '+s.name+'?',body:'Removes <b>'+esc(s.name)+'</b> ('+esc(specLabel(s.specialty))+') from this house\u2019s crew list. Their logged records stay. This can\u2019t be undone.',onConfirm:()=>{
   try{const p=P();const inv=(p.invites||[]).find(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked');
-    if(inv){if(inv.uid&&p.members&&p.members[inv.uid]){delete p.members[inv.uid];if(p.memberInfo)delete p.memberInfo[inv.uid];}inv.status='revoked';}}catch(e){}
+    if(inv){if(inv.uid&&p.members&&p.members[inv.uid]){delete p.members[inv.uid];if(p.memberInfo)delete p.memberInfo[inv.uid];}inv.status='revoked';cloudCloseInvite(inv.code);}}catch(e){}
   Data.removeSub(id);try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}logEvent('subRemoved',s.name);renderBuild();toast('Removed');}});}
 
 /* site-ready picker */

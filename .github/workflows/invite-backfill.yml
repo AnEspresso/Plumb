@@ -1,0 +1,33 @@
+name: Backfill invites for Release D (one time)
+# Stamps claimed:true on invites that were already used, and writes the
+# builder + street preview for invites that are still open. Dry run unless
+# confirm is 1. Run once after the Release D rules are published.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 1 to write, otherwise dry run
+        required: true
+        default: "0"
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Auth with the Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+      - name: Backfill
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          BACKFILL_CONFIRM: ${{ github.event.inputs.confirm }}
+        run: |
+          set -euo pipefail
+          npm i --no-audit --no-fund firebase-admin >/dev/null
+          node scripts/invite-backfill.mjs

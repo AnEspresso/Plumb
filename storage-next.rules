@@ -21,8 +21,10 @@ service firebase.storage {
         return firestore.get(/databases/(default)/documents/sites/$(siteId)).data;
       }
       function role() { return site().members[request.auth.uid]; }
+      /* P2-4 (Release D): files follow the house. A house that is not live is closed. */
       function isMember() {
-        return signedIn() && site().members != null && role() != null;
+        return signedIn() && site().get('mode', '') == 'live'
+               && site().members != null && role() != null;
       }
       function kindOk() { return kind != 'costs' || role() == 'builder'; }
       allow read:  if isMember() && kindOk();

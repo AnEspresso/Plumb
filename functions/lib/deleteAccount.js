@@ -96,6 +96,12 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email) {
     } catch (e) {}
   }
 
+  /* 5b · join-screen previews of invites they sent (they carry the builder's name) */
+  try {
+    const sent = await db.collection('invites').where('createdBy', '==', uid).get();
+    for (const d of sent.docs) await db.collection('invitePreviews').doc(d.id).delete();
+  } catch (e) {}
+
   /* 6 · profile doc (name, email, push tokens live here) */
   try { await db.collection('users').doc(uid).delete(); } catch (e) {}
 
