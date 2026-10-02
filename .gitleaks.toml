@@ -1,0 +1,25 @@
+# Secret scan for SitePlumb (run in CI by .github/workflows/secret-scan.yml).
+# Uses gitleaks' built-in rules (API keys, tokens, private keys) plus one rule
+# for written-down passwords, which is how QA passwords once leaked into
+# HANDOFF.md. Never put a credential in any repo file: secrets live only in
+# GitHub Secrets and the untracked .secrets/ folder.
+title = "SitePlumb secret scan"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "written-password"
+description = "A password written next to a label, or after an email address with a slash"
+regex = '''(?i)\b(?:password|passwd|pwd)\b\s*["'`]?\s*[:=]\s*["'`]([^"'`\s]{8,})["'`]|[\w.+-]+@[\w-]+\.[\w.]+`?\s*/\s*`([^`\s]{6,})`'''
+keywords = ["pass", "pwd", "@"]
+[rules.allowlist]
+regexes = ['''(?i)^(?:current|new)-password$|^[*]+$|\$\{''']
+
+[allowlist]
+description = "Public-by-design keys, and an archived old build"
+regexes = [
+  '''AIza[0-9A-Za-z_-]{35}''',                     # Firebase web API key (public)
+  '''BO8LtWn5UFruEvCqBbl_Ghl2gUJr-aClDyegoZmPlEj1fx9W6L5mXMXwdEpl6syqYCpMDF1pJo3_UZaHl05D87s''', # VAPID public key
+]
+paths = ['''^app/restore-2\.319\.0-full-site/''']
