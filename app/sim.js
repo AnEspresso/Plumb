@@ -1415,7 +1415,8 @@ t('the briefing keeps field schedule selections money and the desk', (function()
 })());
 t('the house briefing does not repeat the street', $("String(houseHTML)").indexOf('This job')<0&&$("String(houseHTML)").indexOf('pkt-head')<0);
 t('rooms on the house are doors not a second inbox', $("String(houseHTML)").indexOf('hs-doors')>=0&&$("String(houseHTML)").indexOf("Read and close old lines")<0&&$("String(houseHTML)").indexOf("This house</div>")<0);
-t('money is one sentence', $("String(houseMoneyLine)").indexOf('Contracted')>=0&&$("String(houseMoneyLine)").indexOf('billed')>=0);
+t('money is one sentence', $("String(houseMoneyLine)").indexOf("'Contract '")>=0&&$("String(houseMoneyLine)").indexOf("' · paid '")>=0&&$("String(houseMoneyLine)").indexOf('billed')<0);
+t('money line reads contract, paid, left', (function(){const r=$("(function(){const p=state.projects.find(x=>{const b=billingSummary(x);return b.net>0&&b.paid>0;});if(!p)return null;const b=billingSummary(p);return [houseMoneyLine(p),'Contract '+invUsd(b.net)+' · paid '+invUsd(b.paid)+' · left '+invUsd(Math.max(0,b.net-b.paid))];})()");return !!r&&r[0]===r[1];})());
 t('settings leads with company', $("String(renderSettings)").indexOf("<h2>Company</h2>")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
 t('house doors stay two across', $("document.documentElement.innerHTML").indexOf('hs-doors{grid-template-columns:repeat(3')<0&&$("String(houseHTML)").indexOf('hs-door wide')>=0);
@@ -1434,6 +1435,7 @@ t('Replay starts voice on the tap', $("String(replayTour)").indexOf('setTimeout'
 t('Glad you are here stages the book', $("String(tourSceneRect)").indexOf('ovSortRow')>=0);
 t('tour camera opens Field Notes not the house picker', $("String(openLogPick)").indexOf('tourOpenFieldNote')>=0 && $("String(tourOpenFieldNote)").indexOf("classList.add('show')")>=0);
 t('homeowner briefing uses house doors', $("String(renderClient)").indexOf('On this house')>=0 && $("String(renderClient)").indexOf('The rest of this house')>=0);
+t('crew house is one 2x2 door grid, no Still open', (function(){$("window.__ksv=state.session;window.__kss=subSel;window.__kst=subTab");const h=subSiteHTML('Clearwater Plumbing','p2');$("state.session=window.__ksv;subSel=window.__kss;subTab=window.__kst");const g=h.split('hs-doors').length-1;const i=h.indexOf('hs-doors');const grid=h.slice(i,h.indexOf('</div></button></div>',i));return g===1&&(grid.match(/class="hs-door"/g)||[]).length===4&&h.indexOf('The rest of this house')<0&&h.indexOf('Still open')<0&&h.indexOf('pkt-strip')>=0;})());
 t('crew briefing uses house doors', $("String(renderSubView)").indexOf('On this house')>=0 && $("String(renderSubView)").indexOf('Your packet')>=0);
 t('add-a-crew save stays Save after a hit', $("String(subAfterHit)").indexOf("save.textContent='Save'")>=0);
 t('book-a-day names the other house even when days do not overlap', $("String(bkRenderOverlap)").indexOf('Also on')>=0&&$("String(bkRenderOverlap)").indexOf('Not the same days')>=0);
@@ -2947,6 +2949,7 @@ S('release-f');
 t('wording: homeowner packet speaks homeowner, builder packet unchanged',$("(function(){const keep=state.session;const p=state.projects.find(x=>x.id==='p8');state.session={role:'client',site:'p8',name:'Jordan'};const h=packetHTML(p,'framing');state.session={role:'builder',name:'You'};const b=packetHTML(p,'framing');state.session=keep;return h.indexOf('install packet')<0&&h.indexOf('Ready for the crew')>=0&&h.indexOf('Ready for this trade')<0&&h.indexOf('<b>Not approved yet.</b> The crew shouldn')>=0&&h.indexOf('Do not install')<0&&b.indexOf('Framing install packet')>=0&&b.indexOf('Ready for this trade')>=0&&b.indexOf('<b>Do not install.</b>')>=0;})()"));
 t('wording: homeowner specs-changed banner and approved state',SRC.indexOf("<b>Specs changed,</b> so the final OK was cleared. Review and approve again. The crew shouldn\\u2019t start until you and your builder have both approved.")>=0&&SRC.indexOf("'\u2713 Approved':'Approve'")>=0);
 t('wording: no console.log left in the app',!/console\.log\(/.test(SRC));
+t('demo builder is the example company contractor, not a placeholder', SRC.indexOf("name:'Demo Builder'")<0&&(SRC.match(/setSession\(\{role:'builder',name:EMPLOYEES\[0\]\.name\}\)/g)||[]).length===2&&$("EMPLOYEES[0].role")==='Contractor');
 t('wording: the demo header does not repeat the role',(function(){$("(function(){try{Data.setSession({role:'builder',name:'Demo Builder'});renderOverview();}catch(e){}})()");return $("document.getElementById('ovWho').textContent")==='Demo Builder';})());
 t('wording: the crew packet door leads the house, one dates block',(function(){const f=$("String(renderSubView)");return f.indexOf('id=\"svPacket\"')>=0&&f.indexOf('id=\"svPacket\"')<f.indexOf('subCapture(')&&f.indexOf('Next on this house')<0;})());
 

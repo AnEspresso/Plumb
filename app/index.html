@@ -3930,15 +3930,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.450.0 - Homeowner packet words: approve, ready for the crew, switch page heading';
+const PLUMB_VERSION='2.451.0 - Crew house grid, no duplicate dates, Money line, demo builder name';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790999129190;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.450.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791026838771;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.451.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8691,11 +8691,11 @@ function houseGoNext(){
 function houseMoneyLine(p){
   try{
     const b=billingSummary(p);
-    const contracted=Number(b.net)||0;
-    const billed=Number(b.billed)||0;
+    const contract=Number(b.net)||0;
+    const paid=Number(b.paid)||0;
     const left=Math.max(0,Number(b.out)||0);
-    if(contracted>0.005||billed>0.005)
-      return 'Contracted '+invUsd(contracted)+' · billed '+invUsd(billed)+' · left '+invUsd(left);
+    if(contract>0.005||paid>0.005)
+      return 'Contract '+invUsd(contract)+' · paid '+invUsd(paid)+' · left '+invUsd(left);
     const cs=costSummary(p);
     if((Number(cs.budget)||0)>0.005)
       return (cs.over?'Over budget · ':'On budget · ')+invUsd(Math.abs(cs.remaining))+(cs.over?' over':' left');
@@ -10392,22 +10392,10 @@ function renderSubView(){
   else meta.push('You will see a notice here when this house is ready for '+tr.label);
   let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   h+=buildBriefRowHTML(p);
-  const facts=[];
-  needConfirm.forEach(function(b){facts.push({k:fmtWin(b),m:'Confirm, change dates, or say you cannot make it',go:'svBkConfirm(\''+p.id+'\',\''+b.id+'\')'});});
-  open.forEach(function(it){facts.push({k:it.cap||'Open item',m:areaText(it.area)||tr.label,go:''});});
-  if(facts.length){
-    h+='<div class="pkt-open"><div class="h">Still open</div>';
-    facts.forEach(function(it){
-      h+='<div class="pkt-or"'+(it.go?(' onclick="'+it.go+'"'):'')+'><div><div class="k">'+esc(it.k)+'</div>'+(it.m?('<div class="m">'+esc(it.m)+'</div>'):'')+'</div><span class="td-chev">\u203a</span></div>';
-    });
-    h+='</div>';
-  }
   h+='<div class="hs-band">On this house</div><div class="hs-doors">';
   h+='<button class="hs-door" id="svPacket" onclick="openSubPacket(\''+p.id+'\',\''+tr.id+'\')"><div class="k">Your packet</div><div class="m">Install specs and drawings</div></button>';
   h+='<button class="hs-door" onclick="subCapture(\''+p.id+'\')"><div class="k">Field Notes</div><div class="m">Post an update</div></button>';
   h+='<button class="hs-door" onclick="subGo(\'selections\')"><div class="k">Selections</div><div class="m">Finishes on your scope</div></button>';
-  h+='</div>';
-  h+='<div class="hs-band">The rest of this house</div><div class="hs-doors">';
   h+='<button class="hs-door" onclick="subGo(\'docs\')"><div class="k">Documents</div><div class="m">What you need on site</div></button>';
   h+='</div>';
   if(_svBookings.length){
@@ -11381,7 +11369,7 @@ function enterDemo(opts){
      visit still persist for that visit; the next entry starts fresh. */
   state=sampleState();
   if(!opts.skipPersist)try{persist();}catch(e){}
-  Data.setSession({role:'builder',name:'Demo Builder'});
+  Data.setSession({role:'builder',name:EMPLOYEES[0].name});
   state.activeId=state.activeId||((state.projects[0]||{}).id)||null;
   try{const p2=(state.projects||[]).find(p=>String(p.id)==='p2');
     if(p2){if(Array.isArray(p2.items))p2.items=p2.items.filter(it=>!it.tour);
@@ -11478,7 +11466,7 @@ function demoRole(r){
     const roster=pr.subs||[];
     const pick=roster.find(x=>x.specialty==='plumb')||roster.find(x=>x.cleared)||roster[0]||{};
     Data.setSession({role:'subs',name:pick.name||'Clearwater Plumbing'});showSubView();try{openSubSite(sid);}catch(e){}}
-  else{Data.setSession({role:'builder',name:'Demo Builder'});renderAll();showOverview();}
+  else{Data.setSession({role:'builder',name:EMPLOYEES[0].name});renderAll();showOverview();}
   excRoles();
 }
 function excRoles(){
