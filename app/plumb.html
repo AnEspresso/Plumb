@@ -3930,15 +3930,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.449.0 - Wording pass: one example build name, plainer homeowner words, Needs you';
+const PLUMB_VERSION='2.450.0 - Homeowner packet words: approve, ready for the crew, switch page heading';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790997272874;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.449.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790999129190;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.450.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -13206,7 +13206,7 @@ function renderClient(){
             <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
             ${selTimelineRO(s)}
           </div>
-          ${s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Signed':'Approve'}</button>`}
+          ${s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Approved':'Approve'}</button>`}
         </div>`;}).join('');
     }).join(''):'<div class="empty">No selections recorded yet.</div>';
     h+='<div class="sec" id="clMoney"><h2>Costs & payments</h2><button type="button" class="sec-act" onclick="toggleClientMoney()">'+(_clientMoneyOpen?'Hide':esc(costs.line))+'</button></div>';
@@ -16761,14 +16761,14 @@ function packetHTML(p,tradeId,subId){
   const permName=PK_PERMIT[tradeId];
   const perm=permName&&(p.permits||[]).find(function(x){return x.name===permName;});
   const ik=PK_INSP[tradeId];const iv=ik&&(p.inspections||{})[ik];
-  let stripSt=gaps.length? (gaps.length+' still open') : (siteOk?'Ready for this trade':'Specs confirmed \u2014 site not marked ready');
+  let stripSt=gaps.length? (gaps.length+' still open') : (isClient?(siteOk?'Ready for the crew':'Specs are set. The house isn\u2019t ready for the crew yet.'):(siteOk?'Ready for this trade':'Specs confirmed \u2014 site not marked ready'));
   const meta=[];
   if(bkWin)meta.push((isClient?tl+' scheduled':'Scheduled')+' '+fmtWin(bkWin)+(bkWin.note?(' \u2014 '+bkWin.note):''));
   else meta.push('No dates on the calendar');
   if(due)meta.push(due.label+' \u00b7 answers due '+fmtDue(due.ts));
   if(perm)meta.push(permName+': '+perm.status);
   else if(permName&&isBuilder)meta.push(permName+' not on the board');
-  if(iv)meta.push((PK_INSP_LBL[ik]||ik)+': '+iv);
+  if(iv)meta.push((isClient&&ik==='roughin'?'In-wall inspection':(PK_INSP_LBL[ik]||ik))+': '+iv);
   const row=function(title,sub,aside,go,asideGo,asideCls){
     const tap=go?' row-tap':'';
     const onclick=go?(' onclick="'+go+'"'):'';
@@ -16781,7 +16781,7 @@ function packetHTML(p,tradeId,subId){
     return '<div class="row'+tap+'"'+onclick+'><div class="row-main"><div class="row-title">'+esc(title)+'</div>'+(sub?('<div class="row-sub">'+esc(sub)+'</div>'):'')+'</div>'+a+(go?'<span class="row-chev">\u203a</span>':'')+'</div>';
   };
   let h='';
-  h+='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+(isClient?' crew instructions':' install packet')+'</div></div>';
+  h+='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div>'+(isClient?'':'<div class="pk-trade">'+esc(tl)+' install packet</div>')+'</div>';
   h+='<div class="pkt-strip '+(warn?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   h+=buildBriefReadHTML(p);
 
@@ -16885,9 +16885,9 @@ function packetHTML(p,tradeId,subId){
   const so=packetSignoff(p,tradeId);
   const bSigned=!!(so.builder&&so.builder.at), hSigned=!!(so.homeowner&&so.homeowner.at);
   if(packetIsStale(p,tradeId)||((p.packetPrevSpec||{})[tradeId]&&!(bSigned&&hSigned))){
-    h+='<div class="pkt-banner warn mt-2"><b>Specs changed'+(isClient?',</b> so the final OK was cleared.':'.</b> Sign-off no longer applies.')+' Review and sign again before anyone installs. Do not install until builder and homeowner have both signed.</div>';
+    h+='<div class="pkt-banner warn mt-2">'+(isClient?'<b>Specs changed,</b> so the final OK was cleared. Review and approve again. The crew shouldn\u2019t start until you and your builder have both approved.':'<b>Specs changed.</b> Sign-off no longer applies. Review and sign again before anyone installs. Do not install until builder and homeowner have both signed.')+'</div>';
   }else if(!gaps.length&&!(bSigned&&hSigned)){
-    h+='<div class="pkt-banner warn mt-2"><b>Do not install.</b> Wait until builder and homeowner have both signed these instructions.</div>';
+    h+='<div class="pkt-banner warn mt-2">'+(isClient?'<b>Not approved yet.</b> The crew shouldn\u2019t start until you and your builder have both approved these instructions.':'<b>Do not install.</b> Wait until builder and homeowner have both signed these instructions.')+'</div>';
   }
   h+=packetSpecDiffHTML(p,tradeId);
   if(!isClient){
