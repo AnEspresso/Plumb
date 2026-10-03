@@ -2924,6 +2924,24 @@ await $('(async()=>{'+
   t('one code: under the old rules the plain claim still goes through',n.oldRules.ok&&n.oldRules.log.length===1&&n.oldRules.log[0]==='set invites/PB-N2TESTCODE/claims/uJ',JSON.stringify(n.oldRules));
 })();
 
+/* ════ RELEASE E · one stacking rule for sheets, guest no-signal retry (2.448.0) ════ */
+S('release-e');
+t('stack: one observer stacks every sheet, no hand-assigned 210s left',SRC.indexOf('function sheetStack')>=0&&SRC.indexOf("style.zIndex='210'")<0);
+$("(function(){try{openSettings();openLegal();}catch(e){window.__stackErr=String(e);}})()");
+await new Promise(r=>setTimeout(r,0));
+(function(){
+  const st=JSON.parse($("JSON.stringify({err:window.__stackErr||'',z:document.getElementById('legalScrim').style.zIndex,mark:document.getElementById('legalScrim').dataset.zStack||'',settings:document.getElementById('settingsScrim').classList.contains('show')})"));
+  t('stack: a sheet opened over Settings is lifted above it',!st.err&&st.settings&&st.mark==='1'&&Number(st.z)>0,JSON.stringify(st));
+  $("(function(){try{document.getElementById('legalScrim').classList.remove('show');closeSettings();}catch(e){}})()");
+})();
+await new Promise(r=>setTimeout(r,0));
+t('stack: closing the sheet drops its lift',$("document.getElementById('legalScrim').style.zIndex===''&&!document.getElementById('legalScrim').dataset.zStack"));
+(function(){
+  const PH=fs.readFileSync(path.join(__dirname,'p.html'),'utf8');
+  t('guest no signal: the words live in one place',(PH.match(/Your answer didn't go through/g)||[]).length===1&&PH.indexOf('var GP_TRY_AGAIN="Try again"')>=0);
+  t('guest no signal: Try again re-runs the same load',PH.indexOf('function noSignal(retry)')>=0&&PH.indexOf('fail("This link needs a connection to open. Get a bar of signal and tap Try again.",load)')>=0);
+})();
+
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');
 if(failures.length){

@@ -19,6 +19,19 @@ function roleOf(members, uid) {
 }
 function isBuilderRole(r) { return r === 'builder'; }  // strict: ambiguity strips membership, never cascades
 
+/* A cleanup step that fails must not stop the erasure (later steps and the Auth
+   delete still run, as before), but it must not vanish either (P2-5). Each one
+   is written to the function's own log at ERROR severity (console -> Cloud
+   Logging, which Cloud Functions already collects; no new service), and the
+   step names come back as cleanupFailed. Tests pass their own `log`. */
+function defaultLog(entry) {
+  console.error(JSON.stringify(Object.assign({ severity: 'ERROR', message: 'deleteAccount: cleanup step failed' }, entry)));
+}
+function stepFailed(log, failed, uid, step, e) {
+  failed.push(step);
+  try { log({ step, uid, error: String((e && e.message) || e).slice(0, 300) }); } catch (_) {}
+}
+
 async function deleteCollectionDocs(db, collRef, pageSize) {
   for (;;) {
     const snap = await collRef.limit(pageSize || 300).get();
@@ -34,21 +47,22 @@ async function deleteCollectionDocs(db, collRef, pageSize) {
    it through the existing deleted-flag pathway), then every subcollection
    (enumerated, not hardcoded — survives new record types), Storage files under
    the site's prefix, then the doc itself. */
-async function cascadeSite(db, bucket, doc) {
+async function cascadeSite(db, bucket, doc, onFail) {
+  const fail = onFail || (() => {});
   const data = doc.data() || {};
   /* cloud site docs carry the project under `meta`; receivers drop a site when
      meta.deleted appears — the same tombstone pathway deleteSite uses */
-  try { await doc.ref.set({ meta: { deleted: Date.now() }, updatedAt: Date.now(), updatedBy: 'server' }, { merge: true }); } catch (e) {}
+  try { await doc.ref.set({ meta: { deleted: Date.now() }, updatedAt: Date.now(), updatedBy: 'server' }, { merge: true }); } catch (e) { fail('site tombstone', e); }
   const colls = await doc.ref.listCollections();
   for (const c of colls) await deleteCollectionDocs(db, c);
   if (bucket) {
     try { await bucket.deleteFiles({ prefix: (data.mode || 'live') + '/sites/' + doc.id + '/' }); }
-    catch (e) { /* storage cleanup is best-effort; files without a live site doc are unreachable via rules */ }
+    catch (e) { fail('storage files', e); /* best-effort: files without a live site doc are unreachable via rules */ }
   }
   await doc.ref.delete();
 }
 
-async function deleteAccount(db, authAdmin, bucket, uid, confirm, email) {
+async function deleteAccount(db, authAdmin, bucket, uid, confirm, email, log) {
   const snap = await db.collection('sites').where('memberUids', 'array-contains', uid).get();
   const owned = [], memberOf = [];
   for (const d of snap.docs) {
@@ -62,9 +76,11 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email) {
     qb: !!(qbSnap.exists && (qbSnap.data() || {}).refreshToken),
   };
   if (!confirm) return { ok: true, preview };
+  const failed = [], lg = log || defaultLog;
+  const fail = step => e => stepFailed(lg, failed, uid, step, e);
 
   /* 1 · sites they build: full cascade */
-  for (const d of owned) await cascadeSite(db, bucket, d);
+  for (const d of owned) await cascadeSite(db, bucket, d, (step, e) => stepFailed(lg, failed, uid, step + ' (' + d.id + ')', e));
 
   /* 2 · sites they merely belong to: strip the identity, leave the project */
   for (const d of memberOf) {
@@ -76,7 +92,7 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email) {
   }
 
   /* 3 · QuickBooks tokens */
-  try { await db.collection('qb').doc(uid).delete(); } catch (e) {}
+  try { await db.collection('qb').doc(uid).delete(); } catch (e) { fail('quickbooks tokens')(e); }
 
   /* 4 · diagnostics stamped with this uid (device docs + their event trails) */
   try {
@@ -85,7 +101,7 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email) {
       await deleteCollectionDocs(db, d.ref.collection('events'));
       await d.ref.delete();
     }
-  } catch (e) {}
+  } catch (e) { fail('diagnostics')(e); }
 
   /* 5 · invite claims carrying their email (best-effort — needs a
         collection-group index; silently skipped where absent) */
@@ -93,22 +109,24 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email) {
     try {
       const cg = await db.collectionGroup('claims').where('email', '==', email).get();
       for (const d of cg.docs) await d.ref.delete();
-    } catch (e) {}
+    } catch (e) { fail('invite claims')(e); }
   }
 
   /* 5b · join-screen previews of invites they sent (they carry the builder's name) */
   try {
     const sent = await db.collection('invites').where('createdBy', '==', uid).get();
     for (const d of sent.docs) await db.collection('invitePreviews').doc(d.id).delete();
-  } catch (e) {}
+  } catch (e) { fail('invite previews')(e); }
 
   /* 6 · profile doc (name, email, push tokens live here) */
-  try { await db.collection('users').doc(uid).delete(); } catch (e) {}
+  try { await db.collection('users').doc(uid).delete(); } catch (e) { fail('profile')(e); }
 
   /* 7 · the Auth user itself — last, so any earlier failure is retryable */
   await authAdmin.deleteUser(uid);
 
-  return { ok: true, deleted: { sites: owned.length, memberships: memberOf.length } };
+  const out = { ok: true, deleted: { sites: owned.length, memberships: memberOf.length } };
+  if (failed.length) out.cleanupFailed = failed;
+  return out;
 }
 
 module.exports = { deleteAccount, cascadeSite, roleOf, isBuilderRole };

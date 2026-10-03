@@ -7,6 +7,11 @@ name: Publish rules (Firestore + Storage)
 #   - The publish job waits in the "rules-publish" GitHub Environment until a
 #     required reviewer (Peter) approves it. The deploy key is an environment
 #     secret (FIREBASE_RULES_DEPLOYER), so no other workflow or branch can use it.
+#   - The FIREBASE_RULES_DEPLOYER service account needs exactly these roles:
+#     Firebase Rules Admin, Service Usage Consumer, Cloud Storage for Firebase
+#     Viewer, and Firebase Viewer. Firebase Viewer lets the deploy read the
+#     project's Firebase setup; without it the first publish failed with
+#     "Firebase Storage has not been set up".
 #   - firestore.rules and storage.rules go out together as one release, then
 #     both live rulesets are read back and must match the repo byte for byte
 #     (ignoring leading/trailing whitespace).

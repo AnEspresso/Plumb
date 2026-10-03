@@ -149,6 +149,18 @@ const server = http.createServer((req, res) => {
   t('join-screen preview of an invite they sent gone', !(await db.collection('invitePreviews').doc('PB-DEL2').get()).exists);
   t('auth user deleted, exactly once, last', authMock.deleted.length === 1 && authMock.deleted[0] === 'dU');
 
+  /* P2-5: a cleanup step that fails is logged, and the erasure still completes */
+  await db.collection('sites').doc('sF').set({ meta: { street: '9 Fail Ln' }, mode: 'live', members: { fU: 'builder' }, memberUids: ['fU'] });
+  await db.collection('users').doc('fU').set({ name: 'Fay' });
+  const failBucket = { async deleteFiles() { throw new Error('storage unavailable'); } };
+  const failAuth = { deleted: [], async deleteUser(u) { this.deleted.push(u); } };
+  const logged = [];
+  const fx = await deleteAccount(db, failAuth, failBucket, 'fU', true, '', e => logged.push(e));
+  t('failed file cleanup is logged with its step and error', logged.length === 1 && logged[0].step === 'storage files (sF)' && logged[0].uid === 'fU' && /storage unavailable/.test(logged[0].error), JSON.stringify(logged));
+  t('failed file cleanup is reported back', JSON.stringify(fx.cleanupFailed) === JSON.stringify(['storage files (sF)']), JSON.stringify(fx));
+  t('deletion still completes past the failed step', fx.ok && !(await db.collection('sites').doc('sF').get()).exists && !(await db.collection('users').doc('fU').get()).exists && failAuth.deleted.length === 1 && failAuth.deleted[0] === 'fU');
+  t('a clean run logs nothing and reports no failures', ex.cleanupFailed === undefined);
+
   server.close();
   console.log('fncheck: ' + PASS + ' checks across oauth/dedupe/purchases/idempotency/gates/refresh/deletion');
   if (FAILS.length) { console.log('FAIL (' + FAILS.length + '):'); FAILS.forEach(f => console.log('  x ' + f)); process.exit(1); }
