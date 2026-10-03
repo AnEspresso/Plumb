@@ -16761,7 +16761,7 @@ function packetHTML(p,tradeId,subId){
   const permName=PK_PERMIT[tradeId];
   const perm=permName&&(p.permits||[]).find(function(x){return x.name===permName;});
   const ik=PK_INSP[tradeId];const iv=ik&&(p.inspections||{})[ik];
-  let stripSt=gaps.length? (gaps.length+' still open') : (isClient?(siteOk?'Ready for the crew':'Specs are set. The house isn\'t ready for the crew yet.'):(siteOk?'Ready for this trade':'Specs confirmed \u2014 site not marked ready'));
+  let stripSt=gaps.length? (gaps.length+' still open') : (isClient?(siteOk?'Ready for the crew':'Specs are set. The house isn\u2019t ready for the crew yet.'):(siteOk?'Ready for this trade':'Specs confirmed \u2014 site not marked ready'));
   const meta=[];
   if(bkWin)meta.push((isClient?tl+' scheduled':'Scheduled')+' '+fmtWin(bkWin)+(bkWin.note?(' \u2014 '+bkWin.note):''));
   else meta.push('No dates on the calendar');
@@ -16885,9 +16885,9 @@ function packetHTML(p,tradeId,subId){
   const so=packetSignoff(p,tradeId);
   const bSigned=!!(so.builder&&so.builder.at), hSigned=!!(so.homeowner&&so.homeowner.at);
   if(packetIsStale(p,tradeId)||((p.packetPrevSpec||{})[tradeId]&&!(bSigned&&hSigned))){
-    h+='<div class="pkt-banner warn mt-2">'+(isClient?'<b>Specs changed,</b> so the final OK was cleared. Review and approve again. The crew shouldn\'t start until you and your builder have both approved.':'<b>Specs changed.</b> Sign-off no longer applies. Review and sign again before anyone installs. Do not install until builder and homeowner have both signed.')+'</div>';
+    h+='<div class="pkt-banner warn mt-2">'+(isClient?'<b>Specs changed,</b> so the final OK was cleared. Review and approve again. The crew shouldn\u2019t start until you and your builder have both approved.':'<b>Specs changed.</b> Sign-off no longer applies. Review and sign again before anyone installs. Do not install until builder and homeowner have both signed.')+'</div>';
   }else if(!gaps.length&&!(bSigned&&hSigned)){
-    h+='<div class="pkt-banner warn mt-2">'+(isClient?'<b>Not approved yet.</b> The crew shouldn\'t start until you and your builder have both approved these instructions.':'<b>Do not install.</b> Wait until builder and homeowner have both signed these instructions.')+'</div>';
+    h+='<div class="pkt-banner warn mt-2">'+(isClient?'<b>Not approved yet.</b> The crew shouldn\u2019t start until you and your builder have both approved these instructions.':'<b>Do not install.</b> Wait until builder and homeowner have both signed these instructions.')+'</div>';
   }
   h+=packetSpecDiffHTML(p,tradeId);
   if(!isClient){
