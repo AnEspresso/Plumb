@@ -17090,7 +17090,7 @@ function _sharePacketLink(snap,token){
   const num=phone
     ?('<div class="fs-md fw-6 mt-0 ml-0 mr-0 mb-2">'+esc(phone)+'</div>')
     :('<div class="fs-sm c-ink-3 mt-0 ml-0 mr-0 mb-2">No phone on file for '+who+' \u2014 the link stays here to copy.</div>');
-  showInfo('Text this link',`<p class="mt-0 ml-0 mr-0 mb-2 fs-sm lh-15">Opens a text to <b>${who}</b> with the link. You press Send.</p>
+  showInfo('Text this link',`${phone?`<p class="mt-0 ml-0 mr-0 mb-2 fs-sm lh-15">Opens a text to <b>${who}</b> with the link. You press Send.</p>`:''}
     ${num}
     <button class="b1 b-go w-full btn btn-primary" onclick="pkDoShare()">Text this link</button>
     <div class="code-box pkt-url mt-3" onclick="copyText('${url}')">${url}</div>
