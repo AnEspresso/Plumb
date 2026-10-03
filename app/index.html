@@ -1829,6 +1829,7 @@ body.on-tour .tour-card{display:block;}
 .ig-step{display:flex;align-items:center;font-size:var(--t-sm);color:rgba(231,220,198,.9);}
 .ig-step>b:first-child{width:24px;height:24px;border-radius:50%;background:rgba(176,137,90,.22);color:var(--oak);
   display:inline-flex;align-items:center;justify-content:center;font-size:var(--t-xs);margin-right:var(--s-3);flex:none;}
+#igGeneric .ig-step>b:first-child{width:auto;padding:0 var(--s-2);border-radius:999px;white-space:nowrap;margin-right:0;}   /* Install app is a chip, not a step number: one line */
 .ig-install{margin-top:var(--s-6);background:var(--oak);color:var(--night);border:none;border-radius:var(--r);padding:var(--s-4) calc(var(--s-7) + var(--s-1)*2);
   font-family:inherit;font-size:var(--t-md);font-weight:700;cursor:pointer;}
 .ig-skip{margin-top:var(--s-6);color:rgba(231,220,198,.45);}
@@ -2588,7 +2589,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
         <select class="login-select" id="loginSelect"></select>
         <button class="login-enter btn btn-primary" id="loginEnter" onclick="doLogin()">Enter</button>
         </div>
-        <button class="login-explore" onclick="enterDemoGuided(true)">Just looking? Explore the example build</button>
+        <button class="login-explore" onclick="enterDemoGuided(true)">Just looking? Open the example build</button>
         <a class="login-explore mt-2 mb-5" href="mailto:hello@siteplumb.com?subject=Zoom%20onboarding">New to SitePlumb? Get a free Zoom setup.</a>
         <div id="realControls" style="display:none">
           <div class="lh">Your company</div>
@@ -2814,7 +2815,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <div class="hdr-actions"><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div>
     </div>
     <div class="sv-body" id="clBody"></div>
-    <div class="leave-bar" id="clHouseBar" hidden><button type="button" class="btn btn-secondary" onclick="clientGo('home')"><span>House</span></button></div>
+    <div class="leave-bar" id="clHouseBar" hidden><button type="button" class="btn btn-secondary" onclick="clientGo('home')"><span>See your house</span></button></div>
     <div class="cl-nav hide">
       <div class="tabs">
         <button class="tab on" id="cltab-home" onclick="clientGo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg><span>Home</span></button>
@@ -2830,7 +2831,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
       <div class="sheet-head"><h4>Raise a concern</h4></div>
 <div class="sheet-body">
-<div class="info-body mb-3">Send a photo and note to your builder. Your builder sees it in Needs You so it does not get lost.</div>
+<div class="info-body mb-3">Send a photo and note to your builder. Your builder sees it in Needs you so it does not get lost.</div>
       <div class="photo-drop mb-3" id="cDrop" onclick="var e=document.getElementById('cFile');e&amp;&amp;e.click()">
         <div class="ph" id="cDropPh">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l1.5 2.5h3a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3L9.5 4z"/><circle cx="12" cy="13" r="3.4"/></svg>
@@ -3568,10 +3569,10 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
   <main id="main">
     <section class="view active" id="view-log">
       <div id="siteSummary" class="site-summary"></div>
-      <button class="ov-field site-field" onclick="openFieldNote()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="siteLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#B0895A" stroke-width="1.7"/><path d="M52 20V15h24v5" fill="none" stroke="#B0895A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#1B1916" stroke-width="1.55"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#siteLens)" fill="none" stroke="#1B1916" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="1.8"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Write a field note<small>Photo, note, or a problem</small></span></button>
+      <button class="ov-field site-field" onclick="openFieldNote()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="siteLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#B0895A" stroke-width="1.7"/><path d="M52 20V15h24v5" fill="none" stroke="#B0895A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#1B1916" stroke-width="1.55"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#siteLens)" fill="none" stroke="#1B1916" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="1.8"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Add a field note<small>Photo, note, or a problem</small></span></button>
       <div class="daylog" onclick="openSheet(true)">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg></div>
-        <div class="b"><div class="t" id="logTitle">Add today's entry</div><div class="s" id="logSub">Who was here and what got done</div></div>
+        <div class="b"><div class="t" id="logTitle">Who was here today</div><div class="s" id="logSub">Crews on site and what got done</div></div>
         <div class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
       </div>
       <div id="logHistory"></div>
@@ -3671,7 +3672,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
     </div>
     <div class="tabs">
       <button class="tab on" data-v="log" onclick="go('log',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg><span>Log</span></button>
-      <button class="tab" data-v="decisions" onclick="go('decisions',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2.5 2.5L16 9"/><rect x="3.5" y="4" width="17" height="16" rx="3"/></svg><span>Needs You</span></button>
+      <button class="tab" data-v="decisions" onclick="go('decisions',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2.5 2.5L16 9"/><rect x="3.5" y="4" width="17" height="16" rx="3"/></svg><span>Needs you</span></button>
       <button class="tab" data-v="build" onclick="go('build',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V9l5-4 5 4M4 20h16M14 20V5l6 4v11"/><path d="M8 20v-4h2v4"/></svg><span>Build</span></button>
       <button class="tab" data-v="files" onclick="go('files',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="11" r="2"/><path d="m3 17 5-4 4 3 3-2 6 5"/></svg><span>Files</span></button>
     </div>
@@ -3697,10 +3698,10 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
     <div class="chips" id="fieldKindChips" style="display:none"></div>
     <div class="fn-hint" id="fieldKindHint" hidden>
       <div><b>Note</b> House record. Not an open item.</div>
-      <div><b>Leak</b> Water or a drip. Goes to Needs You.</div>
-      <div><b>Damage</b> Broken or wrong. Goes to Needs You.</div>
+      <div><b>Leak</b> Water or a drip. Goes to Needs you.</div>
+      <div><b>Damage</b> Broken or wrong. Goes to Needs you.</div>
       <div><b>Decision</b> A call to make. House record.</div>
-      <div><b>Punch</b> A leftover from the walkthrough. Goes to Needs You.</div>
+      <div><b>Punch</b> A leftover from the walkthrough. Goes to Needs you.</div>
     </div>
     <div class="field-k" id="sheetNoteLbl">Note</div>
     <textarea class="ti" id="caption" rows="2" oninput="growNote(this)" placeholder="A few words…"></textarea>
@@ -3822,7 +3823,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <div id="pushLine" class="fs-sm mt-1 ml-0 mr-0 mb-3"></div>
       <div class="sec"><h2>Demo and tour</h2></div>
       <div class="d-flex gap-2 mt-1 ml-0 mr-0 mb-3">
-        <button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeDev();enterDemo()">Explore the example build</button>
+        <button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeDev();enterDemo()">Open the example build</button>
         <button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeDev();startGrandTour()">Replay the tour</button>
       </div>
       <input id="appCheckInput" class="dev-ta minh-0 h-auto" placeholder="App Check reCAPTCHA v3 site key (optional)" />
@@ -3929,15 +3930,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.448.0 - Sheets always open on top, guest packet keeps a Try again with no signal';
+const PLUMB_VERSION='2.449.0 - Wording pass: one example build name, plainer homeowner words, Needs you';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790995721741;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.448.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790997272874;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.449.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5290,7 +5291,7 @@ function renderFeed(){
       <div class="body"><div class="cap">${esc(it.cap)}</div>
         <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}${it.issue?`<span class="status ${it.status}"><span class="d"></span>${it.status==='open'?'Open':'Closed'}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div>
-    </div>`).join('')||`<div class="empty">No entries yet. Tap Add today\u2019s entry to start the record.</div>`;
+    </div>`).join('')||`<div class="empty">No entries yet. Tap Who was here today to start the record.</div>`;
 }
 function renderPhotos(){
   const wrap=document.getElementById('photoGroups');if(!wrap)return;
@@ -5456,8 +5457,8 @@ function renderDayLog(){
   /* The button stays a button. It used to wear today's text as its subtitle,
      which made the way IN look like the record itself - the record is the list
      below, where today reads as Today alongside every other day. */
-  document.getElementById('logTitle').textContent=today?"Edit today's entry":"Add today's entry";
-  document.getElementById('logSub').textContent='Crew, conditions, what got done';
+  document.getElementById('logTitle').textContent='Who was here today';
+  document.getElementById('logSub').textContent='Crews on site and what got done';
   const wrap=document.getElementById('logHistory');if(!wrap)return;
   wrap.innerHTML=logs.length?logs.map(l=>`<div class="row row-tap" onclick="openSheet(true,'${l.date}')">
     <div class="row-main"><div class="row-title">${fmtLogDate(l.date)}</div><div class="row-sub">${esc(l.text)}</div></div>
@@ -6800,7 +6801,7 @@ async function impContacts(){
         return;}
     }catch(e){/* user cancelled or denied — fall through to manual */}
   }
-  openAddSub();toast('Add the sub\u2019s name, trade, and number');
+  openAddSub();toast('Add the crew\u2019s name, trade, and number');
 }
 function impForward(){
   const p=impSite()||P();const inbox=inboxFor(p);
@@ -6898,7 +6899,7 @@ function renderSettings(){
   let rows='';
   if(role==='builder'&&hat!=='client'&&hat!=='sub'&&!onClient){
     rows+='<div class="sec"><h2>Company</h2></div>';
-    rows+=SET_LIST_ROW('Company','People, calendar, invoices, new job','closeSettings();openCompany()');
+    rows+=SET_LIST_ROW('People, calendar, and invoices','Also where you start a new job','closeSettings();openCompany()');
     if(appMode()==='real'){
       if(isOrgOwner()){
         rows+=SET_LIST_ROW('Selection templates','Build style & install spec sheets','closeSettings();openPeopleMode(\'templates\')');
@@ -7035,7 +7036,7 @@ const TOUR={team:[
     {f:'s2c',point:'.ov-field',stage:'field'},
     {f:'s2d',point:'.ov-field',stage:'field',waitTap:'.ov-field',waitMs:30000,intercept:function(){try{tourOpenFieldNote();}catch(e){}},doAfter:function(tok){return tourFieldDemo(tok);}}
   ]},
- {sel:'#ovSortRow',bubSide:'tb',title:'Your book',body:'Needs You. Recent Decisions. A\u2013Z.',
+ {sel:'#ovSortRow',bubSide:'tb',title:'Your book',body:'Needs you. Recent decisions. A\u2013Z.',
   nav:()=>{try{try{closeSheet();}catch(e){}try{closeLogPick();}catch(e){}showOverview();_ovSort='attn';renderOvSortRow();renderOvCards();}catch(e){}},
   play:[
     {f:'s3a',point:'#ovSortRow',stage:'book',line:true},
@@ -7099,7 +7100,7 @@ teamLegacy:[
  {sel:'#ovCards .ov-card',title:'Your jobs',body:'Each house shows its open count, progress, and what\u2019s on deck. We\u2019ll step into one now.',nav:()=>{try{showOverview();}catch(e){}}},
  {sel:'#siteSummary',title:'The site at a glance',body:'A job opens calm: current stage and %, what it\u2019s waiting on, and who\u2019s next on site.',nav:()=>{try{const sp=state.projects||[];const pick=sp.find(p=>!p.sample)||sp[0];if(pick)openSiteFromOverview(pick.id);}catch(e){}}},
  {sel:'#siteSummary .ss-card:last-child',title:'Next on site',body:'The smart one: it suggests the best crews free across all your jobs for the work that\u2019s due \u2014 by who can start first, who has room, or who knows the house.'},
- {sel:'nav .tabs .tab[data-v="decisions"]',tap:true,title:'Needs You',body:'Everything the job is waiting on \u2014 open issues and selections in one list. Tap it to look.'},
+ {sel:'nav .tabs .tab[data-v="decisions"]',tap:true,title:'Needs you',body:'Everything the job is waiting on \u2014 open issues and selections in one list. Tap it to look.'},
  {sel:'nav .tabs .tab[data-v="build"]',tap:true,title:'Build',body:'Your schedule, permits and crews \u2014 the whole build in one place. Tap Build.'},
  {sel:'nav .tabs .tab[data-v="files"]',tap:true,title:'Files',body:'Photos and documents together, filed by date and trade. Tap Files.'},
  {title:'That\u2019s the tour',body:'Explore the demo freely \u2014 three sample homes at different stages. When you\u2019re ready, switch to Live to run your own jobs.',nav:()=>{try{go('log');}catch(e){}}}
@@ -7146,7 +7147,7 @@ teamLegacy:[
        hint:'The Save entry button at the bottom of the sheet.',
        done:()=>{try{return !document.getElementById('sheet').classList.contains('show')&&(P().logs||[]).some(l=>String(l.text||'').includes('waste lines'));}catch(e){return false;}}}
     ]}},
-{sel:'#decWaiting',title:'Needs You',body:'Everything waiting on a person \u2014 crew questions, homeowner sign-offs, open issues \u2014 in one list. When this screen is empty, nobody on your job is stuck.',
+{sel:'#decWaiting',title:'Needs you',body:'Everything waiting on a person \u2014 crew questions, homeowner sign-offs, open issues \u2014 in one list. When this screen is empty, nobody on your job is stuck.',
   acts:[{tap:'nav .tab[data-v=decisions]',do:()=>tourGoto('decisions')},{tap:'[data-d=waiting]',jump:true,do:()=>{try{decSeg('waiting',document.querySelector('[data-d=waiting]'));}catch(e){}}}],
   after:async(tok)=>{
     await new Promise(r=>setTimeout(r,1400));if(!tourAlive(tok))return;
@@ -8352,7 +8353,7 @@ function streetAzKey(p){return String((p&&(p.street||p.name))||'').replace(/^\d+
 function markHouseDone(pid,on){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
   if(on===false){delete p.doneAt;p.doneAskUntil=0;persist();logEvent('houseOnBook',p.street||p.name);toast(houseCall(p)+' is on the book again');}
-  else {p.doneAt=Date.now();persist();logEvent('houseOffBook',p.street||p.name);toast(houseCall(p)+' is off Needs You. Still on All houses.');}
+  else {p.doneAt=Date.now();persist();logEvent('houseOffBook',p.street||p.name);toast(houseCall(p)+' is off Needs you. Still on All houses.');}
   try{renderHouse();}catch(e){}
   try{renderOverview();}catch(e){}
   try{renderEditSites();}catch(e){}
@@ -8362,7 +8363,7 @@ function askHouseDone(pid){
   const street=p.street||p.name||'this house';
   openConfirm({
     title:'Done with '+street+'?',
-    body:'Take it off Needs You and Coming up? You can still open it from All houses.',
+    body:'Take it off Needs you and Coming up? You can still open it from All houses.',
     okLabel:'Done with this house',
     cancelLabel:'Keep it on the book',
     onConfirm:function(){markHouseDone(p.id,true);}
@@ -8395,7 +8396,7 @@ function maybeAskDoneHouse(){
   const street=p.street||p.name||'this house';
   openConfirm({
     title:'Done with '+street+'?',
-    body:'Nothing new in two weeks, and this house looks finished. Take it off Needs You and Coming up? You can still open it from All houses.',
+    body:'Nothing new in two weeks, and this house looks finished. Take it off Needs you and Coming up? You can still open it from All houses.',
     okLabel:'Done with this house',
     cancelLabel:'Keep it on the book',
     onConfirm:function(){markHouseDone(p.id,true);},
@@ -8437,7 +8438,8 @@ function idleSiteGo(pid){closeIdleSites();Data.setActive(pid);openSiteFromOvervi
 function renderOverview(){
   const who=state.session;
   const _roleLbl=who&&who.role==='subs'?'Crew':'Builder';
-  document.getElementById('ovWho').textContent=(who&&who.name&&who.name!==_roleLbl?who.name+' · ':'')+_roleLbl;
+  const _nm=(who&&who.name)||'';
+  document.getElementById('ovWho').textContent=!_nm?_roleLbl:(_nm.toLowerCase().indexOf(_roleLbl.toLowerCase())>=0?_nm:_nm+' · '+_roleLbl);   /* Demo Builder, not Demo Builder · Builder */
   const projs=visibleProjects();
   const bh=document.getElementById('ovBuildsHd');if(bh)bh.textContent='Your houses';
   const hd=document.querySelector('.ov-builds-hd');if(hd)hd.style.display=projs.length?'':'none';
@@ -9100,7 +9102,7 @@ function renderToday(){
   const cap=document.getElementById('ovCapture');
   if(cap){
     if(canGate('field')){
-      cap.innerHTML='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#CDB48C" stroke-width="2"/><path d="M52 20V15h24v5" fill="none" stroke="#CDB48C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#CDB48C" stroke-width="1.9"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#3A342B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="2.2"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Write a field note<small>Photo, note, or a problem</small></span></button>';
+      cap.innerHTML='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#CDB48C" stroke-width="2"/><path d="M52 20V15h24v5" fill="none" stroke="#CDB48C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#CDB48C" stroke-width="1.9"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#3A342B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="2.2"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Add a field note<small>Photo, note, or a problem</small></span></button>';
       cap.hidden=false;
     }else{cap.innerHTML='';cap.hidden=true;}
   }
@@ -9863,7 +9865,6 @@ const Notify={
       this._tok=tok;this.listenForeground();
       const uid=(state.session&&state.session.auth&&state.session.auth.uid)||Sync.uid;
       if(uid){try{await Sync.db.collection('users').doc(uid).set({fcm:{[tok]:Date.now()}},{merge:true});}catch(e){}}
-      console.log('[SitePlumb] FCM token registered');
       return tok;
     }catch(e){console.warn('[SitePlumb] fcm token',e);return '';}},
   listenForeground(){
@@ -10389,7 +10390,6 @@ function renderSubView(){
   const meta=[];
   if(tr.cleared)meta.push('Your builder marked '+tr.label+' ready '+timeAgo(tr.cleared));
   else meta.push('You will see a notice here when this house is ready for '+tr.label);
-  if(_svBookings[0])meta.push('Next on this house · '+fmtWin(_svBookings[0]));
   let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   h+=buildBriefRowHTML(p);
   const facts=[];
@@ -10403,11 +10403,11 @@ function renderSubView(){
     h+='</div>';
   }
   h+='<div class="hs-band">On this house</div><div class="hs-doors">';
+  h+='<button class="hs-door" id="svPacket" onclick="openSubPacket(\''+p.id+'\',\''+tr.id+'\')"><div class="k">Your packet</div><div class="m">Install specs and drawings</div></button>';
   h+='<button class="hs-door" onclick="subCapture(\''+p.id+'\')"><div class="k">Field Notes</div><div class="m">Post an update</div></button>';
   h+='<button class="hs-door" onclick="subGo(\'selections\')"><div class="k">Selections</div><div class="m">Finishes on your scope</div></button>';
   h+='</div>';
   h+='<div class="hs-band">The rest of this house</div><div class="hs-doors">';
-  h+='<button class="hs-door" id="svPacket" onclick="openSubPacket(\''+p.id+'\',\''+tr.id+'\')"><div class="k">Your packet</div><div class="m">Install specs and drawings</div></button>';
   h+='<button class="hs-door" onclick="subGo(\'docs\')"><div class="k">Documents</div><div class="m">What you need on site</div></button>';
   h+='</div>';
   if(_svBookings.length){
@@ -10836,7 +10836,7 @@ function renderBudget(){
     ${moneyTotHTML(p)}
   </div>
   ${moneyActionsHTML()}
-  <div class="seg" id="costGroupSeg"><button class="${_costGroup==='stage'?'on':''}" onclick="setCostGroup('stage')">By stage</button><button class="${_costGroup==='trade'?'on':''}" onclick="setCostGroup('trade')">By trade</button></div>`;
+  <div class="seg" id="costGroupSeg"><button class="${_costGroup==='stage'?'on':''}" onclick="setCostGroup('stage')">Stage</button><button class="${_costGroup==='trade'?'on':''}" onclick="setCostGroup('trade')">Trade</button></div>`;
   if(isWideBudget()){document.getElementById('budgetBody').innerHTML=h+budgetTableHTML(p)+moneyBillHTML(p);try{labelHouseBack(document.getElementById('budgetDoneBtn'),'Done');}catch(e){}return;}
   if(!lines.length)h+='<div class="empty">No budget lines yet. Add one \u2014 or copy another house from More.</div>';
   const groups=[];
@@ -13173,8 +13173,8 @@ function renderClient(){
       const has=tradeSelections(p,tr).length>0;const so=packetSignoff(p,tr);
       return has&&tradeSpecGaps(p,tr).length===0&&!(so.homeowner&&so.homeowner.at);});
     if(signTrades.length){
-      h+=`<div class="cl-needs"><div class="cn-h">Install packets to approve</div><div class="cn-sub">Specs are set. Review each and sign off so your builder can send it to the crew.</div>`+
-        signTrades.map(tr=>`<div class="cn-item cur-p" onclick="openClientPacket('${tr}')"><div class="cn-t">${esc(specLabel(tr))} install packet <span class="cn-c">tap to review &amp; sign</span></div></div>`).join('')+`</div>`;
+      h+=`<div class="cl-needs"><div class="cn-h">Crew instructions to approve</div><div class="cn-sub">Specs are set. Review each and sign off so your builder can send it to the crew.</div>`+
+        signTrades.map(tr=>`<div class="cn-item cur-p" onclick="openClientPacket('${tr}')"><div class="cn-t">${esc(specLabel(tr))} crew instructions <span class="cn-c">tap to review &amp; sign</span></div></div>`).join('')+`</div>`;
     }
     const needs=sels.filter(s=>s.status!=='installed'&&specStatus(s).homeownerPending.length);
     if(needs.length){
@@ -13239,7 +13239,7 @@ function clientSaveSpec(id){const p=clientProj();const s=(p.selections||[]).find
 function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
   if(s.status==='pending'){toast('Your builder is still preparing this option');return;}
   const now=!s.approved;const patch={approved:now,signed:now?{date:todayStr(),by:(p.buyers&&p.buyers.length?p.buyers:['Homeowner'])}:null};Data.updateSelection(id,patch,p.id);logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
-  renderClient();toast(now?'Signed off — thank you':'Sign-off removed');}
+  renderClient();toast(now?'Signed off — thank you':'Final OK removed');}
 /* raise a concern */
 let concernPhotoId=null;
 function openConcern(){concernPhotoId=null;document.getElementById('cNote').value='';
@@ -16781,7 +16781,7 @@ function packetHTML(p,tradeId,subId){
     return '<div class="row'+tap+'"'+onclick+'><div class="row-main"><div class="row-title">'+esc(title)+'</div>'+(sub?('<div class="row-sub">'+esc(sub)+'</div>'):'')+'</div>'+a+(go?'<span class="row-chev">\u203a</span>':'')+'</div>';
   };
   let h='';
-  h+='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+' install packet</div></div>';
+  h+='<div class="pkt-head"><div class="pk-site">'+esc(p.street||p.name)+(p.city?(' \u00b7 '+esc(p.city)):'')+'</div><div class="pk-trade">'+esc(tl)+(isClient?' crew instructions':' install packet')+'</div></div>';
   h+='<div class="pkt-strip '+(warn?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   h+=buildBriefReadHTML(p);
 
@@ -16885,7 +16885,7 @@ function packetHTML(p,tradeId,subId){
   const so=packetSignoff(p,tradeId);
   const bSigned=!!(so.builder&&so.builder.at), hSigned=!!(so.homeowner&&so.homeowner.at);
   if(packetIsStale(p,tradeId)||((p.packetPrevSpec||{})[tradeId]&&!(bSigned&&hSigned))){
-    h+='<div class="pkt-banner warn mt-2"><b>Specs changed.</b> Sign-off no longer applies. Review and sign again before anyone installs. Do not install until builder and homeowner have both signed.</div>';
+    h+='<div class="pkt-banner warn mt-2"><b>Specs changed.</b> '+(isClient?'Final OK':'Sign-off')+' no longer applies. Review and sign again before anyone installs. Do not install until builder and homeowner have both signed.</div>';
   }else if(!gaps.length&&!(bSigned&&hSigned)){
     h+='<div class="pkt-banner warn mt-2"><b>Do not install.</b> Wait until builder and homeowner have both signed these instructions.</div>';
   }
@@ -16903,7 +16903,7 @@ function packetHTML(p,tradeId,subId){
       if(!gaps.length&&bSigned&&hSigned)h+='<div class="pkt-banner ok mt-2"><b>Packet finalized.</b> '+(isBuilder?'Clear to send.':'Build to this.')+'</div>';
     }
   }else{
-    h+='<div class="sec"><h2>Your sign-off</h2></div>';
+    h+='<div class="sec"><h2>Your final OK</h2></div>';
     h+=row('Homeowner',hSigned?('Signed '+fmtDue(so.homeowner.at)):'Review the specs above, then sign off',hSigned?'Signed':'','','',hSigned?'ok':'');
     h+='<button class="btn btn-primary btn-block mt-3" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">'+(hSigned?'Signed':'Sign off')+'</button>';
     h+='<button class="btn btn-secondary btn-block mt-2" onclick="openIdea()">Add a note for your builder</button>';
@@ -17090,7 +17090,7 @@ function _sharePacketLink(snap,token){
   const num=phone
     ?('<div class="fs-md fw-6 mt-0 ml-0 mr-0 mb-2">'+esc(phone)+'</div>')
     :('<div class="fs-sm c-ink-3 mt-0 ml-0 mr-0 mb-2">No phone on file for '+who+' \u2014 the link stays here to copy.</div>');
-  showInfo('Text this link',`<p class="mt-0 ml-0 mr-0 mb-2 fs-sm lh-15">Send this to <b>${who}</b>. If you cancel the share sheet, the link stays here.</p>
+  showInfo('Text this link',`<p class="mt-0 ml-0 mr-0 mb-2 fs-sm lh-15">Opens a text to <b>${who}</b> with the link. You press Send.</p>
     ${num}
     <button class="b1 b-go w-full btn btn-primary" onclick="pkDoShare()">Text this link</button>
     <div class="code-box pkt-url mt-3" onclick="copyText('${url}')">${url}</div>
@@ -18587,7 +18587,7 @@ function openSheet(asLog,logDate){try{const _hr=document.getElementById('fnHouse
   if(!asLog&&!_fieldNote)_fieldNote=false;
   const isSub=(state.session||{}).role==='subs';
   document.getElementById('sheetTitle').textContent=isSub?'Post an update':(asLog?'Daily log entry':'New entry');
-  document.getElementById('sheetSub').textContent=isSub?'Photo first \u2014 your builder sees this in Needs You.':(asLog?(editingLogDate===todayStr()?'Crew, conditions, what got done.':'Editing '+fmtLogDate(editingLogDate)+'.'):'Photo first \u2014 everything else is optional.');
+  document.getElementById('sheetSub').textContent=isSub?'Photo first \u2014 your builder sees this in Needs you.':(asLog?(editingLogDate===todayStr()?'Crew, conditions, what got done.':'Editing '+fmtLogDate(editingLogDate)+'.'):'Photo first \u2014 everything else is optional.');
   document.getElementById('saveBtn').textContent=isSub?'Send to builder':(asLog?'Save entry':'Add to log');
   ['sheetAssignLbl','crewSelect','crewSelect__ss','sheetShareRow'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isSub?'none':'';});
   {const fl=document.getElementById('flag');const fr=fl&&fl.closest('.flagrow');if(fr)fr.style.display=isSub?'none':'';}

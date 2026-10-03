@@ -221,7 +221,7 @@ async function tappable(page,sel){
     const name=(el.getAttribute('aria-label')||el.innerText||'').replace(/\s+/g,' ').trim();
     const txt=(el.innerText||'').replace(/\s+/g,' ').trim();
     return {
-      ok:r.height>=48&&r.width>=300&&!!name&&txt.indexOf('Write a field note')>=0,
+      ok:r.height>=48&&r.width>=300&&!!name&&txt.indexOf('Add a field note')>=0,
       why:'h='+Math.round(r.height)+' w='+Math.round(r.width)+' name='+JSON.stringify(name)+' txt='+JSON.stringify(txt)+' bg='+cs.backgroundColor
     };
   });
