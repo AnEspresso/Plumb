@@ -5681,7 +5681,7 @@ function saveNewSite(){const name=document.getElementById('nsName').value.trim()
 
 /* ════════ login + session + overview ════════ */
 const EMPLOYEES=[
-  {name:'Dean Walsh',role:'Contractor'},
+  {name:'Dean Walsh',role:'Builder'},
   {name:'Marcus Avery',role:'Site Superintendent'},
   {name:'Janelle Cortez',role:'Project Coordinator'},
   {name:'Theo Brandt',role:'Estimator'}
@@ -8695,7 +8695,7 @@ function houseMoneyLine(p){
     const paid=Number(b.paid)||0;
     const left=Math.max(0,Number(b.out)||0);
     if(contract>0.005||paid>0.005)
-      return 'Contract '+invUsd(contract)+' · paid '+invUsd(paid)+' · left '+invUsd(left);
+      return 'Contract\u00a0'+invUsd(contract)+' · paid\u00a0'+invUsd(paid)+' · left\u00a0'+invUsd(left);
     const cs=costSummary(p);
     if((Number(cs.budget)||0)>0.005)
       return (cs.over?'Over budget · ':'On budget · ')+invUsd(Math.abs(cs.remaining))+(cs.over?' over':' left');
