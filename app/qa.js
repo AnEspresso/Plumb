@@ -554,6 +554,55 @@ async function tappable(page,sel){
   t('p.html paints dates from the URL with network blocked', !!(urlPaint.painted&&/Sep|Sept|9/.test(urlPaint.dates)&&urlPaint.house.indexOf('Calderwood')>=0), JSON.stringify(urlPaint));
   t('p.html dates on screen under 300ms', urlPaint.at>0&&urlPaint.at<=300, String(urlPaint.at));
 
+  /* ══ P2-2: p.html with NO SIGNAL. The Firebase SDK never arrives, so after the
+     wait the crew gets a LASTING line and a real Try again (not a 2.2s toast and a
+     grey button). Try again re-runs the same load; when it works, the line goes.
+     Real clock here (the frozen Date.now would never let the wait run out). ══ */
+  const NO_SIGNAL_LINE="Your answer didn't go through. Check your signal, then tap Try again.";
+  const pNo=await browser.newPage();
+  await pNo.setViewport({width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true});
+  pNo.on('pageerror',e=>failures.push('pageerror (p.html no signal): '+String(e).slice(0,160)));
+  await pNo.setBypassServiceWorker(true);
+  await pNo.setRequestInterception(true);
+  pNo.on('request',req=>{if(req.url().startsWith('http://localhost:'+PORT+'/p.html'))req.continue();else req.abort();});
+  await pNo.evaluateOnNewDocument(()=>{window.__gpWaitMs=700;});
+  await pNo.goto('http://localhost:'+PORT+'/p.html?packet=qa-nosig&h=288%20Calderwood%20Ln&t=Plumbing&s=1757376000000&e=1757980800000',{waitUntil:'domcontentloaded'});
+  await new Promise(r=>setTimeout(r,1500));
+  const nos=()=>pNo.evaluate(()=>{const l=document.getElementById('gpNoSigLine'),b=document.getElementById('gpRetry');
+    const grey=[...document.querySelectorAll('#body .btn-primary[disabled]')].filter(x=>x.offsetParent!==null).length;
+    return {line:l?l.textContent:'',btn:b?b.textContent:'',btnOn:!!(b&&!b.disabled&&b.offsetParent!==null),grey,toast:(document.getElementById('toast').className||'').indexOf('show')>=0};});
+  let ns=await nos();
+  t('p.html no signal: lasting line appears', ns.line===NO_SIGNAL_LINE, JSON.stringify(ns));
+  t('p.html no signal: Try again button appears', ns.btn==='Try again'&&ns.btnOn, JSON.stringify(ns));
+  t('p.html no signal: no grey These dates work left on screen', ns.grey===0, JSON.stringify(ns));
+  const nsTap=await tappable(pNo,'#gpRetry');
+  t('p.html no signal: Try again tappable', nsTap.ok, nsTap.why);
+  await new Promise(r=>setTimeout(r,2600));
+  ns=await nos();
+  t('p.html no signal: line outlasts a toast (still there after 2.6s)', ns.line===NO_SIGNAL_LINE&&ns.btnOn, JSON.stringify(ns));
+  await pNo.evaluate(()=>{const b=document.getElementById('gpRetry');if(b)b.click();});
+  await new Promise(r=>setTimeout(r,100));
+  ns=await nos();
+  t('p.html no signal: line stays while Try again is retrying', ns.line===NO_SIGNAL_LINE&&!ns.btnOn, JSON.stringify(ns));
+  await new Promise(r=>setTimeout(r,1400));
+  ns=await nos();
+  t('p.html no signal: a failed retry keeps the line and Try again', ns.line===NO_SIGNAL_LINE&&ns.btnOn, JSON.stringify(ns));
+  /* signal comes back: a stand-in Firestore answers, Try again must load the packet */
+  await pNo.evaluate(()=>{
+    const fx={v:1,t:Date.now(),expires:Date.now()+10*864e5,site:'288 Calderwood Ln \u00b7 Ferndale',builder:'Demo Builder',sub:'Clearwater Plumbing',
+      trade:'plumb',tradeLabel:'Plumbing',start:Date.now()+3*864e5,end:Date.now()+5*864e5,specs:[],docs:[],resp:null};
+    window.__gpGets=0;
+    const doc={get:()=>{window.__gpGets++;return Promise.resolve({exists:true,data:()=>fx});},onSnapshot:()=>()=>{},update:()=>Promise.resolve()};
+    window.firebase={apps:[1],firestore:()=>({collection:()=>({doc:()=>doc})})};
+    const b=document.getElementById('gpRetry');if(b)b.click();
+  });
+  await new Promise(r=>setTimeout(r,500));
+  const back=await pNo.evaluate(()=>({gets:window.__gpGets,line:!!document.getElementById('gpNoSigLine'),retry:!!document.getElementById('gpRetry'),
+    prim:[...document.querySelectorAll('#body .btn-primary')].map(b=>(b.textContent||'').trim()+(b.disabled?' (disabled)':''))}));
+  t('p.html no signal: Try again retries the load', back.gets>=1, JSON.stringify(back));
+  t('p.html no signal: line and Try again go once the retry works', !back.line&&!back.retry&&back.prim[0]==='These dates work', JSON.stringify(back));
+  await pNo.close();
+
   /* ══ HEADER FITS (P1-3): nothing in the header runs past the screen edge,
      for every demo house as builder, and for crew and homeowner, at 320/375/390 ══ */
   for(const w of [320,375,390]){
@@ -595,6 +644,87 @@ async function tappable(page,sel){
   await new Promise(r=>setTimeout(r,300));
   t('desktop budget renders the wide table', await desk.evaluate(()=>isWideBudget()===true&&document.getElementById('budgetBody').innerHTML.includes('bgt-table')));
   await shot(desk,'10-desktop-budget');
+
+  /* ══ TAP CRAWLER (P2-1): every visible tappable on the main screens and in
+     opened sheets - including a sheet opened over another sheet - must own the
+     point at its center (document.elementFromPoint is the button or inside it).
+     Grown from tappable() above. Toasts are transient and ignored. ══ */
+  const crawlPage=await prepPage(browser);
+  await crawlPage.goto('http://localhost:'+PORT+'/index.html?demo=1',{waitUntil:'load'});
+  await new Promise(r=>setTimeout(r,1600));
+  await crawlPage.evaluate(()=>{try{demoIntroExplore();}catch(e){}});
+  const CRAWL=[
+    /* [label, setup run in the page, root the user expects on top] */
+    ['overview (builder)',"demoRole('builder');showOverview();",'#overview'],
+    ['house sheet',"demoRole('builder');showOverview();nyOpenHouse('p2');",'#houseScrim'],
+    ['house > switch street menu (sheet over sheet)',"demoRole('builder');showOverview();nyOpenHouse('p2');houseSwitchStreet();",'#siteMenu'],
+    ['house > field note (sheet over sheet)',"demoRole('builder');showOverview();nyOpenHouse('p2');openFieldNote();",'#sheet'],
+    ['house desk: crews',"demoRole('builder');showOverview();nyOpenHouse('p2');houseGoDesk('crews');",'body'],
+    ['house desk: docs',"demoRole('builder');showOverview();nyOpenHouse('p2');houseGoDesk('docs');",'body'],
+    ['person sheet',"demoRole('builder');showOverview();nyOpenHouse('p2');houseGoDesk('crews');openSubDetail(P().subs[0].id);",'#subDetailScrim'],
+    ['packet sheet',"demoRole('builder');showOverview();state.activeId='p2';openPacket(P().subs[0].id);",'#infoScrim'],
+    ['settings sheet',"demoRole('builder');showOverview();openSettings();",'#settingsScrim'],
+    ['settings > idle crews',"demoRole('builder');showOverview();openSettings();openIdle();",'#idleScrim'],
+    ['settings > privacy and legal (same layer, earlier in the page)',"demoRole('builder');showOverview();openSettings();openLegal();",'#legalScrim'],
+    ['house > packet (sheet over a sheet-2)',"demoRole('builder');showOverview();nyOpenHouse('p2');openPacket(P().subs[0].id);",'#infoScrim'],
+    ['money sheet',"demoRole('builder');showOverview();openSiteFromOverview('p8');openBudget();",'#budgetScrim'],
+    ['money > More (sheet over sheet)',"demoRole('builder');showOverview();openSiteFromOverview('p8');openBudget();moneyMore();",'#choiceScrim'],
+    ['calendar',"demoRole('builder');showOverview();calMonth=null;calSiteFilter='all';openCal();",'#calview'],
+    ['calendar > day',"demoRole('builder');showOverview();calSiteFilter='all';openCal();openDay(Date.now());",'#dayScrim'],
+    ['calendar > schedule a crew',"demoRole('builder');showOverview();calSiteFilter='all';openCal();openBk(null,Date.now());",'#bkScrim'],
+    ['crew view',"demoRole('builder');state.activeId='p2';demoRole('subs');",'#subview'],
+    ['homeowner view',"demoRole('builder');state.activeId='p9';demoRole('client');",'#clientview']
+  ];
+  const RESET="try{[...document.querySelectorAll('.sheet-scrim.show,.pmodal-scrim.show,#sheet.show,#siteMenu.show,#siteMenuScrim.show')].forEach(el=>el.classList.remove('show'));}catch(e){}"
+    +"try{closeCal();}catch(e){}try{exitHouseDesk();}catch(e){}try{closeHouse();}catch(e){}try{demoRole('builder');showOverview();}catch(e){}window.scrollTo(0,0);";
+  let crawled=0;const covered=[];
+  for(const [label,setup,root] of CRAWL){
+    await crawlPage.evaluate(RESET);
+    await new Promise(r=>setTimeout(r,150));
+    const err=await crawlPage.evaluate(code=>{try{(0,eval)(code);return '';}catch(e){return String(e&&e.message||e);}},setup);
+    await new Promise(r=>setTimeout(r,350));
+    const out=await crawlPage.evaluate((rootSel)=>{
+      document.querySelectorAll('.toast.show').forEach(el=>el.classList.remove('show'));
+      const root=rootSel==='body'?document.body:document.querySelector(rootSel);
+      if(!root)return {n:0,bad:['root '+rootSel+' missing']};
+      const SHEETS='.sheet-scrim,.pmodal-scrim,#sheet,#siteMenu,#siteMenuScrim';
+      const name=el=>(el.id?('#'+el.id):'')+(typeof el.className==='string'&&el.className?('.'+el.className.trim().split(/\s+/).join('.')):'')||el.tagName.toLowerCase();
+      const words=el=>((el.innerText||el.getAttribute('aria-label')||el.title||'').replace(/\s+/g,' ').trim()).slice(0,40);
+      const W=innerWidth,H=innerHeight;
+      const cands=[...root.querySelectorAll('button,a[href],[role="button"],[onclick]')].filter(el=>{
+        if(el.disabled||el.closest('[aria-hidden="true"],[inert]'))return false;
+        if(el.matches(SHEETS))return false;                       /* a scrim's own tap-to-close */
+        if(rootSel==='body'&&el.parentElement&&el.parentElement.closest(SHEETS))return false;  /* screens: closed/other sheets */
+        if(el.closest('.toast,#toast'))return false;
+        const cs=getComputedStyle(el);
+        if(cs.pointerEvents==='none'||cs.visibility==='hidden')return false;
+        const r=el.getBoundingClientRect();return r.width>=2&&r.height>=2;
+      });
+      let n=0;const bad=[];
+      /* the part of el a thumb can reach: its box clipped by every scrolling/clipping ancestor and the screen */
+      const reach=el=>{const r=el.getBoundingClientRect();let L=Math.max(r.left,0),T=Math.max(r.top,0),R=Math.min(r.right,W),B=Math.min(r.bottom,H);
+        for(let a=el.parentElement;a&&a!==document.documentElement;a=a.parentElement){const o=getComputedStyle(a);
+          if(o.overflowX!=='visible'||o.overflowY!=='visible'){const q=a.getBoundingClientRect();L=Math.max(L,q.left);T=Math.max(T,q.top);R=Math.min(R,q.right);B=Math.min(B,q.bottom);}}
+        return (R-L>=1&&B-T>=1)?{x:(L+R)/2,y:(T+B)/2}:null;};
+      for(const el of cands){
+        el.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});
+        const pt=reach(el);
+        if(!pt)continue;                                         /* clipped out by design (carousel, collapsed) */
+        const x=pt.x,y=pt.y;
+        const hit=document.elementFromPoint(x,y);
+        if(hit&&hit.closest('.toast,#toast'))continue;          /* transient toast: ignore */
+        n++;
+        if(!hit||(hit!==el&&!el.contains(hit)))bad.push(name(el)+' "'+words(el)+'" covered by '+(hit?name(hit):'nothing'));
+      }
+      return {n,bad};
+    },root);
+    crawled+=out.n;
+    t('tap crawler: '+label+' ('+out.n+' tappables)',!err&&out.n>0&&out.bad.length===0,err||out.bad.slice(0,3).join(' | '));
+    out.bad.forEach(b=>covered.push(label+': '+b));
+  }
+  console.log('  tap crawler: '+crawled+' tappables across '+CRAWL.length+' screens/sheets, '+covered.length+' covered');
+  if(covered.length)covered.slice(0,40).forEach(c=>console.log('    covered - '+c));
+  await crawlPage.close();
 
   /* ══ MONKEY: 12s of random taps in the demo must not throw ══ */
   const monkey=await prepPage(browser);

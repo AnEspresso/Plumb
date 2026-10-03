@@ -183,8 +183,28 @@ function db(){
   }
   return firebase.firestore();
 }
-function fail(msg){
+/* No-signal words (P2-2): ONE place, so the copy owner can swap them. */
+var GP_NO_SIGNAL_LINE="Your answer didn't go through. Check your signal, then tap Try again.";
+var GP_TRY_AGAIN="Try again";
+/* Lasting no-signal line + a real Try again that re-runs the same action.
+   Stays on screen until the retry succeeds (paint() replaces the body). */
+function noSignal(retry){
+  var body=document.getElementById("body");if(!body)return;
+  var box=document.getElementById("gpNoSig");
+  if(!box){
+    box=document.createElement("div");box.id="gpNoSig";box.className="ok warn";box.setAttribute("role","alert");
+    var line=document.createElement("b");line.id="gpNoSigLine";line.textContent=GP_NO_SIGNAL_LINE;box.appendChild(line);
+    var dis=body.querySelector(".btn-primary[disabled]");if(dis)dis.style.display="none";
+    body.appendChild(box);
+  }
+  var btn=document.getElementById("gpRetry");
+  if(!btn){btn=document.createElement("button");btn.id="gpRetry";btn.className="btn btn-primary btn-block";btn.textContent=GP_TRY_AGAIN;body.appendChild(btn);}
+  btn.disabled=false;
+  btn.onclick=function(){btn.disabled=true;retry();};
+}
+function fail(msg,retry){
   if(window.__gpUrlPainted){
+    if(retry){noSignal(retry);return;}
     toast(msg);
     return;
   }
@@ -469,19 +489,21 @@ function listen(){
 function boot(){
   if(window.__packetFixture){apply(window.__packetFixture);return;}
   if(!TOKEN){if(window.__gpUrlPainted)return;fail("This link is missing its packet. Reply to the text you got and your builder will send a fresh one.");return;}
-  var t0=Date.now(),tries=0,wait=20000;
-  (function look(){
+  var t0,tries,wait=window.__gpWaitMs||20000;
+  function load(){t0=Date.now();tries=0;look();}
+  function look(){
     var d=db();
-    if(!d){if(Date.now()-t0<wait){setTimeout(look,150);return;}fail("This link needs a connection to open. Get a bar of signal and tap Try again.");return;}
+    if(!d){if(Date.now()-t0<wait){setTimeout(look,150);return;}fail("This link needs a connection to open. Get a bar of signal and tap Try again.",load);return;}
     d.collection("packets").doc(String(TOKEN)).get().then(function(x){
       if(x&&x.exists){_snap=x.data();if(_snap.revoked||_snap.siteDeleted){fail("This house is no longer on the book. Ask your builder if you still need the packet.");return;}if((_snap.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}paint();listen();return;}
       if(++tries<8&&Date.now()-t0<wait){setTimeout(look,350);return;}
       fail("This link is no longer available. Ask your builder if you still need it.");
-    }).catch(function(){
+    }).catch(function(err){
       if(++tries<10&&Date.now()-t0<wait){setTimeout(look,400);return;}
-      fail("This link is no longer available. Ask your builder if you still need it.");
+      fail("This link is no longer available. Ask your builder if you still need it.",(err&&err.code==="permission-denied")?null:load);
     });
-  })();
+  }
+  load();
 }
 boot();
 })();

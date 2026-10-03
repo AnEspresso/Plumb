@@ -3929,15 +3929,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.447.0 - Invite codes are single use and show the house before sign-up';
+const PLUMB_VERSION='2.448.0 - Sheets always open on top, guest packet keeps a Try again with no signal';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1790982578552;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.447.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1790995721741;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.448.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5229,6 +5229,25 @@ function photoSrc(it){if(!it)return null;const local=it.photoId&&photoURLs[it.ph
 function thumbHTML(it){const u=photoSrc(it);if(u)return`<img src="${u}" alt="">`;return swatch(SW[it.sw]||SW.dove,noteGlyph(it));}
 function esc(s){return(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toast(msg){const t=document.getElementById('toast');t.className='toast';t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+/* ── One stacking rule (P2-1). A sheet that opens sits above every sheet already
+   open, and always below toasts and confirm dialogs (--z-toast). No sheet needs a
+   hand-assigned z-index any more; that was the recurring "broken button". ── */
+(function sheetStack(){
+  const SEL='.sheet-scrim,.pmodal-scrim,#sheet,#siteMenuScrim,#siteMenu',SKIP={confirmScrim:1,confirmDelScrim:1};
+  const isSheet=el=>el&&el.nodeType===1&&!SKIP[el.id]&&el.matches(SEL);
+  const zOf=el=>{const v=parseInt(getComputedStyle(el).zIndex,10);return isNaN(v)?0:v;};
+  function lift(el){
+    const cap=(parseInt(getComputedStyle(document.documentElement).getPropertyValue('--z-toast'),10)||300)-1;
+    const mine=zOf(el);if(mine>cap)return;            /* deliberately lifted (tour): leave it */
+    let top=-1;document.querySelectorAll(SEL).forEach(o=>{if(o!==el&&isSheet(o)&&o.classList.contains('show'))top=Math.max(top,zOf(o));});
+    if(top>=mine){el.style.setProperty('z-index',String(Math.min(top+1,cap)),'important');el.dataset.zStack='1';}   /* important: beats the old !important per-sheet rules */
+  }
+  try{new MutationObserver(recs=>{for(const r of recs){const el=r.target;if(!isSheet(el))continue;
+    const on=el.classList.contains('show'),was=/(^|\s)show(\s|$)/.test(r.oldValue||'');
+    if(on&&!was)lift(el);
+    else if(!on&&was&&el.dataset.zStack){el.style.zIndex='';delete el.dataset.zStack;}}})
+    .observe(document.body,{subtree:true,attributes:true,attributeFilter:['class'],attributeOldValue:true});}catch(e){}
+})();
 function toastAction(msg,label,fn,ms){const t=document.getElementById('toast');t.className='toast has-action';
   t.innerHTML='<span></span><button class="ua">'+esc(label)+'</button>';t.querySelector('span').textContent=msg;
   t.querySelector('.ua').onclick=()=>{clearTimeout(t._t);t.classList.remove('show');fn();};
@@ -8751,8 +8770,8 @@ function houseGoSite(view){
 function houseSwitchStreet(){
   try{
     const sc=document.getElementById('siteMenuScrim'),m=document.getElementById('siteMenu');
-    if(sc)sc.style.zIndex='210';
-    if(m)m.style.zIndex='210';
+    if(sc)sc.style.zIndex='';    /* the sheet stacking rule lifts the menu over the house sheet */
+    if(m)m.style.zIndex='';
   }catch(e){}
   openSiteMenu();
 }
@@ -18580,7 +18599,7 @@ function openSheet(asLog,logDate){try{const _hr=document.getElementById('fnHouse
   if(asLog){const e=(P().logs||[]).find(l=>l.date===editingLogDate);document.getElementById('caption').value=e?e.text:'';document.getElementById('shareToggle').classList.toggle('on',!!(e&&e.share));}
   syncAreaExclusivity(document.getElementById('areaChips'));
   const _sc=document.getElementById('scrim'),_sh=document.getElementById('sheet');
-  if(document.querySelector('.pmodal-scrim.show')){_sc.style.zIndex='210';_sh.style.zIndex='210';}else{_sc.style.zIndex='';_sh.style.zIndex='';}
+  if(!_sh.dataset.zStack){_sc.style.zIndex='';_sh.style.zIndex='';}   /* drop a stale tour lift; the sheet stacking rule lifts it over any open sheet */
   _sc.classList.add('show');_sh.classList.add('show');requestAnimationFrame(()=>growNote(document.getElementById('caption')));
   try{labelHouseBack(document.getElementById('sheetCancelBtn'),'Cancel');}catch(e){}}
 function _impAfterSave(){
