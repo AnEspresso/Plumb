@@ -683,6 +683,8 @@ async function tappable(page,sel){
     await new Promise(r=>setTimeout(r,150));
     const err=await crawlPage.evaluate(code=>{try{(0,eval)(code);return '';}catch(e){return String(e&&e.message||e);}},setup);
     await new Promise(r=>setTimeout(r,350));
+    /* let slide-ins finish first: slow CI runners caught #deskBack mid-transition */
+    await crawlPage.evaluate(()=>Promise.race([Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{}))),new Promise(r=>setTimeout(r,1500))]));
     const out=await crawlPage.evaluate((rootSel)=>{
       document.querySelectorAll('.toast.show').forEach(el=>el.classList.remove('show'));
       const root=rootSel==='body'?document.body:document.querySelector(rootSel);
