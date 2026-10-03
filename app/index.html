@@ -13120,7 +13120,7 @@ function renderClient(){
     h+=buildBriefRowHTML(p);
     const facts=[];
     decisions.forEach(function(s){
-      facts.push({k:s.item||'A finish to sign off',m:(s.cat||'')+(s.room&&s.room!=='—'?' \u00b7 '+s.room:''),go:'clientGo(\'specs\','+s.id+')'});
+      facts.push({k:s.item||'A finish to approve',m:(s.cat||'')+(s.room&&s.room!=='—'?' \u00b7 '+s.room:''),go:'clientGo(\'specs\','+s.id+')'});
     });
     openQs.forEach(function(s){
       facts.push({k:(s.item||'A finish')+' needs your answer',m:'Selections',go:'clientGo(\'specs\','+s.id+')'});
@@ -13173,7 +13173,7 @@ function renderClient(){
       const has=tradeSelections(p,tr).length>0;const so=packetSignoff(p,tr);
       return has&&tradeSpecGaps(p,tr).length===0&&!(so.homeowner&&so.homeowner.at);});
     if(signTrades.length){
-      h+=`<div class="cl-needs"><div class="cn-h">Crew instructions to approve</div><div class="cn-sub">Specs are set. Review each and sign off so your builder can send it to the crew.</div>`+
+      h+=`<div class="cl-needs"><div class="cn-h">Crew instructions to approve</div><div class="cn-sub">Specs are set. Review each one and approve it so your builder can send it to the crew.</div>`+
         signTrades.map(tr=>`<div class="cn-item cur-p" onclick="openClientPacket('${tr}')"><div class="cn-t">${esc(specLabel(tr))} crew instructions <span class="cn-c">tap to review &amp; sign</span></div></div>`).join('')+`</div>`;
     }
     const needs=sels.filter(s=>s.status!=='installed'&&specStatus(s).homeownerPending.length);
@@ -13206,7 +13206,7 @@ function renderClient(){
             <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
             ${selTimelineRO(s)}
           </div>
-          ${s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Signed':'Sign off'}</button>`}
+          ${s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Signed':'Approve'}</button>`}
         </div>`;}).join('');
     }).join(''):'<div class="empty">No selections recorded yet.</div>';
     h+='<div class="sec" id="clMoney"><h2>Costs & payments</h2><button type="button" class="sec-act" onclick="toggleClientMoney()">'+(_clientMoneyOpen?'Hide':esc(costs.line))+'</button></div>';
@@ -13239,7 +13239,7 @@ function clientSaveSpec(id){const p=clientProj();const s=(p.selections||[]).find
 function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
   if(s.status==='pending'){toast('Your builder is still preparing this option');return;}
   const now=!s.approved;const patch={approved:now,signed:now?{date:todayStr(),by:(p.buyers&&p.buyers.length?p.buyers:['Homeowner'])}:null};Data.updateSelection(id,patch,p.id);logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
-  renderClient();toast(now?'Signed off — thank you':'Final OK removed');}
+  renderClient();toast(now?'Approved. Thank you.':'Final OK removed');}
 /* raise a concern */
 let concernPhotoId=null;
 function openConcern(){concernPhotoId=null;document.getElementById('cNote').value='';
@@ -16843,7 +16843,7 @@ function packetHTML(p,tradeId,subId){
       h+=row(sel.item||'(unspecified)',sub,'','pktFillSpec('+sel.id+')','','');
     });
     openItems.forEach(function(it){
-      h+=row(cap1(it.cap),areaText(it.area)+(it.client?' \u00b7 raised by homeowner':'')+' \u00b7 on their scope','',isBuilder?('openRecord('+it.id+')'):'','','');
+      h+=row(cap1(it.cap),areaText(it.area)+(it.client?' \u00b7 raised by homeowner':'')+(isClient?' \u00b7 part of their work':' \u00b7 on their scope'),'',isBuilder?('openRecord('+it.id+')'):'','','');
     });
     pinnedItems.forEach(function(it){
       h+=row(it.cap,areaText(it.area)+' \u00b7 pinned','','openRecord('+it.id+')','','');
@@ -16885,7 +16885,7 @@ function packetHTML(p,tradeId,subId){
   const so=packetSignoff(p,tradeId);
   const bSigned=!!(so.builder&&so.builder.at), hSigned=!!(so.homeowner&&so.homeowner.at);
   if(packetIsStale(p,tradeId)||((p.packetPrevSpec||{})[tradeId]&&!(bSigned&&hSigned))){
-    h+='<div class="pkt-banner warn mt-2"><b>Specs changed.</b> '+(isClient?'Final OK':'Sign-off')+' no longer applies. Review and sign again before anyone installs. Do not install until builder and homeowner have both signed.</div>';
+    h+='<div class="pkt-banner warn mt-2"><b>Specs changed'+(isClient?',</b> so the final OK was cleared.':'.</b> Sign-off no longer applies.')+' Review and sign again before anyone installs. Do not install until builder and homeowner have both signed.</div>';
   }else if(!gaps.length&&!(bSigned&&hSigned)){
     h+='<div class="pkt-banner warn mt-2"><b>Do not install.</b> Wait until builder and homeowner have both signed these instructions.</div>';
   }
@@ -16904,8 +16904,8 @@ function packetHTML(p,tradeId,subId){
     }
   }else{
     h+='<div class="sec"><h2>Your final OK</h2></div>';
-    h+=row('Homeowner',hSigned?('Signed '+fmtDue(so.homeowner.at)):'Review the specs above, then sign off',hSigned?'Signed':'','','',hSigned?'ok':'');
-    h+='<button class="btn btn-primary btn-block mt-3" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">'+(hSigned?'Signed':'Sign off')+'</button>';
+    h+=row('Homeowner',hSigned?('Signed '+fmtDue(so.homeowner.at)):'Review the specs above, then approve them.',hSigned?'Signed':'','','',hSigned?'ok':'');
+    h+='<button class="btn btn-primary btn-block mt-3" onclick="pktSignHomeowner(\''+p.id+'\',\''+esc(tradeId)+'\')">'+(hSigned?'Signed':'Approve')+'</button>';
     h+='<button class="btn btn-secondary btn-block mt-2" onclick="openIdea()">Add a note for your builder</button>';
   }
   if(!gaps.length&&bSigned&&hSigned&&!packetIsStale(p,tradeId)){
@@ -18214,7 +18214,7 @@ function openSubPacket(projId,tradeId){const p=state.projects.find(x=>String(x.i
   renderSubView();const b=document.getElementById('svBody');if(b)b.scrollTop=0;}
 function openClientPacket(tradeId){const p=clientProj();if(!p)return;
   logEvent('packetViewed','homeowner · '+specLabel(tradeId));
-  showInfo(specLabel(tradeId)+' packet',packetHTML(p,tradeId));}
+  showInfo(specLabel(tradeId)+' crew instructions',packetHTML(p,tradeId));}
 function clearSub(id){const s=P().subs.find(x=>x.id===id);if(!s)return;
   const gaps=tradeSpecGaps(P(),s.specialty);
   if(gaps.length){logEvent('siteReadyBlocked',s.name+' ('+specLabel(s.specialty)+') · '+gaps.length+' spec gap'+(gaps.length===1?'':'s'));openSpecBlock(s,gaps);return;}
