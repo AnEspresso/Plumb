@@ -794,7 +794,7 @@ t('calendar door atop Schedule pane', el('buildSchedule').innerHTML.includes('Tr
 $("calSiteFilter=String(state.activeId);openCal()");
 t('door opens calendar scoped to this site', el('calview').classList.contains('show'));
 $("document.getElementById('calview').classList.remove('show')");
-t('Full site tab says Needs You', $("document.querySelector('nav .tab[data-v=\"decisions\"] span').textContent")==='Needs You');
+t('Full site tab says Needs you', $("document.querySelector('nav .tab[data-v=\"decisions\"] span').textContent")==='Needs you');
 t('To-Do segments speak one language', el('view-decisions').innerHTML.includes('Waiting on you')&&el('view-decisions').innerHTML.includes('House issues'));
 t('Log camera is Field Notes', $("!!document.querySelector('#view-log .site-field')")===true);
 t('Photos pane uses Field Notes', el('filesPhotos').innerHTML.includes('Field Notes')&&el('filesPhotos').innerHTML.includes('openFieldNote'));
@@ -1584,7 +1584,7 @@ asClient('p3');_linksAs('homeowner: homeowners page only',[_hoSite]);
 $("state.session={role:'builder',name:'You',member:{role:'client'}}");_linksAs('builder account wearing the homeowner hat',[_hoSite]);
 $("state.session={role:'builder',name:'You',member:{role:'sub'}}");_linksAs('builder account wearing the crew hat',[_site]);
 asSub('Ray Delgado');if(_cvOn)_cv.classList.add('show');}
-t('sign-in offers the free Zoom setup under Just looking', (function(){const e=D.querySelector('.login-explore + a.login-explore');return !!(e&&e.previousElementSibling.textContent==='Just looking? Explore the example build'&&e.textContent==='New to SitePlumb? Get a free Zoom setup.'&&e.getAttribute('href')===_zm);})());
+t('sign-in offers the free Zoom setup under Just looking', (function(){const e=D.querySelector('.login-explore + a.login-explore');return !!(e&&e.previousElementSibling.textContent==='Just looking? Open the example build'&&e.textContent==='New to SitePlumb? Get a free Zoom setup.'&&e.getAttribute('href')===_zm);})());
 t('demo bar ends with Like it? Free Zoom setup', (function(){const e=el('excBanner').lastElementChild;return !!(e&&e.tagName==='A'&&e.textContent==='Like it? Free Zoom setup'&&e.getAttribute('href')===_zm);})());
 asBuilder();
 // demo / no-live-account: hub offers policies but no server deletion
@@ -2325,15 +2325,15 @@ S('daily log reads as a record');
 $("P().logs=[{date:todayStr(),text:'This is Today'},{date:'2026-07-20',text:'Older day'}]");
 $("renderDayLog()");
 t('the button stays a button, not a readout',
-  $("document.getElementById('logTitle').textContent")==="Edit today's entry"
-  &&$("document.getElementById('logSub').textContent")==='Crew, conditions, what got done');
+  $("document.getElementById('logTitle').textContent")==='Who was here today'
+  &&$("document.getElementById('logSub').textContent")==='Crews on site and what got done');
 t('today appears in the list with every other day',
   $("document.getElementById('logHistory').textContent").indexOf('This is Today')>=0
   &&$("document.getElementById('logHistory').textContent").indexOf('Older day')>=0);
 t('and it reads as Today', $("document.getElementById('logHistory').textContent").indexOf('Today')>=0);
 $("P().logs=[]");$("renderDayLog()");
 t('with nothing logged the button invites one',
-  $("document.getElementById('logTitle').textContent")==="Add today's entry");
+  $("document.getElementById('logTitle').textContent")==='Who was here today'&&SRC.indexOf('No entries yet. Tap Who was here today to start the record.')>=0);
 asBuilder();
 
 S('renamed tags keep old records whole');
@@ -2419,7 +2419,7 @@ t('Needs you on first screen is at most three', $("document.querySelectorAll('#o
 t('Field Notes card is on home after Needs you', $("!!document.querySelector('#ovCapture .ov-field')")===true&&$("document.getElementById('ovToday').innerHTML").indexOf('Needs you')>=0);
 t('Field Notes button has words', (function(){
   const txt=$("(function(){var el=document.querySelector('#ovCapture .ov-field');return el?String(el.textContent||''):'';})()");
-  return txt.indexOf('Write a field note')>=0&&txt.indexOf('Photo, note, or a problem')>=0;
+  return txt.indexOf('Add a field note')>=0&&txt.indexOf('Photo, note, or a problem')>=0;
 })());
 t('Field Notes button is full width in source', SRC.indexOf('.ov-field{')>=0&&SRC.split('.ov-field{')[1].slice(0,280).indexOf('width:100%')>=0&&SRC.indexOf('min-height:var(--tap)')>=0);
 t('Field Notes mark is 82 by 56', (function(){
@@ -2941,6 +2941,12 @@ t('stack: closing the sheet drops its lift',$("document.getElementById('legalScr
   t('guest no signal: the words live in one place',(PH.match(/Your answer didn't go through/g)||[]).length===1&&PH.indexOf('var GP_TRY_AGAIN="Try again"')>=0);
   t('guest no signal: Try again re-runs the same load',PH.indexOf('function noSignal(retry)')>=0&&PH.indexOf('fail("This link needs a connection to open. Get a bar of signal and tap Try again.",load)')>=0);
 })();
+
+/* ════ RELEASE F · wording pass (2.449.0) ════ */
+S('release-f');
+t('wording: no console.log left in the app',!/console\.log\(/.test(SRC));
+t('wording: the demo header does not repeat the role',(function(){$("(function(){try{Data.setSession({role:'builder',name:'Demo Builder'});renderOverview();}catch(e){}})()");return $("document.getElementById('ovWho').textContent")==='Demo Builder';})());
+t('wording: the crew packet door leads the house, one dates block',(function(){const f=$("String(renderSubView)");return f.indexOf('id=\"svPacket\"')>=0&&f.indexOf('id=\"svPacket\"')<f.indexOf('subCapture(')&&f.indexOf('Next on this house')<0;})());
 
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');

@@ -88,6 +88,9 @@ jobs:
     #   2. live index.html == live plumb.html          (parity really deployed)
     #   3. live sw.js cache tag == live app version    (no half-uploaded batch)
     #   4. key pages answer 200                        (nothing missing)
+    # Main only: on a branch push live is still the previous release, so this
+    # could never pass before merge.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: ritual
     steps:
