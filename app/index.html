@@ -3157,7 +3157,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
         </div>
         <div id="clMargin"></div>
         <label class="flabel">Projected final cost (optional)</label>
-        <input class="finput" id="clExpect" type="number" inputmode="decimal" placeholder="Leave blank to project automatically">
+        <input class="finput" id="clExpect" type="number" inputmode="decimal" placeholder="Leave blank to use the projection">
         <label class="flabel">Tied to a homeowner selection (optional)</label>
         <select class="finput" id="clSel"></select>
         <div id="clActuals"></div>
@@ -3562,7 +3562,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 <div class="sheet-body">
 <div id="ledgerBody"></div>
 </div>
-<div class="action-bar sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeLedgerDetail()">Close</button><button class="b1 b-go flex-1 btn btn-primary" onclick="closeLedgerDetail();openPayments()">Add / Edit Payments</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeLedgerDetail()">Close</button><button class="b1 b-go flex-1 btn btn-primary" onclick="closeLedgerDetail();openPayments()">Payments</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="stageReviewScrim">
@@ -3957,7 +3957,7 @@ const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791140950337;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1791142497327;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.460.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
@@ -8762,6 +8762,9 @@ function houseGoNext(){
   const pid=_housePid;
   houseLeave(function(){try{openNextSite(pid);}catch(e){}});
 }
+/* House Money tile and briefing strip (Agency 10/4): Paid {paid} of {net} · owed {out}.
+   The long "Upgrades & credits {net} · paid · owed" wrapped to two lines in the
+   strip at 390 on every demo house, so the strip uses the short one too. */
 function houseMoneyLine(p){
   try{
     const b=billingSummary(p);
@@ -8769,7 +8772,7 @@ function houseMoneyLine(p){
     const paid=Number(b.paid)||0;
     const left=Math.max(0,Number(b.out)||0);
     if(contract>0.005||paid>0.005)
-      return 'Upgrades & credits\u00a0'+invUsd(contract)+' · paid\u00a0'+invUsd(paid)+' · owed\u00a0'+invUsd(left);
+      return 'Paid\u00a0'+invUsd(paid)+' of\u00a0'+invUsd(contract)+' · owed\u00a0'+invUsd(left);
     const cs=costSummary(p);
     if((Number(cs.budget)||0)>0.005)
       /* On budget only when exactly on; otherwise Under budget · {x} left (Agency 10/4) */
@@ -10559,7 +10562,9 @@ function clientCostsHTML(p){
     ledger+='<div class="lr"><span>Balance due on invoices</span><b>'+usd(bs.balanceDue)+'</b></div>';
     if(Math.abs(bs.unbilled)>0.005)ledger+='<div class="lr"><span>Not yet invoiced</span><b class="'+(bs.unbilled<0?'cr':'up')+'">'+(bs.unbilled<0?'\u2212':'+')+usd(bs.unbilled)+'</b></div>';
     if(loose>0.005)ledger+='<div class="lr"><span>Paid outside invoices</span><b class="cr">\u2212'+usd(loose)+'</b></div>';
-    ledger+='<div class="lr out"><span>Still to pay</span><b class="'+(bs.out<0?'cr':'')+'">'+(bs.out<0?'\u2212':'')+usd(bs.out)+'</b></div>';
+    /* Below $0 it is the homeowner's credit, shown as a positive amount (Agency 10/4). */
+    ledger+=bs.out<-0.005?'<div class="lr out"><span>Your credit</span><b class="cr">'+usd(bs.out)+'</b></div>'
+      :'<div class="lr out"><span>Still to pay</span><b>'+usd(bs.out)+'</b></div>';
   }else{
     ledger+='<div class="lr out"><span>Balance due</span><b class="'+(bs.balanceDue>0?'':'cr')+'">'+usd(bs.balanceDue)+'</b></div>';
   }
@@ -10844,7 +10849,7 @@ function jobCostCsv(p){
     const revTxt=revs.map(x=>{const d=x.t?new Date(x.t):null;
       const ds=d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';
       return ds+' '+invUsd(x.from)+' to '+invUsd(x.to)+(x.note?' ('+x.note+')':'');}).join('; ');
-    const notes=[r.paidOver?'paid more than signed':'',r.expect>0?'projection set by builder':''].filter(Boolean).join('; ');
+    const notes=[r.paidOver?'paid over the contract':'',r.expect>0?'projection set by builder':''].filter(Boolean).join('; ');
     rows.push([l.label||'',l.trade?specLabel(l.trade):'',l.stage?stageName(l.stage):'',orig,r.budget,revTxt,r.committed,r.spent,r.projected,
       Math.round((r.projected-r.budget)*100)/100,notes]);});
   const cs=costSummary(p);
@@ -10901,7 +10906,7 @@ function billingCardHTML(p){
   return `<div class="overall bgt-tap" onclick="openInvoices()">
       <div class="bgt-cardgrid">
         <div><b>${invUsd(b.out)}</b><span>Still owed</span></div>
-        <div><b class="${okN?'ov':''}">${okN}</b><span>Awaiting OK</span></div>
+        <div><b class="${okN?'ov':''}">${okN}</b><span>Not approved yet</span></div>
         <div><b>${invUsd(b.billed)}</b><span>Invoiced</span></div>
         <div><b>${invUsd(b.paid)}</b><span>Paid</span></div>
       </div>
@@ -11042,7 +11047,7 @@ function renderBudget(){
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
   if(un.length){
     h+=`<div class="bgt-grp c-clay">Not assigned to a line</div>`;
-    un.forEach(a=>{h+=`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${qbBadge(a)}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`;});
+    un.forEach(a=>{h+=`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${qbBadge(a)}</span><i>${a.kind==='spent'?'paid':'contract'} ${invUsd(a.amount)}</i></div>`;});
   }
   document.getElementById('budgetBody').innerHTML=h+moneyBillHTML(p);
   try{labelHouseBack(document.getElementById('budgetDoneBtn'),'Done');}catch(e){}
@@ -11390,7 +11395,7 @@ function budgetTableHTML(p){
   });
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
   let unh='';
-  if(un.length){unh=`<div class="bgt-grp c-clay">Not assigned to a line</div>`+un.map(a=>`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${a.qbId?' <b style=\"color:var(--sage);font-size:.72em\">QB✓</b>':''}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`).join('');}
+  if(un.length){unh=`<div class="bgt-grp c-clay">Not assigned to a line</div>`+un.map(a=>`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${a.qbId?' <b style=\"color:var(--sage);font-size:.72em\">QB✓</b>':''}</span><i>${a.kind==='spent'?'paid':'contract'} ${invUsd(a.amount)}</i></div>`).join('');}
   return `<table class="bgt-table"><thead><tr>
       <th class="u-m23">Line</th><th class="u-m24">Trade</th><th class="u-m24">Stage</th><th class="n u-m25">Budget</th><th class="n u-m25">Contracted</th><th class="n u-m25">Paid</th><th class="n u-m26">Remaining</th><th class="n u-m27">Edit</th>
     </tr></thead><tbody>${rows}
@@ -13516,7 +13521,7 @@ function ledgerDetailHTML(p){
   h+=`<div class="ld-sec">Credits</div>`;
   h+=credRows.length?credRows.map(liRow).join(''):`<div class="ld-empty">No credits on this build.</div>`;
   h+=`<div class="ld-sub"><span>Total credits</span><b class="cr">\u2212${usd(crs)}</b></div>`;
-  h+=`<div class="ld-tot"><span>Net change</span><b class="${net<0?'cr':''}">${net<0?'\u2212':''}${usd(net)}</b></div>`;
+  h+=`<div class="ld-tot"><span>Upgrades minus credits</span><b class="${net<0?'cr':''}">${net<0?'\u2212':''}${usd(net)}</b></div>`;
   h+=`<div class="ld-sub"><span>Invoiced</span><b>${usd(bs.billed)}</b></div>`;
   if(Math.abs(bs.unbilled)>0.005)h+=`<div class="ld-sub"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`;
   h+=`<div class="ld-sec">Payments received</div>`;
@@ -13524,7 +13529,8 @@ function ledgerDetailHTML(p){
   if(payRows.length)h+=`<div class="ld-sub"><span>Total received</span><b class="cr">\u2212${usd(paid)}</b></div>`;
   if(loose>0.005)h+=`<div class="fs-xs c-ink-3 mt-1 ml-1 mr-1 mb-1 lh-145">Includes ${usd(loose)} paid outside invoices.</div>`;
   if(Math.abs(bs.unbilled)>0.005||loose>0.005)h+=`<div class="ld-sub"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>`;
-  h+=`<div class="ld-tot big"><span>Still owed</span><b class="${out<0?'cr':''}">${out<0?'\u2212':''}${usd(out)}</b></div>`;
+  h+=out<-0.005?`<div class="ld-tot big"><span>Homeowner’s credit</span><b class="cr">${usd(out)}</b></div>`
+    :`<div class="ld-tot big"><span>Still owed</span><b>${usd(out)}</b></div>`;
   return h;
 }
 function openLedgerDetail(){document.getElementById('ledgerBody').innerHTML=ledgerDetailHTML(P());document.getElementById('ledgerScrim').classList.add('show');}
@@ -14000,7 +14006,7 @@ function renderSelections(){
     const bs=billingSummary(P());const ups=bs.ups,crs=bs.crs,net=bs.net;const loose=bs.paid-bs.invPaid;
     const usd=n=>'$'+Math.abs(n).toLocaleString();
     sum.innerHTML=`<div class="sel-ledger tappable" onclick="openLedger()">
-      <div class="lh"><span>Upgrades &amp; credits</span><span class="d-flex gap-1"><button class="lpay btn btn-quiet" onclick="event.stopPropagation();openInvoices()">Invoices</button><button class="lpay btn btn-quiet" onclick="event.stopPropagation();openBilling('payments')">Add / Edit Payments</button></span></div>
+      <div class="lh"><span>Upgrades &amp; credits</span><span class="d-flex gap-1"><button class="lpay btn btn-quiet" onclick="event.stopPropagation();openInvoices()">Invoices</button><button class="lpay btn btn-quiet" onclick="event.stopPropagation();openBilling('payments')">Payments</button></span></div>
       <div class="lr"><span>Upgrades &amp; overages</span><b class="up">+${usd(ups)}</b></div>
       ${crs?`<div class="lr"><span>Credits</span><b class="cr">−${usd(crs)}</b></div>`:''}
       <div class="lr net"><span>Upgrades minus credits</span><b class="${net<0?'cr':''}">${net<0?'−':''}${usd(net)}</b></div>
@@ -14010,7 +14016,7 @@ function renderSelections(){
         ?`<div class="lr"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>
           ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
           ${loose>0.005?`<div class="lr"><span>Paid outside invoices</span><b class="cr">−${usd(loose)}</b></div>`:''}
-          <div class="lr out"><span>Still owed</span><b class="${bs.out<0?'cr':''}">${bs.out<0?'−':''}${usd(bs.out)}</b></div>`
+          ${bs.out<-0.005?`<div class="lr out"><span>Homeowner’s credit</span><b class="cr">${usd(bs.out)}</b></div>`:`<div class="lr out"><span>Still owed</span><b>${usd(bs.out)}</b></div>`}`
         :`<div class="lr out"><span>Balance due</span><b class="${bs.balanceDue>0?'':'cr'}">${usd(bs.balanceDue)}</b></div>`}
       <div class="ldr-hint">Tap for itemized breakdown ›</div>
     </div>`;
@@ -14159,6 +14165,8 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   if(!item){toast('Add an item or spec');return;}
   const existingSel=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
   const allowance=_selModeAllow?_selNum('selAllow'):null;let money=null;
+  /* Allowance mode with the allowance left blank saves a plain upgrade or credit; say so. */
+  const blankAllow=_selModeAllow&&allowance==null;
   if(allowance!=null){
     const cost=_selNum('selCost');
     if(isNaN(allowance)||isNaN(cost)||allowance<0||(cost!=null&&cost<0)){toast('Allowance and price can’t be less than $0.');return;}
@@ -14175,9 +14183,9 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
     if(!selCanInstall(existing)){
       toast((!existing||!existing.approved)?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'Crew has not confirmed these instructions \u2014 can\u2019t mark Installed');return;}
   }
-  if(editingSelId!=null){Data.updateSelection(editingSelId,Object.assign({room:room||'—',cat,item,note,price,status},money||{}));logEvent('selectionEdit',item);toast('Selection updated');}
+  if(editingSelId!=null){Data.updateSelection(editingSelId,Object.assign({room:room||'—',cat,item,note,price,status},money||{}));logEvent('selectionEdit',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection updated');}
   else{/* R-1 PR 3: never reuse an id an invoice still names (allowances bill by selId) */
-    const id=Math.max(P().selections.reduce((m,s)=>Math.max(m,s.id),0)||0,(P().invoices||[]).reduce((m,v)=>Math.max(m,...(v.items||[]).map(it=>Number(it.selId)||0)),0))+1;Data.addSelection(Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{}));logEvent('selectionAdded',item);toast('Selection added');}
+    const id=Math.max(P().selections.reduce((m,s)=>Math.max(m,s.id),0)||0,(P().invoices||[]).reduce((m,v)=>Math.max(m,...(v.items||[]).map(it=>Number(it.selId)||0)),0))+1;Data.addSelection(Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{}));logEvent('selectionAdded',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection added');}
   closeAddSel();renderSelections();}
 function removeSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;
   const m=selMoney(s.price);
@@ -16725,7 +16733,7 @@ function schedPlanList(){
    prompts all count down to it. */
 function fmtDue(ts){const d=new Date(ts);return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
 function dueState(ts){if(!ts)return null;const days=Math.ceil((ts-Date.now())/86400000);
-  return {ts,days,overdue:days<0,label:days<0?('Overdue by '+(-days)+' day'+(days===-1?'':'s')):days===0?'Due today':('Due in '+days+' day'+(days===1?'':'s'))};}
+  return {ts,days,overdue:days<0,label:days<0?((-days)+' day'+(days===-1?'':'s')+' late'):days===0?'Due today':('Due in '+days+' day'+(days===1?'':'s'))};}
 function setPacketDeadline(subId){
   const sb=P().subs.find(x=>x.id===subId);if(!sb)return;
   const cur=sb.specsDue?new Date(sb.specsDue).toISOString().slice(0,10):'';
@@ -18627,7 +18635,7 @@ function renderDecisions(){
       <div class="body"><div class="cap">${esc(it.cap)}</div>
         <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div></div>`).join('');
-  if(awaiting.length)h+='<div class="sec"><h2>Awaiting homeowner sign-off</h2></div>'+awaiting.map(s=>`
+  if(awaiting.length)h+='<div class="sec"><h2>Waiting for the homeowner to approve</h2></div>'+awaiting.map(s=>`
     <div class="sel-row"><div class="si" onclick="openEditSel(${s.id})"><div class="it">${esc(s.item||'(unspecified)')}</div>
       <div class="ct">${esc(s.cat||'Other')}${s.room?' \u00b7 '+esc(s.room):''}</div></div><span class="approve-ro off">Awaiting</span></div>`).join('');
   if(pendingCats.length)h+='<div class="sec"><h2>Selections not yet made</h2></div>'+pendingCats.map(c=>`<div class="sel-empty-row" onclick="openAddSel('${String(c).replace(/'/g,"\\'")}')"><span>${esc(c)}</span><span class="addlink">\uff0b Choose</span></div>`).join('');
