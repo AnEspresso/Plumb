@@ -3945,15 +3945,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.456.0 - Allowances: a changed overage asks the homeowner again';
+const PLUMB_VERSION='2.457.0 - Approve says Approved only once the house has it';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791135117964;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.456.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791137715273;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.457.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -13339,7 +13339,7 @@ function renderClient(){
             <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
             ${selTimelineRO(s)}
           </div>
-          ${s.status==='pending'?'<span class="cl-info">In progress</span>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Approved':'Approve'}</button>`}
+          ${s.status==='pending'?'<span class="cl-info">In progress</span>':_clSignBusy[p.id+':'+s.id]?'<button class="cl-sign" disabled aria-busy="true">Saving…</button>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Approved':'Approve'}</button>`}
         </div>`;}).join('');
     }).join(''):'<div class="empty">No selections recorded yet.</div>';
     h+='<div class="sec" id="clMoney"><h2>Costs & payments</h2><button type="button" class="sec-act" onclick="toggleClientMoney()">'+(_clientMoneyOpen?'Hide':esc(costs.line))+'</button></div>';
@@ -13386,9 +13386,30 @@ function clientAllowanceLine(s,p){
      the line only breaks between pieces (never "$120" / "over"). */
   return '<div class="ct cl-allow">'+parts.map((x,i)=>'<span class="ws-nw">'+x+(i<parts.length-1?' ·':'')+'</span>').join(' ')+'</div>';
 }
-function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
+/* A live house says Approved only after the server takes it (2.457.0). The write
+   carries just the two fields the rules let a homeowner change (clientSelOk); a
+   refusal or a dropped connection changes nothing here and says so. Practice
+   houses stay local. No timeout: a queued write can still land later. */
+const _clSignBusy={};
+async function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
   if(s.status==='pending'){toast('Your builder is still preparing this option');return;}
-  const now=!s.approved;const patch={approved:now,signed:now?{date:todayStr(),by:(p.buyers&&p.buyers.length?p.buyers:['Homeowner'])}:null};Data.updateSelection(id,patch,p.id);logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
+  const now=!s.approved;const patch={approved:now,signed:now?{date:todayStr(),by:(p.buyers&&p.buyers.length?p.buyers:['Homeowner'])}:null};
+  if(appMode()!=='real'||p.sample){Data.updateSelection(id,patch,p.id);logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
+    renderClient();toast(now?'Approved. Thank you.':'Final OK removed');return;}
+  const key=p.id+':'+id;if(_clSignBusy[key])return;
+  const SIGNAL='Could not save \u2014 try again with a bar of signal';
+  if((typeof navigator!=='undefined'&&navigator.onLine===false)||typeof Sync==='undefined'||!Sync.ready()||Sync.mode!=='live'){toast(SIGNAL);return;}
+  _clSignBusy[key]=true;renderClient();
+  try{await Sync.db.collection('sites').doc(String(p.id)).collection('sel').doc(String(id))
+      .set({data:{approved:patch.approved,signed:patch.signed},updatedAt:Date.now(),updatedBy:Sync.deviceId},{merge:true});}
+  catch(e){delete _clSignBusy[key];const denied=!!(e&&e.code==='permission-denied');
+    trapError(denied?'rules':'caught','Approve write '+(denied?'refused':'failed')+': '+String((e&&(e.code||e.message))||'').slice(0,100),'clientSignoff');
+    renderClient();toast(denied?'Couldn\u2019t save. Your builder\u2019s house didn\u2019t accept it. Ask your builder to check your access.':SIGNAL);return;}
+  delete _clSignBusy[key];
+  const rec=Data.updateSelection(id,patch,p.id);
+  try{const sh=Sync._shadow[String(p.id)]||(Sync._shadow[String(p.id)]={meta:'',colls:{}});sh.colls=sh.colls||{};
+    if(rec)(sh.colls.sel||(sh.colls.sel={}))[String(id)]=_syncHash(JSON.stringify(rec));Sync._saveBase();}catch(e){}
+  logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
   renderClient();toast(now?'Approved. Thank you.':'Final OK removed');}
 /* raise a concern */
 let concernPhotoId=null;
