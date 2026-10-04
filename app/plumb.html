@@ -2001,6 +2001,8 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 .seg button{min-height:var(--tap);padding:0 var(--s-4);border:0;border-radius:999px;background:none;
   font-family:var(--f-sans);font-size:var(--t-sm);font-weight:600;color:var(--ink-2);}
 .seg button.on{background:var(--ink);color:var(--surface);}
+.seg.sel-mode{display:flex;width:100%;box-sizing:border-box;}
+.seg.sel-mode button{flex:1;white-space:nowrap;padding:0 var(--s-2);}
 .chip{display:inline-flex;align-items:center;justify-content:center;line-height:1;min-height:var(--tap);padding:0 var(--s-3);border-radius:999px;
   background:var(--surface);border:1px solid var(--line);font-size:var(--t-sm);font-weight:600;color:var(--ink-2);}
 .chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink);}
@@ -3017,20 +3019,22 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <input id="selRoom" placeholder="Type a room / location…" style="display:none">
       <div class="fld-label">Selection</div>
       <input id="selItem" placeholder="e.g. SHAW Perspectives 2050">
-      <div class="fld-label">Allowance</div>
-      <input id="selAllow" inputmode="decimal" placeholder="e.g. 450" oninput="selAllowRefresh()">
-      <div class="fld-hint" id="selAllowHint">Leave blank if this item has no allowance.</div>
+      <div class="fld-label">How it’s priced</div>
+      <div class="seg sel-mode" id="selMode"><button type="button" id="selModeUp" class="on" onclick="setSelMode(false)">Upgrade or credit</button><button type="button" id="selModeAl" onclick="setSelMode(true)">Allowance</button></div>
       <div id="selAllowBox" style="display:none">
-        <div class="fld-label">Item price</div>
+        <div class="fld-label">Allowance</div>
+        <input id="selAllow" inputmode="decimal" placeholder="e.g. 450" oninput="selAllowRefresh()">
+        <div class="fld-hint" id="selAllowHint">The amount the contract sets aside for this item.</div>
+        <div class="fld-label">Price of what they picked</div>
         <input id="selCost" inputmode="decimal" placeholder="e.g. 570" oninput="selAllowRefresh()">
-        <div class="fld-hint" id="selCostHint">The homeowner’s price for this item, not your cost.</div>
+        <div class="fld-hint" id="selCostHint">What the homeowner pays for it. Not your cost.</div>
         <div class="fld-label">Budget line</div>
         <select id="selLine" class="fld-select"></select>
-        <div class="flagrow mt-2 ml-0 mr-0 mb-1"><div class="l"><div class="t">Credit unused allowances</div><div class="s">For this house only. If an item costs less than its allowance, the homeowner gets the difference as a credit.</div></div><div class="toggle" id="selCredit" onclick="this.classList.toggle('on');selAllowRefresh()"></div></div>
+        <div class="flagrow mt-2 ml-0 mr-0 mb-1"><div class="l"><div class="t">Credit unused allowances</div><div class="s">For this house only. If the price comes in under the allowance, the homeowner gets the difference as a credit.</div></div><div class="toggle" id="selCredit" onclick="this.classList.toggle('on');selAllowRefresh()"></div></div>
       </div>
       <div id="selPriceBox">
-      <div class="fld-label">Upgrade $ or credit</div>
-      <input id="selPrice" inputmode="text" placeholder="e.g. 2100 or -8000">
+      <div class="fld-label">Upgrade or credit amount</div>
+      <input id="selPrice" inputmode="text" placeholder="e.g. 2100, or -800 for a credit">
       <div class="fld-hint">Put 0 if there’s no upgrade or credit on this item.</div>
       </div>
       <div class="fld-label">Status</div>
@@ -3151,11 +3155,11 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
           <label class="flabel c-clay">Why the change? (kept in the line’s history)</label>
           <input class="finput" id="clRevNote" placeholder="Change order · steel price up">
         </div>
+        <div id="clMargin"></div>
         <label class="flabel">Now expecting (optional — overrides the projection)</label>
         <input class="finput" id="clExpect" type="number" inputmode="decimal" placeholder="Leave blank to project automatically">
         <label class="flabel">Tied to a homeowner selection (optional)</label>
         <select class="finput" id="clSel"></select>
-        <div id="clMargin"></div>
         <div id="clActuals"></div>
       </div>
       
@@ -3946,15 +3950,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.458.0 - Allowances: changes after an invoice bill the difference; allowance use on Money';
+const PLUMB_VERSION='2.459.0 - Selection sheet: How it’s priced switch (Upgrade or credit | Allowance)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791139323865;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.458.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791140306535;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.459.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -13935,7 +13939,7 @@ function saveSpec(){const s=(P().selections||[]).find(x=>x.id===_specId);if(!s){
   try{invalidatePacketSignaturesForCat(P(),cat);}catch(e){}}
 function openSpecBlock(sub,gaps){closeReady();if(sub){openPacket(sub.id);return;}}
 const SEL_NEXT={pending:'selected',selected:'ordered',ordered:'delivered',delivered:'installed',installed:'pending'};
-function selMoney(n){if(n==null||n==='')return '';n=Number(n);if(isNaN(n))return '';if(n===0)return 'Std';return (n<0?'−$':'+$')+Math.abs(n).toLocaleString();}
+function selMoney(n){if(n==null||n==='')return '';n=Number(n);if(isNaN(n))return '';if(n===0)return 'Included';return (n<0?'−$':'+$')+Math.abs(n).toLocaleString();}
 function selTimeline(s){
   const cur=SEL_STATUS.indexOf(s.status);const lastI=SEL_STATUS.length-1;
   return `<div class="tl">`+SEL_STATUS.map((st,i)=>{
@@ -14097,13 +14101,19 @@ function fillSelAllow(s){
   ['selAllow','selCost'].forEach(id=>{document.getElementById(id).readOnly=false;});
   _costSel('selLine',costLines(p).map(l=>({id:l.id,label:l.label})),a?(s.costLineId||''):'','No budget line');
   document.getElementById('selCredit').classList.toggle('on',houseCreditsAllowances(p));
-  selAllowRefresh();
+  setSelMode(a);   /* new items start on Upgrade or credit; an allowance item opens on Allowance */
 }
+/* How it’s priced: Upgrade or credit (the upgrade field) or Allowance (allowance,
+   price, budget line, credit setting). Saving on Upgrade drops any allowance. */
+let _selModeAllow=false;
+function setSelMode(on){_selModeAllow=!!on;
+  document.getElementById('selModeUp').classList.toggle('on',!_selModeAllow);
+  document.getElementById('selModeAl').classList.toggle('on',_selModeAllow);
+  selAllowRefresh();}
 function selAllowRefresh(){
-  const a=_selNum('selAllow');const on=a!=null;
+  const a=_selNum('selAllow');const on=_selModeAllow;
   document.getElementById('selAllowBox').style.display=on?'':'none';
   document.getElementById('selPriceBox').style.display=on?'none':'';
-  document.getElementById('selAllowHint').style.display=on?'none':'';
   const hint=document.getElementById('selCostHint');if(!on||!hint)return;hint.classList.remove('c-clay');
   const c=_selNum('selCost');const credit=document.getElementById('selCredit').classList.contains('on');
   const m=allowanceMath(a,c,credit);
@@ -14121,8 +14131,8 @@ function selAllowRefresh(){
       :d<-0.005?' The other '+invUsd(-d)+' goes on the next invoice as a credit.':'');
     return;}
   hint.classList.toggle('c-clay',!bad&&m.priced&&m.over>0.005&&!ra.kept);
-  hint.textContent=bad?'The homeowner’s price for this item, not your cost.'
-    :!m.priced?'Add the item price once the homeowner picks. Not your cost.'
+  hint.textContent=bad?'What the homeowner pays for it. Not your cost.'
+    :!m.priced?'Add the price once the homeowner picks.'
     :m.over>0.005?(ra.kept?invUsd(m.over)+' over the allowance. Approved by the homeowner.'
       :ra.reset&&ra.was>0.005?invUsd(m.over)+' over the allowance. The homeowner approved '+invUsd(ra.was)+' before, so they have to approve the new amount.'
       :invUsd(m.over)+' over the allowance. The homeowner has to approve it first.')
@@ -14147,10 +14157,10 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   let price=document.getElementById('selPrice').value.trim();price=price===''?null:Number(price.replace(/[^0-9.-]/g,''));price=isNaN(price)?null:price;
   if(!item){toast('Add an item or spec');return;}
   const existingSel=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
-  const allowance=_selNum('selAllow');let money=null;
+  const allowance=_selModeAllow?_selNum('selAllow'):null;let money=null;
   if(allowance!=null){
     const cost=_selNum('selCost');
-    if(isNaN(allowance)||isNaN(cost)||allowance<0||(cost!=null&&cost<0)){toast('Allowance and item price can’t be less than $0.');return;}
+    if(isNaN(allowance)||isNaN(cost)||allowance<0||(cost!=null&&cost<0)){toast('Allowance and price can’t be less than $0.');return;}
     const p=P();const credit=document.getElementById('selCredit').classList.contains('on');
     if(credit!==houseCreditsAllowances(p)){p.allowanceCredit=credit;repriceAllowances(p);}
     money={allowance,cost,costLineId:document.getElementById('selLine').value||null,price:allowanceMath(allowance,cost,credit).amount};
@@ -14171,7 +14181,7 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   closeAddSel();renderSelections();}
 function removeSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;
   const m=selMoney(s.price);
-  confirmDelete({title:'Delete selection?',body:'\u201c'+esc(s.item||'')+'\u201d'+(m&&m!=='Std'?' ('+esc(m)+')':'')+'<br><br>Removes it from the spec sheet and its amount from the upcharge ledger. This can\u2019t be undone.',onConfirm:()=>{
+  confirmDelete({title:'Delete selection?',body:'\u201c'+esc(s.item||'')+'\u201d'+(m&&m!=='Included'?' ('+esc(m)+')':'')+'<br><br>Removes it from the spec sheet and its amount from the upcharge ledger. This can\u2019t be undone.',onConfirm:()=>{
   Data.removeSelection(id);renderSelections();toast('Selection deleted');}});}
 function openSelNotes(){document.getElementById('selNotesText').value=P().selNotes||'';document.getElementById('selNotesScrim').classList.add('show');}
 function closeSelNotes(){document.getElementById('selNotesScrim').classList.remove('show');}
