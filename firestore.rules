@@ -37,26 +37,59 @@ service cloud.firestore {
         return isBuilder() && membersHeld() && rootMetaOnly()
           && !metaChanged().hasAny(['memberInfo','members','memberUids','mode']);
       }
-      function soBuilderHeld(t) {
-        return resource.data.meta.get('packetSignoff', {}).get(t, {}).get('builder', {})
-            == request.resource.data.meta.get('packetSignoff', {}).get(t, {}).get('builder', {});
-      }
+      /* A homeowner signs a trade's crew instructions: packetSignoff.<trade>
+         .homeowner. The builder's own sign-off on every trade stays exactly
+         as it was. Only the trades this write changed are compared: a group
+         of six is skipped with one hasAny, so the cost stays flat however
+         many trades are signed (the old version compared all 29 and ran past
+         the 1,000-expression limit, refusing every homeowner sign-off). No
+         helper function per trade: each call costs more than the compare. */
       function clientSignoffOk() {
-        return !metaChanged().hasAny(['packetSignoff'])
+        let o = resource.data.meta.get('packetSignoff', {});
+        let n = request.resource.data.meta.get('packetSignoff', {});
+        let ch = n.diff(o).affectedKeys();
+        return ch.size() == 0
           || (
-            request.resource.data.meta.get('packetSignoff', {})
-              .diff(resource.data.meta.get('packetSignoff', {})).affectedKeys()
-              .hasOnly(['excav','concrete','framing','roofing','siding','hvac','plumb','elec','insul','drywall','finish','floor','paint','landscape','cabinets','counter','windows','garage','gutters','lowvolt','fireplace','waterproof','septic','appliance','cleaning','demo','steel','stucco','general'])
-            && soBuilderHeld('excav') && soBuilderHeld('concrete') && soBuilderHeld('framing')
-            && soBuilderHeld('roofing') && soBuilderHeld('siding') && soBuilderHeld('hvac')
-            && soBuilderHeld('plumb') && soBuilderHeld('elec') && soBuilderHeld('insul')
-            && soBuilderHeld('drywall') && soBuilderHeld('finish') && soBuilderHeld('floor')
-            && soBuilderHeld('paint') && soBuilderHeld('landscape') && soBuilderHeld('cabinets')
-            && soBuilderHeld('counter') && soBuilderHeld('windows') && soBuilderHeld('garage')
-            && soBuilderHeld('gutters') && soBuilderHeld('lowvolt') && soBuilderHeld('fireplace')
-            && soBuilderHeld('waterproof') && soBuilderHeld('septic') && soBuilderHeld('appliance')
-            && soBuilderHeld('cleaning') && soBuilderHeld('demo') && soBuilderHeld('steel')
-            && soBuilderHeld('stucco') && soBuilderHeld('general')
+            ch.hasOnly(['excav','concrete','framing','roofing','siding','hvac','plumb','elec','insul','drywall','finish','floor','paint','landscape','cabinets','counter','windows','garage','gutters','lowvolt','fireplace','waterproof','septic','appliance','cleaning','demo','steel','stucco','general'])
+            && (!ch.hasAny(['excav', 'concrete', 'framing', 'roofing', 'siding', 'hvac']) || (
+              (!('excav' in ch) || o.get('excav', {}).get('builder', {}) == n.get('excav', {}).get('builder', {}))
+              && (!('concrete' in ch) || o.get('concrete', {}).get('builder', {}) == n.get('concrete', {}).get('builder', {}))
+              && (!('framing' in ch) || o.get('framing', {}).get('builder', {}) == n.get('framing', {}).get('builder', {}))
+              && (!('roofing' in ch) || o.get('roofing', {}).get('builder', {}) == n.get('roofing', {}).get('builder', {}))
+              && (!('siding' in ch) || o.get('siding', {}).get('builder', {}) == n.get('siding', {}).get('builder', {}))
+              && (!('hvac' in ch) || o.get('hvac', {}).get('builder', {}) == n.get('hvac', {}).get('builder', {}))
+            ))
+            && (!ch.hasAny(['plumb', 'elec', 'insul', 'drywall', 'finish', 'floor']) || (
+              (!('plumb' in ch) || o.get('plumb', {}).get('builder', {}) == n.get('plumb', {}).get('builder', {}))
+              && (!('elec' in ch) || o.get('elec', {}).get('builder', {}) == n.get('elec', {}).get('builder', {}))
+              && (!('insul' in ch) || o.get('insul', {}).get('builder', {}) == n.get('insul', {}).get('builder', {}))
+              && (!('drywall' in ch) || o.get('drywall', {}).get('builder', {}) == n.get('drywall', {}).get('builder', {}))
+              && (!('finish' in ch) || o.get('finish', {}).get('builder', {}) == n.get('finish', {}).get('builder', {}))
+              && (!('floor' in ch) || o.get('floor', {}).get('builder', {}) == n.get('floor', {}).get('builder', {}))
+            ))
+            && (!ch.hasAny(['paint', 'landscape', 'cabinets', 'counter', 'windows', 'garage']) || (
+              (!('paint' in ch) || o.get('paint', {}).get('builder', {}) == n.get('paint', {}).get('builder', {}))
+              && (!('landscape' in ch) || o.get('landscape', {}).get('builder', {}) == n.get('landscape', {}).get('builder', {}))
+              && (!('cabinets' in ch) || o.get('cabinets', {}).get('builder', {}) == n.get('cabinets', {}).get('builder', {}))
+              && (!('counter' in ch) || o.get('counter', {}).get('builder', {}) == n.get('counter', {}).get('builder', {}))
+              && (!('windows' in ch) || o.get('windows', {}).get('builder', {}) == n.get('windows', {}).get('builder', {}))
+              && (!('garage' in ch) || o.get('garage', {}).get('builder', {}) == n.get('garage', {}).get('builder', {}))
+            ))
+            && (!ch.hasAny(['gutters', 'lowvolt', 'fireplace', 'waterproof', 'septic', 'appliance']) || (
+              (!('gutters' in ch) || o.get('gutters', {}).get('builder', {}) == n.get('gutters', {}).get('builder', {}))
+              && (!('lowvolt' in ch) || o.get('lowvolt', {}).get('builder', {}) == n.get('lowvolt', {}).get('builder', {}))
+              && (!('fireplace' in ch) || o.get('fireplace', {}).get('builder', {}) == n.get('fireplace', {}).get('builder', {}))
+              && (!('waterproof' in ch) || o.get('waterproof', {}).get('builder', {}) == n.get('waterproof', {}).get('builder', {}))
+              && (!('septic' in ch) || o.get('septic', {}).get('builder', {}) == n.get('septic', {}).get('builder', {}))
+              && (!('appliance' in ch) || o.get('appliance', {}).get('builder', {}) == n.get('appliance', {}).get('builder', {}))
+            ))
+            && (!ch.hasAny(['cleaning', 'demo', 'steel', 'stucco', 'general']) || (
+              (!('cleaning' in ch) || o.get('cleaning', {}).get('builder', {}) == n.get('cleaning', {}).get('builder', {}))
+              && (!('demo' in ch) || o.get('demo', {}).get('builder', {}) == n.get('demo', {}).get('builder', {}))
+              && (!('steel' in ch) || o.get('steel', {}).get('builder', {}) == n.get('steel', {}).get('builder', {}))
+              && (!('stucco' in ch) || o.get('stucco', {}).get('builder', {}) == n.get('stucco', {}).get('builder', {}))
+              && (!('general' in ch) || o.get('general', {}).get('builder', {}) == n.get('general', {}).get('builder', {}))
+            ))
           );
       }
       function workShapeOk(oldW, newW, specAt) {
