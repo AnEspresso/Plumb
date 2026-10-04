@@ -1982,7 +1982,7 @@ t('exit example closes the overview', $("String(exitDemoToApp)").indexOf("getEle
 t('rules require ack before guest install', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('hasAll([\'ack\'])')>=0&&R.indexOf('packetPublisher')>=0&&R.indexOf('createdBy == uid()')>=0;}catch(e){return false;}})());
 t('rules bind invite revoke to creator', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf("resource.data.createdBy == uid()")>=0&&R.indexOf('clientSelOk')>=0&&R.indexOf('moneyOk')>=0;}catch(e){return false;}})());
 t('rules hold memberUids for non-owners', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf("request.resource.data.get('memberUids', []) == resource.data.get('memberUids', [])")>=0&&R.indexOf('rootMetaOnly')>=0;}catch(e){return false;}})());
-t('rules hold loc and custom spec fields', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf("specHeld('loc')")>=0&&R.indexOf('specCustomOk')>=0&&R.indexOf('clientSelCreateOk')>=0;}catch(e){return false;}})());
+t('rules hold loc and custom spec fields', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');/* PR 0 (#32): loc is one of the install-detail keys specTechHeld holds; homeowners no longer create selections at all. */const th=(R.match(/function specTechHeld[\s\S]*?\]\);/)||[''])[0];return th.indexOf("'loc'")>=0&&R.indexOf('function specCustomOk')>=0&&R.indexOf("(sRole() == 'client' && recordColl == 'items'));")>=0&&R.indexOf('clientSelCreateOk')<0;}catch(e){return false;}})());
 t('rules apply money gate to cost writes', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('moneyColl')>=0&&R.indexOf('(!moneyColl() || moneyOk())')>=0;}catch(e){return false;}})());
 t('rules reject fp-only guest relabel', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('function workFresh')>=0&&R.indexOf('function crewWorkOk')>=0&&R.indexOf('crewBkRespOk')>=0&&R.indexOf('crewItemOk')>=0;}catch(e){return false;}})());
 t('rules retire revoked packets', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('function packetLive')>=0&&R.indexOf("get('revoked', false)")>=0&&R.indexOf("get('siteDeleted', false)")>=0;}catch(e){return false;}})());
@@ -2970,18 +2970,29 @@ await $('(async()=>{'+
     'window.toast=function(m){toasts.push(String(m));};'+
     'var db={collection:function(c){return{doc:function(id){return{set:function(v){n++;sets.push({path:c+"/"+id,v:JSON.parse(JSON.stringify(v))});'+
       'if(n<=o.deny){var e=new Error("Missing or insufficient permissions.");e.code="permission-denied";return Promise.reject(e);}return Promise.resolve();}};}};}};'+
-    'window.firebase={apps:[1],firestore:function(){return db;},auth:function(){return{currentUser:o.uid?{uid:o.uid}:null,onAuthStateChanged:function(){return function(){};}};}};'+
+    'window.firebase=o.noSdk?undefined:{apps:[1],firestore:function(){return db;},auth:function(){return{currentUser:o.uid?{uid:o.uid,isAnonymous:!!o.anon}:null,onAuthStateChanged:function(){return function(){};},signOut:function(){return Promise.resolve();}};}};'+
+    'var oSes=state.session;if(o.ses)state.session=Object.assign({},oSes,{auth:{uid:"uSaved",provider:"firebase"}});'+
+    'if(o.ses)localStorage.setItem("plumb.liveAuth",JSON.stringify({provider:"firebase",email:"peter@example.com",uid:"uSaved",name:"Peter"}));'+
     'localStorage.setItem("plumb.mode","real");Sync.uid="uStale";window.__pkRetryMs=0;localStorage.removeItem("plumb.errors");'+
     'var p=state.projects.find(function(x){return x.id==="p1";});var b=(p.bookings||[]).find(function(x){return x.trade==="concrete";});'+
     'b.pkToken=null;var oEnd=b.end;if(o.endStr)b.end=o.endStr;'+
     'sendGuestPacket(p.id,b.id);gpApproveSend();'+
     'return new Promise(function(res){setTimeout(function(){var errs=[];try{errs=JSON.parse(localStorage.getItem("plumb.errors")||"[]").map(function(x){return x.m;});}catch(e){}'+
-      'var tk=b.pkToken||null;b.end=oEnd;b.pkToken=null;b.pkSent=null;res({sets:sets,toasts:toasts,tok:tk,errs:errs});},o.wait||300);});}'+
+      'var tk=b.pkToken||null;b.end=oEnd;b.pkToken=null;b.pkSent=null;'+
+      'var cs=document.getElementById("confirmScrim");var prompt=!!(cs&&cs.classList.contains("show"))?{title:document.getElementById("ocTitle").textContent,body:document.getElementById("ocBody").textContent,ok:document.getElementById("ocGo").textContent,no:document.getElementById("ocCancel").textContent}:null;'+
+      'var pill=(document.getElementById("hdrSync")||{}).textContent||"";var lost=!!Sync.lost;'+
+      'if(prompt&&o.ses){try{ocConfirm();}catch(e){}}'+
+      'var lg=document.getElementById("login");var login=!!(lg&&!lg.classList.contains("hide"));var le=document.getElementById("laErr");var laerr=le&&le.style.display!=="none"?le.textContent:"";'+
+      'if(o.ses){state.session=oSes;localStorage.removeItem("plumb.liveAuth");Sync.lost=false;try{setSync("local");}catch(e){}if(cs)cs.classList.remove("show");if(lg)lg.classList.add("hide");try{setChrome(false);}catch(e){}}'+
+      'res({sets:sets,toasts:toasts,tok:tk,errs:errs,login:login,laerr:laerr,prompt:prompt,pill:pill,lost:lost});},o.wait||300);});}'+
   'try{'+
     'window.__pl.retry=await run({uid:"uAuth",deny:1});'+
     'window.__pl.denied=await run({uid:"uAuth",deny:9});'+
     'window.__pl.noauth=await run({uid:"",deny:0,wait:4400});'+
     'window.__pl.strEnd=await run({uid:"uAuth",deny:0,endStr:"2026-10-11"});'+
+    'window.__pl.lost=await run({uid:"",deny:0,wait:4400,ses:true});'+
+    'window.__pl.anon=await run({uid:"uAnon",anon:true,deny:0,wait:4400,ses:true});'+
+    'window.__pl.nosdk=await run({noSdk:true,deny:0});'+
   '}finally{window.firebase=oFb;window.toast=oT;Sync.uid=oS;if(oM==null)localStorage.removeItem("plumb.mode");else localStorage.setItem("plumb.mode",oM);'+
     'try{closeGuestPreview();closeInfo&&closeInfo();}catch(e){}}'+
 '})()');
@@ -2992,7 +3003,47 @@ await $('(async()=>{'+
   t('packet link: the packet is created by the signed-in account, not a remembered uid',r.retry.sets.every(x=>x.v.createdBy==='uAuth'&&x.v.resp===null)&&r.retry.sets[0].path.indexOf('packets/pk')===0,JSON.stringify(r.retry.sets.map(x=>x.v.createdBy)));
   t('packet link: a create still refused says so, and the error code is logged',r.denied.sets.length===3&&!r.denied.tok&&r.denied.toasts.indexOf('Could not create the link \u2014 check your connection')>=0&&r.denied.errs.some(m=>m.indexOf('packet create permission-denied')===0&&m.indexOf('auth yes')>0),JSON.stringify({n:r.denied.sets.length,e:r.denied.errs}));
   t('packet link: no signed-in account, no write, and it is logged',r.noauth.sets.length===0&&!r.noauth.tok&&r.noauth.toasts.indexOf('Connecting \u2014 try again in a moment')>=0&&r.noauth.errs.some(m=>m.indexOf('no signed-in account')>=0),JSON.stringify(r.noauth));
+  /* 2.454.0 · Peter, iPhone home-screen app, 2026-10-04 11:41 ET: 'Connecting - try
+     again in a moment' on 2.453.0. The app kept its saved account session while
+     Firebase had no account (sync down too); waiting never fixes that. */
+  const conn=x=>x.toasts.indexOf('Connecting \u2014 try again in a moment')>=0;
+  const PROMPT={title:'Cloud sync needs you to sign in again',body:'Your work is saved on this phone and sends once you\u2019re back in.',ok:'Sign in',no:'Not now'};
+  const isPrompt=x=>!!x.prompt&&JSON.stringify(x.prompt)===JSON.stringify(PROMPT);
+  t('packet link: app signed in but Firebase lost the account: no Connecting, the sign-in-again prompt opens',r.lost.sets.length===0&&!conn(r.lost)&&isPrompt(r.lost),JSON.stringify({t:r.lost.toasts,p:r.lost.prompt}));
+  t('packet link: Sign in on the prompt goes straight to the existing sign-in',r.lost.login&&r.lost.laerr==='Quick security check \u2014 enter your password to reconnect cloud sync.',JSON.stringify({login:r.lost.login,e:r.lost.laerr}));
+  t('packet link: the sync pill keeps saying Sign in again',r.lost.lost&&r.lost.pill==='Sign in again',JSON.stringify({lost:r.lost.lost,pill:r.lost.pill}));
+  t('packet link: the lost account is logged as its own case in the bug report',r.lost.errs.some(m=>m.indexOf('packet create: account sign-in not restored')===0&&m.indexOf('firebase user none')>0&&m.indexOf('app session account')>0)&&r.lost.errs.some(m=>m.indexOf('Account session lost on this device')===0),JSON.stringify(r.lost.errs));
+  t('packet link: an anonymous Firebase user is not the account: same prompt, no write as anon',r.anon.sets.length===0&&!conn(r.anon)&&isPrompt(r.anon)&&r.anon.errs.some(m=>m.indexOf('firebase user anon')>0),JSON.stringify({n:r.anon.sets.length,t:r.anon.toasts}));
+  t('packet link: Firebase not loaded logs its own case (db null)',r.nosdk.sets.length===0&&conn(r.nosdk)&&r.nosdk.errs.some(m=>m.indexOf('packet create: firebase not ready (db null)')===0&&m.indexOf('sdk no')>0),JSON.stringify(r.nosdk.errs));
   t('packet link: expires goes up as a whole number even from a text end date',r.strEnd.sets.length===1&&Number.isSafeInteger(r.strEnd.sets[0].v.expires)&&r.strEnd.sets[0].v.expires>Date.now(),JSON.stringify(r.strEnd.sets.map(x=>x.v.expires)));
+})();
+
+/* ════ ACCOUNT LOST · sync down because Firebase lost the sign-in (2.454.0) ════
+   The app keeps its saved session; Firebase has no account. Sync cannot connect
+   and nothing a person asks for can reach the cloud until they sign in again. */
+S('account-lost');
+(function(){
+  const r=JSON.parse($("(function(){var o={ses:state.session,t:window.toast,mode:localStorage.getItem('plumb.mode'),err:Sync.err,on:Sync.on};var toasts=[];var out={};"+
+    "function prompt(){var cs=document.getElementById('confirmScrim');return cs&&cs.classList.contains('show')?document.getElementById('ocTitle').textContent:'';}"+
+    "function reset(){try{Sync.lost=false;document.getElementById('confirmScrim').classList.remove('show');}catch(e){}toasts.length=0;}"+
+    "try{window.toast=function(m){toasts.push(String(m));};localStorage.setItem('plumb.mode','real');state.session=Object.assign({},o.ses,{auth:{uid:'uSaved',provider:'firebase'}});Sync.on=false;Sync.err='account sign-in not restored yet';"+
+    "reset();try{createInvite('client');}catch(e){out.invErr=String(e);}out.invite={prompt:prompt(),toasts:toasts.slice()};"+
+    "reset();Sync.lost=true;setSync('synced');out.pill={hdr:(document.getElementById('hdrSync')||{}).textContent,cls:(document.getElementById('hdrSync')||{}).className,ov:(document.getElementById('ovSync')||{}).textContent,ovCls:(document.getElementById('ovSync')||{}).className};"+
+    "var wb=document.getElementById('devSyncStatus');if(wb){devSyncStatusText();out.wb=wb.textContent;}"+
+    "document.getElementById('hdrSync').click();out.tap=prompt();"+
+    "reset();Sync.lost=true;syncOnResume();out.resume=prompt();"+
+    "reset();Sync.lost=true;Sync.on=true;Sync.db=Sync.db||{};var ok=true;try{clearAccountLost();}catch(e){ok=false;}Sync.on=false;setSync('local');out.cleared={ok:ok,lost:!!Sync.lost,hdr:(document.getElementById('hdrSync')||{}).textContent};"+
+    "reset();state.session=o.ses;Sync.err='account sign-in not restored yet';out.noAccount=!!(typeof markAccountLost==='function'&&markAccountLost('x'));"+
+    "}catch(e){out.err=String(e&&e.message||e);}finally{reset();window.toast=o.t;state.session=o.ses;Sync.err=o.err;Sync.on=o.on;if(o.mode==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',o.mode);try{setSync('local');}catch(e){}}"+
+    "return JSON.stringify(out);})()"));
+  t('account lost: a cloud write (invite) opens the sign-in-again prompt, not Connect sync first',!r.err&&r.invite&&r.invite.prompt==='Cloud sync needs you to sign in again'&&r.invite.toasts.indexOf('Connect sync first (workbench)')<0,JSON.stringify(r.invite||r.err));
+  t('account lost: the sync pill says Sign in again, in clay, on every pill',!!r.pill&&r.pill.hdr==='Sign in again'&&/\blost\b/.test(r.pill.cls)&&r.pill.ov==='Sign in again'&&/c-clay/.test(r.pill.ovCls),JSON.stringify(r.pill));
+  t('account lost: tapping the pill opens the prompt',r.tap==='Cloud sync needs you to sign in again',r.tap);
+  t('account lost: Workbench says why sync is down',!r.wb||r.wb==='Not connected \u2014 this phone lost your sign-in. Sign in again to reconnect sync.',r.wb);
+  t('account lost: coming back to the app asks again',r.resume==='Cloud sync needs you to sign in again',r.resume);
+  t('account lost: when sync connects the state clears',!!r.cleared&&r.cleared.ok&&!r.cleared.lost&&r.cleared.hdr!=='Sign in again',JSON.stringify(r.cleared));
+  t('account lost: never raised for a device with no saved account',r.noAccount===false,String(r.noAccount));
+  t('account lost: the app-open refusal marks it at once (no waiting for a second retry)',/account sign-in not restored\/\.test\(this\.err\)&&markAccountLost\('app open'\)/.test($("String(Sync._init)")));
 })();
 
 /* ════ REPORT ════ */
