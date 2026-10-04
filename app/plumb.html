@@ -3930,15 +3930,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.452.0 - Deleted photos leave Storage, Text this link opens the text';
+const PLUMB_VERSION='2.453.0 - Text this link sends from a fresh sign-in, failures log their code';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791121783554;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.452.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791125438896;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.453.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -17065,16 +17065,60 @@ function gpApproveSend(){
   }
   const token=_pkToken();
   const db=_pkDb();if(!db){toast('Connecting \u2014 try again in a moment');return;}
-  try{
-    db.collection('packets').doc(token).set(Object.assign({},snap,{createdBy:(function(){try{return (firebase.auth&&firebase.auth().currentUser&&firebase.auth().currentUser.uid)||(Sync&&Sync.uid)||'';}catch(e){return '';}})()}))
-      .then(()=>{updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});try{_pkListenAll();}catch(e){}
-        try{_pkPubLast[String(p.id)+'|'+String(b.id)+'|'+token]=JSON.stringify({docs:snap.docs||[],specs:snap.specs||[],ctx:snap.ctx||{},note:snap.note||'',start:snap.start,end:snap.end,site:snap.site});}catch(e){}
-        _gpPendingSend=null;closeGuestPreview();
-        try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(b.id)));}catch(e){}
-        _sharePacketLink(snap,token);logEvent('packetLinkSent',snap.tradeLabel+' \u00b7 '+snap.site);})
-      .catch(e=>{toast('Could not create the link \u2014 check your connection');});
-  }catch(e){toast('Could not create the link');}
+  if(_gpSending)return;_gpSending=true;
+  (async function(){try{
+    const uid=await _pkAuthUid(4000);
+    if(!uid){trapError('caught','packet create: no signed-in account | '+_pkDiag(snap,''),'gpApproveSend');toast('Connecting \u2014 try again in a moment');return;}
+    await _pkAttest(false);
+    const err=await _pkCreate(db,token,_pkCreateDoc(snap,uid));
+    if(err){trapError('caught','packet create '+String((err&&err.code)||'error')+': '+String((err&&err.message)||err).slice(0,160)+' | '+_pkDiag(snap,uid),'gpApproveSend');
+      toast('Could not create the link \u2014 check your connection');return;}
+    /* The link exists now. A slip below is the app's, not the network's: log it, never the connection toast. */
+    try{updateBooking(p,b.id,{pkToken:token,pkSent:Date.now()});try{_pkListenAll();}catch(e){}
+      try{_pkPubLast[String(p.id)+'|'+String(b.id)+'|'+token]=JSON.stringify({docs:snap.docs||[],specs:snap.specs||[],ctx:snap.ctx||{},note:snap.note||'',start:snap.start,end:snap.end,site:snap.site});}catch(e){}
+      _gpPendingSend=null;closeGuestPreview();
+      try{bkRenderGuestRow(p,(p.bookings||[]).find(x=>String(x.id)===String(b.id)));}catch(e){}
+      _sharePacketLink(snap,token);logEvent('packetLinkSent',snap.tradeLabel+' \u00b7 '+snap.site);
+    }catch(e){trapError('caught',e&&e.message,'gpApproveSend.after');}
+  }catch(e){trapError('caught',e&&e.message,'gpApproveSend');toast('Could not create the link');}
+  finally{_gpSending=false;}})();
 }
+/* Packet create (Peter, iPhone, 2026-10-04: "Could not create the link" on good
+   wifi). The rules take a packet only from a signed-in account whose uid is
+   createdBy, with a whole-number expires and no reply yet. createdBy now comes
+   from the signed-in account alone (waiting a moment for it to restore), never
+   a remembered uid. iOS can refuse the first write after the app wakes, before
+   App Check has a fresh token, the same first-try refusal the house listeners
+   already forgive; so the token is refreshed and a refused create is retried
+   twice. Every failure now logs its code. */
+let _gpSending=false;
+function _pkAuthUid(waitMs){return new Promise(function(res){
+  try{const a=firebase.auth();const cu=a.currentUser;if(cu)return res(cu.uid);
+    let done=false,off=null;const fin=function(u){if(done)return;done=true;try{off&&off();}catch(e){}res(u?u.uid:'');};
+    off=a.onAuthStateChanged(function(u){if(u)fin(u);});
+    setTimeout(function(){fin(a.currentUser);},waitMs||4000);
+  }catch(e){res('');}});}
+function _pkAttest(force){
+  try{if(!(firebase.appCheck&&typeof appCheckKey==='function'&&appCheckKey()))return Promise.resolve();
+    return Promise.race([Promise.resolve(firebase.appCheck().getToken(!!force)).catch(function(){}),new Promise(function(r){setTimeout(r,4000);})]);
+  }catch(e){return Promise.resolve();}}
+function _pkCreateDoc(snap,uid){
+  const d=Object.assign({},snap,{createdBy:String(uid||''),resp:null});
+  const ex=Math.round(Number(d.expires));
+  d.expires=Number.isSafeInteger(ex)?ex:Date.now()+7*864e5;
+  return d;}
+async function _pkCreate(db,token,doc){
+  let last=null;
+  for(let i=0;i<3;i++){
+    if(i){await new Promise(function(r){setTimeout(r,(window.__pkRetryMs!=null?window.__pkRetryMs:1200)*i);});await _pkAttest(true);}
+    try{await db.collection('packets').doc(token).set(doc);return null;}
+    catch(e){last=e||new Error('refused');if(!(e&&e.code==='permission-denied'))break;}
+  }
+  return last;}
+function _pkDiag(snap,uid){
+  try{return 'auth '+(uid?'yes':'none')+' \u00b7 sync '+((typeof Sync!=='undefined'&&Sync.uid)?(Sync.uid===uid?'same':'other'):'none')
+    +' \u00b7 appcheck '+((typeof Sync!=='undefined'&&Sync.appCheck)?'on':'off')+' \u00b7 expires '+typeof (snap&&snap.expires)+(Number.isSafeInteger(snap&&snap.expires)?' int':' not int')
+    +' \u00b7 online '+(navigator.onLine?'yes':'no');}catch(e){return '';}}
 function _sharePacketLink(snap,token){
   const url='https://siteplumb.com/app/p.html?packet='+encodeURIComponent(token)
     +'&h='+encodeURIComponent(snap.site||'')
