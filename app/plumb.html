@@ -9901,7 +9901,7 @@ const Notify={
   selReapprove(o,n,site){
     if(!o||!n||!o.approved||n.approved||n.invoicedIn)return null;
     const amt=Number(n.price)||0;if(amt<=0.005||Math.abs(amt-(Number(o.price)||0))<=0.005||!selIsAllowance(n))return null;
-    return {key:'selre:'+site+':'+n.id+':'+amt,aud:'client',title:'Needs your OK again',body:(n.item||'A selection')+' · now '+invUsd(amt)+' over the allowance'};},
+    return {key:'selre:'+site+':'+n.id+':'+amt,aud:'client',title:'Needs your OK again',body:(n.item||'A selection')+' is now '+invUsd(amt)+' over the allowance.'};},
   selChanged(p,o,n){const x=this.selReapprove(o,n,p.id);
     if(x&&this._audMatch(x.aud,p))this.push(x.key,x.title,x.body,{pid:p.id,view:'selections',id:n.id},x.aud);},
   newItem(p,rec){
@@ -13376,7 +13376,7 @@ function clientAllowanceLine(s,p){
   let t='Allowance '+invUsd(s.allowance);
   /* The difference is the stored charge, so it matches what gets invoiced. */
   const amt=Number(s.price)||0;
-  if(m.priced){t+=' · item '+invUsd(s.cost);
+  if(m.priced){t+=' · price '+invUsd(s.cost);
     if(amt>0.005)t+=' · '+invUsd(amt)+' over';
     else if(amt<-0.005)t+=' · '+invUsd(-amt)+' credit';
     else if(m.under>0.005)t+=' · '+invUsd(m.under)+' under';}
@@ -14037,7 +14037,7 @@ function selAllowRefresh(){
   hint.textContent=bad?'The homeowner’s price for this item, not your cost.'
     :!m.priced?'Add the item price once the homeowner picks. Not your cost.'
     :m.over>0.005?(ra.kept?invUsd(m.over)+' over the allowance. Approved by the homeowner.'
-      :ra.reset&&ra.was>0.005?invUsd(m.over)+' over the allowance. The homeowner approved '+invUsd(ra.was)+', so they’ll need to approve it again.'
+      :ra.reset&&ra.was>0.005?invUsd(m.over)+' over the allowance. The homeowner approved '+invUsd(ra.was)+' before, so they have to approve the new amount.'
       :invUsd(m.over)+' over the allowance. The homeowner has to approve it first.')
     :m.under>0.005?(credit?invUsd(m.under)+' under the allowance. Credited to the homeowner.':invUsd(m.under)+' under the allowance. No credit on this house.')
     :'Right at the allowance. Nothing to charge or credit.';
