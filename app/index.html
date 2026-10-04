@@ -3950,15 +3950,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.461.0 - Budget left: one Remaining / left (budget minus contracted or paid, per contract)';
+const PLUMB_VERSION='2.462.0 - Approve this invoice says approved only after the server saves it';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791144976366;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.461.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791217310079;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.462.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9538,6 +9538,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
        of a house until it has read what the other phones changed meanwhile. */
     if(!this._canPush(id)){this._held[id]=p;return;}
     const sh=this._shadow[id]||(this._shadow[id]={meta:'',colls:{}});
+    if(state.session&&state.session.role==='client'&&invClearRefusedApprove(p,sh)){persistLocalOnly();try{rerenderCurrent();}catch(e){}}
     const ops=diffSiteOps(sh,p);if(!ops.length)return;
     for(const op of ops){
       if(op.kind==='meta'){
@@ -9647,6 +9648,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
               p[k]=meta[k];});try{Notify.scanMeta(_nv,p);}catch(e){}}
           else {const _nv=Notify.snap(p);Object.assign(p,meta);try{Notify.scanMeta(_nv,p);}catch(e){}}  // legacy whole-blob fallback
           sh.mk={};Object.keys(meta).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(meta[k]));});
+          if(kept&&state.session&&state.session.role==='client')invClearRefusedApprove(p,sh);
           sh.mem=Object.assign({},(meta&&meta.members)||{},d.members||{});
           sh.meta=kept?'':_syncHash(JSON.stringify(metaOf(p)));changed=true;
         }
@@ -14354,7 +14356,8 @@ function invDetailHTML(p,inv,viewer){
   }
   // client approve
   if(viewer==='client'&&invNeedsOK(inv))
-    h+=`<button class="b1 b-go w-full mt-3 btn btn-primary" onclick="invApprove('${p.id}','${inv.id}')">Approve this invoice</button>
+    h+=(_invOkBusy[p.id+':'+inv.id]?`<button class="b1 b-go w-full mt-3 btn btn-primary inv-ok" disabled aria-busy="true">Saving…</button>`
+      :`<button class="b1 b-go w-full mt-3 btn btn-primary inv-ok" onclick="invApprove('${p.id}','${inv.id}')">Approve this invoice</button>`)+`
       <p class="mt-2 ml-0 mr-0 mb-0 c-ink-3 fs-xs">Approving tells your builder the charges look right. Payment itself happens however you two normally settle up.</p>`;
   // builder: record payment (partial or full) while a balance remains
   if(viewer==='builder'&&st!=='void'&&bal>0){
@@ -14404,12 +14407,69 @@ function invDelAdjustment(projId,invId,idx){
     inv.items.splice(idx,1);inv.total=(inv.items||[]).reduce((a,b)=>a+(Number(b.amount)||0),0);
     persist();try{renderInvoices();}catch(e){}try{renderSelections();}catch(e){}try{if(document.getElementById('clientview').classList.contains('show'))renderClient();}catch(e){}
     showInfo('Invoice',invDetailHTML(p,inv,'builder'));toast('Adjustment removed');}});}
-function invApprove(projId,invId){
+/* A live house says an invoice is approved only after the server takes it
+   (2.462.0, the same as selection Approve in 2.457.0). The write is only
+   meta.invoices, merged: the list as this phone last synced it with this one
+   invoice sent -> approved plus approvedAt, the only change the rules let a
+   homeowner make (invoiceApproveOk). Nothing changes here until the server
+   answers, so a refusal leaves nothing queued to jam later saves. Practice
+   houses and demo stay local. No timeout: a queued write can still land. */
+const _invOkBusy={};
+function _invOkRender(p,inv){
+  try{if(document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('infoTitle').textContent==='Invoice')
+    document.getElementById('infoBody').innerHTML=invDetailHTML(p,inv,'client');}catch(e){}
+  try{if(document.getElementById('clientview').classList.contains('show'))_clRenderKeep();}catch(e){}}
+async function invApprove(projId,invId){
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status!=='sent')return;
-  inv.status='approved';inv.approvedAt=Date.now();persist();
-  logEvent('invoiceApproved',inv.no);toast(inv.no+' approved');
+  if(appMode()!=='real'||p.sample){
+    inv.status='approved';inv.approvedAt=Date.now();persist();
+    logEvent('invoiceApproved',inv.no);toast(inv.no+' approved');
+    try{closeInfo();}catch(e){}try{renderClient();}catch(e){}return;}
+  const key=p.id+':'+invId;if(_invOkBusy[key])return;
+  const SIGNAL='Could not save \u2014 try again with a bar of signal';
+  if((typeof navigator!=='undefined'&&navigator.onLine===false)||typeof Sync==='undefined'||!Sync.ready()||Sync.mode!=='live'){toast(SIGNAL);return;}
+  const at=Date.now();
+  const list=JSON.parse(JSON.stringify(p.invoices||[])).map(v=>v&&v.id===invId?Object.assign(v,{status:'approved',approvedAt:at}):v);
+  const sh=Sync._shadow[String(p.id)];
+  let inSync=false;try{inSync=!!sh&&sh.meta===_syncHash(JSON.stringify(metaOf(p)));}catch(e){}
+  const myUid=(state.session&&state.session.auth&&state.session.auth.uid)||Sync.uid||'';
+  _invOkBusy[key]=true;_invOkRender(p,inv);
+  try{await Sync.db.collection('sites').doc(String(p.id))
+      .set({meta:{invoices:list},updatedAt:at,updatedBy:Sync.deviceId,updatedByUid:myUid},{merge:true});}
+  catch(e){delete _invOkBusy[key];const denied=!!(e&&e.code==='permission-denied');
+    trapError(denied?'rules':'caught','Invoice approve write '+(denied?'refused':'failed')+': '+String((e&&(e.code||e.message))||'').slice(0,100),'invApprove');
+    _invOkRender(p,inv);toast(denied?'Not approved yet. Ask your builder to check your access.':SIGNAL);return;}
+  delete _invOkBusy[key];
+  inv.status='approved';inv.approvedAt=at;
+  /* Mark it synced so queueSync does not send the house again for it. Only
+     when this phone had nothing else waiting to go up; otherwise the next
+     push carries the rest, and the invoice already matches the server. */
+  try{const s2=Sync._shadow[String(p.id)]||(Sync._shadow[String(p.id)]={meta:'',colls:{}});
+    s2.mk=s2.mk||{};s2.mk.invoices=_syncHash(JSON.stringify(p.invoices));
+    if(inSync)s2.meta=_syncHash(JSON.stringify(metaOf(p)));Sync._saveBase();}catch(e){}
+  persist();logEvent('invoiceApproved',inv.no);toast(inv.no+' approved');
   try{closeInfo();}catch(e){}try{renderClient();}catch(e){}}
+/* Before 2.462.0 a homeowner's Approve this invoice changed the invoice on the
+   phone first, the rules refused the push, and the phone kept sending it with
+   every later save (each one refused). Clear that one change, and only when
+   it provably is that change: undoing approvals that have an approvedAt must
+   give back exactly the invoice list the server last sent (its hash). Then
+   the invoice reads as waiting again and the homeowner can approve it with
+   the confirmed path above. A homeowner never edits invoices any other way. */
+function invClearRefusedApprove(p,sh){
+  try{
+    if(!p||!sh||!sh.mk||sh.mk.invoices===undefined||!Array.isArray(p.invoices))return false;
+    if(_syncHash(JSON.stringify(p.invoices))===sh.mk.invoices)return false;
+    const cand=p.invoices.map((v,i)=>v&&v.status==='approved'&&v.approvedAt!=null?i:-1).filter(i=>i>=0);
+    if(!cand.length)return false;
+    const undo=ix=>p.invoices.map((v,i)=>{if(ix.indexOf(i)<0)return v;const c=Object.assign({},v);c.status='sent';delete c.approvedAt;return c;});
+    const tries=cand.map(i=>[i]);if(cand.length>1)tries.push(cand);
+    for(const ix of tries){const back=undo(ix);
+      if(_syncHash(JSON.stringify(back))===sh.mk.invoices){p.invoices=back;
+        trapError('caught','Cleared a refused invoice approve ('+ix.length+')','invClearRefusedApprove');return true;}}
+  }catch(e){}
+  return false;}
 function invAddPayment(projId,invId,full){
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status==='void')return;

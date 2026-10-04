@@ -3318,6 +3318,125 @@ await (async function(){
   t('clean up: the test house is gone and sync is restored',$("state.projects.some(x=>x.id==='apv1')")===false);
 })();
 
+/* ════ APPROVE THIS INVOICE WAITS FOR THE SERVER (2.462.0) ════
+   A homeowner's Approve this invoice on a live house used to change the
+   invoice on the phone first; the rules refused the push and the phone kept
+   re-sending it with every later save. Now: Saving…, one minimal write
+   (meta.invoices, merged), approved only after the server takes it, and a
+   refusal leaves nothing queued. An old queued refusal is cleared once. */
+S('invoice-approve-confirmed');
+await (async function(){
+  $(`(function(){
+    window.__iv={writes:[],pend:null,toasts:[],o:{am:appMode,toast:toast,on:Sync.on,mode:Sync.mode,db:Sync.db,dev:Sync.deviceId,sh:Sync._shadow,pulled:Sync._sitesPulled,sess:state.session}};
+    appMode=function(){return 'real';};
+    toast=function(m){__iv.toasts.push(m);__iv.o.toast(m);};
+    const p=JSON.parse(JSON.stringify(state.projects.find(x=>x.id==='p2')||state.projects[0]));
+    p.id='ivl1';delete p.sample;p.members={uH:'client'};
+    const it=[{label:'Quartz \\u2014 Countertops',amount:1850,selId:3}];
+    p.invoices=[
+      {id:'inv_a1',no:'INV-001',title:'Selections \\u2014 September',due:'2026-09-30',items:it,total:1850,status:'paid',t:1,sentBy:'Dean',payments:[{id:'py1',amount:1850,date:'2026-09-28',note:''}],paidAt:2},
+      {id:'inv_a2',no:'INV-002',title:'Selections \\u2014 October',due:'2026-10-18',items:[{label:'Marble hex \\u2014 Tile',amount:120,selId:7}],total:120,status:'sent',t:3,sentBy:'Dean',payments:[]},
+      {id:'inv_a3',no:'INV-003',title:'Selections \\u2014 finals',due:'2026-10-25',items:[{label:'French doors',amount:900,selId:9}],total:900,status:'sent',t:4,sentBy:'Dean',payments:[]}];
+    state.projects.push(p);state.session={role:'client',site:'ivl1',auth:{uid:'uH'}};
+    const house={set:(d,o)=>{__iv.writes.push({d:JSON.parse(JSON.stringify(d)),o:o});return new Promise((res,rej)=>{__iv.pend={res:res,rej:rej};});}};
+    Sync.db={collection:c=>({doc:sid=>{__iv.path=c+'/'+sid;return house;}})};
+    Object.assign(Sync,{on:true,mode:'live',deviceId:'devH',_sitesPulled:false});
+    /* a phone that is in sync with the server */
+    Sync._shadow={ivl1:{meta:_syncHash(JSON.stringify(metaOf(p))),mk:{invoices:_syncHash(JSON.stringify(p.invoices))},colls:{}}};
+    window.__ivServer=JSON.stringify(p.invoices);
+    localStorage.removeItem('plumb.errors');clientTab='specs';renderClient();return true;})()`);
+  const P1="state.projects.find(x=>x.id==='ivl1')";
+  const inv=i=>JSON.parse($("JSON.stringify("+P1+".invoices["+i+"])"));
+  const open=id=>$("openInvoiceDetail('ivl1','"+id+"','client');true");
+  const btn=()=>$("(function(){var b=document.querySelector('#infoBody .inv-ok');return b?(b.textContent+(b.disabled?'|disabled':'')):'';})()");
+  const metaOps=()=>$("diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta').length");
+  const tick=()=>new Promise(r=>setTimeout(r,20));
+  open('inv_a2');
+  t('live house: the invoice offers Approve this invoice',btn()==='Approve this invoice',btn());
+
+  /* accepted */
+  $("window.__ivP=invApprove('ivl1','inv_a2');true");await tick();
+  t('accepted: the button says Saving… and is disabled while the server answers',btn()==='Saving…|disabled',btn());
+  t('saving style: the disabled button is dimmed by the existing .btn[disabled] token (no new CSS)',SRC.indexOf('.btn[disabled]{opacity:.45;pointer-events:none;}')>=0&&$("(function(){var b=document.querySelector('#infoBody .inv-ok');return b?getComputedStyle(b).opacity:'none';})()")==='0.45',$("(function(){var b=document.querySelector('#infoBody .inv-ok');return b?getComputedStyle(b).opacity:'none';})()"));
+  t('accepted: nothing changes here and no toast before the server answers',inv(1).status==='sent'&&inv(1).approvedAt===undefined&&$("__iv.toasts.length")===0,JSON.stringify(inv(1))+' '+$("JSON.stringify(__iv.toasts)"));
+  const w0=JSON.parse($("JSON.stringify(__iv.writes[0]||null)"));
+  t('accepted: one write to the house doc sites/ivl1',$("__iv.writes.length")===1&&$("__iv.path")==='sites/ivl1',$("__iv.path"));
+  t('accepted: the write is only {meta:{invoices},updatedAt,updatedBy,updatedByUid} with merge',
+    !!w0&&Object.keys(w0.d).sort().join()==='meta,updatedAt,updatedBy,updatedByUid'&&Object.keys(w0.d.meta).join()==='invoices'&&w0.d.updatedBy==='devH'&&w0.d.updatedByUid==='uH'&&typeof w0.d.updatedAt==='number'&&!!(w0.o&&w0.o.merge),JSON.stringify(w0&&Object.keys(w0.d)));
+  const srv=JSON.parse($("__ivServer"));
+  t('accepted: the list is the synced one with only INV-002 sent -> approved plus approvedAt',
+    !!w0&&w0.d.meta.invoices.length===3&&JSON.stringify(w0.d.meta.invoices[0])===JSON.stringify(srv[0])&&JSON.stringify(w0.d.meta.invoices[2])===JSON.stringify(srv[2])
+    &&w0.d.meta.invoices[1].status==='approved'&&Number.isInteger(w0.d.meta.invoices[1].approvedAt)
+    &&JSON.stringify(Object.assign({},w0.d.meta.invoices[1],{status:'sent',approvedAt:undefined}))===JSON.stringify(Object.assign({},srv[1],{approvedAt:undefined})),JSON.stringify(w0&&w0.d.meta.invoices[1]));
+  $("invApprove('ivl1','inv_a2');true");await tick();
+  t('accepted: a second tap while saving writes nothing',$("__iv.writes.length")===1);
+  $("__iv.pend&&__iv.pend.res();true");await $("__ivP");await tick();
+  t('accepted: approved here once the server took it',inv(1).status==='approved'&&!!w0&&inv(1).approvedAt===w0.d.meta.invoices[1].approvedAt,JSON.stringify(inv(1)));
+  t('accepted: then the existing toast',$("__iv.toasts[__iv.toasts.length-1]")==='INV-002 approved',$("JSON.stringify(__iv.toasts)"));
+  t('accepted: the invoice is marked synced',$("Sync._shadow.ivl1.mk.invoices")===$("_syncHash(JSON.stringify("+P1+".invoices))"));
+  t('accepted: no re-send - the house is not queued again',metaOps()===0,'meta ops='+metaOps());
+
+  /* refused */
+  $("window.__ivServer=JSON.stringify("+P1+".invoices);__iv.toasts=[];true");open('inv_a3');
+  $("window.__ivP=invApprove('ivl1','inv_a3');true");await tick();
+  t('refused: Saving… while waiting',btn()==='Saving…|disabled',btn());
+  $("__iv.pend&&__iv.pend.rej({code:'permission-denied',message:'Missing or insufficient permissions.'});true");await $("__ivP");await tick();
+  t('refused: the invoice is still waiting here (no status, no approvedAt)',inv(2).status==='sent'&&inv(2).approvedAt===undefined,JSON.stringify(inv(2)));
+  t('refused: #37\u2019s toast, word for word',$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Not approved yet. Ask your builder to check your access.']),$("JSON.stringify(__iv.toasts)"));
+  t('refused: the error is logged as a rules refusal',$("(function(){var a=JSON.parse(localStorage.getItem('plumb.errors')||'[]');return !!a[0]&&a[0].k==='rules'&&a[0].w==='invApprove'&&a[0].m.indexOf('permission-denied')>=0;})()"));
+  t('refused: the button is back to Approve this invoice',btn()==='Approve this invoice',btn());
+  t('refused: nothing is queued, so it is never sent again',metaOps()===0&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer"),'meta ops='+metaOps());
+  $(P1+".buildBrief={note:'Sim brief after a refusal'};true");
+  const nextOp=JSON.parse($("JSON.stringify(diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta')[0]||null)"));
+  t('refused: the next save goes up without the refused change (invoices as the server has them)',!!nextOp&&JSON.stringify(nextOp.data.invoices)===$("__ivServer")&&nextOp.data.invoices[2].status==='sent',JSON.stringify(nextOp&&nextOp.data.invoices[2]));
+  $("delete "+P1+".buildBrief;true");
+
+  /* other error, offline */
+  $("__iv.toasts=[];window.__ivP=invApprove('ivl1','inv_a3');true");await tick();
+  $("__iv.pend&&__iv.pend.rej({code:'unavailable',message:'offline'});true");await $("__ivP");await tick();
+  t('other error: nothing changes and the signal toast shows',inv(2).status==='sent'&&$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Could not save \u2014 try again with a bar of signal']),$("JSON.stringify(__iv.toasts)"));
+  $("__iv.toasts=[];Object.defineProperty(navigator,'onLine',{configurable:true,get:function(){return false;}});true");
+  const nW=$("__iv.writes.length");
+  await $("invApprove('ivl1','inv_a3')");await tick();
+  t('offline: no write, nothing changes, the signal toast shows, not stuck on Saving…',$("__iv.writes.length")===nW&&inv(2).status==='sent'&&$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Could not save \u2014 try again with a bar of signal'])&&btn()==='Approve this invoice',$("JSON.stringify(__iv.toasts)")+' '+btn());
+  $("delete navigator.onLine;true");
+
+  /* one-time cleanup of a refused change queued by an older version */
+  $(`(function(){const p=${P1};window.__ivServer=JSON.stringify(p.invoices);
+    Sync._shadow.ivl1.mk.invoices=_syncHash(__ivServer);Sync._shadow.ivl1.meta='';
+    const v=p.invoices[2];v.status='approved';v.approvedAt=1791130000000;return true;})()`);
+  t('old jam: before cleanup the phone would push the refused change',$("((diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta')[0]||{data:{invoices:[]}}).data.invoices[2]||{}).status")==='approved');
+  t('old jam: cleared once, back to exactly the server\u2019s list',$("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===true&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer")&&inv(2).status==='sent'&&!('approvedAt' in inv(2)));
+  t('old jam: the next push carries the server\u2019s invoices (no refused change)',JSON.stringify(JSON.parse($("JSON.stringify((diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta')[0]||{data:{invoices:null}}).data.invoices)")))===$("__ivServer"));
+  t('old jam: a second run does nothing',$("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===false);
+  $("(function(){const v="+P1+".invoices[2];v.status='approved';v.approvedAt=5;v.total=1;return true;})()");
+  t('old jam: anything that is not provably that change is left alone',$("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===false&&inv(2).total===1&&inv(2).status==='approved');
+  $("(function(){const v="+P1+".invoices[2];v.status='sent';delete v.approvedAt;v.total=900;return true;})()");
+  t('old jam: two refused approvals at once are cleared too',(function(){$(`(function(){const p=${P1};p.invoices[1].status='sent';delete p.invoices[1].approvedAt;window.__ivServer=JSON.stringify(p.invoices);Sync._shadow.ivl1.mk.invoices=_syncHash(__ivServer);
+      p.invoices[1].status='approved';p.invoices[1].approvedAt=7;p.invoices[2].status='approved';p.invoices[2].approvedAt=8;return true;})()`);
+    return $("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===true&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer");})());
+  t('old jam: the cleanup runs before every homeowner push and after a pull that kept a local edit',
+    SRC.indexOf("if(state.session&&state.session.role==='client'&&invClearRefusedApprove(p,sh)){persistLocalOnly();")>=0&&SRC.indexOf("if(kept&&state.session&&state.session.role==='client')invClearRefusedApprove(p,sh);")>=0);
+
+  /* sample and demo keep the local path */
+  $("__iv.toasts=[];state.session={role:'client',site:'p2',auth:{uid:'uH'}};true");
+  const smp=$("(function(){var v=(state.projects.find(x=>x.id==='p2').invoices||[]).find(x=>x.status==='sent');return v?v.id:'';})()");
+  const nW2=$("__iv.writes.length");
+  if(smp)$("invApprove('p2','"+smp+"')");
+  t('sample house: approves at once, no server write, the existing toast',!smp||($("state.projects.find(x=>x.id==='p2').invoices.find(x=>x.id==='"+smp+"').status")==='approved'&&$("__iv.writes.length")===nW2&&/ approved$/.test($("__iv.toasts[0]"))),'inv='+smp+' '+$("JSON.stringify(__iv.toasts)"));
+  $("appMode=__iv.o.am;__iv.toasts=[];state.session={role:'client',site:'ivl1',auth:{uid:'uH'}};true");
+  const nW3=$("__iv.writes.length");
+  $("invApprove('ivl1','inv_a3')");
+  t('demo: the local path, no server write',inv(2).status==='approved'&&$("__iv.writes.length")===nW3);
+  t('wording: no new strings - #37\u2019s refused toast, the signal toast and Saving… are reused',
+    SRC.split("'Not approved yet. Ask your builder to check your access.'").length===3&&SRC.indexOf('disabled aria-busy="true">Saving…</button>`')>=0);
+
+  /* clean up */
+  $(`(function(){const o=__iv.o;toast=o.toast;appMode=o.am;Object.assign(Sync,{on:o.on,mode:o.mode,db:o.db,deviceId:o.dev,_shadow:o.sh,_sitesPulled:o.pulled});
+    state.projects=state.projects.filter(x=>x.id!=='ivl1');state.session=o.sess;clientTab='home';try{closeInfo();}catch(e){}localStorage.removeItem('plumb.errors');delete window.__iv;delete window.__ivP;delete window.__ivServer;return true;})()`);
+  t('clean up: the test house is gone and sync is restored',$("state.projects.some(x=>x.id==='ivl1')")===false);
+})();
+
 /* ════ R-1 ALLOWANCES · PR 3 (2.458.0) ════
    After an allowance is invoiced, a price change bills only the difference: a
    new charge (waits for the homeowner) or a new credit (no approval). The
