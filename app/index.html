@@ -3946,15 +3946,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.457.0 - Approve says Approved only once the house has it';
+const PLUMB_VERSION='2.458.0 - Allowances: changes after an invoice bill the difference; allowance use on Money';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791137715273;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.457.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791139323865;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.458.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9900,7 +9900,7 @@ const Notify={
   /* pure: an approved selection whose charge the builder changed and sent back
      for approval (R-1 PR 2) → one homeowner notice, keyed on the new amount. */
   selReapprove(o,n,site){
-    if(!o||!n||!o.approved||n.approved||n.invoicedIn)return null;
+    if(!o||!n||!o.approved||n.approved||(n.invoicedIn&&!selIsAllowance(n)))return null;
     const amt=Number(n.price)||0;if(amt<=0.005||Math.abs(amt-(Number(o.price)||0))<=0.005||!selIsAllowance(n))return null;
     return {key:'selre:'+site+':'+n.id+':'+amt,aud:'client',title:'Needs your OK again',body:(n.item||'A selection')+' is now '+invUsd(amt)+' over the allowance'};},
   selChanged(p,o,n){const x=this.selReapprove(o,n,p.id);
@@ -10586,10 +10586,18 @@ function allowanceMath(allowance,itemPrice,creditOn){
   return {over,under,credit,amount:over>0?over:(credit>0?-credit:0),priced:true};
 }
 function chargeState(c){
-  c=c||{};const amount=Number(c.amount)||0;const invoiced=!!c.invoicedIn;
+  c=c||{};const amount=Number(c.amount)||0;
+  /* R-1 PR 3: an invoiced allowance carries billed (what its invoices hold).
+     The billed part always counts and is never re-billed; only the difference
+     can wait (a positive one, until approved) or go on the next invoice. */
+  if(c.billed!=null&&c.gated){const billed=Number(c.billed)||0,delta=amount-billed;
+    const waiting=delta>0.005&&!c.approved?delta:0;
+    const state=waiting?'waiting':Math.abs(delta)<=0.005?'invoiced':delta<0?'credit':'approved';
+    return {amount,state,counts:!waiting,waiting,locked:false,counted:amount-waiting,billed,delta};}
+  const invoiced=!!c.invoicedIn;
   const waiting=amount>0.005&&!!c.gated&&!c.approved&&!invoiced;
   const state=invoiced?'invoiced':waiting?'waiting':amount>0.005?(c.gated?'approved':'charge'):amount<-0.005?'credit':'none';
-  return {amount,state,counts:!waiting,waiting:waiting?amount:0,locked:invoiced};
+  return {amount,state,counts:!waiting,waiting:waiting?amount:0,locked:invoiced,counted:waiting?0:amount};
 }
 /* What an edit does to a priced change (the approval reset and the notice
    build on this). Invoiced: never rewritten; the difference is its own new
@@ -10604,14 +10612,41 @@ function chargeAfterEdit(c,nextAmount){
    price to the homeowner, never the builder's own cost) and costLineId; its
    price is the derived charge, so invoices keep reading price. */
 function selIsAllowance(s){return !!s&&s.allowance!=null&&s.allowance!==''&&isFinite(Number(s.allowance));}
-function selCharge(s){return {amount:Number(s&&s.price)||0,gated:selIsAllowance(s),approved:!!(s&&s.approved),invoicedIn:(s&&s.invoicedIn)||null};}
+function selCharge(s,p,skipInv){const c={amount:Number(s&&s.price)||0,gated:selIsAllowance(s),approved:!!(s&&s.approved),invoicedIn:(s&&s.invoicedIn)||null};
+  if(c.gated){const b=selBilled(p,s,skipInv);if(b!=null){c.billed=b;c.invoicedIn=null;}}return c;}
+/* What a selection's non-void invoices already hold for it (null: never
+   invoiced, i.e. no invoicedIn). An invoicedIn with no item found counts its
+   whole price, so nothing is ever billed twice. */
+function selBilled(p,s,skipInv){
+  if(!s||!s.invoicedIn)return null;let n=0,any=false;
+  ((p&&p.invoices)||[]).forEach(v=>{if(!v||v.status==='void'||(skipInv&&v.id===skipInv))return;(v.items||[]).forEach(it=>{if(it.selId!=null&&String(it.selId)===String(s.id)){n+=Number(it.amount)||0;any=true;}});});
+  if(any)return n;
+  return s.invoicedIn!==skipInv?(Number(s.price)||0):null;
+}
+/* An allowance can sit on more than one invoice (its charge, then each
+   difference). Releasing one invoice points it at another live invoice that
+   still holds it, so what is billed stays billed. Plain selections: as before. */
+function selReleaseInv(p,invId){(p.selections||[]).forEach(sl=>{if(sl.invoicedIn!==invId)return;
+  const o=selIsAllowance(sl)&&(p.invoices||[]).find(v=>v&&v.id!==invId&&v.status!=='void'&&(v.items||[]).some(it=>it.selId!=null&&String(it.selId)===String(sl.id)));
+  sl.invoicedIn=o?o.id:null;});}
+/* What a selection still has to go on an invoice: a plain one bills once; an
+   allowance bills its difference from what is already invoiced. A waiting
+   overage is not billable. */
+function selUnbilledAmt(p,s,skipInv){
+  if(!selIsAllowance(s))return (s.invoicedIn&&s.invoicedIn!==skipInv)?0:(Number(s.price)||0);
+  const c=chargeState(selCharge(s,p,skipInv));if(c.waiting)return 0;
+  return c.billed!=null?c.delta:c.amount;
+}
 function houseCreditsAllowances(p){return !p||p.allowanceCredit!==false;}
 function selAllowanceAmount(s,p){return allowanceMath(s&&s.allowance,s&&s.cost,houseCreditsAllowances(p)).amount;}
 /* R-1 PR 2: a builder edit to an approved selection's charge. An allowance
    overage that changes (chargeAfterEdit) goes back to waiting; a plain upgrade
    that becomes an allowance overage needs the homeowner's OK for that overage.
    Credits and $0 never wait. Invoiced selections are never rewritten here. */
-function selReapproval(s,next){
+function selReapproval(s,next,p){
+  const b=selIsAllowance(s)?selBilled(p,s):null;
+  if(b!=null){const n=Number(next)||0;const d=chargeAfterEdit({amount:b,invoicedIn:'billed'},n).delta;const changed=Math.abs(n-(Number(s.price)||0))>0.005;
+    return {reset:!!s.approved&&d>0.005&&changed,kept:!!s.approved&&d>0.005&&!changed,was:Number(s.price)||0,billed:b,delta:d};}
   if(!s||!s.approved||s.invoicedIn)return {reset:false,kept:!!(s&&s.approved&&!s.invoicedIn),was:s?Number(s.price)||0:0};
   const was=selCharge(s);const n=Number(next)||0;
   const reset=selIsAllowance(s)?chargeAfterEdit(was,n).resetApproval:n>0.005;
@@ -10619,7 +10654,7 @@ function selReapproval(s,next){
 }
 function repriceAllowances(p){(p&&p.selections||[]).forEach(s=>{if(selIsAllowance(s)&&!s.invoicedIn)s.price=selAllowanceAmount(s,p);});}
 function _siteExtraCharges(p){let ups=0,crs=0;(p.invoices||[]).forEach(v=>{if(v&&(v.status==='void'||v.status==='draft'))return;((v&&v.items)||[]).forEach(it=>{if(it.selId)return;const n=Number(it.amount)||0;if(n>0)ups+=n;else if(n<0)crs+=n;});});return {ups,crs};}
-function siteCharges(p){let ups=0,crs=0,waiting=0;(p.selections||[]).forEach(s=>{const c=chargeState(selCharge(s));if(!c.counts){waiting+=c.waiting;return;}const n=c.amount;if(n>0)ups+=n;else if(n<0)crs+=n;});const ex=_siteExtraCharges(p);return {ups:ups+ex.ups,crs:crs+ex.crs,waiting};}
+function siteCharges(p){let ups=0,crs=0,waiting=0;(p.selections||[]).forEach(s=>{const c=chargeState(selCharge(s,p));waiting+=c.waiting;const n=c.counted;if(n>0)ups+=n;else if(n<0)crs+=n;});const ex=_siteExtraCharges(p);return {ups:ups+ex.ups,crs:crs+ex.crs,waiting};}
 function sitePaidTotal(p){const loose=(p.payments||[]).reduce((a,x)=>a+(Number(x.amount)||0),0);const inv=(p.invoices||[]).filter(v=>v&&v.status!=='void').reduce((a,v)=>a+invPaidAmt(v),0);return loose+inv;}
 function clientLedger(p){const c=siteCharges(p);const net=c.ups+c.crs;const paid=sitePaidTotal(p);return {ups:c.ups,crs:c.crs,net,paid,out:net-paid};}
 /* ── Single source of truth for every billing figure shown anywhere. All money
@@ -10709,10 +10744,23 @@ function exportCosts(){
   _csvShare(fname,costsCsv(p),n+' cost'+(n===1?'':'s')+' exported for your accountant').then(ok=>{if(ok)logEvent('costsCsv',String(n));});
 }
 function costLineMargin(p,lineId){
-  const l=costLines(p).find(x=>String(x.id)===String(lineId));if(!l||!l.selId)return null;
-  const sel=(p.selections||[]).find(s=>String(s.id)===String(l.selId));if(!sel)return null;
-  const price=Number(sel.price)||0;const cost=costLineRollup(p,lineId).exposure;
-  return {item:sel.item||'Selection',price,cost,margin:price-cost};
+  const l=costLines(p).find(x=>String(x.id)===String(lineId));if(!l)return null;
+  /* R-1 PR 3: an allowance selection's homeowner price is its item price (cost),
+     not its stored price (only the overage). Allowances that draw from this line
+     (costLineId) count too, so the margin is item prices vs the line's cost. */
+  const sels=(p.selections||[]).filter(s=>(l.selId!=null&&String(s.id)===String(l.selId))||(selIsAllowance(s)&&s.costLineId!=null&&String(s.costLineId)===String(l.id)));
+  if(!sels.length)return null;
+  const pays=s=>selIsAllowance(s)&&s.cost!=null&&s.cost!==''?Number(s.cost)||0:Number(s.price)||0;
+  const price=sels.reduce((a,s)=>a+pays(s),0);const cost=costLineRollup(p,lineId).exposure;
+  return {item:sels[0].item||'Selection',price,cost,margin:price-cost};
+}
+/* R-1 PR 3: allowance use on a budget line: the allowances that draw from it
+   and the item prices picked so far (builder-only Money). */
+function allowanceRollup(p,lineId){
+  let n=0,allowance=0,used=0;
+  ((p&&p.selections)||[]).forEach(s=>{if(!selIsAllowance(s)||s.costLineId==null||String(s.costLineId)!==String(lineId))return;
+    n++;allowance+=Number(s.allowance)||0;if(s.cost!=null&&s.cost!=='')used+=Number(s.cost)||0;});
+  return {n,allowance,used};
 }
 
 /* CSV delivery: iOS PWAs silently drop data-URL navigation, so touch devices
@@ -10931,13 +10979,15 @@ function moneyMore(){
   openChoice({title:'Money',items:items});
 }
 function moneyLineRowHTML(l,r){
+  const al=allowanceRollup(P(),l.id);   /* R-1 PR 3 */
   const left=r.budget-r.projected;const over=left<-0.005;
   const aside=over
     ?'<div class="row-aside warn">'+invUsd(-left)+' over</div>'
     :(left>0.005?'<div class="row-aside">'+invUsd(left)+' left</div>':'');
   return '<div class="row row-tap" onclick="openCostLine(\''+String(l.id).replace(/'/g,'')+'\')">'
     +'<div class="row-main"><div class="row-title">'+esc(l.label||'')+'</div>'
-    +'<div class="row-sub">'+invUsd(r.projected)+' of '+invUsd(r.budget)+'</div></div>'
+    +'<div class="row-sub">'+invUsd(r.projected)+' of '+invUsd(r.budget)+'</div>'
+    +(al.n?'<div class="row-sub mn-allow">Allowances: '+invUsd(al.used)+' of '+invUsd(al.allowance)+' used</div>':'')+'</div>'
     +aside
     +'<span class="row-chev">&rsaquo;</span></div>';
 }
@@ -13381,7 +13431,7 @@ function clientAllowanceLine(s,p){
     if(amt>0.005)parts.push(esc(invUsd(amt)+' over'));
     else if(amt<-0.005)parts.push(esc(invUsd(-amt)+' credit'));
     else if(m.under>0.005)parts.push(esc(invUsd(m.under)+' under'));}
-  const st=chargeState(selCharge(s));
+  const st=chargeState(selCharge(s,p));
   if(st.state==='waiting')parts.push('<span class="c-clay">needs your OK</span>');
   /* Each piece stays whole and keeps its " · " at the end of its own line, so
      the line only breaks between pieces (never "$120" / "over"). */
@@ -13446,7 +13496,7 @@ function ledgerDetailHTML(p){
   const bs=billingSummary(p);const loose=bs.paid-bs.invPaid;
   const invs=(p.invoices||[]).filter(v=>v&&v.status!=='void');
   const overRows=[],credRows=[];
-  sels.forEach(s=>{if(!chargeState(selCharge(s)).counts)return;const n=Number(s.price)||0;const m=(s.cat||'')+(s.room&&s.room!=='\u2014'&&s.room!=='N/A'?' \u00b7 '+s.room:'')+(s.approved?' \u00b7 signed':'');if(n>0)overRows.push({n:s.item||'(unspecified)',m,amt:n});else if(n<0)credRows.push({n:s.item||'(unspecified)',m,amt:n});});
+  sels.forEach(s=>{const n=chargeState(selCharge(s,p)).counted;if(!n)return;const m=(s.cat||'')+(s.room&&s.room!=='\u2014'&&s.room!=='N/A'?' \u00b7 '+s.room:'')+(s.approved?' \u00b7 signed':'');if(n>0)overRows.push({n:s.item||'(unspecified)',m,amt:n});else if(n<0)credRows.push({n:s.item||'(unspecified)',m,amt:n});});
   invs.forEach(v=>(v.items||[]).forEach(it=>{if(it.selId)return;const n=Number(it.amount)||0;if(n>0)overRows.push({n:it.label||'Invoice charge',m:esc(v.no||'Invoice'),amt:n});else if(n<0)credRows.push({n:it.label||'Invoice credit',m:esc(v.no||'Invoice'),amt:n});}));
   const payRows=[];
   (p.payments||[]).forEach(x=>payRows.push({n:x.label||'Payment',m:x.date?fmtLogDate(x.date):'',amt:Number(x.amount)||0}));
@@ -14040,13 +14090,13 @@ function selRoomValue(){const sel=document.getElementById('selRoomSel');if(sel.v
    derived (allowanceMath), never typed. */
 function _selNum(id){const v=String((document.getElementById(id)||{}).value||'').trim();if(v==='')return null;const d=v.replace(/[^0-9.-]/g,'');const n=d===''?NaN:Number(d);return isNaN(n)?NaN:n;}
 function fillSelAllow(s){
-  const p=P();const a=selIsAllowance(s);const locked=!!(a&&s.invoicedIn);
+  /* R-1 PR 3: an invoiced allowance stays editable; the difference bills on its own. */
+  const p=P();const a=selIsAllowance(s);
   document.getElementById('selAllow').value=a?s.allowance:'';
   document.getElementById('selCost').value=a&&s.cost!=null?s.cost:'';
-  ['selAllow','selCost'].forEach(id=>{document.getElementById(id).readOnly=locked;});
+  ['selAllow','selCost'].forEach(id=>{document.getElementById(id).readOnly=false;});
   _costSel('selLine',costLines(p).map(l=>({id:l.id,label:l.label})),a?(s.costLineId||''):'','No budget line');
   document.getElementById('selCredit').classList.toggle('on',houseCreditsAllowances(p));
-  document.getElementById('selAllowBox').dataset.locked=locked?'1':'';
   selAllowRefresh();
 }
 function selAllowRefresh(){
@@ -14055,13 +14105,21 @@ function selAllowRefresh(){
   document.getElementById('selPriceBox').style.display=on?'none':'';
   document.getElementById('selAllowHint').style.display=on?'none':'';
   const hint=document.getElementById('selCostHint');if(!on||!hint)return;hint.classList.remove('c-clay');
-  if(document.getElementById('selAllowBox').dataset.locked){hint.textContent='Already invoiced, so the allowance and item price are locked.';return;}
   const c=_selNum('selCost');const credit=document.getElementById('selCredit').classList.contains('on');
   const m=allowanceMath(a,c,credit);
   const bad=isNaN(a)||isNaN(c)||a<0||(c!=null&&c<0);
   const ex=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
-  const ra=selReapproval(ex,m.amount);
+  const ra=selReapproval(ex,m.amount,P());
   /* An overage waiting on the homeowner reads in clay; one they already approved does not. */
+  if(!bad&&m.priced&&ra.billed!=null){
+    /* Invoiced: what is billed stays billed; say where the difference goes. */
+    const b=ra.billed,d=ra.delta,wait=d>0.005&&!ra.kept;
+    const head=m.over>0.005?invUsd(m.over)+' over the allowance.':m.under>0.005?invUsd(m.under)+' under the allowance.':'Right at the allowance.';
+    const inv=(b<0?invUsd(-b)+' credit':invUsd(b))+' is already invoiced.';
+    hint.classList.toggle('c-clay',wait);
+    hint.textContent=head+' '+inv+(d>0.005?(wait?' The other '+invUsd(d)+' waits for the homeowner’s approval.':' The other '+invUsd(d)+' goes on the next invoice.')
+      :d<-0.005?' The '+invUsd(-d)+' difference is credited on the next invoice.':'');
+    return;}
   hint.classList.toggle('c-clay',!bad&&m.priced&&m.over>0.005&&!ra.kept);
   hint.textContent=bad?'The homeowner’s price for this item, not your cost.'
     :!m.priced?'Add the item price once the homeowner picks. Not your cost.'
@@ -14095,11 +14153,9 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
     if(isNaN(allowance)||isNaN(cost)||allowance<0||(cost!=null&&cost<0)){toast('Allowance and item price can’t be less than $0.');return;}
     const p=P();const credit=document.getElementById('selCredit').classList.contains('on');
     if(credit!==houseCreditsAllowances(p)){p.allowanceCredit=credit;repriceAllowances(p);}
-    const locked=!!(existingSel&&selIsAllowance(existingSel)&&existingSel.invoicedIn);
-    money=locked?{costLineId:document.getElementById('selLine').value||null}
-      :{allowance,cost,costLineId:document.getElementById('selLine').value||null,price:allowanceMath(allowance,cost,credit).amount};
-    price=locked?existingSel.price:money.price;
-    if(!locked&&selReapproval(existingSel,money.price).reset){money.approved=false;money.signed=null;logEvent('allowanceReapprove',item+' · '+invUsd(money.price));}
+    money={allowance,cost,costLineId:document.getElementById('selLine').value||null,price:allowanceMath(allowance,cost,credit).amount};
+    price=money.price;
+    if(selReapproval(existingSel,money.price,p).reset){money.approved=false;money.signed=null;logEvent('allowanceReapprove',item+' · '+invUsd(money.price));}
   }else if(existingSel&&selIsAllowance(existingSel)){
     money={allowance:null,cost:null,costLineId:null};
   }
@@ -14110,7 +14166,8 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
       toast(why+' \u2014 can\u2019t mark Installed');return;}
   }
   if(editingSelId!=null){Data.updateSelection(editingSelId,Object.assign({room:room||'—',cat,item,note,price,status},money||{}));logEvent('selectionEdit',item);toast('Selection updated');}
-  else{const id=(P().selections.reduce((m,s)=>Math.max(m,s.id),0)||0)+1;Data.addSelection(Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{}));logEvent('selectionAdded',item);toast('Selection added');}
+  else{/* R-1 PR 3: never reuse an id an invoice still names (allowances bill by selId) */
+    const id=Math.max(P().selections.reduce((m,s)=>Math.max(m,s.id),0)||0,(P().invoices||[]).reduce((m,v)=>Math.max(m,...(v.items||[]).map(it=>Number(it.selId)||0)),0))+1;Data.addSelection(Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{}));logEvent('selectionAdded',item);toast('Selection added');}
   closeAddSel();renderSelections();}
 function removeSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;
   const m=selMoney(s.price);
@@ -14145,8 +14202,8 @@ function invState(inv){
 // Keyed on computed state so it stays correct as a sent invoice ages into
 // 'overdue' - the label, the notice, and the Approve button all agree.
 function invNeedsOK(inv){if(!inv||inv.status==='approved')return false;const st=invState(inv);return (st==='sent'||st==='overdue')&&invPaidAmt(inv)<=0.005;}
-function unbilledSelections(p){return (p.selections||[]).filter(x=>Number(x.price)&&chargeState(selCharge(x)).counts&&SEL_STATUS.indexOf(x.status)>=1&&!x.invoicedIn);}
-function composeSelections(p){const editId=(_invDraft&&_invDraft.editId)||null;return (p.selections||[]).filter(x=>Number(x.price)&&chargeState(selCharge(x)).counts&&SEL_STATUS.indexOf(x.status)>=1&&(!x.invoicedIn||x.invoicedIn===editId));}
+function unbilledSelections(p){return (p.selections||[]).filter(x=>SEL_STATUS.indexOf(x.status)>=1&&Math.abs(selUnbilledAmt(p,x))>0.005);}
+function composeSelections(p){const editId=(_invDraft&&_invDraft.editId)||null;return (p.selections||[]).filter(x=>SEL_STATUS.indexOf(x.status)>=1&&Math.abs(selUnbilledAmt(p,x,editId))>0.005);}
 let invMode='list',_invDraft=null;
 let _invAnyHouse=false;
 function openInvoices(anyHouse){if(!canGate('moneyCo')){toast('Invoices are off for this role');return;}_invAnyHouse=anyHouse===true;invMode='list';renderInvoices();document.getElementById('invScrim').classList.add('show');}
@@ -14181,7 +14238,7 @@ function _invSnapInputs(){const g=i=>(document.getElementById(i)||{value:''}).va
   _invDraft.exLabel=g('invExLabel');_invDraft.exAmount=g('invExAmount');}
 function invDraftItems(){
   const p=P();const items=[];
-  composeSelections(p).forEach(x=>{if(_invDraft.picks[x.id])items.push({label:(x.item||'(selection)')+' — '+(x.cat||'')+(x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+x.room:''),amount:Number(x.price)||0,selId:x.id});});
+  composeSelections(p).forEach(x=>{if(_invDraft.picks[x.id])items.push({label:(x.item||'(selection)')+' — '+(x.cat||'')+(x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+x.room:''),amount:selUnbilledAmt(p,x,_invDraft.editId||null),selId:x.id});});
   const exA=Number(_invDraft.exAmount);
   if(_invDraft.exLabel.trim()&&!isNaN(exA)&&exA!==0)items.push({label:_invDraft.exLabel.trim(),amount:exA});
   return items;}
@@ -14196,7 +14253,7 @@ function invSave(asDraft){
   if(editId){
     inv=(p.invoices||[]).find(v=>v.id===editId);
     if(!inv){toast('Draft not found');invMode='list';renderInvoices();return;}
-    (p.selections||[]).forEach(sl=>{if(sl.invoicedIn===editId)sl.invoicedIn=null;});
+    selReleaseInv(p,editId);
     inv.title=_invDraft.title.trim()||'Selections invoice';inv.due=_invDraft.due.trim()||'';inv.items=items;inv.total=total;
   }else{
     inv={id:'inv_'+Math.random().toString(36).slice(2,9),no:'',title:_invDraft.title.trim()||'Selections invoice',
@@ -14216,7 +14273,7 @@ function invSave(asDraft){
 function invDeleteDraft(invId){
   const p=P();const inv=(p.invoices||[]).find(v=>v.id===invId);if(!inv)return;
   confirmDelete({title:'Delete draft?',body:esc(inv.title)+'<br><br>This draft was never sent. Its selections return to “Not yet invoiced.”',onConfirm:()=>{
-    (p.selections||[]).forEach(sl=>{if(sl.invoicedIn===invId)sl.invoicedIn=null;});
+    selReleaseInv(p,invId);
     p.invoices=(p.invoices||[]).filter(v=>v.id!==invId);
     persist();_invDraft=null;invMode='list';renderInvoices();try{renderSelections();}catch(e){}toast('Draft deleted');}});}
 let _billAssignees=[];
@@ -14352,7 +14409,7 @@ function invVoid(projId,invId){
     onConfirm:()=>{
       inv.status='void';inv.voidedAt=Date.now();
       // release the selections this invoice billed so they become unbilled again
-      (inv.items||[]).forEach(it=>{if(it.selId){const sl=(p.selections||[]).find(x=>x.id===it.selId);if(sl&&sl.invoicedIn===inv.id)sl.invoicedIn=null;}});
+      selReleaseInv(p,inv.id);
       persist();logEvent('invoiceVoided',inv.no);toast(inv.no+' voided');
       try{closeInfo();}catch(e){}renderInvoices();try{renderSelections();}catch(e){}
     }});
@@ -14463,7 +14520,7 @@ function renderInvoices(){
       </div>
       ${(_invDraft.due&&_invDraft.due!=='On receipt'&&!/^\d{4}-\d{2}-\d{2}$/.test(_invDraft.due))?`<div class="meta">Due: ${esc(_invDraft.due)} \u00b7 <a href="#" onclick="event.preventDefault();_invDraft.due='';renderInvoices()" class="c-gold">clear</a></div>`:''}
       <div class="sec"><h2>Unbilled selections</h2></div>`
-      +(un.length?un.map(x=>`<div class="subrow cur-p" onclick="invTogglePick('${x.id}')"><div class="si"><div class="n">${_invDraft.picks[x.id]?'☑':'☐'} ${esc(x.item||'(selection)')}</div><div class="d">${esc(x.cat||'')}${x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+esc(x.room):''}</div></div><b class="${Number(x.price)>0?'up':'cr'} fs-sm">${selMoney(x.price)}</b></div>`).join('')
+      +(un.length?un.map(x=>`<div class="subrow cur-p" onclick="invTogglePick('${x.id}')"><div class="si"><div class="n">${_invDraft.picks[x.id]?'☑':'☐'} ${esc(x.item||'(selection)')}</div><div class="d">${esc(x.cat||'')}${x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+esc(x.room):''}</div></div><b class="${selUnbilledAmt(p,x,editId)>0?'up':'cr'} fs-sm">${selMoney(selUnbilledAmt(p,x,editId))}</b></div>`).join('')
         :'<div class="empty py-2 px-0">Nothing unbilled — every priced selection is already on an invoice.</div>')
       +`<div class="sec"><h2>Custom line</h2></div>
       <div class="setup-roster-row"><input id="invExLabel" placeholder="e.g. Change order #3" value="${esc(_invDraft.exLabel)}"><input id="invExAmount" placeholder="Amount" inputmode="numeric" value="${esc(_invDraft.exAmount)}" class="u-m31"></div>
