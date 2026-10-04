@@ -63,6 +63,38 @@ const JOIN = applyClaimToSite({ members: { [U.builder]: 'builder' }, meta: {} },
   { code: 'CRWJ', role: 'sub', siteId: 'liveJoin', trade: 'plumb', name: 'Clearwater Plumbing' },
   U.sub, { name: 'Mike Chen', email: 'mike@example.com' });
 
+/* PR 0: a selection as the app stores it ({data, updatedAt, updatedBy}),
+   every one of the nine install-detail spec fields and seven custom slots
+   filled, plus every money field a selection carries or will carry. */
+const SEL_IDS = ['s9a', 's9b', 's9c', 's9d', 's9e', 's9f', 's9g', 's9h', 's9i', 's9j', 's9k'];
+function selRec(over) {
+  return Object.assign({
+    id: 9, room: 'Primary Bath', cat: 'Plumbing Fixtures', item: 'Brushed brass package',
+    status: 'selected', approved: false, note: 'Rough-in confirmed on site',
+    price: 850, allowance: 1200, cost: 640, costLineId: 'cl_plumb_fix', invoicedIn: 'inv_p2_1',
+    spec: {
+      finish: 'Brushed brass', roughin: '8 in widespread', mount: 'Deck', mounting: 'Deck, 3-hole',
+      height: '36 in vanity', supply: '1/2 in compression', drain: '1-1/4 in pop-up',
+      location: 'Centered on sink', loc: 'Wall B', valve: 'Pressure-balance',
+    },
+    specCustom: [
+      { label: 'Handle style', who: 'homeowner', required: true, value: 'Lever' },
+      { label: 'Shower head', who: 'homeowner', required: true, value: 'Rain, 10 in' },
+      { label: 'Tub filler', who: 'homeowner', required: false, value: 'Floor-mount' },
+      { label: 'Blocking', who: 'builder', required: true, value: '2x10 at 48 in' },
+      { label: 'Trim kit', who: 'builder', required: true, value: 'T14 series' },
+      { label: 'Accessories', who: 'homeowner', required: false, value: 'Towel bar + hook' },
+      { label: 'Supply stops', who: 'builder', required: false, value: 'Quarter-turn' },
+    ],
+  }, over || {});
+}
+const selDoc = (over) => ({ data: selRec(over), updatedAt: 1, updatedBy: 'dev-builder' });
+/* What clientSignoff() sends: the whole record, approved + signed changed, merged. */
+const approveAs = (d, id, over) => setDoc(doc(d, `sites/liveA/sel/${id}`), {
+  data: selRec(Object.assign({ approved: true, signed: { date: '2026-10-04', by: ['Ana Ruiz'] } }, over || {})),
+  updatedAt: 2, updatedBy: 'dev-client',
+}, { merge: true });
+
 const results = [];
 let testEnv;
 
@@ -79,6 +111,12 @@ async function expect(tier, name, promise, shouldPass) {
 }
 const INV = (n, p, pass) => expect('INVARIANT', n, p, pass);
 const GAP = (n, p, pass) => expect('GAP', n, p, pass);
+/* Denied by the rule's own logic. A refusal that only comes from Firestore's
+   1,000-expression limit is not proof (PR 0: the old selection rule refused
+   every homeowner write that way, the good ones included). */
+const INV_RULE = (n, p) => expect('INVARIANT', n, p.then(
+  () => { throw new Error('write was allowed'); },
+  (e) => { if (/maximum of 1000 expressions/.test(String(e && e.message))) throw new Error('denied only by the 1,000-expression limit'); }), true);
 
 /* ---------- fixtures (written with rules disabled) ---------- */
 async function seed() {
@@ -92,6 +130,8 @@ async function seed() {
     });
     for (const c of ['items', 'sel', 'logs', 'pmts', 'mail', 'costs'])
       await setDoc(doc(db, `sites/liveA/${c}/r1`), { seeded: true, note: c });
+    // PR 0: realistic selections, written the way the app writes a record
+    for (const id of SEL_IDS) await setDoc(doc(db, `sites/liveA/sel/${id}`), selDoc());
     // liveB: a different builder's live site — our personas are strangers here
     await setDoc(doc(db, 'sites/liveB'), {
       mode: 'live', street: 'Live B',
@@ -236,7 +276,7 @@ async function main() {
   await INV('records: sub DENIED write sel', setDoc(doc(db.sub, 'sites/liveA/sel/s2'), { item: 'x' }), false);
   await INV('records: sub DENIED write pmts', setDoc(doc(db.sub, 'sites/liveA/pmts/p3'), { amt: 9 }), false);
   await INV('records: sub DENIED write mail', setDoc(doc(db.sub, 'sites/liveA/mail/m3'), { status: 'x' }), false);
-  await INV('records: client writes sel', setDoc(doc(db.client, 'sites/liveA/sel/s3'), { signed: true }), true);
+  await INV('records: PR 0 client DENIED creating a sel (homeowners never create selections)', setDoc(doc(db.client, 'sites/liveA/sel/s3'), { signed: true }), false);
   await INV('records: client writes items', setDoc(doc(db.client, 'sites/liveA/items/i3'), { issue: true }), true);
   await INV('records: client DENIED write logs', setDoc(doc(db.client, 'sites/liveA/logs/l3'), { note: 'x' }), false);
   await INV('records: client DENIED write pmts', setDoc(doc(db.client, 'sites/liveA/pmts/p4'), { amt: 0 }), false);
@@ -259,6 +299,46 @@ async function main() {
     setDoc(doc(db.stranger, 'sites/legacy/items/iX'), { x: 1 }), false);
   await GAP(HARD ? 'LEGACY-NULL: records under it denied too' : 'LEGACY-NULL: stranger CAN read+write records under explicit-null site',
     setDoc(doc(db.stranger, 'sites/legacyNull/items/iX'), { x: 1 }), !HARD);
+
+  /* ══════════ SELECTIONS: homeowner allowlist (PR 0, R-1 prep) ══════════ */
+  await INV('sel: (a) homeowner approves a full selection - 9 spec fields + 7 custom slots filled - ALLOWED',
+    approveAs(db.client, 's9a'), true);
+  await INV('sel: homeowner takes the final OK back (approved false, signed cleared) - ALLOWED',
+    approveAs(db.client, 's9a', { approved: false, signed: null }), true);
+  await INV('sel: homeowner answers their own questions (spec finish + a homeowner slot value) - ALLOWED',
+    setDoc(doc(db.client, 'sites/liveA/sel/s9b'), {
+      data: selRec({ spec: Object.assign({}, selRec().spec, { finish: 'Matte black' }),
+        specCustom: selRec().specCustom.map((c, i) => i === 0 ? Object.assign({}, c, { value: 'Cross handle' }) : c) }),
+      updatedAt: 2, updatedBy: 'dev-client' }, { merge: true }), true);
+  for (const [k, v, id] of [['price', -50000, 's9c'], ['allowance', 99999, 's9d'], ['cost', 0, 's9e'],
+                            ['costLineId', 'cl_other', 's9f'], ['invoicedIn', null, 's9g']])
+    await INV_RULE(`sel: (b) homeowner changing ${k} while approving - DENIED by the rule`, approveAs(db.client, id, { [k]: v }));
+  await INV('sel: homeowner marking it installed - DENIED', approveAs(db.client, 's9h', { status: 'installed' }), false);
+  await INV('sel: homeowner changing an install detail (rough-in) - DENIED',
+    approveAs(db.client, 's9i', { spec: Object.assign({}, selRec().spec, { roughin: '4 in centerset' }) }), false);
+  await INV('sel: homeowner adding or dropping a custom slot - DENIED',
+    approveAs(db.client, 's9j', { specCustom: selRec().specCustom.slice(0, 6) }), false);
+  /* GAP (PR 0, by design for the expression budget): custom slots are not
+     checked one by one, so a homeowner driving the API (never the app) can
+     rewrite a builder slot's text. No money lives in a slot. */
+  await GAP('PR 0: homeowner can rewrite a builder custom slot through the API (no slot-by-slot check)',
+    approveAs(db.client, 's9b', { specCustom: selRec().specCustom.map((c, i) => i === 3 ? Object.assign({}, c, { value: 'none' }) : c) }), true);
+  await INV('sel: homeowner adding a top-level field beside the record - DENIED',
+    setDoc(doc(db.client, 'sites/liveA/sel/s9k'), { price: -50000 }, { merge: true }), false);
+  await INV('sel: (c) homeowner creating a priced selection (-$50,000) - DENIED',
+    setDoc(doc(db.client, 'sites/liveA/sel/s9new'), { data: { id: 99, room: 'Kitchen', cat: 'Appliances', item: 'Credit', status: 'selected', price: -50000 }, updatedAt: 1, updatedBy: 'dev-client' }), false);
+  await INV('sel: builder still sets the price (nothing loosened for builders)',
+    setDoc(doc(db.builder, 'sites/liveA/sel/s9k'), { data: selRec({ price: 900 }), updatedAt: 3, updatedBy: 'dev-builder' }, { merge: true }), true);
+  /* KNOWN GAP (Day-one: PM and crews can't see Money): a crew member can read a
+     selection's price, allowance and cost straight from the database; only
+     the app hides them. This asserts today's behavior so a rules change that
+     closes it is deliberate. It MUST flip to DENIED before the first paying
+     customer. */
+  await GAP('KNOWN GAP (Day-one: PM and crews can\'t see Money): crew can read selection money',
+    getDoc(doc(db.sub, 'sites/liveA/sel/s9a')).then(r => {
+      const d = (r.data() || {}).data || {};
+      if (d.price !== 850 || d.allowance !== 1200) throw new Error('money not visible: ' + JSON.stringify(d).slice(0, 80));
+    }), true);
 
   /* ══════════ COSTS (job costing — builder-only) ══════════ */
   await INV('costs: builder reads', getDoc(doc(db.builder, 'sites/liveA/costs/r1')), true);

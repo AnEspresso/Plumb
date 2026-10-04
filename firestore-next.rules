@@ -166,52 +166,38 @@ service cloud.firestore {
           );
         }
         function moneyColl() { return recordColl in ['costs', 'mail']; }
-        function specHeld(k) {
-          return rec().get('spec', {}).get(k, '') == recNew().get('spec', {}).get(k, '');
+        /* PR 0 (R-1 prep): a homeowner's selection write is an allowlist.
+           The app writes a whole record as {data, updatedAt, updatedBy}. A
+           homeowner Approves (data.approved + data.signed, clientSignoff) and
+           answers their own questions (data.spec + data.specCustom values,
+           clientSaveSpec). Nothing else moves: not the price, the status, the
+           item, an invoice link or any amount, present or future. The old
+           field-by-field rule ran past Firestore's 1,000-expression limit and
+           refused every homeowner write; this one reads only what changed. */
+        function specTechHeld(n, o) {
+          return !n.get('spec', {}).diff(o.get('spec', {})).affectedKeys()
+            .hasAny(['roughin','mount','mounting','height','supply','drain','location','loc','valve']);
         }
-        function specNoTech(s) {
-          return !s.keys().hasAny(['roughin','mount','mounting','height','supply','drain','location','loc','valve']);
-        }
-        function customSlot(i) {
-          let arr = rec().get('specCustom', []);
-          let brr = recNew().get('specCustom', []);
-          let o = arr.size() > i ? arr[i] : {};
-          let n = brr.size() > i ? brr[i] : {};
-          return o == n
-            || (
-              o.get('who', '') == 'homeowner'
-              && n.get('who', '') == 'homeowner'
-              && o.get('label', '') == n.get('label', '')
-              && o.get('required', false) == n.get('required', false)
-            );
-        }
-        function specCustomOk() {
-          return rec().get('specCustom', []).size() == recNew().get('specCustom', []).size()
-            && customSlot(0) && customSlot(1) && customSlot(2) && customSlot(3)
-            && customSlot(4) && customSlot(5) && customSlot(6) && customSlot(7)
-            && customSlot(8) && customSlot(9) && customSlot(10) && customSlot(11);
+        /* Custom slots: same count, still a list. No slot-by-slot check: twelve
+           of them cost ~400 expressions (measured), the same budget that broke
+           the old rule. Builder slot text is not protected here (documented gap
+           in rulescheck.js); money never lives in a slot. */
+        function specCustomOk(n, o) {
+          return n.specCustom is list
+            && n.specCustom.size() == o.get('specCustom', []).size();
         }
         function clientSelOk() {
+          let n = recNew();
+          let o = rec();
+          let ch = n.diff(o).affectedKeys();
           return recordColl == 'sel'
-            && recNew().get('id', '') == rec().get('id', '')
-            && rec().get('id', '') != ''
-            && specHeld('roughin')
-            && specHeld('mount')
-            && specHeld('mounting')
-            && specHeld('height')
-            && specHeld('supply')
-            && specHeld('drain')
-            && specHeld('location')
-            && specHeld('loc')
-            && specHeld('valve')
-            && specCustomOk()
-            && (recNew().get('status', '') != 'installed' || rec().get('status', '') == 'installed');
-        }
-        function clientSelCreateOk() {
-          return recordColl == 'sel'
-            && specNoTech(recNew().get('spec', {}))
-            && recNew().get('specCustom', []).size() == 0
-            && recNew().get('status', '') != 'installed';
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt', 'updatedBy'])
+            && ch.hasOnly(['approved', 'approvedAt', 'signed', 'spec', 'specCustom'])
+            && (!ch.hasAny(['approved']) || n.approved is bool)
+            && (!ch.hasAny(['approvedAt']) || n.approvedAt == null || n.approvedAt is int)
+            && (!ch.hasAny(['signed']) || n.signed == null || n.signed is map)
+            && (!ch.hasAny(['spec']) || (n.spec is map && specTechHeld(n, o)))
+            && (!ch.hasAny(['specCustom']) || specCustomOk(n, o));
         }
         function crewOwnBk() {
           return recordColl == 'bk'
@@ -241,8 +227,7 @@ service cloud.firestore {
         allow create: if signedIn() && sScoped()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
               || (sRole() == 'sub' && recordColl in ['items','logs'])
-              || (sRole() == 'client' && recordColl == 'items')
-              || (sRole() == 'client' && clientSelCreateOk()));
+              || (sRole() == 'client' && recordColl == 'items'));
 
         allow update: if signedIn() && sScoped()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
