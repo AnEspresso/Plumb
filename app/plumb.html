@@ -9901,7 +9901,7 @@ const Notify={
   selReapprove(o,n,site){
     if(!o||!n||!o.approved||n.approved||n.invoicedIn)return null;
     const amt=Number(n.price)||0;if(amt<=0.005||Math.abs(amt-(Number(o.price)||0))<=0.005||!selIsAllowance(n))return null;
-    return {key:'selre:'+site+':'+n.id+':'+amt,aud:'client',title:'Needs your OK again',body:(n.item||'A selection')+' is now '+invUsd(amt)+' over the allowance.'};},
+    return {key:'selre:'+site+':'+n.id+':'+amt,aud:'client',title:'Needs your OK again',body:(n.item||'A selection')+' is now '+invUsd(amt)+' over the allowance'};},
   selChanged(p,o,n){const x=this.selReapprove(o,n,p.id);
     if(x&&this._audMatch(x.aud,p))this.push(x.key,x.title,x.body,{pid:p.id,view:'selections',id:n.id},x.aud);},
   newItem(p,rec){
@@ -13373,15 +13373,18 @@ function clientSaveSpec(id){const p=clientProj();const s=(p.selections||[]).find
    price and the difference. Builder cost never lives on a selection. */
 function clientAllowanceLine(s,p){
   const m=allowanceMath(s.allowance,s.cost,houseCreditsAllowances(p));
-  let t='Allowance '+invUsd(s.allowance);
+  const parts=[esc('Allowance '+invUsd(s.allowance))];
   /* The difference is the stored charge, so it matches what gets invoiced. */
   const amt=Number(s.price)||0;
-  if(m.priced){t+=' · price '+invUsd(s.cost);
-    if(amt>0.005)t+=' · '+invUsd(amt)+' over';
-    else if(amt<-0.005)t+=' · '+invUsd(-amt)+' credit';
-    else if(m.under>0.005)t+=' · '+invUsd(m.under)+' under';}
+  if(m.priced){parts.push(esc('price '+invUsd(s.cost)));
+    if(amt>0.005)parts.push(esc(invUsd(amt)+' over'));
+    else if(amt<-0.005)parts.push(esc(invUsd(-amt)+' credit'));
+    else if(m.under>0.005)parts.push(esc(invUsd(m.under)+' under'));}
   const st=chargeState(selCharge(s));
-  return '<div class="ct cl-allow">'+esc(t)+(st.state==='waiting'?' · <span class="c-clay">needs your OK</span>':'')+'</div>';
+  if(st.state==='waiting')parts.push('<span class="c-clay">needs your OK</span>');
+  /* Each piece stays whole and keeps its " · " at the end of its own line, so
+     the line only breaks between pieces (never "$120" / "over"). */
+  return '<div class="ct cl-allow">'+parts.map((x,i)=>'<span class="ws-nw">'+x+(i<parts.length-1?' ·':'')+'</span>').join(' ')+'</div>';
 }
 function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
   if(s.status==='pending'){toast('Your builder is still preparing this option');return;}

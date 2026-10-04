@@ -3153,6 +3153,7 @@ S('allowances-2');
   approve(s0.id);
   const c1=card(s0.id);
   t('(c) after Approve: the card keeps the numbers, drops needs your OK, says Approved',txt(c1).indexOf('Allowance $450 · price $570 · $120 over')>=0&&c1.indexOf('needs your OK')<0&&c1.indexOf('✓ Approved')>=0,txt(c1));
+  t('(c) the card line breaks only between whole pieces, each keeping its \u00b7 at the end',(function(){var sp=(c0.split('cl-allow')[1]||'').match(/<span class="ws-nw">[\s\S]*?<\/span>(<\/span>)?/g)||[];return sp.length===4&&/Allowance \$450 ·<\/span>$/.test(sp[0])&&/price \$570 ·<\/span>$/.test(sp[1])&&/\$120 over ·<\/span>$/.test(sp[2])&&/needs your OK<\/span><\/span>$/.test(sp[3]);})(),(c0.split('cl-allow')[1]||'').slice(0,400));
   t('(c) the card never shows builder cost: only allowance, item price and the stored difference',(function(){const nums=(txt(c1).match(/\$[\d,]+/g)||[]);return nums.join(',')==='$450,$570,$120';})(),txt(c1));
   /* (a) same overage: approval kept */
   $("openEditSel("+s0.id+")");$("selAllowRefresh()");
@@ -3169,7 +3170,7 @@ S('allowances-2');
   t('(a) a changed overage resets the approval and waits again',s2.price===150&&s2.approved===false&&s2.signed==null&&w2>=150-0.005,JSON.stringify([s2.price,s2.approved,s2.signed,w2]));
   /* (b) the notice */
   const nt=JSON.parse($("JSON.stringify(Notify.selReapprove("+JSON.stringify(before)+","+JSON.stringify(s2)+",'p1'))"));
-  t('(b) the homeowner gets one notice: Needs your OK again, with the new overage',!!nt&&nt.aud==='client'&&nt.title==='Needs your OK again'&&nt.body==='Sim2 faucet is now $150 over the allowance.'&&nt.key==='selre:p1:'+s2.id+':150',JSON.stringify(nt));
+  t('(b) the homeowner gets one notice: Needs your OK again, with the new overage',!!nt&&nt.aud==='client'&&nt.title==='Needs your OK again'&&nt.body==='Sim2 faucet is now $150 over the allowance'&&nt.key==='selre:p1:'+s2.id+':150',JSON.stringify(nt));
   const pushed=JSON.parse($("(function(){var o="+JSON.stringify(before)+",n="+JSON.stringify(s2)+";var p=P();var ses=state.session;var k0=Notify.list().length;"+
     "state.session={role:'builder',name:'You'};Notify.selChanged(p,o,n);var b=Notify.list().length-k0;"+
     "state.session={role:'client',site:'p1'};Notify.selChanged(p,o,n);var c=Notify.list().length-k0-b;var top=Notify.list()[0];Notify.selChanged(p,o,n);var again=Notify.list().length-k0-b-c;"+
@@ -3208,7 +3209,7 @@ S('allowances-2');
   t('(d) Money shows a credit that is not on an invoice yet',Math.abs(mt.u+40)<0.005&&mt.h.indexOf('$40 credit not yet invoiced')>=0,JSON.stringify(mt.u));
   /* clean up */
   $("(function(){var p=P();p.selections=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim2 ')!==0;});})()");
-  t('wording: Agency\u2019s PR 2 strings',SRC.indexOf("before, so they have to approve the new amount.")>=0&&SRC.indexOf("approve it again")<0&&SRC.indexOf("' is now '+invUsd(amt)+' over the allowance.'")>=0&&SRC.indexOf("t+=' · price '+invUsd(s.cost)")>=0&&SRC.indexOf("t+=' · item '")<0);
+  t('wording: Agency\u2019s PR 2 strings',SRC.indexOf("before, so they have to approve the new amount.")>=0&&SRC.indexOf("approve it again")<0&&SRC.indexOf("' is now '+invUsd(amt)+' over the allowance'}")>=0&&SRC.indexOf("over the allowance.'}")<0&&SRC.indexOf("esc('price '+invUsd(s.cost))")>=0&&SRC.indexOf("' · item '")<0);
 })();
 
 /* ════ REPORT ════ */
