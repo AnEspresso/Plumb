@@ -623,7 +623,7 @@ t('Calderwood seed math (budget 656.3k, exposure 396.9k, 1 line over)',
   BS.budget===656300&&BS.committed===302500&&BS.spent===259600&&BS.exposure===396900&&BS.remaining===259400&&BS.over===false&&BS.lines===16&&BS.overLines===1&&BS.unassigned===0, JSON.stringify(BS));
 $('renderBuild()');
 t('Build tab card shows all four stats + open affordance',
-  ['Money','Budget','Remaining','Signed for','Paid','View &amp; edit budget','1 line over'].every(s=>el('budgetCard').innerHTML.includes(s)));
+  ['Money','Budget','Remaining','Contracted','Paid','View &amp; edit budget','1 line over'].every(s=>el('budgetCard').innerHTML.includes(s)));
 $("buildSeg('permits')");
 t('Progress hidden on Permits segment', el('buildSchedule').style.display==='none'&&el('overallBar').closest('#buildSchedule')!==null);
 $("buildSeg('subs')");
@@ -699,7 +699,7 @@ asBuilder();$("state.activeId='p2'");
 $("Object.defineProperty(window,'innerWidth',{value:1200,configurable:true})");
 t('isWideBudget flips at breakpoint', $('isWideBudget()')===true);
 $('renderBudget()');
-t('wide layout renders the table', el('budgetBody').innerHTML.includes('bgt-table')&&el('budgetBody').innerHTML.includes('Signed for'));
+t('wide layout renders the table', el('budgetBody').innerHTML.includes('bgt-table')&&el('budgetBody').innerHTML.includes('Contracted'));
 t('sixteen seed rows + quick-add row', $("document.querySelectorAll('#budgetBody tr[data-line]').length")===16&&$("document.querySelectorAll('#budgetBody tr.bgt-qa').length")===1);
 t('over cell rendered in table', el('budgetBody').innerHTML.includes('3,400 over'));
 t('explicit Edit buttons on table rows', $("document.querySelectorAll('#budgetBody .bgt-edit').length")===16);
@@ -734,7 +734,7 @@ let CSVT=$("costsCsv(P())");
 let csvRows=CSVT.split('\r\n');
 t('csv header row', csvRows[0]==='Date,Paid to,Type,Amount,Budget line,Trade,Stage,Toward contract,QuickBooks,Note', csvRows[0]);
 t('csv one row per logged cost', csvRows.length===1+$("costActuals(P()).length"), csvRows.length);
-t('csv carries payees + amounts + line context', CSVT.includes('Ironhill Excavating')&&CSVT.includes('21900')&&CSVT.includes('Signed contract')&&CSVT.includes('Payment')&&CSVT.includes('Plumbing rough-in'));
+t('csv carries payees + amounts + line context', CSVT.includes('Ironhill Excavating')&&CSVT.includes('21900')&&/,"?Contract"?,/.test(CSVT)&&CSVT.includes('Payment')&&CSVT.includes('Plumbing rough-in'));
 $("Data.addCostActual({id:'caq',lineId:'b1',kind:'spent',amount:5,payee:'Acme, \"Quote\" Co',note:'line1\\nline2',t:Date.now()})");
 CSVT=$("costsCsv(P())");
 t('csv quotes commas, quotes and newlines', CSVT.includes('"Acme, ""Quote"" Co"')&&CSVT.includes('"line1\nline2"'));
@@ -788,7 +788,7 @@ t('cleanup', $("state.activeId==='p4'&&costLines(P()).length===0")===true);
 /* ════ 14g · UX POLISH SWEEP (one vocabulary, doors where hands expect them) ════ */
 S('ux polish');
 asBuilder();$("state.activeId='p2'");$('renderBuild()');
-t('Invoice card is the Budget twin', ['To collect','Awaiting OK','Billed','Paid','View invoices'].every(s=>el('billingCard').innerHTML.includes(s)));
+t('Invoice card is the Budget twin', ['Still owed','Not approved yet','Invoiced','Paid','View invoices'].every(s=>el('billingCard').innerHTML.includes(s)));
 t('Billing card math (out=net-paid on p2)', el('billingCard').innerHTML.includes($("invUsd(billingSummary(P()).out)")));
 t('calendar door atop Schedule pane', el('buildSchedule').innerHTML.includes('Trades calendar for this house'));
 $("calSiteFilter=String(state.activeId);openCal()");
@@ -1421,8 +1421,8 @@ t('the briefing keeps field schedule selections money and the desk', (function()
 })());
 t('the house briefing does not repeat the street', $("String(houseHTML)").indexOf('This job')<0&&$("String(houseHTML)").indexOf('pkt-head')<0);
 t('rooms on the house are doors not a second inbox', $("String(houseHTML)").indexOf('hs-doors')>=0&&$("String(houseHTML)").indexOf("Read and close old lines")<0&&$("String(houseHTML)").indexOf("This house</div>")<0);
-t('money is one sentence', $("String(houseMoneyLine)").indexOf("'Contract\\u00a0'")>=0&&$("String(houseMoneyLine)").indexOf("' · paid\\u00a0'")>=0&&$("String(houseMoneyLine)").indexOf('billed')<0);
-t('money line reads contract, paid, left', (function(){const r=$("(function(){const p=state.projects.find(x=>{const b=billingSummary(x);return b.net>0&&b.paid>0;});if(!p)return null;const b=billingSummary(p);return [houseMoneyLine(p),'Contract\\u00a0'+invUsd(b.net)+' · paid\\u00a0'+invUsd(b.paid)+' · left\\u00a0'+invUsd(Math.max(0,b.net-b.paid))];})()");return !!r&&r[0]===r[1];})());
+t('money is one sentence', $("String(houseMoneyLine)").indexOf("'Paid\\u00a0'")>=0&&$("String(houseMoneyLine)").indexOf("' of\\u00a0'")>=0&&$("String(houseMoneyLine)").indexOf('billed')<0);
+t('money line reads Paid {paid} of {net} · owed {out}', (function(){const r=$("(function(){const p=state.projects.find(x=>{const b=billingSummary(x);return b.net>0&&b.paid>0;});if(!p)return null;const b=billingSummary(p);return [houseMoneyLine(p),'Paid\\u00a0'+invUsd(b.paid)+' of\\u00a0'+invUsd(b.net)+' · owed\\u00a0'+invUsd(Math.max(0,b.net-b.paid))];})()");return !!r&&r[0]===r[1];})());
 t('settings leads with company', $("String(renderSettings)").indexOf("<h2>Company</h2>")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
 t('house doors stay two across', $("document.documentElement.innerHTML").indexOf('hs-doors{grid-template-columns:repeat(3')<0&&$("String(houseHTML)").indexOf('hs-door wide')>=0);
@@ -1722,7 +1722,7 @@ S('payee memory, labels, one-tap deposit');
 $("state.projects[0].costs.push({rt:'actual',id:'zzhist',lineId:'',kind:'spent',amount:5,payee:'One Off Vendor',t:Date.now()})");
 $('openCostActual()');
 t('picker remembers every payee the site has paid', $("document.getElementById('caPayeeSel').innerHTML").indexOf('One Off Vendor')>=0);
-t('Signed for asks who you signed with', $("document.getElementById('caPayeeLab').textContent")==='Signed with');
+t('Contracted asks who the contract is with', $("document.getElementById('caPayeeLab').textContent")==='Contract with');
 $("setCaKind('spent')");
 t('Paid asks who you paid', $("document.getElementById('caPayeeLab').textContent")==='Paid to');
 $("document.getElementById('caLine').value=''");$('caLineChanged()');
@@ -2010,7 +2010,7 @@ t('saving the brief does not drop packet signatures', $("(function(){state.sessi
 t('packet snapshot carries the brief', $("(function(){const p=state.projects.find(x=>x.id==='p2');p.buildBrief={priorities:'Keep the oak.',look:'Black windows.',tradeoffs:'Spend on kitchen.',by:'You',at:Date.now()};const b=(p.bookings||[])[0]||{id:'sim',trade:'windows',subName:'x',start:Date.now(),end:Date.now()};const snap=packetSnapshot(p,Object.assign({trade:'windows'},b));return snap.brief&&snap.brief.priorities==='Keep the oak.';})()")===true);
 t('house briefing shows the build brief', $("(function(){state.session={role:'builder',name:'You'};state.activeId='p2';const p=state.projects.find(x=>x.id==='p2');p.buildBrief={priorities:'Keep the oak at the drive.',look:'',tradeoffs:'',by:'You',at:Date.now()};return houseHTML(p).indexOf('Build brief')>=0&&houseHTML(p).indexOf('Keep the oak at the drive')>=0;})()")===true);
 t('guest packet names this house from the brief', SRC.indexOf('This house')>=0&&SRC.indexOf('g.brief')>=0);
-t('homeowner money is folded', SRC.indexOf('function toggleClientMoney')>=0&&SRC.indexOf('function openClientMoney')>=0&&SRC.indexOf('Costs & payments')>=0);
+t('homeowner money is folded', SRC.indexOf('function toggleClientMoney')>=0&&SRC.indexOf('function openClientMoney')>=0&&SRC.indexOf('Upgrades &amp; payments')>=0);
 t('homeowner specs fold money after selections', $("(function(){state.session={role:'client',site:'p2'};clientTab='specs';_clientMoneyOpen=false;renderClient();const h=document.getElementById('clBody').innerHTML;const sel=h.indexOf('Your selections');const money=h.indexOf('clMoney');const led=h.indexOf('sel-ledger');return sel>=0&&money>sel&&led<0;})()")===true);
 t('opening costs shows the ledger', $("(function(){state.session={role:'client',site:'p2'};openClientMoney();const h=document.getElementById('clBody').innerHTML;_clientMoneyOpen=false;clientTab='home';return h.indexOf('sel-ledger')>=0&&h.indexOf('clMoney')>=0;})()")===true);
 
@@ -2830,7 +2830,7 @@ S('money-due');
   t('money: fixture has charges not on an invoice',b.unbilled>0.005&&b.billed>0.005,JSON.stringify(b));
   t('money: due = invoiced minus received on those invoices',b.balanceDue===b.billed-b.invPaid&&b.balanceDue===2000,JSON.stringify(b));
   t('money: Money shows $2,000 due, not the uninvoiced total',/\$2,000(\.00)? due/.test(html)&&!/\$4,000(\.00)? due/.test(html),html.slice(-400));
-  t('money: received is the invoice payments, so the row adds up',/\$3,000(\.00)? invoiced &middot; \$1,000(\.00)? received/.test(html),html.slice(-400));
+  t('money: paid on invoices is the invoice payments, so the row adds up',/\$3,000(\.00)? invoiced &middot; \$1,000(\.00)? paid on invoices/.test(html.replace(/<\/?span[^>]*>/g,'')),html.slice(-400));
   t('money: uninvoiced charges get their own line',/\$2,000(\.00)? not yet invoiced/.test(html),html.slice(-400));
   t('money: no uninvoiced line when everything is invoiced',!/not yet invoiced/.test($("moneyTotHTML({id:'zy',name:'x',selections:[{id:902,price:3000}],invoices:[{id:'i2',status:'sent',total:3000,payments:[]}],payments:[],costs:[]})")));
   t('money: old due (net minus all payments) is gone',SRC.indexOf('const owed=Math.max(0,bill.out)')<0&&SRC.indexOf('const owed=bill.balanceDue')>=0);
@@ -3057,7 +3057,7 @@ S('allowances');
      pre-R-1 formula (every selection price counts, approved or not). */
   const f=JSON.parse($("JSON.stringify(state.projects.map(function(p){var n=0;(p.selections||[]).forEach(function(s){n+=Number(s.price)||0;});var ex=_siteExtraCharges(p);var b=billingSummary(p);"+
     "return {id:p.id,old:n+ex.ups+ex.crs,net:b.net,out:b.out,paid:b.paid,waiting:b.waiting,anyAllow:(p.selections||[]).some(selIsAllowance),line:houseMoneyLine(p),"+
-    "oldLine:(function(){var c=n+ex.ups+ex.crs,pd=sitePaidTotal(p);return (c>0.005||pd>0.005)?'Contract\\u00a0'+invUsd(c)+' \\u00b7 paid\\u00a0'+invUsd(pd)+' \\u00b7 left\\u00a0'+invUsd(Math.max(0,c-pd)):null;})()};}))"));
+    "oldLine:(function(){var c=n+ex.ups+ex.crs,pd=sitePaidTotal(p);return (c>0.005||pd>0.005)?'Paid\\u00a0'+invUsd(pd)+' of\\u00a0'+invUsd(c)+' \\u00b7 owed\\u00a0'+invUsd(Math.max(0,c-pd)):null;})()};}))"));
   const moved=f.filter(x=>Math.abs(x.old-x.net)>0.005||Math.abs((x.old-x.paid)-x.out)>0.005||x.waiting!==0||x.anyAllow||(x.oldLine&&x.oldLine!==x.line));
   t('(f) no existing total moves: every demo house nets exactly the pre-R-1 sum, nothing waiting',f.length>=5&&moved.length===0,JSON.stringify(moved.slice(0,2)));
 
@@ -3401,7 +3401,7 @@ S('allowances-3');
   $("costLines(P()).find(function(l){return l.id==='"+L+"';}).selId="+JSON.stringify(s0.id));
   t('(c) margin: a line tied to the same allowance counts it once',$("costLineMargin(P(),'"+L+"').price")===500);
   $("openCostLine('"+L+"')");const ch=txt($("document.getElementById('clMargin').innerHTML"));$("closeCostLine&&closeCostLine()");
-  t('(c) the cost-line sheet shows Homeowner pays the item price',ch.indexOf('Homeowner pays $500 · costs '+$("invUsd(costLineRollup(P(),'"+L+"').exposure)"))===0,ch);
+  t('(c) the cost-line sheet shows Homeowner pays the item price',ch.indexOf('Homeowner pays $500 · your cost '+$("invUsd(costLineRollup(P(),'"+L+"').exposure)"))===0,ch);
   $("delete costLines(P()).find(function(l){return l.id==='"+L+"';}).selId");
   const pm=$("(function(){var p=P();var l=costLines(p).find(function(x){return x.selId;});if(!l)return true;var s=p.selections.find(function(x){return String(x.id)===String(l.selId);});return !s||selIsAllowance(s)||costLineMargin(p,l.id).price===(Number(s.price)||0)+p.selections.filter(function(x){return selIsAllowance(x)&&String(x.costLineId)===String(l.id)&&x!==s;}).reduce(function(a,x){return a+(Number(x.cost)||0);},0);})()");
   t('(c) a plain selection tied to a line still uses its price',pm===true);
@@ -3471,6 +3471,104 @@ S('price-switch');
   $("closeAddSel()");
   $("(function(){var p=P();p.selections=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim4 ')!==0;});})()");
   t('wording: switch strings word for word, curly apostrophes',SRC.indexOf('>How it\u2019s priced<')>=0&&SRC.indexOf("How it's priced")<0&&SRC.indexOf('>Upgrade or credit<')>=0&&SRC.indexOf('>The amount the contract sets aside for this item.<')>=0&&SRC.indexOf('>Price of what they picked<')>=0&&SRC.indexOf('>Item price<')<0&&SRC.indexOf("'Add the price once the homeowner picks.'")>=0&&SRC.indexOf('Add the item price once')<0&&SRC.indexOf('>Upgrade or credit amount<')>=0&&SRC.indexOf('Upgrade $ or credit')<0&&SRC.indexOf('placeholder="e.g. 2100, or -800 for a credit"')>=0&&SRC.indexOf('Allowance and price can\u2019t be less than $0.')>=0&&SRC.indexOf("'Std'")<0);
+})();
+
+/* ════ MONEY WORDS (2.460.0) ════
+   Agency's builder-language swaps (swaps.md 10/4), the On/Under budget rule on
+   the house Money line, and the homeowner's credit balance reading as a credit. */
+S('money-words');
+(function(){
+  const txt=h=>String(h).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  asBuilder();$("state.activeId='p1'");
+  /* house Money tile and briefing strip: Paid {paid} of {net} · owed {out} (Agency 10/4) */
+  const ml=$("(function(){var p=JSON.parse(JSON.stringify(P()));p.selections=[{id:1,item:'x',cat:'Windows',status:'selected',price:1000}];p.invoices=[];p.payments=[{id:'y',amount:400,label:'Deposit'}];return houseMoneyLine(p);})()");
+  t('Money line: Paid {paid} of {net} · owed {out}',ml==='Paid\u00a0$400 of\u00a0$1,000 · owed\u00a0$600',ml);
+  $("nyOpenHouse('p1')");
+  const hd=JSON.parse($("JSON.stringify({door:(document.querySelector('#houseBody [data-door=money] .m')||{}).textContent||'',strip:(document.querySelector('#houseBody .pkt-strip .meta')||{}).textContent||'',line:houseMoneyLine(P())})"));
+  $("try{closeHouse();}catch(e){}");asBuilder();$("state.activeId='p1'");
+  t('house Money tile and briefing strip both use the short line',hd.door===hd.line&&hd.line.indexOf('Paid\u00a0')===0&&hd.strip.indexOf(hd.line)>=0&&hd.strip.indexOf('Upgrades & credits')<0,JSON.stringify(hd));
+  /* On budget only when exactly on */
+  const bl=JSON.parse($("JSON.stringify([700,1000,1300].map(function(spent){var p=JSON.parse(JSON.stringify(P()));p.selections=[];p.invoices=[];p.payments=[];p.costs=[{rt:'line',id:'L',label:'x',budget:1000},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:spent}];return houseMoneyLine(p);}))"));
+  t('budget line: Under budget · {x} left when under; On budget only when exact; Over budget when over',bl[0]==='Under budget · $300 left'&&bl[1]==='On budget'&&bl[2]==='Over budget · $300 over',JSON.stringify(bl));
+  /* homeowner credit balance (PM) */
+  t('homeowner line: below $0 reads as a credit, a positive amount',$("clientStillToPayLine(-250)")==='$250 credit'&&$("clientStillToPayLine(300)")==='$300 still to pay'&&$("clientStillToPayLine(0)")==='$0 still to pay');
+  const out0=$("billingSummary(P()).out");
+  $("P().payments=(P().payments||[]).concat([{id:'sim_mw_pay',amount:"+(Math.round(out0)+500)+",label:'Sim overpay',t:Date.now()}])");
+  const neg=JSON.parse($("JSON.stringify({out:billingSummary(P()).out,line:clientCostsHTML(P()).line})"));
+  const home=txt(clientHTML('p1','home'));asBuilder();$("state.activeId='p1'");
+  t('homeowner with a negative balance: the Money door says $X credit, never still to pay',neg.out<-0.005&&neg.line==='$'+Math.abs(neg.out).toLocaleString()+' credit'&&home.indexOf(neg.line)>=0&&home.indexOf('still to pay')<0,JSON.stringify(neg));
+  $("P().payments=P().payments.filter(function(x){return x.id!=='sim_mw_pay';})");
+  /* approve words on the builder's selection list */
+  const sl=$("(function(){renderSelections();return document.body.innerHTML;})()");
+  t('builder selection chip says ✓ Approved / Waiting; tiles say Waiting approval',(sl.indexOf('>✓ Approved<')>=0||sl.indexOf('>Waiting<')>=0)&&sl.indexOf('>✓ Signed<')<0&&sl.indexOf('Awaiting<br>sign-off')<0&&SRC.indexOf('<div class="l">Waiting<br>approval</div>')>=0);
+  /* installed refusal toast */
+  const tst=$("(function(){var s=P().selections.find(function(x){return !x.approved&&x.status!=='pending';});if(!s)return 'none';var o=window.toast,m=[];window.toast=function(x){m.push(x);};setSelStatus(s.id,'installed');window.toast=o;return m[0]||'';})()");
+  t('an unapproved item cannot be marked Installed, in Agency\u2019s words',tst==='The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.',tst);
+  /* delete a payment: title and toast */
+  const dp=$("(function(){var a=(P().costs||[]).find(function(x){return x.rt==='actual'&&x.kind==='spent';});if(!a)return 'none';openCostActual(a.id);var hold=JSON.stringify(P().costs);var o=window.toast,m=[];window.toast=function(x){m.push(x);};deleteCostActual();var t1=document.getElementById('ocTitle').textContent;ocConfirm();window.toast=o;var r=t1+'|'+(m[0]||'');P().costs=JSON.parse(hold);return r;})()");
+  t('deleting a payment says Delete this payment? and Payment deleted',dp==='Delete this payment?|Payment deleted',dp);
+  /* invoice chip and notice */
+  t('a late invoice is Past due: chip and notice',$("invStatusChip('overdue')").indexOf('>Past due<')>=0&&SRC.indexOf("'Invoice past due · '+site")>=0&&SRC.indexOf('Invoice overdue')<0);
+  /* every swap: new words in, old words out */
+  const IN=["'Paid\\u00a0'","' of\\u00a0'","' · owed\\u00a0'","'Under budget · '",'>Contracted</button>',"'Contracted','Paid'",'<span>Contracted</span>','<th class="n u-m25">Contracted</th>',"' contracted &middot; '","'Contract with'",'<i>contract ${invUsd(s)} · paid','— contract ${invUsd(contractSigned(c))}','paid over the contract</b>',"' from this contract. The original amount stays.'",'Budget, contracted, paid, and projected for the whole build on one sheet. Only your team sees it.',"<span>contracted</span>","'Payment':'Contract',",
+    "'The homeowner approves this from their own login.'",'See the homeowner\u2019s approval','Waiting for the homeowner to approve',"'\u2713 Approved':'Waiting'",'The homeowner approves each item from their own login.','<span>Approved</span><b>${date}</b>','<div class="so-k">Homeowner</div>','Approved from the homeowner\u2019s own login.',"' \\u00b7 approved'",
+    '<h4>Upgrades &amp; credits</h4>','<span>Upgrades &amp; credits</span>','<div class="ld-sec">Upgrades &amp; overages</div>','No upgrades yet.','Total upgrades &amp; overages','<span>Upgrades &amp; overages</span>','<span>Upgrades minus credits</span>','No invoices yet. Bill the homeowner for upgrades and changes here.','its amount from upgrades &amp; credits.','Money the homeowner paid you. Add deposits and draws here. Payments on an invoice are entered on that invoice.','<div class="k">Upgrades &amp; payments</div>','<h2>Upgrades &amp; payments</h2>',
+    '<span>Still owed</span>','What\u2019s still owed updates to match.','<span>Invoiced</span></div>',"' paid on invoices</span></div>'",'<span>Paid outside invoices</span>','paid outside invoices.</div>','Deposits and draws that aren\u2019t on an invoice go here. Payments on an invoice are entered on that invoice and show here too.','Every payment so far came in on an invoice.',"overdue:'Past due',paid",'invoice & past-due alerts','Approval and past-due alerts for',
+    'Projected final cost (optional)',"'<i>you set '",' · your cost <b>',"' loss'","'Delete this payment?'","'Payment deleted'",'It comes off this house\u2019s budget right away.','This cost is already in QuickBooks. Deleting it here won\u2019t remove it there, so delete it in QuickBooks too.','A credit lowers what the homeowner owes. A charge adds to it. The homeowner gets a notice that the invoice changed.',"n:'Money',d:'Budget, costs, and what the homeowner owes'",'Money is off for this role','Tap to add homeowner notes, allowances, or build-wide instructions.',"' credit':' still to pay'"];
+  const OUT=["'Upgrades & credits\\u00a0'","'Contract\\u00a0'","'On budget · '",'>Signed for<',"'Signed for'",'Signed with','paid more than signed</b>','from the signed total','Budget · signed · paid',"'Payment':'Signed contract'",'\u2713 Signed','View homeowner sign-off','Awaiting homeowner sign-off\'','signs off from their login','Sign-off is the homeowner','Homeowner hasn\\u2019t signed off','Buyer under contract','binding approval','\\u00b7 signed\'','Upcharge ledger','>Overages<','No overages on this build.','Total overages','<div class="lr net"><span>Net change<','bill the homeowner for selection upcharges','toward the upcharge balance','Costs & payments','Amount outstanding','To collect','amount outstanding will recalculate','<span>Billed</span>',"' received</div>'",'Credit on account','credit on account','Loose payments are deposits','No loose payments here',"overdue:'Overdue'",'Invoice overdue','& overdue alerts','Approval and overdue alerts','Now expecting','(your call)','underwater',"'Delete this cost?'",'off the budget math','deleting here does NOT','credit note)','Job costs','billed the buyer','buyer notes'];
+  const miss=IN.filter(x=>SRC.indexOf(x)<0),left=OUT.filter(x=>SRC.indexOf(x)>=0);
+  t('wording: every Agency money swap is in, word for word, curly apostrophes',miss.length===0,JSON.stringify(miss));
+  t('wording: none of the replaced money words are left',left.length===0,JSON.stringify(left));
+  t('wording: no straight apostrophes in the new words',IN.every(x=>x.indexOf("homeowner's")<0&&x.indexOf("aren't")<0&&x.indexOf("won't")<0&&x.indexOf("What's")<0&&x.indexOf("house's")<0));
+})();
+
+/* ════ MONEY WORDS, AGENCY FINAL (2.460.0) ════
+   Agency's final words for PR B: placeholder, Payments button, credit labels,
+   the last old words, and the blank-allowance toast. */
+S('money-words-final');
+(function(){
+  const txt=h=>String(h).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  asBuilder();$("state.activeId='p1'");
+  /* 1 placeholder */
+  t('Projected final cost placeholder: Leave blank to use the projection',$("document.getElementById('clExpect').placeholder")==='Leave blank to use the projection');
+  /* 3 Payments button, card and sheet; header stays */
+  $("openSiteFromOverview('p1');go('selections');renderSelections()");
+  const card=$("document.getElementById('selSummary').innerHTML");
+  t('Selections card: the button says Payments; the header stays Upgrades & credits',card.indexOf(">Payments</button>")>=0&&card.indexOf('Add / Edit')<0&&card.indexOf('<span>Upgrades &amp; credits</span>')>=0);
+  t('Upgrades & credits sheet: the button says Payments',SRC.indexOf('openPayments()">Payments</button>')>=0&&SRC.indexOf('Add / Edit Payments')<0);
+  /* 4 credit labels below $0, amount positive */
+  const out0=$("billingSummary(P()).out");
+  $("P().payments=(P().payments||[]).concat([{id:'sim_fin_pay',amount:"+(Math.round(out0)+5000)+",label:'Sim overpay',t:Date.now()}])");
+  const cr=JSON.parse($("JSON.stringify({out:billingSummary(P()).out,ho:clientCostsHTML(P()).ledger||'',led:ledgerDetailHTML(P()),card:(renderSelections(),document.getElementById('selSummary').innerHTML)})"));
+  const amt='$'+Math.abs(cr.out).toLocaleString();
+  const ho=txt(cr.ho);
+  t('homeowner ledger in credit: Your credit and a positive amount, no minus, no Still to pay',cr.out<-0.005&&ho.indexOf('Your credit '+amt)>=0&&ho.indexOf('Still to pay')<0&&ho.indexOf('Your credit \u2212')<0,ho.slice(0,400));
+  t('builder ledger sheet in credit: Homeowner’s credit and a positive amount',txt(cr.led).indexOf('Homeowner\u2019s credit '+amt)>=0&&txt(cr.led).indexOf('Still owed')<0,txt(cr.led).slice(-120));
+  t('Selections card in credit: Homeowner’s credit and a positive amount',txt(cr.card).indexOf('Homeowner\u2019s credit '+amt)>=0&&txt(cr.card).indexOf('Still owed')<0,txt(cr.card));
+  $("P().payments=P().payments.filter(function(x){return x.id!=='sim_fin_pay';})");
+  const ow=JSON.parse($("JSON.stringify({out:billingSummary(P()).out,led:ledgerDetailHTML(P())})"));
+  const ho2=txt($("clientCostsHTML(P()).ledger"));
+  t('not in credit: Still owed and Still to pay stay',ow.out>0.005&&txt(ow.led).indexOf('Still owed')>=0&&txt(ow.led).indexOf('Homeowner\u2019s credit')<0&&ho2.indexOf('Your credit')<0);
+  /* 5 old words */
+  t('Awaiting homeowner sign-off is now Waiting for the homeowner to approve',SRC.indexOf('<h2>Waiting for the homeowner to approve</h2>')>=0&&SRC.indexOf('<h2>Awaiting homeowner sign-off</h2>')<0);
+  const ldt=txt($("ledgerDetailHTML(P())"));
+  t('Upgrades & credits sheet total says Upgrades minus credits',ldt.indexOf('Upgrades minus credits')>=0&&ldt.indexOf('Net change')<0,ldt);
+  const csv=$("(function(){var p=JSON.parse(JSON.stringify(P()));p.costs=[{rt:'line',id:'L',label:'x',budget:1000},{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:500,payee:'Sub'},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:700,toward:'C',payee:'Sub'}];return jobCostCsv(p);})()");
+  t('cost report CSV: paid over the contract',csv.indexOf('paid over the contract')>=0&&csv.indexOf('paid more than signed')<0,csv);
+  const un=$("(function(){var p=P();var hold=JSON.stringify(p.costs);p.costs=p.costs.concat([{rt:'actual',id:'sim_un',lineId:'nope',kind:'contract',amount:1234,payee:'Sim Sub'}]);renderBudget();var h=document.getElementById('budgetBody').innerHTML;var t2=budgetTableHTML(p);p.costs=JSON.parse(hold);return h+'|'+t2;})()");
+  t('unassigned contract says contract {x}',un.indexOf('contract $1,234')>=0&&un.indexOf('signed $1,234')<0);
+  const dl=JSON.parse($("JSON.stringify([dueState(Date.now()-3*864e5-1000).label,dueState(Date.now()-864e5-1000).label,dueState(Date.now()+2*864e5-1000).label])"));
+  t('specs past the deadline: {N} days late, 1 day late',dl[0]==='3 days late'&&dl[1]==='1 day late'&&dl[2]==='Due in 2 days'&&SRC.indexOf('Overdue by')<0,JSON.stringify(dl));
+  t('invoice card: Not approved yet',$("billingCardHTML(P())").indexOf('<span>Not approved yet</span>')>=0);
+  t('invoice card no longer says Awaiting OK',SRC.indexOf('<span>Awaiting OK</span>')<0);
+  t('demo notes keep Signed contract',SRC.indexOf('Signed contract')>=0);
+  /* 6 blank allowance toast */
+  const bt=$("(function(){var o=window.toast,m=[];window.toast=function(x){m.push(x);};openAddSel('Lighting');document.getElementById('selItem').value='Sim5 blank';setSelMode(true);document.getElementById('selAllow').value='';saveSel();window.toast=o;var s=P().selections.find(function(x){return x.item==='Sim5 blank';});var r=JSON.stringify({t:m[m.length-1]||'',allow:!!(s&&selIsAllowance(s))});P().selections=P().selections.filter(function(x){return x.item!=='Sim5 blank';});return r;})()");
+  const btj=JSON.parse(bt);
+  t('Allowance mode with the allowance blank: saved as a plain upgrade, toast says so',btj.t==='No allowance entered, so it was saved as an upgrade or credit.'&&btj.allow===false,bt);
+  const bt2=$("(function(){var o=window.toast,m=[];window.toast=function(x){m.push(x);};openAddSel('Lighting');document.getElementById('selItem').value='Sim5 plain';setSelMode(false);document.getElementById('selPrice').value='100';saveSel();window.toast=o;P().selections=P().selections.filter(function(x){return x.item!=='Sim5 plain';});return m[m.length-1]||'';})()");
+  t('Upgrade mode still says Selection added',bt2==='Selection added',bt2);
+  t('wording: Agency final words use curly apostrophes',SRC.indexOf("Homeowner’s credit")>=0&&SRC.indexOf("Homeowner's credit")<0);
 })();
 
 /* ════ REPORT ════ */

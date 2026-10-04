@@ -3050,7 +3050,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
       <div class="sheet-head"><h4>Payments</h4></div>
 <div class="sheet-body">
-<div class="sub fs-xs c-ink-2 mt-1 ml-0 mr-0 mb-3 ta-c">All money received toward the upcharge balance. Add loose payments here; invoice payments are edited on each invoice.</div>
+<div class="sub fs-xs c-ink-2 mt-1 ml-0 mr-0 mb-3 ta-c">Money the homeowner paid you. Add deposits and draws here. Payments on an invoice are entered on that invoice.</div>
       <div id="payList" class="mb-3"></div>
       <div class="fld-label">Label</div>
       <input id="payLabel" placeholder="e.g. Deposit, Draw #2">
@@ -3156,8 +3156,8 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
           <input class="finput" id="clRevNote" placeholder="Change order · steel price up">
         </div>
         <div id="clMargin"></div>
-        <label class="flabel">Now expecting (optional — overrides the projection)</label>
-        <input class="finput" id="clExpect" type="number" inputmode="decimal" placeholder="Leave blank to project automatically">
+        <label class="flabel">Projected final cost (optional)</label>
+        <input class="finput" id="clExpect" type="number" inputmode="decimal" placeholder="Leave blank to use the projection">
         <label class="flabel">Tied to a homeowner selection (optional)</label>
         <select class="finput" id="clSel"></select>
         <div id="clActuals"></div>
@@ -3179,7 +3179,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
         <label class="flabel">Amount</label>
         <input class="finput" id="caAmount" type="number" inputmode="decimal" placeholder="12500">
         <div class="bgt-seg" id="caKindSeg">
-          <button id="caKindC" class="on" onclick="setCaKind('committed')">Signed for</button>
+          <button id="caKindC" class="on" onclick="setCaKind('committed')">Contracted</button>
           <button id="caKindS" onclick="setCaKind('spent')">Paid</button>
         </div>
         <label class="flabel">Date</label>
@@ -3214,7 +3214,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
     <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
       <div class="sheet-head"><h4>Cost report</h4></div>
 <div class="sheet-body">
-<div class="ls ta-c mt-1 ml-0 mr-0 mb-2">Budget · signed · paid · projected — the whole build’s money on one sheet. Private to your team.</div>
+<div class="ls ta-c mt-1 ml-0 mr-0 mb-2">Budget, contracted, paid, and projected for the whole build on one sheet. Only your team sees it.</div>
       <div class="info-body" id="jcBody"></div>
       <button class="la-link d-block mt-3 mb-0 mx-auto btn btn-quiet" onclick="downloadJobCost()">Download cost report (.csv)</button>
 </div>
@@ -3558,11 +3558,11 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
   <div class="pmodal-scrim sheet-scrim" id="ledgerScrim">
     <div class="pmodal pmodal-tall sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
-      <div class="sheet-head"><h4>Upcharge ledger</h4></div>
+      <div class="sheet-head"><h4>Upgrades &amp; credits</h4></div>
 <div class="sheet-body">
 <div id="ledgerBody"></div>
 </div>
-<div class="action-bar sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeLedgerDetail()">Close</button><button class="b1 b-go flex-1 btn btn-primary" onclick="closeLedgerDetail();openPayments()">Add / Edit Payments</button></div></div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel flex-1 btn btn-secondary" onclick="closeLedgerDetail()">Close</button><button class="b1 b-go flex-1 btn btn-primary" onclick="closeLedgerDetail();openPayments()">Payments</button></div></div>
   </div>
 
   <div class="pmodal-scrim sheet-scrim" id="stageReviewScrim">
@@ -3950,15 +3950,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.459.0 - Selection sheet: How it’s priced switch (Upgrade or credit | Allowance)';
+const PLUMB_VERSION='2.460.0 - Money words: builder language (Agency swaps); homeowner credit balance';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791140306535;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.459.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791142497327;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.460.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5749,7 +5749,7 @@ const GATE_KEYS=[
   {id:'selections',n:'Selections',d:'Finishes, specs, homeowner choices'},
   {id:'site',n:'This house',d:'Log, photos, permits, progress, and crews on this street'},
   {id:'jobs',n:'Add a house',d:'Put a new job on the company'},
-  {id:'moneyJob',n:'Job costs',d:'What this house cost, and what you billed the buyer'},
+  {id:'moneyJob',n:'Money',d:'Budget, costs, and what the homeowner owes'},
   {id:'moneyCo',n:'Invoices',d:'Every invoice, and QuickBooks'},
   {id:'people',n:'People',d:'Invite the team, homeowners, and crews'}
 ];
@@ -8762,6 +8762,9 @@ function houseGoNext(){
   const pid=_housePid;
   houseLeave(function(){try{openNextSite(pid);}catch(e){}});
 }
+/* House Money tile and briefing strip (Agency 10/4): Paid {paid} of {net} · owed {out}.
+   The long "Upgrades & credits {net} · paid · owed" wrapped to two lines in the
+   strip at 390 on every demo house, so the strip uses the short one too. */
 function houseMoneyLine(p){
   try{
     const b=billingSummary(p);
@@ -8769,10 +8772,11 @@ function houseMoneyLine(p){
     const paid=Number(b.paid)||0;
     const left=Math.max(0,Number(b.out)||0);
     if(contract>0.005||paid>0.005)
-      return 'Contract\u00a0'+invUsd(contract)+' · paid\u00a0'+invUsd(paid)+' · left\u00a0'+invUsd(left);
+      return 'Paid\u00a0'+invUsd(paid)+' of\u00a0'+invUsd(contract)+' · owed\u00a0'+invUsd(left);
     const cs=costSummary(p);
     if((Number(cs.budget)||0)>0.005)
-      return (cs.over?'Over budget · ':'On budget · ')+invUsd(Math.abs(cs.remaining))+(cs.over?' over':' left');
+      /* On budget only when exactly on; otherwise Under budget · {x} left (Agency 10/4) */
+      return cs.over?'Over budget · '+invUsd(Math.abs(cs.remaining))+' over':Math.abs(cs.remaining)<=0.005?'On budget':'Under budget · '+invUsd(cs.remaining)+' left';
   }catch(e){}
   return 'No money on this house yet';
 }
@@ -8859,7 +8863,7 @@ function houseGoCal(){
   });
 }
 function houseGoMoney(){
-  if(!canGate('moneyJob')){toast('Job costs are off for this role');return;}
+  if(!canGate('moneyJob')){toast('Money is off for this role');return;}
   houseLeave(function(){try{Data.setActive(_housePid);}catch(e){}openBudget();});
 }
 function openLogPick(){
@@ -9926,7 +9930,7 @@ const Notify={
         const body=gaps.length+' answer'+(gaps.length===1?'':'s')+' still missing · '+d.label.toLowerCase();
         if(sx.role==='builder')this.push('swB:'+p.id+':'+sb.id+':'+day,'Specs '+(d.overdue?'overdue':'due soon')+' — '+site,sb.name+' · '+body,{pid:p.id,view:'schedule'});
         if(sx.role==='subs'&&sx.name===sb.name)this.push('swS:'+p.id+':'+sb.id+':'+day,'Your specs '+(d.overdue?'are overdue':'are due soon')+' — '+site,body,{pid:p.id,view:'schedule'});});
-      (p.invoices||[]).forEach(i=>{if(invOverdue(i)&&this._audMatch('biller',p))this.push('inv:'+i.id+':overdue','Invoice overdue — '+site,i.no+' · '+invUsd(i.total)+' — past due '+i.due,{pid:p.id,view:'invoices',id:i.id});});
+      (p.invoices||[]).forEach(i=>{if(invOverdue(i)&&this._audMatch('biller',p))this.push('inv:'+i.id+':overdue','Invoice past due · '+site,i.no+' · '+invUsd(i.total)+' — past due '+i.due,{pid:p.id,view:'invoices',id:i.id});});
       if(sx.role==='client'&&String(sx.site||'')===String(p.id)){
         (p.selections||[]).forEach(sl=>{
           if(sl.status==='installed')return;const hp=specStatus(sl).homeownerPending;if(!hp.length)return;
@@ -10543,21 +10547,24 @@ function toggleClientMoney(){
 }
 function openClientMoney(){_clientMoneyOpen=true;clientGo('specs');
   try{const el=document.getElementById('clMoney');if(el)el.scrollIntoView({block:'nearest'});}catch(e){}}
-function clientStillToPayLine(n){return '$'+Math.abs(Number(n)||0).toLocaleString()+' still to pay';}
+/* Below $0 the homeowner has a credit: say so instead of an amount to pay. */
+function clientStillToPayLine(n){n=Number(n)||0;return '$'+Math.abs(n).toLocaleString()+(n<-0.005?' credit':' still to pay');}
 function clientCostsHTML(p){
   const bs=billingSummary(p);const usd=n=>'$'+Math.abs(n).toLocaleString();
   const loose=bs.paid-bs.invPaid;
   let ledger='<div class="sel-ledger">';
-  ledger+='<div class="lr"><span>Upgrades</span><b class="up">+'+usd(bs.ups)+'</b></div>';
+  ledger+='<div class="lr"><span>Upgrades &amp; overages</span><b class="up">+'+usd(bs.ups)+'</b></div>';
   if(bs.crs)ledger+='<div class="lr"><span>Credits</span><b class="cr">\u2212'+usd(bs.crs)+'</b></div>';
-  ledger+='<div class="lr net"><span>Net change</span><b class="'+(bs.net<0?'cr':'')+'">'+(bs.net<0?'\u2212':'')+usd(bs.net)+'</b></div>';
+  ledger+='<div class="lr net"><span>Upgrades minus credits</span><b class="'+(bs.net<0?'cr':'')+'">'+(bs.net<0?'\u2212':'')+usd(bs.net)+'</b></div>';
   ledger+='<div class="lr"><span>Invoiced</span><b>'+usd(bs.billed)+'</b></div>';
   if(bs.invPaid>0.005)ledger+='<div class="lr"><span>'+(loose>0.005?'Paid on invoices':'Paid')+'</span><b class="cr">\u2212'+usd(bs.invPaid)+'</b></div>';
   if(Math.abs(bs.unbilled)>0.005||loose>0.005){
     ledger+='<div class="lr"><span>Balance due on invoices</span><b>'+usd(bs.balanceDue)+'</b></div>';
     if(Math.abs(bs.unbilled)>0.005)ledger+='<div class="lr"><span>Not yet invoiced</span><b class="'+(bs.unbilled<0?'cr':'up')+'">'+(bs.unbilled<0?'\u2212':'+')+usd(bs.unbilled)+'</b></div>';
-    if(loose>0.005)ledger+='<div class="lr"><span>Credit on account</span><b class="cr">\u2212'+usd(loose)+'</b></div>';
-    ledger+='<div class="lr out"><span>Still to pay</span><b class="'+(bs.out<0?'cr':'')+'">'+(bs.out<0?'\u2212':'')+usd(bs.out)+'</b></div>';
+    if(loose>0.005)ledger+='<div class="lr"><span>Paid outside invoices</span><b class="cr">\u2212'+usd(loose)+'</b></div>';
+    /* Below $0 it is the homeowner's credit, shown as a positive amount (Agency 10/4). */
+    ledger+=bs.out<-0.005?'<div class="lr out"><span>Your credit</span><b class="cr">'+usd(bs.out)+'</b></div>'
+      :'<div class="lr out"><span>Still to pay</span><b>'+usd(bs.out)+'</b></div>';
   }else{
     ledger+='<div class="lr out"><span>Balance due</span><b class="'+(bs.balanceDue>0?'':'cr')+'">'+usd(bs.balanceDue)+'</b></div>';
   }
@@ -10735,7 +10742,7 @@ function costsCsv(p){
     const ds=d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';
     const c=a.toward?(p.costs||[]).find(x=>String(x.id)===String(a.toward)):null;
     const amt=a.kind==='spent'?(Number(a.amount)||0):contractSigned(a);
-    rows.push([ds,a.payee||'',a.kind==='spent'?'Payment':'Signed contract',amt,
+    rows.push([ds,a.payee||'',a.kind==='spent'?'Payment':'Contract',amt,
       l?(l.label||''):'(not assigned)',l&&l.trade?specLabel(l.trade):'',l&&l.stage?stageName(l.stage):'',
       c?(c.payee||'contract'):'',a.qbId?(a.qbEdited?'edited after export':'exported'):'',a.note||'']);
   });
@@ -10811,10 +10818,10 @@ function renderJobCost(){
     h+='<div class="jc-row" onclick="closeJobCost();openBudget();openCostLine(\''+esc(String(l.id))+'\')">'
       +'<div class="jc-name"><b>'+esc(l.label||'Untitled')+'</b>'
       +(revN?'<i>budget revised '+revN+'×'+(r.budget!==Number((l.revs[0]||{}).from)?' · was '+invUsd((l.revs[0]||{}).from):'')+'</i>':'')
-      +(r.expect>0?'<i>expecting '+invUsd(r.expect)+' (your call)</i>':'')+'</div>'
+      +(r.expect>0?'<i>you set '+invUsd(r.expect)+'</i>':'')+'</div>'
       +'<div class="jc-nums">'
       +cell(invUsd(r.budget)+'<span>budget</span>')
-      +cell(invUsd(r.committed)+'<span>signed</span>')
+      +cell(invUsd(r.committed)+'<span>contracted</span>')
       +cell(invUsd(r.spent)+'<span>paid</span>')
       +cell(invUsd(r.projected)+'<span>projected</span>')
       +cell(Math.abs(varn)<=0.005?'even<span>vs budget</span>':(varn>0?'<b class="jc-ov">'+invUsd(varn)+' over</b>':'<b class="jc-un">'+invUsd(-varn)+' under</b>')+'<span>vs budget</span>')
@@ -10822,12 +10829,12 @@ function renderJobCost(){
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
   if(un.length){let uc=0,us=0;un.forEach(a=>{const n=Number(a.amount)||0;if(a.kind==='spent')us+=n;else uc+=n;});
     h+='<div class="jc-row"><div class="jc-name"><b>Not assigned to a line</b><i>'+un.length+' cost'+(un.length===1?'':'s')+'</i></div>'
-      +'<div class="jc-nums">'+cell('—<span>budget</span>')+cell(invUsd(uc)+'<span>signed</span>')+cell(invUsd(us)+'<span>paid</span>')
+      +'<div class="jc-nums">'+cell('—<span>budget</span>')+cell(invUsd(uc)+'<span>contracted</span>')+cell(invUsd(us)+'<span>paid</span>')
       +cell(invUsd(Math.max(uc,us))+'<span>projected</span>')+cell('—<span>vs budget</span>')+'</div></div>';}
   const tvar=cs.projected-cs.budget;
   h+='<div class="jc-row jc-total"><div class="jc-name"><b>Whole build</b></div><div class="jc-nums">'
     +cell(invUsd(cs.budget)+'<span>budget</span>')
-    +cell(invUsd(cs.committed)+'<span>signed</span>')
+    +cell(invUsd(cs.committed)+'<span>contracted</span>')
     +cell(invUsd(cs.spent)+'<span>paid</span>')
     +cell(invUsd(cs.projected)+'<span>projected</span>')
     +cell(Math.abs(tvar)<=0.005?'even<span>vs budget</span>':(tvar>0?'<b class="jc-ov">'+invUsd(tvar)+' over</b>':'<b class="jc-un">'+invUsd(-tvar)+' under</b>')+'<span>vs budget</span>')
@@ -10835,14 +10842,14 @@ function renderJobCost(){
   document.getElementById('jcBody').innerHTML=h||'<div class="empty">No budget lines yet.</div>';
 }
 function jobCostCsv(p){
-  const rows=[['Budget line','Trade','Stage','Original budget','Current budget','Budget revisions','Signed for','Paid','Projected final','Vs budget','Notes']];
+  const rows=[['Budget line','Trade','Stage','Original budget','Current budget','Budget revisions','Contracted','Paid','Projected final','Vs budget','Notes']];
   costLines(p).forEach(l=>{const r=costLineRollup(p,l.id);
     const revs=(l.revs||[]);
     const orig=revs.length?Number(revs[0].from)||0:r.budget;
     const revTxt=revs.map(x=>{const d=x.t?new Date(x.t):null;
       const ds=d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';
       return ds+' '+invUsd(x.from)+' to '+invUsd(x.to)+(x.note?' ('+x.note+')':'');}).join('; ');
-    const notes=[r.paidOver?'paid more than signed':'',r.expect>0?'projection set by builder':''].filter(Boolean).join('; ');
+    const notes=[r.paidOver?'paid over the contract':'',r.expect>0?'projection set by builder':''].filter(Boolean).join('; ');
     rows.push([l.label||'',l.trade?specLabel(l.trade):'',l.stage?stageName(l.stage):'',orig,r.budget,revTxt,r.committed,r.spent,r.projected,
       Math.round((r.projected-r.budget)*100)/100,notes]);});
   const cs=costSummary(p);
@@ -10898,9 +10905,9 @@ function billingCardHTML(p){
   const pct=b.net>0?Math.min(100,Math.round(b.paid/b.net*100)):0;
   return `<div class="overall bgt-tap" onclick="openInvoices()">
       <div class="bgt-cardgrid">
-        <div><b>${invUsd(b.out)}</b><span>To collect</span></div>
-        <div><b class="${okN?'ov':''}">${okN}</b><span>Awaiting OK</span></div>
-        <div><b>${invUsd(b.billed)}</b><span>Billed</span></div>
+        <div><b>${invUsd(b.out)}</b><span>Still owed</span></div>
+        <div><b class="${okN?'ov':''}">${okN}</b><span>Not approved yet</span></div>
+        <div><b>${invUsd(b.billed)}</b><span>Invoiced</span></div>
         <div><b>${invUsd(b.paid)}</b><span>Paid</span></div>
       </div>
       <div class="pbar"><i style="width:${pct}%"></i></div>
@@ -10918,7 +10925,7 @@ function budgetCardHTML(p){
       <div class="bgt-cardgrid">
         <div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
         <div><b class="${cs.over?'ov':''}">${cs.over?invUsd(-cs.remaining):invUsd(cs.remaining)}</b><span>${cs.over?'Over budget':'Remaining'}</span></div>
-        <div><b>${invUsd(cs.committed)}</b><span>Signed for</span></div>
+        <div><b>${invUsd(cs.committed)}</b><span>Contracted</span></div>
         <div><b>${invUsd(cs.spent)}</b><span>Paid</span></div>
         <div><b>${invUsd(cs.projected)}</b><span>Projected</span></div>
         <div><b class="${cs.projected-cs.budget>0.005?'ov':''}">${cs.projected-cs.budget>0.005?invUsd(cs.projected-cs.budget)+' over':(cs.budget-cs.projected>0.005?invUsd(cs.budget-cs.projected)+' under':'On budget')}</b><span>Tracking</span></div>
@@ -10941,7 +10948,7 @@ function moneyTotHTML(p){
   let h='<div class="hero">'
     +'<div class="hero-n '+(over?'warn':'ok')+'">'+heroN+'</div>'
     +'<div class="hero-l">'+heroL+'</div>'
-    +'<div class="hero-s">'+invUsd(cs.budget)+' budget &middot; '+invUsd(cs.committed)+' signed &middot; '+invUsd(cs.spent)+' paid out</div>'
+    +'<div class="hero-s">'+invUsd(cs.budget)+' budget &middot; '+invUsd(cs.committed)+' contracted &middot; '+invUsd(cs.spent)+' paid out</div>'
     +'</div>';
   /* An allowance overage the homeowner has not approved is not in any total
      yet (R-1): it shows as its own line. */
@@ -10954,7 +10961,7 @@ function moneyTotHTML(p){
        folded into due (P1-2). */
     const owed=bill.balanceDue;
     h+='<div class="row"><div class="row-main"><div class="row-title">Homeowner</div>'
-      +'<div class="row-sub">'+invUsd(bill.billed)+' invoiced &middot; '+invUsd(bill.invPaid)+' received</div>'
+      +'<div class="row-sub"><span class="ws-nw">'+invUsd(bill.billed)+' invoiced &middot;</span> <span class="ws-nw">'+invUsd(bill.invPaid)+' paid on invoices</span></div>'
       +(bill.unbilled>0.005?'<div class="row-sub mn-unbilled">'+invUsd(bill.unbilled)+' not yet invoiced</div>':'')+cred+wait+'</div>'
       +'<div class="row-aside'+(owed>0.005?' warn':'')+'">'+(owed>0.005?invUsd(owed)+' due':'Paid up')+'</div></div>';
   }else if(wait||cred){
@@ -11040,7 +11047,7 @@ function renderBudget(){
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
   if(un.length){
     h+=`<div class="bgt-grp c-clay">Not assigned to a line</div>`;
-    un.forEach(a=>{h+=`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${qbBadge(a)}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`;});
+    un.forEach(a=>{h+=`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${qbBadge(a)}</span><i>${a.kind==='spent'?'paid':'contract'} ${invUsd(a.amount)}</i></div>`;});
   }
   document.getElementById('budgetBody').innerHTML=h+moneyBillHTML(p);
   try{labelHouseBack(document.getElementById('budgetDoneBtn'),'Done');}catch(e){}
@@ -11107,7 +11114,7 @@ function openCostLine(id){
   _costSel('clSel',(p.selections||[]).map(s=>({id:s.id,label:(s.item||'Selection')+(Number(s.price)>0?' — '+invUsd(s.price):'')})),l&&l.selId,'Not tied to a selection');
   let mh='';
   if(l){const mg=costLineMargin(p,l.id);
-    if(mg)mh=`<div class="fld-hint mt-1">Homeowner pays <b>${invUsd(mg.price)}</b> · costs <b>${invUsd(mg.cost)}</b> · <b style="color:${mg.margin>=0?'var(--sage)':'var(--clay)'}">${mg.margin>=0?invUsd(mg.margin)+' margin':invUsd(-mg.margin)+' underwater'}</b></div>`;
+    if(mg)mh=`<div class="fld-hint mt-1">Homeowner pays <b>${invUsd(mg.price)}</b> · your cost <b>${invUsd(mg.cost)}</b> · <b style="color:${mg.margin>=0?'var(--sage)':'var(--clay)'}">${mg.margin>=0?invUsd(mg.margin)+' margin':invUsd(-mg.margin)+' loss'}</b></div>`;
     const revs=(l.revs||[]);
     if(revs.length)mh+='<div class="fld-hint mt-1">'+revs.slice().reverse().map(x=>{
       const d=x.t?new Date(x.t):null;const ds=d?(d.getMonth()+1)+'/'+d.getDate():'';
@@ -11119,8 +11126,8 @@ function openCostLine(id){
     const cons=costContracts(p,l.id);
     if(cons.length){ah+='<div class="bgt-grp">Contracts on this line</div>'+cons.map(c=>{
       const s=contractSigned(c),pd=contractPaid(p,c.id),left=s-pd;
-      const chip=pd-s>0.005?`<b class="c-clay">${invUsd(pd-s)} paid more than signed</b>`:(left>0.005?invUsd(left)+' left to pay':'paid in full');
-      return `<div class="bgt-act" onclick="closeCostLine();openCostActual('${esc(String(c.id))}')"><span>${esc(c.payee||'Contract')}${qbBadge(c)}${(c.adds||[]).length?' <i class="op-7">+'+(c.adds||[]).length+' change'+((c.adds||[]).length===1?'':'s')+'</i>':''}</span><i>signed ${invUsd(s)} · paid ${invUsd(pd)} · ${chip}</i></div>`;}).join('');}
+      const chip=pd-s>0.005?`<b class="c-clay">${invUsd(pd-s)} paid over the contract</b>`:(left>0.005?invUsd(left)+' left to pay':'paid in full');
+      return `<div class="bgt-act" onclick="closeCostLine();openCostActual('${esc(String(c.id))}')"><span>${esc(c.payee||'Contract')}${qbBadge(c)}${(c.adds||[]).length?' <i class="op-7">+'+(c.adds||[]).length+' change'+((c.adds||[]).length===1?'':'s')+'</i>':''}</span><i>contract ${invUsd(s)} · paid ${invUsd(pd)} · ${chip}</i></div>`;}).join('');}
     const pays=costActuals(p,l.id).filter(a=>a.kind==='spent');
     if(pays.length){ah+='<div class="bgt-grp">Payments on this line</div>'+pays.map(a=>`<div class="bgt-act" onclick="closeCostLine();openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Payment')}${qbBadge(a)}${a.note?' · '+esc(a.note):''}</span><i>paid ${invUsd(a.amount)}${esc(towardLabel(p,a))}</i></div>`).join('');}
     ah+=`<button class="la-link d-block mt-2 ml-0 mr-0 mb-0 btn btn-quiet" onclick="closeCostLine();openCostActual(null,'${esc(String(l.id))}')">+ Log a cost on this line</button>`;}
@@ -11200,7 +11207,7 @@ function setCaKind(k){_caKind=k==='spent'?'spent':'committed';
   document.getElementById('caKindS').className=_caKind==='spent'?'on':'';
   _caKindLabels();caLineChanged();caAddRender();}
 function _caKindLabels(){
-  const txt=_caKind==='spent'?'Paid to':'Signed with';
+  const txt=_caKind==='spent'?'Paid to':'Contract with';
   const lab=document.getElementById('caPayeeLab');if(lab)lab.textContent=txt;
   const sel=document.getElementById('caPayeeSel');
   if(sel&&sel.options.length&&!sel.options[0].value)sel.options[0].text=txt+'…';
@@ -11238,7 +11245,7 @@ function caLineChanged(){
      exactly what it is - an innocent Save must never relink money. */
   const pick=_caEditId?cur:(cons.length===1?String(cons[0].id):'');
   sel.innerHTML='<option value="">Not tied to a contract</option>'+cons.map(c=>
-    `<option value="${esc(String(c.id))}"${pick===String(c.id)?' selected':''}>${esc(c.payee||'Contract')} — signed ${invUsd(contractSigned(c))}</option>`).join('');
+    `<option value="${esc(String(c.id))}"${pick===String(c.id)?' selected':''}>${esc(c.payee||'Contract')} — contract ${invUsd(contractSigned(c))}</option>`).join('');
   wrap.style.display='block';
   caPayeeSync();
 }
@@ -11297,7 +11304,7 @@ function caAddDel(ix){
   if(!_caEditId)return;const p=P();const a=(p.costs||[]).find(x=>String(x.id)===String(_caEditId));if(!a)return;
   const adds=(a.adds||[]).slice();const x=adds[ix];if(!x)return;
   openConfirm({title:'Remove this contract change?',danger:true,okLabel:'Remove',
-    body:'Removes '+invUsd(x.amount)+' from the signed total. The original contract amount stays.',
+    body:'Removes '+invUsd(x.amount)+' from this contract. The original amount stays.',
     onConfirm:()=>{adds.splice(ix,1);Data.updateCost(_caEditId,{adds});caAddRender();renderBudget();try{renderBuild();}catch(e){}toast('Change removed');}});
 }
 function openCostActual(id,presetLineId){
@@ -11348,12 +11355,12 @@ function deleteCostActual(){
   if(!_caEditId)return;
   const p=P();const a=(p.costs||[]).find(x=>String(x.id)===String(_caEditId));
   const pays=a&&a.kind!=='spent'?(p.costs||[]).filter(x=>x.rt==='actual'&&x.kind==='spent'&&String(x.toward||'')===String(_caEditId)).length:0;
-  let body='It comes off the budget math immediately.';
-  if(a&&a.qbId)body='This cost is already in QuickBooks — deleting here does NOT remove it there. Delete it in QuickBooks too or the books won’t match.';
+  let body='It comes off this house’s budget right away.';
+  if(a&&a.qbId)body='This cost is already in QuickBooks. Deleting it here won’t remove it there, so delete it in QuickBooks too.';
   if(pays)body+=' Its '+pays+' linked payment'+(pays===1?' stays logged and goes back to counting on its own.':'s stay logged and go back to counting on their own.');
   if(a&&a.photoId)body+=' Its photo is deleted too. You can\u2019t get it back.';
-  openConfirm({title:a&&a.kind!=='spent'?'Delete this contract?':'Delete this cost?',danger:true,okLabel:'Delete',body,
-    onConfirm:()=>{Data.removeCost(_caEditId);closeCostActual();renderBudget();try{renderBuild();}catch(e){}toast('Cost deleted');}});
+  openConfirm({title:a&&a.kind!=='spent'?'Delete this contract?':'Delete this payment?',danger:true,okLabel:'Delete',body,
+    onConfirm:()=>{Data.removeCost(_caEditId);closeCostActual();renderBudget();try{renderBuild();}catch(e){}toast(a&&a.kind==='spent'?'Payment deleted':'Cost deleted');}});
 }
 
 /* ── Desktop budget table (≥900px): spreadsheet-style entry. Cell saves patch
@@ -11388,9 +11395,9 @@ function budgetTableHTML(p){
   });
   const un=costActuals(p).filter(a=>!lines.some(l=>l.id===a.lineId));
   let unh='';
-  if(un.length){unh=`<div class="bgt-grp c-clay">Not assigned to a line</div>`+un.map(a=>`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${a.qbId?' <b style=\"color:var(--sage);font-size:.72em\">QB✓</b>':''}</span><i>${a.kind==='spent'?'paid':'signed'} ${invUsd(a.amount)}</i></div>`).join('');}
+  if(un.length){unh=`<div class="bgt-grp c-clay">Not assigned to a line</div>`+un.map(a=>`<div class="bgt-act" onclick="openCostActual('${esc(String(a.id))}')"><span>${esc(a.payee||'Cost')}${a.qbId?' <b style=\"color:var(--sage);font-size:.72em\">QB✓</b>':''}</span><i>${a.kind==='spent'?'paid':'contract'} ${invUsd(a.amount)}</i></div>`).join('');}
   return `<table class="bgt-table"><thead><tr>
-      <th class="u-m23">Line</th><th class="u-m24">Trade</th><th class="u-m24">Stage</th><th class="n u-m25">Budget</th><th class="n u-m25">Signed for</th><th class="n u-m25">Paid</th><th class="n u-m26">Remaining</th><th class="n u-m27">Edit</th>
+      <th class="u-m23">Line</th><th class="u-m24">Trade</th><th class="u-m24">Stage</th><th class="n u-m25">Budget</th><th class="n u-m25">Contracted</th><th class="n u-m25">Paid</th><th class="n u-m26">Remaining</th><th class="n u-m27">Edit</th>
     </tr></thead><tbody>${rows}
     <tr class="bgt-qa">
       <td><input id="bgtQaName" placeholder="New budget line…" onkeydown="if(event.key==='Enter')bgtQuickAdd()"></td>
@@ -13335,7 +13342,7 @@ function renderClient(){
     h+='<div class="hs-band">The rest of this house</div><div class="hs-doors">';
     h+='<button class="hs-door" onclick="clientGo(\'progress\')"><div class="k">Updates</div><div class="m">Photos and notes your builder shares</div></button>';
     h+='<button class="hs-door" onclick="clientGo(\'docs\')"><div class="k">Documents</div><div class="m">Drawings and PDFs</div></button>';
-    h+='<button class="hs-door" onclick="openClientMoney()"><div class="k">Costs & payments</div><div class="m">'+esc(clientStillToPayLine(led.out))+'</div></button>';
+    h+='<button class="hs-door" onclick="openClientMoney()"><div class="k">Upgrades &amp; payments</div><div class="m">'+esc(clientStillToPayLine(led.out))+'</div></button>';
     h+='</div>';
     h+='<div class="row2 gap-2 mt-4 ml-0 mr-0 mb-2"><button class="cl-concern" onclick="openConcern()">Raise a concern</button><button class="cl-concern" onclick="openIdea()">Share an idea</button></div>';
   }
@@ -13397,7 +13404,7 @@ function renderClient(){
           ${s.status==='pending'?'<span class="cl-info">In progress</span>':_clSignBusy[p.id+':'+s.id]?'<button class="cl-sign" disabled aria-busy="true">Saving…</button>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Approved':'Approve'}</button>`}
         </div>`;}).join('');
     }).join(''):'<div class="empty">No selections recorded yet.</div>';
-    h+='<div class="sec" id="clMoney"><h2>Costs & payments</h2><button type="button" class="sec-act" onclick="toggleClientMoney()">'+(_clientMoneyOpen?'Hide':esc(costs.line))+'</button></div>';
+    h+='<div class="sec" id="clMoney"><h2>Upgrades &amp; payments</h2><button type="button" class="sec-act" onclick="toggleClientMoney()">'+(_clientMoneyOpen?'Hide':esc(costs.line))+'</button></div>';
     if(_clientMoneyOpen){h+=costs.ledger;h+=costs.invoices;}
   }
 
@@ -13485,10 +13492,10 @@ function openSignoffInfo(id){
   const date=(s.signed&&s.signed.date)?fmtLogDate(s.signed.date):'on file';
   document.getElementById('signBody').innerHTML=
     `<div class="so-head"><div class="so-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg></div><div><div class="so-item">${esc(s.item||'Selection')}</div><div class="so-cat">${esc(s.cat||'')}${s.room&&s.room!=='—'?' · '+esc(s.room):''}</div></div></div>`+
-    `<div class="so-row"><span>Signed off</span><b>${date}</b></div>`+
+    `<div class="so-row"><span>Approved</span><b>${date}</b></div>`+
     `<div class="so-row"><span>By</span><b>${by.map(esc).join(' & ')}</b></div>`+
-    `<div class="so-sigs">${by.map(n=>`<div class="so-sig"><div class="so-ini">${esc(initialsOf(n))}</div><div class="so-nm">${esc(n)}</div><div class="so-k">Buyer under contract</div></div>`).join('')}</div>`+
-    `<div class="ii-note">Recorded from the homeowner's own login — the buyer's binding approval of this selection.</div>`;
+    `<div class="so-sigs">${by.map(n=>`<div class="so-sig"><div class="so-ini">${esc(initialsOf(n))}</div><div class="so-nm">${esc(n)}</div><div class="so-k">Homeowner</div></div>`).join('')}</div>`+
+    `<div class="ii-note">Approved from the homeowner’s own login.</div>`;
   document.getElementById('signScrim').classList.add('show');
 }
 function closeSignoff(){document.getElementById('signScrim').classList.remove('show');}
@@ -13500,29 +13507,30 @@ function ledgerDetailHTML(p){
   const bs=billingSummary(p);const loose=bs.paid-bs.invPaid;
   const invs=(p.invoices||[]).filter(v=>v&&v.status!=='void');
   const overRows=[],credRows=[];
-  sels.forEach(s=>{const n=chargeState(selCharge(s,p)).counted;if(!n)return;const m=(s.cat||'')+(s.room&&s.room!=='\u2014'&&s.room!=='N/A'?' \u00b7 '+s.room:'')+(s.approved?' \u00b7 signed':'');if(n>0)overRows.push({n:s.item||'(unspecified)',m,amt:n});else if(n<0)credRows.push({n:s.item||'(unspecified)',m,amt:n});});
+  sels.forEach(s=>{const n=chargeState(selCharge(s,p)).counted;if(!n)return;const m=(s.cat||'')+(s.room&&s.room!=='\u2014'&&s.room!=='N/A'?' \u00b7 '+s.room:'')+(s.approved?' \u00b7 approved':'');if(n>0)overRows.push({n:s.item||'(unspecified)',m,amt:n});else if(n<0)credRows.push({n:s.item||'(unspecified)',m,amt:n});});
   invs.forEach(v=>(v.items||[]).forEach(it=>{if(it.selId)return;const n=Number(it.amount)||0;if(n>0)overRows.push({n:it.label||'Invoice charge',m:esc(v.no||'Invoice'),amt:n});else if(n<0)credRows.push({n:it.label||'Invoice credit',m:esc(v.no||'Invoice'),amt:n});}));
   const payRows=[];
   (p.payments||[]).forEach(x=>payRows.push({n:x.label||'Payment',m:x.date?fmtLogDate(x.date):'',amt:Number(x.amount)||0}));
   invs.forEach(v=>(v.payments||[]).forEach(pm=>payRows.push({n:(pm.note||'Payment')+' \u00b7 '+(v.no||''),m:pm.date?fmtLogDate(pm.date):'',amt:Number(pm.amount)||0})));
   const liRow=r=>`<div class="ld-li"><div class="ld-d"><div class="ld-n">${esc(r.n)}</div><div class="ld-m">${esc(r.m||'')}</div></div><b class="${r.amt<0?'cr':'up'}">${r.amt<0?'\u2212':'+'}${usd(r.amt)}</b></div>`;
   let h='';
-  h+=`<div class="ld-sec">Overages</div>`;
-  h+=overRows.length?overRows.map(liRow).join(''):`<div class="ld-empty">No overages on this build.</div>`;
-  h+=`<div class="ld-sub"><span>Total overages</span><b class="up">+${usd(ups)}</b></div>`;
+  h+=`<div class="ld-sec">Upgrades &amp; overages</div>`;
+  h+=overRows.length?overRows.map(liRow).join(''):`<div class="ld-empty">No upgrades yet.</div>`;
+  h+=`<div class="ld-sub"><span>Total upgrades &amp; overages</span><b class="up">+${usd(ups)}</b></div>`;
   if(bs.waiting>0.005)h+=`<div class="ld-sub"><span>Waiting on the homeowner</span><b>+${usd(bs.waiting)}</b></div>`;
   h+=`<div class="ld-sec">Credits</div>`;
   h+=credRows.length?credRows.map(liRow).join(''):`<div class="ld-empty">No credits on this build.</div>`;
   h+=`<div class="ld-sub"><span>Total credits</span><b class="cr">\u2212${usd(crs)}</b></div>`;
-  h+=`<div class="ld-tot"><span>Net change</span><b class="${net<0?'cr':''}">${net<0?'\u2212':''}${usd(net)}</b></div>`;
+  h+=`<div class="ld-tot"><span>Upgrades minus credits</span><b class="${net<0?'cr':''}">${net<0?'\u2212':''}${usd(net)}</b></div>`;
   h+=`<div class="ld-sub"><span>Invoiced</span><b>${usd(bs.billed)}</b></div>`;
   if(Math.abs(bs.unbilled)>0.005)h+=`<div class="ld-sub"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`;
   h+=`<div class="ld-sec">Payments received</div>`;
   h+=payRows.length?payRows.map(r=>`<div class="ld-li"><div class="ld-d"><div class="ld-n">${esc(r.n)}</div><div class="ld-m">${esc(r.m||'')}</div></div><b class="cr">\u2212${usd(r.amt)}</b></div>`).join(''):`<div class="ld-empty">No payments recorded yet.</div>`;
   if(payRows.length)h+=`<div class="ld-sub"><span>Total received</span><b class="cr">\u2212${usd(paid)}</b></div>`;
-  if(loose>0.005)h+=`<div class="fs-xs c-ink-3 mt-1 ml-1 mr-1 mb-1 lh-145">Includes ${usd(loose)} credit on account — received but not yet applied to an invoice.</div>`;
+  if(loose>0.005)h+=`<div class="fs-xs c-ink-3 mt-1 ml-1 mr-1 mb-1 lh-145">Includes ${usd(loose)} paid outside invoices.</div>`;
   if(Math.abs(bs.unbilled)>0.005||loose>0.005)h+=`<div class="ld-sub"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>`;
-  h+=`<div class="ld-tot big"><span>Amount outstanding</span><b class="${out<0?'cr':''}">${out<0?'\u2212':''}${usd(out)}</b></div>`;
+  h+=out<-0.005?`<div class="ld-tot big"><span>Homeowner’s credit</span><b class="cr">${usd(out)}</b></div>`
+    :`<div class="ld-tot big"><span>Still owed</span><b>${usd(out)}</b></div>`;
   return h;
 }
 function openLedgerDetail(){document.getElementById('ledgerBody').innerHTML=ledgerDetailHTML(P());document.getElementById('ledgerScrim').classList.add('show');}
@@ -13951,8 +13959,7 @@ function selTimeline(s){
 }
 function setSelStatus(id,st){const s=P().selections.find(x=>x.id===id);if(!s)return;
   if(st==='installed'&&!selCanInstall(s)){
-    const why=(!s.approved)?'Homeowner hasn\u2019t signed off':'Crew has not confirmed these instructions';
-    toast(why+' \u2014 can\u2019t mark Installed');return;}
+    toast(!s.approved?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'Crew has not confirmed these instructions \u2014 can\u2019t mark Installed');return;}
   Data.updateSelection(id,{status:st});logEvent('selectionStatus',(s.item||'')+' → '+st);renderSelections();toast((s.item||'Selection')+': '+SEL_LABEL[st]);}
 function selTimelineRO(s){
   const cur=SEL_STATUS.indexOf(s.status);const lastI=SEL_STATUS.length-1;
@@ -13985,31 +13992,31 @@ function renderSelections(){
       prog.map(([st,v])=>`<div class="sc ${st==='installed'?'done':''}${_selFilter===st?' on':''}${v?' tap':''}"${v?` onclick="setSelFilter('${st}')"`:''}><div class="n">${v}<span class="tot">/${total}</span></div><div class="l">${SEL_LABEL[st]}</div></div>`).join('')+
       `</div><div class="sel-todo">`+
       `<div class="sc td${_selFilter==='pending'?' on':''}${pending?' tap':''}"${pending?` onclick="setSelFilter('pending')"`:''}><div class="n">${pending}</div><div class="l">Pending<br>selection</div></div>`+
-      `<div class="sc td${_selFilter==='awaiting'?' on':''}${awaiting?' tap':''}"${awaiting?` onclick="setSelFilter('awaiting')"`:''}><div class="n">${awaiting}</div><div class="l">Awaiting<br>sign-off</div></div></div>`;
+      `<div class="sc td${_selFilter==='awaiting'?' on':''}${awaiting?' tap':''}"${awaiting?` onclick="setSelFilter('awaiting')"`:''}><div class="n">${awaiting}</div><div class="l">Waiting<br>approval</div></div></div>`;
   } else cnt.innerHTML='';
   // special instructions
   const ins=document.getElementById('selInstr');
   const note=(P().selNotes||'').trim();
-  ins.innerHTML=`<div class="sel-intro mb-3">Tap a selection to edit it · tap a step on the timeline to set its status. <b>Sign-off is the homeowner's</b> — they approve each item from their own login.</div><div class="sel-instr ${note?'':'empty'}" onclick="openSelNotes()">
+  ins.innerHTML=`<div class="sel-intro mb-3">Tap a selection to edit it · tap a step on the timeline to set its status. The homeowner approves each item from their own login.</div><div class="sel-instr ${note?'':'empty'}" onclick="openSelNotes()">
     <div class="sih"><span>Special instructions</span><span class="ed">Edit</span></div>
-    <div class="sib">${note?esc(note):'Tap to add buyer notes, allowances, or build-wide instructions.'}</div></div>`;
+    <div class="sib">${note?esc(note):'Tap to add homeowner notes, allowances, or build-wide instructions.'}</div></div>`;
   // upcharge ledger (overages / credits / net / payments / outstanding)
   const sum=document.getElementById('selSummary');
   if(sels.length){
     const bs=billingSummary(P());const ups=bs.ups,crs=bs.crs,net=bs.net;const loose=bs.paid-bs.invPaid;
     const usd=n=>'$'+Math.abs(n).toLocaleString();
     sum.innerHTML=`<div class="sel-ledger tappable" onclick="openLedger()">
-      <div class="lh"><span>Upcharge ledger</span><span class="d-flex gap-1"><button class="lpay btn btn-quiet" onclick="event.stopPropagation();openInvoices()">Invoices</button><button class="lpay btn btn-quiet" onclick="event.stopPropagation();openBilling('payments')">Add / Edit Payments</button></span></div>
-      <div class="lr"><span>Upgrades</span><b class="up">+${usd(ups)}</b></div>
+      <div class="lh"><span>Upgrades &amp; credits</span><span class="d-flex gap-1"><button class="lpay btn btn-quiet" onclick="event.stopPropagation();openInvoices()">Invoices</button><button class="lpay btn btn-quiet" onclick="event.stopPropagation();openBilling('payments')">Payments</button></span></div>
+      <div class="lr"><span>Upgrades &amp; overages</span><b class="up">+${usd(ups)}</b></div>
       ${crs?`<div class="lr"><span>Credits</span><b class="cr">−${usd(crs)}</b></div>`:''}
-      <div class="lr net"><span>Net change</span><b class="${net<0?'cr':''}">${net<0?'−':''}${usd(net)}</b></div>
+      <div class="lr net"><span>Upgrades minus credits</span><b class="${net<0?'cr':''}">${net<0?'−':''}${usd(net)}</b></div>
       <div class="lr"><span>Invoiced</span><b>${usd(bs.billed)}</b></div>
       ${bs.invPaid>0.005?`<div class="lr"><span>${loose>0.005?'Paid on invoices':'Paid'}</span><b class="cr">−${usd(bs.invPaid)}</b></div>`:''}
       ${(Math.abs(bs.unbilled)>0.005||loose>0.005)
         ?`<div class="lr"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>
           ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`:''}
-          ${loose>0.005?`<div class="lr"><span>Credit on account</span><b class="cr">−${usd(loose)}</b></div>`:''}
-          <div class="lr out"><span>Amount outstanding</span><b class="${bs.out<0?'cr':''}">${bs.out<0?'−':''}${usd(bs.out)}</b></div>`
+          ${loose>0.005?`<div class="lr"><span>Paid outside invoices</span><b class="cr">−${usd(loose)}</b></div>`:''}
+          ${bs.out<-0.005?`<div class="lr out"><span>Homeowner’s credit</span><b class="cr">${usd(bs.out)}</b></div>`:`<div class="lr out"><span>Still owed</span><b>${usd(bs.out)}</b></div>`}`
         :`<div class="lr out"><span>Balance due</span><b class="${bs.balanceDue>0?'':'cr'}">${usd(bs.balanceDue)}</b></div>`}
       <div class="ldr-hint">Tap for itemized breakdown ›</div>
     </div>`;
@@ -14032,7 +14039,7 @@ function renderSelections(){
           ${selTimeline(s)}
           <div class="spec-line">${specChipHTML(s)}</div>
         </div>
-        <span class="approve-ro ${s.approved?'on':'off'}" onclick="${s.approved?`openSignoffInfo(${s.id})`:`toast('The homeowner signs off from their login')`}" title="${s.approved?'View homeowner sign-off':'Awaiting homeowner sign-off'}">${s.approved?'✓ Signed':'Awaiting'}</span>
+        <span class="approve-ro ${s.approved?'on':'off'}" onclick="${s.approved?`openSignoffInfo(${s.id})`:`toast('The homeowner approves this from their own login.')`}" title="${s.approved?'See the homeowner’s approval':'Waiting for the homeowner to approve'}">${s.approved?'✓ Approved':'Waiting'}</span>
         <button class="sel-rm" onclick="removeSel(${s.id})">${ICON.trash}</button>
       </div>`;}).join('');
   };
@@ -14158,6 +14165,8 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   if(!item){toast('Add an item or spec');return;}
   const existingSel=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
   const allowance=_selModeAllow?_selNum('selAllow'):null;let money=null;
+  /* Allowance mode with the allowance left blank saves a plain upgrade or credit; say so. */
+  const blankAllow=_selModeAllow&&allowance==null;
   if(allowance!=null){
     const cost=_selNum('selCost');
     if(isNaN(allowance)||isNaN(cost)||allowance<0||(cost!=null&&cost<0)){toast('Allowance and price can’t be less than $0.');return;}
@@ -14172,16 +14181,15 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   if(status==='installed'){
     const existing=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
     if(!selCanInstall(existing)){
-      const why=(!existing||!existing.approved)?'Homeowner hasn\u2019t signed off':'Crew has not confirmed these instructions';
-      toast(why+' \u2014 can\u2019t mark Installed');return;}
+      toast((!existing||!existing.approved)?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'Crew has not confirmed these instructions \u2014 can\u2019t mark Installed');return;}
   }
-  if(editingSelId!=null){Data.updateSelection(editingSelId,Object.assign({room:room||'—',cat,item,note,price,status},money||{}));logEvent('selectionEdit',item);toast('Selection updated');}
+  if(editingSelId!=null){Data.updateSelection(editingSelId,Object.assign({room:room||'—',cat,item,note,price,status},money||{}));logEvent('selectionEdit',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection updated');}
   else{/* R-1 PR 3: never reuse an id an invoice still names (allowances bill by selId) */
-    const id=Math.max(P().selections.reduce((m,s)=>Math.max(m,s.id),0)||0,(P().invoices||[]).reduce((m,v)=>Math.max(m,...(v.items||[]).map(it=>Number(it.selId)||0)),0))+1;Data.addSelection(Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{}));logEvent('selectionAdded',item);toast('Selection added');}
+    const id=Math.max(P().selections.reduce((m,s)=>Math.max(m,s.id),0)||0,(P().invoices||[]).reduce((m,v)=>Math.max(m,...(v.items||[]).map(it=>Number(it.selId)||0)),0))+1;Data.addSelection(Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{}));logEvent('selectionAdded',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection added');}
   closeAddSel();renderSelections();}
 function removeSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;
   const m=selMoney(s.price);
-  confirmDelete({title:'Delete selection?',body:'\u201c'+esc(s.item||'')+'\u201d'+(m&&m!=='Included'?' ('+esc(m)+')':'')+'<br><br>Removes it from the spec sheet and its amount from the upcharge ledger. This can\u2019t be undone.',onConfirm:()=>{
+  confirmDelete({title:'Delete selection?',body:'\u201c'+esc(s.item||'')+'\u201d'+(m&&m!=='Included'?' ('+esc(m)+')':'')+'<br><br>Removes it from the spec sheet and its amount from upgrades &amp; credits. This can\u2019t be undone.',onConfirm:()=>{
   Data.removeSelection(id);renderSelections();toast('Selection deleted');}});}
 function openSelNotes(){document.getElementById('selNotesText').value=P().selNotes||'';document.getElementById('selNotesScrim').classList.add('show');}
 function closeSelNotes(){document.getElementById('selNotesScrim').classList.remove('show');}
@@ -14300,8 +14308,8 @@ function billersOf(p){if(p&&Array.isArray(p.billers))return p.billers;if(p&&p.bi
 function toggleBiller(i){const p=P();const name=_billAssignees[i];if(!name)return;const set=billersOf(p).slice();const k=set.indexOf(name);if(k>=0)set.splice(k,1);else set.push(name);p.billers=set;delete p.billingOwner;persist();renderInvoices();}
 function clearBillers(){const p=P();p.billers=[];delete p.billingOwner;persist();renderInvoices();toast('Invoice alerts go to the whole team');}
 function openBillingPicker(){invMode='owner';renderInvoices();const sc=document.getElementById('invScrim');if(sc)sc.classList.add('show');}
-function billersSummaryLine(){try{const p=P();if(!p)return 'Choose who gets invoice & overdue alerts';const set=billersOf(p);const site=p.street||p.name||'this house';return (set.length?(set.length<=2?set.join(', '):set.length+' people'):'Whole team')+' · '+site;}catch(e){return 'Choose who gets invoice & overdue alerts';}}
-function invStatusChip(st){const lbl={draft:'Draft',sent:'Sent',approved:'Approved',partial:'Partial',overdue:'Overdue',paid:'Paid',void:'Void'}[st]||st;return `<span class="inv-chip ${st}">${lbl}</span>`;}
+function billersSummaryLine(){try{const p=P();if(!p)return 'Choose who gets invoice & past-due alerts';const set=billersOf(p);const site=p.street||p.name||'this house';return (set.length?(set.length<=2?set.join(', '):set.length+' people'):'Whole team')+' · '+site;}catch(e){return 'Choose who gets invoice & past-due alerts';}}
+function invStatusChip(st){const lbl={draft:'Draft',sent:'Sent',approved:'Approved',partial:'Partial',overdue:'Past due',paid:'Paid',void:'Void'}[st]||st;return `<span class="inv-chip ${st}">${lbl}</span>`;}
 function invDetailHTML(p,inv,viewer){
   const st=invState(inv);const paid=invPaidAmt(inv);const bal=invBalance(inv);
   let h=`<div class="pkt-head"><div class="pk-site">${esc(inv.no)} · ${esc(inv.title)}</div><div class="pk-trade">${esc(p.street||p.name)}${inv.due?' · due '+esc(inv.due):''} · sent ${timeAgo(inv.t)}${inv.sentBy?' by '+(viewer==='client'?'your builder':esc(inv.sentBy)):''}</div></div>`;
@@ -14344,7 +14352,7 @@ function invDetailHTML(p,inv,viewer){
       <div class="d-flex gap-2 mt-2">
         <button class="lpay flex-1 btn btn-quiet" onclick="invAddAdjustment('${p.id}','${inv.id}',-1)">Add credit</button>
         <button class="lpay flex-1 btn btn-quiet" onclick="invAddAdjustment('${p.id}','${inv.id}',1)">Add charge</button></div>
-      <p class="mt-1 ml-1 mr-1 mb-0 c-ink-3 fs-xs">A credit lowers the balance (a credit note); a charge adds to it. The homeowner is notified the invoice changed.</p>`;
+      <p class="mt-1 ml-1 mr-1 mb-0 c-ink-3 fs-xs">A credit lowers what the homeowner owes. A charge adds to it. The homeowner gets a notice that the invoice changed.</p>`;
   }
   // builder: void (not when fully paid — void is for mistakes, not paid invoices)
   if(viewer==='builder'&&st!=='void'&&st!=='paid')
@@ -14543,9 +14551,9 @@ function renderInvoices(){
   if(invMode==='owner'){
     _billAssignees=billingAssignees();const set=billersOf(p);
     const who=set.length?(set.length+' '+(set.length===1?'person gets':'people get')+' invoice alerts'):'Everyone on the builder side gets invoice alerts';
-    const row=(i,name,on)=>`<div class="subrow cur-p" onclick="toggleBiller(${i})"><div class="si"><div class="n">${on?'☑':'☐'} ${esc(name)}</div><div class="d">${on?'Gets invoice & overdue alerts':'Tap to add'}</div></div></div>`;
+    const row=(i,name,on)=>`<div class="subrow cur-p" onclick="toggleBiller(${i})"><div class="si"><div class="n">${on?'☑':'☐'} ${esc(name)}</div><div class="d">${on?'Gets invoice & past-due alerts':'Tap to add'}</div></div></div>`;
     el.innerHTML=`<div class="sec"><h2>Who gets invoice alerts?</h2></div>`
-      +`<p class="fs-xs c-ink-3 mt-0 ml-0 mr-0 mb-2 lh-15">Approval and overdue alerts for ${esc(p.street||p.name||'this house')} go to the people you check. Check no one to alert the whole builder side. Everyone can still view and edit invoices.</p>`
+      +`<p class="fs-xs c-ink-3 mt-0 ml-0 mr-0 mb-2 lh-15">Approval and past-due alerts for ${esc(p.street||p.name||'this house')} go to the people you check. Check no one to alert the whole builder side. Everyone can still view and edit invoices.</p>`
       +`<div class="fs-sm c-oak fw-6 mt-0 ml-0 mr-0 mb-2">${who}</div>`
       +_billAssignees.map((n,i)=>row(i,n,set.includes(n))).join('')
       +(set.length?`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="clearBillers()">Reset to whole team</button>`:'')
@@ -14561,7 +14569,7 @@ function renderInvoices(){
         <input id="bpLabel" placeholder="e.g. Deposit, Draw #2" class="w-full">
         <div class="setup-roster-row mt-2"><input id="bpAmount" inputmode="decimal" placeholder="Amount"><input id="bpDate" type="date" class="fld-date flex-1"></div>
         <button class="b1 b-go w-full mt-2 btn btn-primary" onclick="addBillingPayment()">Add payment</button>
-        <p class="mt-1 ml-1 mr-1 mb-0 c-ink-3 fs-xs">Loose payments are deposits not tied to a specific invoice. Payments made against an invoice are recorded on that invoice and shown here read-only.</p>`;
+        <p class="mt-1 ml-1 mr-1 mb-0 c-ink-3 fs-xs">Deposits and draws that aren’t on an invoice go here. Payments on an invoice are entered on that invoice and show here too.</p>`;
     const d=document.getElementById('bpDate');if(d&&!d.value)d.value=todayStr();
     return;}
   const list=(p.invoices||[]).slice().reverse();
@@ -14577,7 +14585,7 @@ function renderInvoices(){
   const ownerRow=`<div class="subrow cur-p mb-2" onclick="invMode='owner';renderInvoices()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(_bsub)}</div></div><span class="ed">Change</span></div>`;
   el.innerHTML=(_invAnyHouse?houseSwitchHTML(p,'invChangeHouse'):'')+seg+summary+ownerRow+(list.length?list.map(inv=>{const st=invState(inv);const bal=invBalance(inv);
     return `<div class="subrow" style="cursor:pointer${st==='void'?';opacity:.6':''}" onclick="${st==='draft'?`invCompose('${inv.id}')`:`openInvoiceDetail('${p.id}','${inv.id}','builder')`}"><div class="si"><div class="n">${inv.no?esc(inv.no)+' · ':''}${esc(inv.title)}</div><div class="d">${inv.items.length} line${inv.items.length===1?'':'s'} · ${invUsd(inv.total)}${st==='partial'?' · '+invUsd(bal)+' left':''}${st==='draft'?' · not sent yet':st==='overdue'?' · <b class="c-clay">past due '+esc(inv.due)+'</b>':(inv.due&&st!=='paid'&&st!=='void'?' · due '+esc(inv.due):'')}</div></div>${invStatusChip(st)}</div>`;}).join('')
-    :'<div class="empty py-2 px-0">No invoices yet — bill the homeowner for selection upcharges right here.</div>')
+    :'<div class="empty py-2 px-0">No invoices yet. Bill the homeowner for upgrades and changes here.</div>')
     +`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="invCompose()">New invoice…</button>`;}
 function openPayments(){renderPaymentsList();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';document.getElementById('payDate').value=todayStr();document.getElementById('payScrim').classList.add('show');}
 function closePayments(){document.getElementById('payScrim').classList.remove('show');try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}
@@ -14586,7 +14594,7 @@ function paymentsListHTML(p){const pmts=(p.payments||[]);const loose=pmts.reduce
   const invPaid=invPays.reduce((a,x)=>a+x.amount,0);
   const total=loose+invPaid;                          // === sitePaidTotal(p): the one shared "received" figure
   const looseHTML=pmts.length?pmts.map(x=>`<div class="pay-row"><div class="pi"><div class="pl">${esc(x.label||'Payment')}</div><div class="pd">${x.date?fmtLogDate(x.date):''}</div></div><div class="pa">$${(Number(x.amount)||0).toLocaleString()}</div><button class="pay-rm" onclick="removePayment('${x.id}')">${ICON.trash}</button></div>`).join('')
-    :(invPaid>0?'<div class="pay-empty">No loose payments here \u2014 everything received so far came in on an invoice.</div>':'<div class="pay-empty">No payments recorded yet.</div>');
+    :(invPaid>0?'<div class="pay-empty">Every payment so far came in on an invoice.</div>':'<div class="pay-empty">No payments recorded yet.</div>');
   const invHTML=invPays.length?`<div class="fld-label mt-3">From invoices \u00b7 edited on each invoice</div>`+invPays.map(x=>`<div class="pay-row op-72"><div class="pi"><div class="pl">${esc(x.label)}</div><div class="pd">${x.date?fmtLogDate(x.date):''}</div></div><div class="pa">$${x.amount.toLocaleString()}</div></div>`).join(''):'';
   return looseHTML+invHTML+`<div class="pay-total"><span>Total received</span><b>$${total.toLocaleString()}</b></div>`;}
 function renderPaymentsList(){const el=document.getElementById('payList');if(el)el.innerHTML=paymentsListHTML(P());}
@@ -14595,7 +14603,7 @@ function addPayment(){const label=document.getElementById('payLabel').value.trim
   Data.addPayment({id:'pm'+Date.now().toString(36),label:label||'Payment',amount:amt,date:document.getElementById('payDate').value||todayStr()});
   logEvent('paymentAdded',label+' $'+amt);renderPaymentsList();renderSelections();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}toast('Payment recorded');}
 function removePayment(id){const p=(P().payments||[]).find(x=>x.id===id);if(!p)return;
-  confirmDelete({title:'Remove payment?',body:esc(p.label||'Payment')+' \u00b7 $'+(Number(p.amount)||0).toLocaleString()+'<br><br>The amount outstanding will recalculate.',onConfirm:()=>{
+  confirmDelete({title:'Remove payment?',body:esc(p.label||'Payment')+' \u00b7 $'+(Number(p.amount)||0).toLocaleString()+'<br><br>What’s still owed updates to match.',onConfirm:()=>{
   Data.removePayment(id);try{renderPaymentsList();}catch(e){}try{renderInvoices();}catch(e){}renderSelections();toast('Payment removed');}});}
 
 
@@ -16725,7 +16733,7 @@ function schedPlanList(){
    prompts all count down to it. */
 function fmtDue(ts){const d=new Date(ts);return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
 function dueState(ts){if(!ts)return null;const days=Math.ceil((ts-Date.now())/86400000);
-  return {ts,days,overdue:days<0,label:days<0?('Overdue by '+(-days)+' day'+(days===-1?'':'s')):days===0?'Due today':('Due in '+days+' day'+(days===1?'':'s'))};}
+  return {ts,days,overdue:days<0,label:days<0?((-days)+' day'+(days===-1?'':'s')+' late'):days===0?'Due today':('Due in '+days+' day'+(days===1?'':'s'))};}
 function setPacketDeadline(subId){
   const sb=P().subs.find(x=>x.id===subId);if(!sb)return;
   const cur=sb.specsDue?new Date(sb.specsDue).toISOString().slice(0,10):'';
@@ -18627,7 +18635,7 @@ function renderDecisions(){
       <div class="body"><div class="cap">${esc(it.cap)}</div>
         <div class="meta"><span class="tag area">${esc(areaText(it.area))}</span>${it.client?'<span class="tag ho">Homeowner</span>':''}${(it.crew&&it.crew!==it.area)?`<span class="tag">${esc(it.crew)}</span>`:''}<span class="when">${timeAgo(it.t)}</span></div>
       </div></div>`).join('');
-  if(awaiting.length)h+='<div class="sec"><h2>Awaiting homeowner sign-off</h2></div>'+awaiting.map(s=>`
+  if(awaiting.length)h+='<div class="sec"><h2>Waiting for the homeowner to approve</h2></div>'+awaiting.map(s=>`
     <div class="sel-row"><div class="si" onclick="openEditSel(${s.id})"><div class="it">${esc(s.item||'(unspecified)')}</div>
       <div class="ct">${esc(s.cat||'Other')}${s.room?' \u00b7 '+esc(s.room):''}</div></div><span class="approve-ro off">Awaiting</span></div>`).join('');
   if(pendingCats.length)h+='<div class="sec"><h2>Selections not yet made</h2></div>'+pendingCats.map(c=>`<div class="sel-empty-row" onclick="openAddSel('${String(c).replace(/'/g,"\\'")}')"><span>${esc(c)}</span><span class="addlink">\uff0b Choose</span></div>`).join('');
