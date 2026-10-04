@@ -1175,6 +1175,8 @@
   .syncpill.offline{color:var(--ink-3);}
   .syncpill.live .sd{background:var(--sage-4);box-shadow:0 0 0 3px rgba(94,158,110,.18);}
   .syncpill.live{color:var(--sage);}
+  .syncpill.lost .sd{background:var(--clay);}
+  .syncpill.lost{color:var(--clay);cursor:pointer;}
   .dev-ta{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:var(--r-sm);color:var(--mist);font-family:ui-monospace,Menlo,monospace;font-size:var(--t-xs);padding:var(--s-2);outline:none;margin-bottom:var(--s-2);resize:vertical;}
   .sync-status{font-size:var(--t-xs);color:var(--ink-9);margin-bottom:var(--s-2);line-height:1.55;}
   .sync-status code{background:rgba(255,255,255,.09);padding:var(--s-1) var(--s-1);border-radius:var(--r-sm);font-size:var(--t-xs);}
@@ -3930,7 +3932,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.453.0 - Text this link sends from a fresh sign-in, failures log their code';
+const PLUMB_VERSION='2.454.0 - Text this link sends you to sign in again when this phone lost its account';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
@@ -3938,7 +3940,7 @@ const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
 const APP_VERSION=1791125438896;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.453.0';     /* keep in sync with sw.js CACHE on each deploy */
+const SW_CACHE_EXPECTED='plumb-v2.454.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5866,6 +5868,7 @@ function savePersonGates(){
 async function mintTeamInvite(){
   const d=_teamInv;if(!d)return;
   if(appMode()!=='real'){toast('Invites work in Live mode');return;}
+  if(accountGone('invite'))return;
   if(!Sync.ready()){toast('Connect sync first (workbench)');return;}
   const code=genInviteCode();
   const payload={code,role:'team',siteId:'',name:'',trade:'',setup:!!d.setup,mode:'live',createdBy:Sync.uid||'',t:Date.now(),rpRole:d.rpRole,gates:Object.assign({},d.gates)};
@@ -5928,6 +5931,52 @@ function laFirebaseUser(waitMs){return new Promise(res=>{try{
   off=auth.onAuthStateChanged(u=>{if(done)return;done=true;try{off&&off();}catch(e){}res(u);});
   setTimeout(()=>{if(done)return;done=true;try{off&&off();}catch(e){}res(auth.currentUser);},waitMs||4000);
 }catch(e){res(null);}});}
+function laAskPassword(p){
+  try{const signed=document.getElementById('laSignedIn');if(signed)signed.style.display='none';
+    const form=document.getElementById('laForm');if(form)form.style.display='';
+    const em=document.getElementById('laEmail');if(em&&!em.value)em.value=(p&&p.email)||'';
+    laErr('You\u2019ve been signed out. Enter your password to sign back in.');}catch(e){}
+}
+/* The app is local-first: a saved session keeps the houses on screen even when
+   Firebase no longer has the account (an iOS home-screen app can lose its
+   Firebase sign-in storage while the app's own storage stays). Then sync is
+   down too, and anything that needs the account must send the person to sign
+   in again, not ask them to wait. */
+function accountExpected(){return appMode()==='real'&&!!(state.session&&state.session.auth&&state.session.auth.uid);}
+/* Sync.lost: this phone's Firebase account is gone while the app still holds
+   the session. Set on app open, on resume, when Firebase signs the account out,
+   and before a cloud write; cleared when sync connects. The sync pill shows it
+   for as long as it lasts. */
+function markAccountLost(why){
+  if(!accountExpected())return false;
+  const first=!Sync.lost;Sync.lost=true;
+  if(first){try{trapError('auth','Account session lost on this device \u2014 sign out and back in to reconnect sync | '+String(why||''),'accountLost');}catch(e){}
+    try{logEvent('authLost',String(why||'').slice(0,60));}catch(e){}}
+  try{setSync(syncStatus);}catch(e){}
+  return true;
+}
+function clearAccountLost(){if(!Sync.lost)return;Sync.lost=false;try{logEvent('authBack','sync connected');}catch(e){}
+  try{const sc=document.getElementById('confirmScrim');if(sc&&sc.classList.contains('show')&&_ocAction===accountSignInAgain)ocCancel();}catch(e){}}
+function accountSignInAgain(){
+  const p=laProfile();
+  try{showSplash();}catch(e){}
+  if(p&&p.provider==='firebase')laAskPassword(p);
+}
+/* The prompt: one dialog, straight to the existing sign-in. */
+function accountLostPrompt(){
+  if(!Sync.lost)return;
+  try{const lg=document.getElementById('login');if(lg&&!lg.classList.contains('hide'))return;}catch(e){}
+  try{if(document.getElementById('confirmScrim').classList.contains('show')&&_ocAction===accountSignInAgain)return;}catch(e){}
+  openConfirm({title:'Sign in again',body:'You\u2019ve been signed out. Your work is safe here and goes to your account when you sign in.',okLabel:'Sign in',cancelLabel:'Not now',onConfirm:accountSignInAgain});
+}
+/* Guard for a cloud write the person just asked for: true (and the prompt) when
+   the account is gone, so the caller stops instead of saying Connecting. */
+function accountGone(why){
+  let gone=!!Sync.lost;
+  if(!gone&&accountExpected()&&!Sync.on&&/account sign-in not restored/.test(Sync.err||''))gone=markAccountLost(why);
+  if(gone){try{logEvent('authLostBlocked',String(why||'').slice(0,60));}catch(e){}accountLostPrompt();}
+  return gone;
+}
 async function laEnter(p){
   /* A Firebase profile may only enter on a REAL Firebase account session.
      The legacy anonymous fallback overwrote account sessions on devices, so a
@@ -5940,10 +5989,7 @@ async function laEnter(p){
     if(!cu||cu.isAnonymous||(p.uid&&cu.uid!==p.uid)){
       logEvent('authRepair',(cu?(cu.isAnonymous?'anon ':'other ')+cu.uid.slice(0,8):'no firebase user')+' — sign-in required');
       try{if(cu)firebase.auth().signOut();}catch(e){}
-      try{const signed=document.getElementById('laSignedIn');if(signed)signed.style.display='none';
-        const form=document.getElementById('laForm');if(form)form.style.display='';
-        const em=document.getElementById('laEmail');if(em&&!em.value)em.value=p.email||'';
-        laErr('Quick security check — enter your password to reconnect cloud sync.');}catch(e){}
+      laAskPassword(p);
       try{toast('Sign in to reconnect sync');}catch(e){}
       return;
     }
@@ -6304,7 +6350,7 @@ async function liveSignOut(){
       ]);
     }
   }catch(e){}
-  try{if(typeof Sync!=='undefined')Sync.disconnect();}catch(e){}
+  try{if(typeof Sync!=='undefined'){Sync.disconnect();Sync.lost=false;}}catch(e){}
   /* Persist the signed-out session onto this account's store first, while the
      profile still names the owner. Clearing the profile before that persist
      dumped the houses onto the shared device key. */
@@ -7989,6 +8035,7 @@ function __renderPeople(){
     +(isOrgOwner()?'<p class="ppl-quiet">Hand off company setup to someone else. <button type="button" onclick="openTeamInvite({setup:true})">Invite with setup</button></p>':'');}
 async function revokeInvite(code){
   confirmDelete({title:'Revoke invite?',body:'The code stops working immediately. Anyone who hasn\u2019t joined yet won\u2019t be able to.',onConfirm:async()=>{
+  if(!Sync.ready()&&accountGone('revoke invite'))return;
   try{if(Sync.ready())await Sync.db.collection('invites').doc(code).set({revoked:true,revokedAt:Date.now()},{merge:true});}catch(e){toast('Couldn\u2019t reach the cloud — try again');return;}
   dropInvitePreview(code);
   const ti=laTeamInvites();ti.forEach(i=>{if(i.code===code)i.status='revoked';});laSaveTeamInvites(ti);
@@ -8036,6 +8083,7 @@ function cloudCloseInvite(code){
     dropInvitePreview(code);}catch(e){}}
 async function createInvite(role,subId,opts){opts=opts||{};
   if(appMode()!=='real'){toast('Invites work in Live mode');return;}
+  if(accountGone('invite'))return;
   if(!Sync.ready()){toast('Connect sync first (workbench)');return;}
   if(role==='team'){
     if(opts.confirmed){
@@ -9401,7 +9449,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       }}catch(e){}
       this.deviceId=this._devId();
       try{if(this.mode==='live')this._loadBase();}catch(e){}
-      this.on=true;this.err='';this._retries=0;clearTimeout(this._retryT);setSync('synced');
+      this.on=true;this.err='';this._retries=0;this._reloginNudged=false;clearAccountLost();clearTimeout(this._retryT);setSync('synced');
       this._watchAuth();
       try{if(this.mode==='live')applyLiveRole();}catch(e){}
       try{if(this.mode==='live')backfillMemberships();}catch(e){}
@@ -9413,10 +9461,9 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       return true;
     }catch(e){this.err=(e&&e.message)||'init failed';this.on=false;setSync('local');console.warn('[SitePlumb] sync init failed',e);
       this._retries=(this._retries||0)+1;
-      if(/account sign-in not restored/.test(this.err)&&this._retries>=2&&!this._reloginNudged){
+      if(/account sign-in not restored/.test(this.err)&&markAccountLost('app open')&&!this._reloginNudged){
         this._reloginNudged=true;
-        try{trapError('auth','Account session lost on this device — sign out and back in to reconnect sync','Sync.init');}catch(_){}
-        try{toast('Cloud sync needs you to sign in again');}catch(_){}
+        try{accountLostPrompt();}catch(_){}
       }
       const backoff=Math.min(8000*this._retries,60000);          // 8s, 16s … capped at 60s
       clearTimeout(this._retryT);
@@ -9451,7 +9498,11 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       const uid=u?u.uid:null;
       if(uid===this.uid)return;
       try{logEvent('authChange',(this.uid?this.uid.slice(0,8):'none')+' → '+(uid?uid.slice(0,8):'none')+(u&&u.isAnonymous?' (anon)':''));}catch(e){}
-      if(!uid){if(this.on){this.disconnect();}return;}    // signed out: stop; next sign-in reconnects
+      if(!uid){if(this.on){this.disconnect();}
+        /* Not an explicit sign-out (that clears the session first or right after):
+           Firebase dropped the account. */
+        setTimeout(()=>{try{const cu=firebase.auth().currentUser;if(!cu&&markAccountLost('signed out by Firebase')){setSync('local');accountLostPrompt();}}catch(e){}},2000);
+        return;}    // signed out: stop; next sign-in reconnects
       if(this.on)this.disconnect();
       if(fbConfig())this.init();
     }catch(e){}});}catch(e){}},
@@ -10314,9 +10365,12 @@ function renderDevErrors(){
     :'<div class="empty py-1 px-0">No errors recorded. When a button misbehaves, it lands here automatically.</div>';}
 function setSync(s){syncStatus=s;
   const live=(typeof Sync!=='undefined'&&Sync.on&&appMode()==='real');   // demo is local-only: a telemetry connection is not cross-device site sync
-  const label=s==='syncing'?'Saving…':s==='offline'?'Offline · saved here':(s==='synced'&&live)?'Synced · live':'On this device';
-  document.querySelectorAll('.syncpill').forEach(el=>{el.className='syncpill'+(s==='syncing'?' syncing':s==='offline'?' offline':(s==='synced'&&live?' live':''));el.innerHTML='<span class="sd"></span>'+label;});
-  const ov=document.getElementById('ovSync');if(ov)ov.textContent=label;}
+  const lost=typeof Sync!=='undefined'&&!!Sync.lost&&!live;              // the account is gone: say so until sync connects again
+  const label=lost?'Sign in again':s==='syncing'?'Saving…':s==='offline'?'Offline · saved here':(s==='synced'&&live)?'Saved · live':'On this device';
+  document.querySelectorAll('.syncpill').forEach(el=>{el.className='syncpill'+(lost?' lost':s==='syncing'?' syncing':s==='offline'?' offline':(s==='synced'&&live?' live':''));el.innerHTML='<span class="sd"></span>'+label;
+    if(lost){el.setAttribute('role','button');el.onclick=function(){accountLostPrompt();};}else{el.removeAttribute('role');el.onclick=null;}});
+  const ov=document.getElementById('ovSync');if(ov){ov.textContent=label;ov.classList.toggle('c-clay',lost);
+    if(lost){ov.setAttribute('role','button');ov.onclick=function(){accountLostPrompt();};}else{ov.removeAttribute('role');ov.onclick=null;}}}
 function queueSync(){if(typeof Sync==='undefined'||!Sync.ready())return;const online=(typeof navigator!=='undefined')?navigator.onLine!==false:true;
   if(!online){setSync('offline');return;}
   try{if(state.activeId)_syncDirty.add(String(state.activeId));}catch(e){}
@@ -10341,15 +10395,19 @@ function queueSync(){if(typeof Sync==='undefined'||!Sync.ready())return;const on
 function pushToBackend(){return Sync.pushAll();}
 function subscribeBackend(){return Sync.subscribe();}
 if(typeof window!=='undefined'){window.addEventListener('online',()=>{if(Sync.ready()){setSync('syncing');queueSync();}else{try{if(fbConfig())Sync.init();}catch(e){}}try{CloudFiles.flush();}catch(e){}});window.addEventListener('offline',()=>{if(Sync.ready())setSync('offline');});}
-if(typeof document!=='undefined'){document.addEventListener('visibilitychange',async()=>{
-  if(document.visibilityState!=='visible')return;
+async function syncOnResume(){
   if(typeof Sync==='undefined')return;
+  if(Sync.lost){try{accountLostPrompt();}catch(e){}}
   if(!Sync.ready()){try{if(fbConfig())Sync.init();}catch(e){}return;}
+  /* Connected, but Firebase may have dropped the account while the app slept. */
+  try{if(accountExpected()&&firebase.apps.length&&!firebase.auth().currentUser){const u=await laFirebaseUser(4000);if(!u&&markAccountLost('resume')){Sync.disconnect();setSync('local');accountLostPrompt();return;}}}catch(e){}
   if(typeof navigator!=='undefined'&&navigator.onLine===false){setSync('offline');return;}
   try{const p=P();if(!p)return;
     await Sync.db.collection('sites').doc(String(p.id)).get();setSync('synced');}
   catch(e){setSync('offline');}
-});}
+}
+if(typeof document!=='undefined'){document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')syncOnResume();});
+  window.addEventListener('pageshow',function(e){if(e&&e.persisted)syncOnResume();});}
 
 /* ════════ crew restricted view ════════ */
 let subSel=null;let subTab='todo';
@@ -17063,12 +17121,18 @@ function gpApproveSend(){
     toast('Link is ready to copy. Texts send in Live mode.');
     return;
   }
+  if(accountGone('packet create'))return;
   const token=_pkToken();
-  const db=_pkDb();if(!db){toast('Connecting \u2014 try again in a moment');return;}
+  const db=_pkDb();if(!db){trapError('caught','packet create: firebase not ready (db null) | '+_pkFbDiag()+' \u00b7 '+_pkDiag(snap,''),'gpApproveSend');toast('Connecting \u2014 try again in a moment');return;}
   if(_gpSending)return;_gpSending=true;
   (async function(){try{
     const uid=await _pkAuthUid(4000);
-    if(!uid){trapError('caught','packet create: no signed-in account | '+_pkDiag(snap,''),'gpApproveSend');toast('Connecting \u2014 try again in a moment');return;}
+    if(!uid){
+      /* The app holds an account session but Firebase restored no account:
+         sync is down as well, and waiting will not bring it back. */
+      if(accountExpected()){trapError('caught','packet create: account sign-in not restored | '+_pkFbDiag()+' \u00b7 '+_pkDiag(snap,''),'gpApproveSend');
+        _gpPendingSend=null;try{closeGuestPreview();}catch(e){}markAccountLost('packet create');accountLostPrompt();return;}
+      trapError('caught','packet create: no signed-in account | '+_pkDiag(snap,''),'gpApproveSend');toast('Connecting \u2014 try again in a moment');return;}
     await _pkAttest(false);
     const err=await _pkCreate(db,token,_pkCreateDoc(snap,uid));
     if(err){trapError('caught','packet create '+String((err&&err.code)||'error')+': '+String((err&&err.message)||err).slice(0,160)+' | '+_pkDiag(snap,uid),'gpApproveSend');
@@ -17093,9 +17157,10 @@ function gpApproveSend(){
    twice. Every failure now logs its code. */
 let _gpSending=false;
 function _pkAuthUid(waitMs){return new Promise(function(res){
-  try{const a=firebase.auth();const cu=a.currentUser;if(cu)return res(cu.uid);
-    let done=false,off=null;const fin=function(u){if(done)return;done=true;try{off&&off();}catch(e){}res(u?u.uid:'');};
-    off=a.onAuthStateChanged(function(u){if(u)fin(u);});
+  try{const a=firebase.auth();const want=accountExpected();const ok=function(u){return !!u&&!(want&&u.isAnonymous);};
+    const cu=a.currentUser;if(ok(cu))return res(cu.uid);
+    let done=false,off=null;const fin=function(u){if(done)return;done=true;try{off&&off();}catch(e){}res(ok(u)?u.uid:'');};
+    off=a.onAuthStateChanged(function(u){if(ok(u))fin(u);});
     setTimeout(function(){fin(a.currentUser);},waitMs||4000);
   }catch(e){res('');}});}
 function _pkAttest(force){
@@ -17115,6 +17180,13 @@ async function _pkCreate(db,token,doc){
     catch(e){last=e||new Error('refused');if(!(e&&e.code==='permission-denied'))break;}
   }
   return last;}
+function _pkFbDiag(){
+  try{const sdk=typeof firebase!=='undefined';let cu='none';
+    try{const u=sdk&&firebase.apps.length&&firebase.auth().currentUser;if(u)cu=u.isAnonymous?'anon':'account';}catch(e){}
+    const ses=(state.session&&state.session.auth&&state.session.auth.uid)?'account':'none';
+    return 'sdk '+(sdk?'yes':'no')+' \u00b7 config '+(fbConfig()?'yes':'no')+' \u00b7 apps '+(sdk&&firebase.apps?firebase.apps.length:0)
+      +' \u00b7 firebase user '+cu+' \u00b7 app session '+ses+' \u00b7 sync '+((typeof Sync!=='undefined'&&Sync.on)?'on':'off')
+      +((typeof Sync!=='undefined'&&Sync.err)?' ('+String(Sync.err).slice(0,48)+')':'');}catch(e){return '';}}
 function _pkDiag(snap,uid){
   try{return 'auth '+(uid?'yes':'none')+' \u00b7 sync '+((typeof Sync!=='undefined'&&Sync.uid)?(Sync.uid===uid?'same':'other'):'none')
     +' \u00b7 appcheck '+((typeof Sync!=='undefined'&&Sync.appCheck)?'on':'off')+' \u00b7 expires '+typeof (snap&&snap.expires)+(Number.isSafeInteger(snap&&snap.expires)?' int':' not int')
@@ -18491,9 +18563,11 @@ let deferredPrompt=null;
 function isStandalone(){try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(e){return false;}}
 /* ── SitePlumb server (Cloud Functions): callable-lite protocol ── */
 const FN_BASE=emuOn()?'http://127.0.0.1:5001/'+(((typeof fbConfig==='function'&&fbConfig())||{}).projectId||'plumb-467a0')+'/us-central1/':'https://us-central1-plumb-467a0.cloudfunctions.net/';
+const FN_ASKED={deleteAccount:1,qbConnect:1,qbDisconnect:1,qbExportCosts:1,notifyTest:1};
 async function fnCall(name,data){
   const u=(typeof firebase!=='undefined'&&firebase.auth&&firebase.auth().currentUser);
-  if(!u)throw new Error('sign in first');
+  /* Only a call the person just asked for raises the sign-in prompt; background telemetry stays quiet. */
+  if(!u){if(FN_ASKED[name]&&accountExpected()&&markAccountLost('server call '+name))accountLostPrompt();throw new Error('sign in first');}
   const tok=await u.getIdToken();
   const r=await fetch(FN_BASE+name,{method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
@@ -19145,6 +19219,7 @@ function devSaveVapid(){const v=(document.getElementById('vapidInput')||{value:'
 async function openDev(){try{qbRefreshStatus();}catch(e){}try{pushRenderLine();}catch(e){}if(!devAllowed()){toast('Workbench is limited to the owner account');return;}if(!_lastLayoutSnap||Date.now()-_snapAt>1500){try{_lastLayoutSnap=buildLayoutSnap();}catch(e){}}document.getElementById('devpanel').classList.add('show');try{renderDevGrants();}catch(e){}try{renderDevErrors();}catch(e){}try{const ai=document.getElementById('appCheckInput');if(ai)ai.value=appCheckKey()||'';const vi=document.getElementById('vapidInput');if(vi)vi.value=Notify.vapid();renderLocalState();renderEventLog();renderFeedbackList();devSyncStatusText();}catch(e){}try{await refreshDev();}catch(e){}try{devRunCensus();}catch(e){}}
 function devSyncStatusText(){const el=document.getElementById('devSyncStatus');if(!el)return;const cfg=fbConfig();
   if(Sync.on){el.innerHTML='<b class="u-m45">● Live</b> · project <code>'+esc((cfg&&cfg.projectId)||'')+'</code> · this device <code>'+esc(Sync.deviceId||'')+'</code>'+((Sync.authKind==='account'&&Sync.uid)?(' \u00b7 account <code>'+esc(Sync.uid.slice(0,8)+'\u2026')+'</code>'):(' \u00b7 <b class="u-m46">no account \u2014 sign in</b>'));}
+  else if(cfg&&Sync.lost){el.innerHTML='Not connected. You\u2019ve been signed out. Sign in again to keep saving to your account.';}
   else if(cfg){el.innerHTML='Config saved, not connected'+(Sync.err?' — '+esc(Sync.err):'')+'. Tap Connect.';}
   else{el.textContent='Local only — paste a Firebase config to go live.';}}
 function parseFbConfig(raw){
