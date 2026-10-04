@@ -95,6 +95,28 @@ const approveAs = (d, id, over) => setDoc(doc(d, `sites/liveA/sel/${id}`), {
   updatedAt: 2, updatedBy: 'dev-client',
 }, { merge: true });
 
+/* House-doc sign-off: a house with N trades signed by the builder, written
+   the way the app pushes a house ({meta, id, mode, ...} merged). */
+const SO_TRADES = ['excav','concrete','framing','roofing','siding','hvac','plumb','elec','insul','drywall','finish','floor','paint','landscape','cabinets','counter','windows','garage','gutters','lowvolt','fireplace','waterproof','septic','appliance','cleaning','demo','steel','stucco','general'];
+const SO_MEMBERS = { [U.builder]: 'builder', [U.sub]: 'sub', [U.client]: 'client' };
+function soMeta(nSigned) {
+  const so = {}, at = {};
+  SO_TRADES.slice(0, nSigned).forEach(t => { so[t] = { builder: { by: 'Dean Walsh', at: 1790000000000 } }; at[t] = '{"sels":[],"docs":[]}'; });
+  if (!so.plumb) { so.plumb = { builder: { by: 'Dean Walsh', at: 1790000000000 } }; at.plumb = '{"sels":[],"docs":[]}'; }
+  return { memberInfo: { [U.client]: { name: 'Ana Ruiz' }, [U.sub]: { name: 'Clearwater Plumbing', trade: 'plumb' } },
+    packetSignoff: so, packetSpecAt: at, packetStale: {}, t: 1 };
+}
+const soHouse = (nSigned) => ({ mode: 'live', id: 'h', street: 'Sign-off House', members: SO_MEMBERS, memberUids: Object.keys(SO_MEMBERS), meta: soMeta(nSigned), updatedAt: 1 });
+/* What setPacketSignoff(p, 'plumb', 'homeowner', true) sends from the homeowner's phone, plus any tamper. */
+function signPlumb(d, site, nSigned, tamper) {
+  const m = soMeta(nSigned);
+  m.packetSignoff.plumb.homeowner = { by: 'Ana Ruiz', at: 1791130000000 };
+  m.packetStale.plumb = false; m.t = 2;
+  const extra = tamper ? tamper(m) : {};
+  return setDoc(doc(d, `sites/${site}`), Object.assign({ meta: m, id: 'h', mode: 'live', updatedAt: 2, updatedBy: 'dev-client',
+    updatedByUid: U.client, members: SO_MEMBERS, memberUids: Object.keys(SO_MEMBERS) }, extra), { merge: true });
+}
+
 const results = [];
 let testEnv;
 
@@ -117,6 +139,20 @@ const GAP = (n, p, pass) => expect('GAP', n, p, pass);
 const INV_RULE = (n, p) => expect('INVARIANT', n, p.then(
   () => { throw new Error('write was allowed'); },
   (e) => { if (/maximum of 1000 expressions/.test(String(e && e.message))) throw new Error('denied only by the 1,000-expression limit'); }), true);
+/* Same proof for house-doc updates. The emulator evaluates an update twice
+   and reports both: one pass errors at signedIn() (it cannot read the
+   sign-in) and then walks every branch without short-circuiting; on any
+   denied house update that pass runs into the 1,000-expression limit (on main
+   too). The other pass is the real one. Proof of a rule denial is the real
+   pass ending in a plain false; a refusal with no such pass (limit or error
+   only) fails, as INV_RULE does. */
+const INV_LOGIC = (n, p) => expect('INVARIANT', n, p.then(
+  () => { throw new Error('write was allowed'); },
+  (e) => {
+    const m = String(e && e.message);
+    if (!/PERMISSION_DENIED|permission/i.test(m) && (e && e.code) !== 'permission-denied') throw new Error('not a permission denial: ' + m.slice(0, 160));
+    if (!/(^|[:,]\s*)false for 'update'/.test(m)) throw new Error(/maximum of 1000 expressions/.test(m) ? 'denied only by the 1,000-expression limit' : 'no rule pass ended in false: ' + m.slice(0, 160));
+  }), true);
 
 /* ---------- fixtures (written with rules disabled) ---------- */
 async function seed() {
@@ -132,6 +168,8 @@ async function seed() {
       await setDoc(doc(db, `sites/liveA/${c}/r1`), { seeded: true, note: c });
     // PR 0: realistic selections, written the way the app writes a record
     for (const id of SEL_IDS) await setDoc(doc(db, `sites/liveA/sel/${id}`), selDoc());
+    // House-doc sign-off houses: 6 and all 29 trades signed by the builder
+    for (const [id, n] of [['so6', 6], ['so29', 29], ['so29d', 29]]) await setDoc(doc(db, `sites/${id}`), soHouse(n));
     // liveB: a different builder's live site — our personas are strangers here
     await setDoc(doc(db, 'sites/liveB'), {
       mode: 'live', street: 'Live B',
@@ -299,6 +337,28 @@ async function main() {
     setDoc(doc(db.stranger, 'sites/legacy/items/iX'), { x: 1 }), false);
   await GAP(HARD ? 'LEGACY-NULL: records under it denied too' : 'LEGACY-NULL: stranger CAN read+write records under explicit-null site',
     setDoc(doc(db.stranger, 'sites/legacyNull/items/iX'), { x: 1 }), !HARD);
+
+  /* ══════════ HOUSE: homeowner signs a trade's crew instructions ══════════ */
+  await INV('signoff: homeowner signs one trade on a house with 6 builder-signed trades - ALLOWED', signPlumb(db.client, 'so6', 6), true);
+  await INV('signoff: homeowner signs one trade on a house with all 29 builder-signed - ALLOWED', signPlumb(db.client, 'so29', 29), true);
+  await INV_LOGIC('signoff: homeowner also changing another trade\'s builder sign-off - DENIED by the rule',
+    signPlumb(db.client, 'so29d', 29, m => { m.packetSignoff.elec.builder.at = 1; return {}; }));
+  await INV_LOGIC('signoff: homeowner also clearing another trade\'s builder sign-off - DENIED by the rule',
+    signPlumb(db.client, 'so29d', 29, m => { m.packetSignoff.general = {}; return {}; }));
+  await INV_LOGIC('signoff: homeowner signing the builder\'s half of the same trade - DENIED by the rule',
+    signPlumb(db.client, 'so29d', 29, m => { m.packetSignoff.plumb.builder = { by: 'Ana Ruiz', at: 1791130000000 }; return {}; }));
+  await INV_LOGIC('signoff: homeowner signing a trade that is not on the list - DENIED by the rule',
+    signPlumb(db.client, 'so29d', 29, m => { m.packetSignoff.pool = { homeowner: { by: 'Ana Ruiz', at: 1 } }; return {}; }));
+  await INV_LOGIC('signoff: homeowner also writing the crew roster (memberInfo) - DENIED by the rule',
+    signPlumb(db.client, 'so29d', 29, m => { m.memberInfo[U.client].rpRole = 'owner'; return {}; }));
+  await INV_LOGIC('signoff: homeowner also writing crew work (packetWork) - DENIED by the rule',
+    signPlumb(db.client, 'so29d', 29, m => { m.packetWork = { plumb: { fp: 'x', ack: { at: 1 } } }; return {}; }));
+  await INV_LOGIC('signoff: homeowner also promoting themselves to builder - DENIED by the rule',
+    signPlumb(db.client, 'so29d', 29, () => ({ members: Object.assign({}, SO_MEMBERS, { [U.client]: 'builder' }) })));
+  await INV_LOGIC('signoff: homeowner also changing a top-level field - DENIED by the rule',
+    signPlumb(db.client, 'so29d', 29, () => ({ street: 'Elsewhere' })));
+  await INV('signoff: builder still signs (nothing changed for builders)',
+    setDoc(doc(db.builder, 'sites/so6'), { meta: Object.assign(soMeta(6), { packetSignoff: Object.assign(soMeta(6).packetSignoff, { elec: { builder: { by: 'Dean Walsh', at: 1791130000002 } } }) }), updatedAt: 3 }, { merge: true }), true);
 
   /* ══════════ SELECTIONS: homeowner allowlist (PR 0, R-1 prep) ══════════ */
   await INV('sel: (a) homeowner approves a full selection - 9 spec fields + 7 custom slots filled - ALLOWED',
