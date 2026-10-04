@@ -5935,7 +5935,7 @@ function laAskPassword(p){
   try{const signed=document.getElementById('laSignedIn');if(signed)signed.style.display='none';
     const form=document.getElementById('laForm');if(form)form.style.display='';
     const em=document.getElementById('laEmail');if(em&&!em.value)em.value=(p&&p.email)||'';
-    laErr('Quick security check — enter your password to reconnect cloud sync.');}catch(e){}
+    laErr('You\u2019ve been signed out. Enter your password to sign back in.');}catch(e){}
 }
 /* The app is local-first: a saved session keeps the houses on screen even when
    Firebase no longer has the account (an iOS home-screen app can lose its
@@ -5967,7 +5967,7 @@ function accountLostPrompt(){
   if(!Sync.lost)return;
   try{const lg=document.getElementById('login');if(lg&&!lg.classList.contains('hide'))return;}catch(e){}
   try{if(document.getElementById('confirmScrim').classList.contains('show')&&_ocAction===accountSignInAgain)return;}catch(e){}
-  openConfirm({title:'Cloud sync needs you to sign in again',body:'Your work is saved on this phone and sends once you\u2019re back in.',okLabel:'Sign in',cancelLabel:'Not now',onConfirm:accountSignInAgain});
+  openConfirm({title:'Sign in again',body:'You\u2019ve been signed out. Your work is safe here and goes to your account when you sign in.',okLabel:'Sign in',cancelLabel:'Not now',onConfirm:accountSignInAgain});
 }
 /* Guard for a cloud write the person just asked for: true (and the prompt) when
    the account is gone, so the caller stops instead of saying Connecting. */
@@ -10366,7 +10366,7 @@ function renderDevErrors(){
 function setSync(s){syncStatus=s;
   const live=(typeof Sync!=='undefined'&&Sync.on&&appMode()==='real');   // demo is local-only: a telemetry connection is not cross-device site sync
   const lost=typeof Sync!=='undefined'&&!!Sync.lost&&!live;              // the account is gone: say so until sync connects again
-  const label=lost?'Sign in again':s==='syncing'?'Saving…':s==='offline'?'Offline · saved here':(s==='synced'&&live)?'Synced · live':'On this device';
+  const label=lost?'Sign in again':s==='syncing'?'Saving…':s==='offline'?'Offline · saved here':(s==='synced'&&live)?'Saved · live':'On this device';
   document.querySelectorAll('.syncpill').forEach(el=>{el.className='syncpill'+(lost?' lost':s==='syncing'?' syncing':s==='offline'?' offline':(s==='synced'&&live?' live':''));el.innerHTML='<span class="sd"></span>'+label;
     if(lost){el.setAttribute('role','button');el.onclick=function(){accountLostPrompt();};}else{el.removeAttribute('role');el.onclick=null;}});
   const ov=document.getElementById('ovSync');if(ov){ov.textContent=label;ov.classList.toggle('c-clay',lost);
@@ -19219,7 +19219,7 @@ function devSaveVapid(){const v=(document.getElementById('vapidInput')||{value:'
 async function openDev(){try{qbRefreshStatus();}catch(e){}try{pushRenderLine();}catch(e){}if(!devAllowed()){toast('Workbench is limited to the owner account');return;}if(!_lastLayoutSnap||Date.now()-_snapAt>1500){try{_lastLayoutSnap=buildLayoutSnap();}catch(e){}}document.getElementById('devpanel').classList.add('show');try{renderDevGrants();}catch(e){}try{renderDevErrors();}catch(e){}try{const ai=document.getElementById('appCheckInput');if(ai)ai.value=appCheckKey()||'';const vi=document.getElementById('vapidInput');if(vi)vi.value=Notify.vapid();renderLocalState();renderEventLog();renderFeedbackList();devSyncStatusText();}catch(e){}try{await refreshDev();}catch(e){}try{devRunCensus();}catch(e){}}
 function devSyncStatusText(){const el=document.getElementById('devSyncStatus');if(!el)return;const cfg=fbConfig();
   if(Sync.on){el.innerHTML='<b class="u-m45">● Live</b> · project <code>'+esc((cfg&&cfg.projectId)||'')+'</code> · this device <code>'+esc(Sync.deviceId||'')+'</code>'+((Sync.authKind==='account'&&Sync.uid)?(' \u00b7 account <code>'+esc(Sync.uid.slice(0,8)+'\u2026')+'</code>'):(' \u00b7 <b class="u-m46">no account \u2014 sign in</b>'));}
-  else if(cfg&&Sync.lost){el.innerHTML='Not connected \u2014 this phone lost your sign-in. Sign in again to reconnect sync.';}
+  else if(cfg&&Sync.lost){el.innerHTML='Not connected. You\u2019ve been signed out. Sign in again to keep saving to your account.';}
   else if(cfg){el.innerHTML='Config saved, not connected'+(Sync.err?' — '+esc(Sync.err):'')+'. Tap Connect.';}
   else{el.textContent='Local only — paste a Firebase config to go live.';}}
 function parseFbConfig(raw){

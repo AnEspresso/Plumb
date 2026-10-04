@@ -3007,10 +3007,10 @@ await $('(async()=>{'+
      again in a moment' on 2.453.0. The app kept its saved account session while
      Firebase had no account (sync down too); waiting never fixes that. */
   const conn=x=>x.toasts.indexOf('Connecting \u2014 try again in a moment')>=0;
-  const PROMPT={title:'Cloud sync needs you to sign in again',body:'Your work is saved on this phone and sends once you\u2019re back in.',ok:'Sign in',no:'Not now'};
+  const PROMPT={title:'Sign in again',body:'You\u2019ve been signed out. Your work is safe here and goes to your account when you sign in.',ok:'Sign in',no:'Not now'};
   const isPrompt=x=>!!x.prompt&&JSON.stringify(x.prompt)===JSON.stringify(PROMPT);
   t('packet link: app signed in but Firebase lost the account: no Connecting, the sign-in-again prompt opens',r.lost.sets.length===0&&!conn(r.lost)&&isPrompt(r.lost),JSON.stringify({t:r.lost.toasts,p:r.lost.prompt}));
-  t('packet link: Sign in on the prompt goes straight to the existing sign-in',r.lost.login&&r.lost.laerr==='Quick security check \u2014 enter your password to reconnect cloud sync.',JSON.stringify({login:r.lost.login,e:r.lost.laerr}));
+  t('packet link: Sign in on the prompt goes straight to the existing sign-in',r.lost.login&&r.lost.laerr==='You\u2019ve been signed out. Enter your password to sign back in.',JSON.stringify({login:r.lost.login,e:r.lost.laerr}));
   t('packet link: the sync pill keeps saying Sign in again',r.lost.lost&&r.lost.pill==='Sign in again',JSON.stringify({lost:r.lost.lost,pill:r.lost.pill}));
   t('packet link: the lost account is logged as its own case in the bug report',r.lost.errs.some(m=>m.indexOf('packet create: account sign-in not restored')===0&&m.indexOf('firebase user none')>0&&m.indexOf('app session account')>0)&&r.lost.errs.some(m=>m.indexOf('Account session lost on this device')===0),JSON.stringify(r.lost.errs));
   t('packet link: an anonymous Firebase user is not the account: same prompt, no write as anon',r.anon.sets.length===0&&!conn(r.anon)&&isPrompt(r.anon)&&r.anon.errs.some(m=>m.indexOf('firebase user anon')>0),JSON.stringify({n:r.anon.sets.length,t:r.anon.toasts}));
@@ -3036,11 +3036,11 @@ S('account-lost');
     "reset();state.session=o.ses;Sync.err='account sign-in not restored yet';out.noAccount=!!(typeof markAccountLost==='function'&&markAccountLost('x'));"+
     "}catch(e){out.err=String(e&&e.message||e);}finally{reset();window.toast=o.t;state.session=o.ses;Sync.err=o.err;Sync.on=o.on;if(o.mode==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',o.mode);try{setSync('local');}catch(e){}}"+
     "return JSON.stringify(out);})()"));
-  t('account lost: a cloud write (invite) opens the sign-in-again prompt, not Connect sync first',!r.err&&r.invite&&r.invite.prompt==='Cloud sync needs you to sign in again'&&r.invite.toasts.indexOf('Connect sync first (workbench)')<0,JSON.stringify(r.invite||r.err));
+  t('account lost: a cloud write (invite) opens the sign-in-again prompt, not Connect sync first',!r.err&&r.invite&&r.invite.prompt==='Sign in again'&&r.invite.toasts.indexOf('Connect sync first (workbench)')<0,JSON.stringify(r.invite||r.err));
   t('account lost: the sync pill says Sign in again, in clay, on every pill',!!r.pill&&r.pill.hdr==='Sign in again'&&/\blost\b/.test(r.pill.cls)&&r.pill.ov==='Sign in again'&&/c-clay/.test(r.pill.ovCls),JSON.stringify(r.pill));
-  t('account lost: tapping the pill opens the prompt',r.tap==='Cloud sync needs you to sign in again',r.tap);
-  t('account lost: Workbench says why sync is down',!r.wb||r.wb==='Not connected \u2014 this phone lost your sign-in. Sign in again to reconnect sync.',r.wb);
-  t('account lost: coming back to the app asks again',r.resume==='Cloud sync needs you to sign in again',r.resume);
+  t('account lost: tapping the pill opens the prompt',r.tap==='Sign in again',r.tap);
+  t('account lost: Workbench says why sync is down',!r.wb||r.wb==='Not connected. You\u2019ve been signed out. Sign in again to keep saving to your account.',r.wb);
+  t('account lost: coming back to the app asks again',r.resume==='Sign in again',r.resume);
   t('account lost: when sync connects the state clears',!!r.cleared&&r.cleared.ok&&!r.cleared.lost&&r.cleared.hdr!=='Sign in again',JSON.stringify(r.cleared));
   t('account lost: never raised for a device with no saved account',r.noAccount===false,String(r.noAccount));
   t('account lost: the app-open refusal marks it at once (no waiting for a second retry)',/account sign-in not restored\/\.test\(this\.err\)&&markAccountLost\('app open'\)/.test($("String(Sync._init)")));
