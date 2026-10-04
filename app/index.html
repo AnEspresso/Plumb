@@ -3945,15 +3945,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.455.0 - Allowances on selections: an overage waits for the homeowner';
+const PLUMB_VERSION='2.456.0 - Allowances: a changed overage asks the homeowner again';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791131865015;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.455.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791135117964;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.456.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9705,7 +9705,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
             const rh=_syncHash(JSON.stringify(rec));
             /* unchanged on the server since this phone last synced, but edited or deleted here: the phone's change wins and goes up after the pull */
             if(prev[key]!==undefined&&rh===prev[key]&&(idx<0||_syncHash(JSON.stringify(p[c.f][idx]))!==prev[key]))return;
-            if(idx>=0)p[c.f][idx]=rec;else{p[c.f].push(rec);if(c.sub==='items'&&this._notifReady[sid+c.sub]){try{Notify.newItem(p,rec);}catch(e){}}}prev[key]=rh;changed=true;}});
+            if(idx>=0){const _o=p[c.f][idx];p[c.f][idx]=rec;if(c.sub==='sel'&&this._notifReady[sid+c.sub]){try{Notify.selChanged(p,_o,rec);}catch(e){}}}else{p[c.f].push(rec);if(c.sub==='items'&&this._notifReady[sid+c.sub]){try{Notify.newItem(p,rec);}catch(e){}}}prev[key]=rh;changed=true;}});
         this._notifReady[sid+c.sub]=true;                               // first snapshot is history, not news
         const got=this._pulled[sid]||(this._pulled[sid]={});
         if(!(snap.metadata&&snap.metadata.fromCache)&&!got[c.sub]){
@@ -9896,6 +9896,14 @@ const Notify={
     return out;},
   scanMeta(prev,p){if(!prev)return;
     this.diffs(prev,this.snap(p),p.street||p.name||'site').forEach(n=>{if(this._audMatch(n.aud,p))this.push(n.key,n.title,n.body,{pid:p.id,view:navFor(n.key)},n.aud);});},
+  /* pure: an approved selection whose charge the builder changed and sent back
+     for approval (R-1 PR 2) → one homeowner notice, keyed on the new amount. */
+  selReapprove(o,n,site){
+    if(!o||!n||!o.approved||n.approved||n.invoicedIn)return null;
+    const amt=Number(n.price)||0;if(amt<=0.005||Math.abs(amt-(Number(o.price)||0))<=0.005||!selIsAllowance(n))return null;
+    return {key:'selre:'+site+':'+n.id+':'+amt,aud:'client',title:'Needs your OK again',body:(n.item||'A selection')+' is now '+invUsd(amt)+' over the allowance'};},
+  selChanged(p,o,n){const x=this.selReapprove(o,n,p.id);
+    if(x&&this._audMatch(x.aud,p))this.push(x.key,x.title,x.body,{pid:p.id,view:'selections',id:n.id},x.aud);},
   newItem(p,rec){
     if(!rec||!rec.issue||rec.status!=='open')return;
     if(rec.t&&Date.now()-rec.t>10*60000)return;                       // stale record, not news
@@ -10024,7 +10032,7 @@ function notifGoClient(n,nav){
 function scrollToDecision(sid){
   let tries=0;
   const tick=()=>{
-    const el=document.getElementById('cldec-'+sid);
+    const el=document.getElementById('cldec-'+sid)||document.getElementById('clsel-'+sid);
     if(el){
       try{el.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){try{el.scrollIntoView();}catch(_){}}
       const prev=el.style.backgroundColor;
@@ -10598,6 +10606,16 @@ function selIsAllowance(s){return !!s&&s.allowance!=null&&s.allowance!==''&&isFi
 function selCharge(s){return {amount:Number(s&&s.price)||0,gated:selIsAllowance(s),approved:!!(s&&s.approved),invoicedIn:(s&&s.invoicedIn)||null};}
 function houseCreditsAllowances(p){return !p||p.allowanceCredit!==false;}
 function selAllowanceAmount(s,p){return allowanceMath(s&&s.allowance,s&&s.cost,houseCreditsAllowances(p)).amount;}
+/* R-1 PR 2: a builder edit to an approved selection's charge. An allowance
+   overage that changes (chargeAfterEdit) goes back to waiting; a plain upgrade
+   that becomes an allowance overage needs the homeowner's OK for that overage.
+   Credits and $0 never wait. Invoiced selections are never rewritten here. */
+function selReapproval(s,next){
+  if(!s||!s.approved||s.invoicedIn)return {reset:false,kept:!!(s&&s.approved&&!s.invoicedIn),was:s?Number(s.price)||0:0};
+  const was=selCharge(s);const n=Number(next)||0;
+  const reset=selIsAllowance(s)?chargeAfterEdit(was,n).resetApproval:n>0.005;
+  return {reset,kept:!reset,was:was.amount};
+}
 function repriceAllowances(p){(p&&p.selections||[]).forEach(s=>{if(selIsAllowance(s)&&!s.invoicedIn)s.price=selAllowanceAmount(s,p);});}
 function _siteExtraCharges(p){let ups=0,crs=0;(p.invoices||[]).forEach(v=>{if(v&&(v.status==='void'||v.status==='draft'))return;((v&&v.items)||[]).forEach(it=>{if(it.selId)return;const n=Number(it.amount)||0;if(n>0)ups+=n;else if(n<0)crs+=n;});});return {ups,crs};}
 function siteCharges(p){let ups=0,crs=0,waiting=0;(p.selections||[]).forEach(s=>{const c=chargeState(selCharge(s));if(!c.counts){waiting+=c.waiting;return;}const n=c.amount;if(n>0)ups+=n;else if(n<0)crs+=n;});const ex=_siteExtraCharges(p);return {ups:ups+ex.ups,crs:crs+ex.crs,waiting};}
@@ -10875,6 +10893,8 @@ function moneyTotHTML(p){
   /* An allowance overage the homeowner has not approved is not in any total
      yet (R-1): it shows as its own line. */
   const wait=bill.waiting>0.005?'<div class="row-sub mn-waiting">'+invUsd(bill.waiting)+' waiting on the homeowner</div>':'';
+  /* A net credit not on an invoice yet (R-1 PR 2): its own line, like not yet invoiced. */
+  const cred=bill.unbilled<-0.005?'<div class="row-sub mn-credit">'+invUsd(-bill.unbilled)+' credit not yet invoiced</div>':'';
   if(bill.billed>0.005){
     /* Due is what the homeowner has been invoiced and not yet paid on those
        invoices. Charges not on an invoice yet are shown on their own line, not
@@ -10882,11 +10902,11 @@ function moneyTotHTML(p){
     const owed=bill.balanceDue;
     h+='<div class="row"><div class="row-main"><div class="row-title">Homeowner</div>'
       +'<div class="row-sub">'+invUsd(bill.billed)+' invoiced &middot; '+invUsd(bill.invPaid)+' received</div>'
-      +(bill.unbilled>0.005?'<div class="row-sub mn-unbilled">'+invUsd(bill.unbilled)+' not yet invoiced</div>':'')+wait+'</div>'
+      +(bill.unbilled>0.005?'<div class="row-sub mn-unbilled">'+invUsd(bill.unbilled)+' not yet invoiced</div>':'')+cred+wait+'</div>'
       +'<div class="row-aside'+(owed>0.005?' warn':'')+'">'+(owed>0.005?invUsd(owed)+' due':'Paid up')+'</div></div>';
-  }else if(wait){
+  }else if(wait||cred){
     h+='<div class="row"><div class="row-main"><div class="row-title">Homeowner</div>'
-      +(bill.unbilled>0.005?'<div class="row-sub mn-unbilled">'+invUsd(bill.unbilled)+' not yet invoiced</div>':'')+wait+'</div></div>';
+      +(bill.unbilled>0.005?'<div class="row-sub mn-unbilled">'+invUsd(bill.unbilled)+' not yet invoiced</div>':'')+cred+wait+'</div></div>';
   }
   return h;
 }
@@ -13310,10 +13330,12 @@ function renderClient(){
     h+=sels.length?order.map(cat=>{
       const inCat=sels.filter(s=>(s.cat||'Other')===cat);
       return `<div class="sel-room">${esc(cat)}</div>`+inCat.map(s=>{
-        const m=selMoney(s.price);const cls=Number(s.price)>0?'up':Number(s.price)<0?'cr':'std';
+        const al=selIsAllowance(s);
+        const m=al?'':selMoney(s.price);const cls=Number(s.price)>0?'up':Number(s.price)<0?'cr':'std';
         return `<div class="sel-row" id="clsel-${s.id}">
           <div class="si cur-d">
             <div class="it">${esc(s.item||'(unspecified)')}${m?`<span class="price ${cls}">${m}</span>`:''}</div>
+            ${al?clientAllowanceLine(s,p):''}
             <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
             ${selTimelineRO(s)}
           </div>
@@ -13347,6 +13369,23 @@ function clientSaveSpec(id){const p=clientProj();const s=(p.selections||[]).find
   if(!any){toast('Enter at least one answer');return;}
   Data.updateSelection(id,{spec,specCustom:custom},p.id);logEvent('clientSpecAnswered',(s.item||'')+' · '+(s.cat||''));renderClient();toast('Answers submitted to your builder');
   try{invalidatePacketSignaturesForCat(p,s.cat);}catch(e){}}
+/* R-1 PR 2: the homeowner's view of an allowance: the allowance, their item
+   price and the difference. Builder cost never lives on a selection. */
+function clientAllowanceLine(s,p){
+  const m=allowanceMath(s.allowance,s.cost,houseCreditsAllowances(p));
+  const parts=[esc('Allowance '+invUsd(s.allowance))];
+  /* The difference is the stored charge, so it matches what gets invoiced. */
+  const amt=Number(s.price)||0;
+  if(m.priced){parts.push(esc('price '+invUsd(s.cost)));
+    if(amt>0.005)parts.push(esc(invUsd(amt)+' over'));
+    else if(amt<-0.005)parts.push(esc(invUsd(-amt)+' credit'));
+    else if(m.under>0.005)parts.push(esc(invUsd(m.under)+' under'));}
+  const st=chargeState(selCharge(s));
+  if(st.state==='waiting')parts.push('<span class="c-clay">needs your OK</span>');
+  /* Each piece stays whole and keeps its " · " at the end of its own line, so
+     the line only breaks between pieces (never "$120" / "over"). */
+  return '<div class="ct cl-allow">'+parts.map((x,i)=>'<span class="ws-nw">'+x+(i<parts.length-1?' ·':'')+'</span>').join(' ')+'</div>';
+}
 function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
   if(s.status==='pending'){toast('Your builder is still preparing this option');return;}
   const now=!s.approved;const patch={approved:now,signed:now?{date:todayStr(),by:(p.buyers&&p.buyers.length?p.buyers:['Homeowner'])}:null};Data.updateSelection(id,patch,p.id);logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
@@ -13993,11 +14032,16 @@ function selAllowRefresh(){
   if(document.getElementById('selAllowBox').dataset.locked){hint.textContent='Already invoiced, so the allowance and item price are locked.';return;}
   const c=_selNum('selCost');const credit=document.getElementById('selCredit').classList.contains('on');
   const m=allowanceMath(a,c,credit);
-  /* An overage waiting on the homeowner reads in clay. */
-  hint.classList.toggle('c-clay',!(isNaN(a)||isNaN(c)||a<0||(c!=null&&c<0))&&m.priced&&m.over>0.005);
-  hint.textContent=(isNaN(a)||isNaN(c)||a<0||(c!=null&&c<0))?'The homeowner’s price for this item, not your cost.'
+  const bad=isNaN(a)||isNaN(c)||a<0||(c!=null&&c<0);
+  const ex=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
+  const ra=selReapproval(ex,m.amount);
+  /* An overage waiting on the homeowner reads in clay; one they already approved does not. */
+  hint.classList.toggle('c-clay',!bad&&m.priced&&m.over>0.005&&!ra.kept);
+  hint.textContent=bad?'The homeowner’s price for this item, not your cost.'
     :!m.priced?'Add the item price once the homeowner picks. Not your cost.'
-    :m.over>0.005?invUsd(m.over)+' over the allowance. The homeowner has to approve it first.'
+    :m.over>0.005?(ra.kept?invUsd(m.over)+' over the allowance. Approved by the homeowner.'
+      :ra.reset&&ra.was>0.005?invUsd(m.over)+' over the allowance. The homeowner approved '+invUsd(ra.was)+' before, so they have to approve the new amount.'
+      :invUsd(m.over)+' over the allowance. The homeowner has to approve it first.')
     :m.under>0.005?(credit?invUsd(m.under)+' under the allowance. Credited to the homeowner.':invUsd(m.under)+' under the allowance. No credit on this house.')
     :'Right at the allowance. Nothing to charge or credit.';
 }
@@ -14029,6 +14073,7 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
     money=locked?{costLineId:document.getElementById('selLine').value||null}
       :{allowance,cost,costLineId:document.getElementById('selLine').value||null,price:allowanceMath(allowance,cost,credit).amount};
     price=locked?existingSel.price:money.price;
+    if(!locked&&selReapproval(existingSel,money.price).reset){money.approved=false;money.signed=null;logEvent('allowanceReapprove',item+' · '+invUsd(money.price));}
   }else if(existingSel&&selIsAllowance(existingSel)){
     money={allowance:null,cost:null,costLineId:null};
   }

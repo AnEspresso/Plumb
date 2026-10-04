@@ -3132,6 +3132,86 @@ S('allowances');
   t('wording: Agency\u2019s allowance strings, curly apostrophes',SRC.indexOf('>Leave blank if this item has no allowance.<')>=0&&SRC.indexOf('Put 0 if there\u2019s no upgrade or credit on this item.')>=0&&SRC.indexOf("Put 0 if there's no upgrade")<0&&SRC.indexOf('No allowance on this item?')<0&&SRC.indexOf('For this house only. If an item costs less than its allowance, the homeowner gets the difference as a credit.')>=0&&SRC.indexOf("can\u2019t be less than $0.")>=0&&SRC.indexOf("can't be less than")<0&&SRC.indexOf("homeowner\u2019s price for this item")>=0&&SRC.indexOf('Leave blank for a plain upgrade')<0&&SRC.indexOf('need to be amounts of')<0);
 })();
 
+/* ════ R-1 ALLOWANCES · PR 2 (2.456.0) ════
+   A builder edit that changes an approved overage sends it back to the homeowner
+   (chargeAfterEdit), the homeowner hears about it once, and their card shows the
+   allowance, their item price and the difference. Never the builder's cost. */
+S('allowances-2');
+(function(){
+  const SEL=n=>"P().selections.find(function(s){return s.item==='"+n+"';})";
+  const get=n=>JSON.parse($("JSON.stringify("+SEL(n)+"||null)"));
+  const hint=()=>({t:el('selCostHint').textContent,clay:el('selCostHint').classList.contains('c-clay')});
+  const approve=id=>{asClient('p1');$("clientSignoff("+id+")");asBuilder();$("state.activeId='p1'");};
+  const card=id=>{const h=clientHTML('p1','specs');asBuilder();$("state.activeId='p1'");const m=h.split('id="clsel-'+id+'"')[1];return m?m.split('class="sel-row"')[0]:'';};
+  const txt=h=>h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  asBuilder();$("state.activeId='p1'");
+  $("openAddSel('Plumbing Fixtures')");setVal('selItem','Sim2 faucet');setVal('selStatus','selected');setVal('selAllow','450');$("selAllowRefresh()");setVal('selCost','570');$("selAllowRefresh()");$("saveSel()");
+  const s0=get('Sim2 faucet');
+  /* (c) homeowner card, waiting */
+  const c0=card(s0.id);
+  t('(c) homeowner card shows allowance, item price and the overage, waiting on them',txt(c0).indexOf('Allowance $450 · price $570 · $120 over · needs your OK')>=0&&c0.indexOf('c-clay')>=0&&c0.indexOf('class="price')<0&&/>Approve</.test(c0),txt(c0));
+  approve(s0.id);
+  const c1=card(s0.id);
+  t('(c) after Approve: the card keeps the numbers, drops needs your OK, says Approved',txt(c1).indexOf('Allowance $450 · price $570 · $120 over')>=0&&c1.indexOf('needs your OK')<0&&c1.indexOf('✓ Approved')>=0,txt(c1));
+  t('(c) the card line breaks only between whole pieces, each keeping its \u00b7 at the end',(function(){var sp=(c0.split('cl-allow')[1]||'').match(/<span class="ws-nw">[\s\S]*?<\/span>(<\/span>)?/g)||[];return sp.length===4&&/Allowance \$450 ·<\/span>$/.test(sp[0])&&/price \$570 ·<\/span>$/.test(sp[1])&&/\$120 over ·<\/span>$/.test(sp[2])&&/needs your OK<\/span><\/span>$/.test(sp[3]);})(),(c0.split('cl-allow')[1]||'').slice(0,400));
+  t('(c) the card never shows builder cost: only allowance, item price and the stored difference',(function(){const nums=(txt(c1).match(/\$[\d,]+/g)||[]);return nums.join(',')==='$450,$570,$120';})(),txt(c1));
+  /* (a) same overage: approval kept */
+  $("openEditSel("+s0.id+")");$("selAllowRefresh()");
+  const h1=hint();
+  t('(a) sheet: an approved, unchanged overage says so and is not clay',h1.t==='$120 over the allowance. Approved by the homeowner.'&&!h1.clay,JSON.stringify(h1));
+  setVal('selNote','sim note');$("saveSel()");
+  t('(a) saving without changing the overage keeps the approval',get('Sim2 faucet').approved===true);
+  /* (a) overage changes: approval resets */
+  $("openEditSel("+s0.id+")");setVal('selCost','600');$("selAllowRefresh()");
+  const h2=hint();
+  t('(a) sheet: a changed overage says the homeowner will be asked again, in clay',h2.t==='$150 over the allowance. The homeowner approved $120 before, so they have to approve the new amount.'&&h2.clay,JSON.stringify(h2));
+  const before=get('Sim2 faucet');$("saveSel()");const s2=get('Sim2 faucet');
+  const w2=$("billingSummary(P()).waiting");
+  t('(a) a changed overage resets the approval and waits again',s2.price===150&&s2.approved===false&&s2.signed==null&&w2>=150-0.005,JSON.stringify([s2.price,s2.approved,s2.signed,w2]));
+  /* (b) the notice */
+  const nt=JSON.parse($("JSON.stringify(Notify.selReapprove("+JSON.stringify(before)+","+JSON.stringify(s2)+",'p1'))"));
+  t('(b) the homeowner gets one notice: Needs your OK again, with the new overage',!!nt&&nt.aud==='client'&&nt.title==='Needs your OK again'&&nt.body==='Sim2 faucet is now $150 over the allowance'&&nt.key==='selre:p1:'+s2.id+':150',JSON.stringify(nt));
+  const pushed=JSON.parse($("(function(){var o="+JSON.stringify(before)+",n="+JSON.stringify(s2)+";var p=P();var ses=state.session;var k0=Notify.list().length;"+
+    "state.session={role:'builder',name:'You'};Notify.selChanged(p,o,n);var b=Notify.list().length-k0;"+
+    "state.session={role:'client',site:'p1'};Notify.selChanged(p,o,n);var c=Notify.list().length-k0-b;var top=Notify.list()[0];Notify.selChanged(p,o,n);var again=Notify.list().length-k0-b-c;"+
+    "state.session=ses;return JSON.stringify({b:b,c:c,again:again,title:top&&top.title,nav:top&&top.nav});})()"));
+  t('(b) only the homeowner hears it, once, and it opens the selection',pushed.b===0&&pushed.c===1&&pushed.again===0&&pushed.title==='Needs your OK again'&&pushed.nav&&pushed.nav.view==='selections'&&String(pushed.nav.id)===String(s2.id),JSON.stringify(pushed));
+  const quiet=JSON.parse($("JSON.stringify([Notify.selReapprove({id:1,item:'x',approved:true,price:500},{id:1,item:'x',approved:false,price:600},'p1'),"+
+    "Notify.selReapprove({id:1,item:'x',allowance:450,cost:570,approved:true,price:120},{id:1,item:'x',allowance:450,cost:570,approved:false,price:120},'p1'),"+
+    "Notify.selReapprove({id:1,item:'x',allowance:450,cost:570,approved:false,price:120},{id:1,item:'x',allowance:450,cost:600,approved:false,price:150},'p1'),"+
+    "Notify.selReapprove({id:1,item:'x',allowance:450,cost:570,approved:true,price:120},{id:1,item:'x',allowance:450,cost:400,approved:false,price:-50},'p1')])"));
+  t('(b) no notice for a plain upgrade, the homeowner\u2019s own un-approve, an item never approved, or a credit',quiet.every(x=>x===null),JSON.stringify(quiet));
+  t('(b) the sync merge of a selection runs the notice check',$("String(Sync._attachColls)").indexOf("c.sub==='sel'")>=0&&$("String(Sync._attachColls)").indexOf('Notify.selChanged')>=0);
+  const c2=card(s0.id);
+  t('(c) the card is waiting again after the change',txt(c2).indexOf('Allowance $450 · price $600 · $150 over · needs your OK')>=0&&/>Approve</.test(c2),txt(c2));
+  /* (a) drops under the allowance: no longer waits */
+  approve(s0.id);
+  $("openEditSel("+s0.id+")");setVal('selCost','400');$("selAllowRefresh()");$("saveSel()");
+  const s3=get('Sim2 faucet');
+  t('(a) at or under the allowance it no longer waits (a credit never needs approval)',s3.price===-50&&$("chargeState(selCharge("+SEL('Sim2 faucet')+")).state")==='credit'&&$("billingSummary(P()).waiting")===0,JSON.stringify(s3));
+  $("openEditSel("+s0.id+")");setVal('selCost','500');$("selAllowRefresh()");
+  const h4=hint();$("saveSel()");
+  t('(a) back over the allowance from a credit: waits again, with the plain hint',get('Sim2 faucet').approved===false&&get('Sim2 faucet').price===50&&h4.t==='$50 over the allowance. The homeowner has to approve it first.'&&h4.clay,JSON.stringify(h4));
+  /* (a) a plain approved upgrade that becomes an allowance overage */
+  $("openAddSel('Windows')");setVal('selItem','Sim2 plain');setVal('selStatus','selected');setVal('selPrice','300');$("saveSel()");
+  const pl=get('Sim2 plain');approve(pl.id);
+  $("openEditSel("+pl.id+")");setVal('selAllow','200');$("selAllowRefresh()");setVal('selCost','500');$("selAllowRefresh()");$("saveSel()");
+  t('(a) an approved plain upgrade turned into an allowance overage needs the homeowner again',get('Sim2 plain').approved===false&&get('Sim2 plain').price===300);
+  /* (a) invoiced: never reset */
+  approve(s0.id);$("(function(){"+SEL('Sim2 faucet')+".invoicedIn='inv_sim2';})()");
+  $("openEditSel("+s0.id+")");setVal('selCost','900');$("saveSel()");
+  t('(a) an invoiced allowance keeps its approval and amount',get('Sim2 faucet').approved===true&&get('Sim2 faucet').price===50);
+  /* (d) uninvoiced credit line on Money */
+  $("(function(){var p=P();p.selections=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim2 ')!==0;});})()");
+  const base=$("billingSummary(P()).unbilled");
+  $("openAddSel('Lighting')");setVal('selItem','Sim2 light');setVal('selStatus','selected');setVal('selAllow','300');$("selAllowRefresh()");setVal('selCost',String(Math.round(300-base-40)));$("selAllowRefresh()");$("saveSel()");
+  const mt=JSON.parse($("JSON.stringify({u:billingSummary(P()).unbilled,h:moneyTotHTML(P())})"));
+  t('(d) Money shows a credit that is not on an invoice yet',Math.abs(mt.u+40)<0.005&&mt.h.indexOf('$40 credit not yet invoiced')>=0,JSON.stringify(mt.u));
+  /* clean up */
+  $("(function(){var p=P();p.selections=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim2 ')!==0;});})()");
+  t('wording: Agency\u2019s PR 2 strings',SRC.indexOf("before, so they have to approve the new amount.")>=0&&SRC.indexOf("approve it again")<0&&SRC.indexOf("' is now '+invUsd(amt)+' over the allowance'}")>=0&&SRC.indexOf("over the allowance.'}")<0&&SRC.indexOf("esc('price '+invUsd(s.cost))")>=0&&SRC.indexOf("' · item '")<0);
+})();
+
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');
 if(failures.length){
