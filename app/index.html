@@ -3018,7 +3018,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <input id="selItem" placeholder="e.g. SHAW Perspectives 2050">
       <div class="fld-label">Allowance</div>
       <input id="selAllow" inputmode="decimal" placeholder="e.g. 450" oninput="selAllowRefresh()">
-      <div class="fld-hint" id="selAllowHint">No allowance on this item? Leave it blank and enter the upgrade or credit instead.</div>
+      <div class="fld-hint" id="selAllowHint">Leave blank if this item has no allowance.</div>
       <div id="selAllowBox" style="display:none">
         <div class="fld-label">Item price</div>
         <input id="selCost" inputmode="decimal" placeholder="e.g. 570" oninput="selAllowRefresh()">
@@ -3030,7 +3030,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <div id="selPriceBox">
       <div class="fld-label">Upgrade $ or credit</div>
       <input id="selPrice" inputmode="text" placeholder="e.g. 2100 or -8000">
-      <div class="fld-hint">Put 0 if there's no upgrade or credit on this item.</div>
+      <div class="fld-hint">Put 0 if there’s no upgrade or credit on this item.</div>
       </div>
       <div class="fld-label">Status</div>
       <select id="selStatus" class="fld-select"></select>
@@ -14783,7 +14783,7 @@ function addPermit(){openPrompt({title:'Add permit',placeholder:'Permit name (e.
 /* ── searchable select: a custom bottom-sheet picker that fronts a native <select> ──
    The <select> stays in the DOM (hidden) as the source of truth, so every existing
    .value read / onchange handler keeps working untouched. */
-const SS_FIELDS={crewSelect:{t:'Packet',search:true},recCrew:{t:'Packet',search:true},selCat:{t:'Trade section'},recArea:{t:'Area'},selRoomSel:{t:'Room / location'},docType:{t:'Document type'},docTrade:{t:'For trade'},selStatus:{t:'Status',search:false},jSystem:{t:'Permit system',search:false},subSpec:{t:'Trade',search:true},inspEditSel:{t:'Status',search:false},
+const SS_FIELDS={crewSelect:{t:'Packet',search:true},recCrew:{t:'Packet',search:true},selCat:{t:'Trade section'},recArea:{t:'Area'},selRoomSel:{t:'Room / location'},docType:{t:'Document type'},docTrade:{t:'For trade'},selStatus:{t:'Status',search:false},selLine:{t:'Budget line'},jSystem:{t:'Permit system',search:false},subSpec:{t:'Trade',search:true},inspEditSel:{t:'Status',search:false},
   loginSelect:{t:'Who are you today?',search:false},laRole:{t:'Your role',search:false},suRosterTrade:{t:'Trade'},tqWho:{t:'Who decides',search:false},logFilter:{t:'Show',search:false}};
 function ssCfg(id){const c=SS_FIELDS[id];return (c&&typeof c==='object')?c:{t:c};}
 function ssTitleOf(id){if(ssCfg(id).t)return ssCfg(id).t;try{const el=document.getElementById(id);if(el&&el.dataset&&el.dataset.ssTitle)return el.dataset.ssTitle;}catch(e){}return 'Choose';}

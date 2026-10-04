@@ -3084,6 +3084,8 @@ S('allowances');
   t('sheet: Allowance shows, Item price waits for an allowance, Upgrade field stays for plain items',el('selAllow')&&el('selAllowBox').style.display==='none'&&el('selPriceBox').style.display!=='none');
   setVal('selItem','Sim faucet allowance');setVal('selStatus','selected');setVal('selAllow','450');$("selAllowRefresh()");setVal('selCost','570');$("selAllowRefresh()");
   t('sheet: with an allowance, Item price + Budget line + credit switch replace the upgrade field',el('selAllowBox').style.display===''&&el('selPriceBox').style.display==='none'&&el('selCredit').classList.contains('on')&&el('selLine').options.length===1+$("costLines(P()).length"));
+  $("initSearchSelects()");
+  t('sheet: Budget line uses the same picker (with chevron) as Trade section, Room and Status',!!el('selCat__ss')&&!!el('selLine__ss')&&!!el('selLine__ss').querySelector('.ss-chev')&&el('selLine').classList.contains('ss-hidden')&&$("ssTitleOf('selLine')")==='Budget line');
   t('sheet: live hint says the overage waits for the homeowner, in clay',el('selCostHint').textContent==='$120 over the allowance. The homeowner has to approve it first.'&&el('selCostHint').classList.contains('c-clay'),el('selCostHint').textContent+' | '+el('selCostHint').className);
   const lineId=$("(costLines(P())[0]||{}).id||''");if(lineId)setVal('selLine',lineId);
   $("saveSel()");
@@ -3127,7 +3129,7 @@ S('allowances');
   t('a negative allowance is refused, with the toast',$("P().selections.length")===nb&&$("JSON.stringify(window._simToasts)")===JSON.stringify(['Allowance and item price can\u2019t be less than $0.']),$("JSON.stringify(window._simToasts)"));$("closeAddSel()");
   /* clean up so nothing here leaks into later runs */
   $("(function(){var p=P();p.selections=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim ')!==0||x.item==='Sim skylight — fixed';});delete p.allowanceCredit;})()");
-  t('wording: Agency\u2019s allowance strings, curly apostrophes',SRC.indexOf('No allowance on this item? Leave it blank and enter the upgrade or credit instead.')>=0&&SRC.indexOf('For this house only. If an item costs less than its allowance, the homeowner gets the difference as a credit.')>=0&&SRC.indexOf("can\u2019t be less than $0.")>=0&&SRC.indexOf("can't be less than")<0&&SRC.indexOf("homeowner\u2019s price for this item")>=0&&SRC.indexOf('Leave blank for a plain upgrade')<0&&SRC.indexOf('need to be amounts of')<0);
+  t('wording: Agency\u2019s allowance strings, curly apostrophes',SRC.indexOf('>Leave blank if this item has no allowance.<')>=0&&SRC.indexOf('Put 0 if there\u2019s no upgrade or credit on this item.')>=0&&SRC.indexOf("Put 0 if there's no upgrade")<0&&SRC.indexOf('No allowance on this item?')<0&&SRC.indexOf('For this house only. If an item costs less than its allowance, the homeowner gets the difference as a credit.')>=0&&SRC.indexOf("can\u2019t be less than $0.")>=0&&SRC.indexOf("can't be less than")<0&&SRC.indexOf("homeowner\u2019s price for this item")>=0&&SRC.indexOf('Leave blank for a plain upgrade')<0&&SRC.indexOf('need to be amounts of')<0);
 })();
 
 /* ════ REPORT ════ */
