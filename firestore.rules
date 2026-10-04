@@ -135,12 +135,39 @@ service cloud.firestore {
             )
           );
       }
+      /* A homeowner approves one invoice ("Approve this invoice", invApprove):
+         one invoice goes from sent to approved and gains approvedAt. Nothing
+         else in the list moves: no amount, line, title, payment or other
+         invoice, no add or remove, no other status. The list is compared
+         whole, without a loop: removeAll leaves exactly the one changed
+         invoice on each side, and the rest must be equal and in order. Rules
+         have no index lookup, so the one invoice being approved could change
+         its place in the list (documented gap in rulescheck.js; its content
+         cannot change). The cost stays flat however many invoices the house
+         has (~300 expressions, measured with 1 to 200 invoices). */
+      function invoiceApproveOk() {
+        let o = resource.data.meta.get('invoices', []);
+        let n = request.resource.data.meta.get('invoices', []);
+        let now = n.removeAll(o);
+        let was = o.removeAll(n);
+        return n is list
+          && n.size() == o.size()
+          && now.size() == 1
+          && was.size() == 1
+          && n.removeAll(now) == o.removeAll(was)
+          && now[0].diff(was[0]).affectedKeys().hasOnly(['status', 'approvedAt'])
+          && was[0].get('status', '') == 'sent'
+          && now[0].get('status', '') == 'approved'
+          && now[0].get('approvedAt', null) is int;
+      }
       function clientHouseOk() {
+        let ch = metaChanged();
         return resource.data.members[uid()] == 'client'
           && membersHeld()
           && rootMetaOnly()
-          && metaChanged().hasOnly(['buildBrief','packetSignoff','packetSpecAt','packetStale','packetPrevSpec','t','updatedAt'])
-          && clientSignoffOk();
+          && ch.hasOnly(['buildBrief','invoices','packetSignoff','packetSpecAt','packetStale','packetPrevSpec','t','updatedAt'])
+          && clientSignoffOk()
+          && (!ch.hasAny(['invoices']) || invoiceApproveOk());
       }
       function crewHouseOk() {
         return resource.data.members[uid()] == 'sub'
