@@ -11162,7 +11162,7 @@ function deleteCostActual(){
   let body='It comes off the budget math immediately.';
   if(a&&a.qbId)body='This cost is already in QuickBooks — deleting here does NOT remove it there. Delete it in QuickBooks too or the books won’t match.';
   if(pays)body+=' Its '+pays+' linked payment'+(pays===1?' stays logged and goes back to counting on its own.':'s stay logged and go back to counting on their own.');
-  if(a&&a.photoId)body+=' Its receipt photo is deleted for good.';
+  if(a&&a.photoId)body+=' Its photo is deleted too. You can\u2019t get it back.';
   openConfirm({title:a&&a.kind!=='spent'?'Delete this contract?':'Delete this cost?',danger:true,okLabel:'Delete',body,
     onConfirm:()=>{Data.removeCost(_caEditId);closeCostActual();renderBudget();try{renderBuild();}catch(e){}toast('Cost deleted');}});
 }
