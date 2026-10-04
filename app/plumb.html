@@ -14115,10 +14115,10 @@ function selAllowRefresh(){
     /* Invoiced: what is billed stays billed; say where the difference goes. */
     const b=ra.billed,d=ra.delta,wait=d>0.005&&!ra.kept;
     const head=m.over>0.005?invUsd(m.over)+' over the allowance.':m.under>0.005?invUsd(m.under)+' under the allowance.':'Right at the allowance.';
-    const inv=(b<0?invUsd(-b)+' credit':invUsd(b))+' is already invoiced.';
+    const inv=(b<0?'A '+invUsd(-b)+' credit':invUsd(b))+' is already invoiced.';
     hint.classList.toggle('c-clay',wait);
-    hint.textContent=head+' '+inv+(d>0.005?(wait?' The other '+invUsd(d)+' waits for the homeowner’s approval.':' The other '+invUsd(d)+' goes on the next invoice.')
-      :d<-0.005?' The '+invUsd(-d)+' difference is credited on the next invoice.':'');
+    hint.textContent=head+' '+inv+(d>0.005?(wait?' The homeowner has to approve the other '+invUsd(d)+' first.':' The other '+invUsd(d)+' goes on the next invoice.')
+      :d<-0.005?' The other '+invUsd(-d)+' goes on the next invoice as a credit.':'');
     return;}
   hint.classList.toggle('c-clay',!bad&&m.priced&&m.over>0.005&&!ra.kept);
   hint.textContent=bad?'The homeowner’s price for this item, not your cost.'

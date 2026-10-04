@@ -3350,7 +3350,7 @@ S('allowances-3');
   t('(a) the approved overage goes on an invoice as before',i1.items.length===1&&i1.items[0].amount===120&&String(i1.items[0].selId)===String(s0.id)&&get('Sim3 faucet').invoicedIn===i1.id&&st('Sim3 faucet').state==='invoiced'&&unb('Sim3 faucet')===0,JSON.stringify(i1.items));
   /* (a) price up after the invoice: only the difference waits */
   const h1=edit(s0.id,700);
-  t('(a) sheet: the invoiced part is named and the new difference waits, in clay',h1.t==='$250 over the allowance. $120 is already invoiced. The other $130 waits for the homeowner\u2019s approval.'&&h1.clay&&!el('selCost').readOnly,JSON.stringify(h1));
+  t('(a) sheet: the invoiced part is named and the new difference waits, in clay',h1.t==='$250 over the allowance. $120 is already invoiced. The homeowner has to approve the other $130 first.'&&h1.clay&&!el('selCost').readOnly,JSON.stringify(h1));
   const pre=get('Sim3 faucet');$("saveSel()");const s1=get('Sim3 faucet');const c1=st('Sim3 faucet');const b1=bs();
   t('(a) price up: the $130 difference waits; the invoiced $120 still counts and is not reset',s1.price===250&&s1.approved===false&&c1.state==='waiting'&&c1.billed===120&&c1.waiting===130&&c1.counted===120&&Math.abs(b1.net-b0.net)<0.005&&Math.abs(b1.waiting-b0.waiting-130)<0.005,JSON.stringify([c1,b0.net,b1.net]));
   t('(a) the sent invoice is never rewritten, and a waiting difference cannot be invoiced',JSON.stringify(lastInv().items)===JSON.stringify(i1.items)&&lastInv().total===i1.total&&unb('Sim3 faucet')===0&&!$("unbilledSelections(P()).some(function(x){return x.item==='Sim3 faucet';})"));
@@ -3369,7 +3369,7 @@ S('allowances-3');
   t('(a) after the second invoice nothing is left to bill or re-bill',st('Sim3 faucet').state==='invoiced'&&st('Sim3 faucet').billed===250&&unb('Sim3 faucet')===0&&$("composeSelections(P()).every(function(x){return x.item!=='Sim3 faucet';})"));
   /* price down after the invoice: a credit, no approval */
   const h3=edit(s0.id,500);
-  t('(a) sheet: a lower price is credited on the next invoice (not clay)',h3.t==='$50 over the allowance. $250 is already invoiced. The $200 difference is credited on the next invoice.'&&!h3.clay,JSON.stringify(h3));
+  t('(a) sheet: a lower price is credited on the next invoice (not clay)',h3.t==='$50 over the allowance. $250 is already invoiced. The other $200 goes on the next invoice as a credit.'&&!h3.clay,JSON.stringify(h3));
   $("saveSel()");const c3=st('Sim3 faucet');
   t('(a) price down: a $200 credit, no approval needed, invoiced $250 untouched',get('Sim3 faucet').approved===true&&c3.state==='credit'&&c3.waiting===0&&c3.delta===-200&&unb('Sim3 faucet')===-200&&Math.abs(bs().net-b0.net+70)<0.005,JSON.stringify(c3));
   compose(s0.id);$('invSave(false)');const i3=lastInv();
@@ -3377,10 +3377,10 @@ S('allowances-3');
   $("invVoid('p1','"+i3.id+"')");$("ocConfirm()");
   t('(a) voiding the credit invoice frees only the credit again',$("P().invoices.find(function(v){return v.id==='"+i3.id+"';}).status")==='void'&&unb('Sim3 faucet')===-200&&st('Sim3 faucet').billed===250);
   const h4=edit(s0.id,400);
-  t('(a) sheet: under the allowance after an invoice',h4.t==='$50 under the allowance. $250 is already invoiced. The $300 difference is credited on the next invoice.',JSON.stringify(h4));
+  t('(a) sheet: under the allowance after an invoice',h4.t==='$50 under the allowance. $250 is already invoiced. The other $300 goes on the next invoice as a credit.',JSON.stringify(h4));
   const h5=edit(s0.id,450);$("closeAddSel()");
-  t('(a) sheet: right at the allowance after an invoice',h5.t==='Right at the allowance. $250 is already invoiced. The $250 difference is credited on the next invoice.',JSON.stringify(h5));
-  t('(a) a credit already invoiced is named as a credit',$("(function(){var p=P();var s={id:'x3',item:'x',allowance:450,cost:400,price:-50,approved:true,invoicedIn:'inv_x3'};p.invoices.push({id:'inv_x3',status:'sent',items:[{selId:'x3',amount:-50}],total:-50});var r=selReapproval(s,-50,p);p.invoices.pop();return JSON.stringify([r.billed,r.delta]);})()")==='[-50,0]'&&SRC.indexOf("' credit':invUsd(b))+' is already invoiced.'")>=0);
+  t('(a) sheet: right at the allowance after an invoice',h5.t==='Right at the allowance. $250 is already invoiced. The other $250 goes on the next invoice as a credit.',JSON.stringify(h5));
+  t('(a) a credit already invoiced is named as a credit',$("(function(){var p=P();var s={id:'x3',item:'x',allowance:450,cost:400,price:-50,approved:true,invoicedIn:'inv_x3'};p.invoices.push({id:'inv_x3',status:'sent',items:[{selId:'x3',amount:-50}],total:-50});var r=selReapproval(s,-50,p);p.invoices.pop();return JSON.stringify([r.billed,r.delta]);})()")==='[-50,0]'&&SRC.indexOf("'A '+invUsd(-b)+' credit':invUsd(b))+' is already invoiced.'")>=0);
   t('(a) a new selection never takes an id an invoice still names',$("(function(){var p=P();var hold=p.selections;var mx=hold.reduce(function(m,s){return Math.max(m,s.id);},0);p.invoices.push({id:'inv_idx',status:'void',items:[{selId:mx+5,amount:1}],total:1});openAddSel('Windows');document.getElementById('selItem').value='Sim3 id';document.getElementById('selPrice').value='10';saveSel();var s=p.selections.find(function(x){return x.item==='Sim3 id';});p.invoices.pop();return s&&s.id===mx+6;})()")===true);
   /* (f) plain selections: the old once-only rule */
   const pf=JSON.parse($("JSON.stringify(state.projects.map(function(p){var leg=(p.selections||[]).filter(function(x){return Number(x.price)&&SEL_STATUS.indexOf(x.status)>=1&&!x.invoicedIn&&!selIsAllowance(x);}).map(function(x){return x.id;}).join(',');var now=unbilledSelections(p).filter(function(x){return !selIsAllowance(x);}).map(function(x){return x.id;}).join(',');var plainInv=(p.selections||[]).filter(function(x){return x.invoicedIn&&!selIsAllowance(x);}).every(function(x){var c=chargeState(selCharge(x,p));return c.state==='invoiced'&&c.locked&&c.billed===undefined&&selUnbilledAmt(p,x)===0;});return {id:p.id,ok:leg===now&&plainInv};}))"));
@@ -3414,7 +3414,7 @@ S('allowances-3');
   /* clean up */
   $("(function(){var p=P();var ids=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim3 ')===0;}).map(function(x){return x.id;});p.selections=p.selections.filter(function(x){return ids.indexOf(x.id)<0;});p.invoices=p.invoices.filter(function(v){return !(v.items||[]).some(function(it){return ids.indexOf(it.selId)>=0;});});})()");
   t('clean up: no Sim3 records left',$("(P().invoices||[]).length")===nInv&&!$("P().selections.some(function(x){return String(x.item||'').indexOf('Sim3 ')===0;})"));
-  t('wording: PR 3 strings, curly apostrophes',SRC.indexOf(" waits for the homeowner\u2019s approval.'")>=0&&SRC.indexOf("waits for the homeowner's approval")<0&&SRC.indexOf("' goes on the next invoice.'")>=0&&SRC.indexOf(" difference is credited on the next invoice.'")>=0&&SRC.indexOf("'Right at the allowance.'")>=0&&SRC.indexOf("Allowances: '+invUsd(al.used)+' of '+invUsd(al.allowance)+' used")>=0&&SRC.indexOf('Already invoiced, so the allowance')<0);
+  t('wording: PR 3 strings, curly apostrophes',SRC.indexOf("' The homeowner has to approve the other '+invUsd(d)+' first.'")>=0&&SRC.indexOf("homeowner\u2019s approval.'")<0&&SRC.indexOf("' goes on the next invoice.'")>=0&&SRC.indexOf("' goes on the next invoice as a credit.'")>=0&&SRC.indexOf("difference is credited on the next invoice")<0&&SRC.indexOf("'Right at the allowance.'")>=0&&SRC.indexOf("Allowances: '+invUsd(al.used)+' of '+invUsd(al.allowance)+' used")>=0&&SRC.indexOf('Already invoiced, so the allowance')<0);
 })();
 
 /* ════ REPORT ════ */
