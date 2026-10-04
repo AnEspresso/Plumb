@@ -57,6 +57,9 @@ jobs:
       - name: Claim stamp (the function the server runs when someone joins)
         run: npm run claimstamp
 
+      - name: File cleanup (deleted entries take their photos out of Storage)
+        run: npm run filecleanup
+
       - name: Rules - production (firestore.rules)
         run: npm run rules
 

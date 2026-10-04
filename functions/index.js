@@ -184,7 +184,7 @@ exports.telemetryClear = onRequest(async (req, res) => {
 });
 
 /* ── Lock-screen push when a sub replies on a packet ── */
-const { onDocumentWritten, onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated, onDocumentUpdated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
 const push = require('./lib/push');
 const { applyClaimToSite, claimWins } = require('./lib/claimStamp');
 
@@ -283,3 +283,14 @@ exports.notifyTest = onRequest(async (req, res) => {
   res.json({ result: { ok: true, sent: r.sent || 0, failed: r.failed || 0 } });
 });
 
+/* P2-6 (Release I): a deleted field note or cost entry takes its photo files
+   out of Storage, gone for good. Fires on deletes only; other collections exit
+   at once. A failed file delete is logged and never blocks the user. */
+const { deleteRecordFiles } = require('./lib/fileCleanup');
+exports.onRecordDeleted = onDocumentDeleted('sites/{siteId}/{coll}/{docId}', async (event) => {
+  const coll = event.params.coll;
+  if (coll !== 'items' && coll !== 'costs') return;
+  const doc = (event.data && event.data.data && event.data.data()) || {};
+  const bucket = admin.storage().bucket(process.env.PLUMB_BUCKET || 'plumb-467a0.firebasestorage.app');
+  await deleteRecordFiles(bucket, event.params.siteId, doc);
+});

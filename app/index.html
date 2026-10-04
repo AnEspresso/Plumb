@@ -3930,15 +3930,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.451.0 - Crew house grid, no duplicate dates, Money line, demo builder name';
+const PLUMB_VERSION='2.452.0 - Deleted photos leave Storage, Text this link opens the text';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791026838771;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.451.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791121783554;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.452.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5037,6 +5037,12 @@ function idbKeys(){return new Promise((res)=>{if(!db)return res([]);const t=db.t
 function idbClear(){return new Promise((res)=>{if(!db)return res();const t=db.transaction('photos','readwrite');t.objectStore('photos').clear();t.oncomplete=res;t.onerror=res;});}
 function idbPutDoc(k,blob){return new Promise((res,rej)=>{if(!db)return rej(new Error('no-idb'));const t=db.transaction('docs','readwrite');t.objectStore('docs').put(blob,k);t.oncomplete=res;t.onerror=()=>rej(t.error);});}
 function idbGetDoc(k){return new Promise((res,rej)=>{if(!db)return res(undefined);const t=db.transaction('docs','readonly');const rq=t.objectStore('docs').get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});}
+/* P2-6: a deleted entry's photos are gone for good. This phone drops its own
+   copies here; the server (onRecordDeleted) deletes the Storage files. */
+function recPhotoIds(r){const out=[];const add=v=>{if(v&&typeof v==='string'&&out.indexOf(v)<0)out.push(v);};
+  if(r){add(r.photoId);(r.edits||[]).forEach(e=>add(e&&e.snap&&e.snap.photoId));}return out;}
+function dropLocalPhotos(r){recPhotoIds(r).forEach(id=>{try{idbDel(id);}catch(e){}
+  try{if(photoURLs[id]){URL.revokeObjectURL(photoURLs[id]);delete photoURLs[id];}}catch(e){}});}
 function idbDelDoc(k){return new Promise((res)=>{if(!db)return res();const t=db.transaction('docs','readwrite');t.objectStore('docs').delete(k);t.oncomplete=res;t.onerror=res;});}
 
 /* ════════ persistence (metadata) ════════ */
@@ -5074,7 +5080,7 @@ const Data = {
   /* items (records + flagged issues) */
   addItem(it){ if(it&&!it.by)it.by=(state.session&&state.session.name)||''; const p=P(); p.items.unshift(it); this.commit(); return it; },
   updateItem(projId,id,patch){ const p=this.project(projId)||P(); const it=p.items.find(i=>i.id===id); if(it){Object.assign(it,patch);} this.commit(); return it; },
-  removeItem(projId,id){ const p=this.project(projId)||P(); p.items=p.items.filter(i=>i.id!==id); this.commit(); },
+  removeItem(projId,id){ const p=this.project(projId)||P(); try{dropLocalPhotos(p.items.find(i=>i.id===id));}catch(e){} p.items=p.items.filter(i=>i.id!==id); this.commit(); },
   nextItemId(){ const p=P(); return p.nextId++; },
   /* daily log (one entry per date) */
   saveLog(date,text,share){ const p=P(); p.logs=p.logs||[]; const ex=p.logs.find(l=>l.date===date); if(ex){ex.text=text;ex.t=Date.now();if(share!==undefined)ex.share=share;} else {p.logs.unshift({date,t:Date.now(),text,share:!!share});} this.commit(); },
@@ -5091,7 +5097,9 @@ const Data = {
   addCostActual(a){ const p=P(); p.costs=p.costs||[]; a.rt='actual'; p.costs.push(a); this.commit(); return a; },
   updateCost(id,patch){ const p=P(); const r=(p.costs||[]).find(x=>x.id===id); if(r)Object.assign(r,patch); this.commit(); return r; },
   removeCost(id){ const p=P(); const r=(p.costs||[]).find(x=>x.id===id);
-    p.costs=(p.costs||[]).filter(x=>x.id!==id&&!(r&&r.rt==='line'&&x.rt==='actual'&&x.lineId===id));
+    const gone=x=>x.id===id||!!(r&&r.rt==='line'&&x.rt==='actual'&&x.lineId===id);
+    try{(p.costs||[]).filter(gone).forEach(dropLocalPhotos);}catch(e){}
+    p.costs=(p.costs||[]).filter(x=>!gone(x));
     this.commit(); },
   importCostLines(lines){ const p=P(); p.costs=p.costs||[];
     lines.forEach(l=>p.costs.push(l)); this.commit(); return lines.length; },
@@ -11154,6 +11162,7 @@ function deleteCostActual(){
   let body='It comes off the budget math immediately.';
   if(a&&a.qbId)body='This cost is already in QuickBooks — deleting here does NOT remove it there. Delete it in QuickBooks too or the books won’t match.';
   if(pays)body+=' Its '+pays+' linked payment'+(pays===1?' stays logged and goes back to counting on its own.':'s stay logged and go back to counting on their own.');
+  if(a&&a.photoId)body+=' Its receipt photo is deleted for good.';
   openConfirm({title:a&&a.kind!=='spent'?'Delete this contract?':'Delete this cost?',danger:true,okLabel:'Delete',body,
     onConfirm:()=>{Data.removeCost(_caEditId);closeCostActual();renderBudget();try{renderBuild();}catch(e){}toast('Cost deleted');}});
 }
@@ -16778,8 +16787,9 @@ function packetHTML(p,tradeId,subId){
     /* One tap to send (batch 5): Text this link is always the primary action
        when a crew is on the packet. With no booking yet it asks for a start
        date in place and books it pending, so the crew still confirms. */
-    if(!sb&&bk)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="sendGuestPacket(\''+p.id+'\',\''+bk.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
-    else if(sb)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="pktTextLink(\''+p.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
+    const PKT_TEXT_HELP='<div class="pkt-foot mt-1 mb-2">Opens a text with the link. You press Send.</div>';   /* D-7 */
+    if(!sb&&bk)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="sendGuestPacket(\''+p.id+'\',\''+bk.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>'+PKT_TEXT_HELP;
+    else if(sb)h+='<div class="money-actions"><button class="btn btn-primary btn-block" onclick="pktTextLink(\''+p.id+'\')">Text this link</button><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>'+PKT_TEXT_HELP;
     else h+='<div class="money-actions"><button class="btn btn-secondary" onclick="packetMore()" aria-label="More packet actions">More</button></div>';
   }
 
@@ -17077,7 +17087,7 @@ function _sharePacketLink(snap,token){
   const who=esc(snap.subName||snap.sub||'the crew');
   const num=phone
     ?('<div class="fs-md fw-6 mt-0 ml-0 mr-0 mb-2">'+esc(phone)+'</div>')
-    :('<div class="fs-sm c-ink-3 mt-0 ml-0 mr-0 mb-2">No phone on file for '+who+' \u2014 the link stays here to copy.</div>');
+    :('<div class="fs-sm c-ink-3 mt-0 ml-0 mr-0 mb-2">No phone number for '+who+' yet. Tap Text this link and pick who gets it, or tap the link below to copy it.</div>');
   showInfo('Text this link',`${phone?`<p class="mt-0 ml-0 mr-0 mb-2 fs-sm lh-15">Opens a text to <b>${who}</b> with the link. You press Send.</p>`:''}
     ${num}
     <button class="b1 b-go w-full btn btn-primary" onclick="pkDoShare()">Text this link</button>
@@ -17086,9 +17096,14 @@ function _sharePacketLink(snap,token){
 }
 function pkDoShare(){
   const x=window._pkLastShare;if(!x)return;
+  /* D-7: with a number on file, open a text to that person directly (sms:),
+     no share sheet and no copy toast. No number: the share sheet picks who. */
+  const to=String(x.phone||'').replace(/[^\d+]/g,'');
+  if(/\d/.test(to)){_openSms('sms:'+to+'?&body='+encodeURIComponent(x.msg));return;}
   if(navigator.share){navigator.share({text:x.msg}).catch(function(){});}
-  else _smsOrCopy(x.msg,x.phone);
+  else _smsOrCopy(x.msg,'');
 }
+function _openSms(u){try{location.href=u;}catch(e){}}
 function _smsOrCopy(msg,phone){
   try{
     const to=String(phone||'').replace(/[^\d+]/g,'');
