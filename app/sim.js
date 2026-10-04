@@ -2959,6 +2959,42 @@ t('demo builder is the example company contractor, not a placeholder', SRC.index
 t('wording: the demo header does not repeat the role',(function(){$("(function(){try{Data.setSession({role:'builder',name:'Demo Builder'});renderOverview();}catch(e){}})()");return $("document.getElementById('ovWho').textContent")==='Demo Builder';})());
 t('wording: the crew packet door leads the house, one dates block',(function(){const f=$("String(renderSubView)");return f.indexOf('id=\"svPacket\"')>=0&&f.indexOf('id=\"svPacket\"')<f.indexOf('subCapture(')&&f.indexOf('Next on this house')<0;})());
 
+/* ════ PACKET LINK · Text this link on a live house (2.453.0) ════
+   Peter, iPhone, 2026-10-04: "Could not create the link - check your
+   connection" on good wifi. The create is now made by the signed-in account,
+   a refused first write is retried, and every failure logs its code. */
+S('packet-link');
+await $('(async()=>{'+
+  'var oFb=window.firebase,oT=window.toast,oM=localStorage.getItem("plumb.mode"),oS=Sync.uid;window.__pl={};'+
+  'function run(o){var sets=[],toasts=[];var n=0;'+
+    'window.toast=function(m){toasts.push(String(m));};'+
+    'var db={collection:function(c){return{doc:function(id){return{set:function(v){n++;sets.push({path:c+"/"+id,v:JSON.parse(JSON.stringify(v))});'+
+      'if(n<=o.deny){var e=new Error("Missing or insufficient permissions.");e.code="permission-denied";return Promise.reject(e);}return Promise.resolve();}};}};}};'+
+    'window.firebase={apps:[1],firestore:function(){return db;},auth:function(){return{currentUser:o.uid?{uid:o.uid}:null,onAuthStateChanged:function(){return function(){};}};}};'+
+    'localStorage.setItem("plumb.mode","real");Sync.uid="uStale";window.__pkRetryMs=0;localStorage.removeItem("plumb.errors");'+
+    'var p=state.projects.find(function(x){return x.id==="p1";});var b=(p.bookings||[]).find(function(x){return x.trade==="concrete";});'+
+    'b.pkToken=null;var oEnd=b.end;if(o.endStr)b.end=o.endStr;'+
+    'sendGuestPacket(p.id,b.id);gpApproveSend();'+
+    'return new Promise(function(res){setTimeout(function(){var errs=[];try{errs=JSON.parse(localStorage.getItem("plumb.errors")||"[]").map(function(x){return x.m;});}catch(e){}'+
+      'var tk=b.pkToken||null;b.end=oEnd;b.pkToken=null;b.pkSent=null;res({sets:sets,toasts:toasts,tok:tk,errs:errs});},o.wait||300);});}'+
+  'try{'+
+    'window.__pl.retry=await run({uid:"uAuth",deny:1});'+
+    'window.__pl.denied=await run({uid:"uAuth",deny:9});'+
+    'window.__pl.noauth=await run({uid:"",deny:0,wait:4400});'+
+    'window.__pl.strEnd=await run({uid:"uAuth",deny:0,endStr:"2026-10-11"});'+
+  '}finally{window.firebase=oFb;window.toast=oT;Sync.uid=oS;if(oM==null)localStorage.removeItem("plumb.mode");else localStorage.setItem("plumb.mode",oM);'+
+    'try{closeGuestPreview();closeInfo&&closeInfo();}catch(e){}}'+
+'})()');
+(function(){
+  const r=JSON.parse($("JSON.stringify(window.__pl)"));
+  const bad=x=>x.toasts.some(m=>m.indexOf('Could not create the link')===0);
+  t('packet link: a first refused create is retried and the link is made',r.retry.sets.length===2&&!!r.retry.tok&&!bad(r.retry),JSON.stringify({n:r.retry.sets.length,tok:r.retry.tok,t:r.retry.toasts}));
+  t('packet link: the packet is created by the signed-in account, not a remembered uid',r.retry.sets.every(x=>x.v.createdBy==='uAuth'&&x.v.resp===null)&&r.retry.sets[0].path.indexOf('packets/pk')===0,JSON.stringify(r.retry.sets.map(x=>x.v.createdBy)));
+  t('packet link: a create still refused says so, and the error code is logged',r.denied.sets.length===3&&!r.denied.tok&&r.denied.toasts.indexOf('Could not create the link \u2014 check your connection')>=0&&r.denied.errs.some(m=>m.indexOf('packet create permission-denied')===0&&m.indexOf('auth yes')>0),JSON.stringify({n:r.denied.sets.length,e:r.denied.errs}));
+  t('packet link: no signed-in account, no write, and it is logged',r.noauth.sets.length===0&&!r.noauth.tok&&r.noauth.toasts.indexOf('Connecting \u2014 try again in a moment')>=0&&r.noauth.errs.some(m=>m.indexOf('no signed-in account')>=0),JSON.stringify(r.noauth));
+  t('packet link: expires goes up as a whole number even from a text end date',r.strEnd.sets.length===1&&Number.isSafeInteger(r.strEnd.sets[0].v.expires)&&r.strEnd.sets[0].v.expires>Date.now(),JSON.stringify(r.strEnd.sets.map(x=>x.v.expires)));
+})();
+
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');
 if(failures.length){
