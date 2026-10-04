@@ -3018,14 +3018,14 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <input id="selItem" placeholder="e.g. SHAW Perspectives 2050">
       <div class="fld-label">Allowance</div>
       <input id="selAllow" inputmode="decimal" placeholder="e.g. 450" oninput="selAllowRefresh()">
-      <div class="fld-hint" id="selAllowHint">Leave blank for a plain upgrade or credit.</div>
+      <div class="fld-hint" id="selAllowHint">No allowance on this item? Leave it blank and enter the upgrade or credit instead.</div>
       <div id="selAllowBox" style="display:none">
         <div class="fld-label">Item price</div>
         <input id="selCost" inputmode="decimal" placeholder="e.g. 570" oninput="selAllowRefresh()">
         <div class="fld-hint" id="selCostHint">The homeowner’s price for this item, not your cost.</div>
         <div class="fld-label">Budget line</div>
         <select id="selLine" class="fld-select"></select>
-        <div class="flagrow mt-2 ml-0 mr-0 mb-1"><div class="l"><div class="t">Credit unused allowances</div><div class="s">This house: an item under its allowance becomes a credit to the homeowner.</div></div><div class="toggle" id="selCredit" onclick="this.classList.toggle('on');selAllowRefresh()"></div></div>
+        <div class="flagrow mt-2 ml-0 mr-0 mb-1"><div class="l"><div class="t">Credit unused allowances</div><div class="s">For this house only. If an item costs less than its allowance, the homeowner gets the difference as a credit.</div></div><div class="toggle" id="selCredit" onclick="this.classList.toggle('on');selAllowRefresh()"></div></div>
       </div>
       <div id="selPriceBox">
       <div class="fld-label">Upgrade $ or credit</div>
@@ -13989,13 +13989,15 @@ function selAllowRefresh(){
   document.getElementById('selAllowBox').style.display=on?'':'none';
   document.getElementById('selPriceBox').style.display=on?'none':'';
   document.getElementById('selAllowHint').style.display=on?'none':'';
-  const hint=document.getElementById('selCostHint');if(!on||!hint)return;
+  const hint=document.getElementById('selCostHint');if(!on||!hint)return;hint.classList.remove('c-clay');
   if(document.getElementById('selAllowBox').dataset.locked){hint.textContent='Already invoiced, so the allowance and item price are locked.';return;}
   const c=_selNum('selCost');const credit=document.getElementById('selCredit').classList.contains('on');
   const m=allowanceMath(a,c,credit);
+  /* An overage waiting on the homeowner reads in clay. */
+  hint.classList.toggle('c-clay',!(isNaN(a)||isNaN(c)||a<0||(c!=null&&c<0))&&m.priced&&m.over>0.005);
   hint.textContent=(isNaN(a)||isNaN(c)||a<0||(c!=null&&c<0))?'The homeowner’s price for this item, not your cost.'
     :!m.priced?'Add the item price once the homeowner picks. Not your cost.'
-    :m.over>0.005?invUsd(m.over)+' over the allowance. Waits for the homeowner’s approval.'
+    :m.over>0.005?invUsd(m.over)+' over the allowance. The homeowner has to approve it first.'
     :m.under>0.005?(credit?invUsd(m.under)+' under the allowance. Credited to the homeowner.':invUsd(m.under)+' under the allowance. No credit on this house.')
     :'Right at the allowance. Nothing to charge or credit.';
 }
@@ -14020,7 +14022,7 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   const allowance=_selNum('selAllow');let money=null;
   if(allowance!=null){
     const cost=_selNum('selCost');
-    if(isNaN(allowance)||isNaN(cost)||allowance<0||(cost!=null&&cost<0)){toast('Allowance and item price need to be amounts of $0 or more');return;}
+    if(isNaN(allowance)||isNaN(cost)||allowance<0||(cost!=null&&cost<0)){toast('Allowance and item price can’t be less than $0.');return;}
     const p=P();const credit=document.getElementById('selCredit').classList.contains('on');
     if(credit!==houseCreditsAllowances(p)){p.allowanceCredit=credit;repriceAllowances(p);}
     const locked=!!(existingSel&&selIsAllowance(existingSel)&&existingSel.invoicedIn);

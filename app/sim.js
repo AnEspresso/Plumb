@@ -3084,7 +3084,7 @@ S('allowances');
   t('sheet: Allowance shows, Item price waits for an allowance, Upgrade field stays for plain items',el('selAllow')&&el('selAllowBox').style.display==='none'&&el('selPriceBox').style.display!=='none');
   setVal('selItem','Sim faucet allowance');setVal('selStatus','selected');setVal('selAllow','450');$("selAllowRefresh()");setVal('selCost','570');$("selAllowRefresh()");
   t('sheet: with an allowance, Item price + Budget line + credit switch replace the upgrade field',el('selAllowBox').style.display===''&&el('selPriceBox').style.display==='none'&&el('selCredit').classList.contains('on')&&el('selLine').options.length===1+$("costLines(P()).length"));
-  t('sheet: live hint says the overage waits for the homeowner',el('selCostHint').textContent==='$120 over the allowance. Waits for the homeowner\u2019s approval.',el('selCostHint').textContent);
+  t('sheet: live hint says the overage waits for the homeowner, in clay',el('selCostHint').textContent==='$120 over the allowance. The homeowner has to approve it first.'&&el('selCostHint').classList.contains('c-clay'),el('selCostHint').textContent+' | '+el('selCostHint').className);
   const lineId=$("(costLines(P())[0]||{}).id||''");if(lineId)setVal('selLine',lineId);
   $("saveSel()");
   const s1=JSON.parse($("JSON.stringify(P().selections.find(function(s){return s.item==='Sim faucet allowance';})||null)"));
@@ -3099,7 +3099,7 @@ S('allowances');
 
   /* credit on/off */
   $("openAddSel('Lighting')");setVal('selItem','Sim light allowance');setVal('selStatus','selected');setVal('selAllow','300');$("selAllowRefresh()");setVal('selCost','260');$("selAllowRefresh()");
-  t('credit: hint says the unused allowance is credited',el('selCostHint').textContent==='$40 under the allowance. Credited to the homeowner.',el('selCostHint').textContent);
+  t('credit: hint says the unused allowance is credited (not clay)',el('selCostHint').textContent==='$40 under the allowance. Credited to the homeowner.'&&!el('selCostHint').classList.contains('c-clay'),el('selCostHint').textContent+' | '+el('selCostHint').className);
   $("saveSel()");
   const c1=JSON.parse($("JSON.stringify((function(p){var s=p.selections.find(function(x){return x.item==='Sim light allowance';});return {id:s.id,price:s.price,net:billingSummary(p).net};})(P()))"));
   t('credit: under the allowance credits the homeowner at once, no approval needed',c1.price===-40&&Math.abs(c1.net-(ap.net-40))<0.005,JSON.stringify(c1));
@@ -3123,11 +3123,11 @@ S('allowances');
   setVal('selCost','900');$("saveSel()");
   t('invoiced: saving never rewrites the invoiced charge',$("JSON.stringify((function(s){return [s.price,s.cost];})(P().selections.find(function(x){return x.item==='Sim faucet allowance';})))")==='[120,570]');
   $("openAddSel('Lighting')");setVal('selItem','Sim bad');setVal('selAllow','-5');$("selAllowRefresh()");
-  const nb=$("P().selections.length");$("saveSel()");
-  t('a negative allowance is refused',$("P().selections.length")===nb);$("closeAddSel()");
+  const nb=$("P().selections.length");$("window._simToasts=[];window._simOT=window.toast;window.toast=function(m){window._simToasts.push(m);};");$("saveSel()");$("window.toast=window._simOT;");
+  t('a negative allowance is refused, with the toast',$("P().selections.length")===nb&&$("JSON.stringify(window._simToasts)")===JSON.stringify(['Allowance and item price can\u2019t be less than $0.']),$("JSON.stringify(window._simToasts)"));$("closeAddSel()");
   /* clean up so nothing here leaks into later runs */
   $("(function(){var p=P();p.selections=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim ')!==0||x.item==='Sim skylight — fixed';});delete p.allowanceCredit;})()");
-  t('wording: new allowance strings use curly apostrophes',SRC.indexOf("homeowner\u2019s approval")>=0&&SRC.indexOf("homeowner's approval")<0&&SRC.indexOf("homeowner\u2019s price for this item")>=0);
+  t('wording: Agency\u2019s allowance strings, curly apostrophes',SRC.indexOf('No allowance on this item? Leave it blank and enter the upgrade or credit instead.')>=0&&SRC.indexOf('For this house only. If an item costs less than its allowance, the homeowner gets the difference as a credit.')>=0&&SRC.indexOf("can\u2019t be less than $0.")>=0&&SRC.indexOf("can't be less than")<0&&SRC.indexOf("homeowner\u2019s price for this item")>=0&&SRC.indexOf('Leave blank for a plain upgrade')<0&&SRC.indexOf('need to be amounts of')<0);
 })();
 
 /* ════ REPORT ════ */
