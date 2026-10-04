@@ -3571,6 +3571,49 @@ S('money-words-final');
   t('wording: Agency final words use curly apostrophes',SRC.indexOf("Homeowner’s credit")>=0&&SRC.indexOf("Homeowner's credit")<0);
 })();
 
+/* ════ BUDGET LEFT (2.461.0) ════
+   One number for a budget line's Remaining (desktop) and left (phone rows):
+   budgetLeft = budget minus exposure (the larger of contracted or paid, per
+   contract). Projected stays on Projected / Tracking / vs budget. */
+S('budget-left');
+(function(){
+  const txt=h=>String(h).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  asBuilder();$("state.activeId='p1'");
+  const L=costs=>JSON.parse($("(function(){var p=JSON.parse(JSON.stringify(P()));p.selections=[];p.invoices=[];p.payments=[];p.costs="+JSON.stringify(costs)+";"+
+    "var r=costLineRollup(p,'L');var l=costLines(p)[0];var row=moneyLineRowHTML(l,r);var tb=budgetTableHTML(p);var m=/id=\"bgtL-L\">([^<]*)</.exec(tb);"+
+    "var a=/row-aside[^\"]*\">([^<]*)</.exec(row);var sub=/row-sub\">([^<]*)</.exec(row);"+
+    "return JSON.stringify({left:budgetLeft(r),over:budgetOver(r),rem:r.remaining,ro:r.over,exposure:r.exposure,projected:r.projected,aside:a?a[1]:'',sub:sub?sub[1]:'',cell:m?m[1]:'',card:budgetCardHTML(p),house:houseMoneyLine(p),cs:budgetLeft(costSummary(p))});})()"));
+  const line=(b,ex)=>Object.assign({rt:'line',id:'L',label:'Sim line',budget:b},ex||{});
+  /* under, contracted greater than paid: 1000 budget, 600 contract, 200 paid on it */
+  const u=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'},{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:200,toward:'C',payee:'Sub'}]);
+  t('under, contracted > paid: left is budget minus contracted',u.left===400&&!u.over&&u.rem===400&&u.ro===false,JSON.stringify(u));
+  t('under, contracted > paid: phone row, desktop cell, card and house line all say $400',u.aside==='$400 left'&&u.cell==='$400'&&u.sub==='$600 of $1,000'&&txt(u.card).indexOf('$400 Remaining')>=0&&u.house==='Under budget · $400 left',JSON.stringify([u.aside,u.cell,u.sub,u.house]));
+  /* paid greater than contracted: 400 contract, 700 paid not tied to it */
+  const sp=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:400,payee:'Sub'},{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:700,payee:'Supplier'}]);
+  t('paid > contracted: left is budget minus paid',sp.left===300&&sp.exposure===700&&sp.aside==='$300 left'&&sp.cell==='$300'&&sp.sub==='$700 of $1,000',JSON.stringify(sp));
+  /* paid only, no contract */
+  const po=L([line(1000),{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:650,payee:'Supplier'}]);
+  t('paid only: left is budget minus paid',po.left===350&&po.aside==='$350 left'&&po.cell==='$350',JSON.stringify([po.left,po.aside,po.cell]));
+  /* exact */
+  const ex=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:1000,payee:'Sub'},{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:300,toward:'C',payee:'Sub'}]);
+  t('exactly on budget: left $0, no aside on the phone row, $0 on desktop, On budget on the house',ex.left===0&&!ex.over&&ex.aside===''&&ex.cell==='$0'&&ex.house==='On budget',JSON.stringify([ex.left,ex.aside,ex.cell,ex.house]));
+  /* over */
+  const ov=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:1200,payee:'Sub'}]);
+  t('over budget: $200 over on the phone row, desktop, card and house',ov.left===-200&&ov.over&&ov.ro===true&&ov.aside==='$200 over'&&ov.cell==='$200 over'&&txt(ov.card).indexOf('$200 Over budget')>=0&&ov.house==='Over budget · $200 over',JSON.stringify([ov.aside,ov.cell,ov.house]));
+  /* the old disagreement: a builder projection does not move left */
+  const pj=L([line(1000,{expect:1300}),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'}]);
+  t('a projected final cost above budget does not move left (it stays on Projected / vs budget)',pj.projected===1300&&pj.left===400&&pj.aside==='$400 left'&&pj.cell==='$400',JSON.stringify(pj));
+  const nx=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'}]);
+  t('no projection set: the phone row shows what is left (it used to show nothing)',nx.projected===1000&&nx.aside==='$400 left',JSON.stringify([nx.projected,nx.aside]));
+  /* every demo line on every house: phone row and desktop agree */
+  const all=JSON.parse($("JSON.stringify((function(){var bad=[],n=0;state.projects.forEach(function(p){var hold=state.activeId;state.activeId=p.id;var tb=budgetTableHTML(p);costLines(p).forEach(function(l){n++;var r=costLineRollup(p,l.id);var row=moneyLineRowHTML(l,r);var a=/row-aside[^\"]*\">([^<]*)</.exec(row);var re=new RegExp('id=\"bgtL-'+String(l.id).replace(/[^\\w-]/g,'')+'\">([^<]*)<');var m=re.exec(tb);var cell=m?m[1]:'?';var aside=a?a[1]:'';var want=aside===''?'$0':aside.replace(' left','');if(want!==cell)bad.push([p.id,l.id,aside,cell]);});state.activeId=hold;});return {n:n,bad:bad};})())"));
+  t('every demo budget line: phone row left and desktop Remaining are the same number',all.n>=16&&all.bad.length===0,JSON.stringify(all.bad.slice(0,3)));
+  /* one helper */
+  t('one helper: phone rows, desktop Remaining, cell refresh, Money card and house line all read budgetLeft',['moneyLineRowHTML','budgetTableHTML','bgtRefreshRow','budgetCardHTML','houseMoneyLine'].every(f=>$("String("+f+")").indexOf('budgetLeft(')>=0)&&$("String(moneyLineRowHTML)").indexOf('r.projected')<0&&$("String(costLineRollup)").indexOf('budgetLeft(')>=0&&$("String(costSummary)").indexOf('budgetLeft(')>=0);
+  t('projected stays on Projected, Tracking, vs budget and the CSV',$("String(renderJobCost)").indexOf('r.projected-r.budget')>=0&&$("String(jobCostCsv)").indexOf('r.projected-r.budget')>=0&&$("String(budgetCardHTML)").indexOf('cs.projected-cs.budget')>=0&&$("String(moneyTotHTML)").indexOf('cs.budget-cs.projected')>=0);
+  t('no new words: the labels are the ones already there',SRC.indexOf('<span>${budgetOver(cs)?\'Over budget\':\'Remaining\'}</span>')>=0&&SRC.indexOf('<th class="n u-m26">Remaining</th>')>=0);
+})();
+
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');
 if(failures.length){
