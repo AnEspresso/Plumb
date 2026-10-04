@@ -3225,7 +3225,7 @@ await (async function(){
     toast=function(m){__ap.toasts.push(m);__ap.o.toast(m);};
     const p=JSON.parse(JSON.stringify(state.projects.find(x=>x.id==='p2')||state.projects[0]));
     p.id='apv1';delete p.sample;p.members={uH:'client'};
-    p.selections=[{id:901,item:'Sim live fireplace',cat:'Mechanical',room:'Great room',price:2200,status:'selected',approved:false}];
+    p.selections=[{id:901,item:'Sim live fireplace',cat:'Mechanical',room:'Great room',price:2200,status:'selected',approved:false},{id:902,item:'Sim live tile',cat:'Flooring',room:'Kitchen',price:400,status:'selected',approved:false}];
     state.projects.push(p);state.session={role:'client',site:'apv1',auth:{uid:'uH'}};
     const sel={set:(d,o)=>{__ap.writes.push({d:JSON.parse(JSON.stringify(d)),o:o});return new Promise((res,rej)=>{__ap.pend={res:res,rej:rej};});}};
     Sync.db={collection:c=>({doc:sid=>({collection:sub=>({doc:id=>{__ap.path=c+'/'+sid+'/'+sub+'/'+id;return sel;}})})})};
@@ -3239,6 +3239,7 @@ await (async function(){
   /* accepted */
   $("window.__apP=clientSignoff(901);true");await tick();
   t('accepted: the button says Saving… and is disabled while the server answers',btn()==='Saving…|disabled',btn());
+  t('saving style: the disabled homeowner button is faded and grey, from tokens (Ink)',SRC.indexOf('.cl-sign:disabled{opacity:.5;border-color:var(--ink-3);color:var(--ink-3);')>=0&&$("getComputedStyle(document.querySelector('#clsel-901 .cl-sign')).opacity")==='0.5',$("getComputedStyle(document.querySelector('#clsel-901 .cl-sign')).opacity"));
   t('accepted: nothing is approved here and no toast before the server answers',rec().approved===false&&$("__ap.toasts.length")===0,JSON.stringify(rec())+' '+$("JSON.stringify(__ap.toasts)"));
   const w0=JSON.parse($("JSON.stringify(__ap.writes[0]||null)"));
   t('accepted: one write to sites/apv1/sel/901',$("__ap.writes.length")===1&&$("__ap.path")==='sites/apv1/sel/901',$("__ap.path"));
@@ -3251,7 +3252,7 @@ await (async function(){
   t('accepted: then the existing toast',$("__ap.toasts[__ap.toasts.length-1]")==='Approved. Thank you.',$("JSON.stringify(__ap.toasts)"));
   t('accepted: the card shows ✓ Approved',btn()==='✓ Approved',btn());
   t('accepted: the record is marked synced, so it is not sent again',$("(Sync._shadow.apv1&&Sync._shadow.apv1.colls.sel||{})['901']")===$("_syncHash(JSON.stringify(state.projects.find(x=>x.id==='apv1').selections[0]))"));
-  t('accepted: nothing else is queued for the house',$("diffSiteOps(Object.assign({},Sync._shadow.apv1,{meta:_syncHash(JSON.stringify(metaOf(state.projects.find(x=>x.id==='apv1'))))}),state.projects.find(x=>x.id==='apv1')).filter(o=>o.sub==='sel').length")===0);
+  t('accepted: the approved record is not queued again',$("diffSiteOps(Object.assign({},Sync._shadow.apv1,{meta:_syncHash(JSON.stringify(metaOf(state.projects.find(x=>x.id==='apv1'))))}),state.projects.find(x=>x.id==='apv1')).filter(o=>o.sub==='sel'&&o.id==='901').length")===0);
 
   /* refused: taking the OK back is denied */
   $("__ap.toasts=[];window.__apP=clientSignoff(901);true");await tick();
@@ -3259,7 +3260,7 @@ await (async function(){
   t('refused: the write takes the OK back (approved false, signed null)',$("JSON.stringify(__ap.writes[1].d.data)")==='{"approved":false,"signed":null}',$("JSON.stringify(__ap.writes[1].d.data)"));
   $("__ap.pend.rej({code:'permission-denied',message:'Missing or insufficient permissions.'})");await $("__apP");await tick();
   t('refused: nothing changes here',rec().approved===true&&!!rec().signed,JSON.stringify(rec()));
-  t('refused: the new toast',$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Couldn\u2019t save. Your builder\u2019s house didn\u2019t accept it. Ask your builder to check your access.']),$("JSON.stringify(__ap.toasts)"));
+  t('refused: the new toast',$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Not approved yet. Ask your builder to check your access.']),$("JSON.stringify(__ap.toasts)"));
   t('refused: the error is logged as a rules refusal',$("(function(){var a=JSON.parse(localStorage.getItem('plumb.errors')||'[]');return !!a[0]&&a[0].k==='rules'&&a[0].w==='clientSignoff'&&a[0].m.indexOf('permission-denied')>=0;})()"));
   t('refused: the card is back to ✓ Approved and tappable',btn()==='✓ Approved',btn());
 
@@ -3268,13 +3269,30 @@ await (async function(){
   $("__ap.pend.rej({code:'unavailable',message:'offline'})");await $("__apP");await tick();
   t('other error: nothing changes and the signal toast shows',rec().approved===true&&$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Could not save \u2014 try again with a bar of signal']),$("JSON.stringify(__ap.toasts)"));
 
+  /* Ink: re-renders keep the list where the homeowner is. jsdom has no layout,
+     so scrollTop is a plain value and scrollIntoView (the deep-link focus
+     re-centre) is stubbed to jump to 999 and count. */
+  $(`(function(){const b=document.getElementById('clBody');let y=0;Object.defineProperty(b,'scrollTop',{configurable:true,get:()=>y,set:v=>{y=v;}});
+    window.__apSIV=Element.prototype.scrollIntoView;window.__apJumps=0;Element.prototype.scrollIntoView=function(){__apJumps++;b.scrollTop=999;};
+    _clientFocusSel='901';b.scrollTop=200;__ap.toasts=[];return true;})()`);
+  const st=()=>$("document.getElementById('clBody').scrollTop");
+  $("window.__apP=clientSignoff(902);true");await tick();
+  t('scroll: the Saving render stays put (no jump back to a deep-linked card)',st()===200&&$("__apJumps")===0&&$("_clientFocusSel")===null,st()+' jumps='+$("__apJumps"));
+  $("__ap.pend.res()");await $("__apP");await tick();
+  t('scroll: the accepted render stays put',st()===200&&$("__apJumps")===0&&$("state.projects.find(x=>x.id==='apv1').selections[1].approved")===true,st());
+  $("document.getElementById('clBody').scrollTop=150;_clientFocusSel='901';window.__apP=clientSignoff(902);true");await tick();
+  $("__ap.pend.rej({code:'permission-denied'})");await $("__apP");await tick();
+  t('scroll: the refused render stays put',st()===150&&$("__apJumps")===0,st());
+
   /* offline */
+  $("document.getElementById('clBody').scrollTop=120;_clientFocusSel='901';true");
   $("__ap.toasts=[];Object.defineProperty(navigator,'onLine',{configurable:true,get:function(){return false;}});true");
   const nW=$("__ap.writes.length");
   await $("clientSignoff(901)");await tick();
   t('offline: no write, nothing changes, the signal toast shows',$("__ap.writes.length")===nW&&rec().approved===true&&$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Could not save \u2014 try again with a bar of signal']),$("JSON.stringify(__ap.toasts)"));
   t('offline: the card is not stuck on Saving…',btn()==='✓ Approved',btn());
-  $("delete navigator.onLine;true");
+  t('scroll: offline does not move the list',st()===120&&$("__apJumps")===0,st());
+  $("delete navigator.onLine;Element.prototype.scrollIntoView=__apSIV;delete document.getElementById('clBody').scrollTop;_clientFocusSel=null;true");
 
   /* sample house in a live account: the local path, no write */
   $("__ap.toasts=[];state.session={role:'client',site:'p2',auth:{uid:'uH'}};renderClient();true");
@@ -3288,7 +3306,7 @@ await (async function(){
   const nW3=$("__ap.writes.length");
   $("clientSignoff(901)");
   t('demo: the local path, no server write',rec().approved===false&&$("__ap.writes.length")===nW3&&$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Final OK removed']));
-  t('wording: the refused string has curly apostrophes and Saving… is reused',SRC.indexOf('Couldn\\u2019t save. Your builder\\u2019s house didn\\u2019t accept it. Ask your builder to check your access.')>=0&&SRC.indexOf("disabled aria-busy=\"true\">Saving…</button>")>=0);
+  t('wording: Agency\u2019s refused string and Saving… is reused',SRC.indexOf("toast(denied?'Not approved yet. Ask your builder to check your access.':SIGNAL)")>=0&&SRC.indexOf("disabled aria-busy=\"true\">Saving…</button>")>=0);
 
   /* clean up */
   $(`(function(){const o=__ap.o;toast=o.toast;appMode=o.am;Object.assign(Sync,{on:o.on,mode:o.mode,db:o.db,deviceId:o.dev,_shadow:o.sh,_sitesPulled:o.pulled});

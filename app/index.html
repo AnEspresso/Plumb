@@ -911,6 +911,7 @@
   .cl-dec .price.up{color:var(--oak);}.cl-dec .price.cr{color:var(--sage);}
   .cl-sign{flex:0 0 auto;border:1px solid var(--oak);background:transparent;color:var(--oak);border-radius:var(--r-sm);padding:var(--s-2) var(--s-3);font-family:inherit;font-size:var(--t-xs);font-weight:700;cursor:pointer;white-space:nowrap;}
   .cl-sign:active{transform:scale(.97);}
+  .cl-sign:disabled{opacity:.5;border-color:var(--ink-3);color:var(--ink-3);cursor:default;transform:none;}
   .cl-info{font-size:var(--t-xs);color:var(--ink-3);flex:0 0 auto;font-weight:600;}
   .approve-ro{flex:0 0 auto;display:flex;align-items:center;gap:5px;font-size:var(--t-xs);font-weight:700;padding:var(--s-2) var(--s-2);border-radius:var(--r-sm);white-space:nowrap;}
   .approve-ro.on{color:var(--sage);background:rgba(122,132,94,.12);}
@@ -13391,26 +13392,30 @@ function clientAllowanceLine(s,p){
    refusal or a dropped connection changes nothing here and says so. Practice
    houses stay local. No timeout: a queued write can still land later. */
 const _clSignBusy={};
+/* Re-render the homeowner list where the homeowner is looking. A deep link's
+   focus (_clientFocusSel) re-centred the list on every render, so approving
+   another card jumped back to it; once they act on the list, it is done. */
+function _clRenderKeep(){const b=document.getElementById('clBody');const y=b?b.scrollTop:0;_clientFocusSel=null;renderClient();if(b)b.scrollTop=y;}
 async function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
   if(s.status==='pending'){toast('Your builder is still preparing this option');return;}
   const now=!s.approved;const patch={approved:now,signed:now?{date:todayStr(),by:(p.buyers&&p.buyers.length?p.buyers:['Homeowner'])}:null};
   if(appMode()!=='real'||p.sample){Data.updateSelection(id,patch,p.id);logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
-    renderClient();toast(now?'Approved. Thank you.':'Final OK removed');return;}
+    _clRenderKeep();toast(now?'Approved. Thank you.':'Final OK removed');return;}
   const key=p.id+':'+id;if(_clSignBusy[key])return;
   const SIGNAL='Could not save \u2014 try again with a bar of signal';
   if((typeof navigator!=='undefined'&&navigator.onLine===false)||typeof Sync==='undefined'||!Sync.ready()||Sync.mode!=='live'){toast(SIGNAL);return;}
-  _clSignBusy[key]=true;renderClient();
+  _clSignBusy[key]=true;_clRenderKeep();
   try{await Sync.db.collection('sites').doc(String(p.id)).collection('sel').doc(String(id))
       .set({data:{approved:patch.approved,signed:patch.signed},updatedAt:Date.now(),updatedBy:Sync.deviceId},{merge:true});}
   catch(e){delete _clSignBusy[key];const denied=!!(e&&e.code==='permission-denied');
     trapError(denied?'rules':'caught','Approve write '+(denied?'refused':'failed')+': '+String((e&&(e.code||e.message))||'').slice(0,100),'clientSignoff');
-    renderClient();toast(denied?'Couldn\u2019t save. Your builder\u2019s house didn\u2019t accept it. Ask your builder to check your access.':SIGNAL);return;}
+    _clRenderKeep();toast(denied?'Not approved yet. Ask your builder to check your access.':SIGNAL);return;}
   delete _clSignBusy[key];
   const rec=Data.updateSelection(id,patch,p.id);
   try{const sh=Sync._shadow[String(p.id)]||(Sync._shadow[String(p.id)]={meta:'',colls:{}});sh.colls=sh.colls||{};
     if(rec)(sh.colls.sel||(sh.colls.sel={}))[String(id)]=_syncHash(JSON.stringify(rec));Sync._saveBase();}catch(e){}
   logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
-  renderClient();toast(now?'Approved. Thank you.':'Final OK removed');}
+  _clRenderKeep();toast(now?'Approved. Thank you.':'Final OK removed');}
 /* raise a concern */
 let concernPhotoId=null;
 function openConcern(){concernPhotoId=null;document.getElementById('cNote').value='';
