@@ -3957,7 +3957,7 @@ const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791143252924;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1791144100628;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.461.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
@@ -4206,7 +4206,7 @@ function sampleState(){
           {id:4,room:'Kitchen',cat:'Appliances',item:'42" panel-ready package',status:'ordered',approved:true,price:0,spec:{models:'KitchenAid 42" package',utils:'Gas range, 240v double oven',panel:'Panel-ready fridge + DW'}},
           {id:5,room:'Primary Bath',cat:'Tile',item:'Marble hex',status:'ordered',approved:true,price:600,invoicedIn:'inv_p2_1',spec:{pattern:'Hex, straight set',grout:'Warm gray'}},
           {id:6,room:'Whole House',cat:'Plumbing Fixtures',item:'Brushed brass / matte black',status:'ordered',approved:true,price:850,invoicedIn:'inv_p2_1',note:'Rough-in dimensions being confirmed on site',spec:{finish:'Brushed brass / matte black',height:'Standard'}},
-          {id:7,room:'Whole House',cat:'Lighting & Electrical',item:'Fixture schedule',status:'selected',approved:false,note:'Awaiting homeowner sign-off on dining pendant + switch placement',spec:{locations:'Per lighting plan rev B'},price:0},
+          {id:7,room:'Whole House',cat:'Lighting & Electrical',item:'Fixture schedule',status:'selected',approved:false,note:'Waiting for the homeowner to approve the dining pendant and switch placement',spec:{locations:'Per lighting plan rev B'},price:0},
           {id:8,room:'Main Floor',cat:'Trim & Millwork',item:'Crown moulding — main floor',status:'ordered',approved:true,price:1500,invoicedIn:'inv_p2_1',spec:{profile:'3-piece crown',finish:'Painted to match trim'}},
           {id:9,room:'Bedrooms',cat:'Flooring',item:'Carpet in bedrooms (credit vs. hardwood)',status:'selected',approved:true,price:-700,spec:{direction:'N/A (carpet)'}},
           {id:10,room:'Great Room',cat:'Mechanical (HVAC / Fireplace)',item:'Direct-vent linear fireplace',status:'selected',approved:false,price:2200,note:'Thermostat locations + fireplace framing TBD before HVAC rough',spec:{surround:'Drywall flush, no mantel',zoning:'2-zone'}}
@@ -8772,11 +8772,13 @@ function houseMoneyLine(p){
     const paid=Number(b.paid)||0;
     const left=Math.max(0,Number(b.out)||0);
     if(contract>0.005||paid>0.005)
-      return 'Paid\u00a0'+invUsd(paid)+' of\u00a0'+invUsd(contract)+' · owed\u00a0'+invUsd(left);
+      /* Nowrap pieces joined by plain spaces; the dot ends the piece before it,
+         so a wrapped line never starts with "· owed" (Ink 10/4). */
+      return 'Paid\u00a0'+invUsd(paid)+' of\u00a0'+invUsd(contract)+'\u00a0· owed\u00a0'+invUsd(left);
     const cs=costSummary(p);
     if((Number(cs.budget)||0)>0.005)
       /* On budget only when exactly on; otherwise Under budget · {x} left (Agency 10/4) */
-      {const lf=budgetLeft(cs);return budgetOver(cs)?'Over budget · '+invUsd(-lf)+' over':Math.abs(lf)<=0.005?'On budget':'Under budget · '+invUsd(lf)+' left';}
+      {const lf=budgetLeft(cs);return budgetOver(cs)?'Over\u00a0budget\u00a0· '+invUsd(-lf)+'\u00a0over':Math.abs(lf)<=0.005?'On budget':'Under\u00a0budget\u00a0· '+invUsd(lf)+'\u00a0left';}
   }catch(e){}
   return 'No money on this house yet';
 }
@@ -10914,7 +10916,7 @@ function billingCardHTML(p){
   const pct=b.net>0?Math.min(100,Math.round(b.paid/b.net*100)):0;
   return `<div class="overall bgt-tap" onclick="openInvoices()">
       <div class="bgt-cardgrid">
-        <div><b>${invUsd(b.out)}</b><span>Still owed</span></div>
+        ${b.out<-0.005?`<div><b>${invUsd(-b.out)}</b><span>Homeowner’s credit</span></div>`:`<div><b>${invUsd(b.out)}</b><span>Still owed</span></div>`}
         <div><b class="${okN?'ov':''}">${okN}</b><span>Not approved yet</span></div>
         <div><b>${invUsd(b.billed)}</b><span>Invoiced</span></div>
         <div><b>${invUsd(b.paid)}</b><span>Paid</span></div>
@@ -11004,12 +11006,19 @@ function moneyLineRowHTML(l,r){
      sub line shows what it is measured against (spoken for, of budget), so
      the row adds up. */
   const left=budgetLeft(r);const over=budgetOver(r);
+  /* Agency 10/4: {x} used of {budget} · {y} left. When the projection is over
+     budget but what is used is still under, the row adds projected {z} over in
+     clay. Measured at 390 (2.461.0): with {y} left as well, that row runs past
+     two lines for a realistic name, so those rows drop the left part. Nowrap
+     pieces, and each dot ends the piece before it. */
+  const projOver=!over&&r.projected-r.budget>0.005;
+  const used='<span class="ws-nw">'+invUsd(r.exposure)+' used of '+invUsd(r.budget)+(projOver?'\u00a0·':'')+'</span>';
   const aside=over
     ?'<div class="row-aside warn">'+invUsd(-left)+' over</div>'
-    :(left>0.005?'<div class="row-aside">'+invUsd(left)+' left</div>':'');
+    :(!projOver&&left>0.005?'<div class="row-aside">'+invUsd(left)+' left</div>':'');
   return '<div class="row row-tap" onclick="openCostLine(\''+String(l.id).replace(/'/g,'')+'\')">'
     +'<div class="row-main"><div class="row-title">'+esc(l.label||'')+'</div>'
-    +'<div class="row-sub">'+invUsd(r.exposure)+' of '+invUsd(r.budget)+'</div>'
+    +'<div class="row-sub">'+used+(projOver?' <span class="ws-nw c-clay mn-proj">projected '+invUsd(r.projected-r.budget)+' over</span>':'')+'</div>'
     +(al.n?'<div class="row-sub mn-allow">Allowances: '+invUsd(al.used)+' of '+invUsd(al.allowance)+' used</div>':'')+'</div>'
     +aside
     +'<span class="row-chev">&rsaquo;</span></div>';
@@ -13971,7 +13980,7 @@ function selTimeline(s){
 }
 function setSelStatus(id,st){const s=P().selections.find(x=>x.id===id);if(!s)return;
   if(st==='installed'&&!selCanInstall(s)){
-    toast(!s.approved?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'Crew has not confirmed these instructions \u2014 can\u2019t mark Installed');return;}
+    toast(!s.approved?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'The crew hasn\u2019t confirmed these instructions yet, so it can\u2019t be marked Installed.');return;}
   Data.updateSelection(id,{status:st});logEvent('selectionStatus',(s.item||'')+' → '+st);renderSelections();toast((s.item||'Selection')+': '+SEL_LABEL[st]);}
 function selTimelineRO(s){
   const cur=SEL_STATUS.indexOf(s.status);const lastI=SEL_STATUS.length-1;
@@ -13985,7 +13994,7 @@ function selTimelineRO(s){
 let _selFilter=null;
 function selIdx(st){const i=SEL_STATUS.indexOf(st);return i<0?0:i;}
 function selMatchesFilter(s){if(!_selFilter)return true;const k={selected:1,ordered:2,delivered:3,installed:4}[_selFilter];if(k!=null)return selIdx(s.status)>=k;if(_selFilter==='pending')return selIdx(s.status)<1;if(_selFilter==='awaiting')return selIdx(s.status)>=1&&!s.approved;return true;}
-const SEL_FILTER_LABELS={selected:'Selected or later',ordered:'Ordered or later',delivered:'Delivered or later',installed:'Installed',pending:'Pending selection',awaiting:'Awaiting sign-off'};
+const SEL_FILTER_LABELS={selected:'Selected or later',ordered:'Ordered or later',delivered:'Delivered or later',installed:'Installed',pending:'Pending selection',awaiting:'Waiting approval'};
 function setSelFilter(f){_selFilter=(_selFilter===f?null:f);renderSelections();}
 function renderSelections(){
   const sels=(P().selections||[]);
@@ -14193,7 +14202,7 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   if(status==='installed'){
     const existing=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
     if(!selCanInstall(existing)){
-      toast((!existing||!existing.approved)?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'Crew has not confirmed these instructions \u2014 can\u2019t mark Installed');return;}
+      toast((!existing||!existing.approved)?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'The crew hasn\u2019t confirmed these instructions yet, so it can\u2019t be marked Installed.');return;}
   }
   if(editingSelId!=null){Data.updateSelection(editingSelId,Object.assign({room:room||'—',cat,item,note,price,status},money||{}));logEvent('selectionEdit',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection updated');}
   else{/* R-1 PR 3: never reuse an id an invoice still names (allowances bill by selId) */
@@ -18649,7 +18658,7 @@ function renderDecisions(){
       </div></div>`).join('');
   if(awaiting.length)h+='<div class="sec"><h2>Waiting for the homeowner to approve</h2></div>'+awaiting.map(s=>`
     <div class="sel-row"><div class="si" onclick="openEditSel(${s.id})"><div class="it">${esc(s.item||'(unspecified)')}</div>
-      <div class="ct">${esc(s.cat||'Other')}${s.room?' \u00b7 '+esc(s.room):''}</div></div><span class="approve-ro off">Awaiting</span></div>`).join('');
+      <div class="ct">${esc(s.cat||'Other')}${s.room?' \u00b7 '+esc(s.room):''}</div></div><span class="approve-ro off">Waiting</span></div>`).join('');
   if(pendingCats.length)h+='<div class="sec"><h2>Selections not yet made</h2></div>'+pendingCats.map(c=>`<div class="sel-empty-row" onclick="openAddSel('${String(c).replace(/'/g,"\\'")}')"><span>${esc(c)}</span><span class="addlink">\uff0b Choose</span></div>`).join('');
   el.innerHTML=h||'<div class="empty">Nothing waiting \u2014 this house\'s caught up.</div>';}
 function filterIssues(f,el){issueFilter=f;document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderIssues();}
