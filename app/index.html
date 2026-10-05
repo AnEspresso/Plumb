@@ -3957,7 +3957,7 @@ const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791144100628;          /* build number (epoch ms), AnEspresso-style */
+const APP_VERSION=1791144976366;          /* build number (epoch ms), AnEspresso-style */
 const SW_CACHE_EXPECTED='plumb-v2.461.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
@@ -11008,14 +11008,13 @@ function moneyLineRowHTML(l,r){
   const left=budgetLeft(r);const over=budgetOver(r);
   /* Agency 10/4: {x} used of {budget} · {y} left. When the projection is over
      budget but what is used is still under, the row adds projected {z} over in
-     clay. Measured at 390 (2.461.0): with {y} left as well, that row runs past
-     two lines for a realistic name, so those rows drop the left part. Nowrap
-     pieces, and each dot ends the piece before it. */
+     clay, and keeps {y} left in the aside like every other row (Agency 10/4).
+     Nowrap pieces, and each dot ends the piece before it. */
   const projOver=!over&&r.projected-r.budget>0.005;
   const used='<span class="ws-nw">'+invUsd(r.exposure)+' used of '+invUsd(r.budget)+(projOver?'\u00a0·':'')+'</span>';
   const aside=over
     ?'<div class="row-aside warn">'+invUsd(-left)+' over</div>'
-    :(!projOver&&left>0.005?'<div class="row-aside">'+invUsd(left)+' left</div>':'');
+    :(left>0.005?'<div class="row-aside">'+invUsd(left)+' left</div>':'');
   return '<div class="row row-tap" onclick="openCostLine(\''+String(l.id).replace(/'/g,'')+'\')">'
     +'<div class="row-main"><div class="row-title">'+esc(l.label||'')+'</div>'
     +'<div class="row-sub">'+used+(projOver?' <span class="ws-nw c-clay mn-proj">projected '+invUsd(r.projected-r.budget)+' over</span>':'')+'</div>'

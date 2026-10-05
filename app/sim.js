@@ -3606,7 +3606,7 @@ S('budget-left');
   const nx=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'}]);
   t('no projection set: the phone row shows what is left (it used to show nothing)',nx.projected===1000&&nx.aside==='$400 left',JSON.stringify([nx.projected,nx.aside]));
   /* every demo line on every house: phone row and desktop agree */
-  const all=JSON.parse($("JSON.stringify((function(){var bad=[],n=0;state.projects.forEach(function(p){var hold=state.activeId;state.activeId=p.id;var tb=budgetTableHTML(p);costLines(p).forEach(function(l){n++;var r=costLineRollup(p,l.id);var row=moneyLineRowHTML(l,r);var a=/row-aside[^\"]*\">([^<]*)</.exec(row);var re=new RegExp('id=\"bgtL-'+String(l.id).replace(/[^\\w-]/g,'')+'\">([^<]*)<');var m=re.exec(tb);var cell=m?m[1]:'?';var aside=a?a[1]:'';var po=row.indexOf('mn-proj')>=0;var want=po?invUsd(budgetLeft(r)):(aside===''?'$0':aside.replace(' left',''));if(want!==cell)bad.push([p.id,l.id,aside,cell]);});state.activeId=hold;});return {n:n,bad:bad};})())"));
+  const all=JSON.parse($("JSON.stringify((function(){var bad=[],n=0;state.projects.forEach(function(p){var hold=state.activeId;state.activeId=p.id;var tb=budgetTableHTML(p);costLines(p).forEach(function(l){n++;var r=costLineRollup(p,l.id);var row=moneyLineRowHTML(l,r);var a=/row-aside[^\"]*\">([^<]*)</.exec(row);var re=new RegExp('id=\"bgtL-'+String(l.id).replace(/[^\\w-]/g,'')+'\">([^<]*)<');var m=re.exec(tb);var cell=m?m[1]:'?';var aside=a?a[1]:'';var want=aside===''?'$0':aside.replace(' left','');if(want!==cell)bad.push([p.id,l.id,aside,cell]);});state.activeId=hold;});return {n:n,bad:bad};})())"));
   t('every demo budget line: phone row left and desktop Remaining are the same number',all.n>=16&&all.bad.length===0,JSON.stringify(all.bad.slice(0,3)));
   /* one helper */
   t('one helper: phone rows, desktop Remaining, cell refresh, Money card and house line all read budgetLeft',['moneyLineRowHTML','budgetTableHTML','bgtRefreshRow','budgetCardHTML','houseMoneyLine'].every(f=>$("String("+f+")").indexOf('budgetLeft(')>=0)&&$("String(moneyLineRowHTML)").indexOf('r.budget-r.projected')<0&&$("String(costLineRollup)").indexOf('budgetLeft(')>=0&&$("String(costSummary)").indexOf('budgetLeft(')>=0);
@@ -3625,12 +3625,13 @@ S('budget-left-words');
   /* (a) used of */
   const a=R([line(1000),C(600)]);
   t('(a) phone row: {x} used of {budget} · {y} left',a.sub==='$600 used of $1,000'&&a.aside==='$400 left'&&a.pieces===1,JSON.stringify(a));
-  /* (b) projected over budget, used still under: left dropped (measured: 3+ lines at 390 with it) */
+  /* (b) projected over budget, used still under: projected {z} over on the money line, {y} left in the aside like every row (Agency 10/4) */
   const b=R([line(1000,{expect:1300}),C(600)]);
-  t('(b) projection over, used under: {x} used of {budget} · projected {z} over, in clay, no left',b.sub==='$600 used of $1,000\u00a0· projected $300 over'&&b.aside===''&&b.clay&&b.pieces===2&&b.sub.indexOf('left')<0,JSON.stringify(b));
+  t('(b) projection over, used under: {x} used of {budget} · projected {z} over in clay, and the normal {y} left aside',b.sub==='$600 used of $1,000\u00a0· projected $300 over'&&b.aside==='$400 left'&&!b.warn&&b.clay&&b.pieces===2&&b.sub.indexOf('left')<0,JSON.stringify(b));
+  t('(b) the aside is the plain left, never a combined form',b.aside.indexOf('projected')<0&&b.aside.indexOf('·')<0);
   t('(b) each money amount sits inside a nowrap piece and the dot ends the first piece',/<span class="ws-nw">\$600 used of \$1,000(?:\u00a0|&nbsp;)·<\/span> <span class="ws-nw c-clay mn-proj">projected \$300 over<\/span>/.test(b.html),b.html);
   const be=R([line(1000,{expect:1250}),C(1000)]);
-  t('(b) exactly at budget with a projection over: projected {z} over',be.sub==='$1,000 used of $1,000\u00a0· projected $250 over'&&be.aside==='',JSON.stringify(be));
+  t('(b) exactly at budget with a projection over: projected {z} over, no left (nothing left, as on every row)',be.sub==='$1,000 used of $1,000\u00a0· projected $250 over'&&be.aside==='',JSON.stringify(be));
   const bo=R([line(1000,{expect:1500}),C(1200)]);
   t('(b) a line actually over keeps its over display, no projected part',bo.aside==='$200 over'&&bo.warn&&bo.sub==='$1,200 used of $1,000'&&bo.html.indexOf('projected')<0,JSON.stringify(bo));
   const bu=R([line(1000,{expect:800}),C(600)]);
