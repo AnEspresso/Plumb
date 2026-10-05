@@ -117,6 +117,14 @@ function signPlumb(d, site, nSigned, tamper) {
     updatedByUid: U.client, members: SO_MEMBERS, memberUids: Object.keys(SO_MEMBERS) }, extra), { merge: true });
 }
 
+/* F-2 R: an invoice (sites/{id}/inv/{invId}) and a selection's money
+   (sites/{id}/selm/{selId}, doc id = the selection id), written the way the
+   app writes a record ({data, updatedAt, updatedBy}). */
+const INV_DOC = (over) => ({ data: Object.assign({ id: 'inv_r1', num: 3, status: 'sent', amount: 18500,
+  lines: [{ label: 'Draw 3: framing', amount: 18500 }] }, over || {}), updatedAt: 1, updatedBy: 'dev-builder' });
+const SELM_DOC = (over) => ({ data: Object.assign({ selId: 's9a', price: 850, allowance: 1200, cost: 640,
+  costLineId: 'cl_plumb_fix', invoicedIn: 'inv_r1' }, over || {}), updatedAt: 1, updatedBy: 'dev-builder' });
+
 const results = [];
 let testEnv;
 
@@ -166,6 +174,21 @@ async function seed() {
     });
     for (const c of ['items', 'sel', 'logs', 'pmts', 'mail', 'costs'])
       await setDoc(doc(db, `sites/liveA/${c}/r1`), { seeded: true, note: c });
+    // F-2 R: an invoice and a selection's money, in their own collections
+    await setDoc(doc(db, 'sites/liveA/inv/inv_r1'), INV_DOC());
+    await setDoc(doc(db, 'sites/liveA/selm/s9a'), SELM_DOC());
+    // F-2 R: the second builder is on the roster without the money gate
+    // (liveGate) and with moneyJob (liveGateJ); the owner has no roster entry.
+    for (const [id, info] of [['liveGate', { name: 'Pat PM', rpRole: 'pm' }],
+                              ['liveGateJ', { name: 'Pat PM', rpRole: 'pm', gates: { moneyJob: true } }]]) {
+      await setDoc(doc(db, `sites/${id}`), { mode: 'live', street: id,
+        members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.client]: 'client' },
+        memberUids: [U.builder, U.builder2, U.client],
+        meta: { memberInfo: { [U.builder2]: info } } });
+      await setDoc(doc(db, `sites/${id}/costs/r1`), { seeded: true });
+      await setDoc(doc(db, `sites/${id}/inv/inv_r1`), INV_DOC());
+      await setDoc(doc(db, `sites/${id}/selm/s9a`), SELM_DOC());
+    }
     // PR 0: realistic selections, written the way the app writes a record
     for (const id of SEL_IDS) await setDoc(doc(db, `sites/liveA/sel/${id}`), selDoc());
     // House-doc sign-off houses: 6 and all 29 trades signed by the builder
@@ -408,6 +431,59 @@ async function main() {
   await INV('costs: stranger DENIED everything', getDoc(doc(db.stranger, 'sites/liveA/costs/r1')), false);
   await INV('costs: sub DENIED read (margin privacy)', getDoc(doc(db.sub, 'sites/liveA/costs/r1')), false);
   await INV('costs: client DENIED read', getDoc(doc(db.client, 'sites/liveA/costs/r1')), false);
+
+  /* Costs follow the money gate: a builder on the roster without it is
+     refused, the same builder with moneyJob gets in. */
+  await INV('costs: builder without the money gate DENIED read', getDoc(doc(db.builder2, 'sites/liveGate/costs/r1')), false);
+  await INV('costs: builder without the money gate DENIED write', setDoc(doc(db.builder2, 'sites/liveGate/costs/c2'), { x: 1 }), false);
+  await INV('costs: builder with moneyJob reads', getDoc(doc(db.builder2, 'sites/liveGateJ/costs/r1')), true);
+
+  /* ══════════ F-2 R: INVOICES (inv) and SELECTION MONEY (selm) ══════════
+     Additive: new collections only. The house doc and sel are untouched here
+     (R2 refuses meta.invoices and money on sel, and adds the homeowner's
+     invoice approve). Read: builder with moneyOk() or the homeowner. Write:
+     builder with moneyOk() only. */
+  for (const [c, id, mk] of [['inv', 'inv_r1', INV_DOC], ['selm', 's9a', SELM_DOC]]) {
+    const at = (d, site, docId) => doc(d, `sites/${site}/${c}/${docId || id}`);
+    // builder who passes moneyOk(): full create / read / update / delete
+    await INV(`${c}: builder (owner) reads`, getDoc(at(db.builder, 'liveA')), true);
+    await INV(`${c}: builder (owner) lists`, getDocs(collection(db.builder, `sites/liveA/${c}`)), true);
+    await INV(`${c}: builder (owner) creates`, setDoc(at(db.builder, 'liveA', 'n1'), mk({ id: 'n1' })), true);
+    await INV(`${c}: builder (owner) updates`, updateDoc(at(db.builder, 'liveA', 'n1'), { 'data.amount': 1, updatedAt: 2 }), true);
+    await INV(`${c}: builder (owner) deletes`, deleteDoc(at(db.builder, 'liveA', 'n1')), true);
+    await INV(`${c}: builder with moneyJob reads`, getDoc(at(db.builder2, 'liveGateJ')), true);
+    await INV(`${c}: builder with moneyJob creates`, setDoc(at(db.builder2, 'liveGateJ', 'n2'), mk()), true);
+    await INV(`${c}: builder with moneyJob updates`, updateDoc(at(db.builder2, 'liveGateJ', 'n2'), { updatedAt: 3 }), true);
+    await INV(`${c}: builder with moneyJob deletes`, deleteDoc(at(db.builder2, 'liveGateJ', 'n2')), true);
+    // builder on the roster without the money gate: refused, same as costs
+    await INV(`${c}: builder without the money gate DENIED read`, getDoc(at(db.builder2, 'liveGate')), false);
+    await INV(`${c}: builder without the money gate DENIED list`, getDocs(collection(db.builder2, `sites/liveGate/${c}`)), false);
+    await INV(`${c}: builder without the money gate DENIED create`, setDoc(at(db.builder2, 'liveGate', 'n3'), mk()), false);
+    await INV(`${c}: builder without the money gate DENIED update`, updateDoc(at(db.builder2, 'liveGate'), { updatedAt: 9 }), false);
+    await INV(`${c}: builder without the money gate DENIED delete`, deleteDoc(at(db.builder2, 'liveGate')), false);
+    // homeowner: reads, never writes (F-1 approve comes in R2)
+    await INV(`${c}: homeowner reads`, getDoc(at(db.client, 'liveA')), true);
+    await INV(`${c}: homeowner lists`, getDocs(collection(db.client, `sites/liveA/${c}`)), true);
+    await INV(`${c}: homeowner DENIED create`, setDoc(at(db.client, 'liveA', 'n4'), mk()), false);
+    await INV(`${c}: homeowner DENIED update`, updateDoc(at(db.client, 'liveA'), { 'data.status': 'approved', updatedAt: 9 }), false);
+    await INV(`${c}: homeowner DENIED delete`, deleteDoc(at(db.client, 'liveA')), false);
+    // crew: nothing
+    await INV(`${c}: crew DENIED read`, getDoc(at(db.sub, 'liveA')), false);
+    await INV(`${c}: crew DENIED list`, getDocs(collection(db.sub, `sites/liveA/${c}`)), false);
+    await INV(`${c}: crew DENIED create`, setDoc(at(db.sub, 'liveA', 'n5'), mk()), false);
+    await INV(`${c}: crew DENIED update`, updateDoc(at(db.sub, 'liveA'), { updatedAt: 9 }), false);
+    await INV(`${c}: crew DENIED delete`, deleteDoc(at(db.sub, 'liveA')), false);
+    // stranger, other builder, signed out
+    await INV(`${c}: stranger DENIED read`, getDoc(at(db.stranger, 'liveA')), false);
+    await INV(`${c}: stranger DENIED write`, setDoc(at(db.stranger, 'liveA', 'n6'), mk()), false);
+    await INV(`${c}: other house's builder DENIED read`, getDoc(at(db.otherBuilder, 'liveA')), false);
+    await INV(`${c}: other house's builder DENIED write`, setDoc(at(db.otherBuilder, 'liveA', 'n7'), mk()), false);
+    await INV(`${c}: unauth DENIED read`, getDoc(at(db.unauth, 'liveA')), false);
+  }
+  /* #40 stays stripped: a homeowner still cannot write invoices onto the house
+     doc (clientHouseOk has no invoices key). */
+  await INV_LOGIC('F-2 R: homeowner writing meta.invoices on the house - DENIED by the rule (no #40 allow)',
+    signPlumb(db.client, 'so29d', 29, m => { m.invoices = [{ id: 'inv_r1', status: 'approved', amount: 18500 }]; return {}; }));
 
   /* ══════════ BOOKINGS (a crew sees only its own) ══════════ */
   const bkQ = (d, site, name) => query(collection(d, `sites/${site}/bk`), where('data.subName', '==', name));
