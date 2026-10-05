@@ -198,7 +198,10 @@ service cloud.firestore {
             || sInfo().get('gates', {}).get('moneyCo', false) in [true, 1]
           );
         }
-        function moneyColl() { return recordColl in ['costs', 'mail']; }
+        /* F-2 R: inv (invoices, off the house doc) and selm (a selection's
+           money, doc id = the selection id) are money collections: only a
+           builder who passes moneyOk() creates, updates or deletes them. */
+        function moneyColl() { return recordColl in ['costs', 'mail', 'inv', 'selm']; }
         /* PR 0 (R-1 prep): a homeowner's selection write is an allowlist.
            The app writes a whole record as {data, updatedAt, updatedBy}. A
            homeowner Approves (data.approved + data.signed, clientSignoff) and
@@ -250,10 +253,15 @@ service cloud.firestore {
             && recNew().get('by', '') == rec().get('by', '');
         }
 
-        /* P2-4: records under a house that is not live are closed too. */
+        /* P2-4: records under a house that is not live are closed too.
+           F-2 R (additive): inv and selm are read by a builder who passes
+           moneyOk() and by the homeowner; crews and builders without the
+           money gate are refused. Homeowners get no write here (create and
+           update below never name inv or selm for a client). */
         allow read: if signedIn() && sScoped()
           && (recordColl == 'pmts' ? sMember() && sRole() != 'sub'
               : recordColl in ['mail','costs'] ? moneyOk()
+              : recordColl in ['inv','selm'] ? moneyOk() || sRole() == 'client'
               : recordColl == 'bk' && sRole() == 'sub' ? crewOwnBk()
               : sMember());
 
