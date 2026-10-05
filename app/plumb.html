@@ -3950,15 +3950,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.460.0 - Money words: builder language (Agency swaps); homeowner credit balance';
+const PLUMB_VERSION='2.461.0 - Budget left: one Remaining / left (budget minus contracted or paid, per contract)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791142497327;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.460.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791144976366;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.461.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4206,7 +4206,7 @@ function sampleState(){
           {id:4,room:'Kitchen',cat:'Appliances',item:'42" panel-ready package',status:'ordered',approved:true,price:0,spec:{models:'KitchenAid 42" package',utils:'Gas range, 240v double oven',panel:'Panel-ready fridge + DW'}},
           {id:5,room:'Primary Bath',cat:'Tile',item:'Marble hex',status:'ordered',approved:true,price:600,invoicedIn:'inv_p2_1',spec:{pattern:'Hex, straight set',grout:'Warm gray'}},
           {id:6,room:'Whole House',cat:'Plumbing Fixtures',item:'Brushed brass / matte black',status:'ordered',approved:true,price:850,invoicedIn:'inv_p2_1',note:'Rough-in dimensions being confirmed on site',spec:{finish:'Brushed brass / matte black',height:'Standard'}},
-          {id:7,room:'Whole House',cat:'Lighting & Electrical',item:'Fixture schedule',status:'selected',approved:false,note:'Awaiting homeowner sign-off on dining pendant + switch placement',spec:{locations:'Per lighting plan rev B'},price:0},
+          {id:7,room:'Whole House',cat:'Lighting & Electrical',item:'Fixture schedule',status:'selected',approved:false,note:'Waiting for the homeowner to approve the dining pendant and switch placement',spec:{locations:'Per lighting plan rev B'},price:0},
           {id:8,room:'Main Floor',cat:'Trim & Millwork',item:'Crown moulding — main floor',status:'ordered',approved:true,price:1500,invoicedIn:'inv_p2_1',spec:{profile:'3-piece crown',finish:'Painted to match trim'}},
           {id:9,room:'Bedrooms',cat:'Flooring',item:'Carpet in bedrooms (credit vs. hardwood)',status:'selected',approved:true,price:-700,spec:{direction:'N/A (carpet)'}},
           {id:10,room:'Great Room',cat:'Mechanical (HVAC / Fireplace)',item:'Direct-vent linear fireplace',status:'selected',approved:false,price:2200,note:'Thermostat locations + fireplace framing TBD before HVAC rough',spec:{surround:'Drywall flush, no mantel',zoning:'2-zone'}}
@@ -8772,11 +8772,13 @@ function houseMoneyLine(p){
     const paid=Number(b.paid)||0;
     const left=Math.max(0,Number(b.out)||0);
     if(contract>0.005||paid>0.005)
-      return 'Paid\u00a0'+invUsd(paid)+' of\u00a0'+invUsd(contract)+' · owed\u00a0'+invUsd(left);
+      /* Nowrap pieces joined by plain spaces; the dot ends the piece before it,
+         so a wrapped line never starts with "· owed" (Ink 10/4). */
+      return 'Paid\u00a0'+invUsd(paid)+' of\u00a0'+invUsd(contract)+'\u00a0· owed\u00a0'+invUsd(left);
     const cs=costSummary(p);
     if((Number(cs.budget)||0)>0.005)
       /* On budget only when exactly on; otherwise Under budget · {x} left (Agency 10/4) */
-      return cs.over?'Over budget · '+invUsd(Math.abs(cs.remaining))+' over':Math.abs(cs.remaining)<=0.005?'On budget':'Under budget · '+invUsd(cs.remaining)+' left';
+      {const lf=budgetLeft(cs);return budgetOver(cs)?'Over\u00a0budget\u00a0· '+invUsd(-lf)+'\u00a0over':Math.abs(lf)<=0.005?'On budget':'Under\u00a0budget\u00a0· '+invUsd(lf)+'\u00a0left';}
   }catch(e){}
   return 'No money on this house yet';
 }
@@ -10690,8 +10692,17 @@ function billingSummary(p){
    Semantics: committed = signed-for money (contracts, accepted bids); spent = paid.
    A line's exposure = max(committed, spent) — a signed 10k contract with 4k paid
    still exposes 10k; a 12k direct spend against a 10k contract exposes 12k.
-   remaining = budget − exposure; over when remaining < 0. Actuals whose lineId
+   remaining = budget − exposure (budgetLeft); over when remaining < 0. Actuals whose lineId
    matches no line are collected as 'unassigned' so money can never disappear. ── */
+/* One answer to "how much of this budget is left" (2.461.0): the budget minus
+   what is already spoken for, the larger of contracted or paid, counted per
+   contract (exposure). It is what the builder can still commit without going
+   over. Every Remaining and every left reads it: the desktop Remaining column,
+   the phone rows, the Money card and the house money line. Projected final
+   cost is a forecast (it assumes the whole budget gets spent unless the
+   builder sets one), so it stays on Projected, Tracking and vs budget. */
+function budgetLeft(r){return (Number(r&&r.budget)||0)-(Number(r&&r.exposure)||0);}
+function budgetOver(r){return budgetLeft(r)<-0.005;}
 function costLines(p){return (p.costs||[]).filter(r=>r.rt==='line');}
 function costActuals(p,lineId){return (p.costs||[]).filter(r=>r.rt==='actual'&&(lineId===undefined||r.lineId===lineId));}
 function costContracts(p,lineId){return costActuals(p,lineId).filter(a=>a.kind!=='spent');}
@@ -10718,17 +10729,17 @@ function costLineRollup(p,lineId){
   const expect=Number(line.expect)||0;
   const projected=expect>0?expect:Math.max(budget,exposure);
   return {budget,committed,spent,exposure,projected,expect,overpaid,overflow,paidOver,
-    remaining:budget-exposure,over:budget-exposure<-0.005};
+    remaining:budgetLeft({budget,exposure}),over:budgetOver({budget,exposure})};
 }
 function costSummary(p){
   const lines=costLines(p);const ids={};lines.forEach(l=>{ids[l.id]=1;});
   let budget=0,committed=0,spent=0,exposure=0,overLines=0;
-  lines.forEach(l=>{const r=costLineRollup(p,l.id);budget+=r.budget;committed+=r.committed;spent+=r.spent;exposure+=r.exposure;if(r.over)overLines++;});
+  lines.forEach(l=>{const r=costLineRollup(p,l.id);budget+=r.budget;committed+=r.committed;spent+=r.spent;exposure+=r.exposure;if(budgetOver(r))overLines++;});
   let uc=0,us=0,un=0,projected=0;
   lines.forEach(l=>{projected+=costLineRollup(p,l.id).projected;});
   (p.costs||[]).forEach(r=>{if(r.rt==='actual'&&!ids[r.lineId]){un++;const n=Number(r.amount)||0;if(r.kind==='spent')us+=n;else uc+=n;}});
   committed+=uc;spent+=us;exposure+=Math.max(uc,us);projected+=Math.max(uc,us);
-  return {budget,committed,spent,exposure,projected,remaining:budget-exposure,over:budget-exposure<-0.005,lines:lines.length,overLines,unassigned:un};
+  return {budget,committed,spent,exposure,projected,remaining:budgetLeft({budget,exposure}),over:budgetOver({budget,exposure}),lines:lines.length,overLines,unassigned:un};
 }
 
 /* ── Accountant export: one flat CSV of every logged cost with its line context. ── */
@@ -10905,7 +10916,7 @@ function billingCardHTML(p){
   const pct=b.net>0?Math.min(100,Math.round(b.paid/b.net*100)):0;
   return `<div class="overall bgt-tap" onclick="openInvoices()">
       <div class="bgt-cardgrid">
-        <div><b>${invUsd(b.out)}</b><span>Still owed</span></div>
+        ${b.out<-0.005?`<div><b>${invUsd(-b.out)}</b><span>Homeowner’s credit</span></div>`:`<div><b>${invUsd(b.out)}</b><span>Still owed</span></div>`}
         <div><b class="${okN?'ov':''}">${okN}</b><span>Not approved yet</span></div>
         <div><b>${invUsd(b.billed)}</b><span>Invoiced</span></div>
         <div><b>${invUsd(b.paid)}</b><span>Paid</span></div>
@@ -10924,13 +10935,13 @@ function budgetCardHTML(p){
     <div class="overall bgt-tap" onclick="openBudget()">
       <div class="bgt-cardgrid">
         <div><b>${invUsd(cs.budget)}</b><span>Budget</span></div>
-        <div><b class="${cs.over?'ov':''}">${cs.over?invUsd(-cs.remaining):invUsd(cs.remaining)}</b><span>${cs.over?'Over budget':'Remaining'}</span></div>
+        <div><b class="${budgetOver(cs)?'ov':''}">${budgetOver(cs)?invUsd(-budgetLeft(cs)):invUsd(budgetLeft(cs))}</b><span>${budgetOver(cs)?'Over budget':'Remaining'}</span></div>
         <div><b>${invUsd(cs.committed)}</b><span>Contracted</span></div>
         <div><b>${invUsd(cs.spent)}</b><span>Paid</span></div>
         <div><b>${invUsd(cs.projected)}</b><span>Projected</span></div>
         <div><b class="${cs.projected-cs.budget>0.005?'ov':''}">${cs.projected-cs.budget>0.005?invUsd(cs.projected-cs.budget)+' over':(cs.budget-cs.projected>0.005?invUsd(cs.budget-cs.projected)+' under':'On budget')}</b><span>Tracking</span></div>
       </div>
-      <div class="pbar"><i class="${cs.over?'bgt-overbar':''}" style="width:${pct}%"></i></div>
+      <div class="pbar"><i class="${budgetOver(cs)?'bgt-overbar':''}" style="width:${pct}%"></i></div>
       <div class="bgt-open">${cs.overLines?`<b class="c-clay">${cs.overLines} line${cs.overLines===1?'':'s'} over</b><span class="mt-0 mb-0 ml-1 mr-1">·</span>`:''}View &amp; edit budget<span class="bgt-chev">›</span></div>
     </div>`;
 }
@@ -10991,13 +11002,22 @@ function moneyMore(){
 }
 function moneyLineRowHTML(l,r){
   const al=allowanceRollup(P(),l.id);   /* R-1 PR 3 */
-  const left=r.budget-r.projected;const over=left<-0.005;
+  /* left is budgetLeft, the same number as the desktop Remaining column; the
+     sub line shows what it is measured against (spoken for, of budget), so
+     the row adds up. */
+  const left=budgetLeft(r);const over=budgetOver(r);
+  /* Agency 10/4: {x} used of {budget} · {y} left. When the projection is over
+     budget but what is used is still under, the row adds projected {z} over in
+     clay, and keeps {y} left in the aside like every other row (Agency 10/4).
+     Nowrap pieces, and each dot ends the piece before it. */
+  const projOver=!over&&r.projected-r.budget>0.005;
+  const used='<span class="ws-nw">'+invUsd(r.exposure)+' used of '+invUsd(r.budget)+(projOver?'\u00a0·':'')+'</span>';
   const aside=over
     ?'<div class="row-aside warn">'+invUsd(-left)+' over</div>'
     :(left>0.005?'<div class="row-aside">'+invUsd(left)+' left</div>':'');
   return '<div class="row row-tap" onclick="openCostLine(\''+String(l.id).replace(/'/g,'')+'\')">'
     +'<div class="row-main"><div class="row-title">'+esc(l.label||'')+'</div>'
-    +'<div class="row-sub">'+invUsd(r.projected)+' of '+invUsd(r.budget)+'</div>'
+    +'<div class="row-sub">'+used+(projOver?' <span class="ws-nw c-clay mn-proj">projected '+invUsd(r.projected-r.budget)+' over</span>':'')+'</div>'
     +(al.n?'<div class="row-sub mn-allow">Allowances: '+invUsd(al.used)+' of '+invUsd(al.allowance)+' used</div>':'')+'</div>'
     +aside
     +'<span class="row-chev">&rsaquo;</span></div>';
@@ -11389,7 +11409,7 @@ function budgetTableHTML(p){
         <td class="n"><input class="num" type="number" value="${Number(l.budget)||0}" onchange="bgtCellSave('${esc(String(l.id))}','budget',this)"></td>
         <td class="n" id="bgtC-${esc(String(l.id))}">${invUsd(r.committed)}</td>
         <td class="n" id="bgtS-${esc(String(l.id))}">${invUsd(r.spent)}</td>
-        <td class="n ${r.over?'over':''}" id="bgtL-${esc(String(l.id))}">${r.over?invUsd(-r.remaining)+' over':invUsd(r.remaining)}</td>
+        <td class="n ${budgetOver(r)?'over':''}" id="bgtL-${esc(String(l.id))}">${budgetOver(r)?invUsd(-budgetLeft(r))+' over':invUsd(budgetLeft(r))}</td>
         <td class="n"><button class="bgt-edit" onclick="openCostLine('${esc(String(l.id))}')"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>${nActs} cost${nActs===1?'':'s'}</button></td>
       </tr>`;});
   });
@@ -11417,7 +11437,7 @@ function bgtRefreshRow(id){
   const p=P();const r=costLineRollup(p,id);
   const set=(pre,html,over)=>{const e=document.getElementById(pre+id);if(!e)return;e.innerHTML=html;e.classList.toggle('over',!!over);};
   set('bgtC-',invUsd(r.committed));set('bgtS-',invUsd(r.spent));
-  set('bgtL-',r.over?invUsd(-r.remaining)+' over':invUsd(r.remaining),r.over);
+  set('bgtL-',budgetOver(r)?invUsd(-budgetLeft(r))+' over':invUsd(budgetLeft(r)),budgetOver(r));
 }
 function bgtRefreshTotals(){
   const p=P();
@@ -13959,7 +13979,7 @@ function selTimeline(s){
 }
 function setSelStatus(id,st){const s=P().selections.find(x=>x.id===id);if(!s)return;
   if(st==='installed'&&!selCanInstall(s)){
-    toast(!s.approved?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'Crew has not confirmed these instructions \u2014 can\u2019t mark Installed');return;}
+    toast(!s.approved?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'The crew hasn\u2019t confirmed these instructions yet, so it can\u2019t be marked Installed.');return;}
   Data.updateSelection(id,{status:st});logEvent('selectionStatus',(s.item||'')+' → '+st);renderSelections();toast((s.item||'Selection')+': '+SEL_LABEL[st]);}
 function selTimelineRO(s){
   const cur=SEL_STATUS.indexOf(s.status);const lastI=SEL_STATUS.length-1;
@@ -13973,7 +13993,7 @@ function selTimelineRO(s){
 let _selFilter=null;
 function selIdx(st){const i=SEL_STATUS.indexOf(st);return i<0?0:i;}
 function selMatchesFilter(s){if(!_selFilter)return true;const k={selected:1,ordered:2,delivered:3,installed:4}[_selFilter];if(k!=null)return selIdx(s.status)>=k;if(_selFilter==='pending')return selIdx(s.status)<1;if(_selFilter==='awaiting')return selIdx(s.status)>=1&&!s.approved;return true;}
-const SEL_FILTER_LABELS={selected:'Selected or later',ordered:'Ordered or later',delivered:'Delivered or later',installed:'Installed',pending:'Pending selection',awaiting:'Awaiting sign-off'};
+const SEL_FILTER_LABELS={selected:'Selected or later',ordered:'Ordered or later',delivered:'Delivered or later',installed:'Installed',pending:'Pending selection',awaiting:'Waiting approval'};
 function setSelFilter(f){_selFilter=(_selFilter===f?null:f);renderSelections();}
 function renderSelections(){
   const sels=(P().selections||[]);
@@ -14181,7 +14201,7 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   if(status==='installed'){
     const existing=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
     if(!selCanInstall(existing)){
-      toast((!existing||!existing.approved)?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'Crew has not confirmed these instructions \u2014 can\u2019t mark Installed');return;}
+      toast((!existing||!existing.approved)?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'The crew hasn\u2019t confirmed these instructions yet, so it can\u2019t be marked Installed.');return;}
   }
   if(editingSelId!=null){Data.updateSelection(editingSelId,Object.assign({room:room||'—',cat,item,note,price,status},money||{}));logEvent('selectionEdit',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection updated');}
   else{/* R-1 PR 3: never reuse an id an invoice still names (allowances bill by selId) */
@@ -18637,7 +18657,7 @@ function renderDecisions(){
       </div></div>`).join('');
   if(awaiting.length)h+='<div class="sec"><h2>Waiting for the homeowner to approve</h2></div>'+awaiting.map(s=>`
     <div class="sel-row"><div class="si" onclick="openEditSel(${s.id})"><div class="it">${esc(s.item||'(unspecified)')}</div>
-      <div class="ct">${esc(s.cat||'Other')}${s.room?' \u00b7 '+esc(s.room):''}</div></div><span class="approve-ro off">Awaiting</span></div>`).join('');
+      <div class="ct">${esc(s.cat||'Other')}${s.room?' \u00b7 '+esc(s.room):''}</div></div><span class="approve-ro off">Waiting</span></div>`).join('');
   if(pendingCats.length)h+='<div class="sec"><h2>Selections not yet made</h2></div>'+pendingCats.map(c=>`<div class="sel-empty-row" onclick="openAddSel('${String(c).replace(/'/g,"\\'")}')"><span>${esc(c)}</span><span class="addlink">\uff0b Choose</span></div>`).join('');
   el.innerHTML=h||'<div class="empty">Nothing waiting \u2014 this house\'s caught up.</div>';}
 function filterIssues(f,el){issueFilter=f;document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderIssues();}

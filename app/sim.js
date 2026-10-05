@@ -1422,7 +1422,7 @@ t('the briefing keeps field schedule selections money and the desk', (function()
 t('the house briefing does not repeat the street', $("String(houseHTML)").indexOf('This job')<0&&$("String(houseHTML)").indexOf('pkt-head')<0);
 t('rooms on the house are doors not a second inbox', $("String(houseHTML)").indexOf('hs-doors')>=0&&$("String(houseHTML)").indexOf("Read and close old lines")<0&&$("String(houseHTML)").indexOf("This house</div>")<0);
 t('money is one sentence', $("String(houseMoneyLine)").indexOf("'Paid\\u00a0'")>=0&&$("String(houseMoneyLine)").indexOf("' of\\u00a0'")>=0&&$("String(houseMoneyLine)").indexOf('billed')<0);
-t('money line reads Paid {paid} of {net} · owed {out}', (function(){const r=$("(function(){const p=state.projects.find(x=>{const b=billingSummary(x);return b.net>0&&b.paid>0;});if(!p)return null;const b=billingSummary(p);return [houseMoneyLine(p),'Paid\\u00a0'+invUsd(b.paid)+' of\\u00a0'+invUsd(b.net)+' · owed\\u00a0'+invUsd(Math.max(0,b.net-b.paid))];})()");return !!r&&r[0]===r[1];})());
+t('money line reads Paid {paid} of {net} · owed {out}', (function(){const r=$("(function(){const p=state.projects.find(x=>{const b=billingSummary(x);return b.net>0&&b.paid>0;});if(!p)return null;const b=billingSummary(p);return [houseMoneyLine(p),'Paid\\u00a0'+invUsd(b.paid)+' of\\u00a0'+invUsd(b.net)+'\\u00a0· owed\\u00a0'+invUsd(Math.max(0,b.net-b.paid))];})()");return !!r&&r[0]===r[1];})());
 t('settings leads with company', $("String(renderSettings)").indexOf("<h2>Company</h2>")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
 t('house doors stay two across', $("document.documentElement.innerHTML").indexOf('hs-doors{grid-template-columns:repeat(3')<0&&$("String(houseHTML)").indexOf('hs-door wide')>=0);
@@ -3057,7 +3057,7 @@ S('allowances');
      pre-R-1 formula (every selection price counts, approved or not). */
   const f=JSON.parse($("JSON.stringify(state.projects.map(function(p){var n=0;(p.selections||[]).forEach(function(s){n+=Number(s.price)||0;});var ex=_siteExtraCharges(p);var b=billingSummary(p);"+
     "return {id:p.id,old:n+ex.ups+ex.crs,net:b.net,out:b.out,paid:b.paid,waiting:b.waiting,anyAllow:(p.selections||[]).some(selIsAllowance),line:houseMoneyLine(p),"+
-    "oldLine:(function(){var c=n+ex.ups+ex.crs,pd=sitePaidTotal(p);return (c>0.005||pd>0.005)?'Paid\\u00a0'+invUsd(pd)+' of\\u00a0'+invUsd(c)+' \\u00b7 owed\\u00a0'+invUsd(Math.max(0,c-pd)):null;})()};}))"));
+    "oldLine:(function(){var c=n+ex.ups+ex.crs,pd=sitePaidTotal(p);return (c>0.005||pd>0.005)?'Paid\\u00a0'+invUsd(pd)+' of\\u00a0'+invUsd(c)+'\\u00a0\\u00b7 owed\\u00a0'+invUsd(Math.max(0,c-pd)):null;})()};}))"));
   const moved=f.filter(x=>Math.abs(x.old-x.net)>0.005||Math.abs((x.old-x.paid)-x.out)>0.005||x.waiting!==0||x.anyAllow||(x.oldLine&&x.oldLine!==x.line));
   t('(f) no existing total moves: every demo house nets exactly the pre-R-1 sum, nothing waiting',f.length>=5&&moved.length===0,JSON.stringify(moved.slice(0,2)));
 
@@ -3482,14 +3482,14 @@ S('money-words');
   asBuilder();$("state.activeId='p1'");
   /* house Money tile and briefing strip: Paid {paid} of {net} · owed {out} (Agency 10/4) */
   const ml=$("(function(){var p=JSON.parse(JSON.stringify(P()));p.selections=[{id:1,item:'x',cat:'Windows',status:'selected',price:1000}];p.invoices=[];p.payments=[{id:'y',amount:400,label:'Deposit'}];return houseMoneyLine(p);})()");
-  t('Money line: Paid {paid} of {net} · owed {out}',ml==='Paid\u00a0$400 of\u00a0$1,000 · owed\u00a0$600',ml);
+  t('Money line: Paid {paid} of {net} · owed {out}',ml==='Paid\u00a0$400 of\u00a0$1,000\u00a0· owed\u00a0$600',ml);
   $("nyOpenHouse('p1')");
   const hd=JSON.parse($("JSON.stringify({door:(document.querySelector('#houseBody [data-door=money] .m')||{}).textContent||'',strip:(document.querySelector('#houseBody .pkt-strip .meta')||{}).textContent||'',line:houseMoneyLine(P())})"));
   $("try{closeHouse();}catch(e){}");asBuilder();$("state.activeId='p1'");
   t('house Money tile and briefing strip both use the short line',hd.door===hd.line&&hd.line.indexOf('Paid\u00a0')===0&&hd.strip.indexOf(hd.line)>=0&&hd.strip.indexOf('Upgrades & credits')<0,JSON.stringify(hd));
   /* On budget only when exactly on */
   const bl=JSON.parse($("JSON.stringify([700,1000,1300].map(function(spent){var p=JSON.parse(JSON.stringify(P()));p.selections=[];p.invoices=[];p.payments=[];p.costs=[{rt:'line',id:'L',label:'x',budget:1000},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:spent}];return houseMoneyLine(p);}))"));
-  t('budget line: Under budget · {x} left when under; On budget only when exact; Over budget when over',bl[0]==='Under budget · $300 left'&&bl[1]==='On budget'&&bl[2]==='Over budget · $300 over',JSON.stringify(bl));
+  t('budget line: Under budget · {x} left when under; On budget only when exact; Over budget when over',bl[0]==='Under\u00a0budget\u00a0· $300\u00a0left'&&bl[1]==='On budget'&&bl[2]==='Over\u00a0budget\u00a0· $300\u00a0over',JSON.stringify(bl));
   /* homeowner credit balance (PM) */
   t('homeowner line: below $0 reads as a credit, a positive amount',$("clientStillToPayLine(-250)")==='$250 credit'&&$("clientStillToPayLine(300)")==='$300 still to pay'&&$("clientStillToPayLine(0)")==='$0 still to pay');
   const out0=$("billingSummary(P()).out");
@@ -3510,7 +3510,7 @@ S('money-words');
   /* invoice chip and notice */
   t('a late invoice is Past due: chip and notice',$("invStatusChip('overdue')").indexOf('>Past due<')>=0&&SRC.indexOf("'Invoice past due · '+site")>=0&&SRC.indexOf('Invoice overdue')<0);
   /* every swap: new words in, old words out */
-  const IN=["'Paid\\u00a0'","' of\\u00a0'","' · owed\\u00a0'","'Under budget · '",'>Contracted</button>',"'Contracted','Paid'",'<span>Contracted</span>','<th class="n u-m25">Contracted</th>',"' contracted &middot; '","'Contract with'",'<i>contract ${invUsd(s)} · paid','— contract ${invUsd(contractSigned(c))}','paid over the contract</b>',"' from this contract. The original amount stays.'",'Budget, contracted, paid, and projected for the whole build on one sheet. Only your team sees it.',"<span>contracted</span>","'Payment':'Contract',",
+  const IN=["'Paid\\u00a0'","' of\\u00a0'","'\\u00a0· owed\\u00a0'","'Under\\u00a0budget\\u00a0· '",'>Contracted</button>',"'Contracted','Paid'",'<span>Contracted</span>','<th class="n u-m25">Contracted</th>',"' contracted &middot; '","'Contract with'",'<i>contract ${invUsd(s)} · paid','— contract ${invUsd(contractSigned(c))}','paid over the contract</b>',"' from this contract. The original amount stays.'",'Budget, contracted, paid, and projected for the whole build on one sheet. Only your team sees it.',"<span>contracted</span>","'Payment':'Contract',",
     "'The homeowner approves this from their own login.'",'See the homeowner\u2019s approval','Waiting for the homeowner to approve',"'\u2713 Approved':'Waiting'",'The homeowner approves each item from their own login.','<span>Approved</span><b>${date}</b>','<div class="so-k">Homeowner</div>','Approved from the homeowner\u2019s own login.',"' \\u00b7 approved'",
     '<h4>Upgrades &amp; credits</h4>','<span>Upgrades &amp; credits</span>','<div class="ld-sec">Upgrades &amp; overages</div>','No upgrades yet.','Total upgrades &amp; overages','<span>Upgrades &amp; overages</span>','<span>Upgrades minus credits</span>','No invoices yet. Bill the homeowner for upgrades and changes here.','its amount from upgrades &amp; credits.','Money the homeowner paid you. Add deposits and draws here. Payments on an invoice are entered on that invoice.','<div class="k">Upgrades &amp; payments</div>','<h2>Upgrades &amp; payments</h2>',
     '<span>Still owed</span>','What\u2019s still owed updates to match.','<span>Invoiced</span></div>',"' paid on invoices</span></div>'",'<span>Paid outside invoices</span>','paid outside invoices.</div>','Deposits and draws that aren\u2019t on an invoice go here. Payments on an invoice are entered on that invoice and show here too.','Every payment so far came in on an invoice.',"overdue:'Past due',paid",'invoice & past-due alerts','Approval and past-due alerts for',
@@ -3569,6 +3569,98 @@ S('money-words-final');
   const bt2=$("(function(){var o=window.toast,m=[];window.toast=function(x){m.push(x);};openAddSel('Lighting');document.getElementById('selItem').value='Sim5 plain';setSelMode(false);document.getElementById('selPrice').value='100';saveSel();window.toast=o;P().selections=P().selections.filter(function(x){return x.item!=='Sim5 plain';});return m[m.length-1]||'';})()");
   t('Upgrade mode still says Selection added',bt2==='Selection added',bt2);
   t('wording: Agency final words use curly apostrophes',SRC.indexOf("Homeowner’s credit")>=0&&SRC.indexOf("Homeowner's credit")<0);
+})();
+
+/* ════ BUDGET LEFT (2.461.0) ════
+   One number for a budget line's Remaining (desktop) and left (phone rows):
+   budgetLeft = budget minus exposure (the larger of contracted or paid, per
+   contract). Projected stays on Projected / Tracking / vs budget. */
+S('budget-left');
+(function(){
+  const txt=h=>String(h).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  asBuilder();$("state.activeId='p1'");
+  const L=costs=>JSON.parse($("(function(){var p=JSON.parse(JSON.stringify(P()));p.selections=[];p.invoices=[];p.payments=[];p.costs="+JSON.stringify(costs)+";"+
+    "var r=costLineRollup(p,'L');var l=costLines(p)[0];var row=moneyLineRowHTML(l,r);var tb=budgetTableHTML(p);var m=/id=\"bgtL-L\">([^<]*)</.exec(tb);"+
+    "var d=document.createElement('div');d.innerHTML=row;var a=d.querySelector('.row-aside');var sb=d.querySelector('.row-sub');"+
+    "return JSON.stringify({left:budgetLeft(r),over:budgetOver(r),rem:r.remaining,ro:r.over,exposure:r.exposure,projected:r.projected,aside:a?a.textContent:'',sub:sb?sb.textContent:'',subHTML:sb?sb.innerHTML:'',cell:m?m[1]:'',card:budgetCardHTML(p),house:houseMoneyLine(p),cs:budgetLeft(costSummary(p))});})()"));
+  const line=(b,ex)=>Object.assign({rt:'line',id:'L',label:'Sim line',budget:b},ex||{});
+  /* under, contracted greater than paid: 1000 budget, 600 contract, 200 paid on it */
+  const u=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'},{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:200,toward:'C',payee:'Sub'}]);
+  t('under, contracted > paid: left is budget minus contracted',u.left===400&&!u.over&&u.rem===400&&u.ro===false,JSON.stringify(u));
+  t('under, contracted > paid: phone row, desktop cell, card and house line all say $400',u.aside==='$400 left'&&u.cell==='$400'&&u.sub==='$600 used of $1,000'&&txt(u.card).indexOf('$400 Remaining')>=0&&u.house==='Under\u00a0budget\u00a0· $400\u00a0left',JSON.stringify([u.aside,u.cell,u.sub,u.house]));
+  /* paid greater than contracted: 400 contract, 700 paid not tied to it */
+  const sp=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:400,payee:'Sub'},{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:700,payee:'Supplier'}]);
+  t('paid > contracted: left is budget minus paid',sp.left===300&&sp.exposure===700&&sp.aside==='$300 left'&&sp.cell==='$300'&&sp.sub==='$700 used of $1,000',JSON.stringify(sp));
+  /* paid only, no contract */
+  const po=L([line(1000),{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:650,payee:'Supplier'}]);
+  t('paid only: left is budget minus paid',po.left===350&&po.aside==='$350 left'&&po.cell==='$350',JSON.stringify([po.left,po.aside,po.cell]));
+  /* exact */
+  const ex=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:1000,payee:'Sub'},{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:300,toward:'C',payee:'Sub'}]);
+  t('exactly on budget: left $0, no aside on the phone row, $0 on desktop, On budget on the house',ex.left===0&&!ex.over&&ex.aside===''&&ex.cell==='$0'&&ex.house==='On budget',JSON.stringify([ex.left,ex.aside,ex.cell,ex.house]));
+  /* over */
+  const ov=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:1200,payee:'Sub'}]);
+  t('over budget: $200 over on the phone row, desktop, card and house',ov.left===-200&&ov.over&&ov.ro===true&&ov.aside==='$200 over'&&ov.cell==='$200 over'&&txt(ov.card).indexOf('$200 Over budget')>=0&&ov.house==='Over\u00a0budget\u00a0· $200\u00a0over',JSON.stringify([ov.aside,ov.cell,ov.house]));
+  /* the old disagreement: a builder projection does not move left */
+  const pj=L([line(1000,{expect:1300}),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'}]);
+  t('a projected final cost above budget does not move left (it stays on Projected / vs budget)',pj.projected===1300&&pj.left===400&&pj.cell==='$400',JSON.stringify(pj));
+  const nx=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'}]);
+  t('no projection set: the phone row shows what is left (it used to show nothing)',nx.projected===1000&&nx.aside==='$400 left',JSON.stringify([nx.projected,nx.aside]));
+  /* every demo line on every house: phone row and desktop agree */
+  const all=JSON.parse($("JSON.stringify((function(){var bad=[],n=0;state.projects.forEach(function(p){var hold=state.activeId;state.activeId=p.id;var tb=budgetTableHTML(p);costLines(p).forEach(function(l){n++;var r=costLineRollup(p,l.id);var row=moneyLineRowHTML(l,r);var a=/row-aside[^\"]*\">([^<]*)</.exec(row);var re=new RegExp('id=\"bgtL-'+String(l.id).replace(/[^\\w-]/g,'')+'\">([^<]*)<');var m=re.exec(tb);var cell=m?m[1]:'?';var aside=a?a[1]:'';var want=aside===''?'$0':aside.replace(' left','');if(want!==cell)bad.push([p.id,l.id,aside,cell]);});state.activeId=hold;});return {n:n,bad:bad};})())"));
+  t('every demo budget line: phone row left and desktop Remaining are the same number',all.n>=16&&all.bad.length===0,JSON.stringify(all.bad.slice(0,3)));
+  /* one helper */
+  t('one helper: phone rows, desktop Remaining, cell refresh, Money card and house line all read budgetLeft',['moneyLineRowHTML','budgetTableHTML','bgtRefreshRow','budgetCardHTML','houseMoneyLine'].every(f=>$("String("+f+")").indexOf('budgetLeft(')>=0)&&$("String(moneyLineRowHTML)").indexOf('r.budget-r.projected')<0&&$("String(costLineRollup)").indexOf('budgetLeft(')>=0&&$("String(costSummary)").indexOf('budgetLeft(')>=0);
+  t('projected stays on Projected, Tracking, vs budget and the CSV',$("String(renderJobCost)").indexOf('r.projected-r.budget')>=0&&$("String(jobCostCsv)").indexOf('r.projected-r.budget')>=0&&$("String(budgetCardHTML)").indexOf('cs.projected-cs.budget')>=0&&$("String(moneyTotHTML)").indexOf('cs.budget-cs.projected')>=0);
+  t('no new words: the labels are the ones already there',SRC.indexOf('<span>${budgetOver(cs)?\'Over budget\':\'Remaining\'}</span>')>=0&&SRC.indexOf('<th class="n u-m26">Remaining</th>')>=0);
+})();
+
+/* ════ BUDGET LEFT WORDS + B LEFTOVERS (2.461.0) ════ */
+S('budget-left-words');
+(function(){
+  const txt=h=>String(h).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+  asBuilder();$("state.activeId='p1'");
+  const R=(costs)=>JSON.parse($("(function(){var p=JSON.parse(JSON.stringify(P()));p.costs="+JSON.stringify(costs)+";var r=costLineRollup(p,'L');var row=moneyLineRowHTML(costLines(p)[0],r);var d=document.createElement('div');d.innerHTML=row;var a=d.querySelector('.row-aside');var sb=d.querySelector('.row-sub');return JSON.stringify({aside:a?a.textContent:'',warn:!!(a&&a.classList.contains('warn')),sub:sb.textContent,html:sb.innerHTML,clay:!!sb.querySelector('.c-clay.ws-nw'),pieces:sb.querySelectorAll('.ws-nw').length});})()"));
+  const line=(b,ex)=>Object.assign({rt:'line',id:'L',label:'Sim line',budget:b},ex||{});
+  const C=n=>({rt:'actual',id:'C',lineId:'L',kind:'contract',amount:n,payee:'Sub'});
+  /* (a) used of */
+  const a=R([line(1000),C(600)]);
+  t('(a) phone row: {x} used of {budget} · {y} left',a.sub==='$600 used of $1,000'&&a.aside==='$400 left'&&a.pieces===1,JSON.stringify(a));
+  /* (b) projected over budget, used still under: projected {z} over on the money line, {y} left in the aside like every row (Agency 10/4) */
+  const b=R([line(1000,{expect:1300}),C(600)]);
+  t('(b) projection over, used under: {x} used of {budget} · projected {z} over in clay, and the normal {y} left aside',b.sub==='$600 used of $1,000\u00a0· projected $300 over'&&b.aside==='$400 left'&&!b.warn&&b.clay&&b.pieces===2&&b.sub.indexOf('left')<0,JSON.stringify(b));
+  t('(b) the aside is the plain left, never a combined form',b.aside.indexOf('projected')<0&&b.aside.indexOf('·')<0);
+  t('(b) each money amount sits inside a nowrap piece and the dot ends the first piece',/<span class="ws-nw">\$600 used of \$1,000(?:\u00a0|&nbsp;)·<\/span> <span class="ws-nw c-clay mn-proj">projected \$300 over<\/span>/.test(b.html),b.html);
+  const be=R([line(1000,{expect:1250}),C(1000)]);
+  t('(b) exactly at budget with a projection over: projected {z} over, no left (nothing left, as on every row)',be.sub==='$1,000 used of $1,000\u00a0· projected $250 over'&&be.aside==='',JSON.stringify(be));
+  const bo=R([line(1000,{expect:1500}),C(1200)]);
+  t('(b) a line actually over keeps its over display, no projected part',bo.aside==='$200 over'&&bo.warn&&bo.sub==='$1,200 used of $1,000'&&bo.html.indexOf('projected')<0,JSON.stringify(bo));
+  const bu=R([line(1000,{expect:800}),C(600)]);
+  t('(b) a projection under budget adds nothing',bu.sub==='$600 used of $1,000'&&bu.aside==='$400 left',JSON.stringify(bu));
+  t('(b) the projected part reads Agency’s words',SRC.indexOf(">projected '+invUsd(r.projected-r.budget)+' over</span>'")>=0&&SRC.indexOf("' used of '")>=0);
+  /* Ink: house Money line never starts a line with the dot */
+  const hl=$("houseMoneyLine(P())");
+  t('house Money line: the dot sticks to the end of the piece before it',hl.indexOf('\u00a0· owed\u00a0')>0&&hl.indexOf(' · ')<0&&/^Paid\u00a0\$[\d,]+ of\u00a0\$[\d,]+\u00a0· owed\u00a0\$[\d,]+$/.test(hl),JSON.stringify(hl));
+  t('house budget line: the same rule',$("String(houseMoneyLine)").indexOf("'Under\\u00a0budget\\u00a0· '")>=0&&$("String(houseMoneyLine)").indexOf("'Over\\u00a0budget\\u00a0· '")>=0);
+  /* 1 invoice card in credit */
+  const out0=$("billingSummary(P()).out");
+  $("P().payments=(P().payments||[]).concat([{id:'sim_bl_pay',amount:"+(Math.round(out0)+5000)+",label:'Sim overpay',t:Date.now()}])");
+  const ic=JSON.parse($("JSON.stringify({out:billingSummary(P()).out,h:billingCardHTML(P())})"));
+  $("P().payments=P().payments.filter(function(x){return x.id!=='sim_bl_pay';})");
+  const amt='$'+Math.abs(ic.out).toLocaleString();
+  t('1. invoice card in credit: Homeowner’s credit and a positive amount',ic.out<-0.005&&ic.h.indexOf('<b>'+amt+'</b><span>Homeowner\u2019s credit</span>')>=0&&ic.h.indexOf('Still owed')<0&&ic.h.indexOf('\u2212$')<0,ic.h.slice(0,300));
+  t('1. invoice card not in credit: Still owed',$("billingCardHTML(P())").indexOf('<span>Still owed</span>')>=0);
+  /* 2 Waiting chips and the filter label */
+  const dw=$("(function(){var s=P().selections.find(function(x){return SEL_STATUS.indexOf(x.status)>=1&&!x.approved;});if(!s)return 'none';renderDecisions();return document.getElementById('decWaiting').innerHTML;})()");
+  t('2. rows under Waiting for the homeowner to approve: Waiting chips',dw.indexOf('<span class="approve-ro off">Waiting</span>')>=0&&dw.indexOf('>Awaiting<')<0,dw.slice(0,200));
+  t('2. filter label: Waiting approval',$("SEL_FILTER_LABELS.awaiting")==='Waiting approval'&&SRC.indexOf("'Awaiting sign-off'")<0);
+  const fb=$("(function(){_selFilter='awaiting';renderSelections();var h=document.getElementById('selList').parentElement.innerHTML;_selFilter=null;renderSelections();return h;})()");
+  t('2. the filter banner shows Waiting approval',fb.indexOf('Showing <b>Waiting approval</b>')>=0);
+  /* 3 demo note */
+  t('3. demo note: Waiting for the homeowner to approve the dining pendant and switch placement',SRC.indexOf("note:'Waiting for the homeowner to approve the dining pendant and switch placement'")>=0&&SRC.indexOf('Awaiting homeowner sign-off on dining pendant')<0&&SRC.indexOf('Signed contract')>=0);
+  /* 4 Installed toast, crew branch */
+  const it=$("(function(){var s=P().selections.find(function(x){return x.approved&&x.status!=='installed';});if(!s)return 'none';var keep=window.selCanInstall,o=window.toast,m=[],st=s.status;window.selCanInstall=function(){return false;};window.toast=function(x){m.push(x);};setSelStatus(s.id,'installed');window.toast=o;window.selCanInstall=keep;s.status=st;return m[0]||'';})()");
+  t('4. Installed refused, crew has not confirmed: Agency’s words',it==='The crew hasn\u2019t confirmed these instructions yet, so it can\u2019t be marked Installed.',it);
+  t('4. both Installed refusals use it, old text gone',SRC.split("'The crew hasn\\u2019t confirmed these instructions yet, so it can\\u2019t be marked Installed.'").length===3&&SRC.indexOf('Crew has not confirmed')<0);
 })();
 
 /* ════ REPORT ════ */
