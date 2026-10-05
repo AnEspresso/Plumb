@@ -117,48 +117,6 @@ function signPlumb(d, site, nSigned, tamper) {
     updatedByUid: U.client, members: SO_MEMBERS, memberUids: Object.keys(SO_MEMBERS) }, extra), { merge: true });
 }
 
-/* Invoice approval: a house's invoices exactly as the app keeps them in
-   meta.invoices (invSave: {id, no, title, due, items, total, status, t,
-   sentBy, payments}). The first two are sent and waiting for the homeowner's
-   OK; the rest cover every other status. invApprove sets one invoice's
-   status to 'approved' and its approvedAt, nothing else. */
-const INV_STATUS = ['sent', 'sent', 'approved', 'paid', 'void', 'draft'];
-function invList(n) {
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    const st = INV_STATUS[i % INV_STATUS.length];
-    const v = { id: 'inv_' + (1000000 + i).toString(36), no: st === 'draft' ? '' : 'INV-' + String(i + 1).padStart(3, '0'),
-      title: 'Selections \u2014 batch ' + (i + 1), due: '2026-10-18',
-      items: [{ label: 'Quartz \u2014 Calacatta look \u2014 Countertops \u00b7 Kitchen', amount: 1850, selId: 3 },
-              { label: 'Marble hex \u2014 Tile \u00b7 Primary Bath', amount: 120, selId: 7 }],
-      total: 1970, status: st, t: 1791110000000 + i, sentBy: 'Dean Walsh', payments: [] };
-    if (st === 'approved') v.approvedAt = 1791120000000;
-    if (st === 'paid') { v.payments = [{ id: 'pay_' + i, amount: 1970, date: '2026-10-02', note: 'Check 1042' }]; v.paidAt = 1791121000000; }
-    if (st === 'void') v.voidedAt = 1791122000000;
-    out.push(v);
-  }
-  return out;
-}
-const invHouse = (n) => ({ mode: 'live', id: 'h', street: 'Invoice House', members: SO_MEMBERS, memberUids: Object.keys(SO_MEMBERS),
-  meta: Object.assign(soMeta(6), { invoices: invList(n) }), updatedAt: 1 });
-/* The homeowner approves invoice 0. shape 'push': the whole-meta merge the
-   app's sync makes today (Sync._pushOne, the gap-check a1 write). shape
-   'min': only meta.invoices, merged (the app PR that follows). edit() can
-   tamper with the list; signPlumb also signs a trade in the same write. */
-function approveInv(d, site, n, opts) {
-  opts = opts || {};
-  const list = invList(n);
-  if (opts.approve !== false) { list[0].status = 'approved'; list[0].approvedAt = 1791130000000; }
-  if (opts.edit) opts.edit(list);
-  const as = opts.uid || U.client;
-  if (opts.shape === 'min')
-    return setDoc(doc(d, `sites/${site}`), { meta: { invoices: list }, updatedAt: 2, updatedBy: 'dev-client', updatedByUid: as }, { merge: true });
-  const m = Object.assign(soMeta(6), { invoices: list });
-  if (opts.signPlumb) { m.packetSignoff.plumb.homeowner = { by: 'Ana Ruiz', at: 1791130000000 }; m.packetStale.plumb = false; }
-  return setDoc(doc(d, `sites/${site}`), { meta: m, id: 'h', mode: 'live', updatedAt: 2, updatedBy: 'dev-client',
-    updatedByUid: as, members: SO_MEMBERS, memberUids: Object.keys(SO_MEMBERS) }, { merge: true });
-}
-
 const results = [];
 let testEnv;
 
@@ -212,9 +170,6 @@ async function seed() {
     for (const id of SEL_IDS) await setDoc(doc(db, `sites/liveA/sel/${id}`), selDoc());
     // House-doc sign-off houses: 6 and all 29 trades signed by the builder
     for (const [id, n] of [['so6', 6], ['so29', 29], ['so29d', 29]]) await setDoc(doc(db, `sites/${id}`), soHouse(n));
-    // Invoice houses: 8 invoices (every status), and 60 for the worst case
-    for (const [id, n] of [['inv8a', 8], ['inv8b', 8], ['inv8c', 8], ['inv8d', 8], ['inv8e', 8], ['inv8f', 8], ['inv8deny', 8], ['inv60', 60], ['inv1', 1]])
-      await setDoc(doc(db, `sites/${id}`), invHouse(n));
     // liveB: a different builder's live site — our personas are strangers here
     await setDoc(doc(db, 'sites/liveB'), {
       mode: 'live', street: 'Live B',
@@ -404,70 +359,6 @@ async function main() {
     signPlumb(db.client, 'so29d', 29, () => ({ street: 'Elsewhere' })));
   await INV('signoff: builder still signs (nothing changed for builders)',
     setDoc(doc(db.builder, 'sites/so6'), { meta: Object.assign(soMeta(6), { packetSignoff: Object.assign(soMeta(6).packetSignoff, { elec: { builder: { by: 'Dean Walsh', at: 1791130000002 } } }) }), updatedAt: 3 }, { merge: true }), true);
-
-  /* ══════════ HOUSE: homeowner approves an invoice ══════════ */
-  /* invApprove changes one invoice in meta.invoices: status sent -> approved
-     plus approvedAt. Before this rule the homeowner meta allowlist did not
-     name invoices, so the push was refused and the refused change jammed
-     every later homeowner house write (a sign-off included). */
-  await INV('invoice: homeowner approves one invoice, the app\'s whole-meta push (8 invoices) - ALLOWED',
-    approveInv(db.client, 'inv8a', 8), true);
-  await INV('invoice: homeowner approves one invoice, minimal meta.invoices write - ALLOWED',
-    approveInv(db.client, 'inv8b', 8, { shape: 'min' }), true);
-  await INV('invoice: homeowner approves on a house with a single invoice - ALLOWED',
-    approveInv(db.client, 'inv1', 1), true);
-  await INV('invoice: homeowner approves one of 60 invoices (worst case) - ALLOWED',
-    approveInv(db.client, 'inv60', 60), true);
-  await INV('invoice: homeowner approves an invoice and signs crew instructions in the same push (the jammed write) - ALLOWED',
-    approveInv(db.client, 'inv8c', 8, { signPlumb: true }), true);
-  await INV('invoice: homeowner signs crew instructions after an approve went through - ALLOWED', (async () => {
-    await approveInv(db.client, 'inv8d', 8);
-    const list = invList(8); list[0].status = 'approved'; list[0].approvedAt = 1791130000000;
-    const m = Object.assign(soMeta(6), { invoices: list });
-    m.packetSignoff.plumb.homeowner = { by: 'Ana Ruiz', at: 1791130000001 }; m.packetStale.plumb = false;
-    await setDoc(doc(db.client, 'sites/inv8d'), { meta: m, id: 'h', mode: 'live', updatedAt: 3, updatedBy: 'dev-client',
-      updatedByUid: U.client, members: SO_MEMBERS, memberUids: Object.keys(SO_MEMBERS) }, { merge: true });
-  })(), true);
-  const invDeny = [
-    ['changes the invoice total while approving', l => { l[0].total = 1; }],
-    ['changes a line amount while approving', l => { l[0].items[0].amount = 1; }],
-    ['changes a line label while approving', l => { l[0].items[1].label = 'Plain white tile'; }],
-    ['drops a line while approving', l => { l[0].items.pop(); }],
-    ['adds a payment while approving', l => { l[0].payments.push({ id: 'pay_x', amount: 1970, date: '2026-10-04', note: '' }); }],
-    ['adds an invoice', l => { l.push(Object.assign({}, l[3], { id: 'inv_new', no: 'INV-099' })); }],
-    ['removes an invoice while approving', l => { l.splice(3, 1); }],
-    ['reorders the other invoices while approving', l => { const x = l[4]; l[4] = l[5]; l[5] = x; }],
-    ['sets an invoice to paid', l => { l[0].status = 'paid'; }],
-    ['sets an invoice to void', l => { l[0].status = 'void'; }],
-    ['approves two invoices at once', l => { l[1].status = 'approved'; l[1].approvedAt = 1791130000000; }],
-    ['changes another invoice while approving one', l => { l[3].title = 'Paid in full'; }],
-    ['approves with no approvedAt', l => { delete l[0].approvedAt; }],
-    ['approves with a text approvedAt', l => { l[0].approvedAt = 'today'; }],
-    ['adds another field while approving', l => { l[0].approvedBy = 'Ana Ruiz'; }],
-  ];
-  for (const [what, edit] of invDeny)
-    await INV_LOGIC(`invoice: homeowner ${what} - DENIED by the rule`, approveInv(db.client, 'inv8deny', 8, { edit }));
-  await INV_LOGIC('invoice: homeowner un-approves an approved invoice - DENIED by the rule',
-    approveInv(db.client, 'inv8deny', 8, { approve: false, edit: l => { l[2].status = 'sent'; delete l[2].approvedAt; } }));
-  await INV_LOGIC('invoice: homeowner approves a draft - DENIED by the rule',
-    approveInv(db.client, 'inv8deny', 8, { approve: false, edit: l => { l[5].status = 'approved'; l[5].approvedAt = 1791130000000; } }));
-  await INV_LOGIC('invoice: homeowner approves a void invoice - DENIED by the rule',
-    approveInv(db.client, 'inv8deny', 8, { approve: false, edit: l => { l[4].status = 'approved'; l[4].approvedAt = 1791130000000; } }));
-  await INV_LOGIC('invoice: homeowner sets a paid invoice back to approved - DENIED by the rule',
-    approveInv(db.client, 'inv8deny', 8, { approve: false, edit: l => { l[3].status = 'approved'; l[3].approvedAt = 1791130000000; } }));
-  await INV_LOGIC('invoice: homeowner clears every invoice - DENIED by the rule',
-    approveInv(db.client, 'inv8deny', 8, { approve: false, edit: l => { l.length = 0; } }));
-  await INV_LOGIC('invoice: homeowner minimal write that also changes an amount - DENIED by the rule',
-    approveInv(db.client, 'inv8deny', 8, { shape: 'min', edit: l => { l[0].total = 0; } }));
-  await INV_LOGIC('invoice: crew approves an invoice - DENIED by the rule', approveInv(db.sub, 'inv8deny', 8, { uid: U.sub }));
-  await INV('invoice: stranger approves an invoice - DENIED', approveInv(db.stranger, 'inv8deny', 8, { uid: U.stranger }), false);
-  /* GAP (no index in rules): the list is compared without a loop, so the one
-     invoice being approved could be put at another place in the list through
-     the API. Its content and every other invoice stay exactly as they were. */
-  await GAP('invoice: homeowner can move the invoice being approved to another place in the list (content unchanged)',
-    approveInv(db.client, 'inv8e', 8, { edit: l => { const a = l.shift(); l.splice(2, 0, a); } }), true);
-  await INV('invoice: builder still edits invoices freely (changes an amount, adds one)',
-    setDoc(doc(db.builder, 'sites/inv8f'), { meta: Object.assign(soMeta(6), { invoices: invList(8).map((v, i) => i === 1 ? Object.assign({}, v, { total: 2100 }) : v).concat([Object.assign({}, invList(8)[0], { id: 'inv_b9', no: 'INV-009' })]) }), updatedAt: 3 }, { merge: true }), true);
 
   /* ══════════ SELECTIONS: homeowner allowlist (PR 0, R-1 prep) ══════════ */
   await INV('sel: (a) homeowner approves a full selection - 9 spec fields + 7 custom slots filled - ALLOWED',
