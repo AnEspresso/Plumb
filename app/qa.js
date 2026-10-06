@@ -413,6 +413,23 @@ async function tappable(page,sel){
   t('sub chip on Calderwood is still Clearwater', await page.evaluate(()=>state.session.name)==='Clearwater Plumbing');
   await page.evaluate(()=>demoRole('builder'));
 
+  /* Agency 10/5: the longest house budget lines fit the house strip on one line at 390 (no wrap,
+     no ellipsis), and the half-width Money tile wraps only after Projected, never mid-phrase. */
+  const fits=await page.evaluate(()=>{const keep=window.houseBudgetLine;const out=[];
+    const PM=()=>{demoRole('builder');state.session=Object.assign({},state.session,{member:true,rpRole:'pm',gates:{moneyJob:true,moneyCo:false,selections:true,field:true,schedule:true,site:true,jobs:true}});};
+    const lines=el=>{const tops={};[].forEach.call(el.childNodes,n=>{if(n.nodeType!==3||!/budget/.test(n.textContent))return;const r=document.createRange();r.selectNodeContents(n);[].forEach.call(r.getClientRects(),q=>{if(q.width>1)tops[Math.round(q.top)]=1;});});return Object.keys(tops).length;};
+    try{['Projected $20,600\u00a0over\u00a0budget','$1,234,500\u00a0over\u00a0budget','Under\u00a0budget\u00a0\u00b7 $1,458,300\u00a0left'].forEach(str=>{
+      window.houseBudgetLine=()=>str;PM();nyOpenHouse('p3');
+      const meta=document.querySelector('#houseBody .pkt-strip .meta'),tile=document.querySelector('#houseBody [data-door=money] .m');
+      const cs=meta?getComputedStyle(meta):{};
+      out.push({str,strip:!!meta&&meta.textContent.indexOf(str)>=0,stripLines:meta?lines(meta):-1,stripFit:!!meta&&meta.scrollWidth<=meta.clientWidth+1&&cs.textOverflow!=='ellipsis',
+        tile:!!tile&&tile.textContent===str,tileFit:!!tile&&tile.scrollWidth<=tile.clientWidth+1&&getComputedStyle(tile).textOverflow!=='ellipsis',tileLines:tile?lines(tile):-1});
+      try{closeHouse();}catch(e){}});
+    }finally{window.houseBudgetLine=keep;demoRole('builder');}
+    return out;});
+  t('house budget line: the longest lines sit on one line in the strip at 390, no ellipsis', fits.length===3&&fits.every(f=>f.strip&&f.stripLines===1&&f.stripFit), JSON.stringify(fits));
+  t('house budget line: the Money tile holds them without overflow (Projected breaks only before the amount)', fits.every(f=>f.tile&&f.tileFit&&f.tileLines<=2), JSON.stringify(fits));
+
   await page.reload({waitUntil:'load'});
   await new Promise(r=>setTimeout(r,1600));
   t('reload mid-demo resumes the demo', await page.evaluate(()=>document.body.classList.contains('on-excursion')&&appMode()==='demo'));

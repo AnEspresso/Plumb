@@ -3019,6 +3019,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <input id="selRoom" placeholder="Type a room / location…" style="display:none">
       <div class="fld-label">Selection</div>
       <input id="selItem" placeholder="e.g. SHAW Perspectives 2050">
+      <div id="selMoneyBox">
       <div class="fld-label">How it’s priced</div>
       <div class="seg sel-mode" id="selMode"><button type="button" id="selModeUp" class="on" onclick="setSelMode(false)">Upgrade or credit</button><button type="button" id="selModeAl" onclick="setSelMode(true)">Allowance</button></div>
       <div id="selAllowBox" style="display:none">
@@ -3036,6 +3037,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <div class="fld-label">Upgrade or credit amount</div>
       <input id="selPrice" inputmode="text" placeholder="e.g. 2100, or -800 for a credit">
       <div class="fld-hint">Put 0 if there’s no upgrade or credit on this item.</div>
+      </div>
       </div>
       <div class="fld-label">Status</div>
       <select id="selStatus" class="fld-select"></select>
@@ -3950,15 +3952,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.462.0 - Approve this invoice says approved only after the server saves it';
+const PLUMB_VERSION='2.463.0 - Invoices and selection money leave crew phones (F-2 app)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791217310079;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.462.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791245400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.463.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8765,21 +8767,35 @@ function houseGoNext(){
 /* House Money tile and briefing strip (Agency 10/4): Paid {paid} of {net} · owed {out}.
    The long "Upgrades & credits {net} · paid · owed" wrapped to two lines in the
    strip at 390 on every demo house, so the strip uses the short one too. */
+/* The house's budget line, one helper for every builder (owner, PM, team) on
+   the house strip and the Money tile, so the lines cannot drift (Agency 10/5).
+   Gone over (budget minus contracted-or-paid below $0, budgetLeft): {x} over budget.
+   Only the projection over (the Money sheet's hero, budget vs projected):
+   Projected {x} over budget, never plain "over budget" before money has gone over.
+   Non-breaking spaces inside each phrase ({x} over budget, Under budget, {x} left).
+   Otherwise On budget only when exactly on, else Under budget · {x} left (Agency 10/4). */
+function houseBudgetLine(cs){
+  const lf=budgetLeft(cs);const po=(Number(cs&&cs.projected)||0)-(Number(cs&&cs.budget)||0);
+  if(lf<-0.005)return invUsd(-lf)+'\u00a0over\u00a0budget';
+  if(po>0.005)return 'Projected '+invUsd(po)+'\u00a0over\u00a0budget';   // the one break: after Projected (the Money tile is half the width)
+  if(lf<=0.005)return 'On budget';
+  return 'Under\u00a0budget\u00a0· '+invUsd(lf)+'\u00a0left';
+}
 function houseMoneyLine(p){
   try{
     const b=billingSummary(p);
     const contract=Number(b.net)||0;
     const paid=Number(b.paid)||0;
     const left=Math.max(0,Number(b.out)||0);
-    if(contract>0.005||paid>0.005)
+    /* F-2: a builder without Invoices does not hold invoices: no Paid/owed line */
+    if(!moneyHidden('inv')&&(contract>0.005||paid>0.005))
       /* Nowrap pieces joined by plain spaces; the dot ends the piece before it,
          so a wrapped line never starts with "· owed" (Ink 10/4). */
       return 'Paid\u00a0'+invUsd(paid)+' of\u00a0'+invUsd(contract)+'\u00a0· owed\u00a0'+invUsd(left);
     const cs=costSummary(p);
-    if((Number(cs.budget)||0)>0.005)
-      /* On budget only when exactly on; otherwise Under budget · {x} left (Agency 10/4) */
-      {const lf=budgetLeft(cs);return budgetOver(cs)?'Over\u00a0budget\u00a0· '+invUsd(-lf)+'\u00a0over':Math.abs(lf)<=0.005?'On budget':'Under\u00a0budget\u00a0· '+invUsd(lf)+'\u00a0left';}
+    if((Number(cs.budget)||0)>0.005)return houseBudgetLine(cs);
   }catch(e){}
+  if(moneyHidden('inv'))return '';
   return 'No money on this house yet';
 }
 function fromTheHouse(){return !!(_houseResume||(typeof houseStillOpen==='function'&&houseStillOpen()));}
@@ -9443,7 +9459,7 @@ function fbConfig(){
 function appCheckKey(){if(emuOn())return null;try{const k=(localStorage.getItem('plumb.appcheck.sitekey')||'').trim();if(k)return k;}catch(e){}return PLUMB_APPCHECK_SITEKEY||null;}
 let syncStatus='local',syncTimer=null,_syncBusy=false,_syncAgain=false;
 const _syncDirty=typeof Set==='function'?new Set():{add:function(){},forEach:function(){},clear:function(){}};
-const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_pulled:{},_held:{},
+const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_pulled:{},_held:{},_selm:{},_legInv:{},_legAdded:{},_selNp:{},_pushing:{},_pushAgain:{},
   _devId(){let d=null;try{d=localStorage.getItem('plumb.deviceId');}catch(e){}if(!d){d='dev_'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('plumb.deviceId',d);}catch(e){}}return d;},
   ready(){return this.on&&!!this.db;},
   async init(){
@@ -9537,9 +9553,11 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     /* Pull before push: a phone that was closed must not write its old copy
        of a house until it has read what the other phones changed meanwhile. */
     if(!this._canPush(id)){this._held[id]=p;return;}
+    if(this._pushing[id]){this._pushAgain[id]=p;return;}
+    this._pushing[id]=true;try{
     const sh=this._shadow[id]||(this._shadow[id]={meta:'',colls:{}});
     if(state.session&&state.session.role==='client'&&invClearRefusedApprove(p,sh)){persistLocalOnly();try{rerenderCurrent();}catch(e){}}
-    const ops=diffSiteOps(sh,p);if(!ops.length)return;
+    const ops=diffSiteOps(sh,p);if(!ops.length){await this._f2Tidy(p,id,sh);return;}
     for(const op of ops){
       if(op.kind==='meta'){
         const local=Object.assign({},(op.data&&op.data.members)||{});
@@ -9567,14 +9585,122 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         sh.meta=_syncHash(JSON.stringify(op.data));sh.mem=Object.assign({},mem);
         sh.mk={};Object.keys(op.data||{}).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(op.data[k]));});
       } else if(op.kind==='set'){
-        await this.db.collection('sites').doc(id).collection(op.sub).doc(op.id).set({data:op.data,updatedAt:Date.now(),updatedBy:this.deviceId},{merge:true});
+        const ref=this.db.collection('sites').doc(id).collection(op.sub).doc(op.id);
+        if(op.sub==='inv'||op.sub==='selm'){
+          /* F-2: a money record is the builder's whole record: replace it, so a
+             key that left the invoice or the selection's money leaves the cloud too. */
+          await ref.set({data:op.data,updatedAt:Date.now(),updatedBy:this.deviceId});
+        }else{
+          let data=op.data;
+          /* F-2 (correction 2): a merge never deletes a field. Until R2 refuses
+             money on sel, every sel write from a builder who writes selm deletes
+             the five money keys; selm already holds them (diffSiteOps order). */
+          if(op.sub==='sel'&&syncWrites(p,'selm')){const del=fbDelete();if(del!==undefined){data=Object.assign({},op.data);SEL_MONEY_KEYS.forEach(k=>{data[k]=del;});}}
+          await ref.set({data:data,updatedAt:Date.now(),updatedBy:this.deviceId},{merge:true});
+        }
         (sh.colls[op.sub]||(sh.colls[op.sub]={}))[op.id]=_syncHash(JSON.stringify(op.data));
       } else if(op.kind==='del'){
         await this.db.collection('sites').doc(id).collection(op.sub).doc(op.id).delete();
         if(sh.colls[op.sub])delete sh.colls[op.sub][op.id];
+        if(op.sub==='selm'&&this._selm[id])delete this._selm[id][op.id];
       }
     }
-    this._saveBase();},
+    await this._f2Tidy(p,id,sh);
+    this._saveBase();
+    }finally{   /* one push per house at a time (F-2: a held house is flushed from every listener); a second one runs after */
+      delete this._pushing[id];const again=this._pushAgain[id];
+      if(again){delete this._pushAgain[id];Promise.resolve(this._pushOne(again)).catch(e=>{trapError('caught',e&&e.message,'Sync._pushOne again');});}}},
+  /* F-2 migration, the money-gated builder's phone only (corrections 3, 4, 6).
+     (a) Absorb by id: once every legacy meta.invoices id is in inv (the ops
+     above copied the missing ones), meta.invoices is cleared, to [] so an older
+     phone reading it drops its copy instead of writing it back. (b) A selm
+     whose selection is gone, on the server and here, is deleted, once it is a
+     minute old (a new selection's sel lands before its selm; never race it). */
+  async _f2Tidy(p,id,sh){
+    if((this.mode||'demo')!=='live'||this.authKind!=='account')return;
+    const myUid=(state.session&&state.session.auth&&state.session.auth.uid)||this.uid||'';if(!myUid)return;
+    if(syncWrites(p,'inv')){const leg=this._legInv[id]||[];const onInv=sh.colls.inv||{};
+      if(leg.length&&leg.every(v=>onInv[String(v.id)]!==undefined)){
+        await this.db.collection('sites').doc(id).set({meta:{invoices:[]},updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:myUid},{merge:true});
+        this._legInv[id]=[];sh.mk=sh.mk||{};sh.mk.invoices=_syncHash('[]');this._saveBase();}}
+    if(syncWrites(p,'selm')&&(this._pulled[id]||{}).sel){const cache=this._selm[id]||{};const onSel=sh.colls.sel||{};const now=Date.now();
+      for(const k of Object.keys(cache)){
+        if(onSel[k]!==undefined||(p.selections||[]).some(x=>String(x.id)===k))continue;
+        if(now-(Number(cache[k]._at)||0)<60000)continue;
+        await this.db.collection('sites').doc(id).collection('selm').doc(k).delete();
+        delete cache[k];if(sh.colls.selm)delete sh.colls.selm[k];this._saveBase();}}
+  },
+  /* F-2 dual-read + absorb by id (correction 4). meta.invoices is where invoices
+     lived before 2.463.0. A phone that reads inv also shows any legacy invoice
+     inv does not have yet (inv wins on the same id); a builder who writes inv
+     is held so its next push copies them into inv (_f2Tidy then clears meta).
+     A phone that does not read inv keeps no invoices at all. */
+  _legacyInv(p,id,meta){const sid=String(id);
+    const leg=Array.isArray(meta&&meta.invoices)?meta.invoices.filter(v=>v&&v.id!=null):[];
+    this._legInv[sid]=leg;
+    if(!syncHas(p,'inv')){const had=Array.isArray(p.invoices)&&p.invoices.length>0;p.invoices=[];return had;}
+    if(!Array.isArray(p.invoices))p.invoices=[];
+    const sh=this._shadow[sid]||{};const onInv=(sh.colls&&sh.colls.inv)||{};
+    const first=!this._legAdded[sid];   // the first look this session is history, not news
+    const added=this._legAdded[sid]||(this._legAdded[sid]={});const byId={};leg.forEach(v=>{byId[String(v.id)]=v;});
+    const _nv=first?null:Notify.snap(p);let ch=false;
+    Object.keys(added).forEach(k=>{if(byId[k]||onInv[k]!==undefined)return;
+      const i=p.invoices.findIndex(v=>v&&String(v.id)===k);if(i>=0){p.invoices.splice(i,1);ch=true;}delete added[k];});
+    leg.forEach(v=>{const k=String(v.id);if(onInv[k]!==undefined)return;
+      const i=p.invoices.findIndex(x=>x&&String(x.id)===k);const cp=JSON.parse(JSON.stringify(v));
+      if(i<0){p.invoices.push(cp);added[k]=1;ch=true;}
+      else if(added[k]&&JSON.stringify(p.invoices[i])!==JSON.stringify(cp)){p.invoices[i]=cp;ch=true;}});
+    if(ch&&_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}
+    if(leg.length&&syncWrites(p,'inv'))this._held[sid]=p;
+    return ch;},
+  /* A selection from sel joined with its money (correction 5's other half).
+     selm wins; money still on an unmoved sel record is read where it is
+     (dual-read); before selm has answered, this phone's copy stays. A phone
+     that does not read selm keeps no selection money at all. */
+  _selJoin(p,sid,rec,old){
+    if(!syncHas(p,'selm'))return selNoMoney(rec);
+    const k=String(rec.id);const m=(this._selm[sid]||{})[k];
+    if(m){const sh=this._shadow[sid]||(this._shadow[sid]={meta:'',colls:{}});sh.colls=sh.colls||{};
+      (sh.colls.selm||(sh.colls.selm={}))[k]=_syncHash(JSON.stringify(selmRow(m)));return selPutMoney(rec,m);}
+    if(selHasMoney(rec))return selPutMoney(rec,rec);
+    if(old&&!(this._pulled[sid]||{}).selm)return selPutMoney(rec,old);
+    return selNoMoney(rec);},
+  /* sel and selm arrive on two listeners; a builder's approval reset writes both.
+     The notice check waits a moment and compares before the first with after the last. */
+  _selNote(sid,key,old,fire){const k=sid+':'+key;
+    if(!this._selNp[k])this._selNp[k]={old:old};clearTimeout(this._selNp[k].t);
+    this._selNp[k].t=setTimeout(()=>{const x=this._selNp[k];delete this._selNp[k];try{fire(x&&x.old);}catch(e){}},this._selNoteMs==null?400:this._selNoteMs);},
+  /* The selm listener: money joins the selection with the same id. A money doc
+     whose selection is not here is held (never shown) until the selection comes. */
+  _selmSnap(p,sid,snap){
+    const sh=this._shadow[sid]||(this._shadow[sid]={meta:'',colls:{}});sh.colls=sh.colls||{};const prev=sh.colls.selm||(sh.colls.selm={});
+    const cache=this._selm[sid]||(this._selm[sid]={});if(!Array.isArray(p.selections))p.selections=[];
+    let changed=false;
+    const at=k=>p.selections.findIndex(x=>x&&String(x.id)===k);
+    const put=(i,m)=>{const o=p.selections[i];const n=selPutMoney(o,m);
+      if(JSON.stringify(n)===JSON.stringify(o))return;p.selections[i]=n;changed=true;
+      if(this._notifReady[sid+'selm'])this._selNote(sid,String(o.id),o,old=>{const cur=(p.selections||[]).find(x=>x&&String(x.id)===String(o.id));if(cur&&old)Notify.selChanged(p,old,cur);});};
+    snap.docChanges().forEach(ch=>{const key=ch.doc.id;const d=ch.doc.data()||{};
+      if(ch.type==='removed'){delete cache[key];const i=at(key);if(i>=0&&prev[key]!==undefined)put(i,null);delete prev[key];return;}
+      const rec=d.data;if(rec==null)return;
+      const row=selmRow(Object.assign({},rec,{id:rec.id!=null?rec.id:key}));
+      if(!row){delete cache[key];return;}
+      cache[key]=Object.assign({},row,{_at:Number(d.updatedAt)||0});
+      if(d.updatedBy===this.deviceId)return;
+      const i=at(key);if(i<0)return;
+      const rh=_syncHash(JSON.stringify(row));
+      /* unchanged on the server since this phone last synced, but edited here: the phone's money goes up after the pull */
+      if(prev[key]!==undefined&&rh===prev[key]&&_syncHash(JSON.stringify(selmRow(p.selections[i])))!==prev[key])return;
+      put(i,row);prev[key]=rh;});
+    this._notifReady[sid+'selm']=true;
+    const got=this._pulled[sid]||(this._pulled[sid]={});
+    if(!(snap.metadata&&snap.metadata.fromCache)&&!got.selm){
+      const seen={};(snap.docs||[]).forEach(x=>{seen[x.id]=true;});
+      Object.keys(prev).forEach(k=>{if(seen[k])return;const i=at(k);if(i>=0)put(i,null);delete prev[k];});
+      got.selm=true;
+    }
+    if(changed){persistLocalOnly();rerenderCurrent();}
+    this._saveBase();this._flushHeld();},
   /* What this phone last synced (hashes only, per house) survives a restart,
      so a reopened phone can tell its own offline edits from its stale copy. */
   _baseKey(){return 'plumb.syncBase.'+storeKey()+'.'+(this.uid||'');},
@@ -9604,7 +9730,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       let who='no-auth';try{const cu=firebase.auth().currentUser;if(cu)who=(cu.isAnonymous?'anon ':'account ')+cu.uid.slice(0,8);}catch(_){}let ses='none';try{const su=state.session&&state.session.auth&&state.session.auth.uid;if(su)ses=su.slice(0,8);}catch(_){}trapError('rules','Cloud read blocked ('+where+') · token ['+who+'] · bound ['+((this.uid)?this.uid.slice(0,8):'none')+'] · session ['+ses+']','Sync');
       if(!this._permToasted){this._permToasted=true;try{toast('Cloud sync is blocked by security rules');}catch(e){}}
     }}catch(e){}},
-  subscribe(){if(!this.ready())return;this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};
+  subscribe(){if(!this.ready())return;this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._selm={};this._legInv={};this._legAdded={};this._pushing={};this._pushAgain={};
     this._sitesPulled=false;this._onServer={};this._pulled={};this._held=this._held||{};
     const handler=snap=>{let changed=false;
       try{if(typeof syncStatus!=='undefined'&&syncStatus==='offline')setSync('synced');}catch(e){}
@@ -9637,7 +9763,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(meta&&d.updatedBy!==this.deviceId){
           const sh=this._shadow[id]||(this._shadow[id]={meta:'',colls:{}});let kept=false;
           let p=state.projects.find(x=>String(x.id)===String(id));
-          if(!p){p=Object.assign({},meta);SYNC_COLLS.forEach(c=>{if(!Array.isArray(p[c.f]))p[c.f]=[];});
+          if(!p){p=Object.assign({},meta);delete p.invoices;SYNC_COLLS.forEach(c=>{if(!c.joined&&!Array.isArray(p[c.f]))p[c.f]=[];});   // F-2: legacy meta.invoices goes through _legacyInv below
             /* a brand-new site doc may still carry legacy meta.bookings - keep them */
             if(Array.isArray(meta.bookings)&&!p.bookings.length)p.bookings=meta.bookings.slice();
             state.projects.push(p);}
@@ -9652,6 +9778,9 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           sh.mem=Object.assign({},(meta&&meta.members)||{},d.members||{});
           sh.meta=kept?'':_syncHash(JSON.stringify(metaOf(p)));changed=true;
         }
+        /* F-2: every snapshot, this phone's own included (a builder's own phone
+           wrote the legacy list last): dual-read, absorb or drop legacy invoices. */
+        if(meta){const lp=state.projects.find(x=>String(x.id)===String(id));if(lp&&this._legacyInv(lp,id,meta))changed=true;}
         this._subSite(id);                                                    // attach record listeners (after project exists)
       });
       if(changed){persistLocalOnly();rerenderCurrent();this._saveBase();try{firstRunHousesArrived();}catch(e){}try{HouseGeo.soon();}catch(e){}}
@@ -9709,16 +9838,42 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         }
       }catch(e){}
       const u=q.onSnapshot({includeMetadataChanges:true},snap=>{
-        const p=state.projects.find(x=>String(x.id)===sid);if(!p)return;if(!Array.isArray(p[c.f]))p[c.f]=[];
+        const p=state.projects.find(x=>String(x.id)===sid);if(!p)return;
+        if(c.joined){this._selmSnap(p,sid,snap);return;}              // F-2: selection money joins the selections
+        if(!Array.isArray(p[c.f]))p[c.f]=[];
         const sh=this._shadow[sid]||(this._shadow[sid]={meta:'',colls:{}});sh.colls=sh.colls||{};const prev=sh.colls[c.sub]||(sh.colls[c.sub]={});
+        const isSel=c.sub==='sel';const view=r=>isSel?selNoMoney(r):r;   // F-2: a selection syncs (and compares) without its money
+        const _nv=(c.sub==='inv'&&this._notifReady[sid+c.sub])?Notify.snap(p):null;
         let changed=false;
+        /* F-2: a phone that does not read selm keeps no selection money, even a copy saved before 2.463.0 */
+        if(isSel&&!syncHas(p,'selm')){p[c.f]=p[c.f].map(r=>{if(!selHasMoney(r))return r;changed=true;return selNoMoney(r);});}
         snap.docChanges().forEach(ch=>{const d=ch.doc.data()||{};const key=ch.doc.id;
           if(ch.type==='removed'){const idx=p[c.f].findIndex(r=>c.key(r)===key);if(idx>=0){p[c.f].splice(idx,1);changed=true;}delete prev[key];}
-          else{if(d.updatedBy===this.deviceId)return;const rec=d.data;if(rec==null)return;const idx=p[c.f].findIndex(r=>c.key(r)===key);
-            const rh=_syncHash(JSON.stringify(rec));
+          else{const rec=d.data;
+            if(d.updatedBy===this.deviceId){
+              /* F-2: a builder's own phone wrote most sel records before 2.463.0;
+                 money still on one of them moves too (this phone's copy wins). */
+              if(isSel&&rec&&selMoneyKeyed(rec)&&syncWrites(p,'selm')){const i0=p[c.f].findIndex(r=>c.key(r)===key);
+                if(i0>=0&&!selHasMoney(p[c.f][i0])&&!(this._selm[sid]||{})[key]){p[c.f][i0]=selPutMoney(p[c.f][i0],rec);changed=true;}
+                prev[key]='f2-move';this._held[sid]=p;}
+              return;}
+            if(rec==null)return;const idx=p[c.f].findIndex(r=>c.key(r)===key);
+            const rh=_syncHash(JSON.stringify(view(rec)));
+            /* A shadow from before 2.463.0 hashed the selection with its money:
+               read it as the money-free hash of the same record. */
+            if(isSel&&prev[key]!==undefined&&prev[key]===_syncHash(JSON.stringify(rec))&&selHasMoney(rec))prev[key]=rh;
             /* unchanged on the server since this phone last synced, but edited or deleted here: the phone's change wins and goes up after the pull */
-            if(prev[key]!==undefined&&rh===prev[key]&&(idx<0||_syncHash(JSON.stringify(p[c.f][idx]))!==prev[key]))return;
-            if(idx>=0){const _o=p[c.f][idx];p[c.f][idx]=rec;if(c.sub==='sel'&&this._notifReady[sid+c.sub]){try{Notify.selChanged(p,_o,rec);}catch(e){}}}else{p[c.f].push(rec);if(c.sub==='items'&&this._notifReady[sid+c.sub]){try{Notify.newItem(p,rec);}catch(e){}}}prev[key]=rh;changed=true;}});
+            if(prev[key]!==undefined&&rh===prev[key]&&(idx<0||_syncHash(JSON.stringify(view(p[c.f][idx])))!==prev[key])){
+              /* F-2: never let that push drop money the server still has on sel */
+              if(isSel&&idx>=0&&selHasMoney(rec)&&syncHas(p,'selm')&&!selHasMoney(p[c.f][idx])&&!(this._selm[sid]||{})[key]){p[c.f][idx]=selPutMoney(p[c.f][idx],rec);changed=true;}
+              if(isSel&&selMoneyKeyed(rec)&&syncWrites(p,'selm'))this._held[sid]=p;
+              return;}
+            const nr=isSel?this._selJoin(p,sid,rec,idx>=0?p[c.f][idx]:null):rec;
+            if(idx>=0){const _o=p[c.f][idx];p[c.f][idx]=nr;if(c.sub==='sel'&&this._notifReady[sid+c.sub]){this._selNote(sid,key,_o,old=>{const cur=(p.selections||[]).find(x=>c.key(x)===key);if(cur&&old)Notify.selChanged(p,old,cur);});}}else{p[c.f].push(nr);if(c.sub==='items'&&this._notifReady[sid+c.sub]){try{Notify.newItem(p,rec);}catch(e){}}}prev[key]=rh;changed=true;
+            /* F-2 migration (correction 2): money still on this sel record moves to
+               selm and is deleted from sel on this builder's next push. */
+            if(isSel&&selMoneyKeyed(rec)&&syncWrites(p,'selm')){prev[key]='f2-move';this._held[sid]=p;}}});
+        if(c.sub==='inv'&&changed){invOrder(p);if(_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}}
         this._notifReady[sid+c.sub]=true;                               // first snapshot is history, not news
         const got=this._pulled[sid]||(this._pulled[sid]={});
         if(!(snap.metadata&&snap.metadata.fromCache)&&!got[c.sub]){
@@ -9756,7 +9911,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
   _notifReady:{},
   _collGen:{},
   _reArmed:{},
-  disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._shadow={};this._notifReady={};this._sitesPulled=false;this._onServer={};this._pulled={};this._held={};clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
+  disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._shadow={};this._selm={};this._legInv={};this._legAdded={};this._pushing={};this._pushAgain={};this._notifReady={};this._sitesPulled=false;this._onServer={};this._pulled={};this._held={};clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
 };
 /* ── Step 6: cloud files. A live house uploads the already-downscaled photo
    (and doc files) once sync is connected, and stores the download URL on the
@@ -10195,12 +10350,31 @@ function stripForSync(p){try{const c=JSON.parse(JSON.stringify(p));return c;}cat
 const SYNC_COLLS=[
   {f:'items',sub:'items',key:r=>String(r.id)},
   {f:'bookings',sub:'bk',key:r=>String(r.id)},
-  {f:'selections',sub:'sel',key:r=>String(r.id)},
+  {f:'selections',sub:'sel',key:r=>String(r.id),rows:p=>((p&&p.selections)||[]).map(selNoMoney)},   // F-2: sel goes up without its money
   {f:'logs',sub:'logs',key:r=>'d'+String(r.date||r.t||'').replace(/[^\w]/g,'')},
   {f:'payments',sub:'pmts',key:r=>String(r.id)},
   {f:'mailReview',sub:'mail',key:r=>String(r.id)},
-  {f:'costs',sub:'costs',key:r=>String(r.id)}
+  {f:'costs',sub:'costs',key:r=>String(r.id)},
+  /* F-2 (2.463.0): invoices and a selection's money live in records crews never
+     read (rules R: moneyOk() or the homeowner). Invoices left meta the way
+     bookings did in 2.211. A selection's money stays ON the selection on the
+     phone (s.price, s.allowance, s.cost, s.costLineId, s.invoicedIn) so every
+     screen reads the same paths; only sync splits it: sel goes up without the
+     five keys, selm/{selection id} carries only them. No money, no selm doc. */
+  {f:'invoices',sub:'inv',key:r=>String(r.id)},
+  {f:'selMoney',sub:'selm',key:r=>String(r.id),rows:p=>selmRows(p),joined:true}
 ];
+const SEL_MONEY_KEYS=['price','allowance','cost','costLineId','invoicedIn'];
+function selHasMoney(s){return !!s&&SEL_MONEY_KEYS.some(k=>s[k]!=null&&s[k]!=='');}
+/* Any money key at all, even an empty one (an unpriced selection has price:null): the sel record still has to lose it. */
+function selMoneyKeyed(s){return !!s&&SEL_MONEY_KEYS.some(k=>k in s);}
+function selNoMoney(s){const o=Object.assign({},s);SEL_MONEY_KEYS.forEach(k=>{delete o[k];});return o;}
+/* The selm payload: the id and the money keys that hold a value, in a fixed
+   order (so a pulled doc hashes the same as the one this phone sent). */
+function selmRow(s){if(!selHasMoney(s))return null;const o={id:s.id};SEL_MONEY_KEYS.forEach(k=>{if(s[k]!=null&&s[k]!=='')o[k]=s[k];});return o;}
+function selmRows(p){return ((p&&p.selections)||[]).map(selmRow).filter(Boolean);}
+/* A selection with exactly the money m carries (none when m is null). */
+function selPutMoney(s,m){const o=selNoMoney(s);if(m)SEL_MONEY_KEYS.forEach(k=>{if(m[k]!=null&&m[k]!=='')o[k]=m[k];});return o;}
 /* ── Role-aware listener scoping. The hardened Firestore rules deny pmts reads
    to subs and mail reads to subs+clients; a device must not subscribe to a
    collection its role cannot read, or every session trips _permFail and the
@@ -10228,12 +10402,30 @@ function crewBkName(p){
   return (state.session&&state.session.name)||'';
 }
 function syncCollsFor(role){
-  if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs');
+  if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='inv'&&c.sub!=='selm');
   if(role==='client')return SYNC_COLLS.filter(c=>c.sub!=='mail'&&c.sub!=='costs');
   let cols=SYNC_COLLS.slice();
-  try{if(role==='builder'&&(state.session||{}).role==='builder'&&typeof canGate==='function'&&!canGate('moneyJob'))cols=cols.filter(c=>c.sub!=='costs');}catch(e){}
+  /* F-2: a builder without Money does not read costs or selection money; one
+     without Invoices does not read invoices (Claude lock Q3). */
+  try{if(role==='builder'&&(state.session||{}).role==='builder'&&typeof canGate==='function'){
+    const job=canGate('moneyJob'),co=canGate('moneyCo');
+    if(!job)cols=cols.filter(c=>c.sub!=='costs');
+    if(!co)cols=cols.filter(c=>c.sub!=='inv');
+    if(!job&&!co)cols=cols.filter(c=>c.sub!=='selm');}}catch(e){}
   return cols;
 }
+function syncHas(p,sub){return syncCollsFor(siteRoleFor(p)).some(c=>c.sub===sub);}
+/* Only a builder with the money gate writes inv and selm (rules: moneyOk()).
+   The homeowner reads both and writes neither; that phone never tries. */
+function syncWrites(p,sub){return siteRoleFor(p)==='builder'&&syncHas(p,sub);}
+/* F-2: money this builder's phone never pulls is hidden, never shown as $0.
+   'inv': no Invoices gate (invoice-based numbers). 'selm': no money gate at all. */
+function moneyHidden(kind){try{const s=state.session||{};if(s.role!=='builder')return false;
+  return kind==='inv'?!canGate('moneyCo'):(!canGate('moneyJob')&&!canGate('moneyCo'));}catch(e){return false;}}
+/* Pulled invoices keep a steady order: numbered by number, drafts after, by time. */
+function invOrder(p){if(!p||!Array.isArray(p.invoices))return;
+  const n=v=>{const m=/INV-(\d+)/.exec((v&&v.no)||'');return m?+m[1]:Infinity;};
+  p.invoices=p.invoices.map((v,i)=>[v,i]).sort((a,b)=>(n(a[0])-n(b[0]))||((+(a[0]&&a[0].t)||0)-(+(b[0]&&b[0].t)||0))||(a[1]-b[1])).map(x=>x[0]);}
 function metaOf(p){const m=JSON.parse(JSON.stringify(p));SYNC_COLLS.forEach(c=>{delete m[c.f];});return m;}
 /* Short fingerprint of a record's JSON. The shadow keeps these instead of full
    copies so it can be saved on the phone without doubling the house list. */
@@ -10243,12 +10435,18 @@ function _syncHash(str){str=String(str==null?'':str);let a=0x811c9dc5,b=5381;
 function diffSiteOps(sh,p){const ops=[];
   const m=metaOf(p);const ms=_syncHash(JSON.stringify(m));if(ms!==sh.meta)ops.push({kind:'meta',data:m});
   for(const c of SYNC_COLLS){
-    const arr=Array.isArray(p[c.f])?p[c.f]:[];const cur={};arr.forEach(r=>{cur[c.key(r)]=r;});
+    if((c.sub==='inv'||c.sub==='selm')&&!syncWrites(p,c.sub))continue;   // F-2: only a money-gated builder writes money records
+    const arr=c.rows?c.rows(p):(Array.isArray(p[c.f])?p[c.f]:[]);const cur={};arr.forEach(r=>{cur[c.key(r)]=r;});
     const prev=(sh.colls&&sh.colls[c.sub])||{};
     for(const k in cur){const rs=_syncHash(JSON.stringify(cur[k]));if(prev[k]!==rs)ops.push({kind:'set',sub:c.sub,id:k,data:cur[k]});}
     for(const k in prev){if(!(k in cur))ops.push({kind:'del',sub:c.sub,id:k});}
   }
-  return ops;}
+  /* F-2 order: money reaches selm before a selection the server already has
+     drops it (a sel write deletes the money keys); a new selection lands before
+     its money; money is deleted before its selection. No selm without a sel. */
+  const onSrv=(sh.colls&&sh.colls.sel)||{};
+  const rank=o=>o.kind==='meta'?0:o.sub==='selm'?(o.kind==='del'?3:(o.id in onSrv?1:2.5)):(o.sub==='sel'&&o.kind==='del')?4:2;
+  return ops.map((o,i)=>[o,i]).sort((a,b)=>(rank(a[0])-rank(b[0]))||(a[1]-b[1])).map(x=>x[0]);}
 function fbDelete(){try{return firebase.firestore.FieldValue.delete();}catch(e){return undefined;}}
 function persistLocalOnly(){try{localStorage.setItem(storeKey(),JSON.stringify(state));}catch(e){}}
 function rerenderCurrent(){try{
@@ -10910,6 +11108,7 @@ function setCostGroup(g){_costGroup=g==='trade'?'trade':'stage';try{localStorage
 function tradesAZ(){return SPECIALTIES.slice().sort((a,b)=>String(a.label).localeCompare(String(b.label)));}
 function stageName(id){const s=STAGES.find(x=>x.id===id);return s?s.name:'Other';}
 function billingCardHTML(p){
+  if(moneyHidden('inv')||moneyHidden('selm'))return '';   // F-2: not on this phone, so not shown (never $0)
   const b=billingSummary(p);
   if(!(b.net>0)&&!(p.invoices||[]).length)
     return `<div class="overall bgt-tap" onclick="openInvoices()">
@@ -10963,6 +11162,7 @@ function moneyTotHTML(p){
     +'<div class="hero-l">'+heroL+'</div>'
     +'<div class="hero-s">'+invUsd(cs.budget)+' budget &middot; '+invUsd(cs.committed)+' contracted &middot; '+invUsd(cs.spent)+' paid out</div>'
     +'</div>';
+  if(moneyHidden('inv'))return h;   // F-2: the homeowner rows are invoice numbers this phone does not hold
   /* An allowance overage the homeowner has not approved is not in any total
      yet (R-1): it shows as its own line. */
   const wait=bill.waiting>0.005?'<div class="row-sub mn-waiting">'+invUsd(bill.waiting)+' waiting on the homeowner</div>':'';
@@ -11081,7 +11281,7 @@ function moneyBillHTML(p){
   let h='';
   if(typeof canGate==='function'&&canGate('moneyCo'))
     h+='<button class="set-row mt-3 ml-0 mr-0 mb-1" onclick="openInvoices()"><div class="flex-1"><div>Invoices</div><div class="sr-d">This house \u2014 drafts, sent, paid</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="u-m16"><path d="M9 6l6 6-6 6"/></svg></button>';
-  if(invs.length){
+  if(invs.length&&!moneyHidden('inv')){
     h+='<div class="bgt-grp">Invoices</div>';
     invs.forEach(function(inv){
       const st=invState(inv);
@@ -13496,7 +13696,7 @@ async function clientSignoff(id){const p=clientProj();const s=(p.selections||[])
   delete _clSignBusy[key];
   const rec=Data.updateSelection(id,patch,p.id);
   try{const sh=Sync._shadow[String(p.id)]||(Sync._shadow[String(p.id)]={meta:'',colls:{}});sh.colls=sh.colls||{};
-    if(rec)(sh.colls.sel||(sh.colls.sel={}))[String(id)]=_syncHash(JSON.stringify(rec));Sync._saveBase();}catch(e){}
+    if(rec)(sh.colls.sel||(sh.colls.sel={}))[String(id)]=_syncHash(JSON.stringify(selNoMoney(rec)));Sync._saveBase();}catch(e){}
   logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
   _clRenderKeep();toast(now?'Approved. Thank you.':'Final OK removed');}
 /* raise a concern */
@@ -14024,7 +14224,7 @@ function renderSelections(){
     <div class="sib">${note?esc(note):'Tap to add homeowner notes, allowances, or build-wide instructions.'}</div></div>`;
   // upcharge ledger (overages / credits / net / payments / outstanding)
   const sum=document.getElementById('selSummary');
-  if(sels.length){
+  if(sels.length&&!moneyHidden('inv')&&!moneyHidden('selm')){   // F-2: never a $0 ledger on a phone without the money
     const bs=billingSummary(P());const ups=bs.ups,crs=bs.crs,net=bs.net;const loose=bs.paid-bs.invPaid;
     const usd=n=>'$'+Math.abs(n).toLocaleString();
     sum.innerHTML=`<div class="sel-ledger tappable" onclick="openLedger()">
@@ -14168,11 +14368,12 @@ function selAllowRefresh(){
     :m.under>0.005?(credit?invUsd(m.under)+' under the allowance. Credited to the homeowner.':invUsd(m.under)+' under the allowance. No credit on this house.')
     :'Right at the allowance. Nothing to charge or credit.';
 }
-function openAddSel(presetCat){editingSelId=null;document.getElementById('selModalTitle').textContent='Add selection';document.getElementById('selSaveBtn').textContent='Add';
+function selMoneyBoxShow(){const b=document.getElementById('selMoneyBox');if(b)b.style.display=moneyHidden('selm')?'none':'';}
+function openAddSel(presetCat){editingSelId=null;selMoneyBoxShow();document.getElementById('selModalTitle').textContent='Add selection';document.getElementById('selSaveBtn').textContent='Add';
   document.getElementById('selItem').value='';document.getElementById('selNote').value='';document.getElementById('selPrice').value='';fillSelAllow(null);
   document.getElementById('selCat').innerHTML=SEL_CATS.map(c=>`<option ${c===presetCat?'selected':''}>${c}</option>`).join('');fillSelStatus('selected');fillSelRoom('');
   document.getElementById('selScrim').classList.add('show');}
-function openEditSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;editingSelId=id;
+function openEditSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;editingSelId=id;selMoneyBoxShow();
   document.getElementById('selModalTitle').textContent='Edit selection';document.getElementById('selSaveBtn').textContent='Save';
   document.getElementById('selCat').innerHTML=SEL_CATS.map(c=>`<option ${c===s.cat?'selected':''}>${c}</option>`).join('');
   fillSelRoom(s.room||'');
@@ -14200,14 +14401,16 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   }else if(existingSel&&selIsAllowance(existingSel)){
     money={allowance:null,cost:null,costLineId:null};
   }
+  /* F-2: a builder without Money has no money on this phone; the save leaves it alone */
+  const noMoney=moneyHidden('selm');if(noMoney){money=null;price=undefined;}
   if(status==='installed'){
     const existing=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
     if(!selCanInstall(existing)){
       toast((!existing||!existing.approved)?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'The crew hasn\u2019t confirmed these instructions yet, so it can\u2019t be marked Installed.');return;}
   }
-  if(editingSelId!=null){Data.updateSelection(editingSelId,Object.assign({room:room||'—',cat,item,note,price,status},money||{}));logEvent('selectionEdit',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection updated');}
+  if(editingSelId!=null){const patch=Object.assign({room:room||'—',cat,item,note,price,status},money||{});if(noMoney)delete patch.price;Data.updateSelection(editingSelId,patch);logEvent('selectionEdit',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection updated');}
   else{/* R-1 PR 3: never reuse an id an invoice still names (allowances bill by selId) */
-    const id=Math.max(P().selections.reduce((m,s)=>Math.max(m,s.id),0)||0,(P().invoices||[]).reduce((m,v)=>Math.max(m,...(v.items||[]).map(it=>Number(it.selId)||0)),0))+1;Data.addSelection(Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{}));logEvent('selectionAdded',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection added');}
+    const id=Math.max(P().selections.reduce((m,s)=>Math.max(m,s.id),0)||0,(P().invoices||[]).reduce((m,v)=>Math.max(m,...(v.items||[]).map(it=>Number(it.selId)||0)),0))+1;const ns=Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{});if(noMoney)delete ns.price;Data.addSelection(ns);logEvent('selectionAdded',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection added');}
   closeAddSel();renderSelections();}
 function removeSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;
   const m=selMoney(s.price);

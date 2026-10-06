@@ -112,10 +112,10 @@ t('five z tokens are declared', SRC.indexOf('--z-nav:100')>=0&&SRC.indexOf('--z-
 
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
 S('sync-scope');
-t('builder gets all seven colls', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs');
-t('sub skips pmts+mail+costs', $("syncCollsFor('sub').map(c=>c.sub).join()") === 'items,bk,sel,logs');
-t('client skips mail+costs', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts');
-t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs');
+t('builder gets all nine colls', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm');
+t('sub skips pmts+mail+costs+inv+selm', $("syncCollsFor('sub').map(c=>c.sub).join()") === 'items,bk,sel,logs');
+t('client skips mail+costs, keeps inv+selm', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,inv,selm');
+t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm');
 /* v2.211: bookings must merge per record, never ride the whole-site meta blob.
    The old behavior let a second device silently wipe bookings it had not seen. */
 t('bookings are a synced record collection', $("SYNC_COLLS.some(c=>c.f==='bookings'&&c.sub==='bk')")===true);
@@ -187,7 +187,7 @@ $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(2);Sync._subSite('gateA');true");
 t('no listeners attach synchronously', $("__g.attached.length")===0);
 await new Promise(r=>setTimeout(r,250));
 t('gate retried through the ladder', $("__g.gets")===3);
-t('all seven colls attach once doc lands', $("__g.attached.join()")==='items,bk,sel,logs,pmts,mail,costs');
+t('all nine colls attach once doc lands', $("__g.attached.join()")==='items,bk,sel,logs,pmts,mail,costs,inv,selm');
 t('site marked listening after attach', $("!!Sync._listening['gateA']")===true);
 // (2) doc never lands: give up quietly, _listening cleared so a later docChange re-gates
 $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(99);Sync._subSite('gateB');true");
@@ -198,20 +198,20 @@ t('give-up clears _listening (re-gate possible)', $("!Sync._listening['gateB']")
 // (3) offline: unavailable attaches immediately on cache
 $("__g.gets=0;__g.attached=[];Sync.db={collection:()=>({doc:()=>({get:()=>{__g.gets++;return Promise.reject({code:'unavailable'});},collection:sub=>({onSnapshot:(o,h,e)=>{if(typeof o==='function'){e=h;h=o;}__g.attached.push(sub);__g.errCbs[sub]=e;return ()=>{};}})})})};Sync._subSite('gateC');true");
 await new Promise(r=>setTimeout(r,80));
-t('offline attaches without retry ladder', $("__g.gets")===1&&$("__g.attached.length")===7);
+t('offline attaches without retry ladder', $("__g.gets")===1&&$("__g.attached.length")===9);
 // (4) demo mode: gate is a no-op passthrough
 $("__g.gets=0;__g.attached=[];Sync.mode='demo';Sync.db=__mkdb(99);Sync._subSite('gateD');true");
 await new Promise(r=>setTimeout(r,60));
-t('demo attaches without any server get', $("__g.attached.length")===7&&$("__g.gets")===0);
+t('demo attaches without any server get', $("__g.attached.length")===9&&$("__g.gets")===0);
 $("Sync.mode='live';true");
 // (5) belt: first-generation denial is forgiven silently and re-attaches once
 $("localStorage.removeItem('plumb.errors');__g.gets=99;__g.attached=[];Sync.db=__mkdb(0);Sync._subSite('gateE');true");
 await new Promise(r=>setTimeout(r,80));
-t('gateE attached gen-1', $("__g.attached.length")===7);
+t('gateE attached gen-1', $("__g.attached.length")===9);
 $("__g.attached=[];__g.errCbs['items']({code:'permission-denied'});true");
 t('gen-1 denial logs no rules alarm', $("devErrors().length")===0);
 await new Promise(r=>setTimeout(r,200));
-t('belt re-attached a second generation', $("__g.attached.length")===7);
+t('belt re-attached a second generation', $("__g.attached.length")===9);
 t('re-arm consumed', $("Sync._reArmed['gateE']")===true);
 // (6) second-generation denial raises the real alarm
 $("__g.errCbs['items']({code:'permission-denied'});true");
@@ -219,7 +219,7 @@ t('gen-2 denial trips trapError', $("devErrors().length")>0&&$("devErrors()[0].m
 // (7) role scoping preserved through the gate path
 $("localStorage.removeItem('plumb.errors');Sync._permToasted=false;__g.attached=[];state.session={role:'client',auth:{uid:'uC'}};state.projects.push({id:'gateF',members:{uC:'client'},items:[],selections:[],logs:[],payments:[]});Sync.db=__mkdb(0);Sync._subSite('gateF');true");
 await new Promise(r=>setTimeout(r,60));
-t('client attaches only its five colls', $("__g.attached.join()")==='items,bk,sel,logs,pmts');
+t('client attaches only its seven colls', $("__g.attached.join()")==='items,bk,sel,logs,pmts,inv,selm');
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
@@ -1326,7 +1326,7 @@ t('the crew bookings listener uses crewBkName', SRC.split('_attachColls(sid){')[
 t('saving one house does not upload the book', SRC.split('function queueSync')[1].slice(0,1200).indexOf('_syncDirty')>=0&&SRC.split('function queueSync')[1].slice(0,1200).indexOf('_pushOne')>=0);
 t('homeowner hat survives sign out', SRC.indexOf('function laSaveHat')>=0&&SRC.indexOf("localStorage.getItem('plumb.hats')")>=0&&SRC.split('function liveSignOut')[1].slice(0,700).indexOf('plumb.hats')<0);
 t('joined invites are stamped back onto the house', SRC.indexOf('function backfillJoinedInvites')>=0&&SRC.split('function backfillMemberships')[1].slice(0,500).indexOf('backfillJoinedInvites')>=0);
-t('a homeowner write does not stamp them builder', SRC.split('async _pushOne')[1].slice(0,1800).indexOf("sessRole==='builder'&&!mem[myUid]")>=0);
+t('a homeowner write does not stamp them builder', SRC.split('async _pushOne')[1].slice(0,2600).indexOf("sessRole==='builder'&&!mem[myUid]")>=0);
 t('homeowner listens stay homeowner', SRC.split('function siteRoleFor')[1].slice(0,400).indexOf("if(r==='client')return 'client'")>=0);
 t('homeowner settings hide company', SRC.split('function renderSettings')[1].slice(0,500).indexOf("hat!=='client'")>=0);
 t('selections keep the house', SRC.indexOf('let _clientHold=null')>=0&&SRC.indexOf('function clientRetryHouse')>=0);
@@ -3255,7 +3255,7 @@ await (async function(){
   t('accepted: approved locally once the server took it',rec().approved===true&&!!rec().signed,JSON.stringify(rec()));
   t('accepted: then the existing toast',$("__ap.toasts[__ap.toasts.length-1]")==='Approved. Thank you.',$("JSON.stringify(__ap.toasts)"));
   t('accepted: the card shows ✓ Approved',btn()==='✓ Approved',btn());
-  t('accepted: the record is marked synced, so it is not sent again',$("(Sync._shadow.apv1&&Sync._shadow.apv1.colls.sel||{})['901']")===$("_syncHash(JSON.stringify(state.projects.find(x=>x.id==='apv1').selections[0]))"));
+  t('accepted: the record is marked synced, so it is not sent again',$("(Sync._shadow.apv1&&Sync._shadow.apv1.colls.sel||{})['901']")===$("_syncHash(JSON.stringify(selNoMoney(state.projects.find(x=>x.id==='apv1').selections[0])))"));   /* 2.463.0: the sel shadow is the money-free record (money lives in selm) */
   t('accepted: the approved record is not queued again',$("diffSiteOps(Object.assign({},Sync._shadow.apv1,{meta:_syncHash(JSON.stringify(metaOf(state.projects.find(x=>x.id==='apv1'))))}),state.projects.find(x=>x.id==='apv1')).filter(o=>o.sub==='sel'&&o.id==='901').length")===0);
 
   /* refused: taking the OK back is denied */
@@ -3388,7 +3388,8 @@ await (async function(){
   t('refused: nothing is queued, so it is never sent again',metaOps()===0&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer"),'meta ops='+metaOps());
   $(P1+".buildBrief={note:'Sim brief after a refusal'};true");
   const nextOp=JSON.parse($("JSON.stringify(diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta')[0]||null)"));
-  t('refused: the next save goes up without the refused change (invoices as the server has them)',!!nextOp&&JSON.stringify(nextOp.data.invoices)===$("__ivServer")&&nextOp.data.invoices[2].status==='sent',JSON.stringify(nextOp&&nextOp.data.invoices[2]));
+  /* 2.463.0 (F-2): the house doc no longer carries invoices and a homeowner never writes inv */
+  t('refused: the next save goes up without the refused change (no invoices in meta, no inv write)',!!nextOp&&!('invoices' in nextOp.data)&&$("diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.sub==='inv'||o.sub==='selm').length")===0,JSON.stringify(nextOp&&Object.keys(nextOp.data)));
   $("delete "+P1+".buildBrief;true");
 
   /* other error, offline */
@@ -3405,9 +3406,9 @@ await (async function(){
   $(`(function(){const p=${P1};window.__ivServer=JSON.stringify(p.invoices);
     Sync._shadow.ivl1.mk.invoices=_syncHash(__ivServer);Sync._shadow.ivl1.meta='';
     const v=p.invoices[2];v.status='approved';v.approvedAt=1791130000000;return true;})()`);
-  t('old jam: before cleanup the phone would push the refused change',$("((diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta')[0]||{data:{invoices:[]}}).data.invoices[2]||{}).status")==='approved');
+  t('old jam: before cleanup the refused change is on this phone, but 2.463 pushes no invoices from a homeowner',inv(2).status==='approved'&&$("diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>(o.kind==='meta'&&'invoices' in o.data)||o.sub==='inv').length")===0);
   t('old jam: cleared once, back to exactly the server\u2019s list',$("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===true&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer")&&inv(2).status==='sent'&&!('approvedAt' in inv(2)));
-  t('old jam: the next push carries the server\u2019s invoices (no refused change)',JSON.stringify(JSON.parse($("JSON.stringify((diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta')[0]||{data:{invoices:null}}).data.invoices)")))===$("__ivServer"));
+  t('old jam: the next push carries no invoices at all (F-2) and the phone shows the server\u2019s list',$("diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>(o.kind==='meta'&&'invoices' in o.data)||o.sub==='inv').length")===0&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer"));
   t('old jam: a second run does nothing',$("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===false);
   $("(function(){const v="+P1+".invoices[2];v.status='approved';v.approvedAt=5;v.total=1;return true;})()");
   t('old jam: anything that is not provably that change is left alone',$("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===false&&inv(2).total===1&&inv(2).status==='approved');
@@ -3608,7 +3609,7 @@ S('money-words');
   t('house Money tile and briefing strip both use the short line',hd.door===hd.line&&hd.line.indexOf('Paid\u00a0')===0&&hd.strip.indexOf(hd.line)>=0&&hd.strip.indexOf('Upgrades & credits')<0,JSON.stringify(hd));
   /* On budget only when exactly on */
   const bl=JSON.parse($("JSON.stringify([700,1000,1300].map(function(spent){var p=JSON.parse(JSON.stringify(P()));p.selections=[];p.invoices=[];p.payments=[];p.costs=[{rt:'line',id:'L',label:'x',budget:1000},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:spent}];return houseMoneyLine(p);}))"));
-  t('budget line: Under budget · {x} left when under; On budget only when exact; Over budget when over',bl[0]==='Under\u00a0budget\u00a0· $300\u00a0left'&&bl[1]==='On budget'&&bl[2]==='Over\u00a0budget\u00a0· $300\u00a0over',JSON.stringify(bl));
+  t('budget line: Under budget · {x} left when under; On budget only when exact; {x} over budget when gone over (Agency 10/5)',bl[0]==='Under\u00a0budget\u00a0· $300\u00a0left'&&bl[1]==='On budget'&&bl[2]==='$300\u00a0over\u00a0budget',JSON.stringify(bl));
   /* homeowner credit balance (PM) */
   t('homeowner line: below $0 reads as a credit, a positive amount',$("clientStillToPayLine(-250)")==='$250 credit'&&$("clientStillToPayLine(300)")==='$300 still to pay'&&$("clientStillToPayLine(0)")==='$0 still to pay');
   const out0=$("billingSummary(P()).out");
@@ -3718,7 +3719,7 @@ S('budget-left');
   t('exactly on budget: left $0, no aside on the phone row, $0 on desktop, On budget on the house',ex.left===0&&!ex.over&&ex.aside===''&&ex.cell==='$0'&&ex.house==='On budget',JSON.stringify([ex.left,ex.aside,ex.cell,ex.house]));
   /* over */
   const ov=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:1200,payee:'Sub'}]);
-  t('over budget: $200 over on the phone row, desktop, card and house',ov.left===-200&&ov.over&&ov.ro===true&&ov.aside==='$200 over'&&ov.cell==='$200 over'&&txt(ov.card).indexOf('$200 Over budget')>=0&&ov.house==='Over\u00a0budget\u00a0· $200\u00a0over',JSON.stringify([ov.aside,ov.cell,ov.house]));
+  t('over budget: $200 over on the phone row, desktop, card and house',ov.left===-200&&ov.over&&ov.ro===true&&ov.aside==='$200 over'&&ov.cell==='$200 over'&&txt(ov.card).indexOf('$200 Over budget')>=0&&ov.house==='$200\u00a0over\u00a0budget',JSON.stringify([ov.aside,ov.cell,ov.house]));
   /* the old disagreement: a builder projection does not move left */
   const pj=L([line(1000,{expect:1300}),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'}]);
   t('a projected final cost above budget does not move left (it stays on Projected / vs budget)',pj.projected===1300&&pj.left===400&&pj.cell==='$400',JSON.stringify(pj));
@@ -3728,7 +3729,7 @@ S('budget-left');
   const all=JSON.parse($("JSON.stringify((function(){var bad=[],n=0;state.projects.forEach(function(p){var hold=state.activeId;state.activeId=p.id;var tb=budgetTableHTML(p);costLines(p).forEach(function(l){n++;var r=costLineRollup(p,l.id);var row=moneyLineRowHTML(l,r);var a=/row-aside[^\"]*\">([^<]*)</.exec(row);var re=new RegExp('id=\"bgtL-'+String(l.id).replace(/[^\\w-]/g,'')+'\">([^<]*)<');var m=re.exec(tb);var cell=m?m[1]:'?';var aside=a?a[1]:'';var want=aside===''?'$0':aside.replace(' left','');if(want!==cell)bad.push([p.id,l.id,aside,cell]);});state.activeId=hold;});return {n:n,bad:bad};})())"));
   t('every demo budget line: phone row left and desktop Remaining are the same number',all.n>=16&&all.bad.length===0,JSON.stringify(all.bad.slice(0,3)));
   /* one helper */
-  t('one helper: phone rows, desktop Remaining, cell refresh, Money card and house line all read budgetLeft',['moneyLineRowHTML','budgetTableHTML','bgtRefreshRow','budgetCardHTML','houseMoneyLine'].every(f=>$("String("+f+")").indexOf('budgetLeft(')>=0)&&$("String(moneyLineRowHTML)").indexOf('r.budget-r.projected')<0&&$("String(costLineRollup)").indexOf('budgetLeft(')>=0&&$("String(costSummary)").indexOf('budgetLeft(')>=0);
+  t('one helper: phone rows, desktop Remaining, cell refresh, Money card and house line all read budgetLeft',['moneyLineRowHTML','budgetTableHTML','bgtRefreshRow','budgetCardHTML','houseBudgetLine'].every(f=>$("String("+f+")").indexOf('budgetLeft(')>=0)&&$("String(houseMoneyLine)").indexOf('houseBudgetLine(cs)')>=0&&$("String(moneyLineRowHTML)").indexOf('r.budget-r.projected')<0&&$("String(costLineRollup)").indexOf('budgetLeft(')>=0&&$("String(costSummary)").indexOf('budgetLeft(')>=0);
   t('projected stays on Projected, Tracking, vs budget and the CSV',$("String(renderJobCost)").indexOf('r.projected-r.budget')>=0&&$("String(jobCostCsv)").indexOf('r.projected-r.budget')>=0&&$("String(budgetCardHTML)").indexOf('cs.projected-cs.budget')>=0&&$("String(moneyTotHTML)").indexOf('cs.budget-cs.projected')>=0);
   t('no new words: the labels are the ones already there',SRC.indexOf('<span>${budgetOver(cs)?\'Over budget\':\'Remaining\'}</span>')>=0&&SRC.indexOf('<th class="n u-m26">Remaining</th>')>=0);
 })();
@@ -3759,7 +3760,7 @@ S('budget-left-words');
   /* Ink: house Money line never starts a line with the dot */
   const hl=$("houseMoneyLine(P())");
   t('house Money line: the dot sticks to the end of the piece before it',hl.indexOf('\u00a0· owed\u00a0')>0&&hl.indexOf(' · ')<0&&/^Paid\u00a0\$[\d,]+ of\u00a0\$[\d,]+\u00a0· owed\u00a0\$[\d,]+$/.test(hl),JSON.stringify(hl));
-  t('house budget line: the same rule',$("String(houseMoneyLine)").indexOf("'Under\\u00a0budget\\u00a0· '")>=0&&$("String(houseMoneyLine)").indexOf("'Over\\u00a0budget\\u00a0· '")>=0);
+  t('house budget line: the same rule (Agency 10/5 words, no doubled over)',$("String(houseBudgetLine)").indexOf("'Under\\u00a0budget\\u00a0· '")>=0&&$("String(houseBudgetLine)").indexOf("'\\u00a0over\\u00a0budget'")>=0&&$("String(houseBudgetLine)").indexOf("'Projected '")>=0&&$("String(houseBudgetLine)").indexOf("Over\\u00a0budget")<0);
   /* 1 invoice card in credit */
   const out0=$("billingSummary(P()).out");
   $("P().payments=(P().payments||[]).concat([{id:'sim_bl_pay',amount:"+(Math.round(out0)+5000)+",label:'Sim overpay',t:Date.now()}])");
@@ -3780,6 +3781,299 @@ S('budget-left-words');
   const it=$("(function(){var s=P().selections.find(function(x){return x.approved&&x.status!=='installed';});if(!s)return 'none';var keep=window.selCanInstall,o=window.toast,m=[],st=s.status;window.selCanInstall=function(){return false;};window.toast=function(x){m.push(x);};setSelStatus(s.id,'installed');window.toast=o;window.selCanInstall=keep;s.status=st;return m[0]||'';})()");
   t('4. Installed refused, crew has not confirmed: Agency’s words',it==='The crew hasn\u2019t confirmed these instructions yet, so it can\u2019t be marked Installed.',it);
   t('4. both Installed refusals use it, old text gone',SRC.split("'The crew hasn\\u2019t confirmed these instructions yet, so it can\\u2019t be marked Installed.'").length===3&&SRC.indexOf('Crew has not confirmed')<0);
+})();
+
+/* ════ F-2 · INVOICES AND SELECTION MONEY LEAVE CREW PHONES (2.463.0) ════
+   Invoices move from meta.invoices to sites/{id}/inv, selection money from
+   sel to sites/{id}/selm (rules R are live). Proven on a FRESH boot of this
+   app so the example houses are exactly as shipped:
+   money guard (every figure vs 2.462.0, as built and after the real sync
+   round trip), projection, lazy selm, op order + orphans, absorb by id,
+   homeowner-first open writes nothing, crew holds no money, Money-only
+   builder hides (never $0). The fake Firestore below applies merge/deleteField
+   like the server; f2replay.js proves the same against the emulator + rules. */
+S('f2-money-off-crew');
+await (async function(){
+  const w2=await boot();const $2=c=>w2.$eval(c);
+  const J=c=>JSON.parse($2('JSON.stringify('+c+')'));
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const FX=require('./qa-baseline/f2-money-2.462.0.json');
+  const {EXTRACT,ALLOWANCE_HOUSE}=require('../scripts/f2-money-fixture.cjs');
+  $2(EXTRACT);$2(ALLOWANCE_HOUSE);$2('__f2AddAllowanceHouse()');
+  const MONEY=['price','allowance','cost','costLineId','invoicedIn'];
+  const nFig=o=>(JSON.stringify(o).match(/\$|Included/g)||[]).length;
+  const cmp=(got,want,fields)=>{const bad=[];Object.keys(want).forEach(h=>{(fields||Object.keys(want[h])).forEach(k=>{
+      const a=JSON.stringify((got[h]||{})[k]),b=JSON.stringify(want[h][k]);if(a!==b)bad.push(h+'.'+k+' got '+String(a).slice(0,90)+' want '+String(b).slice(0,90));});});return bad;};
+  const B_F=['houseLine','money','selLedger','selList','billingCard','invoices','ledger'],H_F=['homeowner','homeownerMoney'],C_F=['crew'];
+
+  /* 1 · money guard, as built */
+  t('fixture is from 2.462.0 and covers 11 houses (10 examples + one using all five money keys), 1000+ figures',FX.version==='2.462.0'&&Object.keys(FX.houses).length===11&&nFig(FX.houses)>1000,FX.version+' '+nFig(FX.houses));
+  const m0=JSON.parse($2('__f2Money()'));const d0=cmp(m0,FX.houses);
+  t('money guard (as built): every figure on builder, homeowner and crew screens = 2.462.0 ('+nFig(FX.houses)+' figures)',d0.length===0,d0[0]);
+  $2("window.__demo=JSON.parse(JSON.stringify(state.projects));true");
+
+  /* 2 · projection (correction 5) on every example house */
+  const proj=J(`(function(){state.session={role:'builder',name:'You',auth:{uid:'uB'}};return __demo.map(function(p0){var p=JSON.parse(JSON.stringify(p0));delete p.sample;p.members={uB:'builder'};
+    return {id:p.id,nMoney:p.selections.filter(selHasMoney).length,nSel:p.selections.length,nInv:(p.invoices||[]).length,
+      ops:diffSiteOps({meta:'',colls:{}},p).map(function(o){return {kind:o.kind,sub:o.sub||'',id:o.id||'',keys:o.data?Object.keys(o.data):[]};})};});})()`);
+  let selOps=0,selmOps=0,bad=[];
+  proj.forEach(h=>{const sel=h.ops.filter(o=>o.sub==='sel'),sm=h.ops.filter(o=>o.sub==='selm'),inv=h.ops.filter(o=>o.sub==='inv'),meta=h.ops.filter(o=>o.kind==='meta');
+    selOps+=sel.length;selmOps+=sm.length;
+    sel.forEach(o=>{if(o.keys.some(k=>MONEY.indexOf(k)>=0))bad.push(h.id+' sel/'+o.id+' has '+o.keys.filter(k=>MONEY.indexOf(k)>=0));});
+    sm.forEach(o=>{if(o.keys[0]!=='id'||o.keys.length<2||o.keys.slice(1).some(k=>MONEY.indexOf(k)<0))bad.push(h.id+' selm/'+o.id+' keys '+o.keys);
+      if(!sel.some(s=>s.id===o.id))bad.push(h.id+' selm/'+o.id+' has no sel');});
+    if(sm.length!==h.nMoney||sel.length!==h.nSel)bad.push(h.id+' counts sel '+sel.length+'/'+h.nSel+' selm '+sm.length+'/'+h.nMoney);
+    if(inv.length!==h.nInv)bad.push(h.id+' inv '+inv.length+'/'+h.nInv);
+    if(meta.some(o=>o.keys.indexOf('invoices')>=0))bad.push(h.id+' meta carries invoices');});
+  t('projection: no sel push carries a money key; every selm push is {id,+money keys only}; meta has no invoices ('+selOps+' sel, '+selmOps+' selm ops)',bad.length===0&&selOps>50&&selmOps>50,bad[0]);
+  const fz=J(`(function(){var seed=4632;var r=function(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+    var vals=[undefined,null,'',0,1,1250.5,-130,'cl_9','inv_3'];var bad=0,lazy=0,msg='';
+    var srt=function(o){return JSON.stringify(Object.keys(o).sort().map(function(k){return [k,o[k]];}));};
+    for(var i=0;i<3000;i++){var s={id:r()<.5?'f'+i:i,label:'X'+i,status:SEL_STATUS[Math.floor(r()*SEL_STATUS.length)],approved:r()<.5};
+      SEL_MONEY_KEYS.forEach(function(k){var v=vals[Math.floor(r()*vals.length)];if(v!==undefined)s[k]=v;});if(r()<.3)s.note='n'+i;
+      var a=selNoMoney(s),m=selmRow(s);
+      if(SEL_MONEY_KEYS.some(function(k){return k in a;})){bad++;msg='sel keeps money';}
+      if(m){if(m.id!==s.id||Object.keys(m).some(function(k){return k!=='id'&&SEL_MONEY_KEYS.indexOf(k)<0;})){bad++;msg='selm key '+JSON.stringify(m);}}
+      else lazy++;
+      var want={};Object.keys(s).forEach(function(k){if(SEL_MONEY_KEYS.indexOf(k)>=0&&(s[k]==null||s[k]===''))return;want[k]=s[k];});
+      if(srt(selPutMoney(a,m))!==srt(want)){bad++;msg='round trip '+JSON.stringify(s);}}
+    return {bad:bad,lazy:lazy,msg:msg};})()`);
+  t('projection fuzz: 3000 random selections split into sel (no money) + selm (money only) and join back exactly',fz.bad===0&&fz.lazy>0,fz.msg);
+  t('the five money keys are exactly price, allowance, cost, costLineId, invoicedIn',$2("SEL_MONEY_KEYS.join()")===MONEY.join());
+
+  /* 3 · lazy selm: a selection with no selm shows no money and leaves totals alone */
+  const lz=J(`(function(){state.session={role:'builder',name:'You',auth:{uid:'uB'}};var p=state.projects.find(function(x){return x.id==='p1';});
+    var before={b:JSON.stringify(billingSummary(p)),m:__f2Money(['p1'])};
+    var s=Object.assign(selNoMoney(p.selections[0]),{id:9901,item:'Lazy basin',status:SEL_STATUS[0],approved:false});p.selections.push(s);
+    var q=JSON.parse(JSON.stringify(p));delete q.sample;q.members={uB:'builder'};var ops=diffSiteOps({meta:'',colls:{}},q);
+    state.session={role:'builder',name:'You'};state.activeId='p1';_selFilter=null;renderSelections();
+    var row=[].filter.call(document.querySelectorAll('#selList *'),function(e){return e.children.length===0&&/Lazy basin/.test(e.textContent);}).length;
+    var after={b:JSON.stringify(billingSummary(p)),m:__f2Money(['p1'])};
+    p.selections.pop();
+    return {selOp:ops.some(function(o){return o.sub==='sel'&&o.id==='9901';}),selmOp:ops.some(function(o){return o.sub==='selm'&&o.id==='9901';}),row:row,before:before,after:after,nb:JSON.parse(after.m).p1.selList.length-JSON.parse(before.m).p1.selList.length};})()`);
+  t('lazy selm: a selection without money pushes its sel and no selm doc (no zero docs)',lz.selOp&&!lz.selmOp);
+  t('lazy selm: it is listed, with no price and no Included',lz.row>0&&lz.nb===0,lz.row+' '+lz.nb);
+  t('lazy selm: totals and every other figure unchanged',lz.before.b===lz.after.b&&(()=>{const a=JSON.parse(lz.before.m).p1,b=JSON.parse(lz.after.m).p1;return Object.keys(a).every(k=>JSON.stringify(a[k])===JSON.stringify(b[k]));})());
+
+  /* 4 · op order and orphans (corrections 5, 6) */
+  const ord=J(`(function(){state.session={role:'builder',name:'You',auth:{uid:'uB'}};
+    var p=JSON.parse(JSON.stringify(__demo[1]));delete p.sample;p.members={uB:'builder'};var sh={meta:'',colls:{}};
+    var apply=function(ops){ops.forEach(function(o){if(o.kind==='meta')sh.meta=_syncHash(JSON.stringify(o.data));else if(o.kind==='set')(sh.colls[o.sub]||(sh.colls[o.sub]={}))[o.id]=_syncHash(JSON.stringify(o.data));else if(sh.colls[o.sub])delete sh.colls[o.sub][o.id];});};
+    apply(diffSiteOps(sh,p));var settled=diffSiteOps(sh,p).length;
+    var wm=p.selections.filter(selHasMoney);var gone=wm[0],ex=wm[1];
+    p.selections=p.selections.filter(function(s){return s!==gone;});
+    ex.price=(Number(ex.price)||0)+111;ex.notes='edited';
+    p.selections.push(Object.assign(selNoMoney(ex),{id:9902,price:42,item:'New one'}));
+    var noMoney=wm[2];SEL_MONEY_KEYS.forEach(function(k){delete noMoney[k];});
+    var ops=diffSiteOps(sh,p);apply(ops);
+    var orphan=Object.keys(sh.colls.selm||{}).filter(function(k){return !(sh.colls.sel||{})[k];});
+    return {settled:settled,gone:String(gone.id),ex:String(ex.id),nm:String(noMoney.id),ops:ops.map(function(o){return o.kind+' '+(o.sub||'meta')+'/'+(o.id||'');}),orphan:orphan};})()`);
+  const ix=s=>ord.ops.indexOf(s);
+  t('op order: a settled house sends nothing',ord.settled===0);
+  t('orphans: deleting a selection deletes its selm, selm first',ix('del selm/'+ord.gone)>=0&&ix('del sel/'+ord.gone)>ix('del selm/'+ord.gone),ord.ops.join());
+  t('orphans: money removed from a selection deletes its selm (lazy)',ix('del selm/'+ord.nm)>=0&&ix('set sel/'+ord.nm)<0,ord.ops.join());
+  t('op order: new money on a selection the server has goes to selm before sel',ix('set selm/'+ord.ex)>=0&&ix('set selm/'+ord.ex)<ix('set sel/'+ord.ex),ord.ops.join());
+  t('op order: a new selection lands in sel before its selm',ix('set sel/9902')>=0&&ix('set sel/9902')<ix('set selm/9902'),ord.ops.join());
+  t('orphans: no selm without a sel after the push',ord.orphan.length===0,ord.orphan.join());
+  const who=J(`(function(){var out={};[['client',{role:'client',site:'p2',auth:{uid:'uH'}},'client'],['crew',{role:'subs',name:'Timberline Framing',auth:{uid:'uS'}},'sub'],
+      ['super',{role:'builder',name:'Sam',member:true,rpRole:'super',gates:{},auth:{uid:'uX'}},'builder'],['pm',{role:'builder',name:'Pat',member:true,rpRole:'pm',gates:{moneyJob:true,moneyCo:false},auth:{uid:'uP'}},'builder']].forEach(function(x){
+      state.session=x[1];var p=JSON.parse(JSON.stringify(__demo[1]));delete p.sample;p.members={};p.members[x[1].auth.uid]=x[2];
+      var ops=diffSiteOps({meta:'',colls:{}},p);out[x[0]]={inv:ops.filter(function(o){return o.sub==='inv';}).length,selm:ops.filter(function(o){return o.sub==='selm';}).length,
+        metaInv:ops.some(function(o){return o.kind==='meta'&&'invoices' in o.data;}),selMoney:ops.some(function(o){return o.sub==='sel'&&SEL_MONEY_KEYS.some(function(k){return k in o.data;});}),colls:syncCollsFor(siteRoleFor(p)).map(function(c){return c.sub;}).join()};});
+    state.session={role:'builder',name:'You'};return out;})()`);
+  t('homeowner phone: never an inv or selm write, no invoices in meta, no money on sel',who.client.inv===0&&who.client.selm===0&&!who.client.metaInv&&!who.client.selMoney,JSON.stringify(who.client));
+  t('crew phone: does not listen to inv or selm and writes neither',who.crew.colls==='items,bk,sel,logs'&&who.crew.inv+who.crew.selm===0&&!who.crew.metaInv&&!who.crew.selMoney,JSON.stringify(who.crew));
+  t('builder without Money (super): no costs, inv or selm; writes none',who.super.colls==='items,bk,sel,logs,pmts,mail'&&who.super.inv+who.super.selm===0&&!who.super.selMoney,JSON.stringify(who.super));
+  t('Money-only builder (PM): selm yes, inv no (Claude lock Q3)',who.pm.colls==='items,bk,sel,logs,pmts,mail,costs,selm'&&who.pm.inv===0&&who.pm.selm>0,JSON.stringify(who.pm));
+
+  /* 5 · a fake Firestore that applies set/merge/deleteField like the server */
+  $2(`(function(){
+    var DEL={__f2del:1};window.firebase={firestore:{FieldValue:{delete:function(){return DEL;}}}};
+    var F=window.__F={srv:{},writes:[],L:[],uid:null};
+    var cl=function(x){return x===undefined?undefined:JSON.parse(JSON.stringify(x));};
+    var isObj=function(x){return !!x&&typeof x==='object'&&!Array.isArray(x)&&x!==DEL;};
+    var strip=function(o){var r={};Object.keys(o).forEach(function(k){if(o[k]===DEL)return;r[k]=isObj(o[k])?strip(o[k]):cl(o[k]);});return r;};
+    var merge=function(t,d){Object.keys(d).forEach(function(k){if(d[k]===DEL){delete t[k];return;}if(isObj(d[k])&&isObj(t[k]))merge(t[k],d[k]);else t[k]=isObj(d[k])?strip(d[k]):cl(d[k]);});return t;};
+    F.site=function(sid){return F.srv[sid]||(F.srv[sid]={doc:null,colls:{}});};
+    var snap=function(ch,docs){return {metadata:{fromCache:false},docs:docs,size:docs.length,empty:!docs.length,docChanges:function(){return ch;}};};
+    var ds=function(id,d){return {id:id,exists:d!=null,data:function(){return cl(d);}};};
+    var mine=function(d){return !!d&&(d.memberUids||[]).indexOf(F.uid)>=0;};
+    var siteDocs=function(){return Object.keys(F.srv).filter(function(s){return mine(F.srv[s].doc);}).map(function(s){return ds(s,F.srv[s].doc);});};
+    var collDocs=function(sid,sub){var c=F.site(sid).colls[sub]||{};return Object.keys(c).map(function(id){return ds(id,c[id]);});};
+    var fire=function(path,type,id,d){F.L.forEach(function(l){if(l.dead||l.path!==path)return;if(path==='sites'&&!mine(d)&&type!=='removed')return;
+      setTimeout(function(){if(!l.dead)l.h(snap([{type:type,doc:ds(id,d)}],path==='sites'?siteDocs():collDocs(l.sid,l.sub)));},0);});};
+    var listen=function(path,sid,sub,o,h){if(typeof o==='function')h=o;var l={path:path,sid:sid,sub:sub,h:h};F.L.push(l);
+      setTimeout(function(){if(l.dead)return;var dd=path==='sites'?siteDocs():collDocs(sid,sub);l.h(snap(dd.map(function(d){return {type:'added',doc:d};}),dd));},0);return function(){l.dead=true;};};
+    var log=function(kind,path,d,o){var dels=[];if(d&&isObj(d.data))Object.keys(d.data).forEach(function(k){if(d.data[k]===DEL)dels.push(k);});
+      F.writes.push({kind:kind,path:path,data:d?strip(d):null,dels:dels,merge:!!(o&&o.merge),uid:F.uid});};
+    F.db={collection:function(){return {
+      where:function(){return {onSnapshot:function(o,h){return listen('sites',null,null,o,h);}};},
+      doc:function(sid){return {
+        get:function(){return Promise.resolve(ds(sid,F.site(sid).doc));},
+        set:function(d,o){log('set','sites/'+sid,d,o);var s=F.site(sid);var t=s.doc?'modified':'added';s.doc=(o&&o.merge&&s.doc)?merge(s.doc,d):strip(d);fire('sites',t,sid,s.doc);return Promise.resolve();},
+        collection:function(sub){var C={where:function(){return C;},onSnapshot:function(o,h){return listen(sid+'/'+sub,sid,sub,o,h);},
+          doc:function(id){return {
+            set:function(d,o){log('set',sid+'/'+sub+'/'+id,d,o);var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
+            delete:function(){log('del',sid+'/'+sub+'/'+id);var c=F.site(sid).colls[sub]||{};var had=!!c[id];delete c[id];if(had)fire(sid+'/'+sub,'removed',id,null);return Promise.resolve();}};}};return C;}};}};}};
+    /* a fresh phone: new device, no shadow, no houses */
+    F.phone=function(uid,sess,dev){F.L.forEach(function(l){l.dead=true;});F.L=[];F.writes=[];F.uid=uid;
+      try{(Sync.unsub||[]).forEach(function(u){try{u&&u();}catch(e){}});}catch(e){}
+      state.projects=[];state.session=sess;
+      Object.assign(Sync,{db:F.db,mode:'live',uid:uid,authKind:'account',deviceId:dev,on:true,_listening:{},_collGen:{},_reArmed:{},_notifReady:{},unsub:[],_held:{},_gateDelays:[0],_shadow:{},_selNoteMs:0});
+      localStorage.removeItem(Sync._baseKey());Sync._loadBase();Sync._shadow=Sync._shadow||{};Sync.subscribe();return true;};
+    /* the old way (2.462.0): invoices in meta, money on sel, no inv/selm */
+    var OLD=['items','bookings','selections','logs','payments','mailReview','costs'],SUB={items:'items',bookings:'bk',selections:'sel',logs:'logs',payments:'pmts',mailReview:'mail',costs:'costs'};
+    F.seedOld=function(p0,members,info){var p=cl(p0);delete p.sample;p.members=members;p.memberInfo=info||{};var meta=cl(p);OLD.forEach(function(k){delete meta[k];});
+      var s=F.site(String(p.id));s.doc={mode:'live',id:p.id,meta:meta,members:members,memberUids:Object.keys(members),updatedAt:1791000000000,updatedBy:'devOld',updatedByUid:'uB'};
+      OLD.forEach(function(k){var c=s.colls[SUB[k]]={};var key=SYNC_COLLS.find(function(x){return x.f===k;}).key;(p[k]||[]).forEach(function(r){c[key(r)]={data:cl(r),updatedAt:1791000000000,updatedBy:'devOld'};});});};
+    F.state=function(){return JSON.stringify(state.projects);};
+    return true;})()`);
+  const settle=async()=>{let last=-1,same=0;for(let i=0;i<200&&same<6;i++){await sleep(40);const n=$2("__F.writes.length+':'+Object.keys(Sync._pushing).length+':'+Object.keys(Sync._held).length");if(n===last)same++;else{same=0;last=n;}}};
+  const W=()=>J('__F.writes');
+  const srvMoney=()=>J(`(function(){var o={selMoney:[],metaInv:[],orphan:[]};Object.keys(__F.srv).forEach(function(s){var x=__F.srv[s];
+    Object.keys((x.colls.sel)||{}).forEach(function(k){var d=x.colls.sel[k].data||{};if(SEL_MONEY_KEYS.some(function(m){return m in d;}))o.selMoney.push(s+'/'+k);});
+    if(x.doc&&x.doc.meta&&Array.isArray(x.doc.meta.invoices)&&x.doc.meta.invoices.length)o.metaInv.push(s);
+    Object.keys((x.colls.selm)||{}).forEach(function(k){if(!(x.colls.sel||{})[k])o.orphan.push(s+'/'+k);});});return o;})()`);
+  const B={role:'builder',name:'You',auth:{uid:'uB'}},H={role:'client',site:'p1',auth:{uid:'uH'}},PM={role:'builder',name:'Pat',member:true,rpRole:'pm',gates:{moneyJob:true,moneyCo:false},auth:{uid:'uP'}},SUP={role:'builder',name:'Sam',member:true,rpRole:'super',gates:{},auth:{uid:'uX'}};
+  const MEM={uB:'builder',uH:'client',uS:'sub',uP:'builder',uX:'builder'};
+  const phone=async(uid,sess,dev)=>{$2("__F.phone("+JSON.stringify(uid)+","+JSON.stringify(sess)+","+JSON.stringify(dev)+")");await settle();};
+  const noMoneyHeld=()=>J(`(function(){var o=[];state.projects.forEach(function(p){if((p.invoices||[]).length)o.push(p.id+' invoices');(p.selections||[]).forEach(function(s){SEL_MONEY_KEYS.forEach(function(k){if(k in s)o.push(p.id+'/'+s.id+' '+k);});});});return o;})()`);
+
+  /* 6 · migration of all ten example houses, seeded the old way: numbers never move */
+  $2("__F.srv={};__demo.forEach(function(p){__F.seedOld(p,"+JSON.stringify(MEM)+",{uS:{name:'Timberline Framing'}});});true");
+  await phone('uH',H,'devH1');
+  const hoW=W();const hoQl=J("[].concat.apply([],state.projects.map(function(p){return diffSiteOps(Sync._shadow[String(p.id)]||{meta:'',colls:{}},p).map(function(o){return p.id+' '+o.kind+' '+(o.sub||'')+'/'+(o.id||'')+(o.kind==='meta'?' '+Object.keys(o.data).join('|'):'');});}))");const hoQ=hoQl.length;
+  t('homeowner first on 11 unmigrated houses: zero writes',hoW.length===0,JSON.stringify(hoW.slice(0,2)));
+  t('homeowner first: nothing queued or held (no refused write later)',hoQ===0&&$2("Object.keys(Sync._held).length")===0&&J("state.projects.length")===11,hoQ+' '+$2("Object.keys(Sync._held).join()")+' '+hoQl.slice(0,3).join(' ; '));
+  const hoM=JSON.parse($2('__f2Money()'));const dHo=cmp(hoM,FX.houses,H_F);
+  t('homeowner first (dual-read): every homeowner figure = 2.462.0',dHo.length===0,dHo[0]);
+  await phone('uS',{role:'subs',name:'Timberline Framing',auth:{uid:'uS'}},'devS1');
+  t('crew first on unmigrated houses: zero writes, no invoices and no selection money on the phone',W().length===0&&noMoneyHeld().length===0&&J("state.projects.length")===11,JSON.stringify(W().slice(0,1))+noMoneyHeld()[0]);
+  await phone('uX',SUP,'devX1');
+  t('builder without Money (super) first: zero writes, no money on the phone',W().length===0&&noMoneyHeld().length===0,noMoneyHeld()[0]);
+  await phone('uB',B,'devB1');
+  const mw=W();const sm=srvMoney();
+  t('money-gated builder migrates: writes went up',mw.length>0&&mw.every(x=>x.uid==='uB'),mw.length);
+  t('after migration: no sel doc on the server has a money key',sm.selMoney.length===0,sm.selMoney.slice(0,3).join());
+  t('after migration: meta.invoices cleared on every house',sm.metaInv.length===0,sm.metaInv.join());
+  t('after migration: no selm without a sel',sm.orphan.length===0,sm.orphan.join());
+  const invOk=J(`__demo.every(function(p){var c=(__F.srv[p.id].colls.inv)||{};return (p.invoices||[]).every(function(v){return c[String(v.id)]&&JSON.stringify(c[String(v.id)].data)===JSON.stringify(v);})&&Object.keys(c).length===(p.invoices||[]).length;})`);
+  t('after migration: every invoice is in inv, byte for byte',invOk===true);
+  const smOk=J(`__demo.every(function(p){var c=(__F.srv[p.id].colls.selm)||{};var want=p.selections.filter(selHasMoney);return Object.keys(c).length===want.length&&want.every(function(s){var d=c[String(s.id)];return d&&JSON.stringify(d.data)===JSON.stringify(selmRow(s));});})`);
+  t('after migration: one selm per selection with money, holding exactly its money',smOk===true);
+  const selW=mw.filter(x=>/\/sel\//.test(x.path));
+  t('correction 2: every sel write deletes the five money keys explicitly (merge never deletes)',selW.length>0&&selW.every(x=>x.merge&&MONEY.every(k=>x.dels.indexOf(k)>=0)),selW.length);
+  const selmFirst=selW.every(x=>{const id=x.path.split('/sel/')[1],h=x.path.split('/')[0];const a=mw.findIndex(y=>y.path===h+'/selm/'+id);const b=mw.indexOf(x);
+    return a<0?!J("selHasMoney((__demo.find(function(p){return p.id==='"+h+"';}).selections.find(function(s){return String(s.id)==='"+id+"';}))||{})"):a<b;});
+  t('migration order: a selection\u2019s money reaches selm before its sel loses it',selmFirst);
+  const paths=mw.map(x=>x.kind+' '+x.path);const dup=paths.filter((x,i)=>paths.indexOf(x)!==i&&!/^set sites\//.test(x));
+  t('migration writes each record once (one push per house at a time)',dup.length===0,dup.slice(0,3).join());
+  const bM=JSON.parse($2('__f2Money()'));const dB=cmp(bM,FX.houses);
+  t('migrating phone: every figure (builder, homeowner, crew) = 2.462.0',dB.length===0,dB[0]);
+  await phone('uB',B,'devB2');
+  t('idempotent: a second builder phone on migrated houses writes nothing',W().length===0,JSON.stringify(W().slice(0,2)));
+  const b2=JSON.parse($2('__f2Money()'));const dB2=cmp(b2,FX.houses,B_F);
+  t('money guard after the round trip, builder: every figure = 2.462.0',dB2.length===0,dB2[0]);
+  await phone('uH',H,'devH2');
+  const h2=JSON.parse($2('__f2Money()'));const dH2=cmp(h2,FX.houses,H_F);
+  t('money guard after the round trip, homeowner: every figure = 2.462.0, zero writes',dH2.length===0&&W().length===0,dH2[0]);
+  await phone('uS',{role:'subs',name:'Timberline Framing',auth:{uid:'uS'}},'devS2');
+  const c2=JSON.parse($2('__f2Money()'));const dC2=cmp(c2,FX.houses,C_F);
+  t('money guard after the round trip, crew: same (no) figures, no money on the phone, zero writes',dC2.length===0&&noMoneyHeld().length===0&&W().length===0,dC2[0]||noMoneyHeld()[0]);
+  t('crew phone does not listen to inv or selm',J("__F.L.filter(function(l){return !l.dead&&/\\/(inv|selm)$/.test(l.path);}).length")===0);
+  await phone('uP',PM,'devP2');
+  t('Money-only builder after migration: writes nothing',W().length===0,JSON.stringify(W().slice(0,2)));
+  const pmM=JSON.parse($2('__f2Money(null,'+JSON.stringify(PM)+')'));
+  const subseq=(a,b)=>{let j=0;for(const x of b){if(j<a.length&&a[j]===x)j++;}return j===a.length;};
+  const pmBad=[];Object.keys(FX.houses).forEach(h=>{const g=pmM[h],f=FX.houses[h];
+    if(g.billingCard.length)pmBad.push(h+' invoice card shown');if(g.selLedger.length)pmBad.push(h+' selections ledger shown');
+    ['money'].forEach(k=>{if(!subseq(g[k],f[k]))pmBad.push(h+' '+k+' '+JSON.stringify(g[k]).slice(0,80)+' not within '+JSON.stringify(f[k]).slice(0,80));});
+    if(JSON.stringify(g.selList)!==JSON.stringify(f.selList))pmBad.push(h+' selList');});
+  const pmTxt=J(`state.projects.map(function(p){state.session=${JSON.stringify(PM)};return houseMoneyLine(p);}).join('|')`);
+  const pmLines=pmTxt.split('|');
+  t('Money-only builder: invoice numbers hidden (card, ledger, paid/owed), never shown as $0; selection prices still shown',pmBad.length===0&&pmLines.every(x=>!/Paid|owed/.test(x)&&/^(|Under\u00a0budget\u00a0\u00b7 \$[\d,]+\u00a0left|\$[\d,]+\u00a0over\u00a0budget|Projected \$[\d,]+\u00a0over\u00a0budget|On budget)$/.test(x)),pmBad[0]||pmTxt.slice(0,160));
+  /* Ink (F-2) + Agency 10/5: the PM's house line falls back to the budget line. Direction always
+     agrees with the Money sheet; a projection-only overage reads Projected {x} over budget with the
+     sheet's amount; money already over reads {x} over budget with the amount gone over (the Build
+     card's Over budget figure, budgetLeft). Never Under while the sheet says Over. */
+  const agree=J(`(function(){var out=[];state.projects.forEach(function(p){state.session=${JSON.stringify(PM)};
+      var line=houseMoneyLine(p).replace(/\u00a0/g,' ');var hero=moneyTotHTML(p).replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ');var cs=costSummary(p);
+      var hOver=/Over budget, projected/.test(hero),lProj=/^Projected \\$[\\d,]+ over budget$/.test(line),lAct=/^\\$[\\d,]+ over budget$/.test(line),lUnder=/^Under budget/.test(line);
+      var hAmt=(hero.match(/\\$[\\d,]+/)||[''])[0],lAmt=(line.match(/\\$[\\d,]+/)||[''])[0];
+      var ok=!/Paid|owed/.test(line)&&!(lUnder&&hOver)&&(hOver===(lProj||lAct)||(lAct&&budgetOver(cs)))
+        &&(!lProj||(hAmt===lAmt&&!budgetOver(cs)))&&(!lAct||(budgetOver(cs)&&lAmt===invUsd(-budgetLeft(cs))));
+      out.push({id:String(p.id),line:line,hero:hero.slice(0,40),over:hOver,form:lProj?'projected':lAct?'actual':lUnder?'under':line,ok:ok});});
+    state.session={role:'builder',name:'You'};return out;})()`);
+  t('Money-only builder: house line and Money sheet agree on direction on every house; projected-only = the sheet\u2019s amount; gone over = the amount gone over',agree.length===11&&agree.every(x=>x.ok)&&agree.filter(x=>x.over).length>=3,JSON.stringify(agree.filter(x=>!x.ok).slice(0,2)));
+  t('Money-only builder on p2: Projected $3,400 over budget (Money: $3,400 Over budget, projected)',(agree.find(x=>x.id==='p2')||{}).line==='Projected $3,400 over budget',JSON.stringify(agree.find(x=>x.id==='p2')));
+  t('Money-only builder on p3 (contracted already past budget): $1,400 over budget, the Build card\u2019s Over budget figure',(agree.find(x=>x.id==='p3')||{}).line==='$1,400 over budget',JSON.stringify(agree.find(x=>x.id==='p3')));
+  /* Agency 10/5: no house line says over twice, for any builder, on any house, with or without invoices */
+  const twice=J(`(function(){var bad=[],n=0;var S=[{role:'builder',name:'You'},${JSON.stringify(PM)},${JSON.stringify(SUP)},{role:'builder',name:'Kim',member:true,rpRole:'pm',gates:{moneyJob:true,moneyCo:true}}];
+      state.projects.forEach(function(p0){[p0,Object.assign(JSON.parse(JSON.stringify(p0)),{invoices:[],selections:[],payments:[]})].forEach(function(p){S.forEach(function(se){state.session=se;var l=houseMoneyLine(p);n++;
+        if(((l.match(/over/gi))||[]).length>1)bad.push(p.id+' '+l);});});});
+      state.session={role:'builder',name:'You'};return {bad:bad,n:n};})()`);
+  t('no house line says over twice (11 houses x 4 builder roles, with and without homeowner money: '+twice.n+' lines)',twice.bad.length===0&&twice.n===88,twice.bad[0]);
+  /* fixtures: the same budget line, projected-only vs gone over, owner and PM alike */
+  const fx=J(`(function(){var mk=function(lines){var p=JSON.parse(JSON.stringify(state.projects[0]));p.invoices=[];p.selections=[];p.payments=[];p.costs=lines;return p;};
+      var proj=mk([{rt:'line',id:'L',label:'Framing',budget:20000,expect:23400},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:12000}]);
+      var act=mk([{rt:'line',id:'L',label:'Framing',budget:20000},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:23400}]);
+      var out={};[['owner',{role:'builder',name:'You'}],['pm',${JSON.stringify(PM)}]].forEach(function(x){state.session=x[1];out[x[0]]={proj:houseMoneyLine(proj),act:houseMoneyLine(act),projHero:moneyTotHTML(proj).replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').slice(0,40)};});
+      state.session={role:'builder',name:'You'};return out;})()`);
+  t('projection only (contracted and paid still under): Projected $3,400 over budget, owner and PM alike',fx.owner.proj==='Projected $3,400\u00a0over\u00a0budget'&&fx.pm.proj===fx.owner.proj&&/\$3,400 Over budget, projected/.test(fx.owner.projHero),JSON.stringify(fx));
+  t('gone over (paid past the budget): $3,400 over budget, owner and PM alike, never Projected',fx.owner.act==='$3,400\u00a0over\u00a0budget'&&fx.pm.act===fx.owner.act,JSON.stringify(fx));
+  t('Money-only builder: holds no invoices, writes nothing',J("state.projects.every(function(p){return !(p.invoices||[]).length;})")&&W().length===0);
+  await phone('uX',SUP,'devX2');
+  const supM=JSON.parse($2('__f2Money(null,'+JSON.stringify(SUP)+')'));
+  t('builder without Money: no selection prices, no invoice numbers, nothing as $0 on selections',Object.keys(supM).every(h=>supM[h].selList.length===0&&supM[h].selLedger.length===0&&supM[h].billingCard.length===0)&&noMoneyHeld().length===0);
+  const sheet=J(`(function(){state.session=${JSON.stringify(SUP)};state.activeId='p1';var p=P();openEditSel(p.selections[0].id);var b=document.getElementById('selMoneyBox');var a=b?b.style.display:'missing';
+    try{closeModal('selModal');}catch(e){}state.session={role:'builder',name:'You'};openEditSel(p.selections[0].id);var c=document.getElementById('selMoneyBox').style.display;try{closeModal('selModal');}catch(e){}return [a,c];})()`);
+  t('builder without Money: the selection sheet hides the money inputs (owner still sees them)',sheet[0]==='none'&&sheet[1]==='',JSON.stringify(sheet));
+
+  /* 6b · a Money-only builder (PM) opens first: rules let it move selection money (moneyOk), it never reads or moves invoices */
+  $2("window.__pmH=__demo.filter(function(p){return (p.invoices||[]).length&&p.selections.some(selHasMoney);})[1];__F.srv={};__F.seedOld(Object.assign(JSON.parse(JSON.stringify(__pmH)),{id:'f2p'}),"+JSON.stringify(MEM)+",{});true");
+  await phone('uP',PM,'devP3');
+  const pW=W();const pS=srvMoney();
+  t('PM first: moves selection money only (selm, then sel with explicit deletes); no inv, no house doc write',pW.length>0&&pW.every(x=>/^f2p\/(selm|sel)\//.test(x.path))&&pW.filter(x=>/\/sel\//.test(x.path)).every(x=>MONEY.every(k=>x.dels.indexOf(k)>=0))&&pS.selMoney.length===0&&pS.metaInv.length===1,JSON.stringify(pW.filter(x=>!/\/(selm|sel)\//.test(x.path)).slice(0,1))+JSON.stringify(pS));
+  await phone('uB',B,'devB5');
+  const pS2=srvMoney();const pInv=J("Object.keys(__F.srv.f2p.colls.inv||{}).length===__pmH.invoices.length");
+  t('PM first, then the owner: invoices absorbed, meta.invoices cleared, nothing left on sel',pS2.metaInv.length===0&&pS2.selMoney.length===0&&pS2.orphan.length===0&&pInv===true&&W().every(x=>!/\/sel\//.test(x.path)),JSON.stringify(pS2));
+
+  /* 7 · absorb by id, selm wins, orphans: one house with half-moved data */
+  $2(`(function(){__F.srv={};var p=JSON.parse(JSON.stringify(__demo[1]));p.id='f2a';
+    __F.seedOld(p,${JSON.stringify(MEM)},{uS:{name:'Timberline Framing'}});var s=__F.srv.f2a;
+    var inv0=JSON.parse(JSON.stringify(p.invoices[0]));inv0.title=String(inv0.title)+' (inv copy)';
+    s.colls.inv={};s.colls.inv[String(inv0.id)]={data:inv0,updatedAt:1791100000000,updatedBy:'devNew'};
+    var wm=p.selections.filter(selHasMoney);var s12=wm[0];window.__f2a={inv0:String(inv0.id),legacy:p.invoices.map(function(v){return String(v.id);}),s12:String(s12.id),
+      p12:(Number(s12.price)||0)+250,nMoney:wm.length};
+    s.colls.selm={};s.colls.selm[String(s12.id)]={data:{id:s12.id,price:__f2a.p12},updatedAt:1791100000000,updatedBy:'devNew'};
+    s.colls.selm['zz9']={data:{id:'zz9',price:99},updatedAt:Date.now()-3600000,updatedBy:'devOld'};
+    return true;})()`);
+  const A=J('__f2a');
+  await phone('uH',{role:'client',site:'f2a',auth:{uid:'uH'}},'devH3');
+  const hA=J(`(function(){var p=state.projects[0];return {ids:p.invoices.map(function(v){return String(v.id);}).sort(),inv0:(p.invoices.find(function(v){return String(v.id)===__f2a.inv0;})||{}).title,
+     p12:(p.selections.find(function(s){return String(s.id)===__f2a.s12;})||{}).price,zz9:p.selections.some(function(s){return String(s.id)==='zz9';})};})()`);
+  t('half-moved house, homeowner first: zero writes',W().length===0,JSON.stringify(W().slice(0,1)));
+  t('dual-read: union by id (inv + legacy), inv wins on the same id',JSON.stringify(hA.ids)===JSON.stringify(A.legacy.slice().sort())&&/\(inv copy\)$/.test(hA.inv0),JSON.stringify(hA));
+  t('dual-read: selm wins over money still on sel',hA.p12===A.p12&&!hA.zz9,JSON.stringify(hA));
+  await phone('uB',B,'devB3');
+  const fA=J(`(function(){var s=__F.srv.f2a;return {inv:Object.keys(s.colls.inv).sort(),inv0:s.colls.inv[__f2a.inv0].data.title,meta:s.doc.meta.invoices,selm:Object.keys(s.colls.selm).sort(),p12:s.colls.selm[__f2a.s12].data.price,
+     selMoney:Object.keys(s.colls.sel).filter(function(k){return SEL_MONEY_KEYS.some(function(m){return m in s.colls.sel[k].data;});})};})()`);
+  t('absorb by id: every legacy id ends in inv, inv\u2019s own copy kept',JSON.stringify(fA.inv)===JSON.stringify(A.legacy.slice().sort())&&/\(inv copy\)$/.test(fA.inv0),JSON.stringify(fA.inv));
+  t('absorb by id: meta.invoices cleared',Array.isArray(fA.meta)&&fA.meta.length===0,JSON.stringify(fA.meta));
+  t('migration keeps selm\u2019s price over the stale sel price, and strips sel',fA.p12===A.p12&&fA.selMoney.length===0,JSON.stringify(fA));
+  t('orphans: an old selm with no selection is deleted by the migrating builder',fA.selm.indexOf('zz9')<0&&fA.selm.length===A.nMoney,fA.selm.join());
+  const nA=W().length;await phone('uB',B,'devB4');
+  t('absorb by id is idempotent: the next builder phone writes nothing',W().length===0,nA+' then '+JSON.stringify(W().slice(0,2)));
+  /* deleting a selection on a live house deletes its selm */
+  $2("(function(){var p=state.projects[0];var s=p.selections.find(function(x){return String(x.id)===__f2a.s12;});p.selections=p.selections.filter(function(x){return x!==s;});Sync._pushOne(p);return true;})()");await settle();
+  const dl=W().map(x=>x.kind+' '+x.path);const smA=srvMoney();
+  t('deleting a selection deletes its selm first; no selm without sel on the server',dl.indexOf('del f2a/selm/'+A.s12)>=0&&dl.indexOf('del f2a/selm/'+A.s12)<dl.indexOf('del f2a/sel/'+A.s12)&&smA.orphan.length===0,dl.join());
+  await phone('uH',{role:'client',site:'f2a',auth:{uid:'uH'}},'devH4');
+  t('homeowner after migration: zero writes',W().length===0);
+  await phone('uS',{role:'subs',name:'Timberline Framing',auth:{uid:'uS'}},'devS3');
+  t('crew after migration: house doc has no invoices, sel has no money, nothing on the phone',noMoneyHeld().length===0&&W().length===0&&J("(__F.srv.f2a.doc.meta.invoices||[]).length")===0);
+  t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
+  try{w2.close();}catch(e){}
 })();
 
 /* ════ REPORT ════ */
