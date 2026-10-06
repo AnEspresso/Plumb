@@ -3992,6 +3992,15 @@ await (async function(){
   const pmTxt=J(`state.projects.map(function(p){state.session=${JSON.stringify(PM)};return houseMoneyLine(p);}).join('|')`);
   const pmLines=pmTxt.split('|');
   t('Money-only builder: invoice numbers hidden (card, ledger, paid/owed), never shown as $0; selection prices still shown',pmBad.length===0&&pmLines.every(x=>!/Paid|owed/.test(x)&&/^(|Under\u00a0budget\u00a0\u00b7 \$[\d,]+\u00a0left|Over\u00a0budget\u00a0\u00b7 \$[\d,]+\u00a0over|On budget)$/.test(x)),pmBad[0]||pmTxt.slice(0,160));
+  /* Ink (F-2): the PM's house line falls back to the budget line; it must never say Under while the Money sheet says Over */
+  const agree=J(`(function(){var out=[];state.projects.forEach(function(p){state.session=${JSON.stringify(PM)};
+      var line=houseMoneyLine(p).replace(/\u00a0/g,' ');var hero=moneyTotHTML(p).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
+      var hOver=/Over budget, projected/.test(hero),lOver=/^Over budget/.test(line),lUnder=/^Under budget/.test(line);
+      var hAmt=(hero.match(/\$[\d,]+/)||[''])[0],lAmt=(line.match(/\$[\d,]+/)||[''])[0];
+      out.push({id:String(p.id),line:line,hero:hero.slice(0,40),over:hOver,ok:hOver===lOver&&!(lUnder&&hOver)&&(!lOver||hAmt===lAmt)&&!/Paid|owed/.test(line)});});
+    state.session={role:'builder',name:'You'};return out;})()`);
+  t('Money-only builder: house line and Money sheet agree on over/under on every house (over = the same amount)',agree.length===11&&agree.every(x=>x.ok)&&agree.filter(x=>x.over).length>=3,JSON.stringify(agree.filter(x=>!x.ok).slice(0,2)));
+  t('Money-only builder on p2: Over budget · $3,400 over, like Money ($3,400 Over budget, projected)',(agree.find(x=>x.id==='p2')||{}).line==='Over budget · $3,400 over',JSON.stringify(agree.find(x=>x.id==='p2')));
   t('Money-only builder: holds no invoices, writes nothing',J("state.projects.every(function(p){return !(p.invoices||[]).length;})")&&W().length===0);
   await phone('uX',SUP,'devX2');
   const supM=JSON.parse($2('__f2Money(null,'+JSON.stringify(SUP)+')'));

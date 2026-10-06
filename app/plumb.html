@@ -8780,8 +8780,12 @@ function houseMoneyLine(p){
       return 'Paid\u00a0'+invUsd(paid)+' of\u00a0'+invUsd(contract)+'\u00a0· owed\u00a0'+invUsd(left);
     const cs=costSummary(p);
     if((Number(cs.budget)||0)>0.005)
-      /* On budget only when exactly on; otherwise Under budget · {x} left (Agency 10/4) */
-      {const lf=budgetLeft(cs);return budgetOver(cs)?'Over\u00a0budget\u00a0· '+invUsd(-lf)+'\u00a0over':Math.abs(lf)<=0.005?'On budget':'Under\u00a0budget\u00a0· '+invUsd(lf)+'\u00a0left';}
+      /* On budget only when exactly on; otherwise Under budget · {x} left (Agency 10/4).
+         Over or under is the Money sheet's call (its hero: budget vs projected),
+         so this line never says Under while Money says Over (Ink, F-2): over
+         reads the same amount as the hero; under keeps 2.461.0's left. */
+      {const po=(Number(cs.projected)||0)-(Number(cs.budget)||0);const lf=budgetLeft(cs);
+       return po>0.005?'Over\u00a0budget\u00a0· '+invUsd(po)+'\u00a0over':lf<=0.005?'On budget':'Under\u00a0budget\u00a0· '+invUsd(lf)+'\u00a0left';}
   }catch(e){}
   if(moneyHidden('inv'))return '';
   return 'No money on this house yet';
