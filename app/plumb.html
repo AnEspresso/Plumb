@@ -8767,6 +8767,20 @@ function houseGoNext(){
 /* House Money tile and briefing strip (Agency 10/4): Paid {paid} of {net} · owed {out}.
    The long "Upgrades & credits {net} · paid · owed" wrapped to two lines in the
    strip at 390 on every demo house, so the strip uses the short one too. */
+/* The house's budget line, one helper for every builder (owner, PM, team) on
+   the house strip and the Money tile, so the lines cannot drift (Agency 10/5).
+   Gone over (budget minus contracted-or-paid below $0, budgetLeft): {x} over budget.
+   Only the projection over (the Money sheet's hero, budget vs projected):
+   Projected {x} over budget, never plain "over budget" before money has gone over.
+   Non-breaking spaces inside each phrase ({x} over budget, Under budget, {x} left).
+   Otherwise On budget only when exactly on, else Under budget · {x} left (Agency 10/4). */
+function houseBudgetLine(cs){
+  const lf=budgetLeft(cs);const po=(Number(cs&&cs.projected)||0)-(Number(cs&&cs.budget)||0);
+  if(lf<-0.005)return invUsd(-lf)+'\u00a0over\u00a0budget';
+  if(po>0.005)return 'Projected '+invUsd(po)+'\u00a0over\u00a0budget';   // the one break: after Projected (the Money tile is half the width)
+  if(lf<=0.005)return 'On budget';
+  return 'Under\u00a0budget\u00a0· '+invUsd(lf)+'\u00a0left';
+}
 function houseMoneyLine(p){
   try{
     const b=billingSummary(p);
@@ -8779,13 +8793,7 @@ function houseMoneyLine(p){
          so a wrapped line never starts with "· owed" (Ink 10/4). */
       return 'Paid\u00a0'+invUsd(paid)+' of\u00a0'+invUsd(contract)+'\u00a0· owed\u00a0'+invUsd(left);
     const cs=costSummary(p);
-    if((Number(cs.budget)||0)>0.005)
-      /* On budget only when exactly on; otherwise Under budget · {x} left (Agency 10/4).
-         Over or under is the Money sheet's call (its hero: budget vs projected),
-         so this line never says Under while Money says Over (Ink, F-2): over
-         reads the same amount as the hero; under keeps 2.461.0's left. */
-      {const po=(Number(cs.projected)||0)-(Number(cs.budget)||0);const lf=budgetLeft(cs);
-       return po>0.005?'Over\u00a0budget\u00a0· '+invUsd(po)+'\u00a0over':lf<=0.005?'On budget':'Under\u00a0budget\u00a0· '+invUsd(lf)+'\u00a0left';}
+    if((Number(cs.budget)||0)>0.005)return houseBudgetLine(cs);
   }catch(e){}
   if(moneyHidden('inv'))return '';
   return 'No money on this house yet';

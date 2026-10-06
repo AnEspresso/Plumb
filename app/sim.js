@@ -3609,7 +3609,7 @@ S('money-words');
   t('house Money tile and briefing strip both use the short line',hd.door===hd.line&&hd.line.indexOf('Paid\u00a0')===0&&hd.strip.indexOf(hd.line)>=0&&hd.strip.indexOf('Upgrades & credits')<0,JSON.stringify(hd));
   /* On budget only when exactly on */
   const bl=JSON.parse($("JSON.stringify([700,1000,1300].map(function(spent){var p=JSON.parse(JSON.stringify(P()));p.selections=[];p.invoices=[];p.payments=[];p.costs=[{rt:'line',id:'L',label:'x',budget:1000},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:spent}];return houseMoneyLine(p);}))"));
-  t('budget line: Under budget · {x} left when under; On budget only when exact; Over budget when over',bl[0]==='Under\u00a0budget\u00a0· $300\u00a0left'&&bl[1]==='On budget'&&bl[2]==='Over\u00a0budget\u00a0· $300\u00a0over',JSON.stringify(bl));
+  t('budget line: Under budget · {x} left when under; On budget only when exact; {x} over budget when gone over (Agency 10/5)',bl[0]==='Under\u00a0budget\u00a0· $300\u00a0left'&&bl[1]==='On budget'&&bl[2]==='$300\u00a0over\u00a0budget',JSON.stringify(bl));
   /* homeowner credit balance (PM) */
   t('homeowner line: below $0 reads as a credit, a positive amount',$("clientStillToPayLine(-250)")==='$250 credit'&&$("clientStillToPayLine(300)")==='$300 still to pay'&&$("clientStillToPayLine(0)")==='$0 still to pay');
   const out0=$("billingSummary(P()).out");
@@ -3719,7 +3719,7 @@ S('budget-left');
   t('exactly on budget: left $0, no aside on the phone row, $0 on desktop, On budget on the house',ex.left===0&&!ex.over&&ex.aside===''&&ex.cell==='$0'&&ex.house==='On budget',JSON.stringify([ex.left,ex.aside,ex.cell,ex.house]));
   /* over */
   const ov=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:1200,payee:'Sub'}]);
-  t('over budget: $200 over on the phone row, desktop, card and house',ov.left===-200&&ov.over&&ov.ro===true&&ov.aside==='$200 over'&&ov.cell==='$200 over'&&txt(ov.card).indexOf('$200 Over budget')>=0&&ov.house==='Over\u00a0budget\u00a0· $200\u00a0over',JSON.stringify([ov.aside,ov.cell,ov.house]));
+  t('over budget: $200 over on the phone row, desktop, card and house',ov.left===-200&&ov.over&&ov.ro===true&&ov.aside==='$200 over'&&ov.cell==='$200 over'&&txt(ov.card).indexOf('$200 Over budget')>=0&&ov.house==='$200\u00a0over\u00a0budget',JSON.stringify([ov.aside,ov.cell,ov.house]));
   /* the old disagreement: a builder projection does not move left */
   const pj=L([line(1000,{expect:1300}),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'}]);
   t('a projected final cost above budget does not move left (it stays on Projected / vs budget)',pj.projected===1300&&pj.left===400&&pj.cell==='$400',JSON.stringify(pj));
@@ -3729,7 +3729,7 @@ S('budget-left');
   const all=JSON.parse($("JSON.stringify((function(){var bad=[],n=0;state.projects.forEach(function(p){var hold=state.activeId;state.activeId=p.id;var tb=budgetTableHTML(p);costLines(p).forEach(function(l){n++;var r=costLineRollup(p,l.id);var row=moneyLineRowHTML(l,r);var a=/row-aside[^\"]*\">([^<]*)</.exec(row);var re=new RegExp('id=\"bgtL-'+String(l.id).replace(/[^\\w-]/g,'')+'\">([^<]*)<');var m=re.exec(tb);var cell=m?m[1]:'?';var aside=a?a[1]:'';var want=aside===''?'$0':aside.replace(' left','');if(want!==cell)bad.push([p.id,l.id,aside,cell]);});state.activeId=hold;});return {n:n,bad:bad};})())"));
   t('every demo budget line: phone row left and desktop Remaining are the same number',all.n>=16&&all.bad.length===0,JSON.stringify(all.bad.slice(0,3)));
   /* one helper */
-  t('one helper: phone rows, desktop Remaining, cell refresh, Money card and house line all read budgetLeft',['moneyLineRowHTML','budgetTableHTML','bgtRefreshRow','budgetCardHTML','houseMoneyLine'].every(f=>$("String("+f+")").indexOf('budgetLeft(')>=0)&&$("String(moneyLineRowHTML)").indexOf('r.budget-r.projected')<0&&$("String(costLineRollup)").indexOf('budgetLeft(')>=0&&$("String(costSummary)").indexOf('budgetLeft(')>=0);
+  t('one helper: phone rows, desktop Remaining, cell refresh, Money card and house line all read budgetLeft',['moneyLineRowHTML','budgetTableHTML','bgtRefreshRow','budgetCardHTML','houseBudgetLine'].every(f=>$("String("+f+")").indexOf('budgetLeft(')>=0)&&$("String(houseMoneyLine)").indexOf('houseBudgetLine(cs)')>=0&&$("String(moneyLineRowHTML)").indexOf('r.budget-r.projected')<0&&$("String(costLineRollup)").indexOf('budgetLeft(')>=0&&$("String(costSummary)").indexOf('budgetLeft(')>=0);
   t('projected stays on Projected, Tracking, vs budget and the CSV',$("String(renderJobCost)").indexOf('r.projected-r.budget')>=0&&$("String(jobCostCsv)").indexOf('r.projected-r.budget')>=0&&$("String(budgetCardHTML)").indexOf('cs.projected-cs.budget')>=0&&$("String(moneyTotHTML)").indexOf('cs.budget-cs.projected')>=0);
   t('no new words: the labels are the ones already there',SRC.indexOf('<span>${budgetOver(cs)?\'Over budget\':\'Remaining\'}</span>')>=0&&SRC.indexOf('<th class="n u-m26">Remaining</th>')>=0);
 })();
@@ -3760,7 +3760,7 @@ S('budget-left-words');
   /* Ink: house Money line never starts a line with the dot */
   const hl=$("houseMoneyLine(P())");
   t('house Money line: the dot sticks to the end of the piece before it',hl.indexOf('\u00a0· owed\u00a0')>0&&hl.indexOf(' · ')<0&&/^Paid\u00a0\$[\d,]+ of\u00a0\$[\d,]+\u00a0· owed\u00a0\$[\d,]+$/.test(hl),JSON.stringify(hl));
-  t('house budget line: the same rule',$("String(houseMoneyLine)").indexOf("'Under\\u00a0budget\\u00a0· '")>=0&&$("String(houseMoneyLine)").indexOf("'Over\\u00a0budget\\u00a0· '")>=0);
+  t('house budget line: the same rule (Agency 10/5 words, no doubled over)',$("String(houseBudgetLine)").indexOf("'Under\\u00a0budget\\u00a0· '")>=0&&$("String(houseBudgetLine)").indexOf("'\\u00a0over\\u00a0budget'")>=0&&$("String(houseBudgetLine)").indexOf("'Projected '")>=0&&$("String(houseBudgetLine)").indexOf("Over\\u00a0budget")<0);
   /* 1 invoice card in credit */
   const out0=$("billingSummary(P()).out");
   $("P().payments=(P().payments||[]).concat([{id:'sim_bl_pay',amount:"+(Math.round(out0)+5000)+",label:'Sim overpay',t:Date.now()}])");
@@ -3991,16 +3991,36 @@ await (async function(){
     if(JSON.stringify(g.selList)!==JSON.stringify(f.selList))pmBad.push(h+' selList');});
   const pmTxt=J(`state.projects.map(function(p){state.session=${JSON.stringify(PM)};return houseMoneyLine(p);}).join('|')`);
   const pmLines=pmTxt.split('|');
-  t('Money-only builder: invoice numbers hidden (card, ledger, paid/owed), never shown as $0; selection prices still shown',pmBad.length===0&&pmLines.every(x=>!/Paid|owed/.test(x)&&/^(|Under\u00a0budget\u00a0\u00b7 \$[\d,]+\u00a0left|Over\u00a0budget\u00a0\u00b7 \$[\d,]+\u00a0over|On budget)$/.test(x)),pmBad[0]||pmTxt.slice(0,160));
-  /* Ink (F-2): the PM's house line falls back to the budget line; it must never say Under while the Money sheet says Over */
+  t('Money-only builder: invoice numbers hidden (card, ledger, paid/owed), never shown as $0; selection prices still shown',pmBad.length===0&&pmLines.every(x=>!/Paid|owed/.test(x)&&/^(|Under\u00a0budget\u00a0\u00b7 \$[\d,]+\u00a0left|\$[\d,]+\u00a0over\u00a0budget|Projected \$[\d,]+\u00a0over\u00a0budget|On budget)$/.test(x)),pmBad[0]||pmTxt.slice(0,160));
+  /* Ink (F-2) + Agency 10/5: the PM's house line falls back to the budget line. Direction always
+     agrees with the Money sheet; a projection-only overage reads Projected {x} over budget with the
+     sheet's amount; money already over reads {x} over budget with the amount gone over (the Build
+     card's Over budget figure, budgetLeft). Never Under while the sheet says Over. */
   const agree=J(`(function(){var out=[];state.projects.forEach(function(p){state.session=${JSON.stringify(PM)};
-      var line=houseMoneyLine(p).replace(/\u00a0/g,' ');var hero=moneyTotHTML(p).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
-      var hOver=/Over budget, projected/.test(hero),lOver=/^Over budget/.test(line),lUnder=/^Under budget/.test(line);
-      var hAmt=(hero.match(/\$[\d,]+/)||[''])[0],lAmt=(line.match(/\$[\d,]+/)||[''])[0];
-      out.push({id:String(p.id),line:line,hero:hero.slice(0,40),over:hOver,ok:hOver===lOver&&!(lUnder&&hOver)&&(!lOver||hAmt===lAmt)&&!/Paid|owed/.test(line)});});
+      var line=houseMoneyLine(p).replace(/\u00a0/g,' ');var hero=moneyTotHTML(p).replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ');var cs=costSummary(p);
+      var hOver=/Over budget, projected/.test(hero),lProj=/^Projected \\$[\\d,]+ over budget$/.test(line),lAct=/^\\$[\\d,]+ over budget$/.test(line),lUnder=/^Under budget/.test(line);
+      var hAmt=(hero.match(/\\$[\\d,]+/)||[''])[0],lAmt=(line.match(/\\$[\\d,]+/)||[''])[0];
+      var ok=!/Paid|owed/.test(line)&&!(lUnder&&hOver)&&(hOver===(lProj||lAct)||(lAct&&budgetOver(cs)))
+        &&(!lProj||(hAmt===lAmt&&!budgetOver(cs)))&&(!lAct||(budgetOver(cs)&&lAmt===invUsd(-budgetLeft(cs))));
+      out.push({id:String(p.id),line:line,hero:hero.slice(0,40),over:hOver,form:lProj?'projected':lAct?'actual':lUnder?'under':line,ok:ok});});
     state.session={role:'builder',name:'You'};return out;})()`);
-  t('Money-only builder: house line and Money sheet agree on over/under on every house (over = the same amount)',agree.length===11&&agree.every(x=>x.ok)&&agree.filter(x=>x.over).length>=3,JSON.stringify(agree.filter(x=>!x.ok).slice(0,2)));
-  t('Money-only builder on p2: Over budget · $3,400 over, like Money ($3,400 Over budget, projected)',(agree.find(x=>x.id==='p2')||{}).line==='Over budget · $3,400 over',JSON.stringify(agree.find(x=>x.id==='p2')));
+  t('Money-only builder: house line and Money sheet agree on direction on every house; projected-only = the sheet\u2019s amount; gone over = the amount gone over',agree.length===11&&agree.every(x=>x.ok)&&agree.filter(x=>x.over).length>=3,JSON.stringify(agree.filter(x=>!x.ok).slice(0,2)));
+  t('Money-only builder on p2: Projected $3,400 over budget (Money: $3,400 Over budget, projected)',(agree.find(x=>x.id==='p2')||{}).line==='Projected $3,400 over budget',JSON.stringify(agree.find(x=>x.id==='p2')));
+  t('Money-only builder on p3 (contracted already past budget): $1,400 over budget, the Build card\u2019s Over budget figure',(agree.find(x=>x.id==='p3')||{}).line==='$1,400 over budget',JSON.stringify(agree.find(x=>x.id==='p3')));
+  /* Agency 10/5: no house line says over twice, for any builder, on any house, with or without invoices */
+  const twice=J(`(function(){var bad=[],n=0;var S=[{role:'builder',name:'You'},${JSON.stringify(PM)},${JSON.stringify(SUP)},{role:'builder',name:'Kim',member:true,rpRole:'pm',gates:{moneyJob:true,moneyCo:true}}];
+      state.projects.forEach(function(p0){[p0,Object.assign(JSON.parse(JSON.stringify(p0)),{invoices:[],selections:[],payments:[]})].forEach(function(p){S.forEach(function(se){state.session=se;var l=houseMoneyLine(p);n++;
+        if(((l.match(/over/gi))||[]).length>1)bad.push(p.id+' '+l);});});});
+      state.session={role:'builder',name:'You'};return {bad:bad,n:n};})()`);
+  t('no house line says over twice (11 houses x 4 builder roles, with and without homeowner money: '+twice.n+' lines)',twice.bad.length===0&&twice.n===88,twice.bad[0]);
+  /* fixtures: the same budget line, projected-only vs gone over, owner and PM alike */
+  const fx=J(`(function(){var mk=function(lines){var p=JSON.parse(JSON.stringify(state.projects[0]));p.invoices=[];p.selections=[];p.payments=[];p.costs=lines;return p;};
+      var proj=mk([{rt:'line',id:'L',label:'Framing',budget:20000,expect:23400},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:12000}]);
+      var act=mk([{rt:'line',id:'L',label:'Framing',budget:20000},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:23400}]);
+      var out={};[['owner',{role:'builder',name:'You'}],['pm',${JSON.stringify(PM)}]].forEach(function(x){state.session=x[1];out[x[0]]={proj:houseMoneyLine(proj),act:houseMoneyLine(act),projHero:moneyTotHTML(proj).replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').slice(0,40)};});
+      state.session={role:'builder',name:'You'};return out;})()`);
+  t('projection only (contracted and paid still under): Projected $3,400 over budget, owner and PM alike',fx.owner.proj==='Projected $3,400\u00a0over\u00a0budget'&&fx.pm.proj===fx.owner.proj&&/\$3,400 Over budget, projected/.test(fx.owner.projHero),JSON.stringify(fx));
+  t('gone over (paid past the budget): $3,400 over budget, owner and PM alike, never Projected',fx.owner.act==='$3,400\u00a0over\u00a0budget'&&fx.pm.act===fx.owner.act,JSON.stringify(fx));
   t('Money-only builder: holds no invoices, writes nothing',J("state.projects.every(function(p){return !(p.invoices||[]).length;})")&&W().length===0);
   await phone('uX',SUP,'devX2');
   const supM=JSON.parse($2('__f2Money(null,'+JSON.stringify(SUP)+')'));
