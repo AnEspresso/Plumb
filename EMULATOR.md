@@ -11,3 +11,11 @@ Use this to walk the invite flow (or anything else) with fake accounts against t
 5. Create fake accounts by signing up in the app (the Auth emulator accepts any email). Use a second browser profile for the invited person.
 
 The flag sticks for the browser tab. Open `?emu=0` to turn it off. It only works when the page is served from `localhost` or `127.0.0.1`; on siteplumb.com `?emu=1` does nothing. `sim.js` checks that guard on every run.
+
+## F-2 money replay (2.463.0)
+
+`f2replay.js` boots the real `app/index.html` in jsdom and points its own Sync code at the Firestore emulator with the repo's `firestore.rules`. It seeds a house the 2.462.0 way (invoices in `meta.invoices`, money on `sel`), opens it as the homeowner (must write nothing), runs the real migration as a money-gated builder, then replays the crew reads b1–b4 and checks crew get/list of `inv` and `selm` are denied. Money on every screen is compared with the 2.462.0 app.
+
+`F2_PROOF_DIR=../f2-app-proof F2_OLD_INDEX=<2.462.0 index.html> npx firebase emulators:exec --only firestore --project demo-plumb-rules 'node f2replay.js'`
+
+Needs the root `npm install` plus `jsdom` (root or `app/node_modules`). Exit 0 means every check passed. `F2_OLD_INDEX` is optional; without it the truth numbers come from this app.
