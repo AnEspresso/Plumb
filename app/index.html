@@ -969,6 +969,7 @@
     border-top:1px solid var(--line);background:var(--paper);}
   .ov-capture[hidden]{display:none !important;}
   .ov-capture .ov-field{margin:0;width:100%;}
+  .ov-fhdr[hidden]{display:none !important;}
   body:has(.overview.show) #devDot{bottom:calc(116px + env(safe-area-inset-bottom));}
   .es-card{border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s-3);margin-bottom:var(--s-2);}
   .es-card .n{font-weight:650;font-size:var(--t-md);line-height:1.3;}
@@ -1306,17 +1307,25 @@
     #calview .cal-main{grid-column:2;grid-row:1;min-width:0;}
     #calview .cal-side .add-sub-btn{width:100%;margin:var(--s-2) 0 0;}
     #calview .cal-side .cal-legend{flex-direction:column;align-items:flex-start;gap:9px;padding:var(--s-1) var(--s-1) var(--s-3);border-bottom:1px solid var(--line);margin-bottom:var(--s-2);}
+    /* ── 2.465.0 desktop home: Add a field note is a compact dark button in the header
+       (left of the briefcase), one line; the phone keeps the full-width bar ── */
+    .ov-head .ov-field.ov-fhdr{width:auto;min-height:0;align-self:stretch;margin:0;gap:10px;padding:0 var(--s-4) 0 var(--s-2);
+      border-radius:16px;font-size:var(--t-sm);font-weight:600;white-space:nowrap;}
+    .ov-head .ov-field.ov-fhdr svg.cam{width:36px;height:25px;}
+    .ov-head .ov-field.ov-fhdr:hover{background:var(--ink-2);}
+    body:has(.overview.show #ovCapture[hidden]) #devDot{bottom:max(12px,env(safe-area-inset-bottom));}
   }
 
-  /* laptop / desktop home: month calendar left, book right */
-  @media(min-width:1100px){
+  /* laptop / desktop home: month calendar left, book right (2.465.0: from 900px, the one desktop threshold) */
+  @media(min-width:900px){
     body.ov-desk .ov-body,
     .ov-body:has(#ovWeek:not([hidden])){
       display:grid;grid-template-columns:minmax(320px,38%) minmax(0,1fr);column-gap:32px;align-items:start;
       padding-left:var(--s-7);padding-right:var(--s-7);
     }
     body.ov-desk .ov-week:not([hidden]),
-    .ov-week{display:block;position:sticky;top:8px;padding:var(--s-1) var(--s-1) var(--s-5) 0;}
+    .ov-week{display:flex;flex-direction:column;position:sticky;top:8px;padding:var(--s-1) var(--s-1) var(--s-5) 0;box-sizing:border-box;}
+    .ov-week > .ov-wk-nav,.ov-week > .cal-dow,.ov-week > .cal-grid{flex:none;}
     .ov-week[hidden]{display:none;}
     .ov-wk-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 var(--s-2);}
     .ov-wk-nav .m{font-family:'Source Serif 4',Georgia,serif;font-size:var(--t-xl);font-weight:600;letter-spacing:-.015em;}
@@ -1324,8 +1333,14 @@
     .ov-wk-nav button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font-size:var(--t-md);cursor:pointer;}
     .ov-wk-nav .full{width:auto;border-radius:999px;padding:0 var(--s-3);font:600 12px inherit;}
     .ov-week .cal-dow span{font-size:var(--t-xs);}
-    .ov-week .cal-day{min-height:52px;border-radius:var(--r-sm);padding:var(--s-1) var(--s-1) var(--s-1);}
+    .ov-week .cal-day{min-height:42px;border-radius:var(--r-sm);padding:var(--s-1) var(--s-1) var(--s-1);}
     .ov-week .cal-bar{height:5px;}
+    .ov-week .cal-more{position:absolute;top:var(--s-1);right:3px;}
+    .ov-week .cal-day .dn{padding-left:2px;}   /* room between the date and +N in the narrow 900px column */
+    /* 2.465.0 Layout B: Coming up sits under the month and fills the column (scrolls inside it) */
+    .ov-cu{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
+    .ov-cu > .sec{flex:none;margin-top:var(--s-6);}
+    .ov-cu .ov-coming{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0;}
     .ov-list .ov-today{display:block;margin:0 0 var(--s-4);}
     .ov-list .ov-coming{flex:1;min-width:180px;margin:0;}
     #ovCards{grid-template-columns:1fr;}
@@ -2653,7 +2668,7 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
         <div class="who" id="ovWho">Builder</div>
         <div class="meta" id="ovSync">On this device</div>
       </div>
-      <div class="hdr-actions"><button class="ov-logout py-2 px-2 btn btn-secondary" id="ovCompanyBtn" onclick="openCompany()" title="Company"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div>
+      <div class="hdr-actions"><button type="button" class="ov-fhdr" id="ovFieldHdr" hidden onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"></button><button class="ov-logout py-2 px-2 btn btn-secondary" id="ovCompanyBtn" onclick="openCompany()" title="Company"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button><button class="ov-logout py-2 px-2 btn btn-secondary" onclick="openSettings()" title="Settings"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="va-n2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></div>
     </div>
     <div class="ov-body">
       <aside id="ovWeek" class="ov-week" hidden></aside>
@@ -3952,15 +3967,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.464.0 - Approve this invoice saves to the invoice record (F-1 app)';
+const PLUMB_VERSION='2.465.0 - Desktop home: Add a field note in the header, Coming up under the month';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791374400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.464.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791385200000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.465.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9143,14 +9158,27 @@ function nextPacketDecision(projs){
   const mine=all.filter(function(x){return x.who==='Builder';});
   return mine[0]||all[0]||null;
 }
+/* One Coming up row (home list and, on the desktop split, the column under the month). */
+function comingUpRow(s){
+  return '<div class="row row-tap td-soon" onclick="openBk(\''+s.p.id+'|'+s.b.id+'\')"><div class="row-main"><div class="row-title">'+esc(s.trade)+'</div><div class="row-sub">'+esc(s.street)+'</div></div><div class="row-aside">'+esc(s.when)+'</div></div>';
+}
+/* 2.465.0: at 900px and up, Add a field note is a compact button in the home header
+   instead of the sticky bar (same openLogPick). Only one of the two is ever rendered,
+   so the tour's '.ov-field' always finds the one on screen. Same threshold as the
+   month column (ovDesk, 900px). */
+function ovFieldTop(){return ovDesk();}
+var _ovLayoutK='';
+function ovLayoutKey(){return (ovFieldTop()?'f':'')+(ovDesk()?'d':'');}
 function renderToday(){
   const el=document.getElementById('ovToday');if(!el)return;
+  _ovLayoutK=ovLayoutKey();
   const typing=document.getElementById('nyQText');
   const keep=typing&&document.activeElement===typing?{v:typing.value,s:typing.selectionStart}:null;
   const projs=liveProjects();
   if(!projs.length){
     el.innerHTML='';el.style.display='none';
     const cap0=document.getElementById('ovCapture');if(cap0){cap0.hidden=true;cap0.innerHTML='';}
+    const hb0=document.getElementById('ovFieldHdr');if(hb0){hb0.hidden=true;hb0.className='ov-fhdr';hb0.innerHTML='';}
     return;
   }
   el.style.display='';
@@ -9171,12 +9199,11 @@ function renderToday(){
   }else{
     h+='<div class="empty"><b>Nothing needs you</b>Crews are booked, decisions are in.</div>';
   }
-  if(soon.length){
+  /* Desktop split (Layout B): Coming up lives under the month (ovCuRender), not here. */
+  if(soon.length&&!ovDesk()){
     h+='<div class="sec"><h2>Coming up</h2><button type="button" class="sec-act" onclick="openCal()">Calendar</button></div>';
     h+='<div class="ov-coming">';
-    soon.forEach(function(s){
-      h+='<div class="row row-tap td-soon" onclick="openBk(\''+s.p.id+'|'+s.b.id+'\')"><div class="row-main"><div class="row-title">'+esc(s.trade)+'</div><div class="row-sub">'+esc(s.street)+'</div></div><div class="row-aside">'+esc(s.when)+'</div></div>';
-    });
+    soon.forEach(function(s){h+=comingUpRow(s);});
     h+='</div>';
   }
   try{
@@ -9195,16 +9222,25 @@ function renderToday(){
     }
   }catch(e){}
   el.innerHTML=h;if(keep){const n=document.getElementById('nyQText');if(n){n.value=keep.v;try{n.focus();n.selectionStart=n.selectionEnd=keep.s;}catch(e){}}}
+  try{ovCuRender(projs);}catch(e){}
+  const top=ovFieldTop();
+  const hb=document.getElementById('ovFieldHdr');
+  if(hb){
+    if(top&&canGate('field')){
+      if(!hb.innerHTML)hb.innerHTML='<svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="hdrLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#CDB48C" stroke-width="2"/><path d="M52 20V15h24v5" fill="none" stroke="#CDB48C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="64" cy="52" r="16" fill="none" stroke="#CDB48C" stroke-width="1.9"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#hdrLens)" fill="none" stroke="#3A342B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="2.2"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Add a field note</span>';
+      hb.className='ov-field ov-fhdr';hb.hidden=false;
+    }else{hb.hidden=true;hb.className='ov-fhdr';hb.innerHTML='';}
+  }
   const cap=document.getElementById('ovCapture');
   if(cap){
-    if(canGate('field')){
+    if(canGate('field')&&!top){
       cap.innerHTML='<button class="ov-field" onclick="event.stopPropagation();openLogPick()" aria-label="Field Notes"><svg class="cam" viewBox="0 0 128 80" aria-hidden="true"><defs><clipPath id="ovLens"><circle cx="64" cy="52" r="14"/></clipPath></defs><rect x="16" y="20" width="96" height="50" rx="11" fill="#FBF9F4" stroke="#CDB48C" stroke-width="2"/><path d="M52 20V15h24v5" fill="none" stroke="#CDB48C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><text x="64" y="32.5" text-anchor="middle" fill="#B0895A" font-family="Source Serif 4, Georgia, serif" font-size="7.6" font-weight="600" letter-spacing="1.7">FIELD NOTES</text><circle cx="64" cy="52" r="16" fill="none" stroke="#CDB48C" stroke-width="1.9"/><circle cx="64" cy="52" r="14" fill="#F2EEE6"/><g clip-path="url(#ovLens)" fill="none" stroke="#3A342B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="48" y1="62" x2="80" y2="62" stroke="#B0895A" stroke-width="2.2"/><path d="M52 62V40h24v22"/><polyline points="48,42 64,28 80,42"/><rect x="60" y="50" width="8" height="12"/></g></svg><span class="fn-l">Add a field note<small>Photo, note, or a problem</small></span></button>';
       cap.hidden=false;
     }else{cap.innerHTML='';cap.hidden=true;}
   }
 }
 let _ovMonth=null;
-function ovDesk(){try{if(window.matchMedia('(min-width:1100px)').matches)return true;}catch(e){}return (window.innerWidth||0)>=1100;}
+function ovDesk(){try{if(window.matchMedia('(min-width:900px)').matches)return true;}catch(e){}return (window.innerWidth||0)>=900;}
 function ovWeekNav(d){if(!_ovMonth)_ovMonth=new Date();_ovMonth=new Date(_ovMonth.getFullYear(),_ovMonth.getMonth()+d,1);renderOvWeek();}
 function renderOvWeek(){
   const el=document.getElementById('ovWeek');if(!el)return;
@@ -9224,7 +9260,9 @@ function renderOvWeek(){
   bs=bs.filter(function(b){return b.p&&!isOffBook(b.p);});
   const cf=(typeof conflictIds==='function')?conflictIds():{};
   let grid='';
-  for(let i=0;i<42;i++){
+  /* 2.465.0: only the weeks this month needs (no spare next-month row) */
+  const cells=Math.ceil((startDow+new Date(y,m+1,0).getDate())/7)*7;
+  for(let i=0;i<cells;i++){
     const ts=gridStart+i*86400000;const d=new Date(ts);
     const out=d.getMonth()!==m;const k=dayKey(ts);
     const dayBs=bs.filter(function(b){return typeof spanCovers==='function'?spanCovers(b,ts):(b.start<=ts&&ts<=b.end);});
@@ -9238,9 +9276,31 @@ function renderOvWeek(){
   }
   el.innerHTML='<div class="ov-wk-nav"><div class="m">'+_ovMonth.toLocaleDateString(undefined,{month:'long'})+'</div><div class="btns"><button type="button" onclick="ovWeekNav(-1)" aria-label="Previous month">\u2039</button><button type="button" class="full" onclick="openCal()">Open calendar</button><button type="button" onclick="ovWeekNav(1)" aria-label="Next month">\u203a</button></div></div>'
     +'<div class="cal-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>'
-    +'<div class="cal-grid">'+grid+'</div>';
+    +'<div class="cal-grid">'+grid+'</div>'
+    +'<div class="ov-cu" id="ovCu"></div>';
+  ovCuRender(projs);
 }
-try{window.addEventListener('resize',function(){try{if(document.getElementById('overview')&&document.getElementById('overview').classList.contains('show'))renderOvWeek();}catch(e){}});}catch(e){}
+/* 2.465.0 Layout B: under the month, the same Coming up rows (all of the next 7 days),
+   filling the column; no Calendar link here because Open calendar is right above. */
+function ovCuRender(projs){
+  const box=document.getElementById('ovCu');if(!box)return;
+  const wk=document.getElementById('ovWeek');
+  if(!ovDesk()||!wk||wk.hidden){box.innerHTML='';return;}
+  const soon=comingUpItems(projs||liveProjects());
+  let h='<div class="sec"><h2>Coming up</h2></div>';
+  if(soon.length)h+='<div class="ov-coming">'+soon.map(comingUpRow).join('')+'</div>';
+  else h+='<div class="empty py-2 px-0 ov-cu-empty">Nothing new starts in the next 7 days.</div>';
+  box.innerHTML=h;
+  ovCuFit();
+}
+function ovCuFit(){
+  const wk=document.getElementById('ovWeek'),b=document.querySelector('#overview .ov-body');
+  if(!wk||!b||wk.hidden)return;
+  const cs=getComputedStyle(b);
+  const h=b.clientHeight-(parseFloat(cs.paddingTop)||0)-(parseFloat(cs.paddingBottom)||0)-8;
+  wk.style.maxHeight=h>280?(h+'px'):'';
+}
+try{window.addEventListener('resize',function(){try{if(document.getElementById('overview')&&document.getElementById('overview').classList.contains('show')){if(ovLayoutKey()!==_ovLayoutK)renderToday();renderOvWeek();}}catch(e){}});}catch(e){}
 function todayGo(pid,view,selId){navPush(function(){showOverview();});openSiteFromOverview(pid);if(view)setTimeout(()=>{try{go(view);if(selId)setTimeout(()=>{try{highlightSel(selId);}catch(e){}},150);}catch(e){}},70);}
 function todayGoRecord(pid,recId){try{Data.setActive(pid);}catch(e){}openRecord(recId);}
 function nyBookSub(pid,subName){
