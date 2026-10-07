@@ -9287,7 +9287,7 @@ function ovCuRender(projs){
   const soon=comingUpItems(projs||liveProjects());
   let h='<div class="sec"><h2>Coming up</h2></div>';
   if(soon.length)h+='<div class="ov-coming">'+soon.map(comingUpRow).join('')+'</div>';
-  else h+='<div class="empty py-2 px-0 ov-cu-empty">Nothing scheduled this week.</div>';
+  else h+='<div class="empty py-2 px-0 ov-cu-empty">Nothing new starts in the next 7 days.</div>';
   box.innerHTML=h;
   ovCuFit();
 }
