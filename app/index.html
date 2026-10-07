@@ -1316,8 +1316,8 @@
     body:has(.overview.show #ovCapture[hidden]) #devDot{bottom:max(12px,env(safe-area-inset-bottom));}
   }
 
-  /* laptop / desktop home: month calendar left, book right */
-  @media(min-width:1100px){
+  /* laptop / desktop home: month calendar left, book right (2.465.0: from 900px, the one desktop threshold) */
+  @media(min-width:900px){
     body.ov-desk .ov-body,
     .ov-body:has(#ovWeek:not([hidden])){
       display:grid;grid-template-columns:minmax(320px,38%) minmax(0,1fr);column-gap:32px;align-items:start;
@@ -1335,7 +1335,8 @@
     .ov-week .cal-dow span{font-size:var(--t-xs);}
     .ov-week .cal-day{min-height:42px;border-radius:var(--r-sm);padding:var(--s-1) var(--s-1) var(--s-1);}
     .ov-week .cal-bar{height:5px;}
-    .ov-week .cal-more{position:absolute;top:var(--s-1);right:var(--s-1);}
+    .ov-week .cal-more{position:absolute;top:var(--s-1);right:3px;}
+    .ov-week .cal-day .dn{padding-left:2px;}   /* room between the date and +N in the narrow 900px column */
     /* 2.465.0 Layout B: Coming up sits under the month and fills the column (scrolls inside it) */
     .ov-cu{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
     .ov-cu > .sec{flex:none;margin-top:var(--s-6);}
@@ -9163,8 +9164,9 @@ function comingUpRow(s){
 }
 /* 2.465.0: at 900px and up, Add a field note is a compact button in the home header
    instead of the sticky bar (same openLogPick). Only one of the two is ever rendered,
-   so the tour's '.ov-field' always finds the one on screen. */
-function ovFieldTop(){try{if(window.matchMedia('(min-width:900px)').matches)return true;}catch(e){}return (window.innerWidth||0)>=900;}
+   so the tour's '.ov-field' always finds the one on screen. Same threshold as the
+   month column (ovDesk, 900px). */
+function ovFieldTop(){return ovDesk();}
 var _ovLayoutK='';
 function ovLayoutKey(){return (ovFieldTop()?'f':'')+(ovDesk()?'d':'');}
 function renderToday(){
@@ -9238,7 +9240,7 @@ function renderToday(){
   }
 }
 let _ovMonth=null;
-function ovDesk(){try{if(window.matchMedia('(min-width:1100px)').matches)return true;}catch(e){}return (window.innerWidth||0)>=1100;}
+function ovDesk(){try{if(window.matchMedia('(min-width:900px)').matches)return true;}catch(e){}return (window.innerWidth||0)>=900;}
 function ovWeekNav(d){if(!_ovMonth)_ovMonth=new Date();_ovMonth=new Date(_ovMonth.getFullYear(),_ovMonth.getMonth()+d,1);renderOvWeek();}
 function renderOvWeek(){
   const el=document.getElementById('ovWeek');if(!el)return;
