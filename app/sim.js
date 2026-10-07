@@ -2709,6 +2709,54 @@ $("calSiteFilter='all'");
 $('renderCal()');
 t('all houses still shows idle', ((el('calBody')&&el('calBody').textContent)||'').indexOf('idle this month')>=0);
 
+/* ════ 2.466.0 BUDGET CARD: a builder without Money sees no budget card, never a $0 one ════
+   After F-2 a builder without moneyJob never pulls costs, so every budget number would read $0 (or a
+   fake "On budget"). The Build-tab card and the Money sheet are hidden for them; if they still see
+   homeowner invoices (moneyCo) only the existing Money heading stays over that card. The owner, a
+   builder with Money, the homeowner and crew are unchanged. */
+$('demoRole("builder")');
+$("window.__bh={sess:state.session,act:state.activeId};state.activeId='p8';true");
+const bhRun=(g,owner,strip,zero)=>JSON.parse($(`(function(){
+  var p=P();var keep={costs:p.costs,invoices:p.invoices,selections:p.selections};
+  state.session=Object.assign({},__bh.sess,{role:'builder',member:${!owner},owner:${!!owner},rpRole:${owner?"'owner'":"'superintendent'"},gates:${JSON.stringify(g)}});
+  if(${!!strip}){if(!canGate('moneyJob'))p.costs=[];if(!canGate('moneyCo'))p.invoices=[];if(!canGate('moneyJob')&&!canGate('moneyCo'))p.selections=(p.selections||[]).map(function(s){return selNoMoney(s);});}
+  if(${!!zero})p.costs=(keep.costs||[]).filter(function(r){return r.rt==='line';}).map(function(r){var c=JSON.parse(JSON.stringify(r));c.amount=0;c.budget=0;return c;});
+  try{document.getElementById('budgetScrim').classList.remove('show');}catch(e){}
+  document.getElementById('toast').textContent='';
+  renderBuild();
+  var vb=document.getElementById('view-build');var card=document.getElementById('budgetCard').innerHTML;var bill=document.getElementById('billingCard').innerHTML;
+  openBudget();var opened=document.getElementById('budgetScrim').classList.contains('show');var toastTxt=document.getElementById('toast').textContent;
+  try{document.getElementById('budgetScrim').classList.remove('show');}catch(e){}
+  var hh=houseHTML(p);
+  var out={blind:moneyBlindBuilder(),card:card,bill:bill,fn:budgetCardHTML(p),opened:opened,toast:toastTxt,
+    txt:vb.textContent,house:hh,zeroOwner:null};
+  p.costs=keep.costs;p.invoices=keep.invoices;p.selections=keep.selections;
+  return JSON.stringify(out);})()`));
+const G_BLIND={field:true,schedule:true,selections:true,site:true,jobs:false,moneyJob:false,moneyCo:false,people:false};
+const G_JOB={field:true,schedule:true,selections:true,site:true,jobs:true,moneyJob:true,moneyCo:false,people:true};
+const G_CO={field:true,schedule:true,selections:true,site:true,jobs:false,moneyJob:false,moneyCo:true,people:true};
+const bhOwner=bhRun(null,true,false,false), bhBlind=bhRun(G_BLIND,false,true,false), bhBlindDemo=bhRun(G_BLIND,false,false,false), bhBlindZero=bhRun(G_BLIND,false,false,true);
+const bhJob=bhRun(G_JOB,false,true,false), bhCo=bhRun(G_CO,false,true,false), bhOwnerZero=bhRun(null,true,false,true);
+t('budget hide: the owner keeps the full card and the Money sheet opens', !bhOwner.blind&&bhOwner.card.indexOf('<span>Budget</span>')>=0&&bhOwner.card.indexOf('openBudget()')>=0&&bhOwner.opened);
+t('budget hide: zero-amount lines are the $0 card a money-blind builder used to get (owner still sees it, it is real data for them)', bhOwnerZero.card.indexOf('$0')>=0);
+t('budget hide: money-blind builder (F-2 data) gets no card, no Money heading, no billing card', bhBlind.blind&&bhBlind.card===''&&bhBlind.fn===''&&bhBlind.bill==='', JSON.stringify({c:bhBlind.card.slice(0,80),b:bhBlind.bill.slice(0,80)}));
+t('budget hide: money-blind builder with costs still on the phone gets no card either', bhBlindDemo.card===''&&bhBlindDemo.txt.indexOf('Budget')<0);
+t('budget hide: money-blind builder never sees the $0 card from empty lines', bhBlindZero.card===''&&bhBlindZero.txt.indexOf('$0')<0);
+t('budget hide: money-blind Build tab has no $, budget, Under/On budget or Set up budget line', [bhBlind,bhBlindDemo,bhBlindZero].every(r=>!/\$\d|[Bb]udget|Money/.test(r.txt)), bhBlind.txt.replace(/\s+/g,' ').slice(0,160));
+t('budget hide: money-blind builder cannot open the Money sheet (existing "Money is off for this role")', !bhBlind.opened&&bhBlind.toast==='Money is off for this role'&&!bhBlindDemo.opened);
+t('budget hide: money-blind house sheet has no Money door and no money line', [bhBlind,bhBlindDemo,bhBlindZero].every(r=>r.house.indexOf('data-door="money"')<0&&!/budget|\$\d|Paid \$|No money/.test(r.house)));
+t('budget hide: builder with Money keeps the card and the sheet', !bhJob.blind&&bhJob.card.indexOf('<span>Budget</span>')>=0&&bhJob.opened&&bhJob.house.indexOf('data-door="money"')>=0);
+t('budget hide: invoices-only builder keeps only the Money heading over the invoice card (no budget, no $0)', bhCo.blind&&bhCo.card==='<div class="sec"><h2>Money</h2></div>'&&bhCo.bill.indexOf('openInvoices()')>=0&&!bhCo.opened);
+t('budget hide: one gate, the same one costs sync uses', $("String(moneyBlindBuilder)").indexOf("canGate('moneyJob')")>=0&&$("String(moneyBlindBuilder)").indexOf("role==='builder'")>=0&&$("String(budgetCardHTML)").indexOf('moneyBlindBuilder()')>=0&&$("String(openBudget)").indexOf('moneyBlindBuilder()')>=0&&$("String(syncCollsFor)").indexOf("moneyJob")>=0);
+$("state.session=__bh.sess;true");
+$('demoRole("client")');
+t('budget hide: homeowner is never money-blind', $('moneyBlindBuilder()')===false);
+$('demoRole("subs")');
+t('budget hide: crew is never money-blind', $('moneyBlindBuilder()')===false);
+$('demoRole("builder")');
+$("state.session=__bh.sess;state.activeId=__bh.act;delete window.__bh;true");
+t('budget hide: back to the demo owner, card back', $('moneyBlindBuilder()')===false&&$("budgetCardHTML(P())").indexOf('openBudget()')>=0);
+
 /* ════ 14p · PRACTICE PHOTOS STAY ON THE PHONE ════ */
 S('practice-photos');
 await $('(async()=>{'+

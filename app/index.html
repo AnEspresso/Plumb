@@ -3967,15 +3967,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.465.0 - Desktop home: Add a field note in the header, Coming up under the month';
+const PLUMB_VERSION='2.466.0 - Builders without money access see no budget card instead of a $0 one';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791385200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.465.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791392400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.466.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -11197,6 +11197,8 @@ function billingCardHTML(p){
     </div>`;
 }
 function budgetCardHTML(p){
+  // No budget for a builder without Money: no card, no $0. If they still see homeowner invoices, keep only the heading over that card.
+  if(moneyBlindBuilder())return (!moneyHidden('inv')&&!moneyHidden('selm'))?'<div class="sec"><h2>Money</h2></div>':'';
   const cs=costSummary(p);
   if(!cs.lines)return `<div class="sec"><h2>Money</h2></div>
     <div class="overall bgt-tap" onclick="openBudget()">
@@ -11218,7 +11220,9 @@ function budgetCardHTML(p){
 }
 
 
-function openBudget(){renderBudget();document.getElementById('budgetScrim').classList.add('show');}
+/* A builder without Money (moneyJob) never pulls costs, so every budget number would read $0 — hide it, don't fake it. */
+function moneyBlindBuilder(){const s=state.session||{};return s.role==='builder'&&!canGate('moneyJob');}
+function openBudget(){if(moneyBlindBuilder()){toast('Money is off for this role');return;}renderBudget();document.getElementById('budgetScrim').classList.add('show');}
 function closeBudget(){document.getElementById('budgetScrim').classList.remove('show');try{renderBuild();}catch(e){}try{houseMaybeResume();}catch(e){}}
 function moneyTotHTML(p){
   const cs=costSummary(p);const bill=billingSummary(p);
