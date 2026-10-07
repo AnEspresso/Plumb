@@ -3952,15 +3952,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.463.0 - Invoices and selection money leave crew phones (F-2 app)';
+const PLUMB_VERSION='2.464.0 - Approve this invoice saves to the invoice record (F-1 app)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791245400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.463.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1791374400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.464.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9556,8 +9556,15 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     if(this._pushing[id]){this._pushAgain[id]=p;return;}
     this._pushing[id]=true;try{
     const sh=this._shadow[id]||(this._shadow[id]={meta:'',colls:{}});
-    if(state.session&&state.session.role==='client'&&invClearRefusedApprove(p,sh)){persistLocalOnly();try{rerenderCurrent();}catch(e){}}
     const ops=diffSiteOps(sh,p);if(!ops.length){await this._f2Tidy(p,id,sh);return;}
+    /* F-1 (R2 is live): the rules refuse a house write that leaves a non-empty
+       meta.invoices. On a house still holding legacy invoices, a builder who
+       writes inv sends them to inv first, and the house write after them
+       carries invoices: [] (the leftover clear R2 allows). Before 2.464.0 the
+       house write went first, was refused, and the house never migrated. */
+    const legPend=syncWrites(p,'inv')&&(this._legInv[id]||[]).length>0;
+    if(legPend){const mi=ops.findIndex(o=>o.kind==='meta');
+      if(mi>=0){const mo=ops.splice(mi,1)[0];let at=0;ops.forEach((o,i)=>{if(o.sub==='inv')at=i+1;});ops.splice(at,0,mo);}}
     for(const op of ops){
       if(op.kind==='meta'){
         const local=Object.assign({},(op.data&&op.data.members)||{});
@@ -9577,13 +9584,17 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         }
         if(op.data)op.data.members=mem;
         this._cloudMembers=this._cloudMembers||{};this._cloudMembers[id]=mem;
-        const payload={meta:op.data,id:p.id,mode:this.mode||'demo',updatedAt:Date.now(),updatedBy:this.deviceId,
+        let metaOut=op.data,legClear=false;
+        if(legPend){const leg=this._legInv[id]||[];const onInv=sh.colls.inv||{};
+          if(leg.every(v=>onInv[String(v.id)]!==undefined)){metaOut=Object.assign({},op.data,{invoices:[]});legClear=true;}}
+        const payload={meta:metaOut,id:p.id,mode:this.mode||'demo',updatedAt:Date.now(),updatedBy:this.deviceId,
           updatedByUid:myUid,
           members:mem,memberUids:Object.keys(mem)};                          // top-level copies: rules + scoped queries read these
         const del=fbDelete();if(del!==undefined)payload.data=del;            // retire legacy whole-blob field
         await this.db.collection('sites').doc(id).set(payload,{merge:true});
         sh.meta=_syncHash(JSON.stringify(op.data));sh.mem=Object.assign({},mem);
         sh.mk={};Object.keys(op.data||{}).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(op.data[k]));});
+        if(legClear){this._legInv[id]=[];sh.mk.invoices=_syncHash('[]');}
       } else if(op.kind==='set'){
         const ref=this.db.collection('sites').doc(id).collection(op.sub).doc(op.id);
         if(op.sub==='inv'||op.sub==='selm'){
@@ -9774,7 +9785,6 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
               p[k]=meta[k];});try{Notify.scanMeta(_nv,p);}catch(e){}}
           else {const _nv=Notify.snap(p);Object.assign(p,meta);try{Notify.scanMeta(_nv,p);}catch(e){}}  // legacy whole-blob fallback
           sh.mk={};Object.keys(meta).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(meta[k]));});
-          if(kept&&state.session&&state.session.role==='client')invClearRefusedApprove(p,sh);
           sh.mem=Object.assign({},(meta&&meta.members)||{},d.members||{});
           sh.meta=kept?'':_syncHash(JSON.stringify(metaOf(p)));changed=true;
         }
@@ -14611,12 +14621,12 @@ function invDelAdjustment(projId,invId,idx){
     persist();try{renderInvoices();}catch(e){}try{renderSelections();}catch(e){}try{if(document.getElementById('clientview').classList.contains('show'))renderClient();}catch(e){}
     showInfo('Invoice',invDetailHTML(p,inv,'builder'));toast('Adjustment removed');}});}
 /* A live house says an invoice is approved only after the server takes it
-   (2.462.0, the same as selection Approve in 2.457.0). The write is only
-   meta.invoices, merged: the list as this phone last synced it with this one
-   invoice sent -> approved plus approvedAt, the only change the rules let a
-   homeowner make (invoiceApproveOk). Nothing changes here until the server
-   answers, so a refusal leaves nothing queued to jam later saves. Practice
-   houses and demo stay local. No timeout: a queued write can still land. */
+   (2.462.0, the same as selection Approve in 2.457.0). Since 2.464.0 (F-1)
+   the write is the invoice's own record, sites/{id}/inv/{invId}, merged:
+   data.status sent -> approved plus data.approvedAt, nothing else (the rules'
+   clientInvOk). Never the house doc: R2 refuses invoices there. Nothing
+   changes here until the server answers, so a refusal leaves nothing queued.
+   Practice houses and demo stay local. No timeout: a queued write can still land. */
 const _invOkBusy={};
 function _invOkRender(p,inv){
   try{if(document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('infoTitle').textContent==='Invoice')
@@ -14632,47 +14642,29 @@ async function invApprove(projId,invId){
   const key=p.id+':'+invId;if(_invOkBusy[key])return;
   const SIGNAL='Could not save \u2014 try again with a bar of signal';
   if((typeof navigator!=='undefined'&&navigator.onLine===false)||typeof Sync==='undefined'||!Sync.ready()||Sync.mode!=='live'){toast(SIGNAL);return;}
+  /* An invoice still only on the house doc (legacy, until a builder with
+     Invoices opens the house and moves it) has no inv record: the rules would
+     refuse it, and the refused write would briefly drop it from this list.
+     Say so without a write. */
+  const sid=String(p.id);
+  if((Sync._pulled[sid]||{}).inv&&((((Sync._shadow[sid]||{}).colls||{}).inv||{})[String(invId)]===undefined)){
+    trapError('rules','Invoice approve not sent: not in inv yet (legacy)','invApprove');
+    toast('Not approved yet. Ask your builder to check your access.');return;}
   const at=Date.now();
-  const list=JSON.parse(JSON.stringify(p.invoices||[])).map(v=>v&&v.id===invId?Object.assign(v,{status:'approved',approvedAt:at}):v);
-  const sh=Sync._shadow[String(p.id)];
-  let inSync=false;try{inSync=!!sh&&sh.meta===_syncHash(JSON.stringify(metaOf(p)));}catch(e){}
-  const myUid=(state.session&&state.session.auth&&state.session.auth.uid)||Sync.uid||'';
   _invOkBusy[key]=true;_invOkRender(p,inv);
-  try{await Sync.db.collection('sites').doc(String(p.id))
-      .set({meta:{invoices:list},updatedAt:at,updatedBy:Sync.deviceId,updatedByUid:myUid},{merge:true});}
+  try{await Sync.db.collection('sites').doc(String(p.id)).collection('inv').doc(String(invId))
+      .set({data:{status:'approved',approvedAt:at},updatedAt:at,updatedBy:Sync.deviceId},{merge:true});}
   catch(e){delete _invOkBusy[key];const denied=!!(e&&e.code==='permission-denied');
     trapError(denied?'rules':'caught','Invoice approve write '+(denied?'refused':'failed')+': '+String((e&&(e.code||e.message))||'').slice(0,100),'invApprove');
     _invOkRender(p,inv);toast(denied?'Not approved yet. Ask your builder to check your access.':SIGNAL);return;}
   delete _invOkBusy[key];
   inv.status='approved';inv.approvedAt=at;
-  /* Mark it synced so queueSync does not send the house again for it. Only
-     when this phone had nothing else waiting to go up; otherwise the next
-     push carries the rest, and the invoice already matches the server. */
-  try{const s2=Sync._shadow[String(p.id)]||(Sync._shadow[String(p.id)]={meta:'',colls:{}});
-    s2.mk=s2.mk||{};s2.mk.invoices=_syncHash(JSON.stringify(p.invoices));
-    if(inSync)s2.meta=_syncHash(JSON.stringify(metaOf(p)));Sync._saveBase();}catch(e){}
+  /* The server now holds this record: mark it synced (this phone's own echo is
+     skipped by the inv listener). A homeowner never pushes inv records. */
+  try{const sh=Sync._shadow[String(p.id)]||(Sync._shadow[String(p.id)]={meta:'',colls:{}});sh.colls=sh.colls||{};
+    (sh.colls.inv||(sh.colls.inv={}))[String(invId)]=_syncHash(JSON.stringify(inv));Sync._saveBase();}catch(e){}
   persist();logEvent('invoiceApproved',inv.no);toast(inv.no+' approved');
   try{closeInfo();}catch(e){}try{renderClient();}catch(e){}}
-/* Before 2.462.0 a homeowner's Approve this invoice changed the invoice on the
-   phone first, the rules refused the push, and the phone kept sending it with
-   every later save (each one refused). Clear that one change, and only when
-   it provably is that change: undoing approvals that have an approvedAt must
-   give back exactly the invoice list the server last sent (its hash). Then
-   the invoice reads as waiting again and the homeowner can approve it with
-   the confirmed path above. A homeowner never edits invoices any other way. */
-function invClearRefusedApprove(p,sh){
-  try{
-    if(!p||!sh||!sh.mk||sh.mk.invoices===undefined||!Array.isArray(p.invoices))return false;
-    if(_syncHash(JSON.stringify(p.invoices))===sh.mk.invoices)return false;
-    const cand=p.invoices.map((v,i)=>v&&v.status==='approved'&&v.approvedAt!=null?i:-1).filter(i=>i>=0);
-    if(!cand.length)return false;
-    const undo=ix=>p.invoices.map((v,i)=>{if(ix.indexOf(i)<0)return v;const c=Object.assign({},v);c.status='sent';delete c.approvedAt;return c;});
-    const tries=cand.map(i=>[i]);if(cand.length>1)tries.push(cand);
-    for(const ix of tries){const back=undo(ix);
-      if(_syncHash(JSON.stringify(back))===sh.mk.invoices){p.invoices=back;
-        trapError('caught','Cleared a refused invoice approve ('+ix.length+')','invClearRefusedApprove');return true;}}
-  }catch(e){}
-  return false;}
 function invAddPayment(projId,invId,full){
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status==='void')return;

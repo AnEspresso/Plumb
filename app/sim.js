@@ -2649,7 +2649,9 @@ asBuilder();
 $("_houseResume=null");
 $("calSiteFilter='all'");
 $("calCrewFilter=''");
-$("calMonth=new Date(2026,8,1)");
+/* The example bookings sit relative to today, so the month with a double moves with the date (a fixed
+   September 2026 stopped holding one on 10/7). Open the month that holds the first double. */
+$("calMonth=(function(){var c=bookingConflicts().find(function(x){return x.kind==='double';});var d=new Date(c?c.day:Date.now());return new Date(d.getFullYear(),d.getMonth(),1);})()");
 $('renderCal()');
 t('all houses still flags doubles', /double-booked|needs attention|conflict/i.test((el('calBody')&&el('calBody').textContent)||''), ((el('calBody')&&el('calBody').textContent)||'').slice(0,180));
 $("calMonth=new Date(2026,8,1)");
@@ -3318,12 +3320,12 @@ await (async function(){
   t('clean up: the test house is gone and sync is restored',$("state.projects.some(x=>x.id==='apv1')")===false);
 })();
 
-/* ════ APPROVE THIS INVOICE WAITS FOR THE SERVER (2.462.0) ════
-   A homeowner's Approve this invoice on a live house used to change the
-   invoice on the phone first; the rules refused the push and the phone kept
-   re-sending it with every later save. Now: Saving…, one minimal write
-   (meta.invoices, merged), approved only after the server takes it, and a
-   refusal leaves nothing queued. An old queued refusal is cleared once. */
+/* ════ APPROVE THIS INVOICE WAITS FOR THE SERVER (2.462.0; F-1 2.464.0) ════
+   A homeowner's Approve this invoice on a live house: Saving…, one minimal
+   write, approved only after the server takes it, and a refusal leaves
+   nothing queued. Since 2.464.0 (F-1) that write is the invoice's own record
+   sites/{id}/inv/{invId}: data.status + data.approvedAt, merged (clientInvOk).
+   Never the house doc (R2 refuses invoices there). */
 S('invoice-approve-confirmed');
 await (async function(){
   $(`(function(){
@@ -3338,8 +3340,8 @@ await (async function(){
       {id:'inv_a2',no:'INV-002',title:'Selections \\u2014 October',due:'2026-10-18',items:[{label:'Marble hex \\u2014 Tile',amount:120,selId:7}],total:120,status:'sent',t:3,sentBy:'Dean',payments:[]},
       {id:'inv_a3',no:'INV-003',title:'Selections \\u2014 finals',due:'2026-10-25',items:[{label:'French doors',amount:900,selId:9}],total:900,status:'sent',t:4,sentBy:'Dean',payments:[]}];
     state.projects.push(p);state.session={role:'client',site:'ivl1',auth:{uid:'uH'}};
-    const house={set:(d,o)=>{__iv.writes.push({d:JSON.parse(JSON.stringify(d)),o:o});return new Promise((res,rej)=>{__iv.pend={res:res,rej:rej};});}};
-    Sync.db={collection:c=>({doc:sid=>{__iv.path=c+'/'+sid;return house;}})};
+    const w=path=>({set:(d,o)=>{__iv.path=path;__iv.writes.push({path:path,d:JSON.parse(JSON.stringify(d)),o:o});return new Promise((res,rej)=>{__iv.pend={res:res,rej:rej};});}});
+    Sync.db={collection:c=>({doc:sid=>Object.assign(w(c+'/'+sid),{collection:sub=>({doc:id=>w(c+'/'+sid+'/'+sub+'/'+id)})})})};
     Object.assign(Sync,{on:true,mode:'live',deviceId:'devH',_sitesPulled:false});
     /* a phone that is in sync with the server */
     Sync._shadow={ivl1:{meta:_syncHash(JSON.stringify(metaOf(p))),mk:{invoices:_syncHash(JSON.stringify(p.invoices))},colls:{}}};
@@ -3360,21 +3362,19 @@ await (async function(){
   t('saving style: the disabled button is dimmed by the existing .btn[disabled] token (no new CSS)',SRC.indexOf('.btn[disabled]{opacity:.45;pointer-events:none;}')>=0&&$("(function(){var b=document.querySelector('#infoBody .inv-ok');return b?getComputedStyle(b).opacity:'none';})()")==='0.45',$("(function(){var b=document.querySelector('#infoBody .inv-ok');return b?getComputedStyle(b).opacity:'none';})()"));
   t('accepted: nothing changes here and no toast before the server answers',inv(1).status==='sent'&&inv(1).approvedAt===undefined&&$("__iv.toasts.length")===0,JSON.stringify(inv(1))+' '+$("JSON.stringify(__iv.toasts)"));
   const w0=JSON.parse($("JSON.stringify(__iv.writes[0]||null)"));
-  t('accepted: one write to the house doc sites/ivl1',$("__iv.writes.length")===1&&$("__iv.path")==='sites/ivl1',$("__iv.path"));
-  t('accepted: the write is only {meta:{invoices},updatedAt,updatedBy,updatedByUid} with merge',
-    !!w0&&Object.keys(w0.d).sort().join()==='meta,updatedAt,updatedBy,updatedByUid'&&Object.keys(w0.d.meta).join()==='invoices'&&w0.d.updatedBy==='devH'&&w0.d.updatedByUid==='uH'&&typeof w0.d.updatedAt==='number'&&!!(w0.o&&w0.o.merge),JSON.stringify(w0&&Object.keys(w0.d)));
-  const srv=JSON.parse($("__ivServer"));
-  t('accepted: the list is the synced one with only INV-002 sent -> approved plus approvedAt',
-    !!w0&&w0.d.meta.invoices.length===3&&JSON.stringify(w0.d.meta.invoices[0])===JSON.stringify(srv[0])&&JSON.stringify(w0.d.meta.invoices[2])===JSON.stringify(srv[2])
-    &&w0.d.meta.invoices[1].status==='approved'&&Number.isInteger(w0.d.meta.invoices[1].approvedAt)
-    &&JSON.stringify(Object.assign({},w0.d.meta.invoices[1],{status:'sent',approvedAt:undefined}))===JSON.stringify(Object.assign({},srv[1],{approvedAt:undefined})),JSON.stringify(w0&&w0.d.meta.invoices[1]));
+  t('F-1: one write, to the invoice record sites/ivl1/inv/inv_a2 (not the house doc)',$("__iv.writes.length")===1&&!!w0&&w0.path==='sites/ivl1/inv/inv_a2',w0&&w0.path);
+  t('F-1: the write is only {data,updatedAt,updatedBy} with merge (clientInvOk outer keys)',
+    !!w0&&Object.keys(w0.d).sort().join()==='data,updatedAt,updatedBy'&&w0.d.updatedBy==='devH'&&Number.isInteger(w0.d.updatedAt)&&!!(w0.o&&w0.o.merge),JSON.stringify(w0&&w0.d));
+  t('F-1: data carries only status approved + an integer approvedAt (no amount, lines, payments)',
+    !!w0&&Object.keys(w0.d.data).sort().join()==='approvedAt,status'&&w0.d.data.status==='approved'&&Number.isInteger(w0.d.data.approvedAt),JSON.stringify(w0&&w0.d.data));
+  t('F-1: no write anywhere carries meta or invoices',$("__iv.writes.every(function(x){return !('meta' in x.d)&&!/^sites\\/[^/]+$/.test(x.path);})")===true);
   $("invApprove('ivl1','inv_a2');true");await tick();
   t('accepted: a second tap while saving writes nothing',$("__iv.writes.length")===1);
   $("__iv.pend&&__iv.pend.res();true");await $("__ivP");await tick();
-  t('accepted: approved here once the server took it',inv(1).status==='approved'&&!!w0&&inv(1).approvedAt===w0.d.meta.invoices[1].approvedAt,JSON.stringify(inv(1)));
+  t('accepted: approved here once the server took it',inv(1).status==='approved'&&!!w0&&inv(1).approvedAt===w0.d.data.approvedAt,JSON.stringify(inv(1)));
   t('accepted: then the existing toast',$("__iv.toasts[__iv.toasts.length-1]")==='INV-002 approved',$("JSON.stringify(__iv.toasts)"));
-  t('accepted: the invoice is marked synced',$("Sync._shadow.ivl1.mk.invoices")===$("_syncHash(JSON.stringify("+P1+".invoices))"));
-  t('accepted: no re-send - the house is not queued again',metaOps()===0,'meta ops='+metaOps());
+  t('accepted: the invoice record is marked synced',$("(Sync._shadow.ivl1.colls.inv||{}).inv_a2")===$("_syncHash(JSON.stringify("+P1+".invoices[1]))"));
+  t('accepted: no re-send - nothing queued (no house write, no inv write from a homeowner)',metaOps()===0&&$("diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta'||o.sub==='inv'||o.sub==='selm').length")===0,'ops='+$("JSON.stringify(diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta'||o.sub==='inv'||o.sub==='selm'))"));
 
   /* refused */
   $("window.__ivServer=JSON.stringify("+P1+".invoices);__iv.toasts=[];true");open('inv_a3');
@@ -3402,23 +3402,15 @@ await (async function(){
   t('offline: no write, nothing changes, the signal toast shows, not stuck on Saving…',$("__iv.writes.length")===nW&&inv(2).status==='sent'&&$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Could not save \u2014 try again with a bar of signal'])&&btn()==='Approve this invoice',$("JSON.stringify(__iv.toasts)")+' '+btn());
   $("delete navigator.onLine;true");
 
-  /* one-time cleanup of a refused change queued by an older version */
-  $(`(function(){const p=${P1};window.__ivServer=JSON.stringify(p.invoices);
-    Sync._shadow.ivl1.mk.invoices=_syncHash(__ivServer);Sync._shadow.ivl1.meta='';
-    const v=p.invoices[2];v.status='approved';v.approvedAt=1791130000000;return true;})()`);
-  t('old jam: before cleanup the refused change is on this phone, but 2.463 pushes no invoices from a homeowner',inv(2).status==='approved'&&$("diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>(o.kind==='meta'&&'invoices' in o.data)||o.sub==='inv').length")===0);
-  t('old jam: cleared once, back to exactly the server\u2019s list',$("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===true&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer")&&inv(2).status==='sent'&&!('approvedAt' in inv(2)));
-  t('old jam: the next push carries no invoices at all (F-2) and the phone shows the server\u2019s list',$("diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>(o.kind==='meta'&&'invoices' in o.data)||o.sub==='inv').length")===0&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer"));
-  t('old jam: a second run does nothing',$("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===false);
-  $("(function(){const v="+P1+".invoices[2];v.status='approved';v.approvedAt=5;v.total=1;return true;})()");
-  t('old jam: anything that is not provably that change is left alone',$("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===false&&inv(2).total===1&&inv(2).status==='approved');
-  $("(function(){const v="+P1+".invoices[2];v.status='sent';delete v.approvedAt;v.total=900;return true;})()");
-  t('old jam: two refused approvals at once are cleared too',(function(){$(`(function(){const p=${P1};p.invoices[1].status='sent';delete p.invoices[1].approvedAt;window.__ivServer=JSON.stringify(p.invoices);Sync._shadow.ivl1.mk.invoices=_syncHash(__ivServer);
-      p.invoices[1].status='approved';p.invoices[1].approvedAt=7;p.invoices[2].status='approved';p.invoices[2].approvedAt=8;return true;})()`);
-    return $("typeof invClearRefusedApprove==='function'&&invClearRefusedApprove("+P1+",Sync._shadow.ivl1)")===true&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer");})());
-  t('old jam: the cleanup runs before every homeowner push and after a pull that kept a local edit',
-    SRC.indexOf("if(state.session&&state.session.role==='client'&&invClearRefusedApprove(p,sh)){persistLocalOnly();")>=0&&SRC.indexOf("if(kept&&state.session&&state.session.role==='client')invClearRefusedApprove(p,sh);")>=0);
-
+  /* F-1: an invoice still only in legacy meta.invoices (no inv record once inv has answered): no write, the refused toast */
+  $("__iv.toasts=[];Sync._pulled=Sync._pulled||{};Sync._pulled.ivl1={inv:true};Sync._shadow.ivl1.colls.inv={inv_a2:'x'};true");
+  const nWl=$("__iv.writes.length");
+  await $("invApprove('ivl1','inv_a3')");await tick();
+  t('F-1: a legacy-only invoice (not in inv) is not sent: no write, still waiting, the existing refused toast',$("__iv.writes.length")===nWl&&inv(2).status==='sent'&&$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Not approved yet. Ask your builder to check your access.'])&&btn()==='Approve this invoice',$("JSON.stringify(__iv.toasts)")+' '+btn());
+  $("delete Sync._pulled.ivl1;true");
+  /* F-1: the 2.462.0 cleanup of a refused meta.invoices approve is gone with the meta write itself */
+  t('F-1: no code path writes the invoice list to the house doc, and the meta.invoices jam cleanup is gone',
+    SRC.indexOf('meta:{invoices:list}')<0&&SRC.indexOf('invClearRefusedApprove')<0&&$("typeof invClearRefusedApprove")==='undefined');
   /* sample and demo keep the local path */
   $("__iv.toasts=[];state.session={role:'client',site:'p2',auth:{uid:'uH'}};true");
   const smp=$("(function(){var v=(state.projects.find(x=>x.id==='p2').invoices||[]).find(x=>x.status==='sent');return v?v.id:'';})()");
@@ -3430,7 +3422,7 @@ await (async function(){
   $("invApprove('ivl1','inv_a3')");
   t('demo: the local path, no server write',inv(2).status==='approved'&&$("__iv.writes.length")===nW3);
   t('wording: no new strings - #37\u2019s refused toast, the signal toast and Saving… are reused',
-    SRC.split("'Not approved yet. Ask your builder to check your access.'").length===3&&SRC.indexOf('disabled aria-busy="true">Saving…</button>`')>=0);
+    SRC.split("'Not approved yet. Ask your builder to check your access.'").length===4&&SRC.indexOf('disabled aria-busy="true">Saving…</button>`')>=0);
 
   /* clean up */
   $(`(function(){const o=__iv.o;toast=o.toast;appMode=o.am;Object.assign(Sync,{on:o.on,mode:o.mode,db:o.db,deviceId:o.dev,_shadow:o.sh,_sitesPulled:o.pulled});
@@ -3910,7 +3902,10 @@ await (async function(){
       where:function(){return {onSnapshot:function(o,h){return listen('sites',null,null,o,h);}};},
       doc:function(sid){return {
         get:function(){return Promise.resolve(ds(sid,F.site(sid).doc));},
-        set:function(d,o){log('set','sites/'+sid,d,o);var s=F.site(sid);var t=s.doc?'modified':'added';s.doc=(o&&o.merge&&s.doc)?merge(s.doc,d):strip(d);fire('sites',t,sid,s.doc);return Promise.resolve();},
+        set:function(d,o){log('set','sites/'+sid,d,o);var s=F.site(sid);var t=s.doc?'modified':'added';var nd=(o&&o.merge&&s.doc)?merge(cl(s.doc),d):strip(d);
+          /* F.r2: R2 (live since 10/7) refuses a house write that leaves a non-empty meta.invoices */
+          if(F.r2&&s.doc&&nd.meta&&Array.isArray(nd.meta.invoices)&&nd.meta.invoices.length){F.writes[F.writes.length-1].refused=true;return Promise.reject({code:'permission-denied',message:'R2: meta.invoices'});}
+          s.doc=nd;fire('sites',t,sid,s.doc);return Promise.resolve();},
         collection:function(sub){var C={where:function(){return C;},onSnapshot:function(o,h){return listen(sid+'/'+sub,sid,sub,o,h);},
           doc:function(id){return {
             set:function(d,o){log('set',sid+'/'+sub+'/'+id,d,o);var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
@@ -4072,6 +4067,27 @@ await (async function(){
   t('homeowner after migration: zero writes',W().length===0);
   await phone('uS',{role:'subs',name:'Timberline Framing',auth:{uid:'uS'}},'devS3');
   t('crew after migration: house doc has no invoices, sel has no money, nothing on the phone',noMoneyHeld().length===0&&W().length===0&&J("(__F.srv.f2a.doc.meta.invoices||[]).length")===0);
+  /* 7b · F-1 (R2 live): the builder's own upgraded phone has a house edit waiting
+     on a house that still holds meta.invoices. R2 refuses any house write that
+     leaves invoices there. 2.464.0 sends the invoices to inv first, then the
+     house write carries invoices: [] (before, the house write went first, was
+     refused, and the house never migrated). */
+  $2(`(function(){__F.srv={};__F.r2=true;var p=JSON.parse(JSON.stringify(__demo[1]));p.id='f2r';
+    __F.seedOld(p,${JSON.stringify(MEM)},{uS:{name:'Timberline Framing'}});var srvMeta=JSON.parse(JSON.stringify(__F.srv.f2r.doc.meta));
+    __F.phone('uB',${JSON.stringify(B)},'devB7');
+    var loc=JSON.parse(JSON.stringify(p));delete loc.sample;loc.members=${JSON.stringify(MEM)};loc.memberInfo={uS:{name:'Timberline Framing'}};loc.name=String(loc.name)+' (edited)';
+    state.projects=[loc];var mk={};Object.keys(srvMeta).forEach(function(k){mk[k]=_syncHash(JSON.stringify(srvMeta[k]));});
+    Sync._shadow={f2r:{meta:'stale',mk:mk,colls:{}}};
+    window.__f2r={legacy:(p.invoices||[]).map(function(v){return String(v.id);}).sort(),name:loc.name};return true;})()`);
+  await settle();
+  const R=J('__f2r');const rw=W();const rs=J(`(function(){var s=__F.srv.f2r;return {meta:s.doc.meta.invoices,name:s.doc.meta.name,inv:Object.keys(s.colls.inv||{}).sort()};})()`);
+  const hIdx=rw.findIndex(x=>x.path==='sites/f2r'&&x.data&&x.data.meta&&x.data.meta.name===R.name);
+  const invIdx=rw.map((x,i)=>/^f2r\/inv\//.test(x.path)?i:-1).filter(i=>i>=0);
+  t('F-1 R2: the own-phone house with legacy invoices and a waiting edit migrates with no refused write',R.legacy.length>0&&rw.length>0&&rw.every(x=>!x.refused),JSON.stringify(rw.filter(x=>x.refused).slice(0,1)));
+  t('F-1 R2: every inv write goes before the house write, and that house write carries invoices: []',hIdx>=0&&invIdx.length===R.legacy.length&&invIdx.every(i=>i<hIdx)&&Array.isArray(rw[hIdx].data.meta.invoices)&&rw[hIdx].data.meta.invoices.length===0,JSON.stringify({hIdx:hIdx,invIdx:invIdx,meta:hIdx>=0&&rw[hIdx].data.meta.invoices}));
+  t('F-1 R2: on the server every legacy invoice is in inv, meta.invoices is [], and the edit landed',JSON.stringify(rs.inv)===JSON.stringify(R.legacy)&&Array.isArray(rs.meta)&&rs.meta.length===0&&rs.name===R.name,JSON.stringify(rs));
+  t('F-1 R2: no write anywhere puts a non-empty invoice list on the house doc',rw.every(x=>!(x.data&&x.data.meta&&Array.isArray(x.data.meta.invoices)&&x.data.meta.invoices.length)));
+  $2("__F.r2=false;true");
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();

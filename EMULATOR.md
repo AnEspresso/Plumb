@@ -19,3 +19,11 @@ The flag sticks for the browser tab. Open `?emu=0` to turn it off. It only works
 `F2_PROOF_DIR=../f2-app-proof F2_OLD_INDEX=<2.462.0 index.html> npx firebase emulators:exec --only firestore --project demo-plumb-rules 'node f2replay.js'`
 
 Needs the root `npm install` plus `jsdom` (root or `app/node_modules`). Exit 0 means every check passed. `F2_OLD_INDEX` is optional; without it the truth numbers come from this app.
+
+## F-1 homeowner invoice approve replay (2.464.0)
+
+`f1replay.js` uses the same jsdom harness against the Firestore emulator and the repo's `firestore.rules` (the rules live since R2). On a migrated house the homeowner taps Approve this invoice: the app must write exactly one `sites/{id}/inv/{invId}` update (`data.status` sent→approved plus an integer `data.approvedAt`) and nothing to the house doc or `meta.invoices`, and the builder must see it without writing. It also checks that an invoice that only exists in legacy `meta.invoices` is not sent, and, with `F1_OLD_INDEX`, that the 2.463.0 app's `meta.invoices` approve is refused and rolled back.
+
+`F1_PROOF_DIR=../f1-app-proof F1_OLD_INDEX=<2.463.0 index.html> npx firebase emulators:exec --only firestore --project demo-plumb-rules 'node f1replay.js'`
+
+Same setup as `f2replay.js`. `F1_OLD_INDEX` is optional. Exit 0 means every check passed.
