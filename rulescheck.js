@@ -67,11 +67,13 @@ const JOIN = applyClaimToSite({ members: { [U.builder]: 'builder' }, meta: {} },
    every one of the nine install-detail spec fields and seven custom slots
    filled, plus every money field a selection carries or will carry. */
 const SEL_IDS = ['s9a', 's9b', 's9c', 's9d', 's9e', 's9f', 's9g', 's9h', 's9i', 's9j', 's9k'];
+/* F-2 R2: money keys live on selm, not sel. Default fixture has none so
+   homeowner clientSelOk writes and builder sel writes without money pass.
+   selRecMoney keeps a leftover-money shape for the residual crew-read GAP. */
 function selRec(over) {
   return Object.assign({
     id: 9, room: 'Primary Bath', cat: 'Plumbing Fixtures', item: 'Brushed brass package',
     status: 'selected', approved: false, note: 'Rough-in confirmed on site',
-    price: 850, allowance: 1200, cost: 640, costLineId: 'cl_plumb_fix', invoicedIn: 'inv_p2_1',
     spec: {
       finish: 'Brushed brass', roughin: '8 in widespread', mount: 'Deck', mounting: 'Deck, 3-hole',
       height: '36 in vanity', supply: '1/2 in compression', drain: '1-1/4 in pop-up',
@@ -89,6 +91,11 @@ function selRec(over) {
   }, over || {});
 }
 const selDoc = (over) => ({ data: selRec(over), updatedAt: 1, updatedBy: 'dev-builder' });
+function selRecMoney(over) {
+  return selRec(Object.assign({ price: 850, allowance: 1200, cost: 640,
+    costLineId: 'cl_plumb_fix', invoicedIn: 'inv_p2_1' }, over || {}));
+}
+const selDocMoney = (over) => ({ data: selRecMoney(over), updatedAt: 1, updatedBy: 'dev-builder' });
 /* What clientSignoff() sends: the whole record, approved + signed changed, merged. */
 const approveAs = (d, id, over) => setDoc(doc(d, `sites/liveA/sel/${id}`), {
   data: selRec(Object.assign({ approved: true, signed: { date: '2026-10-04', by: ['Ana Ruiz'] } }, over || {})),
@@ -190,7 +197,12 @@ async function seed() {
       await setDoc(doc(db, `sites/${id}/selm/s9a`), SELM_DOC());
     }
     // PR 0: realistic selections, written the way the app writes a record
+    // F-2 R2: default sel has no money keys; sGap keeps leftover money for the residual GAP
     for (const id of SEL_IDS) await setDoc(doc(db, `sites/liveA/sel/${id}`), selDoc());
+    await setDoc(doc(db, 'sites/liveA/sel/sGap'), selDocMoney());
+    // F-1 clientInvOk fixtures: a draft invoice and a second sent one
+    await setDoc(doc(db, 'sites/liveA/inv/inv_draft'), INV_DOC({ id: 'inv_draft', status: 'draft' }));
+    await setDoc(doc(db, 'sites/liveA/inv/inv_sent2'), INV_DOC({ id: 'inv_sent2', status: 'sent' }));
     // House-doc sign-off houses: 6 and all 29 trades signed by the builder
     for (const [id, n] of [['so6', 6], ['so29', 29], ['so29d', 29]]) await setDoc(doc(db, `sites/${id}`), soHouse(n));
     // liveB: a different builder's live site — our personas are strangers here
@@ -410,15 +422,16 @@ async function main() {
     setDoc(doc(db.client, 'sites/liveA/sel/s9k'), { price: -50000 }, { merge: true }), false);
   await INV('sel: (c) homeowner creating a priced selection (-$50,000) - DENIED',
     setDoc(doc(db.client, 'sites/liveA/sel/s9new'), { data: { id: 99, room: 'Kitchen', cat: 'Appliances', item: 'Credit', status: 'selected', price: -50000 }, updatedAt: 1, updatedBy: 'dev-client' }), false);
-  await INV('sel: builder still sets the price (nothing loosened for builders)',
-    setDoc(doc(db.builder, 'sites/liveA/sel/s9k'), { data: selRec({ price: 900 }), updatedAt: 3, updatedBy: 'dev-builder' }, { merge: true }), true);
-  /* KNOWN GAP (Day-one: PM and crews can't see Money): a crew member can read a
-     selection's price, allowance and cost straight from the database; only
-     the app hides them. This asserts today's behavior so a rules change that
-     closes it is deliberate. It MUST flip to DENIED before the first paying
-     customer. */
-  await GAP('KNOWN GAP (Day-one: PM and crews can\'t see Money): crew can read selection money',
-    getDoc(doc(db.sub, 'sites/liveA/sel/s9a')).then(r => {
+  /* F-2 R2: money on sel is refused for every role, including builder. */
+  await INV('sel: builder writing price on sel - DENIED (R2; money lives on selm)',
+    setDoc(doc(db.builder, 'sites/liveA/sel/s9k'), { data: selRec({ price: 900 }), updatedAt: 3, updatedBy: 'dev-builder' }, { merge: true }), false);
+  await INV('sel: builder writing sel without money keys - ALLOWED',
+    setDoc(doc(db.builder, 'sites/liveA/sel/s9k'), { data: selRec({ item: 'Updated package' }), updatedAt: 3, updatedBy: 'dev-builder' }, { merge: true }), true);
+  /* Residual GAP: a leftover pre-migration sel that still carries money is
+     still readable by crew (sel read is sMember()). R2 blocks new money
+     writes on sel; migration + absorb clear live houses. sGap is that leftover. */
+  await GAP('RESIDUAL: crew can still read leftover money on an unmigrated sel',
+    getDoc(doc(db.sub, 'sites/liveA/sel/sGap')).then(r => {
       const d = (r.data() || {}).data || {};
       if (d.price !== 850 || d.allowance !== 1200) throw new Error('money not visible: ' + JSON.stringify(d).slice(0, 80));
     }), true);
@@ -461,11 +474,12 @@ async function main() {
     await INV(`${c}: builder without the money gate DENIED create`, setDoc(at(db.builder2, 'liveGate', 'n3'), mk()), false);
     await INV(`${c}: builder without the money gate DENIED update`, updateDoc(at(db.builder2, 'liveGate'), { updatedAt: 9 }), false);
     await INV(`${c}: builder without the money gate DENIED delete`, deleteDoc(at(db.builder2, 'liveGate')), false);
-    // homeowner: reads, never writes (F-1 approve comes in R2)
+    // homeowner: reads; create/delete denied; incomplete update denied
+    // (full clientInvOk suite is the R2 block below — only for inv)
     await INV(`${c}: homeowner reads`, getDoc(at(db.client, 'liveA')), true);
     await INV(`${c}: homeowner lists`, getDocs(collection(db.client, `sites/liveA/${c}`)), true);
     await INV(`${c}: homeowner DENIED create`, setDoc(at(db.client, 'liveA', 'n4'), mk()), false);
-    await INV(`${c}: homeowner DENIED update`, updateDoc(at(db.client, 'liveA'), { 'data.status': 'approved', updatedAt: 9 }), false);
+    await INV(`${c}: homeowner DENIED update (incomplete / not clientInvOk)`, updateDoc(at(db.client, 'liveA'), { 'data.status': 'approved', updatedAt: 9 }), false);
     await INV(`${c}: homeowner DENIED delete`, deleteDoc(at(db.client, 'liveA')), false);
     // crew: nothing
     await INV(`${c}: crew DENIED read`, getDoc(at(db.sub, 'liveA')), false);
@@ -484,6 +498,51 @@ async function main() {
      doc (clientHouseOk has no invoices key). */
   await INV_LOGIC('F-2 R: homeowner writing meta.invoices on the house - DENIED by the rule (no #40 allow)',
     signPlumb(db.client, 'so29d', 29, m => { m.invoices = [{ id: 'inv_r1', status: 'approved', amount: 18500 }]; return {}; }));
+
+  /* ══════════ F-2 R2: LOCK meta.invoices + sel money; F-1 clientInvOk ══════════ */
+  const invBody = (over) => Object.assign({ id: 'inv_r1', num: 3, status: 'sent', amount: 18500,
+    lines: [{ label: 'Draw 3: framing', amount: 18500 }] }, over || {});
+  const invWrite = (d, id, data, at) => setDoc(doc(d, `sites/liveA/inv/${id}`), {
+    data, updatedAt: at || 2, updatedBy: 'dev-client' }, { merge: true });
+  const houseMeta = (d, invoices) => setDoc(doc(d, 'sites/liveA'), {
+    meta: { invoices }, updatedAt: 9, updatedBy: 'dev-builder', updatedByUid: U.builder,
+  }, { merge: true });
+
+  // 1. Refuse non-empty meta.invoices; allow empty clear
+  await INV_LOGIC('R2: owner writing non-empty meta.invoices - DENIED',
+    houseMeta(db.builder, [{ id: 'inv_x', status: 'sent', amount: 100 }]));
+  await INV_LOGIC('R2: builder writing non-empty meta.invoices - DENIED',
+    houseMeta(db.builder2, [{ id: 'inv_y', status: 'draft', amount: 50 }]));
+  await INV('R2: owner writing meta.invoices: [] - ALLOWED (leftover clear)',
+    houseMeta(db.builder, []), true);
+
+  // 2. Refuse money fields on sel for every role; selm still takes money
+  for (const [k, v] of [['price', 0], ['allowance', 100], ['cost', 50], ['costLineId', 'cl_x'], ['invoicedIn', 'inv_z']]) {
+    await INV(`R2: builder create sel with ${k} - DENIED`,
+      setDoc(doc(db.builder, 'sites/liveA/sel/r2c_' + k), { data: selRec({ [k]: v }), updatedAt: 1, updatedBy: 'dev-builder' }), false);
+    await INV(`R2: builder update sel with ${k} - DENIED`,
+      setDoc(doc(db.builder, 'sites/liveA/sel/s9a'), { data: selRec({ [k]: v }), updatedAt: 4, updatedBy: 'dev-builder' }, { merge: true }), false);
+  }
+  await INV('R2: builder create sel without money keys - ALLOWED',
+    setDoc(doc(db.builder, 'sites/liveA/sel/r2ok'), { data: selRec({ id: 42, item: 'No money' }), updatedAt: 1, updatedBy: 'dev-builder' }), true);
+  await INV('R2: builder writing selm with money - still ALLOWED',
+    setDoc(doc(db.builder, 'sites/liveA/selm/s9a'), SELM_DOC({ price: 999 }), { merge: true }), true);
+
+  // 3. clientInvOk suite
+  await INV('R2 clientInvOk: homeowner sent→approved + approvedAt - ALLOWED',
+    invWrite(db.client, 'inv_r1', invBody({ status: 'approved', approvedAt: 1791130000000 })), true);
+  await INV_RULE('R2 clientInvOk: homeowner changing amount while approving - DENIED',
+    invWrite(db.client, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000001, amount: 1 })));
+  await INV('R2 clientInvOk: draft→approved - DENIED',
+    invWrite(db.client, 'inv_draft', invBody({ id: 'inv_draft', status: 'approved', approvedAt: 1791130000002 })), false);
+  await INV('R2 clientInvOk: sent→paid - DENIED',
+    invWrite(db.client, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'paid', approvedAt: 1791130000003 })), false);
+  await INV('R2 clientInvOk: crew DENIED approve',
+    invWrite(db.sub, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000004 })), false);
+  await INV('R2 clientInvOk: stranger DENIED approve',
+    invWrite(db.stranger, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000005 })), false);
+  await INV('R2: builder still full write on inv',
+    setDoc(doc(db.builder, 'sites/liveA/inv/inv_sent2'), INV_DOC({ id: 'inv_sent2', status: 'void', amount: 0 }), { merge: true }), true);
 
   /* ══════════ BOOKINGS (a crew sees only its own) ══════════ */
   const bkQ = (d, site, name) => query(collection(d, `sites/${site}/bk`), where('data.subName', '==', name));

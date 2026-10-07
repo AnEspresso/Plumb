@@ -149,6 +149,15 @@ service cloud.firestore {
           && metaChanged().hasOnly(['packetWork','t','updatedAt'])
           && crewWorkOk();
       }
+      /* F-2 R2: invoices live in sites/{id}/inv. A leftover clear may write
+         meta.invoices: [] so migration can finish; any non-empty array is
+         refused for every role, including the owner (who has no meta
+         allowlist). Missing key = cleared. */
+      function invoicesCleared() {
+        let m = request.resource.data.get('meta', {});
+        return !m.keys().hasAny(['invoices'])
+          || (m.invoices is list && m.invoices.size() == 0);
+      }
 
       /* P2-4 (Release D): a house that is not live is closed. The example
          build keeps its practice houses on the phone (nothing in demo syncs),
@@ -167,6 +176,7 @@ service cloud.firestore {
 
       allow update: if signedIn() && isLive()
         && request.resource.data.mode == 'live'
+        && invoicesCleared()
         && (
           isOwner()
           || builderHouseOk()
@@ -252,12 +262,35 @@ service cloud.firestore {
             && rec().get('by', '') != ''
             && recNew().get('by', '') == rec().get('by', '');
         }
+        /* F-2 R2: money keys never live on sel (even at $0). They live on
+           selm. Create and update of a sel record refuse any of the five. */
+        function selNoMoney() {
+          return recordColl != 'sel'
+            || !recNew().keys().hasAny(['price', 'allowance', 'cost', 'costLineId', 'invoicedIn']);
+        }
+        /* F-1 (in R2): homeowner Approves one invoice record. Outer keys
+           only data/updatedAt/updatedBy; inside data only status and
+           approvedAt; prior status must be sent, new status approved;
+           approvedAt must be an int. No amount/total/lines/payments/void.
+           Matches 2.463.0 invApprove (status + approvedAt only; no signed). */
+        function clientInvOk() {
+          let n = recNew();
+          let o = rec();
+          let ch = n.diff(o).affectedKeys();
+          return recordColl == 'inv'
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['data', 'updatedAt', 'updatedBy'])
+            && ch.hasOnly(['status', 'approvedAt'])
+            && o.get('status', '') == 'sent'
+            && n.get('status', '') == 'approved'
+            && n.approvedAt is int;
+        }
 
         /* P2-4: records under a house that is not live are closed too.
            F-2 R (additive): inv and selm are read by a builder who passes
            moneyOk() and by the homeowner; crews and builders without the
-           money gate are refused. Homeowners get no write here (create and
-           update below never name inv or selm for a client). */
+           money gate are refused. F-2 R2: homeowner may update inv through
+           clientInvOk (Approve); create/delete stay builder-only. */
         allow read: if signedIn() && sScoped()
           && (recordColl == 'pmts' ? sMember() && sRole() != 'sub'
               : recordColl in ['mail','costs'] ? moneyOk()
@@ -266,16 +299,19 @@ service cloud.firestore {
               : sMember());
 
         allow create: if signedIn() && sScoped()
+          && selNoMoney()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
               || (sRole() == 'sub' && recordColl in ['items','logs'])
               || (sRole() == 'client' && recordColl == 'items'));
 
         allow update: if signedIn() && sScoped()
+          && selNoMoney()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
               || (sRole() == 'sub' && crewItemOk())
               || (sRole() == 'sub' && crewBkRespOk())
               || (sRole() == 'client' && recordColl == 'items')
-              || (sRole() == 'client' && clientSelOk()));
+              || (sRole() == 'client' && clientSelOk())
+              || (sRole() == 'client' && clientInvOk()));
 
         allow delete: if signedIn() && sScoped()
           && sRole() == 'builder' && (!moneyColl() || moneyOk());
