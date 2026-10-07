@@ -2436,7 +2436,34 @@ t('Field Notes mark is 82 by 56', (function(){
   const block=SRC.slice(i,i+140);
   return block.indexOf('width:82px')>=0&&block.indexOf('height:56px')>=0;
 })());
-t('Coming up rows still open a booking', $("String(renderToday)").indexOf('openBk')>=0&&$("String(renderToday)").indexOf('ov-coming')>=0);
+t('Coming up rows still open a booking', $("String(comingUpRow)").indexOf('openBk')>=0&&$("String(renderToday)").indexOf('comingUpRow')>=0&&$("String(renderToday)").indexOf('ov-coming')>=0);   /* 2.465.0: the row is shared with the desktop column (comingUpRow) */
+/* ════ 2.465.0 DESKTOP HOME: Add a field note in the header (>=900), Coming up under the month (split) ════
+   The phone (here 390) keeps the sticky bar and Coming up in the list with its Calendar link. At 900+ the
+   bar is gone and a compact one-line Add a field note sits in the header left of the briefcase (same
+   openLogPick). On the desktop split the month drops its spare row and Coming up (all of the next 7 days,
+   same rows, no Calendar link) sits under it; the right column keeps Next packet and Needs you. */
+t('desktop home: the header button is in the markup, hidden, left of the briefcase', SRC.indexOf('<div class="hdr-actions"><button type="button" class="ov-fhdr" id="ovFieldHdr" hidden onclick="event.stopPropagation();openLogPick()"')>=0);
+$('showOverview()');$('renderToday()');
+t('desktop home: phone keeps the bar, header button hidden and not an .ov-field', $("(function(){var h=document.getElementById('ovFieldHdr');var c=document.getElementById('ovCapture');return h.hidden&&!h.classList.contains('ov-field')&&h.innerHTML===''&&!c.hidden&&!!c.querySelector('.ov-field');})()")===true);
+t('desktop home: phone tour target is the bar', $("!!(document.querySelector('.ov-field')&&document.querySelector('.ov-field').closest('#ovCapture'))")===true);
+t('desktop home: phone Coming up stays in the list with its Calendar link', (function(){const h=$("document.getElementById('ovToday').innerHTML");return h.indexOf('<h2>Coming up</h2><button type="button" class="sec-act" onclick="openCal()">Calendar</button>')>=0;})());
+$("Object.defineProperty(window,'innerWidth',{value:1000,configurable:true})");
+$("window.dispatchEvent(new Event('resize'))");
+t('desktop home 900-1099: resize moves Add a field note into the header, one line', $("(function(){var h=document.getElementById('ovFieldHdr');var c=document.getElementById('ovCapture');var tx=(h.textContent||'').replace(/\\s+/g,' ').trim();return !h.hidden&&h.classList.contains('ov-field')&&tx==='Add a field note'&&c.hidden&&c.innerHTML==='';})()")===true);
+t('desktop home: the header button is the tour target and opens the same picker', $("document.querySelector('.ov-field')===document.getElementById('ovFieldHdr')&&document.getElementById('ovFieldHdr').getAttribute('onclick').indexOf('openLogPick()')>=0")===true);
+t('desktop home 900-1099: no month there, so Coming up keeps its Calendar link', $("document.getElementById('ovToday').innerHTML.indexOf('onclick=\"openCal()\">Calendar</button>')>=0&&document.getElementById('ovWeek').hidden")===true);
+$("Object.defineProperty(window,'innerWidth',{value:1200,configurable:true})");
+$("window.dispatchEvent(new Event('resize'))");
+t('desktop split: Coming up leaves the right column', $("document.getElementById('ovToday').innerHTML.indexOf('Coming up')<0&&document.getElementById('ovToday').innerHTML.indexOf('Needs you')>=0")===true);
+t('desktop split: Coming up sits under the month with no Calendar link', $("(function(){var w=document.getElementById('ovWeek');var cu=document.getElementById('ovCu');return !w.hidden&&!!cu&&w.lastElementChild===cu&&cu.querySelector('h2').textContent==='Coming up'&&!cu.querySelector('.sec-act')&&w.innerHTML.indexOf('Open calendar')>=0;})()")===true);
+t('desktop split: Coming up under the month lists all of the next 7 days in the same rows', $("(function(){var n=comingUpItems(liveProjects()).length;var rows=document.querySelectorAll('#ovCu .ov-coming .row.td-soon');return n>3&&rows.length===n&&rows[0].outerHTML===comingUpRow(comingUpItems(liveProjects())[0]).replace(/&amp;/g,'&amp;');})()")===true);
+t('desktop split: the month has only the weeks it needs', $("(function(){var m=_ovMonth,y=m.getFullYear(),mo=m.getMonth();var sd=(new Date(y,mo,1).getDay()+6)%7;var need=Math.ceil((sd+new Date(y,mo+1,0).getDate())/7)*7;var n=document.querySelectorAll('#ovWeek .cal-day').length;return n===need;})()")===true);
+t('desktop split: no spare next-month row in any month', $("(function(){var keep=_ovMonth,ok=true;for(var i=0;i<14;i++){_ovMonth=new Date(2026,i,1);renderOvWeek();var c=[].slice.call(document.querySelectorAll('#ovWeek .cal-day'));var last=c.slice(-7);if(last.every(function(d){return d.classList.contains('out');}))ok=false;if(c.length%7)ok=false;}_ovMonth=keep;renderOvWeek();return ok;})()")===true);
+t('desktop split: day cells are shorter (42px) and +N rides on the date line', SRC.indexOf('.ov-week .cal-day{min-height:42px;')>=0&&SRC.indexOf('.ov-week .cal-more{position:absolute;top:var(--s-1);right:var(--s-1);}')>=0);
+t('desktop split: empty Coming up says Nothing scheduled this week.', $("(function(){var keep=JSON.stringify(state.projects.map(function(p){return p.bookings||[];}));state.projects.forEach(function(p){p.bookings=[];});renderToday();renderOvWeek();var e=document.querySelector('#ovCu .ov-cu-empty');var ok=!!e&&e.textContent==='Nothing scheduled this week.'&&document.querySelector('#ovCu h2').textContent==='Coming up';var k=JSON.parse(keep);state.projects.forEach(function(p,i){p.bookings=k[i];});renderToday();renderOvWeek();return ok;})()")===true);
+$("Object.defineProperty(window,'innerWidth',{value:390,configurable:true})");
+$("window.dispatchEvent(new Event('resize'))");
+t('desktop home: back at phone width the bar and the list Coming up return', $("(function(){var h=document.getElementById('ovFieldHdr');return h.hidden&&!document.getElementById('ovCapture').hidden&&document.getElementById('ovToday').innerHTML.indexOf('Coming up')>=0;})()")===true);
 t('Your houses keeps the sort pills for the tour', $("!!document.getElementById('ovSortRow')")===true&&$("String(renderOvSortRow)").indexOf('data-sort')>=0);
 t('Find a street lives with Your houses', SRC.indexOf('id="ovSearch"')>SRC.indexOf('id="ovBuildsHd"')&&$("document.getElementById('ovSearch').placeholder")==='Find a street');
 t('calendar House back is bottom row', SRC.indexOf('id="calFoot"')>=0&&SRC.indexOf('id="calDoneBtn" onclick="closeCal()"')>=0&&SRC.split('id="calview"')[1].split('id="calBody"')[0].indexOf('id="calDoneBtn"')<0);
