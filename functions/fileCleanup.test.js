@@ -1,7 +1,7 @@
 'use strict';
 /* P2-6: deleted entries take their photo files with them. Plain node, no emulator. */
 const assert = require('assert');
-const { photoIdsOf, deleteRecordFiles } = require('./lib/fileCleanup');
+const { photoIdsOf, deleteRecordFiles, describeDeleteEvent } = require('./lib/fileCleanup');
 
 function bucket(behave) {
   const b = { calls: [], file(p) { return { delete: async () => { b.calls.push(p); const x = behave[p]; if (x) throw x; } }; } };
@@ -34,6 +34,15 @@ function bucket(behave) {
   await deleteRecordFiles(none, 's1', { data: { id: 9 } });
   await deleteRecordFiles(none, '../evil', { data: { photoId: 'phA' } });
   assert.strictEqual(none.calls.length, 0, 'no photo or a bad site id touches nothing');
+
+  /* the always-on log line: written for every delete event, whatever the collection or shape */
+  const ev = { params: { siteId: 's1', coll: 'items', docId: '7' }, data: { data: () => ({ data: { id: 7, photoId: 'phA', edits: [{ snap: { photoId: 'phB' } }] }, updatedAt: 1 }) } };
+  const d1 = describeDeleteEvent(ev);
+  assert.deepStrictEqual([d1.siteId, d1.coll, d1.docId, d1.hasEventData, d1.hasDocData, d1.hasRecord, d1.photoIds], ['s1', 'items', '7', true, true, true, ['phA', 'phB']]);
+  const d2 = describeDeleteEvent({ params: { siteId: 's1', coll: 'bk', docId: '2' } });
+  assert.deepStrictEqual([d2.coll, d2.hasEventData, d2.hasDocData, d2.photoIds], ['bk', false, false, []], 'no data: logged, not thrown');
+  assert.doesNotThrow(() => describeDeleteEvent(undefined));
+  assert.strictEqual(describeDeleteEvent({ params: {}, data: { data: () => { throw new Error('x'); } } }).hasDocData, false);
 
   console.log('fileCleanup: all checks pass');
 })().catch((e) => { console.error('FAIL', e.message); process.exit(1); });
