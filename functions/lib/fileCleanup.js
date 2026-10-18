@@ -43,4 +43,19 @@ async function deleteRecordFiles(bucket, siteId, doc, log) {
   return r;
 }
 
-module.exports = { photoIdsOf, deleteRecordFiles };
+/* One log object per delete event, written before any filtering: where it fired, whether the
+   deleted doc came through, and which photo ids it names. */
+function describeDeleteEvent(event) {
+  const p = (event && event.params) || {};
+  let doc = null;
+  try { doc = (event && event.data && typeof event.data.data === 'function') ? event.data.data() : null; } catch (_) { doc = null; }
+  const rec = (doc && doc.data) || null;
+  return {
+    severity: 'INFO', message: 'onRecordDeleted fired',
+    siteId: p.siteId || null, coll: p.coll || null, docId: p.docId || null,
+    hasEventData: !!(event && event.data), hasDocData: !!doc, hasRecord: !!rec,
+    photoIds: photoIdsOf(rec),
+  };
+}
+
+module.exports = { photoIdsOf, deleteRecordFiles, describeDeleteEvent };

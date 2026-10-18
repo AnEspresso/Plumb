@@ -286,10 +286,14 @@ exports.notifyTest = onRequest(async (req, res) => {
 /* P2-6 (Release I): a deleted field note or cost entry takes its photo files
    out of Storage, gone for good. Fires on deletes only; other collections exit
    at once. A failed file delete is logged and never blocks the user. */
-const { deleteRecordFiles } = require('./lib/fileCleanup');
+const { deleteRecordFiles, describeDeleteEvent } = require('./lib/fileCleanup');
 exports.onRecordDeleted = onDocumentDeleted('sites/{siteId}/{coll}/{docId}', async (event) => {
   const coll = event.params.coll;
+  /* Always-on, before any early return: proves the trigger fires at all (Cloud Logging, severity INFO). */
+  try { console.log(JSON.stringify(describeDeleteEvent(event))); } catch (_) {}
   if (coll !== 'items' && coll !== 'costs') return;
+  /* v2 onDocumentDeleted: event.data is the deleted document's snapshot, so data() is the old doc
+     ({data:{...record},updatedAt,updatedBy}); the record, and its photoId, sit under .data. */
   const doc = (event.data && event.data.data && event.data.data()) || {};
   const bucket = admin.storage().bucket(process.env.PLUMB_BUCKET || 'plumb-467a0.firebasestorage.app');
   await deleteRecordFiles(bucket, event.params.siteId, doc);
