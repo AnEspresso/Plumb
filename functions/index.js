@@ -288,13 +288,17 @@ exports.notifyTest = onRequest(async (req, res) => {
    at once. A failed file delete is logged and never blocks the user. */
 const { deleteRecordFiles, describeDeleteEvent } = require('./lib/fileCleanup');
 exports.onRecordDeleted = onDocumentDeleted('sites/{siteId}/{coll}/{docId}', async (event) => {
+  const bucketName = process.env.PLUMB_BUCKET || 'plumb-467a0.firebasestorage.app';
+  /* Always-on, before any early return: where it fired, what the deleted doc held, which photo ids and
+     storage paths it will try, or the exact reason it will do nothing (INFO in Cloud Logging). */
+  try { console.log(JSON.stringify(describeDeleteEvent(event, bucketName))); } catch (_) {}
   const coll = event.params.coll;
-  /* Always-on, before any early return: proves the trigger fires at all (Cloud Logging, severity INFO). */
-  try { console.log(JSON.stringify(describeDeleteEvent(event))); } catch (_) {}
   if (coll !== 'items' && coll !== 'costs') return;
   /* v2 onDocumentDeleted: event.data is the deleted document's snapshot, so data() is the old doc
      ({data:{...record},updatedAt,updatedBy}); the record, and its photoId, sit under .data. */
   const doc = (event.data && event.data.data && event.data.data()) || {};
-  const bucket = admin.storage().bucket(process.env.PLUMB_BUCKET || 'plumb-467a0.firebasestorage.app');
-  await deleteRecordFiles(bucket, event.params.siteId, doc);
+  const bucket = admin.storage().bucket(bucketName);
+  const r = await deleteRecordFiles(bucket, event.params.siteId, doc);
+  /* Outcome line: every attempted path ends up in exactly one of deleted / missing / failed. */
+  try { console.log(JSON.stringify(Object.assign({ severity: (r.failed.length ? 'ERROR' : (r.missing.length ? 'WARNING' : 'INFO')), message: 'onRecordDeleted result', bucket: bucketName, siteId: event.params.siteId, docId: event.params.docId }, r))); } catch (_) {}
 });
