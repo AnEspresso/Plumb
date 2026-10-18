@@ -22,7 +22,14 @@ function photoIdsOf(rec) {
 function defaultLog(entry) {
   console.error(JSON.stringify(Object.assign({ severity: 'ERROR', message: 'fileCleanup: file delete failed' }, entry)));
 }
-const notFound = (e) => !!e && (e.code === 404 || e.code === '404' || /no such object|not.?found/i.test(String(e.message || '')));
+/* A missing OBJECT is done. A missing BUCKET is also a 404 from Storage ("The specified bucket does not
+   exist"), and must never count as done: that would hide a wrong bucket name forever. */
+const notFound = (e) => {
+  if (!e) return false;
+  const msg = String(e.message || '');
+  if (/bucket/i.test(msg) && /not exist|not found|no such/i.test(msg)) return false;
+  return e.code === 404 || e.code === '404' || /no such object|not.?found/i.test(msg);
+};
 
 /* doc = the deleted Firestore doc's data ({data:{...record}}); returns what happened. */
 async function deleteRecordFiles(bucket, siteId, doc, log) {
@@ -32,7 +39,7 @@ async function deleteRecordFiles(bucket, siteId, doc, log) {
   const r = { deleted: [], missing: [], failed: [] };
   if (!ID_OK.test(String(siteId || ''))) return r;
   for (const id of ids) {
-    const path = 'live/sites/' + siteId + '/photos/' + id;
+    const path = pathOf(siteId, id);
     try { await bucket.file(path).delete(); r.deleted.push(path); }
     catch (e) {
       if (notFound(e)) { r.missing.push(path); continue; }
@@ -43,19 +50,44 @@ async function deleteRecordFiles(bucket, siteId, doc, log) {
   return r;
 }
 
-/* One log object per delete event, written before any filtering: where it fired, whether the
-   deleted doc came through, and which photo ids it names. */
-function describeDeleteEvent(event) {
-  const p = (event && event.params) || {};
-  let doc = null;
-  try { doc = (event && event.data && typeof event.data.data === 'function') ? event.data.data() : null; } catch (_) { doc = null; }
-  const rec = (doc && doc.data) || null;
+const HANDLED = { items: 1, costs: 1 };
+const pathOf = (siteId, id) => 'live/sites/' + siteId + '/photos/' + id;
+
+/* What a delete event will do, and why it would do nothing. Pure; never throws. earlyReturn is null when
+   at least one file path will be tried, else the exact reason nothing is. */
+function planDelete(params, doc) {
+  const p = params || {};
+  const rec = (doc && typeof doc === 'object' && doc.data && typeof doc.data === 'object') ? doc.data : null;
+  const photoIds = photoIdsOf(rec);
+  const siteOk = ID_OK.test(String(p.siteId || ''));
+  let earlyReturn = null;
+  if (!HANDLED[p.coll]) earlyReturn = 'coll-not-handled';
+  else if (!doc || typeof doc !== 'object') earlyReturn = 'no-doc-data';
+  else if (!rec) earlyReturn = 'no-record-under-data';
+  else if (!siteOk) earlyReturn = 'bad-site-id';
+  else if (!photoIds.length) earlyReturn = 'no-photo-ids';
   return {
-    severity: 'INFO', message: 'onRecordDeleted fired',
-    siteId: p.siteId || null, coll: p.coll || null, docId: p.docId || null,
-    hasEventData: !!(event && event.data), hasDocData: !!doc, hasRecord: !!rec,
-    photoIds: photoIdsOf(rec),
+    docPath: 'sites/' + (p.siteId || '?') + '/' + (p.coll || '?') + '/' + (p.docId || '?'),
+    coll: p.coll || null,
+    docKeys: doc && typeof doc === 'object' ? Object.keys(doc) : [],
+    recordKeys: rec ? Object.keys(rec) : [],
+    photoFields: rec ? { photoId: rec.photoId === undefined ? null : rec.photoId, editPhotoIds: (Array.isArray(rec.edits) ? rec.edits : []).map((e) => (e && e.snap && e.snap.photoId) || null).filter(Boolean) } : null,
+    photoIds,
+    paths: earlyReturn ? [] : photoIds.map((id) => pathOf(p.siteId, id)),
+    earlyReturn,
   };
 }
 
-module.exports = { photoIdsOf, deleteRecordFiles, describeDeleteEvent };
+/* One log object per delete event, written before any filtering. */
+function describeDeleteEvent(event, bucketName) {
+  const p = (event && event.params) || {};
+  let doc = null;
+  try { doc = (event && event.data && typeof event.data.data === 'function') ? event.data.data() : null; } catch (_) { doc = null; }
+  return Object.assign({
+    severity: 'INFO', message: 'onRecordDeleted fired',
+    hasEventData: !!(event && event.data), hasDocData: !!doc, bucket: bucketName || null,
+    siteId: p.siteId || null, docId: p.docId || null,
+  }, planDelete(p, doc));
+}
+
+module.exports = { photoIdsOf, deleteRecordFiles, describeDeleteEvent, planDelete };
