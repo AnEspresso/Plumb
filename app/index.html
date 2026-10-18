@@ -3967,15 +3967,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.466.0 - Builders without money access see no budget card instead of a $0 one';
+const PLUMB_VERSION='2.467.0 - A deleted note leaves the book list, and a new note reaches the server so its delete does too';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1791392400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.466.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792356000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.467.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9660,13 +9660,13 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(op.sub==='inv'||op.sub==='selm'){
           /* F-2: a money record is the builder's whole record: replace it, so a
              key that left the invoice or the selection's money leaves the cloud too. */
-          await ref.set({data:op.data,updatedAt:Date.now(),updatedBy:this.deviceId});
+          await ref.set({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId});
         }else{
-          let data=op.data;
+          let data=fbClean(op.data);
           /* F-2 (correction 2): a merge never deletes a field. Until R2 refuses
              money on sel, every sel write from a builder who writes selm deletes
              the five money keys; selm already holds them (diffSiteOps order). */
-          if(op.sub==='sel'&&syncWrites(p,'selm')){const del=fbDelete();if(del!==undefined){data=Object.assign({},op.data);SEL_MONEY_KEYS.forEach(k=>{data[k]=del;});}}
+          if(op.sub==='sel'&&syncWrites(p,'selm')){const del=fbDelete();if(del!==undefined){data=Object.assign({},data);SEL_MONEY_KEYS.forEach(k=>{data[k]=del;});}}
           await ref.set({data:data,updatedAt:Date.now(),updatedBy:this.deviceId},{merge:true});
         }
         (sh.colls[op.sub]||(sh.colls[op.sub]={}))[op.id]=_syncHash(JSON.stringify(op.data));
@@ -10518,6 +10518,15 @@ function diffSiteOps(sh,p){const ops=[];
   const rank=o=>o.kind==='meta'?0:o.sub==='selm'?(o.kind==='del'?3:(o.id in onSrv?1:2.5)):(o.sub==='sel'&&o.kind==='del')?4:2;
   return ops.map((o,i)=>[o,i]).sort((a,b)=>(rank(a[0])-rank(b[0]))||(a[1]-b[1])).map(x=>x[0]);}
 function fbDelete(){try{return firebase.firestore.FieldValue.delete();}catch(e){return undefined;}}
+/* Firestore refuses any undefined value ("Unsupported field value: undefined") before it sends anything, and that throw
+   stopped the whole house push. A note keeps status:undefined (and its edit history snap.status) until the app is
+   reloaded, so a new note, and its later delete, never reached the server. Drop undefined keys, null array holes. */
+function fbClean(x){
+  if(x===undefined)return undefined;
+  if(Array.isArray(x))return x.map(function(v){return v===undefined?null:fbClean(v);});
+  if(x&&typeof x==='object'&&Object.getPrototypeOf(x)===Object.prototype){const o={};Object.keys(x).forEach(function(k){const v=fbClean(x[k]);if(v!==undefined)o[k]=v;});return o;}
+  return x;
+}
 function persistLocalOnly(){try{localStorage.setItem(storeKey(),JSON.stringify(state));}catch(e){}}
 function rerenderCurrent(){try{
   try{if(appMode()==='real')applyLiveRole();}catch(e){}
@@ -19796,7 +19805,7 @@ function saveRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.
 function deleteRecord(){if(editingRecId==null)return;const it=P().items.find(x=>x.id===editingRecId);const rid=editingRecId;
   confirmDelete({title:'Delete entry?',body:'\u201c'+esc((it&&it.cap)||'')+'\u201d<br><br>Permanently removes the note'+(it&&it.photoId?', its photo,':'')+' and any open-item flag. This can\u2019t be undone.',onConfirm:()=>{
   Data.removeItem(P().id,rid);logEvent('recordDelete','#'+rid);
-  closeRecord();renderFeed();renderIssues();renderPhotos();renderBuild();toast('Entry deleted');}});}
+  closeRecord();renderFeed();renderIssues();renderPhotos();renderBuild();try{renderToday();renderOvCards();}catch(e){}toast('Entry deleted');}});}
 
 /* developer access: Settings → Workbench (owner, QA logins, or a grant) */
 function devSaveVapid(){const v=(document.getElementById('vapidInput')||{value:''}).value.trim();

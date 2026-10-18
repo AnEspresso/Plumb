@@ -3967,6 +3967,8 @@ await (async function(){
     var isObj=function(x){return !!x&&typeof x==='object'&&!Array.isArray(x)&&x!==DEL;};
     var strip=function(o){var r={};Object.keys(o).forEach(function(k){if(o[k]===DEL)return;r[k]=isObj(o[k])?strip(o[k]):cl(o[k]);});return r;};
     var merge=function(t,d){Object.keys(d).forEach(function(k){if(d[k]===DEL){delete t[k];return;}if(isObj(d[k])&&isObj(t[k]))merge(t[k],d[k]);else t[k]=isObj(d[k])?strip(d[k]):cl(d[k]);});return t;};
+    /* F.undefCheck: the real Firestore SDK (10.12.5) throws on any undefined value before it sends; this fake does the same when asked */
+    var hasUndef=function(x){if(x===undefined)return true;if(x===DEL)return false;if(Array.isArray(x))return x.some(hasUndef);if(x&&typeof x==='object')return Object.keys(x).some(function(k){return hasUndef(x[k]);});return false;};
     F.site=function(sid){return F.srv[sid]||(F.srv[sid]={doc:null,colls:{}});};
     var snap=function(ch,docs){return {metadata:{fromCache:false},docs:docs,size:docs.length,empty:!docs.length,docChanges:function(){return ch;}};};
     var ds=function(id,d){return {id:id,exists:d!=null,data:function(){return cl(d);}};};
@@ -3989,7 +3991,7 @@ await (async function(){
           s.doc=nd;fire('sites',t,sid,s.doc);return Promise.resolve();},
         collection:function(sub){var C={where:function(){return C;},onSnapshot:function(o,h){return listen(sid+'/'+sub,sid,sub,o,h);},
           doc:function(id){return {
-            set:function(d,o){log('set',sid+'/'+sub+'/'+id,d,o);var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
+            set:function(d,o){if(F.undefCheck&&hasUndef(d)){F.undefHits=(F.undefHits||0)+1;throw new Error('Unsupported field value: undefined (found in field data in document '+sid+'/'+sub+'/'+id+')');}log('set',sid+'/'+sub+'/'+id,d,o);var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
             delete:function(){log('del',sid+'/'+sub+'/'+id);var c=F.site(sid).colls[sub]||{};var had=!!c[id];delete c[id];if(had)fire(sid+'/'+sub,'removed',id,null);return Promise.resolve();}};}};return C;}};}};}};
     /* a fresh phone: new device, no shadow, no houses */
     F.phone=function(uid,sess,dev){F.L.forEach(function(l){l.dead=true;});F.L=[];F.writes=[];F.uid=uid;
@@ -4169,6 +4171,33 @@ await (async function(){
   t('F-1 R2: on the server every legacy invoice is in inv, meta.invoices is [], and the edit landed',JSON.stringify(rs.inv)===JSON.stringify(R.legacy)&&Array.isArray(rs.meta)&&rs.meta.length===0&&rs.name===R.name,JSON.stringify(rs));
   t('F-1 R2: no write anywhere puts a non-empty invoice list on the house doc',rw.every(x=>!(x.data&&x.data.meta&&Array.isArray(x.data.meta.invoices)&&x.data.meta.invoices.length)));
   $2("__F.r2=false;true");
+  /* 2.467.0 · a Decision with a photo: it must reach the server, its delete must too (so onRecordDeleted fires), and it must leave the book list */
+  $2(`(function(){__F.srv={};var p=JSON.parse(JSON.stringify(__demo[1]));p.id='pdel';p.items=[];p.street='3863 Robina Ave';__F.seedOld(p,${JSON.stringify(MEM)},{});__F.undefCheck=true;__F.undefHits=0;return true;})()`);
+  await phone('uB',B,'devPD');
+  $2("state.activeId='pdel';true");
+  const srvItems=()=>J(`(function(){var c=(__F.srv.pdel&&__F.srv.pdel.colls.items)||{};return Object.keys(c).map(function(k){var d=c[k].data;return {id:k,photoId:d.photoId,issue:d.issue,crew:d.crew,fk:d.fieldKind,cap:d.cap};});})()`);
+  const cardsTxt=()=>J(`(function(){renderToday();return document.getElementById('ovCards').textContent;})()`);
+  $2("(function(){_fieldNote=true;_fieldKind='decision';pendingPhotoId='phTESTDEC1';document.getElementById('caption').value='Check BPs? Lol';return true;})()");
+  await $2("save()");await sleep(1500);await settle();
+  const dec1=srvItems();
+  t('decision with a photo reaches the server as sites/{site}/items/{id} with its photoId (real SDK refuses undefined)',dec1.length===1&&dec1[0].photoId==='phTESTDEC1'&&dec1[0].fk==='decision',JSON.stringify(dec1));
+  const decId=J("state.projects.find(function(x){return x.id==='pdel';}).items[0].id");
+  $2(`(function(){openFileTo(${decId});pickFileTrade('plumb');saveFileTo();return true;})()`);await sleep(1500);await settle();
+  const dec2=srvItems();
+  t('filing the decision to a trade (history added) still reaches the server',dec2.length===1&&dec2[0].issue===true&&dec2[0].crew==='Plumbing',JSON.stringify(dec2));
+  t('the decision shows on the book list while it exists',cardsTxt().indexOf('Check BPs? Lol')>=0);
+  $2(`(function(){__F.writes=[];openRecord(${decId});deleteRecord();cdConfirm();return true;})()`);
+  const afterNow=J(`document.getElementById('ovCards').textContent`);
+  t('deleting the decision takes it off the book list at once (no stale card)',afterNow.indexOf('Check BPs? Lol')<0,afterNow.replace(/\s+/g,' ').slice(0,160));
+  await sleep(1500);await settle();
+  const decDel=J(`(function(){return {dels:__F.writes.filter(function(w){return w.kind==='del';}).map(function(w){return w.path;})};})()`);
+  t('deleting the decision sends the document delete (what onRecordDeleted watches)',srvItems().length===0&&decDel.dels.indexOf('pdel/items/'+decId)>=0,JSON.stringify(decDel));
+  t('no write carried an undefined value',J('__F.undefHits')===0);
+  $2("(function(){_fieldNote=false;sheetIsLog=false;pendingPhotoId='phTESTNOTE';document.getElementById('caption').value='plain note';return true;})()");
+  await $2("save()");await sleep(1500);await settle();
+  const pn=srvItems();
+  t('a plain note with a photo reaches the server too',pn.length===1&&pn[0].photoId==='phTESTNOTE',JSON.stringify(pn));
+  $2("__F.undefCheck=false;true");
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();
