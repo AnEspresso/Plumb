@@ -68,6 +68,9 @@ jobs:
       - name: File cleanup (deleted entries take their photos out of Storage)
         run: npm run filecleanup
 
+      - name: Paper trail (money history writer + server money check, dormant)
+        run: npm run papertrail
+
       - name: Live-rules check (compare logic, and nothing in it can publish)
         run: npm run liverules
 

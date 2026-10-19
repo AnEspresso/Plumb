@@ -7,6 +7,7 @@
     "rules:next": "node scripts/rules.mjs --next",
     "claimstamp": "node functions/claimStamp.test.js",
     "filecleanup": "node functions/fileCleanup.test.js",
+    "papertrail": "node functions/paperTrail.test.js",
     "liverules": "node scripts/liveRules.test.js"
   },
   "devDependencies": {

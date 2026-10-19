@@ -302,3 +302,12 @@ exports.onRecordDeleted = onDocumentDeleted('sites/{siteId}/{coll}/{docId}', asy
   /* Outcome line: every attempted path ends up in exactly one of deleted / missing / failed. */
   try { console.log(JSON.stringify(Object.assign({ severity: (r.failed.length ? 'ERROR' : (r.missing.length ? 'WARNING' : 'INFO')), message: 'onRecordDeleted result', bucket: bucketName, siteId: event.params.siteId, docId: event.params.docId }, r))); } catch (_) {}
 });
+
+/* Step 3a (2.470.0): the money history writer and the server's own money check.
+   DORMANT: each trigger reads settings/paperTrail and returns at once unless it says enabled: true
+   (only the console or the server writes that document; no client can). */
+const paperTrail = require('./lib/paperTrail');
+const _ptTs = () => admin.firestore.FieldValue.serverTimestamp();
+exports.paperTrailInv = onDocumentWritten('sites/{siteId}/inv/{docId}', (event) => paperTrail.handle(db, _ptTs, 'inv', event));
+exports.paperTrailCo = onDocumentWritten('sites/{siteId}/co/{docId}', (event) => paperTrail.handle(db, _ptTs, 'co', event));
+exports.paperTrailPmts = onDocumentWritten('sites/{siteId}/pmts/{docId}', (event) => paperTrail.handle(db, _ptTs, 'pmts', event));
