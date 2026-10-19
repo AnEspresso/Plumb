@@ -805,6 +805,24 @@ async function main() {
   await INV('A1 app 3c-2: homeowner lists the house history', HL(db.client), true);
   await INV('A1 app 3c-2: crew DENIED listing history', HL(db.sub), false);
   await INV('A1 app 3c-2: a builder without the money gate DENIED listing history', HL(db.builder2, 'liveGate'), false);
+  /* 2.480.0 app (3c-5, M-11): Past houses. A deleted house the server archived keeps its tombstone (meta.deleted + meta.archivedAt)
+     and its members; the homeowner's phone reads it once, exactly these four queries. Nothing is written. */
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    const sdb = ctx.firestore();
+    await setDoc(doc(sdb, 'sites/liveArch'), { mode: 'live', street: 'Arch St', members: { [U.builder]: 'builder', [U.sub]: 'sub', [U.client]: 'client' }, memberUids: [U.builder, U.sub, U.client],
+      meta: { deleted: true, archivedAt: 1790000000000, retainUntil: 2010000000000, street: 'Arch St', members: { [U.builder]: 'builder', [U.sub]: 'sub', [U.client]: 'client' } } });
+    await setDoc(doc(sdb, 'sites/liveArch/inv/ia1'), INV_DOC({ id: 'ia1', status: 'paid' }));
+    await setDoc(doc(sdb, 'sites/liveArch/pmts/pa1'), { data: { id: 'pa1', label: 'Deposit', amount: 1000 }, updatedAt: 1, updatedBy: 'dev-b' });
+    await setDoc(doc(sdb, 'sites/liveArch/co/ca1'), { data: sentOf({ id: 'ca1', no: 9, status: 'approved' }), updatedAt: 1, updatedBy: 'dev-b', byUid: U.builder, at: 1790000000000, appV: '2.470.0' });
+    await setDoc(doc(sdb, 'sites/liveArch/hist/ha1'), { kind: 'approved', ref: 'ca1', refType: 'co', at: 1790000000000 });
+  });
+  const ARCH = (d, c) => getDocs(collection(d, `sites/liveArch/${c}`));
+  await INV('A1 app 3c-5: homeowner lists invoices of an archived house', ARCH(db.client, 'inv'), true);
+  await INV('A1 app 3c-5: homeowner lists payments of an archived house', ARCH(db.client, 'pmts'), true);
+  await INV('A1 app 3c-5: homeowner lists history of an archived house', ARCH(db.client, 'hist'), true);
+  await INV('A1 app 3c-5: homeowner lists change orders of an archived house with the status filter', getDocs(query(collection(db.client, 'sites/liveArch/co'), where('data.status', 'in', ['sent', 'approved', 'declined', 'withdrawn']))), true);
+  await INV('A1 app 3c-5: crew DENIED listing invoices of an archived house', ARCH(db.sub, 'inv'), false);
+  await INV('A1 app 3c-5: crew DENIED listing history of an archived house', ARCH(db.sub, 'hist'), false);
   await INV_A1('A1 hist: any client write is DENIED (builder)', setDoc(doc(db.builder, 'sites/liveA/hist/h9'), { kind: 'sent', at: SRV() }));
   await INV_A1('A1 hist: any client write is DENIED (homeowner)', setDoc(doc(db.client, 'sites/liveA/hist/h9'), { kind: 'approved', at: SRV() }));
   await INV_A1('A1 hist: a builder cannot edit a line', setDoc(H(db.builder), { kind: 'void', at: SRV() }));
