@@ -4401,6 +4401,8 @@ await (async function(){
       if(o.status==='sent'&&n.status==='sent'){var ch=keys(n).concat(keys(o)).filter(function(k,i,a){return a.indexOf(k)===i&&JSON.stringify(n[k])!==JSON.stringify(o[k]);});
         if(!ch.every(function(k){return CONT.concat(['rev']).indexOf(k)>=0;}))throw denied('sent keys');
         var content=ch.some(function(k){return CONT.indexOf(k)>=0;});if(content&&n.rev!==o.rev+1)throw denied('rev not bumped');if((merged.data.verifiedRev!==(o.verifiedRev))||(merged.data.verifiedTotal!==o.verifiedTotal))throw denied('verified changed');return;}
+      if(o.status==='sent'&&n.status==='approved'){var pc=keys(n).concat(keys(o)).filter(function(k,i,a){return a.indexOf(k)===i&&JSON.stringify(n[k])!==JSON.stringify(o[k]);});
+        if(!pc.every(function(k){return ['status','approvedVia','paperPhotoId','decidedBy','decidedAt','decidedRev','sentence'].indexOf(k)>=0;})||n.approvedVia!=='paper'||typeof n.paperPhotoId!=='string'||!n.paperPhotoId||n.decidedBy!==Sync.uid||n.decidedAt!==TS||n.decidedRev!==o.rev)throw denied('paper');return;}
       if(o.status==='sent'&&n.status==='withdrawn'){if(n.withdrawnBy!==Sync.uid||n.withdrawnAt!==TS)throw denied('withdraw');return;}
       throw denied('transition '+o.status+'>'+n.status);}
     function apply(ops){var batchPaths=ops.filter(function(o){return o.k!=='del';}).map(function(o){return o.p;});var next={};keys(store).forEach(function(k){next[k]=store[k];});
@@ -4640,6 +4642,44 @@ await (async function(){
   t('4c-2: an update to a sent one keeps its budget line',L7.rev===2&&L7.lineId==='L2'&&L7.amountC===210000,JSON.stringify(L7));
   $2("costLines=window.__clines;CO._edit=null;closeInfo();true");
   t('4c-2: a homeowner is never offered change orders to invoice',J(`(function(){var s=state.session;state.session={role:'client',auth:{uid:'uH'}};var n=coBillable(P(),null).length;state.session=s;return n;})()`)===0);
+  /* ---------- 4d-1: C-5 paper signature (photo required) ---------- */
+  $2(`(function(){var X=__co;X.up=[];X.upFail=false;window.firebase.storage=function(){return {ref:function(path){return {put:function(f,m){X.up.push([path,m&&m.contentType]);return X.upFail?Promise.reject(new Error('net')):Promise.resolve();},getDownloadURL:function(){return Promise.resolve('https://x/'+path);}};}};};
+    X.store[X.pre+'co/p_s']={data:{id:'p_s',title:'Porch rail',amountC:120000,kind:'change',status:'sent',no:50,rev:2},byUid:'uB',at:'__TS__',appV:'x'};
+    X.store[X.pre+'co/p_t']={data:{id:'p_t',title:'Porch light',amountC:30000,kind:'change',status:'sent',no:51,rev:1},byUid:'uB',at:'__TS__',appV:'x'};X.fire();X.writes.length=0;return true;})()`);
+  await sleep(30);
+  $2("CO.openEdit('p_s');true");
+  t('4d-1: a sent change order offers Record a paper signature',J("document.getElementById('infoScrim').innerHTML.indexOf('Record a paper signature')>=0"));
+  $2("CO.paperForm();true");
+  const P0=J("(function(){var b=document.getElementById('coPaperSave');return {dis:b&&b.disabled,photo:!!document.getElementById('coPaperPhoto'),cap:document.getElementById('coPaperPhoto').getAttribute('accept')};})()");
+  t('4d-1: the paper screen asks for a photo and Save stays disabled without one',P0.dis===true&&P0.photo&&P0.cap==='image/*',JSON.stringify(P0));
+  $2(TOAST_ON);await $2("CO.paperSave()");let tsP=JSON.parse($2(TOAST_OFF));
+  t('4d-1: saving without a photo is refused: no upload, no write',tsP.join('|').indexOf('photo of the signed page is required')>=0&&J("__co.up.length")===0&&J("__co.writes.length")===0,JSON.stringify(tsP));
+  $2("CO.paperPick({files:[{type:'application/pdf'}],value:'x'});true");
+  t('4d-1: a file that is not a photo is not accepted',J("CO._paper.file")===null&&J("document.getElementById('coPaperSave').disabled")===true);
+  $2("__co.upFail=true;CO.paperPick({files:[{type:'image/jpeg'}]});true");await $2("CO.paperSave()");await sleep(20);
+  t('4d-1: if the photo upload fails, nothing is written and it stays sent',J("__co.writes.length")===0&&J("__co.store[__co.pre+'co/p_s'].data.status")==='sent');
+  $2("__co.upFail=false;__co.up.length=0;true");await $2("CO.paperSave()");await sleep(30);
+  const P1=J(`(function(){var X=__co;return {d:X.store[X.pre+'co/p_s'].data,up:X.up.slice(),o:X.store[X.pre+'co/p_s']};})()`);
+  const P1id=P1.d.paperPhotoId||'';
+  t('4d-1: the photo goes to the builder-only costs folder of this house',P1.up.length===1&&P1.up[0][0]===J("'live/sites/'+String(P().id)+'/costs/'")+P1id&&/^copaper_p_s_r2_/.test(P1id)&&P1.up[0][1]==='image/jpeg',JSON.stringify(P1.up));
+  t('4d-1: approved via paper: photo id, decidedBy builder, server time, decidedRev = rev, sentence',P1.d.status==='approved'&&P1.d.approvedVia==='paper'&&P1.d.decidedBy==='uB'&&P1.d.decidedAt==='__TS__'&&P1.d.decidedRev===2&&P1.d.sentence==='This adds $1,200.00 to your contract.'&&!('decidedName' in P1.d)&&!('decidedRole' in P1.d)&&P1.o.byUid==='uB',JSON.stringify(P1.d));
+  /* stale revision on the paper screen */
+  $2("CO.openEdit('p_t');CO.paperForm();CO.paperPick({files:[{type:'image/png'}]});__co.store[__co.pre+'co/p_t'].data.rev=2;__co.fire();__co.up.length=0;__co.writes.length=0;true");await sleep(20);
+  $2(TOAST_ON);await $2("CO.paperSave()");let tsS=JSON.parse($2(TOAST_OFF));
+  t('4d-1: the builder changed it after opening the paper screen: no upload, no write, says so',J("__co.up.length")===0&&J("__co.writes.length")===0&&tsS.join('|').indexOf('Updated')>=0,JSON.stringify(tsS));
+  $2("CO._paper=null;CO._edit=null;CO.openView('p_s');true");
+  const P2=J("document.getElementById('infoScrim').innerHTML");
+  t('4d-1: the builder sees Approved with "Signed on paper · photo" (photo opens)',P2.indexOf('Signed on paper \u00b7 <a')>=0&&P2.indexOf('CO.paperPhoto')>=0,P2.slice(0,300));
+  t('4d-1: a paper-signed change order counts on the Change orders line',J("(function(){var a=0;CO.list(P().id).forEach(function(r){if(r.status==='approved')a+=r.amountC;});return Math.round(billingSummary(P()).co*100)===a;})()"));
+  $2(`(function(){var X=__co;X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};clientCostsHTML(P());return true;})()`);await sleep(40);
+  $2("COH.openDetail('p_s');true");
+  const P3=J("document.getElementById('infoScrim').textContent");
+  t('4d-1: the homeowner sees Approved, "Signed on paper · photo" and "Not you? Tell your builder."',P3.indexOf('Signed on paper \u00b7 photo')>=0&&P3.indexOf('Not you? Tell your builder.')>=0&&P3.indexOf('Approve and sign')<0,P3.slice(0,300));
+  $2("closeInfo();true");
+  $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
+  $2("PaperTrail.on=false;__co.writes.length=0;__co.up.length=0;CO._paper={id:'p_t',rev:2,file:{type:'image/png'}};true");await $2("CO.paperSave()");
+  t('4d-1: switch off: paperSave does nothing',J("__co.writes.length")===0&&J("__co.up.length")===0);
+  $2("PaperTrail.on=true;CO._paper=null;delete window.firebase.storage;true");
   $2(COEND);
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
