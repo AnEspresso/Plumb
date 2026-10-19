@@ -694,6 +694,15 @@ async function main() {
   await INV_A1('A1 app 4a: the same merge without the rev bump is DENIED', mrg(db.builder, 'app_s2', { amountC: 210000 }));
   await INV('A1 app 4a: withdraw by merge (status, withdrawnAt server time, withdrawnBy): ALLOWED', mrg(db.builder, 'app_s3', { status: 'withdrawn', withdrawnAt: SRV(), withdrawnBy: U.builder }), true);
   await INV('A1 app 4a: a never-sent draft is deleted: ALLOWED', deleteDoc(coRef(db.builder, 'app_d2')), true);
+  /* 2.474.0 builder app (4c-2): budget line under More details. Only the id is stored; it is chosen before sending and kept after. */
+  await INV('A1 app 4c-2: a new draft with a budget line id: ALLOWED', setDoc(coRef(db.builder, 'app_l1'), Object.assign({ data: { id: 'app_l1', status: 'draft', t: 1, title: 'Bigger window', amountC: 200000, kind: 'change', lineId: 'L2' }, updatedAt: 9, updatedBy: 'devB' }, stampNow(U.builder))), true);
+  await INV('A1 app 4c-2: that draft sent by merge with its claim, line kept: ALLOWED', (async () => {
+    const b = writeBatch(db.builder);
+    b.set(doc(db.builder, 'sites/liveA/numbers/co-68'), claimDoc(U.builder, 'co', 68));
+    b.set(coRef(db.builder, 'app_l1'), Object.assign({ data: { title: 'Bigger window', amountC: 200000, kind: 'change', lineId: 'L2', status: 'sent', no: 68, rev: 1, sentAt: SRV(), sentBy: U.builder, sentName: 'Dean Walsh', sentRole: 'builder' }, updatedAt: 9, updatedBy: 'devB' }, stampNow(U.builder)), { merge: true });
+    return b.commit(); })(), true);
+  await INV('A1 app 4c-2: an update to it (amount, rev 2) that leaves the line alone: ALLOWED', mrg(db.builder, 'app_l1', { amountC: 210000, rev: 2 }), true);
+  await INV_A1('A1 app 4c-2: changing the line of a sent one without a new revision is DENIED (why the app locks it after send)', mrg(db.builder, 'app_l1', { lineId: 'L1' }));
 
   /* C-1: rev bumps on any content change of a sent change order */
   await INV_A1('A1 C-1: a builder changes a sent amount WITHOUT bumping rev: DENIED', upd(db.builder, 's_edit', SEEDS.s_edit, { amountC: 285000 }));
