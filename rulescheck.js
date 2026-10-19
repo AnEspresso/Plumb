@@ -851,7 +851,7 @@ async function main() {
   const appInv = (id, no) => Object.assign({ data: { id, no: 'INV-' + String(no).padStart(3, '0'), title: 'Selections invoice', due: '', items: [{ label: 'Tile', amount: 250 }], total: 250, status: 'sent', t: 1791000000000, sentBy: 'Dean Walsh', payments: [] }, updatedAt: 9, updatedBy: 'devB' }, { byUid: U.builder, tappedAt: 9, appV: APPV });
   const invSendBatch = (d, id, no, uid) => { const b = writeBatch(d); b.set(doc(d, `sites/liveA/inv/${id}`), appInv(id, no)); b.set(doc(d, `sites/liveA/numbers/inv-${no}`), claimDoc(uid || U.builder, 'inv', no)); return b.commit(); };
   await INV('A1 app 3c-3: Send an invoice: the record and its inv-15 claim in one batch: ALLOWED', invSendBatch(db.builder, 'inv_app1', 15), true);
-  await INV_A1('A1 app 3c-3: a second phone sending with the same number (inv-15) is DENIED, record and all', invSendBatch(db.builder2, 'inv_app2', 15, U.builder2));
+  await INV_A1('A1 app 3c-3: a second phone sending with the same number (inv-15) is DENIED, record and all', invSendBatch(db.builder, 'inv_app2', 15));
   await INV('A1 app 3c-3: ... the invoice from the refused batch was not written', getDoc(doc(db.builder, 'sites/liveA/inv/inv_app2')).then(s => { if (s.exists()) throw new Error('written'); }), true);
   await INV('A1 app 3c-3: the builder lists claims to find the next number', getDocs(collection(db.builder, 'sites/liveA/numbers')), true);
   await INV('A1 app 3c-3: crew DENIED listing claims', getDocs(collection(db.sub, 'sites/liveA/numbers')), false);
