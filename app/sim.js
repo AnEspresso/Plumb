@@ -4701,6 +4701,11 @@ await (async function(){
   t('4d-2: printing and the schedule write nothing',J("__co.writes.length")===0);
   $2("PaperTrail.on=false;CO.print('d_a');true");
   t('4d-2: switch off: no print view and nothing on the Schedule door',J("!document.getElementById('invPrintView')")&&J("coDaysNote(P())")==='');
+  $2("PaperTrail.on=false;true");
+  t('4d-2: switch off: the shared print view refuses on its own',J("CO.printOpen(P(),CO.row(String(P().id),'d_a'))")===false&&J("!document.getElementById('invPrintView')"));
+  $2("PaperTrail.on=true;var _ss=state.session;state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uB'}};CO.print('d_a');state.session=_ss;true");
+  t('4d-2: CO.print is builder-only (a homeowner session gets no builder print)',J("!document.getElementById('invPrintView')"));
+  $2("closePrintPreview();true");
   $2("PaperTrail.on=true;CO._view=null;closeInfo();true");
   $2(`(function(){var X=__co;X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};clientCostsHTML(P());return true;})()`);await sleep(40);
   $2("COH.openDetail('d_a');true");
