@@ -4717,6 +4717,51 @@ await (async function(){
   t('4d-2: the homeowner role gets no days note on the Schedule door',J("coDaysNote(P())")==='');
   $2("closePrintPreview();COH.close();true");
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
+  /* ---------- 3c-2: money history screens (M-9), read-only ---------- */
+  $2(`(function(){var X=__co;var H=X.pre+'hist/';
+    X.store[H+'e1_0']={kind:'sent',ref:'d_a',refType:'co',no:52,rev:1,amountC:250000,by:'uB',byName:'Dean Walsh',at:1000,seq:0};
+    X.store[H+'e2_0']={kind:'opened',ref:'d_a',refType:'co',no:52,rev:1,by:'uH',byName:'Ana Ruiz',at:2000,seq:0};
+    X.store[H+'e3_0']={kind:'approved',ref:'d_a',refType:'co',no:52,rev:1,amountC:250000,via:'app',signedName:'Ana Ruiz',sentence:'This adds $2,500.00 to your contract.',by:'uH',byName:'Ana Ruiz',at:3000,seq:0};
+    X.store[H+'e4_0']={kind:'paid',ref:'i9',refType:'inv',no:'INV-009',amountC:50000,by:'uB',byName:'Dean Walsh',at:4000,seq:0};
+    X.store[H+'e4_1']={kind:'payment',ref:'i9',refType:'inv',amountC:50000,by:'uB',byName:'Dean Walsh',at:4000,seq:1};
+    X.store[H+'e5_0']={kind:'sent',ref:'d_c',refType:'co',no:54,rev:1,amountC:900000,by:'uB',byName:'Dean Walsh',at:5000,seq:0};
+    X.writes.length=0;HIST._rows={};HIST._unsub={};HIST._err={};return true;})()`);
+  $2("PaperTrail.on=false;HIST._unsub={};true");
+  const HS0=J(`(function(){var X=__co;var n=X.subs.length;var ch=null;var oc=window.openChoice;window.openChoice=function(x){ch=x.items.map(function(i){return i.label;});};moneyMore();window.openChoice=oc;HIST.open(P());return {menu:ch.indexOf('History')>=0,subs:X.subs.length-n,allowed:HIST.allowed(P())};})()`);
+  t('3c-2: switch off: no History entry, no listener on hist',!HS0.menu&&HS0.subs===0&&!HS0.allowed,JSON.stringify(HS0));
+  $2("PaperTrail.on=true;true");
+  const HS1=J(`(function(){var ch=null;var oc=window.openChoice;window.openChoice=function(x){ch=x.items.map(function(i){return i.label;});};moneyMore();window.openChoice=oc;return ch.indexOf('History')>=0;})()`);
+  t('3c-2: switch on: Money has a History entry for the builder',HS1===true);
+  $2("canGate=function(){return false;};true");const HS1b=J("HIST.allowed(P())");$2("canGate=function(){return true;};true");
+  t('3c-2: a builder without money access gets no history',HS1b===false);
+  $2("HIST.open(P());true");await sleep(30);
+  t('3c-2: History listens to sites/<id>/hist only',J("__co.subs.some(function(s){return s.p===__co.pre+'hist';})"));
+  const HS2=J("document.getElementById('infoScrim').textContent");
+  const iS=HS2.indexOf('CO-054 \u00b7 Sent'),iA=HS2.indexOf('CO-052 \u00b7 Approved'),iO=HS2.indexOf('CO-052 \u00b7 Opened');
+  t('3c-2: the History screen lists every line, newest first, with who',iS>=0&&iA>iS&&iO>iA&&HS2.indexOf('INV-009 \u00b7 Paid')>=0&&HS2.indexOf('Payment recorded')>=0&&HS2.indexOf('Ana Ruiz')>=0,HS2.slice(0,400));
+  t('3c-2: an approved line shows who signed and the exact sentence',HS2.indexOf('signed by Ana Ruiz')>=0&&HS2.indexOf('This adds $2,500.00 to your contract.')>=0);
+  t('3c-2: lines in the same event keep their order (seq)',J("HIST.list(P().id).map(function(r){return r.id;}).join(',')").indexOf('e4_0,e4_1')>=0);
+  $2("HIST.close();CO._edit=null;CO.openView('d_a');true");
+  const HS3=J("document.getElementById('infoScrim').textContent");
+  t('3c-2: the change order shows only its own history lines',HS3.indexOf('History')>=0&&HS3.indexOf('Approved \u00b7 signed by Ana Ruiz')>=0&&HS3.indexOf('Opened')>=0&&HS3.indexOf('INV-009')<0&&HS3.indexOf('Payment recorded')<0,HS3.slice(0,400));
+  $2(`(function(){var X=__co;X.store[X.pre+'hist/e6_0']={kind:'changed',ref:'d_a',refType:'co',no:52,rev:2,amountC:260000,by:'uB',byName:'Dean Walsh',at:6000,seq:0};X.fire();return true;})()`);await sleep(20);
+  t('3c-2: a new line shows up live on the open change order',J("document.getElementById('infoScrim').textContent").indexOf('Updated (revision 2)')>=0);
+  t('3c-2: history writes nothing',J("__co.writes.length")===0);
+  $2("CO._view=null;closeInfo();true");
+  $2(`(function(){var X=__co;X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};return true;})()`);
+  const HS4=J("clientCostsHTML(P()).invoices");await sleep(30);
+  t('3c-2: the homeowner gets History on the money card',HS4.indexOf('HIST.open()')>=0&&J("HIST.allowed(P())")===true);
+  $2("COH.openDetail('d_a');true");
+  t('3c-2: the homeowner change order shows the same lines',J("document.getElementById('infoScrim').textContent").indexOf('Approved \u00b7 signed by Ana Ruiz')>=0);
+  $2("COH.close();HIST.open(P());true");
+  t('3c-2: the homeowner History screen matches the builder one',J("document.getElementById('infoScrim').textContent").indexOf('CO-054 \u00b7 Sent')>=0);
+  $2("HIST.close();true");
+  $2(`(function(){state.session={role:'sub',name:'Crew',auth:{uid:'uC'}};return true;})()`);
+  t('3c-2: a crew session never gets history',J("HIST.allowed(P())")===false&&J("HIST.rowHTML(P())")==='');
+  $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};HIST._open=null;return true;})()`);
+  /* a denied read (published rules) shows a quiet note, no retry */
+  $2(`(function(){var X=__co;HIST._rows={};HIST._unsub={};HIST._err={};var s=X.subs.filter(function(s){return s.p===X.pre+'hist';});s.forEach(function(x){x.eb&&x.eb({code:'permission-denied'});});return true;})()`);
+  t('3c-2: a denied history read is recorded and not retried',J("(function(){var n=__co.subs.length;HIST._err[String(P().id)]='permission-denied';HIST.attach(P());return __co.subs.length===n;})()"));
   $2(COEND);
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
@@ -4731,4 +4776,4 @@ if(failures.length){
 }
 console.log('PASS: all lifecycles, sync matrices and fuzz hold.');
 process.exit(0);
-})().catch(e=>{console.log('FAIL: harness error — '+e.message+'\n'+e.stack.split('\n').slice(0,4).join('\n'));process.exit(1);});
+})().catch(e=>{console.log('FAIL: harness error (last check: '+(passes.concat(failures).slice(-1)[0]||'')+') — '+e.message+'\n'+e.stack.split('\n').slice(0,4).join('\n'));process.exit(1);});

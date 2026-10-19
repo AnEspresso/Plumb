@@ -9759,7 +9759,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
 const CONSENT_TEXT_V='v0-placeholder-2026-10';
 /* 3c-2 (2.477.0, M-9): the money history, read-only. The server writes sites/<id>/hist (sent, opened, changed, approved,
    declined, withdrawn, paid, voided, payment, payment_voided, needs_check); the app never writes it. Money builders see it under
-   Money > History, the homeowner under Costs & payments, and each change order shows its own lines. Never crews.
+   Money > History, the homeowner on their money card, and each change order shows its own lines. Never crews.
    DORMANT: no listener at all unless the paper-trail switch is on; a denied read (published rules) shows nothing and is not retried. */
 const HIST={_rows:{},_unsub:{},_err:{},
   allowed(p){try{if(!PaperTrail.on||!p||typeof Sync==='undefined'||!Sync.ready()||Sync.mode!=='live'||!Sync.uid)return false;
@@ -9798,7 +9798,7 @@ const HIST={_rows:{},_unsub:{},_err:{},
   refresh(){try{if(this._open&&document.getElementById('histRoot'))this.draw();}catch(e){}
     try{if(CO._view&&document.getElementById('coRoot'))CO.draw();}catch(e){}
     try{if(COH._open&&document.getElementById('cohRoot'))COH.drawDetail();}catch(e){}},
-  rowHTML(p){if(!this.allowed(p))return '';this.attach(p);
+  rowHTML(p){if(!this.allowed(p))return '';
     return '<div class="subrow cur-p" onclick="HIST.open()"><div class="si"><div class="n">History</div><div class="d">Every money step on this house</div></div></div>';},
 };
 const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_slow:false,
