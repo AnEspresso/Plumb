@@ -8,7 +8,8 @@
     "claimstamp": "node functions/claimStamp.test.js",
     "filecleanup": "node functions/fileCleanup.test.js",
     "papertrail": "node functions/paperTrail.test.js",
-    "liverules": "node scripts/liveRules.test.js"
+    "liverules": "node scripts/liveRules.test.js",
+    "receipts": "node functions/receipts.test.js"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.2",
