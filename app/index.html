@@ -9699,7 +9699,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
   paperForm(){if(moneyUpdateGate())return;const e=this._edit;if(!e||e.status!=='sent')return;this._paper={id:e.id,rev:e.rev,file:null};
     showInfo('Record a paper signature','<div id="coRoot"><div class="meta">'+esc(this.label(e.orig&&e.orig.no))+' \u00b7 revision '+e.rev+'</div>'
       +'<p>Take a photo of the page the homeowner signed. It is required.</p>'
-      +'<input id="coPaperPhoto" type="file" accept="image/*" capture="environment" onchange="CO.paperPick(this)">'
+      +'<input id="coPaperPhoto" type="file" accept="image/*" onchange="CO.paperPick(this)">'
       +'<div class="meta mt-1" id="coPaperName"></div>'
       +'<div class="meta mt-2">'+esc(this.sentence(e.kind,(e.orig&&e.orig.amountC)||0))+'</div>'
       +'<button class="b1 b-go w-full mt-1 btn btn-primary" id="coPaperSave" disabled onclick="CO.paperSave()">Save paper signature</button>'
