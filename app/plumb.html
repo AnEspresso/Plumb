@@ -9889,8 +9889,8 @@ const PAST={_sites:{},_data:{},_err:{},_open:null,
     L.push('');L.push('PAYMENTS');d.pmts.forEach(x=>L.push((x.label||'Payment')+'  '+fmtMoney(Number(x.amount)||0)+'  '+(x.date||'')+(x.voidedAt?'  (voided: '+(x.voidReason||'')+')':'')));
     L.push('');L.push('HISTORY');d.hist.slice().sort((a,c)=>(HIST.ms(a.at)-HIST.ms(c.at))||((a.seq||0)-(c.seq||0))).forEach(r=>{const ms=HIST.ms(r.at);L.push((ms?new Date(ms).toISOString():'')+'  '+HIST.label(r)+'  '+HIST.what(r)+(Number.isInteger(r.amountC)&&r.kind!=='opened'?'  '+HIST.amt(r):'')+(r.byName?'  '+r.byName:'')+(r.sentence?'  "'+r.sentence+'"':'')+(r.note?'  '+r.note:''));});
     return L.join('\n')+'\n';},
-  download(sid){if(!this.allowed())return;const t=this.text(String(sid));if(!t)return;
-    try{const blob=new Blob([t],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='siteplumb-'+String((this._sites[sid]||{}).street||sid).replace(/[^A-Za-z0-9]+/g,'-').toLowerCase()+'-money.txt';document.body.appendChild(a);a.click();a.remove();this._lastDl=t;}
+  download(sid){if(!this.allowed())return;const t=this.text(String(sid));if(!t)return;this._lastDl=t;
+    try{const blob=new Blob([t],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='siteplumb-'+String((this._sites[sid]||{}).street||sid).replace(/[^A-Za-z0-9]+/g,'-').toLowerCase()+'-money.txt';document.body.appendChild(a);a.click();a.remove();}
     catch(e){toast('Could not download on this device');}},
 };
 const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_slow:false,
