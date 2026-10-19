@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.475.0 - Builders can record a paper signature (photo required) on a change order (paper-trail switch on)';
+const PLUMB_VERSION='2.476.0 - Change orders can be printed; days added show on the schedule (paper-trail switch on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792699200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.475.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792785600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.476.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9607,9 +9607,28 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
     return '<div id="coRoot"><div class="meta">'+esc(this.label(r.no))+(r.rev>1?' \u00b7 revision '+r.rev:'')+'</div><div class="fs-md fw-6">'+esc(r.title||'')+'</div><div class="fs-lg fw-6 mt-1">'+esc(this.amountText(r.amountC))+'</div>'+(r.note?'<p class="mt-2">'+esc(r.note)+'</p>':'')
       +(r.status==='approved'&&r.approvedVia==='paper'?'<div class="meta mt-2">Approved'+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div><div class="meta">Signed on paper \u00b7 <a href="#" onclick="event.preventDefault();CO.paperPhoto(\''+esc(r.id)+'\')">photo</a></div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':'')
       :r.status==='approved'?'<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':''):r.status==='declined'?'<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':''):'<div class="meta mt-2">Withdrawn</div>')
+      +(r.days?'<div class="meta mt-1">'+esc(this.daysText(r.days))+'</div>':'')
       +(r.lineId&&canGate('moneyJob')&&this.lineName(P(),r.lineId)?'<div class="meta mt-1">Budget line: '+esc(this.lineName(P(),r.lineId))+'</div>':'')
       +(r.status==='approved'&&canGate('moneyJob')?'<button class="lpay btn btn-quiet mt-2" onclick="CO.updateBudget()">Update budget</button>':'')   /* the builder's cost lives in the budget, never on the co (the homeowner reads it) */
+      +'<button class="lpay btn btn-quiet mt-2" onclick="CO.print(\''+esc(r.id)+'\')">Print</button>'
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO._view=null;CO.draw()">Back</button></div>';},
+  /* 4d-2 (2.476.0): days added and a printable record. Read-only: no writes. Reuses the invoice print view (spec: same look, no new pattern). */
+  daysText(n){n=Number(n)||0;return 'Adds '+n+' day'+(n===1?'':'s')+' to the schedule';},
+  daysApproved(sid){let d=0;this.list(sid).forEach(function(r){if(r.status==='approved'&&Number.isInteger(r.days)&&r.days>0)d+=r.days;});return d;},
+  statusText(r){const w=COH.when(r.decidedAt);
+    if(r.status==='approved')return 'Approved'+(r.approvedVia==='paper'?' \u00b7 Signed on paper':(r.decidedName?' by '+r.decidedName:''))+(w?' \u00b7 '+w:'');
+    if(r.status==='sent')return 'Waiting on the homeowner';if(r.status==='declined')return 'Declined'+(r.decidedName?' by '+r.decidedName:'');if(r.status==='withdrawn')return 'Withdrawn';return 'Draft';},
+  printDoc(p,r){const rows='<tr><td>'+esc(r.kind==='credit'||r.amountC<0?'Credit':'Change')+'</td><td class="ta-r">'+esc(this.amountText(r.amountC))+'</td></tr>'
+      +(r.days?'<tr><td>Days added</td><td class="ta-r">'+esc(String(r.days))+'</td></tr>':'');
+    return '<h1>'+esc(this.label(r.no))+' \u2014 '+esc(r.title||'')+'</h1>'
+      +'<div class="pv-sub">'+esc(p.street||p.name||'')+(r.rev>1?' \u00b7 revision '+r.rev:'')+(r.sentName?' \u00b7 From '+esc(r.sentName):'')+'</div>'
+      +(r.note?'<p>'+esc(r.note)+'</p>':'')
+      +'<table>'+rows+'<tr class="tot"><td>Total</td><td class="ta-r">'+esc(this.amountText(r.amountC))+'</td></tr></table>'
+      +'<p class="pv-sub" style="margin-top:14px">'+esc(this.statusText(r))+'</p>'+(r.sentence&&r.status==='approved'?'<p class="pv-sub">'+esc(r.sentence)+'</p>':'');},
+  printOpen(p,r){if(!PaperTrail.on||!p||!r)return false;_pvEnsureStyle();closePrintPreview();const v=document.createElement('div');v.id='invPrintView';
+    v.innerHTML='<div class="pv-bar"><button class="pv-done" onclick="closePrintPreview()">Done</button><button class="pv-print" onclick="doPrintPreview()">Print / Save as PDF</button></div><div class="pv-doc">'+this.printDoc(p,r)+'</div>';
+    document.body.appendChild(v);return true;},
+  print(id){if(!this.allowed())return;const p=P();const r=this.row(String(p.id),id);if(!r)return;this.printOpen(p,r);},
   lineName(p,id){try{const l=costLines(p).find(x=>String(x.id)===String(id));return l?String(l.label||l.name||''):'';}catch(e){return '';}},
   /* 4c-2: budget line under "More details". Only the line id is stored on the co; its name and the builder's cost stay in the budget. */
   lineHTML(p,e){let ls=[];try{ls=canGate('moneyJob')?costLines(p):[];}catch(x){}
@@ -9787,9 +9806,11 @@ const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_s
     }else if(r.status==='declined'){
       h+='<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':'');
     }else h+='<div class="meta mt-2">Withdrawn by your builder</div>';
+    if(r.status==='approved')h+='<button class="lpay btn btn-quiet mt-2" onclick="COH.print(\''+esc(r.id)+'\')">Print or download</button>';
     h+='<button class="add-sub-btn mt-2 btn btn-secondary" onclick="COH.close()">Back</button></div>';
     showInfo('Change order',h,true);},
   close(){this._open=null;closeInfo();},
+  print(id){const p=clientProj();if(!p||!this.allowed(p))return;const r=this.row(String(p.id),id);if(!r||r.status!=='approved')return;CO.printOpen(p,r);},
   consentScreen(id){
     showInfo('Sign electronically','<div id="cohRoot"><p>To approve changes to your contract here, you agree to receive and sign documents electronically.</p>'
       +'<p>You can ask your builder for paper at any time. Copies of what you sign are sent to you by email.</p>'
@@ -17529,6 +17550,7 @@ function renderSchedule(){
   const conf=scheduleConflicts();
   let h='';
   if(conf.length)h+=`<div class="pkt-banner warn mb-2"><b>${conf.length} double-booking${conf.length===1?'':'s'}.</b> ${conf.map(c=>esc(c.name)+' is planned at '+esc(c.a.p.street||c.a.p.name)+' and '+esc(c.b.p.street||c.b.p.name)+' in the same window').join('; ')}.</div>`;
+  try{if(PaperTrail.on&&(state.session||{}).role==='builder'&&(canGate('moneyJob')||canGate('moneyCo')))(state.projects||[]).forEach(p=>{if(siteRoleFor(p)!=='builder')return;const d=CO.daysApproved(String(p.id));if(d>0)h+='<div class="pkt-banner mb-2" id="coDays_'+esc(String(p.id))+'">'+esc(p.street||p.name)+': approved change orders add '+d+' day'+(d===1?'':'s')+'</div>';});}catch(e){}
   const entries=scheduleEntries();
   if(!entries.length){el.innerHTML=h+'<div class="empty">Nothing planned yet. Tap a stage below any house\u2019s schedule — or start here:</div>'+schedPlanList();return;}
   const weeks={};entries.forEach(e=>{const k=weekKey(e.w.start);(weeks[k]=weeks[k]||[]).push(e);});
