@@ -311,3 +311,35 @@ const _ptTs = () => admin.firestore.FieldValue.serverTimestamp();
 exports.paperTrailInv = onDocumentWritten('sites/{siteId}/inv/{docId}', (event) => paperTrail.handle(db, _ptTs, 'inv', event));
 exports.paperTrailCo = onDocumentWritten('sites/{siteId}/co/{docId}', (event) => paperTrail.handle(db, _ptTs, 'co', event));
 exports.paperTrailPmts = onDocumentWritten('sites/{siteId}/pmts/{docId}', (event) => paperTrail.handle(db, _ptTs, 'pmts', event));
+
+/* Step 3b-1 (M-10 receipts, M-12 archive): for each money-history line the server archives a snapshot,
+   emails each party the PDF with its SHA-256 fingerprint, and stamps the fingerprint on the line.
+   DORMANT: needs settings/paperTrail { enabled: true, receipts: true }. Provider: Resend (RESEND_API_KEY).
+   retry:true re-runs a failed line; claims on the line make a re-run send each party one email only. */
+const receipts = require('./lib/receipts');
+exports.paperTrailReceipt = onDocumentCreated({ document: 'sites/{siteId}/hist/{lineId}', retry: true }, async (event) => {
+  const f = await receipts.flags(db);
+  if (!(f.on && f.receipts)) return;
+  const key = process.env.RESEND_API_KEY || '';
+  if (!key) throw new Error('paperTrail receipts are on but RESEND_API_KEY is not set');
+  const bucketName = process.env.ARCHIVE_BUCKET || 'plumb-467a0-money-archive';
+  const histRef = (s, l) => db.collection('sites').doc(s).collection('hist').doc(l);
+  const deps = {
+    db, bucket: admin.storage().bucket(bucketName), bucketName,
+    from: process.env.RECEIPT_FROM || 'SitePlumb <receipts@siteplumb.com>',
+    sendEmail: receipts.resendSender(key),
+    emailOf: async (uid) => { try { return (await admin.auth().getUser(uid)).email || ''; } catch (e) { return ''; } },
+    claim: (s, l, uid) => db.runTransaction(async (tx) => {
+      const snap = await tx.get(histRef(s, l)); const rc = ((snap.data() || {}).rc) || {};
+      if (rc[uid]) return false;
+      tx.update(histRef(s, l), { ['rc.' + uid]: Date.now() }); return true;
+    }),
+    release: (s, l, uid) => histRef(s, l).update({ ['rc.' + uid]: admin.firestore.FieldValue.delete() }),
+    notify: async (siteId, line) => {
+      const siteSnap = await db.collection('sites').doc(siteId).get();
+      const uids = push.builderUids(siteSnap.data() || {}); if (!uids.length) return;
+      await deliver(uids, { key: 'pcheck:' + siteId + ':' + String(line.ref) + ':' + String(line.rev), title: 'A change order needs a check', body: 'The numbers did not add up, so it has not been sent to the homeowner.' });
+    },
+  };
+  return receipts.handle(deps, event);
+});

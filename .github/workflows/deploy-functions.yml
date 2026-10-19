@@ -23,6 +23,8 @@ jobs:
           INTUIT_CLIENT_SECRET=${{ secrets.INTUIT_CLIENT_SECRET }}
           QB_ENV=${{ secrets.QB_ENV || 'sandbox' }}
           OWNER_UIDS=${{ secrets.OWNER_UIDS }}
+          RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+          ARCHIVE_BUCKET=${{ secrets.ARCHIVE_BUCKET || 'plumb-467a0-money-archive' }}
           APP_ORIGINS=https://siteplumb.com,https://www.siteplumb.com,https://anespresso.github.io
           EOF
 
