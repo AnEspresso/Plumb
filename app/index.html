@@ -1664,6 +1664,9 @@
   .pay-row{display:flex;align-items:center;gap:10px;padding:var(--s-2) 0;border-bottom:1px solid var(--line);}
   .pay-row .pi{flex:1;min-width:0;}.pay-row .pl{font-size:var(--t-sm);font-weight:600;}.pay-row .pd{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1);}
   .pay-row .pa{font-variant-numeric:tabular-nums;font-weight:600;font-size:var(--t-sm);}
+  .td-lt{text-decoration:line-through;}
+  .pay-void .pl,.pay-void .pa,.ld-void .ld-n,.ld-void b{text-decoration:line-through;color:var(--ink-3);}
+  .pay-void .pd{color:var(--ink-3);}
   .pay-rm{border:none;background:transparent;color:var(--ink-3);cursor:pointer;padding:var(--s-1);}.pay-rm svg{width:15px;height:15px;}
   .pay-empty{font-size:var(--t-xs);color:var(--ink-3);text-align:center;padding:var(--s-2) 0;}
   .pay-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:var(--s-2);margin-top:var(--s-1);border-top:2px solid var(--ink);font-size:var(--t-sm);font-weight:700;}
@@ -3049,7 +3052,6 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
         <div class="fld-hint" id="selCostHint">What the homeowner pays for it. Not your cost.</div>
         <div class="fld-label">Budget line</div>
         <select id="selLine" class="fld-select"></select>
-        <div class="flagrow mt-2 ml-0 mr-0 mb-1"><div class="l"><div class="t">Credit unused allowances</div><div class="s">For this house only. If the price comes in under the allowance, the homeowner gets the difference as a credit.</div></div><div class="toggle" id="selCredit" onclick="this.classList.toggle('on');selAllowRefresh()"></div></div>
       </div>
       <div id="selPriceBox">
       <div class="fld-label">Upgrade or credit amount</div>
@@ -3975,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.468.0 - Money is exact to the cent: one amount format, one amount box';
+const PLUMB_VERSION='2.469.0 - A payment is voided, not deleted; the allowance credit moves to Money; money writes carry who and when';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792400000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.468.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792410000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.469.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5149,7 +5151,7 @@ const Data = {
     this.commit(); },
   importCostLines(lines){ const p=P(); p.costs=p.costs||[];
     lines.forEach(l=>p.costs.push(l)); this.commit(); return lines.length; },
-  removePayment(id){ P().payments=(P().payments||[]).filter(x=>x.id!==id); this.commit(); },
+  voidPayment(id,reason){ const x=(P().payments||[]).find(y=>y.id===id); if(x&&!x.voidedAt){x.voidedAt=Date.now();x.voidReason=String(reason||'');x.voidedBy=(state.session&&state.session.name)||'';} this.commit(); },
   /* schedule + inspections */
   setStage(id,done){ P().stageDone[id]=done; this.commit(); },
   setInspection(inspId,status,meta){ const p=P(); if(!p.inspections)p.inspections={}; p.inspections[inspId]=status; if(!p.inspMeta)p.inspMeta={}; const m=p.inspMeta[inspId]||{}; if(status==='passed'&&!m.date)m.date=todayStr(); if(status!=='passed'&&status!=='scheduled')m.date=m.date; if(meta)Object.assign(m,meta); p.inspMeta[inspId]=m; this.commit(); },
@@ -9616,6 +9618,8 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       if(fbConfig())this.init();
     }catch(e){}});}catch(e){}},
   async pushAll(){if(!this.ready())return;for(const p of state.projects){try{await this._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}},
+  /* M-7: every money write says who wrote it, when the tap happened, and which app version. updatedAt keeps its type. */
+  _stamp(){const o={tappedAt:Date.now(),appV:String(PLUMB_VERSION).split(' ')[0]};const u=this.uid||(state.session&&state.session.auth&&state.session.auth.uid);if(u)o.byUid=String(u);return o;},
   async _pushOne(p){if(!this.ready()||!p)return;
     if(p.sample||(this.mode||'demo')!=='live')return;     // demo is local-only: nothing in demo (sample or not) syncs to the cloud
     const id=String(p.id);
@@ -9669,14 +9673,14 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(op.sub==='inv'||op.sub==='selm'){
           /* F-2: a money record is the builder's whole record: replace it, so a
              key that left the invoice or the selection's money leaves the cloud too. */
-          await ref.set({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId});
+          await ref.set(Object.assign({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId},this._stamp()));
         }else{
           let data=fbClean(op.data);
           /* F-2 (correction 2): a merge never deletes a field. Until R2 refuses
              money on sel, every sel write from a builder who writes selm deletes
              the five money keys; selm already holds them (diffSiteOps order). */
           if(op.sub==='sel'&&syncWrites(p,'selm')){const del=fbDelete();if(del!==undefined){data=Object.assign({},data);SEL_MONEY_KEYS.forEach(k=>{data[k]=del;});}}
-          await ref.set({data:data,updatedAt:Date.now(),updatedBy:this.deviceId},{merge:true});
+          await ref.set(Object.assign({data:data,updatedAt:Date.now(),updatedBy:this.deviceId},(op.sub==='pmts'||op.sub==='costs'||op.sub==='co')?this._stamp():{}),{merge:true});
         }
         (sh.colls[op.sub]||(sh.colls[op.sub]={}))[op.id]=_syncHash(JSON.stringify(op.data));
       } else if(op.kind==='del'){
@@ -9908,6 +9912,8 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
   _attachColls(sid){
     const gen=this._collGen[sid]=(this._collGen[sid]||0)+1;
     const p0=state.projects.find(x=>String(x.id)===sid);
+    /* M-5: a builder with no money access keeps no payments, even a copy saved by an older version */
+    if(p0&&siteRoleFor(p0)==='builder'&&!syncHas(p0,'pmts')&&(p0.payments||[]).length){p0.payments=[];persistLocalOnly();}
     syncCollsFor(siteRoleFor(p0)).forEach(c=>{
       let q=this.db.collection('sites').doc(sid).collection(c.sub);
       try{
@@ -10147,7 +10153,9 @@ const Notify={
      for approval (R-1 PR 2) → one homeowner notice, keyed on the new amount. */
   selReapprove(o,n,site){
     if(!o||!n||!o.approved||n.approved||(n.invoicedIn&&!selIsAllowance(n)))return null;
-    const amt=Number(n.price)||0;if(amt<=0.005||Math.abs(amt-(Number(o.price)||0))<=0.005||!selIsAllowance(n))return null;
+    const amt=Number(n.price)||0;if(Math.abs(amt-(Number(o.price)||0))<=0.005||!selIsAllowance(n))return null;
+    if(amt<=0.005){const was=Number(o.price)||0;if(was>=-0.005)return null;   /* M-2: a credit that shrinks or goes away needs an OK too */
+      return {key:'selre:'+site+':'+n.id+':'+amt,aud:'client',title:'Needs your OK again',body:'Your '+fmtMoney(-was)+' credit is now '+fmtMoney(Math.max(0,-amt))+' ('+(n.item||'A selection')+')'};}
     return {key:'selre:'+site+':'+n.id+':'+amt,aud:'client',title:'Needs your OK again',body:(n.item||'A selection')+' is now '+fmtMoney(amt)+' over the allowance'};},
   selChanged(p,o,n){const x=this.selReapprove(o,n,p.id);
     if(x&&this._audMatch(x.aud,p))this.push(x.key,x.title,x.body,{pid:p.id,view:'selections',id:n.id},x.aud);},
@@ -10490,7 +10498,7 @@ function syncCollsFor(role){
     const job=canGate('moneyJob'),co=canGate('moneyCo');
     if(!job)cols=cols.filter(c=>c.sub!=='costs');
     if(!co)cols=cols.filter(c=>c.sub!=='inv');
-    if(!job&&!co)cols=cols.filter(c=>c.sub!=='selm');}}catch(e){}
+    if(!job&&!co)cols=cols.filter(c=>c.sub!=='selm'&&c.sub!=='pmts');}}catch(e){}   /* M-5/M-7: a builder with no money access does not read payments either */
   return cols;
 }
 function syncHas(p,sub){return syncCollsFor(siteRoleFor(p)).some(c=>c.sub===sub);}
@@ -10514,7 +10522,7 @@ function _syncHash(str){str=String(str==null?'':str);let a=0x811c9dc5,b=5381;
 function diffSiteOps(sh,p){const ops=[];
   const m=metaOf(p);const ms=_syncHash(JSON.stringify(m));if(ms!==sh.meta)ops.push({kind:'meta',data:m});
   for(const c of SYNC_COLLS){
-    if((c.sub==='inv'||c.sub==='selm')&&!syncWrites(p,c.sub))continue;   // F-2: only a money-gated builder writes money records
+    if((c.sub==='inv'||c.sub==='selm'||c.sub==='pmts')&&!syncWrites(p,c.sub))continue;   // F-2: only a money-gated builder writes money records
     const arr=c.rows?c.rows(p):(Array.isArray(p[c.f])?p[c.f]:[]);const cur={};arr.forEach(r=>{cur[c.key(r)]=r;});
     const prev=(sh.colls&&sh.colls[c.sub])||{};
     for(const k in cur){const rs=_syncHash(JSON.stringify(cur[k]));if(prev[k]!==rs)ops.push({kind:'set',sub:c.sub,id:k,data:cur[k]});}
@@ -10953,10 +10961,10 @@ function selReapproval(s,next,p){
   const reset=selIsAllowance(s)?chargeAfterEdit(was,n).resetApproval:n>0.005;
   return {reset,kept:!reset,was:was.amount};
 }
-function repriceAllowances(p){(p&&p.selections||[]).forEach(s=>{if(selIsAllowance(s)&&!s.invoicedIn)s.price=selAllowanceAmount(s,p);});}
+function repriceAllowances(p){(p&&p.selections||[]).forEach(s=>{if(selIsAllowance(s)&&!s.invoicedIn&&!s.approved)s.price=selAllowanceAmount(s,p);});}
 function _siteExtraCharges(p){let ups=0,crs=0;(p.invoices||[]).forEach(v=>{if(v&&(v.status==='void'||v.status==='draft'))return;((v&&v.items)||[]).forEach(it=>{if(it.selId)return;const n=Number(it.amount)||0;if(n>0)ups+=n;else if(n<0)crs+=n;});});return {ups,crs};}
 function siteCharges(p){let ups=0,crs=0,waiting=0;(p.selections||[]).forEach(s=>{const c=chargeState(selCharge(s,p));waiting+=c.waiting;const n=c.counted;if(n>0)ups+=n;else if(n<0)crs+=n;});const ex=_siteExtraCharges(p);return {ups:ups+ex.ups,crs:crs+ex.crs,waiting};}
-function sitePaidTotal(p){const loose=(p.payments||[]).reduce((a,x)=>a+(Number(x.amount)||0),0);const inv=(p.invoices||[]).filter(v=>v&&v.status!=='void').reduce((a,v)=>a+invPaidAmt(v),0);return loose+inv;}
+function sitePaidTotal(p){const loose=fromC(sumC((p.payments||[]).filter(payLive).map(x=>Number(x.amount)||0)));const inv=(p.invoices||[]).filter(v=>v&&v.status!=='void').reduce((a,v)=>a+invPaidAmt(v),0);return loose+inv;}
 function clientLedger(p){const c=siteCharges(p);const net=c.ups+c.crs;const paid=sitePaidTotal(p);return {ups:c.ups,crs:c.crs,net,paid,out:net-paid};}
 /* ── Single source of truth for every billing figure shown anywhere. All money
    surfaces (selections ledger, ledger detail, Invoices modal, homeowner view)
@@ -11281,12 +11289,28 @@ function moneyActionsHTML(){
     +'<button class="btn btn-secondary" onclick="moneyMore()" aria-label="More money actions">More</button>'
     +'</div>';
 }
+/* M-2: the house's allowance-credit switch. Approved items keep their price until the builder confirms; those that change go back for a new OK. */
+function creditAffected(p,next){return (p.selections||[]).filter(function(x){return selIsAllowance(x)&&!x.invoicedIn&&x.cost!=null&&x.cost!==''&&Math.abs(allowanceMath(x.allowance,x.cost,next).amount-(Number(x.price)||0))>0.005;});}
+function creditSwitch(){
+  const p=P();if(!p)return;const next=!houseCreditsAllowances(p);
+  const hit=creditAffected(p,next);const appr=hit.filter(function(x){return x.approved;});
+  const apply=function(){
+    p.allowanceCredit=next;
+    hit.forEach(function(x){const patch={price:allowanceMath(x.allowance,x.cost,next).amount};if(x.approved){patch.approved=false;patch.signed=null;}Data.updateSelection(x.id,patch,p.id);});
+    Data.commit();toast(next?'Unused allowances are credited':'Unused allowances are not credited');
+  };
+  if(!appr.length){apply();return;}
+  openConfirm({title:'Change allowance credits?',okLabel:'Change them',
+    body:esc(appr.length+(appr.length===1?' approved item changes':' approved items change'))+' \u2014 they go back to the homeowner for a new OK.<br><br>'+appr.map(function(x){return esc(x.item||'Item')+': '+fmtMoney(Number(x.price)||0)+' to '+fmtMoney(allowanceMath(x.allowance,x.cost,next).amount);}).join('<br>'),
+    onConfirm:apply});
+}
 function moneyMore(){
   const p=P()||{};
   const items=[
     {label:'Add a budget line',fn:openCostLine},
     {label:'Send an invoice',fn:moneyNewInvoice},
-    {label:'Record a payment',fn:moneyNewPayment}
+    {label:'Record a payment',fn:moneyNewPayment},
+    {label:'Credit unused allowances: '+(houseCreditsAllowances(p)?'On':'Off'),sub:'For this house only. If the price comes in under the allowance, the homeowner gets the difference as a credit.',fn:creditSwitch}
   ];
   try{if(costLines(p).length)items.push({label:'Cost report',fn:openJobCost});}catch(e){}
   try{if(qbEligible()&&_qbState&&_qbState.connected)items.push({label:'Send new costs to QuickBooks',fn:qbExportNow});}catch(e){}
@@ -11323,7 +11347,7 @@ function openChoice(o){
   const ttl=document.getElementById('choiceTitle');if(ttl)ttl.textContent=o.title||'Choose';
   const body=document.getElementById('choiceBody');if(!body)return;
   body.innerHTML=_choiceItems.map(function(it,i){
-    return '<div class="row row-tap" data-choice="'+i+'"><div class="row-main"><div class="row-title">'+esc(it.label||'')+'</div></div><span class="row-chev">&rsaquo;</span></div>';
+    return '<div class="row row-tap" data-choice="'+i+'"><div class="row-main"><div class="row-title">'+esc(it.label||'')+'</div>'+(it.sub?'<div class="fs-xs c-ink-3">'+esc(it.sub)+'</div>':'')+'</div><span class="row-chev">&rsaquo;</span></div>';
   }).join('')||'<div class="empty">Nothing here.</div>';
   body.querySelectorAll('[data-choice]').forEach(function(el){
     el.onclick=function(){
@@ -11368,7 +11392,7 @@ function renderBudget(){
 }
 function moneyBillHTML(p){
   const invs=(p.invoices||[]).slice().reverse();
-  const pmts=(p.payments||[]);
+  const pmts=(p.payments||[]).filter(payLive);
   const stLbl={draft:'Draft',sent:'Sent',approved:'Approved',partial:'Partial',overdue:'Past due',paid:'Paid',void:'Void'};
   let h='';
   if(typeof canGate==='function'&&canGate('moneyCo'))
@@ -11392,7 +11416,7 @@ function moneyBillHTML(p){
   }
   const invPays=[];
   (p.invoices||[]).filter(function(v){return v&&v.status!=='void';}).forEach(function(v){
-    (v.payments||[]).forEach(function(pm){invPays.push({label:(pm.note||'Payment')+' \u00b7 '+(v.no||v.title||''),amount:Number(pm.amount)||0,date:pm.date});});
+    (v.payments||[]).filter(payLive).forEach(function(pm){invPays.push({label:(pm.note||'Payment')+' \u00b7 '+(v.no||v.title||''),amount:Number(pm.amount)||0,date:pm.date});});
   });
   if(invPays.length){
     h+='<div class="bgt-grp">On invoices</div>';
@@ -13825,8 +13849,8 @@ function ledgerDetailHTML(p){
   sels.forEach(s=>{const n=chargeState(selCharge(s,p)).counted;if(!n)return;const m=(s.cat||'')+(s.room&&s.room!=='\u2014'&&s.room!=='N/A'?' \u00b7 '+s.room:'')+(s.approved?' \u00b7 approved':'');if(n>0)overRows.push({n:s.item||'(unspecified)',m,amt:n});else if(n<0)credRows.push({n:s.item||'(unspecified)',m,amt:n});});
   invs.forEach(v=>(v.items||[]).forEach(it=>{if(it.selId)return;const n=Number(it.amount)||0;if(n>0)overRows.push({n:it.label||'Invoice charge',m:esc(v.no||'Invoice'),amt:n});else if(n<0)credRows.push({n:it.label||'Invoice credit',m:esc(v.no||'Invoice'),amt:n});}));
   const payRows=[];
-  (p.payments||[]).forEach(x=>payRows.push({n:x.label||'Payment',m:x.date?fmtLogDate(x.date):'',amt:Number(x.amount)||0}));
-  invs.forEach(v=>(v.payments||[]).forEach(pm=>payRows.push({n:(pm.note||'Payment')+' \u00b7 '+(v.no||''),m:pm.date?fmtLogDate(pm.date):'',amt:Number(pm.amount)||0})));
+  (p.payments||[]).forEach(x=>payRows.push({n:x.label||'Payment',m:(x.date?fmtLogDate(x.date):'')+(x.voidedAt?' \u00b7 Voided'+(x.voidReason?': '+x.voidReason:''):''),amt:Number(x.amount)||0,v:!!x.voidedAt}));
+  invs.forEach(v=>(v.payments||[]).forEach(pm=>payRows.push({n:(pm.note||'Payment')+' \u00b7 '+(v.no||''),m:(pm.date?fmtLogDate(pm.date):'')+(pm.voidedAt?' \u00b7 Voided'+(pm.voidReason?': '+pm.voidReason:''):''),amt:Number(pm.amount)||0,v:!!pm.voidedAt})));
   const liRow=r=>`<div class="ld-li"><div class="ld-d"><div class="ld-n">${esc(r.n)}</div><div class="ld-m">${esc(r.m||'')}</div></div><b class="${r.amt<0?'cr':'up'}">${r.amt<0?'\u2212':'+'}${usd(r.amt)}</b></div>`;
   let h='';
   h+=`<div class="ld-sec">Upgrades &amp; overages</div>`;
@@ -13840,7 +13864,7 @@ function ledgerDetailHTML(p){
   h+=`<div class="ld-sub"><span>Invoiced</span><b>${usd(bs.billed)}</b></div>`;
   if(Math.abs(bs.unbilled)>0.005)h+=`<div class="ld-sub"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`;
   h+=`<div class="ld-sec">Payments received</div>`;
-  h+=payRows.length?payRows.map(r=>`<div class="ld-li"><div class="ld-d"><div class="ld-n">${esc(r.n)}</div><div class="ld-m">${esc(r.m||'')}</div></div><b class="cr">\u2212${usd(r.amt)}</b></div>`).join(''):`<div class="ld-empty">No payments recorded yet.</div>`;
+  h+=payRows.length?payRows.map(r=>`<div class="ld-li${r.v?' ld-void':''}"><div class="ld-d"><div class="ld-n">${esc(r.n)}</div><div class="ld-m">${esc(r.m||'')}</div></div><b class="cr">${r.v?'':'\u2212'}${usd(r.amt)}</b></div>`).join(''):`<div class="ld-empty">No payments recorded yet.</div>`;
   if(payRows.length)h+=`<div class="ld-sub"><span>Total received</span><b class="cr">\u2212${usd(paid)}</b></div>`;
   if(loose>0.005)h+=`<div class="fs-xs c-ink-3 mt-1 ml-1 mr-1 mb-1 lh-145">Includes ${usd(loose)} paid outside invoices.</div>`;
   if(Math.abs(bs.unbilled)>0.005||loose>0.005)h+=`<div class="ld-sub"><span>Balance due on invoices</span><b>${usd(bs.balanceDue)}</b></div>`;
@@ -14421,7 +14445,6 @@ function fillSelAllow(s){
   document.getElementById('selCost').value=a&&s.cost!=null?s.cost:'';
   ['selAllow','selCost'].forEach(id=>{document.getElementById(id).readOnly=false;});
   _costSel('selLine',costLines(p).map(l=>({id:l.id,label:l.label})),a?(s.costLineId||''):'','No budget line');
-  document.getElementById('selCredit').classList.toggle('on',houseCreditsAllowances(p));
   setSelMode(a);   /* new items start on Upgrade or credit; an allowance item opens on Allowance */
 }
 /* How it’s priced: Upgrade or credit (the upgrade field) or Allowance (allowance,
@@ -14438,7 +14461,7 @@ function selAllowRefresh(){
   document.getElementById('selAllowBox').style.display=on?'':'none';
   document.getElementById('selPriceBox').style.display=on?'none':'';
   const hint=document.getElementById('selCostHint');if(!on||!hint)return;hint.classList.remove('c-clay');
-  const c=_selNum('selCost');const credit=document.getElementById('selCredit').classList.contains('on');
+  const c=_selNum('selCost');const credit=houseCreditsAllowances(P());
   const m=allowanceMath(a,c,credit);
   const bad=isNaN(a)||isNaN(c)||a<0||(c!=null&&c<0);
   const ex=editingSelId!=null?(P().selections||[]).find(x=>x.id===editingSelId):null;
@@ -14490,8 +14513,7 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
   if(allowance!=null){
     const cost=_selCost;
     if(isNaN(allowance)||isNaN(cost)||allowance<0||(cost!=null&&cost<0)){toast('Allowance and price can’t be less than $0.');return;}
-    const p=P();const credit=document.getElementById('selCredit').classList.contains('on');
-    if(credit!==houseCreditsAllowances(p)){p.allowanceCredit=credit;repriceAllowances(p);}
+    const p=P();const credit=houseCreditsAllowances(p);   /* M-2: the switch lives in Money > Credit unused allowances, not on the item */
     money={allowance,cost,costLineId:document.getElementById('selLine').value||null,price:allowanceMath(allowance,cost,credit).amount};
     price=money.price;
     if(selReapproval(existingSel,money.price,p).reset){money.approved=false;money.signed=null;logEvent('allowanceReapprove',item+' · '+fmtMoney(money.price));}
@@ -14564,7 +14586,7 @@ function moneyStampWho(p){
   /* Gated: a real house is not converted until the flag is on (Workbench > Money conversion), after the report is signed off. Old dollar fields stay authoritative. */
   if(!_moneyConvRealOn()&&!_mcPreview)return {sel:false,inv:false,pay:false,cost:false};
   if(_mcPreview)return {sel:true,inv:true,pay:true,cost:true};
-  return {sel:syncHas(p,'selm')&&siteRoleFor(p)==='builder',inv:syncWrites(p,'inv'),pay:siteRoleFor(p)==='builder',cost:syncWrites(p,'costs')};}
+  return {sel:syncHas(p,'selm')&&siteRoleFor(p)==='builder',inv:syncWrites(p,'inv'),pay:syncWrites(p,'pmts'),cost:syncWrites(p,'costs')};}
 function moneyStampProject(p,rep){
   const w=moneyStampWho(p);const hs=p.street||p.name||String(p.id);
   if(w.sel)(p.selections||[]).forEach(s=>{if(!s)return;const at=hs+' · selection '+(s.item||s.id);['price','allowance','cost'].forEach(k=>_mcField(s,k,at,rep));});
@@ -14627,7 +14649,9 @@ try{['input','focusin'].forEach(ev=>document.addEventListener(ev,e=>{try{moneyHi
 function nextInvNo(p){let max=0;(p.invoices||[]).forEach(v=>{const m=/INV-(\d+)/.exec(v.no||'');if(m){const n=+m[1];if(n>max)max=n;}});return 'INV-'+String(max+1).padStart(3,'0');}
 /* Partial-payment + lifecycle helpers. An invoice carries a payments[] array;
    its effective state is derived from how much of the total is covered. */
-function invPaidAmt(inv){return (inv.payments||[]).reduce((a,p)=>a+(Number(p.amount)||0),0);}
+/* M-5: a voided payment stays on the record (crossed out) and never counts. */
+function payLive(x){return !!x&&!x.voidedAt;}
+function invPaidAmt(inv){return fromC(sumC((inv.payments||[]).filter(payLive).map(p=>Number(p.amount)||0)));}
 function invBalance(inv){return Math.max(0,(Number(inv.total)||0)-invPaidAmt(inv));}
 function invDueTs(due){if(!due)return null;const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(due).trim());return m?new Date(+m[1],+m[2]-1,+m[3]).getTime():null;}
 function invOverdue(inv){if(!inv||inv.status==='void'||inv.status==='draft')return false;const tot=Number(inv.total)||0,paid=invPaidAmt(inv);if(tot>0&&paid>=tot-0.005)return false;const d=invDueTs(inv.due);return d!=null&&d<dayStart(Date.now());}
@@ -14750,7 +14774,7 @@ function invDetailHTML(p,inv,viewer){
   // payment history
   if((inv.payments||[]).length){
     const canEditPm=viewer==='builder'&&st!=='void';
-    h+=`<div class="sec"><h2>Payments</h2></div>`+inv.payments.map((pm,idx)=>`<div class="sro d-flex jc-sb gap-3 ai-b"><span class="k c-ink-3">${esc(pm.date||'')}${pm.note?' · '+esc(pm.note):''}</span><span class="v ws-nw fw-6">${fmtMoney(pm.amount)}${canEditPm?` <button onclick="invDelPayment('${p.id}','${inv.id}',${idx})" class="ml-2 fs-xs c-clay bd-0 p-0 cur-p td-u u-m28">Remove</button>`:''}</span></div>`).join('');
+    h+=`<div class="sec"><h2>Payments</h2></div>`+inv.payments.map((pm,idx)=>`<div class="sro d-flex jc-sb gap-3 ai-b"><span class="k c-ink-3">${esc(pm.date||'')}${pm.note?' · '+esc(pm.note):''}${pm.voidedAt?' · Voided'+(pm.voidReason?': '+esc(pm.voidReason):''):''}</span><span class="v ws-nw fw-6${pm.voidedAt?' td-lt c-ink-3':''}">${fmtMoney(pm.amount)}${canEditPm&&!pm.voidedAt?` <button onclick="invVoidPayment('${p.id}','${inv.id}',${idx})" class="ml-2 fs-xs c-clay bd-0 p-0 cur-p td-u u-m28">Void payment</button>`:''}</span></div>`).join('');
   }
   // share / export — available to the builder for any non-void invoice
   if(viewer==='builder'&&st!=='void'){
@@ -14870,19 +14894,17 @@ function invAddPayment(projId,invId,full){
   try{closeInfo();}catch(e){}renderInvoices();
   openInvoiceDetail(projId,invId,'builder'); // reopen so the builder sees the updated balance
 }
-function invDelPayment(projId,invId,idx){
+function invVoidPayment(projId,invId,idx){
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status==='void')return;
-  const pm=(inv.payments||[])[idx];if(!pm)return;
-  confirmDelete({title:'Remove this payment?',
-    body:'Removes the '+fmtMoney(pm.amount)+' payment'+(pm.date?' recorded '+pm.date:'')+'. The invoice balance and status update to match — if it was marked paid, it reopens so you can correct it.',
-    onConfirm:()=>{
-      inv.payments.splice(idx,1);
+  const pm=(inv.payments||[])[idx];if(!pm||pm.voidedAt)return;
+  openPrompt({title:'Void payment',body:fmtMoney(pm.amount)+(pm.date?' recorded '+pm.date:'')+'. It stays on the invoice, crossed out, and stops counting. If the invoice was paid, it reopens.',placeholder:'Why is it void?',okLabel:'Void payment',
+    onOk:why=>{if(!why){toast('Say why it is void');invVoidPayment(projId,invId,idx);return;}
+      pm.voidedAt=Date.now();pm.voidReason=why;pm.voidedBy=(state.session&&state.session.name)||'';
       if(invBalance(inv)>0.005&&inv.status==='paid'){inv.status=inv.approvedAt?'approved':'sent';inv.paidAt=null;}
-      persist();logEvent('invoicePaymentRemoved',inv.no+' · '+fmtMoney(pm.amount));
-      toast('Payment removed — '+fmtMoney(invBalance(inv))+' left');
-      try{closeInfo();}catch(e){}renderInvoices();openInvoiceDetail(projId,invId,'builder');
-    }});
+      persist();logEvent('invoicePaymentVoided',inv.no+' \u00b7 '+fmtMoney(pm.amount)+' \u00b7 '+why);
+      toast('Payment voided \u2014 '+fmtMoney(invBalance(inv))+' left');
+      try{closeInfo();}catch(e){}renderInvoices();openInvoiceDetail(projId,invId,'builder');}});
 }
 function invVoid(projId,invId){
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
@@ -15054,21 +15076,22 @@ function renderInvoices(){
     +`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="invCompose()">New invoice…</button>`;}
 function openPayments(){renderPaymentsList();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';document.getElementById('payDate').value=todayStr();document.getElementById('payScrim').classList.add('show');}
 function closePayments(){document.getElementById('payScrim').classList.remove('show');try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}
-function paymentsListHTML(p){const pmts=(p.payments||[]);const loose=pmts.reduce((a,x)=>a+(Number(x.amount)||0),0);
-  const invPays=[];(p.invoices||[]).filter(v=>v&&v.status!=='void').forEach(v=>(v.payments||[]).forEach(pm=>invPays.push({label:(pm.note||'Payment')+'\u2002\u00b7\u2002'+(v.no||''),date:pm.date,amount:Number(pm.amount)||0})));
-  const invPaid=invPays.reduce((a,x)=>a+x.amount,0);
+function paymentsListHTML(p){const pmts=(p.payments||[]);const loose=fromC(sumC(pmts.filter(payLive).map(x=>Number(x.amount)||0)));
+  const invPays=[];(p.invoices||[]).filter(v=>v&&v.status!=='void').forEach(v=>(v.payments||[]).forEach(pm=>invPays.push({label:(pm.note||'Payment')+'\u2002\u00b7\u2002'+(v.no||''),date:pm.date,amount:Number(pm.amount)||0,v:!!pm.voidedAt,why:pm.voidReason||''})));
+  const invPaid=fromC(sumC(invPays.filter(x=>!x.v).map(x=>x.amount)));
   const total=loose+invPaid;                          // === sitePaidTotal(p): the one shared "received" figure
-  const looseHTML=pmts.length?pmts.map(x=>`<div class="pay-row"><div class="pi"><div class="pl">${esc(x.label||'Payment')}</div><div class="pd">${x.date?fmtLogDate(x.date):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div><button class="pay-rm" onclick="removePayment('${x.id}')">${ICON.trash}</button></div>`).join('')
+  const looseHTML=pmts.length?pmts.map(x=>`<div class="pay-row${x.voidedAt?' pay-void':''}"><div class="pi"><div class="pl">${esc(x.label||'Payment')}</div><div class="pd">${x.date?fmtLogDate(x.date):''}${x.voidedAt?' \u00b7 Voided'+(x.voidReason?': '+esc(x.voidReason):''):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div>${x.voidedAt?'':`<button class="pay-rm" onclick="voidPayment('${x.id}')">Void payment</button>`}</div>`).join('')
     :(invPaid>0?'<div class="pay-empty">Every payment so far came in on an invoice.</div>':'<div class="pay-empty">No payments recorded yet.</div>');
-  const invHTML=invPays.length?`<div class="fld-label mt-3">From invoices \u00b7 edited on each invoice</div>`+invPays.map(x=>`<div class="pay-row op-72"><div class="pi"><div class="pl">${esc(x.label)}</div><div class="pd">${x.date?fmtLogDate(x.date):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div></div>`).join(''):'';
+  const invHTML=invPays.length?`<div class="fld-label mt-3">From invoices \u00b7 edited on each invoice</div>`+invPays.map(x=>`<div class="pay-row op-72${x.v?' pay-void':''}"><div class="pi"><div class="pl">${esc(x.label)}</div><div class="pd">${x.date?fmtLogDate(x.date):''}${x.v?' \u00b7 Voided'+(x.why?': '+esc(x.why):''):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div></div>`).join(''):'';
   return looseHTML+invHTML+`<div class="pay-total"><span>Total received</span><b>${fmtMoney(total)}</b></div>`;}
 function renderPaymentsList(){const el=document.getElementById('payList');if(el)el.innerHTML=paymentsListHTML(P());}
 function addPayment(){const label=document.getElementById('payLabel').value.trim();const _r=moneyRead('payAmount',{positive:true});if(!_r)return;const amt=fromC(_r.cents);
   Data.addPayment({id:'pm'+Date.now().toString(36),label:label||'Payment',amount:amt,date:document.getElementById('payDate').value||todayStr()});
   logEvent('paymentAdded',(label||'Payment')+' '+fmtMoney(amt));renderPaymentsList();renderSelections();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}toast('Payment recorded');}
-function removePayment(id){const p=(P().payments||[]).find(x=>x.id===id);if(!p)return;
-  confirmDelete({title:'Remove payment?',body:esc(p.label||'Payment')+' \u00b7 '+fmtMoney(p.amount)+'<br><br>What’s still owed updates to match.',onConfirm:()=>{
-  Data.removePayment(id);try{renderPaymentsList();}catch(e){}try{renderInvoices();}catch(e){}renderSelections();toast('Payment removed');}});}
+function voidPayment(id){const p=(P().payments||[]).find(x=>x.id===id);if(!p||p.voidedAt)return;
+  openPrompt({title:'Void payment',body:(p.label||'Payment')+' \u00b7 '+fmtMoney(p.amount)+'. It stays on the list, crossed out, and stops counting.',placeholder:'Why is it void?',okLabel:'Void payment',
+    onOk:why=>{if(!why){toast('Say why it is void');voidPayment(id);return;}
+      Data.voidPayment(id,why);logEvent('paymentVoided',fmtMoney(p.amount)+' \u00b7 '+why);try{renderPaymentsList();}catch(e){}try{renderInvoices();}catch(e){}renderSelections();toast('Payment voided');}});}
 
 
 /* ════════ build: progress + crews ════════ */
