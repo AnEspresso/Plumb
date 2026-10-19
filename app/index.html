@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.473.0 - Change orders get their own money line; the budget card shows Change orders sold (paper-trail switch on)';
+const PLUMB_VERSION='2.474.0 - Approved change orders can go on an invoice (credits too); change orders can name a budget line (paper-trail switch on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792526400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.473.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792612800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.474.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9586,7 +9586,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
   attach(p){const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
     try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.render();this.money();},
       err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];this.render();});}catch(e){this._err[sid]='error';}},
-  money(){clearTimeout(this._mt);this._mt=setTimeout(()=>{try{renderBuild();}catch(e){}try{renderSelections();}catch(e){}},60);},
+  money(){clearTimeout(this._mt);this._mt=setTimeout(()=>{try{renderBuild();}catch(e){}try{renderSelections();}catch(e){}try{if(document.getElementById('invScrim').classList.contains('show')&&!document.activeElement.closest('#invScrim input'))renderInvoices();}catch(e){}},60);},
   open(){if(!this.allowed()){toast('Change orders are not on yet');return;}this._edit=null;this._view=null;this.attach(P());this.render();},
   render(){const sc=document.getElementById('infoScrim');if(this._edit||this._view||!sc||!sc.classList.contains('show')||!document.getElementById('coRoot'))return;this.draw();},
   draw(){const p=P();if(!p)return;const sid=String(p.id);
@@ -9606,14 +9606,21 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
   viewHTML(r){const w=(t)=>COH.when(t);
     return '<div id="coRoot"><div class="meta">'+esc(this.label(r.no))+(r.rev>1?' \u00b7 revision '+r.rev:'')+'</div><div class="fs-md fw-6">'+esc(r.title||'')+'</div><div class="fs-lg fw-6 mt-1">'+esc(this.amountText(r.amountC))+'</div>'+(r.note?'<p class="mt-2">'+esc(r.note)+'</p>':'')
       +(r.status==='approved'?'<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':''):r.status==='declined'?'<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':''):'<div class="meta mt-2">Withdrawn</div>')
+      +(r.lineId&&canGate('moneyJob')&&this.lineName(P(),r.lineId)?'<div class="meta mt-1">Budget line: '+esc(this.lineName(P(),r.lineId))+'</div>':'')
       +(r.status==='approved'&&canGate('moneyJob')?'<button class="lpay btn btn-quiet mt-2" onclick="CO.updateBudget()">Update budget</button>':'')   /* the builder's cost lives in the budget, never on the co (the homeowner reads it) */
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO._view=null;CO.draw()">Back</button></div>';},
+  lineName(p,id){try{const l=costLines(p).find(x=>String(x.id)===String(id));return l?String(l.label||l.name||''):'';}catch(e){return '';}},
+  /* 4c-2: budget line under "More details". Only the line id is stored on the co; its name and the builder's cost stay in the budget. */
+  lineHTML(p,e){let ls=[];try{ls=canGate('moneyJob')?costLines(p):[];}catch(x){}
+    if(e.status==='sent')return e.lineId&&this.lineName(p,e.lineId)?'<div class="meta">Budget line: '+esc(this.lineName(p,e.lineId))+'</div>':'';
+    if(!ls.length)return '';
+    return '<select id="coLine" class="fld-select mb-1"><option value="">No budget line</option>'+ls.map(l=>'<option value="'+esc(String(l.id))+'"'+(String(l.id)===String(e.lineId||'')?' selected':'')+'>'+esc(String(l.label||l.name||''))+'</option>').join('')+'</select>';},
   updateBudget(){this._view=null;try{closeInfo();}catch(e){}openBudget();},
-  newForm(){this._edit={id:null,status:'new',title:'',kind:'change',amount:'',note:'',days:'',rev:0};this.draw();},
+  newForm(){this._edit={id:null,status:'new',title:'',kind:'change',amount:'',note:'',days:'',lineId:'',rev:0};this.draw();},
   openEdit(id){const p=P();const r=this.row(String(p.id),id);if(!r||!(r.status==='draft'||r.status==='sent'))return;
-    this._edit={id:r.id,status:r.status,title:r.title||'',kind:r.kind==='credit'?'credit':'change',amount:fmtPlain(fromC(Math.abs(r.amountC||0))),note:r.note||'',days:r.days==null?'':String(r.days),rev:r.rev||0,orig:r};this.draw();},
+    this._edit={id:r.id,status:r.status,title:r.title||'',kind:r.kind==='credit'?'credit':'change',amount:fmtPlain(fromC(Math.abs(r.amountC||0))),note:r.note||'',days:r.days==null?'':String(r.days),lineId:r.lineId||'',rev:r.rev||0,orig:r};this.draw();},
   snap(){const e=this._edit;if(!e)return;const g=id=>{const x=document.getElementById(id);return x?x.value:null;};
-    const t=g('coTitle');if(t!=null)e.title=t;const a=g('coAmt');if(a!=null)e.amount=a;const n=g('coNote');if(n!=null)e.note=n;const d=g('coDays');if(d!=null)e.days=d;},
+    const t=g('coTitle');if(t!=null)e.title=t;const a=g('coAmt');if(a!=null)e.amount=a;const n=g('coNote');if(n!=null)e.note=n;const d=g('coDays');if(d!=null)e.days=d;const l=g('coLine');if(l!=null)e.lineId=l;},
   setKind(k){this.snap();this._edit.kind=k==='credit'?'credit':'change';this.draw();},
   back(){this._edit=null;this.draw();},
   hint(){const el=document.getElementById('coSentence');if(!el)return;const e=this._edit;const x=document.getElementById('coAmt');const r=parseMoney(x?x.value:'',{positive:true});
@@ -9625,7 +9632,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
      +'<div class="seg mt-2"><button type="button" class="'+(e.kind==='change'?'on':'')+'" onclick="CO.setKind(\'change\')">Change</button><button type="button" class="'+(e.kind==='credit'?'on':'')+'" onclick="CO.setKind(\'credit\')">Credit</button></div>'
      +'<div class="setup-roster-row"><input id="coAmt" placeholder="Amount" inputmode="decimal" data-money oninput="CO.hint()" value="'+esc(e.amount)+'"></div>'
      +'<textarea id="coNote" placeholder="Note for the homeowner" maxlength="2000" rows="3">'+esc(e.note)+'</textarea>'
-     +'<details class="mt-2"><summary>More details</summary><input id="coDays" placeholder="Days added to the schedule" inputmode="numeric" value="'+esc(e.days)+'"></details>'
+     +'<details class="mt-2"><summary>More details</summary>'+this.lineHTML(p,e)+'<input id="coDays" placeholder="Days added to the schedule" inputmode="numeric" value="'+esc(e.days)+'"></details>'
      +'<div class="meta mt-2" id="coSentence">'+(c0?esc(this.sentence(e.kind,c0)):'')+'</div>'
      +'<button class="b1 b-go w-full mt-1 btn btn-primary" onclick="CO.save(true)">'+(sent?'Sign and send update':'Sign and send')+'</button>'
      +(sent?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="CO.withdraw()">Withdraw</button>':'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.save(false)">Save draft</button>')
@@ -9648,10 +9655,11 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
     const dr=String(e.days||'').trim();let days=null;
     if(dr){if(!/^\d{1,3}$/.test(dr)||+dr>365){toast('Days must be a whole number from 0 to 365');return;}days=+dr;}
     const amountC=e.kind==='credit'?-r.cents:r.cents;const note=String(e.note||'').trim().slice(0,2000);
+    const lineId=e.status==='sent'?((e.orig&&e.orig.lineId)||''):String(e.lineId||'').slice(0,64);   /* budget line: chosen before sending; a sent one keeps its line (changing it would be a new revision) */
     const fresh=!e.id;const id=e.id||('co_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
     const ref=this.col(sid).doc(id);
     const body={title:title.slice(0,120),amountC:amountC,kind:e.kind};
-    const optional=(o)=>{if(note)o.note=note;else if(!fresh)o.note=this.del();if(days!=null)o.days=days;else if(!fresh)o.days=this.del();return o;};
+    const optional=(o)=>{if(note)o.note=note;else if(!fresh)o.note=this.del();if(days!=null)o.days=days;else if(!fresh)o.days=this.del();if(lineId)o.lineId=lineId;else if(!fresh&&e.status!=='sent')o.lineId=this.del();return o;};
     try{
       if(e.status==='sent'){   /* C-1: a change to a sent change order is a new revision */
         const o=e.orig||{};const ch={};
@@ -11232,7 +11240,15 @@ function coLedgerHTML(bs,usd){if(!bs.coOn||!(bs.coN||bs.coWaiting))return '';
     +(bs.coWaiting?'<div class="lr"><span class="meta">'+bs.coWaiting+' waiting on the homeowner</span><b></b></div>':'');}
 function siteCharges(p){let ups=0,crs=0,waiting=0;(p.selections||[]).forEach(s=>{const c=chargeState(selCharge(s,p));waiting+=c.waiting;const n=c.counted;if(n>0)ups+=n;else if(n<0)crs+=n;});const ex=_siteExtraCharges(p);return {ups:ups+ex.ups,crs:crs+ex.crs,waiting};}
 function sitePaidTotal(p){const loose=fromC(sumC((p.payments||[]).filter(payLive).map(x=>Number(x.amount)||0)));const inv=(p.invoices||[]).filter(v=>v&&v.status!=='void').reduce((a,v)=>a+invPaidAmt(v),0);return loose+inv;}
-function clientLedger(p){const c=siteCharges(p);const net=c.ups+c.crs;const paid=sitePaidTotal(p);return {ups:c.ups,crs:c.crs,net,paid,out:net-paid};}
+function clientLedger(p){const c=siteCharges(p);const net=c.ups+c.crs;const paid=sitePaidTotal(p);return {ups:c.ups,crs:c.crs,net,paid,out:net+_coBilled(p)-paid};}
+/* 4c-2: the sum of invoice lines that bill a change order (coId) on live (sent, not void or draft) invoices, exact in cents. */
+function _coBilled(p){return fromC(sumC([].concat.apply([],(p.invoices||[]).filter(v=>v&&v.status!=='void'&&v.status!=='draft').map(v=>(v.items||[]).filter(it=>it&&it.coId).map(it=>Number(it.amount)||0)))));}
+/* 4c-2: approved change orders a builder can put on an invoice: each once, at its exact amount (credits negative).
+   A change order already on another non-void invoice (draft included) is not offered again. Off with the switch. */
+function coBillable(p,editId){try{if(!p||(state.session||{}).role!=='builder'||!coLedger(p).on)return [];
+  const used={};(p.invoices||[]).forEach(v=>{if(!v||v.status==='void'||v.id===editId)return;(v.items||[]).forEach(it=>{if(it&&it.coId)used[it.coId]=1;});});
+  return CO.list(p.id).filter(r=>r.status==='approved'&&Number.isInteger(r.amountC)&&r.amountC!==0&&!used[r.id]).sort((a,b)=>(a.no||0)-(b.no||0));}catch(e){return [];}}
+function invToggleCo(id){_invDraft.coPicks=_invDraft.coPicks||{};_invDraft.coPicks[id]=!_invDraft.coPicks[id];_invSnapInputs();renderInvoices();}
 /* ── Single source of truth for every billing figure shown anywhere. All money
    surfaces (selections ledger, ledger detail, Invoices modal, homeowner view)
    derive from this so they can never disagree. Vocabulary, fixed:
@@ -11249,7 +11265,8 @@ function billingSummary(p){
   const invPaid=live.reduce((a,v)=>a+invPaidAmt(v),0);
   const paid=sitePaidTotal(p);
   const co=coLedger(p);   /* C-4: its own component; every existing figure above is untouched */
-  return {ups:c.ups,crs:c.crs,net,billed,unbilled:net-billed,invPaid,paid,balanceDue:Math.max(0,billed-invPaid),out:net-paid,waiting:c.waiting,coOn:co.on,co:fromC(co.c),coN:co.n,coWaiting:co.waiting};
+  const coB=_coBilled(p);   /* 4c-2: invoiced change-order lines are owed, but are not "not yet invoiced" upgrades. Zero when no line has a coId. */
+  return {ups:c.ups,crs:c.crs,net,billed,unbilled:net-(billed-coB),invPaid,paid,balanceDue:Math.max(0,billed-invPaid),out:net+coB-paid,coBilled:coB,waiting:c.waiting,coOn:co.on,co:fromC(co.c),coN:co.n,coWaiting:co.waiting};
 }
 
 /* ── Job costing rollups (builder-private; separate ledger from homeowner billing).
@@ -14957,9 +14974,9 @@ function invChangeHouse(){
 function closeInvoices(){document.getElementById('invScrim').classList.remove('show');try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}
 function invCompose(editId){
   if(editId){const p=P();const inv=(p.invoices||[]).find(v=>v.id===editId);
-    if(inv){const picks={};let exL='',exA='',exC=false;
-      (inv.items||[]).forEach(it=>{if(it.selId)picks[it.selId]=true;else if(!exL){exL=it.label||'';exA=(it.amount!=null?fmtPlain(Math.abs(it.amount)):'');exC=Number(it.amount)<0;}});
-      _invDraft={title:inv.title||'',due:inv.due||'',picks,exLabel:exL,exAmount:exA,exCredit:exC,editId};}
+    if(inv){const picks={},coPicks={};let exL='',exA='',exC=false;
+      (inv.items||[]).forEach(it=>{if(it.selId)picks[it.selId]=true;else if(it.coId)coPicks[it.coId]=true;else if(!exL){exL=it.label||'';exA=(it.amount!=null?fmtPlain(Math.abs(it.amount)):'');exC=Number(it.amount)<0;}});
+      _invDraft={title:inv.title||'',due:inv.due||'',picks,coPicks,exLabel:exL,exAmount:exA,exCredit:exC,editId};}
     else _invDraft={title:_invDefaultTitle(),due:'',picks:{},exLabel:'',exAmount:'',editId:null};}
   else _invDraft={title:_invDefaultTitle(),due:'',picks:{},exLabel:'',exAmount:'',editId:null};
   invMode='compose';renderInvoices();}
@@ -14978,6 +14995,7 @@ function _invSnapInputs(){const g=i=>(document.getElementById(i)||{value:''}).va
 function invDraftItems(){
   const p=P();const items=[];
   composeSelections(p).forEach(x=>{if(_invDraft.picks[x.id])items.push({label:(x.item||'(selection)')+' — '+(x.cat||'')+(x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+x.room:''),amount:selUnbilledAmt(p,x,_invDraft.editId||null),selId:x.id});});
+  {const cp=_invDraft.coPicks||{};coBillable(p,_invDraft.editId||null).forEach(r=>{if(cp[r.id])items.push({label:CO.label(r.no)+' \u00b7 '+String(r.title||''),amount:fromC(r.amountC),coId:r.id});});}
   const exR=parseMoney(_invDraft.exAmount,{});
   if(_invDraft.exLabel.trim()&&exR.ok&&exR.cents!==0)items.push({label:_invDraft.exLabel.trim(),amount:fromC(exR.cents)*(_invDraft.exCredit?-1:1)});
   return items;}
@@ -15304,6 +15322,8 @@ function renderInvoices(){
       <div class="sec"><h2>Unbilled selections</h2></div>`
       +(un.length?un.map(x=>`<div class="subrow cur-p" onclick="invTogglePick('${x.id}')"><div class="si"><div class="n">${_invDraft.picks[x.id]?'☑':'☐'} ${esc(x.item||'(selection)')}</div><div class="d">${esc(x.cat||'')}${x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+esc(x.room):''}</div></div><b class="${selUnbilledAmt(p,x,editId)>0?'up':'cr'} fs-sm">${selMoney(selUnbilledAmt(p,x,editId))}</b></div>`).join('')
         :'<div class="empty py-2 px-0">Nothing unbilled — every priced selection is already on an invoice.</div>')
+      +(function(){const cb=coBillable(p,_invDraft.editId||null);if(!cb.length)return '';const cp=_invDraft.coPicks||{};
+        return '<div class="sec"><h2>Approved change orders</h2></div>'+cb.map(r=>'<div class="subrow cur-p" onclick="invToggleCo(\''+esc(r.id)+'\')"><div class="si"><div class="n">'+(cp[r.id]?'\u2611':'\u2610')+' '+esc(CO.label(r.no))+' \u00b7 '+esc(r.title||'')+'</div><div class="d">'+esc(CO.amountText(r.amountC))+'</div></div></div>').join('');})()
       +`<div class="sec"><h2>Custom line</h2></div>
       <div class="setup-roster-row"><input id="invExLabel" placeholder="e.g. Change order #3" value="${esc(_invDraft.exLabel)}"><input id="invExAmount" placeholder="Amount" inputmode="decimal" data-money value="${esc(_invDraft.exAmount)}" class="u-m31"><select id="invExKind" class="fld-select"><option value="charge">Charge</option><option value="credit"${_invDraft.exCredit?' selected':''}>Credit</option></select></div>
       <div class="sel-ledger mt-3"><div class="lr"><span>Invoice total</span><b>${fmtMoney(total)}</b></div></div>
