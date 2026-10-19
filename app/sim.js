@@ -4569,7 +4569,7 @@ await (async function(){
   const HB=J(`(function(){var X=__co;var h=document.getElementById('infoScrim').textContent;CO.openView('h_unv');var v=document.getElementById('infoScrim').textContent;CO.openView('h_d1');var d=document.getElementById('infoScrim').textContent;return {list:h,v:v,d:d};})()`);
   t('4b: the builder opens an approved change order read-only and sees who approved it and the sentence',HB.v.indexOf('Ana Ruiz')>=0&&HB.v.indexOf('This adds $1,850.00 to your contract.')>=0&&HB.v.indexOf('Approve and sign')<0,HB.v.slice(0,300));
   t('4b: the builder sees a decline with its reason',HB.d.indexOf('Too much')>=0&&HB.d.toLowerCase().indexOf('declined')>=0,HB.d.slice(0,300));
-  /* ---------- 4c-1: C-4 change orders are their own ledger line ---------- */
+  /* ---------- 4c-1: C-4 change orders are their own ledger line (spec section C-4; sum in cents) ---------- */
   await sleep(80);
   const K0=J(`(function(){var X=__co;var ap=0,n=0,w=0;Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')!==0)return;var d=X.store[k].data;if(d.status==='approved'){ap+=d.amountC;n++;}else if(d.status==='sent')w++;});
     var on=billingSummary(P());PaperTrail.on=false;var off=billingSummary(P());var offL=coLedger(P());PaperTrail.on=true;
