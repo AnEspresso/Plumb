@@ -29,7 +29,7 @@ const { initializeTestEnvironment, assertSucceeds, assertFails } =
   require('@firebase/rules-unit-testing');
 const {
   doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection,
-  query, where, onSnapshot, writeBatch,
+  query, where, onSnapshot, writeBatch, serverTimestamp,
 } = require('firebase/firestore');
 const { ref, uploadBytes, getBytes } = require('firebase/storage');
 
@@ -169,6 +169,24 @@ const INV_LOGIC = (n, p) => expect('INVARIANT', n, p.then(
     if (!/(^|[:,]\s*)false for 'update'/.test(m)) throw new Error(/maximum of 1000 expressions/.test(m) ? 'denied only by the 1,000-expression limit' : 'no rule pass ended in false: ' + m.slice(0, 160));
   }), true);
 
+/* Rules A1 denials. The emulator evaluates a denied record write on several passes; one errors or hits the
+   1,000-expression limit while walking every branch. Proof of a denial by the A1 rule itself is a pass that ends in a
+   plain "false for '<method>' @ L<n>" on one of the A1 allow lines (found in the rules file), not the limit. */
+const A1_LINES = (() => {
+  const L = fs.readFileSync(FS_RULES, 'utf8').split('\n');
+  const at = L.findIndex(x => x.includes('Rules A1: the five new collections'));
+  const out = {};
+  for (const m of ['read', 'create', 'update', 'delete']) { const i = L.findIndex((x, k) => k > at && x.trim().startsWith('allow ' + m + ':')); out[m] = i + 1; }
+  return out;
+})();
+const A1_RE = new RegExp(`false for '(create|update|delete)' @ L(${A1_LINES.create}|${A1_LINES.update}|${A1_LINES.delete})\\b`);
+const INV_A1 = (n, p) => expect('INVARIANT', n, p.then(
+  () => { throw new Error('write was allowed'); },
+  (e) => {
+    const m = String(e && e.message);
+    if (!/PERMISSION_DENIED|permission/i.test(m) && (e && e.code) !== 'permission-denied') throw new Error('not a permission denial: ' + m.slice(0, 160));
+    if (!A1_RE.test(m)) throw new Error('no clean A1 rule pass ended in false: ' + m.slice(0, 200));
+  }), true);
 /* ---------- fixtures (written with rules disabled) ---------- */
 async function seed() {
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
@@ -569,6 +587,216 @@ async function main() {
   await INV('step 1: homeowner Approve carrying the stamp beside data is DENIED by the current rules (so the 2.469.0 app sends the plain approve)',
     setDoc(doc(db.client, 'sites/liveA/inv/inv_sent2'), Object.assign({ data: { status: 'approved', approvedAt: 1791130000200 }, updatedAt: 7, updatedBy: 'dev-client' },
       { byUid: U.client, tappedAt: 1791130000200, appV: '2.469.0' }), { merge: true }), false);
+
+  /* ══════════ RULES A1: change orders and the paper trail (co, hist, consent, flags, numbers, settings) ══════════
+     Additive. Every new collection is strict from day one: byUid == uid(), at == request.time (serverTimestamp()),
+     rev bumps on content change, decidedRev == rev, never un-sent, never deleted once sent, paper signature needs a
+     photo, consent before the homeowner decides, the server verified the total, claims are create-once. */
+  const SRV = serverTimestamp;
+  const APPV = '2.470.0';
+  const stampNow = (uid, extra) => Object.assign({ byUid: uid, at: SRV(), appV: APPV, tappedAt: 1 }, extra || {});
+  const coData = (o) => Object.assign({ id: 'co1', title: 'Add a window', amountC: 185000, kind: 'change', status: 'draft', t: 1 }, o || {});
+  const sentOf = (o) => coData(Object.assign({ status: 'sent', no: 1, rev: 1, sentAt: 1790000000000, sentBy: U.builder, sentName: 'Dean Walsh', sentRole: 'builder' }, o || {}));
+  const coDoc = (uid, data, extra) => Object.assign({ data, updatedAt: 9, updatedBy: 'dev-x' }, stampNow(uid, extra));
+  const coRef = (d, id, site) => doc(d, `sites/${site || 'liveA'}/co/${id}`);
+  const putCo = (d, id, data, uid, site, extra) => setDoc(coRef(d, id, site), coDoc(uid || U.builder, data, extra));
+  const claimDoc = (uid, kind, no) => ({ kind, no, byUid: uid, at: SRV(), appV: APPV });
+  /* Sign and send in one batch: the number claim and the change order land together. */
+  const sendBatch = (d, id, data, no, uid, site) => { const b = writeBatch(d);
+    b.set(doc(d, `sites/${site || 'liveA'}/numbers/co-${no}`), claimDoc(uid || U.builder, 'co', no));
+    b.set(coRef(d, id, site), coDoc(uid || U.builder, data));
+    return b.commit(); };
+  const SEEDS = {
+    d1: coData({ id: 'd1' }),
+    d2: coData({ id: 'd2' }),
+    s_edit: sentOf({ id: 's_edit', no: 11, rev: 1 }),
+    s_edit2: sentOf({ id: 's_edit2', no: 12, rev: 1 }),
+    s_back: sentOf({ id: 's_back', no: 13 }),
+    s_wd: sentOf({ id: 's_wd', no: 14 }),
+    s_wd2: sentOf({ id: 's_wd2', no: 15 }),
+    s_paper: sentOf({ id: 's_paper', no: 16 }),
+    s_paper2: sentOf({ id: 's_paper2', no: 17 }),
+    s_paper3: sentOf({ id: 's_paper3', no: 18 }),
+    s_paper4: sentOf({ id: 's_paper4', no: 19, rev: 3 }),
+    s_noapp: sentOf({ id: 's_noapp', no: 20 }),
+    s_del: sentOf({ id: 's_del', no: 21 }),
+    a_ok: sentOf({ id: 'a_ok', no: 30, rev: 2, verifiedRev: 2, verifiedTotal: 185000 }),
+    a_stale: sentOf({ id: 'a_stale', no: 31, rev: 2, verifiedRev: 2, verifiedTotal: 185000 }),
+    a_unv: sentOf({ id: 'a_unv', no: 32, rev: 2, verifiedRev: 1, verifiedTotal: 185000 }),
+    a_cent: sentOf({ id: 'a_cent', no: 33, rev: 2, verifiedRev: 2, verifiedTotal: 184999 }),
+    a_who: sentOf({ id: 'a_who', no: 34, rev: 2, verifiedRev: 2, verifiedTotal: 185000 }),
+    a_time: sentOf({ id: 'a_time', no: 35, rev: 2, verifiedRev: 2, verifiedTotal: 185000 }),
+    a_amt: sentOf({ id: 'a_amt', no: 36, rev: 2, verifiedRev: 2, verifiedTotal: 185000 }),
+    a_nocons: sentOf({ id: 'a_nocons', no: 37, rev: 2, verifiedRev: 2, verifiedTotal: 185000 }),
+    a_dec: sentOf({ id: 'a_dec', no: 38, rev: 2 }),
+    a_dec2: sentOf({ id: 'a_dec2', no: 39, rev: 2 }),
+    a_draft: coData({ id: 'a_draft' }),
+    ap1: sentOf({ id: 'ap1', no: 40, status: 'approved', approvedVia: 'paper', decidedBy: U.builder, decidedRev: 1 }),
+    ap2: sentOf({ id: 'ap2', no: 41, status: 'approved', approvedVia: 'paper', decidedBy: U.builder, decidedRev: 1 }),
+    dc1: sentOf({ id: 'dc1', no: 42, status: 'declined', decidedBy: U.client, decidedRev: 1 }),
+    wd1: sentOf({ id: 'wd1', no: 43, status: 'withdrawn', withdrawnBy: U.builder }),
+    sx: sentOf({ id: 'sx', no: 44 }),
+  };
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    const sdb = ctx.firestore();
+    for (const [id, data] of Object.entries(SEEDS))
+      await setDoc(doc(sdb, `sites/liveA/co/${id}`), { data, updatedAt: 1, updatedBy: 'dev-b', byUid: U.builder, at: 1790000000000, appV: '2.470.0' });
+    await setDoc(doc(sdb, 'sites/liveA/hist/h1'), { kind: 'sent', ref: 'co1', at: 1790000000000 });
+    await setDoc(doc(sdb, 'sites/liveGateJ/co/dj1'), { data: sentOf({ id: 'dj1', no: 50 }), updatedAt: 1, updatedBy: 'dev-b', byUid: U.builder2, at: 1790000000000, appV: '2.470.0' });
+  });
+  const upd = (d, id, base, over, uid, extra) => { const m = Object.assign({}, base, over); Object.keys(m).forEach(k => { if (m[k] === undefined) delete m[k]; }); return putCo(d, id, m, uid || U.builder, undefined, extra); };
+
+  /* create */
+  await INV('A1 co: builder creates a draft change order', putCo(db.builder, 'n1', coData({ id: 'n1' })), true);
+  await INV_A1('A1 co: a draft with a key outside the list (the builder cost) is DENIED', putCo(db.builder, 'n2', coData({ id: 'n2', cost: 900 })));
+  await INV_A1('A1 co: a Change with a negative amount (or a Credit with a positive one) is DENIED', putCo(db.builder, 'n3', coData({ id: 'n3', amountC: -500 })));
+  await INV_A1('A1 co: a draft that names someone else as byUid is DENIED', putCo(db.builder, 'n4', coData({ id: 'n4' }), U.builder2));
+  await INV_A1('A1 co: a draft whose "at" is a phone time, not server time, is DENIED',
+    setDoc(coRef(db.builder, 'n5'), { data: coData({ id: 'n5' }), updatedAt: 9, updatedBy: 'x', byUid: U.builder, at: 1790000000000, appV: APPV }));
+  await INV_A1('A1 co: a draft with no appV is DENIED',
+    setDoc(coRef(db.builder, 'n6'), { data: coData({ id: 'n6' }), updatedAt: 9, updatedBy: 'x', byUid: U.builder, at: SRV() }));
+  await INV_A1('A1 co: a draft with a non-integer amount is DENIED', putCo(db.builder, 'n7', coData({ id: 'n7', amountC: 1850.5 })));
+  await INV_A1('A1 co: crew DENIED creating a change order', putCo(db.sub, 'n8', coData({ id: 'n8' }), U.sub));
+  await INV_A1('A1 co: homeowner DENIED creating a change order', putCo(db.client, 'n9', coData({ id: 'n9' }), U.client));
+  await INV_A1('A1 co: a builder without the money gate DENIED', putCo(db.builder2, 'n10', coData({ id: 'n10' }), U.builder2, 'liveGate'));
+  await INV('A1 co: a builder with moneyJob may create', putCo(db.builder2, 'n11', coData({ id: 'n11' }), U.builder2, 'liveGateJ'), true);
+  await INV('A1 co: Sign and send (rev 1, number claimed in the same batch) ALLOWED',
+    sendBatch(db.builder, 'n12', sentOf({ id: 'n12', no: 1, sentAt: SRV() }), 1), true);
+  await INV_A1('A1 co: sending without claiming the number is DENIED',
+    putCo(db.builder, 'n13', sentOf({ id: 'n13', no: 2, sentAt: SRV() })));
+  await INV_A1('A1 co: sending at rev 2 is DENIED', sendBatch(db.builder, 'n14', sentOf({ id: 'n14', no: 3, rev: 2, sentAt: SRV() }), 3));
+  await INV_A1('A1 co: sending with a sentAt that is not server time is DENIED', sendBatch(db.builder, 'n15', sentOf({ id: 'n15', no: 4 }), 4));
+  await INV_A1('A1 co: the sent name must match membership (Pat PM on this house)',
+    sendBatch(db.builder2, 'n16', sentOf({ id: 'n16', no: 5, sentAt: SRV(), sentBy: U.builder2, sentName: 'Somebody Else' }), 5, U.builder2, 'liveGateJ'));
+  await INV('A1 co: ... and with the membership name it is ALLOWED',
+    sendBatch(db.builder2, 'n17', sentOf({ id: 'n17', no: 5, sentAt: SRV(), sentBy: U.builder2, sentName: 'Pat PM' }), 5, U.builder2, 'liveGateJ'), true);
+  await INV('A1 co: a draft becomes sent (rev 1, claim in the batch) ALLOWED',
+    sendBatch(db.builder, 'd1', sentOf({ id: 'd1', no: 6, sentAt: SRV() }), 6), true);
+
+  /* C-1: rev bumps on any content change of a sent change order */
+  await INV_A1('A1 C-1: a builder changes a sent amount WITHOUT bumping rev: DENIED', upd(db.builder, 's_edit', SEEDS.s_edit, { amountC: 285000 }));
+  await INV('A1 C-1: ... with rev + 1 and status still sent: ALLOWED', upd(db.builder, 's_edit', SEEDS.s_edit, { amountC: 285000, rev: 2 }), true);
+  await INV_A1('A1 C-1: a revision that jumps rev by 2 is DENIED', upd(db.builder, 's_edit2', SEEDS.s_edit2, { amountC: 285000, rev: 3 }));
+  await INV_A1('A1 C-1: a sent change order cannot change its number', upd(db.builder, 's_edit2', SEEDS.s_edit2, { no: 99 }));
+  await INV_A1('A1 C-1: a builder cannot write verifiedRev (server only)', upd(db.builder, 's_edit2', SEEDS.s_edit2, { verifiedRev: 1, verifiedTotal: 185000 }));
+  /* C-2: never un-sent, never deleted */
+  await INV_A1('A1 C-2: sent back to draft is DENIED', upd(db.builder, 's_back', SEEDS.s_back, { status: 'draft' }));
+  await INV('A1 C-2: Withdraw (status withdrawn, who and server time) ALLOWED',
+    upd(db.builder, 's_wd', SEEDS.s_wd, { status: 'withdrawn', withdrawnBy: U.builder, withdrawnAt: SRV() }), true);
+  await INV_A1('A1 C-2: a withdrawn change order cannot change again', upd(db.builder, 'wd1', SEEDS.wd1, { status: 'sent' }));
+  await INV_A1('A1 C-2: the homeowner cannot withdraw', upd(db.client, 's_wd2', SEEDS.s_wd2, { status: 'withdrawn', withdrawnBy: U.client, withdrawnAt: SRV() }, U.client));
+  for (const [nm, id] of [['sent', 's_del'], ['approved', 'ap1'], ['declined', 'dc1'], ['withdrawn', 'wd1']])
+    await INV_RULE(`A1 C-2: delete of a ${nm} change order is DENIED`, deleteDoc(coRef(db.builder, id)));
+  await INV('A1 C-2: delete of a never-sent draft is ALLOWED', deleteDoc(coRef(db.builder, 'd2')), true);
+  await INV_A1('A1 C-2: the homeowner cannot delete a change order', deleteDoc(coRef(db.client, 'a_draft')));
+  /* C-5: paper signature */
+  const PAPER = { status: 'approved', approvedVia: 'paper', paperPhotoId: 'ph_1', decidedBy: U.builder, decidedAt: SRV(), decidedRev: 1 };
+  await INV('A1 C-5: a builder records a paper signature (photo, decidedBy = uid, rev match) ALLOWED', upd(db.builder, 's_paper', SEEDS.s_paper, PAPER), true);
+  await INV_A1('A1 C-5: paper signature without a photo is DENIED', upd(db.builder, 's_paper2', SEEDS.s_paper2, Object.assign({}, PAPER, { paperPhotoId: '' })));
+  await INV_A1('A1 C-5: approvedVia other than paper is DENIED', upd(db.builder, 's_paper2', SEEDS.s_paper2, Object.assign({}, PAPER, { approvedVia: 'app' })));
+  await INV_A1('A1 C-5: paper signature with someone else as decidedBy is DENIED', upd(db.builder, 's_paper3', SEEDS.s_paper3, Object.assign({}, PAPER, { decidedBy: U.builder2 })));
+  await INV_A1('A1 C-5: paper signature at a stale rev is DENIED', upd(db.builder, 's_paper4', SEEDS.s_paper4, PAPER));
+  await INV_A1('A1 C-5: a builder approving without paper is DENIED', upd(db.builder, 's_noapp', SEEDS.s_noapp, { status: 'approved', decidedBy: U.builder, decidedAt: SRV(), decidedRev: 1 }));
+  await INV_A1('A1 C-5: a homeowner setting approvedVia paper is DENIED', upd(db.client, 's_paper3', SEEDS.s_paper3, PAPER, U.client));
+  await INV('A1 co: an approved change order may only gain invoicedIn', upd(db.builder, 'ap1', SEEDS.ap1, { invoicedIn: 'inv_9' }), true);
+  await INV_A1('A1 co: an approved change order cannot change its amount', upd(db.builder, 'ap2', SEEDS.ap2, { amountC: 1 }));
+
+  /* C-3 + C-1 + M-8 + M-14 + M-17: the homeowner's decision */
+  const DEC = (o) => Object.assign({ status: 'approved', decidedBy: U.client, decidedAt: SRV(), decidedRev: 2, decidedName: 'Ana Ruiz', decidedRole: 'client', sentence: 'This adds $1,850.00 to your contract.' }, o || {});
+  await INV_A1('A1 M-8: approving with no consent record is DENIED', upd(db.client, 'a_nocons', SEEDS.a_nocons, DEC(), U.client));
+  await INV('A1 M-8: the homeowner records consent for themselves (own doc id, server time)',
+    setDoc(doc(db.client, `sites/liveA/consent/${U.client}`), { byUid: U.client, at: SRV(), agreed: true, textV: 'esign-v1', appV: APPV }), true);
+  await INV('A1 C-1: approve with the current decidedRev and a verified total ALLOWED', upd(db.client, 'a_ok', SEEDS.a_ok, DEC(), U.client), true);
+  await INV_A1('A1 C-1: approve with a stale decidedRev is DENIED', upd(db.client, 'a_stale', SEEDS.a_stale, DEC({ decidedRev: 1 }), U.client));
+  await INV_A1('A1 M-14: approve while verifiedRev != rev is DENIED', upd(db.client, 'a_unv', SEEDS.a_unv, DEC(), U.client));
+  await INV_A1('A1 M-14: approve when the verified total is one cent off is DENIED', upd(db.client, 'a_cent', SEEDS.a_cent, DEC(), U.client));
+  await INV_A1('A1 C-3: a homeowner writing someone else\'s uid as decidedBy is DENIED', upd(db.client, 'a_who', SEEDS.a_who, DEC({ decidedBy: U.builder }), U.client));
+  await INV_A1('A1 C-3: a decidedAt that is not server time is DENIED', upd(db.client, 'a_time', SEEDS.a_time, DEC({ decidedAt: 1790000000000 }), U.client));
+  await INV_A1('A1 C-3: the byUid beside data must be the homeowner', upd(db.client, 'a_who', SEEDS.a_who, DEC(), U.builder));
+  await INV_A1('A1 C-1: a decision that also changes the amount is DENIED', upd(db.client, 'a_amt', SEEDS.a_amt, DEC({ amountC: 1 }), U.client));
+  await INV_A1('A1 M-8: approve without the saved sentence is DENIED', upd(db.client, 'a_amt', SEEDS.a_amt, DEC({ sentence: undefined }), U.client));
+  await INV('A1 C-1: decline (a note, current rev) ALLOWED even before the server check', upd(db.client, 'a_dec', SEEDS.a_dec, DEC({ status: 'declined', sentence: undefined, declineNote: 'Too much' }), U.client), true);
+  await INV_A1('A1 co: a decline note over the size cap is DENIED', upd(db.client, 'a_dec2', SEEDS.a_dec2, DEC({ status: 'declined', sentence: undefined, declineNote: 'x'.repeat(501) }), U.client));
+  await INV_A1('A1 co: the homeowner cannot touch a draft', upd(db.client, 'a_draft', SEEDS.a_draft, { title: 'Mine' }, U.client));
+  await INV_A1('A1 co: crew DENIED any decision', upd(db.sub, 'sx', SEEDS.sx, DEC({ decidedBy: U.sub }), U.sub));
+  await INV_A1('A1 co: stranger DENIED any decision', upd(db.stranger, 'sx', SEEDS.sx, DEC({ decidedBy: U.stranger }), U.stranger));
+
+  /* C-5 list rule and who reads */
+  const COQ = (d, withFilter) => withFilter
+    ? query(collection(d, 'sites/liveA/co'), where('data.status', 'in', ['sent', 'approved', 'declined', 'withdrawn']))
+    : collection(d, 'sites/liveA/co');
+  await INV('A1 C-5: homeowner list WITH the status filter ALLOWED', getDocs(COQ(db.client, true)), true);
+  await INV('A1 C-5: homeowner list WITHOUT the status filter DENIED', getDocs(COQ(db.client, false)), false);
+  await INV('A1 co: homeowner reads a sent change order by id', getDoc(coRef(db.client, 'sx')), true);
+  await INV('A1 co: homeowner DENIED a draft by id', getDoc(coRef(db.client, 'a_draft')), false);
+  await INV('A1 co: builder reads every change order', getDocs(COQ(db.builder, false)), true);
+  await INV('A1 co: crew DENIED get', getDoc(coRef(db.sub, 'sx')), false);
+  await INV('A1 co: crew DENIED list (with the filter too)', getDocs(COQ(db.sub, true)), false);
+  await INV('A1 co: a builder without the money gate DENIED get', getDoc(coRef(db.builder2, 'dj1', 'liveGate')), false);
+  await INV('A1 co: stranger DENIED', getDoc(coRef(db.stranger, 'sx')), false);
+  await INV('A1 co: unauth DENIED', getDoc(coRef(db.unauth, 'sx')), false);
+
+  /* hist: the server writes it; nobody on a phone does */
+  const H = (d, site) => doc(d, `sites/${site || 'liveA'}/hist/h1`);
+  await INV('A1 hist: builder reads', getDoc(H(db.builder)), true);
+  await INV('A1 hist: homeowner reads', getDoc(H(db.client)), true);
+  await INV('A1 hist: crew DENIED read', getDoc(H(db.sub)), false);
+  await INV('A1 hist: a builder without the money gate DENIED read', getDoc(doc(db.builder2, 'sites/liveGate/hist/h1')), false);
+  await INV_A1('A1 hist: any client write is DENIED (builder)', setDoc(doc(db.builder, 'sites/liveA/hist/h9'), { kind: 'sent', at: SRV() }));
+  await INV_A1('A1 hist: any client write is DENIED (homeowner)', setDoc(doc(db.client, 'sites/liveA/hist/h9'), { kind: 'approved', at: SRV() }));
+  await INV_A1('A1 hist: a builder cannot edit a line', setDoc(H(db.builder), { kind: 'void', at: SRV() }));
+  await INV_A1('A1 hist: a builder cannot delete a line', deleteDoc(H(db.builder)));
+
+  /* consent: the homeowner's own, never edited */
+  const CONS = (uid, o) => Object.assign({ byUid: uid, at: SRV(), agreed: true, textV: 'esign-v1', appV: APPV }, o || {});
+  await INV_A1('A1 consent: the homeowner cannot write another person\'s consent doc', setDoc(doc(db.client, `sites/liveA/consent/${U.builder}`), CONS(U.client)));
+  await INV_A1('A1 consent: the builder cannot consent for the homeowner', setDoc(doc(db.builder, `sites/liveA/consent/${U.client}x`), CONS(U.builder)));
+  await INV_A1('A1 consent: a consent with a phone time is DENIED', setDoc(doc(db.client, 'sites/liveGateJ/consent/' + U.client), CONS(U.client, { at: 1790000000000 })));
+  await INV_A1('A1 consent: agreed must be true', setDoc(doc(db.client, 'sites/liveGateJ/consent/' + U.client), CONS(U.client, { agreed: false })));
+  await INV_A1('A1 consent: never edited', setDoc(doc(db.client, `sites/liveA/consent/${U.client}`), CONS(U.client, { textV: 'esign-v2' })));
+  await INV_A1('A1 consent: never deleted', deleteDoc(doc(db.client, `sites/liveA/consent/${U.client}`)));
+  await INV('A1 consent: the homeowner reads their own', getDoc(doc(db.client, `sites/liveA/consent/${U.client}`)), true);
+  await INV('A1 consent: the builder reads it (proof)', getDoc(doc(db.builder, `sites/liveA/consent/${U.client}`)), true);
+  await INV('A1 consent: crew DENIED', getDoc(doc(db.sub, `sites/liveA/consent/${U.client}`)), false);
+
+  /* flags: either side creates; never edited or deleted; crews never */
+  const FLAG = (uid, o) => Object.assign({ kind: 'flag', targetType: 'inv', targetId: 'inv_r1', note: 'The total looks wrong', byUid: uid, at: SRV(), appV: APPV }, o || {});
+  await INV('A1 flags: the homeowner flags an invoice', setDoc(doc(db.client, 'sites/liveA/flags/f1'), FLAG(U.client)), true);
+  await INV('A1 flags: the builder flags a payment', setDoc(doc(db.builder, 'sites/liveA/flags/f2'), FLAG(U.builder, { targetType: 'pmt', targetId: 'pm_1' })), true);
+  await INV('A1 flags: resolving is a new entry with a note and the flag id', setDoc(doc(db.builder, 'sites/liveA/flags/f3'), FLAG(U.builder, { kind: 'resolve', ref: 'f1', note: 'Fixed' })), true);
+  await INV_A1('A1 flags: a resolve with no ref is DENIED', setDoc(doc(db.builder, 'sites/liveA/flags/f4'), FLAG(U.builder, { kind: 'resolve' })));
+  await INV_A1('A1 flags: crew DENIED', setDoc(doc(db.sub, 'sites/liveA/flags/f5'), FLAG(U.sub)));
+  await INV_A1('A1 flags: a builder without the money gate DENIED', setDoc(doc(db.builder2, 'sites/liveGate/flags/f6'), FLAG(U.builder2)));
+  await INV_A1('A1 flags: a flag in someone else\'s name is DENIED', setDoc(doc(db.client, 'sites/liveA/flags/f7'), FLAG(U.builder)));
+  await INV_A1('A1 flags: an empty note is DENIED', setDoc(doc(db.client, 'sites/liveA/flags/f8'), FLAG(U.client, { note: '' })));
+  await INV_A1('A1 flags: a key outside the list is DENIED', setDoc(doc(db.client, 'sites/liveA/flags/f9'), FLAG(U.client, { amountC: 5 })));
+  await INV_A1('A1 flags: no one can edit a flag', setDoc(doc(db.client, 'sites/liveA/flags/f1'), FLAG(U.client, { note: 'changed' })));
+  await INV_A1('A1 flags: no one can delete a flag', deleteDoc(doc(db.builder, 'sites/liveA/flags/f1')));
+  await INV('A1 flags: the homeowner reads flags', getDoc(doc(db.client, 'sites/liveA/flags/f1')), true);
+  await INV('A1 flags: crew DENIED read', getDoc(doc(db.sub, 'sites/liveA/flags/f1')), false);
+
+  /* number claims: create once, never update or delete */
+  await INV('A1 numbers: a builder claims co-100', setDoc(doc(db.builder, 'sites/liveA/numbers/co-100'), claimDoc(U.builder, 'co', 100)), true);
+  await INV_A1('A1 numbers: a second claim of the same number is DENIED', setDoc(doc(db.builder2, 'sites/liveA/numbers/co-100'), claimDoc(U.builder2, 'co', 100)));
+  await INV('A1 numbers: invoices use the same mechanism (inv-14)', setDoc(doc(db.builder, 'sites/liveA/numbers/inv-14'), claimDoc(U.builder, 'inv', 14)), true);
+  await INV_A1('A1 numbers: the document id must match the kind and number', setDoc(doc(db.builder, 'sites/liveA/numbers/co-101'), claimDoc(U.builder, 'co', 102)));
+  await INV_A1('A1 numbers: a claim cannot be deleted', deleteDoc(doc(db.builder, 'sites/liveA/numbers/co-100')));
+  await INV_A1('A1 numbers: homeowner DENIED claiming', setDoc(doc(db.client, 'sites/liveA/numbers/co-103'), claimDoc(U.client, 'co', 103)));
+  await INV_A1('A1 numbers: crew DENIED claiming', setDoc(doc(db.sub, 'sites/liveA/numbers/co-104'), claimDoc(U.sub, 'co', 104)));
+  await INV_A1('A1 numbers: a claim with a phone time is DENIED', setDoc(doc(db.builder, 'sites/liveA/numbers/co-105'), Object.assign(claimDoc(U.builder, 'co', 105), { at: 1790000000000 })));
+  await INV('A1 numbers: the builder reads claims', getDoc(doc(db.builder, 'sites/liveA/numbers/co-100')), true);
+  await INV('A1 numbers: homeowner DENIED read', getDoc(doc(db.client, 'sites/liveA/numbers/co-100')), false);
+
+  /* the version settings document: signed-in read, nobody writes */
+  await testEnv.withSecurityRulesDisabled(async (ctx) => { await setDoc(doc(ctx.firestore(), 'settings/money'), { minAppV: 2470 }); });
+  await INV('A1 settings: a signed-in person reads settings/money', getDoc(doc(db.client, 'settings/money')), true);
+  await INV('A1 settings: unauth DENIED', getDoc(doc(db.unauth, 'settings/money')), false);
+  await INV('A1 settings: no client write (builder)', setDoc(doc(db.builder, 'settings/money'), { minAppV: 1 }), false);
+  await INV('A1 settings: no client write (homeowner)', setDoc(doc(db.client, 'settings/money'), { minAppV: 1 }), false);
+  await INV('A1 settings: no listing', getDocs(collection(db.builder, 'settings')), false);
+  /* additive proof: the old record rules for existing names are untouched */
+  await INV('A1 additive: a builder still writes a plain items record', setDoc(doc(db.builder, 'sites/liveA/items/a1_plain'), { data: { id: 1 }, updatedAt: 1, updatedBy: 'd' }), true);
+  await INV('A1 additive: the homeowner still reads pmts', getDoc(doc(db.client, 'sites/liveA/pmts/r1')), true);
 
   /* ══════════ BOOKINGS (a crew sees only its own) ══════════ */
   const bkQ = (d, site, name) => query(collection(d, `sites/${site}/bk`), where('data.subName', '==', name));

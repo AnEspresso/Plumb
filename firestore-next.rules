@@ -208,6 +208,129 @@ service cloud.firestore {
             || sInfo().get('gates', {}).get('moneyCo', false) in [true, 1]
           );
         }
+
+        /* ───────── Rules A1 (additive): change orders and the paper trail ─────────
+           New collections only: co, hist, consent, flags, numbers. Nothing that
+           exists today is tightened here (that is Rules A2). The generic record
+           rules below skip these five names, so each is strict from day one.
+           Every client write to them carries byUid == uid() and at == request.time
+           (a server timestamp) and an appV string (M-7; the minimum-version check
+           is A2/M-15). co money is whole cents (amountC), never dollars. */
+        function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers']; }
+        function stampOk() {
+          let r = request.resource.data;
+          return r.byUid == uid() && r.at == request.time && r.appV is string && r.appV.size() > 0;
+        }
+        function outerOk() {
+          return request.resource.data.keys().hasOnly(['data', 'updatedAt', 'updatedBy', 'byUid', 'at', 'tappedAt', 'appV'])
+            && request.resource.data.keys().hasAll(['data', 'byUid', 'at', 'appV']);
+        }
+        function nameOk(nm) { return nm is string && nm.size() > 0 && nm == sInfo().get('name', nm); }
+        function coBodyOk(n) {
+          return n.title is string && n.title.size() > 0 && n.title.size() <= 120
+            && n.amountC is int && n.amountC > -1000000000 && n.amountC < 1000000000
+            && ((n.kind == 'change' && n.amountC > 0) || (n.kind == 'credit' && n.amountC < 0))
+            && (!n.keys().hasAny(['note']) || (n.note is string && n.note.size() <= 2000))
+            && (!n.keys().hasAny(['days']) || (n.days is int && n.days >= 0 && n.days <= 365));
+        }
+        function coDraftKeys(n) {
+          return n.keys().hasOnly(['id', 'title', 'note', 'amountC', 'kind', 'photoId', 'days', 'lineId', 'status', 't']);
+        }
+        /* Sign and send: rev 1, the builder's uid and server time, the name copied
+           from membership (M-17), and a number claim in the same batch (M-6). */
+        function coSendOk(n) {
+          return n.keys().hasOnly(['id', 'title', 'note', 'amountC', 'kind', 'photoId', 'days', 'lineId', 'status', 't',
+                                   'no', 'rev', 'sentAt', 'sentBy', 'sentName', 'sentRole'])
+            && n.status == 'sent' && coBodyOk(n) && n.rev == 1
+            && n.no is int && n.no > 0
+            && n.sentBy == uid() && n.sentAt == request.time && n.sentRole == 'builder' && nameOk(n.sentName)
+            && existsAfter(/databases/$(database)/documents/sites/$(siteId)/numbers/$('co-' + string(n.no)));
+        }
+        function coCreateOk() {
+          let n = recNew();
+          return recordColl == 'co' && moneyOk() && stampOk() && outerOk()
+            && ((n.status == 'draft' && coDraftKeys(n) && coBodyOk(n)) || coSendOk(n));
+        }
+        function coBuilderUpdOk() {
+          let n = recNew();
+          let o = rec();
+          let ch = n.diff(o).affectedKeys();
+          let content = ['title', 'note', 'amountC', 'kind', 'photoId', 'days', 'lineId'];
+          return recordColl == 'co' && moneyOk() && stampOk() && outerOk()
+            && n.get('verifiedRev', null) == o.get('verifiedRev', null)
+            && n.get('verifiedTotal', null) == o.get('verifiedTotal', null)
+            && (
+              (o.status == 'draft' && ((n.status == 'draft' && coDraftKeys(n) && coBodyOk(n)) || coSendOk(n)))
+              || (o.status == 'sent' && n.status == 'sent'
+                  && ch.hasOnly(['title', 'note', 'amountC', 'kind', 'photoId', 'days', 'lineId', 'rev'])
+                  && coBodyOk(n)
+                  && ((!ch.hasAny(content) && !ch.hasAny(['rev'])) || n.rev == o.rev + 1))
+              || (o.status == 'sent' && n.status == 'withdrawn'
+                  && ch.hasOnly(['status', 'withdrawnAt', 'withdrawnBy'])
+                  && n.get('withdrawnBy', '') == uid() && n.get('withdrawnAt', null) == request.time)
+              || (o.status == 'sent' && n.status == 'approved'
+                  && ch.hasOnly(['status', 'approvedVia', 'paperPhotoId', 'decidedBy', 'decidedAt', 'decidedRev', 'sentence'])
+                  && n.get('approvedVia', '') == 'paper' && n.get('paperPhotoId', null) is string && n.paperPhotoId.size() > 0
+                  && n.get('decidedBy', '') == uid() && n.get('decidedAt', null) == request.time && n.get('decidedRev', -1) == o.rev
+                  && (!ch.hasAny(['sentence']) || (n.sentence is string && n.sentence.size() <= 300)))
+              || (o.status == 'approved' && n.status == 'approved' && ch.hasOnly(['invoicedIn']))
+            );
+        }
+        /* The homeowner decides exactly the revision they saw (C-1), as themselves
+           (C-3), at server time, after consenting (M-8), on a server-verified total
+           (M-14), with their name frozen from membership (M-17). */
+        function clientCoOk() {
+          let n = recNew();
+          let o = rec();
+          let ch = n.diff(o).affectedKeys();
+          return recordColl == 'co' && sRole() == 'client' && stampOk() && outerOk()
+            && o.status == 'sent'
+            && ch.hasOnly(['status', 'decidedAt', 'decidedBy', 'decidedRev', 'decidedName', 'decidedRole', 'declineNote', 'sentence'])
+            && n.status in ['approved', 'declined']
+            && n.get('decidedRev', -1) == o.rev && n.get('decidedBy', '') == uid() && n.get('decidedAt', null) == request.time
+            && n.get('decidedRole', '') == 'client' && nameOk(n.get('decidedName', null))
+            && (!ch.hasAny(['sentence']) || (n.sentence is string && n.sentence.size() <= 300))
+            && (!ch.hasAny(['declineNote']) || (n.declineNote is string && n.declineNote.size() <= 500))
+            && (n.status == 'declined'
+                || (ch.hasAny(['sentence']) && n.sentence.size() > 0
+                    && o.get('verifiedRev', -1) == o.rev && o.get('verifiedTotal', null) == o.amountC))
+            && exists(/databases/$(database)/documents/sites/$(siteId)/consent/$(uid()));
+        }
+        function coReadOk() {
+          return moneyOk() || (sRole() == 'client' && rec().status in ['sent', 'approved', 'declined', 'withdrawn']);
+        }
+        function coDeleteOk() {
+          return moneyOk() && !rec().keys().hasAny(['sentAt']);
+        }
+        function consentCreateOk() {
+          let r = request.resource.data;
+          return sRole() == 'client' && recordId == uid()
+            && r.keys().hasOnly(['byUid', 'at', 'agreed', 'textV', 'appV', 'tappedAt'])
+            && r.keys().hasAll(['byUid', 'at', 'agreed', 'textV'])
+            && r.byUid == uid() && r.at == request.time && r.agreed == true
+            && r.textV is string && r.textV.size() > 0 && r.textV.size() <= 40;
+        }
+        function flagCreateOk() {
+          let r = request.resource.data;
+          return (moneyOk() || sRole() == 'client')
+            && r.keys().hasOnly(['kind', 'targetType', 'targetId', 'note', 'ref', 'byUid', 'at', 'appV', 'tappedAt'])
+            && r.keys().hasAll(['kind', 'targetType', 'targetId', 'note', 'byUid', 'at'])
+            && r.byUid == uid() && r.at == request.time
+            && r.kind in ['flag', 'resolve']
+            && r.targetType in ['inv', 'co', 'sel', 'pmt']
+            && r.targetId is string && r.targetId.size() > 0 && r.targetId.size() <= 80
+            && r.note is string && r.note.size() > 0 && r.note.size() <= 500
+            && (r.kind == 'flag' || (r.get('ref', null) is string && r.ref.size() > 0));
+        }
+        function numberCreateOk() {
+          let r = request.resource.data;
+          return moneyOk()
+            && r.keys().hasOnly(['kind', 'no', 'byUid', 'at', 'appV', 'tappedAt'])
+            && r.keys().hasAll(['kind', 'no', 'byUid', 'at'])
+            && r.kind in ['inv', 'co'] && r.no is int && r.no > 0 && r.no < 1000000
+            && recordId == r.kind + '-' + string(r.no)
+            && r.byUid == uid() && r.at == request.time;
+        }
         /* F-2 R: inv (invoices, off the house doc) and selm (a selection's
            money, doc id = the selection id) are money collections: only a
            builder who passes moneyOk() creates, updates or deletes them. */
@@ -291,20 +414,20 @@ service cloud.firestore {
            moneyOk() and by the homeowner; crews and builders without the
            money gate are refused. F-2 R2: homeowner may update inv through
            clientInvOk (Approve); create/delete stay builder-only. */
-        allow read: if signedIn() && sScoped()
+        allow read: if signedIn() && sScoped() && !newColl()
           && (recordColl == 'pmts' ? sMember() && sRole() != 'sub'
               : recordColl in ['mail','costs'] ? moneyOk()
               : recordColl in ['inv','selm'] ? moneyOk() || sRole() == 'client'
               : recordColl == 'bk' && sRole() == 'sub' ? crewOwnBk()
               : sMember());
 
-        allow create: if signedIn() && sScoped()
+        allow create: if signedIn() && sScoped() && !newColl()
           && selNoMoney()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
               || (sRole() == 'sub' && recordColl in ['items','logs'])
               || (sRole() == 'client' && recordColl == 'items'));
 
-        allow update: if signedIn() && sScoped()
+        allow update: if signedIn() && sScoped() && !newColl()
           && selNoMoney()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
               || (sRole() == 'sub' && crewItemOk())
@@ -313,8 +436,22 @@ service cloud.firestore {
               || (sRole() == 'client' && clientSelOk())
               || (sRole() == 'client' && clientInvOk()));
 
-        allow delete: if signedIn() && sScoped()
+        allow delete: if signedIn() && sScoped() && !newColl()
           && sRole() == 'builder' && (!moneyColl() || moneyOk());
+
+        /* Rules A1: the five new collections, each its own strict rule. */
+        allow read: if signedIn() && sScoped() && (
+          (recordColl == 'co' && coReadOk())
+          || (recordColl in ['hist', 'flags'] && (moneyOk() || sRole() == 'client'))
+          || (recordColl == 'consent' && (recordId == uid() || moneyOk()))
+          || (recordColl == 'numbers' && moneyOk()));
+        allow create: if signedIn() && sScoped() && (
+          coCreateOk()
+          || (recordColl == 'consent' && consentCreateOk())
+          || (recordColl == 'flags' && flagCreateOk())
+          || (recordColl == 'numbers' && numberCreateOk()));
+        allow update: if signedIn() && sScoped() && (coBuilderUpdOk() || clientCoOk());
+        allow delete: if signedIn() && sScoped() && recordColl == 'co' && coDeleteOk();
       }
     }
 
@@ -383,6 +520,15 @@ service cloud.firestore {
         && request.resource.data.street.size() <= 120;
       allow update: if false;
       allow delete: if inviteIsMine();
+    }
+
+    /* Rules A1: server-written settings (the minimum app version for money, M-15).
+       Any signed-in person may read; no client ever writes. The server creates
+       settings/money with the Admin SDK. */
+    match /settings/{docId} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow write: if false;
     }
 
     match /orgs/{orgId} {
