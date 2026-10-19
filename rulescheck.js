@@ -847,6 +847,14 @@ async function main() {
   await INV_A1('A1 numbers: homeowner DENIED claiming', setDoc(doc(db.client, 'sites/liveA/numbers/co-103'), claimDoc(U.client, 'co', 103)));
   await INV_A1('A1 numbers: crew DENIED claiming', setDoc(doc(db.sub, 'sites/liveA/numbers/co-104'), claimDoc(U.sub, 'co', 104)));
   await INV_A1('A1 numbers: a claim with a phone time is DENIED', setDoc(doc(db.builder, 'sites/liveA/numbers/co-105'), Object.assign(claimDoc(U.builder, 'co', 105), { at: 1790000000000 })));
+  /* 2.478.0 app (3c-3, M-6): Send writes the invoice record (the sync's replace shape) and numbers/inv-N in ONE batch. */
+  const appInv = (id, no) => Object.assign({ data: { id, no: 'INV-' + String(no).padStart(3, '0'), title: 'Selections invoice', due: '', items: [{ label: 'Tile', amount: 250 }], total: 250, status: 'sent', t: 1791000000000, sentBy: 'Dean Walsh', payments: [] }, updatedAt: 9, updatedBy: 'devB' }, { byUid: U.builder, tappedAt: 9, appV: APPV });
+  const invSendBatch = (d, id, no, uid) => { const b = writeBatch(d); b.set(doc(d, `sites/liveA/inv/${id}`), appInv(id, no)); b.set(doc(d, `sites/liveA/numbers/inv-${no}`), claimDoc(uid || U.builder, 'inv', no)); return b.commit(); };
+  await INV('A1 app 3c-3: Send an invoice: the record and its inv-15 claim in one batch: ALLOWED', invSendBatch(db.builder, 'inv_app1', 15), true);
+  await INV_A1('A1 app 3c-3: a second phone sending with the same number (inv-15) is DENIED, record and all', invSendBatch(db.builder, 'inv_app2', 15));
+  await INV('A1 app 3c-3: ... the invoice from the refused batch was not written', getDoc(doc(db.builder, 'sites/liveA/inv/inv_app2')).then(s => { if (s.exists()) throw new Error('written'); }), true);
+  await INV('A1 app 3c-3: the builder lists claims to find the next number', getDocs(collection(db.builder, 'sites/liveA/numbers')), true);
+  await INV('A1 app 3c-3: crew DENIED listing claims', getDocs(collection(db.sub, 'sites/liveA/numbers')), false);
   await INV('A1 numbers: the builder reads claims', getDoc(doc(db.builder, 'sites/liveA/numbers/co-100')), true);
   await INV('A1 numbers: homeowner DENIED read', getDoc(doc(db.client, 'sites/liveA/numbers/co-100')), false);
 
