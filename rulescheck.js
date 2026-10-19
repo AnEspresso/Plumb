@@ -544,6 +544,32 @@ async function main() {
   await INV('R2: builder still full write on inv',
     setDoc(doc(db.builder, 'sites/liveA/inv/inv_sent2'), INV_DOC({ id: 'inv_sent2', status: 'void', amount: 0 }), { merge: true }), true);
 
+  /* ══════════ STEP 1 (2.468.0): the app's new money fields against the CURRENT rules ══════════
+     Cents twins (amountC, totalC, priceC ...) sit inside data; the stamp (byUid, tappedAt, appV) sits
+     beside data. A money builder may write both on every money collection. The homeowner's Approve is
+     exactly the old write: the current clientInvOk refuses anything beside status and approvedAt, so the
+     app does not stamp that one write until rules A2 allows it. */
+  const STAMP = { byUid: U.builder, tappedAt: 1791130000100, appV: '2.468.0' };
+  const twinDoc = (data) => Object.assign({ data, updatedAt: 5, updatedBy: 'dev-builder' }, STAMP);
+  await INV('step 1: builder writes an invoice with totalC, line amountC, payment amountC and the stamp - ALLOWED',
+    setDoc(doc(db.builder, 'sites/liveA/inv/inv_c1'), twinDoc({ id: 'inv_c1', status: 'draft', total: 5.86, totalC: 586,
+      items: [{ label: 'a', amount: 5.86, amountC: 586 }], payments: [{ id: 'pm_1', amount: 1, amountC: 100 }] })), true);
+  await INV('step 1: builder writes selm with priceC, allowanceC, costC and the stamp - ALLOWED',
+    setDoc(doc(db.builder, 'sites/liveA/selm/s9a'), twinDoc({ id: 's9a', price: 850, priceC: 85000, allowance: 1200, allowanceC: 120000, cost: 640, costC: 64000 }), { merge: true }), true);
+  await INV('step 1: builder writes a payment (pmts) with amountC and the stamp - ALLOWED',
+    setDoc(doc(db.builder, 'sites/liveA/pmts/pm_c1'), twinDoc({ id: 'pm_c1', label: 'Deposit', amount: 2000, amountC: 200000 })), true);
+  await INV('step 1: builder writes a cost with amountC, budgetC and the stamp - ALLOWED',
+    setDoc(doc(db.builder, 'sites/liveA/costs/c_c1'), twinDoc({ id: 'c_c1', rt: 'actual', amount: 12.5, amountC: 1250, adds: [{ amount: 3, amountC: 300 }] })), true);
+  await INV('step 1: a builder without the money gate is still DENIED an invoice with the stamp',
+    setDoc(doc(db.builder2, 'sites/liveGate/inv/inv_c2'), twinDoc({ id: 'inv_c2', status: 'draft', total: 1, totalC: 100 })), false);
+  await INV('step 1: crew DENIED a payment with the stamp',
+    setDoc(doc(db.sub, 'sites/liveA/pmts/pm_c3'), twinDoc({ id: 'pm_c3', amount: 1, amountC: 100 })), false);
+  await GAP('step 1: a priceC twin on sel is not refused by the current rules (the app strips it; the sim proves sel carries none)',
+    setDoc(doc(db.builder, 'sites/liveA/sel/r2ok'), { data: selRec({ id: 42, item: 'No money', priceC: 5 }), updatedAt: 6, updatedBy: 'dev-builder' }, { merge: true }), true);
+  await INV('step 1: homeowner Approve carrying the stamp beside data is DENIED by the current rules (so the 2.468.0 app sends the plain approve)',
+    setDoc(doc(db.client, 'sites/liveA/inv/inv_sent2'), Object.assign({ data: { status: 'approved', approvedAt: 1791130000200 }, updatedAt: 7, updatedBy: 'dev-client' },
+      { byUid: U.client, tappedAt: 1791130000200, appV: '2.468.0' }), { merge: true }), false);
+
   /* ══════════ BOOKINGS (a crew sees only its own) ══════════ */
   const bkQ = (d, site, name) => query(collection(d, `sites/${site}/bk`), where('data.subName', '==', name));
   const exactly = (n, p) => p.then(r => { if (r.size !== n) throw new Error('expected ' + n + ' booking(s), saw ' + r.size); return r; });

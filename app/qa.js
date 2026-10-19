@@ -418,7 +418,7 @@ async function tappable(page,sel){
   const fits=await page.evaluate(()=>{const keep=window.houseBudgetLine;const out=[];
     const PM=()=>{demoRole('builder');state.session=Object.assign({},state.session,{member:true,rpRole:'pm',gates:{moneyJob:true,moneyCo:false,selections:true,field:true,schedule:true,site:true,jobs:true}});};
     const lines=el=>{const tops={};[].forEach.call(el.childNodes,n=>{if(n.nodeType!==3||!/budget/.test(n.textContent))return;const r=document.createRange();r.selectNodeContents(n);[].forEach.call(r.getClientRects(),q=>{if(q.width>1)tops[Math.round(q.top)]=1;});});return Object.keys(tops).length;};
-    try{['Projected $20,600\u00a0over\u00a0budget','$1,234,500\u00a0over\u00a0budget','Under\u00a0budget\u00a0\u00b7 $1,458,300\u00a0left'].forEach(str=>{
+    try{['Projected $20,600.00\u00a0over\u00a0budget','$1,234,500.00\u00a0over\u00a0budget','Under\u00a0budget\u00a0\u00b7 $1,458,300.00\u00a0left'].forEach(str=>{
       window.houseBudgetLine=()=>str;PM();nyOpenHouse('p3');
       const meta=document.querySelector('#houseBody .pkt-strip .meta'),tile=document.querySelector('#houseBody [data-door=money] .m');
       const cs=meta?getComputedStyle(meta):{};
@@ -441,12 +441,12 @@ async function tappable(page,sel){
   await new Promise(r=>setTimeout(r,300));
   t('Beaumont Park budget shows the amber overrun', await page.evaluate(()=>{
     const b=document.getElementById('budgetBody');
-    return !!(b&&b.querySelector('.hero-n.warn')&&b.innerHTML.includes('Over budget')&&b.innerHTML.includes('5,200 over'));
+    return !!(b&&b.querySelector('.hero-n.warn')&&b.innerHTML.includes('Over budget')&&b.innerHTML.includes('5,200.00 over'));
   }));
   t('Beaumont Money body has one primary', await page.evaluate(()=>document.querySelectorAll('#budgetBody .btn-primary').length===1));
   t('Beaumont Money has no leftover oak links', await page.evaluate(()=>{
     const txt=(document.getElementById('budgetBody')||{}).innerText||'';
-    return txt.indexOf('Cost report')<0&&txt.indexOf('QuickBooks')<0&&txt.indexOf('accountant')<0&&txt.indexOf('$0 left')<0;
+    return txt.indexOf('Cost report')<0&&txt.indexOf('QuickBooks')<0&&txt.indexOf('accountant')<0&&txt.indexOf('$0 left')<0&&txt.indexOf('$0.00 left')<0;
   }));
   await page.evaluate(()=>moneyMore());
   await new Promise(r=>setTimeout(r,150));

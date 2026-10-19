@@ -73,7 +73,7 @@ async function lane(name,browserType){
   await page.waitForTimeout(2000);
   t(name,'reload mid-demo resumes the demo', await js("document.body.classList.contains('on-excursion')&&appMode()==='demo'"));
 
-  t(name,'Beaumont amber overrun renders', await js("(function(){demoRole('hillan');openSiteFromOverview('p8');openBudget();return document.getElementById('budgetBody').innerHTML.includes('5,200 over');})()"));
+  t(name,'Beaumont amber overrun renders', await js("(function(){demoRole('hillan');openSiteFromOverview('p8');openBudget();return document.getElementById('budgetBody').innerHTML.includes('5,200.00 over');})()"));
 
   await browser.close();
 }

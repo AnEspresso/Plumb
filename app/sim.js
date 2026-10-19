@@ -634,7 +634,7 @@ $("setCostGroup('stage')");$('openBudget()');
 t('budget modal opens', el('budgetScrim').classList.contains('show'));
 let BH=el('budgetBody').innerHTML;
 t('stage grouping shows stage headers', BH.includes('Rough-ins')||BH.includes('Rough')||BH.includes('Foundation'));
-t('over line flagged in red chip', BH.includes('3,400 over'));
+t('over line flagged in red chip', BH.includes('3,400.00 over'));
 $("setCostGroup('trade')");BH=el('budgetBody').innerHTML;
 t('trade toggle regroups', BH.includes('Plumbing')&&BH.includes('Electrical'));
 t('toggle persisted', $("localStorage.getItem('plumbCostGroup')")==='trade');
@@ -701,7 +701,7 @@ t('isWideBudget flips at breakpoint', $('isWideBudget()')===true);
 $('renderBudget()');
 t('wide layout renders the table', el('budgetBody').innerHTML.includes('bgt-table')&&el('budgetBody').innerHTML.includes('Contracted'));
 t('sixteen seed rows + quick-add row', $("document.querySelectorAll('#budgetBody tr[data-line]').length")===16&&$("document.querySelectorAll('#budgetBody tr.bgt-qa').length")===1);
-t('over cell rendered in table', el('budgetBody').innerHTML.includes('3,400 over'));
+t('over cell rendered in table', el('budgetBody').innerHTML.includes('3,400.00 over'));
 t('explicit Edit buttons on table rows', $("document.querySelectorAll('#budgetBody .bgt-edit').length")===16);
 // in-place budget edit patches computed cells without re-render
 $("(function(){const tr=document.querySelector('tr[data-line]');const inp=tr.querySelector('input.num');inp.value='20000';inp.onchange({});})()");
@@ -789,7 +789,7 @@ t('cleanup', $("state.activeId==='p4'&&costLines(P()).length===0")===true);
 S('ux polish');
 asBuilder();$("state.activeId='p2'");$('renderBuild()');
 t('Invoice card is the Budget twin', ['Still owed','Not approved yet','Invoiced','Paid','View invoices'].every(s=>el('billingCard').innerHTML.includes(s)));
-t('Billing card math (out=net-paid on p2)', el('billingCard').innerHTML.includes($("invUsd(billingSummary(P()).out)")));
+t('Billing card math (out=net-paid on p2)', el('billingCard').innerHTML.includes($("fmtMoney(billingSummary(P()).out)")));
 t('calendar door atop Schedule pane', el('buildSchedule').innerHTML.includes('Trades calendar for this house'));
 $("calSiteFilter=String(state.activeId);openCal()");
 t('door opens calendar scoped to this site', el('calview').classList.contains('show'));
@@ -1422,7 +1422,7 @@ t('the briefing keeps field schedule selections money and the desk', (function()
 t('the house briefing does not repeat the street', $("String(houseHTML)").indexOf('This job')<0&&$("String(houseHTML)").indexOf('pkt-head')<0);
 t('rooms on the house are doors not a second inbox', $("String(houseHTML)").indexOf('hs-doors')>=0&&$("String(houseHTML)").indexOf("Read and close old lines")<0&&$("String(houseHTML)").indexOf("This house</div>")<0);
 t('money is one sentence', $("String(houseMoneyLine)").indexOf("'Paid\\u00a0'")>=0&&$("String(houseMoneyLine)").indexOf("' of\\u00a0'")>=0&&$("String(houseMoneyLine)").indexOf('billed')<0);
-t('money line reads Paid {paid} of {net} · owed {out}', (function(){const r=$("(function(){const p=state.projects.find(x=>{const b=billingSummary(x);return b.net>0&&b.paid>0;});if(!p)return null;const b=billingSummary(p);return [houseMoneyLine(p),'Paid\\u00a0'+invUsd(b.paid)+' of\\u00a0'+invUsd(b.net)+'\\u00a0· owed\\u00a0'+invUsd(Math.max(0,b.net-b.paid))];})()");return !!r&&r[0]===r[1];})());
+t('money line reads Paid {paid} of {net} · owed {out}', (function(){const r=$("(function(){const p=state.projects.find(x=>{const b=billingSummary(x);return b.net>0&&b.paid>0;});if(!p)return null;const b=billingSummary(p);return [houseMoneyLine(p),'Paid\\u00a0'+fmtMoney(b.paid)+' of\\u00a0'+fmtMoney(b.net)+'\\u00a0· owed\\u00a0'+fmtMoney(Math.max(0,b.net-b.paid))];})()");return !!r&&r[0]===r[1];})());
 t('settings leads with company', $("String(renderSettings)").indexOf("<h2>Company</h2>")>=0&&$("String(renderSettings)").indexOf("openCompany()")>=0);
 t('the homeowner home does not show a percent', $("String(renderClient)").indexOf('% complete')<0);
 t('house doors stay two across', $("document.documentElement.innerHTML").indexOf('hs-doors{grid-template-columns:repeat(3')<0&&$("String(houseHTML)").indexOf('hs-door wide')>=0);
@@ -3140,7 +3140,7 @@ S('allowances');
      pre-R-1 formula (every selection price counts, approved or not). */
   const f=JSON.parse($("JSON.stringify(state.projects.map(function(p){var n=0;(p.selections||[]).forEach(function(s){n+=Number(s.price)||0;});var ex=_siteExtraCharges(p);var b=billingSummary(p);"+
     "return {id:p.id,old:n+ex.ups+ex.crs,net:b.net,out:b.out,paid:b.paid,waiting:b.waiting,anyAllow:(p.selections||[]).some(selIsAllowance),line:houseMoneyLine(p),"+
-    "oldLine:(function(){var c=n+ex.ups+ex.crs,pd=sitePaidTotal(p);return (c>0.005||pd>0.005)?'Paid\\u00a0'+invUsd(pd)+' of\\u00a0'+invUsd(c)+'\\u00a0\\u00b7 owed\\u00a0'+invUsd(Math.max(0,c-pd)):null;})()};}))"));
+    "oldLine:(function(){var c=n+ex.ups+ex.crs,pd=sitePaidTotal(p);return (c>0.005||pd>0.005)?'Paid\\u00a0'+fmtMoney(pd)+' of\\u00a0'+fmtMoney(c)+'\\u00a0\\u00b7 owed\\u00a0'+fmtMoney(Math.max(0,c-pd)):null;})()};}))"));
   const moved=f.filter(x=>Math.abs(x.old-x.net)>0.005||Math.abs((x.old-x.paid)-x.out)>0.005||x.waiting!==0||x.anyAllow||(x.oldLine&&x.oldLine!==x.line));
   t('(f) no existing total moves: every demo house nets exactly the pre-R-1 sum, nothing waiting',f.length>=5&&moved.length===0,JSON.stringify(moved.slice(0,2)));
 
@@ -3169,14 +3169,14 @@ S('allowances');
   t('sheet: with an allowance, Item price + Budget line + credit switch replace the upgrade field',el('selAllowBox').style.display===''&&el('selPriceBox').style.display==='none'&&el('selCredit').classList.contains('on')&&el('selLine').options.length===1+$("costLines(P()).length"));
   $("initSearchSelects()");
   t('sheet: Budget line uses the same picker (with chevron) as Trade section, Room and Status',!!el('selCat__ss')&&!!el('selLine__ss')&&!!el('selLine__ss').querySelector('.ss-chev')&&el('selLine').classList.contains('ss-hidden')&&$("ssTitleOf('selLine')")==='Budget line');
-  t('sheet: live hint says the overage waits for the homeowner, in clay',el('selCostHint').textContent==='$120 over the allowance. The homeowner has to approve it first.'&&el('selCostHint').classList.contains('c-clay'),el('selCostHint').textContent+' | '+el('selCostHint').className);
+  t('sheet: live hint says the overage waits for the homeowner, in clay',el('selCostHint').textContent==='$120.00 over the allowance. The homeowner has to approve it first.'&&el('selCostHint').classList.contains('c-clay'),el('selCostHint').textContent+' | '+el('selCostHint').className);
   const lineId=$("(costLines(P())[0]||{}).id||''");if(lineId)setVal('selLine',lineId);
   $("saveSel()");
   const s1=JSON.parse($("JSON.stringify(P().selections.find(function(s){return s.item==='Sim faucet allowance';})||null)"));
   t('save: allowance, item price (cost), budget line and the derived charge are stored',s1&&s1.allowance===450&&s1.cost===570&&s1.price===120&&s1.approved===false&&String(s1.costLineId||'')===String(lineId||'')&&!('allowanceCredit' in s1),JSON.stringify(s1));
   const mid=JSON.parse($("JSON.stringify((function(p){var b=billingSummary(p);return {net:b.net,out:b.out,waiting:b.waiting,line:houseMoneyLine(p),unb:unbilledSelections(p).length,tot:moneyTotHTML(p),led:ledgerDetailHTML(p)};})(P()))"));
   t('(a) an unapproved overage is out of Contract and left',Math.abs(mid.net-before.net)<0.005&&Math.abs(mid.out-before.out)<0.005&&mid.line===before.line,JSON.stringify([before.net,mid.net,mid.line]));
-  t('(a) Money shows it as waiting on the homeowner',mid.waiting===120&&mid.tot.indexOf('$120 waiting on the homeowner')>=0);
+  t('(a) Money shows it as waiting on the homeowner',mid.waiting===120&&mid.tot.indexOf('$120.00 waiting on the homeowner')>=0);
   t('(a) it cannot go on an invoice until approved; the ledger lists it as waiting, not as an overage',mid.unb===before.unb&&mid.led.indexOf('Sim faucet allowance')<0&&mid.led.indexOf('Waiting on the homeowner')>=0);
   asClient('p1');$("clientSignoff("+s1.id+")");asBuilder();$("state.activeId='p1'");
   const ap=JSON.parse($("JSON.stringify((function(p){var b=billingSummary(p);return {net:b.net,waiting:b.waiting,unb:unbilledSelections(p).length,tot:moneyTotHTML(p)};})(P()))"));
@@ -3184,14 +3184,14 @@ S('allowances');
 
   /* credit on/off */
   $("openAddSel('Lighting')");setVal('selItem','Sim light allowance');setVal('selStatus','selected');$("setSelMode(true)");setVal('selAllow','300');$("selAllowRefresh()");setVal('selCost','260');$("selAllowRefresh()");
-  t('credit: hint says the unused allowance is credited (not clay)',el('selCostHint').textContent==='$40 under the allowance. Credited to the homeowner.'&&!el('selCostHint').classList.contains('c-clay'),el('selCostHint').textContent+' | '+el('selCostHint').className);
+  t('credit: hint says the unused allowance is credited (not clay)',el('selCostHint').textContent==='$40.00 under the allowance. Credited to the homeowner.'&&!el('selCostHint').classList.contains('c-clay'),el('selCostHint').textContent+' | '+el('selCostHint').className);
   $("saveSel()");
   const c1=JSON.parse($("JSON.stringify((function(p){var s=p.selections.find(function(x){return x.item==='Sim light allowance';});return {id:s.id,price:s.price,net:billingSummary(p).net};})(P()))"));
   t('credit: under the allowance credits the homeowner at once, no approval needed',c1.price===-40&&Math.abs(c1.net-(ap.net-40))<0.005,JSON.stringify(c1));
   $("openEditSel("+c1.id+")");
   t('credit: editing reloads the allowance and item price',el('selAllow').value==='300'&&el('selCost').value==='260'&&el('selAllowBox').style.display==='');
   $("document.getElementById('selCredit').click()");
-  t('credit: switched off, the hint says no credit on this house',el('selCostHint').textContent==='$40 under the allowance. No credit on this house.',el('selCostHint').textContent);
+  t('credit: switched off, the hint says no credit on this house',el('selCostHint').textContent==='$40.00 under the allowance. No credit on this house.',el('selCostHint').textContent);
   $("saveSel()");
   const c2=JSON.parse($("JSON.stringify((function(p){var s=p.selections.find(function(x){return x.item==='Sim light allowance';});return {price:s.price,net:billingSummary(p).net,flag:p.allowanceCredit};})(P()))"));
   t('credit: off for the house, under the allowance is $0 and the setting is saved on the house',c2.price===0&&c2.flag===false&&Math.abs(c2.net-ap.net)<0.005,JSON.stringify(c2));
@@ -3205,13 +3205,13 @@ S('allowances');
   $("(function(){var p=P();var s=p.selections.find(function(x){return x.item==='Sim faucet allowance';});s.invoicedIn='inv_sim';p.invoices.push({id:'inv_sim',no:'SIM-1',status:'sent',items:[{selId:s.id,amount:120}],total:120,payments:[]});})()");
   $("openEditSel("+s1.id+")");$("selAllowRefresh()");
   /* R-1 PR 3: an invoiced allowance stays editable; only the difference bills */
-  t('invoiced: the sheet stays editable and says what is already invoiced',!el('selAllow').readOnly&&!el('selCost').readOnly&&el('selCostHint').textContent==='$120 over the allowance. $120 is already invoiced.',el('selCostHint').textContent);
+  t('invoiced: the sheet stays editable and says what is already invoiced',!el('selAllow').readOnly&&!el('selCost').readOnly&&el('selCostHint').textContent==='$120.00 over the allowance. $120.00 is already invoiced.',el('selCostHint').textContent);
   setVal('selCost','900');$("saveSel()");
   const iv=$("JSON.stringify((function(s){var c=chargeState(selCharge(s,P()));return [s.price,s.cost,c.billed,c.waiting,c.counted];})(P().selections.find(function(x){return x.item==='Sim faucet allowance';})))");
   t('invoiced: saving keeps the invoiced $120; only the new $330 waits',iv==='[450,900,120,330,120]',iv);
   $("openAddSel('Lighting')");setVal('selItem','Sim bad');$("setSelMode(true)");setVal('selAllow','-5');$("selAllowRefresh()");
   const nb=$("P().selections.length");$("window._simToasts=[];window._simOT=window.toast;window.toast=function(m){window._simToasts.push(m);};");$("saveSel()");$("window.toast=window._simOT;");
-  t('a negative allowance is refused, with the toast',$("P().selections.length")===nb&&$("JSON.stringify(window._simToasts)")===JSON.stringify(['Allowance and price can\u2019t be less than $0.']),$("JSON.stringify(window._simToasts)"));$("closeAddSel()");
+  t('a negative allowance is refused, with the toast',$("P().selections.length")===nb&&$("JSON.stringify(window._simToasts)")===JSON.stringify(['No minus sign. Pick credit instead.']),$("JSON.stringify(window._simToasts)"));$("closeAddSel()");
   /* clean up so nothing here leaks into later runs */
   $("(function(){var p=P();p.selections=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim ')!==0||x.item==='Sim skylight — fixed';});p.invoices=p.invoices.filter(function(v){return v.id!=='inv_sim';});delete p.allowanceCredit;})()");
   t('wording: Agency\u2019s allowance strings, curly apostrophes',SRC.indexOf('Leave blank if this item has no allowance.')<0&&SRC.indexOf('Put 0 if there\u2019s no upgrade or credit on this item.')>=0&&SRC.indexOf("Put 0 if there's no upgrade")<0&&SRC.indexOf('No allowance on this item?')<0&&SRC.indexOf('For this house only. If the price comes in under the allowance, the homeowner gets the difference as a credit.')>=0&&SRC.indexOf('If an item costs less than its allowance')<0&&SRC.indexOf("can\u2019t be less than $0.")>=0&&SRC.indexOf("can't be less than")<0&&SRC.indexOf("homeowner\u2019s price for this item")<0&&SRC.indexOf('What the homeowner pays for it. Not your cost.')>=0&&SRC.indexOf('Leave blank for a plain upgrade')<0&&SRC.indexOf('need to be amounts of')<0);
@@ -3234,28 +3234,28 @@ S('allowances-2');
   const s0=get('Sim2 faucet');
   /* (c) homeowner card, waiting */
   const c0=card(s0.id);
-  t('(c) homeowner card shows allowance, item price and the overage, waiting on them',txt(c0).indexOf('Allowance $450 · price $570 · $120 over · needs your OK')>=0&&c0.indexOf('c-clay')>=0&&c0.indexOf('class="price')<0&&/>Approve</.test(c0),txt(c0));
+  t('(c) homeowner card shows allowance, item price and the overage, waiting on them',txt(c0).indexOf('Allowance $450.00 · price $570.00 · $120.00 over · needs your OK')>=0&&c0.indexOf('c-clay')>=0&&c0.indexOf('class="price')<0&&/>Approve</.test(c0),txt(c0));
   approve(s0.id);
   const c1=card(s0.id);
-  t('(c) after Approve: the card keeps the numbers, drops needs your OK, says Approved',txt(c1).indexOf('Allowance $450 · price $570 · $120 over')>=0&&c1.indexOf('needs your OK')<0&&c1.indexOf('✓ Approved')>=0,txt(c1));
-  t('(c) the card line breaks only between whole pieces, each keeping its \u00b7 at the end',(function(){var sp=(c0.split('cl-allow')[1]||'').match(/<span class="ws-nw">[\s\S]*?<\/span>(<\/span>)?/g)||[];return sp.length===4&&/Allowance \$450 ·<\/span>$/.test(sp[0])&&/price \$570 ·<\/span>$/.test(sp[1])&&/\$120 over ·<\/span>$/.test(sp[2])&&/needs your OK<\/span><\/span>$/.test(sp[3]);})(),(c0.split('cl-allow')[1]||'').slice(0,400));
+  t('(c) after Approve: the card keeps the numbers, drops needs your OK, says Approved',txt(c1).indexOf('Allowance $450.00 · price $570.00 · $120.00 over')>=0&&c1.indexOf('needs your OK')<0&&c1.indexOf('✓ Approved')>=0,txt(c1));
+  t('(c) the card line breaks only between whole pieces, each keeping its \u00b7 at the end',(function(){var sp=(c0.split('cl-allow')[1]||'').match(/<span class="ws-nw">[\s\S]*?<\/span>(<\/span>)?/g)||[];return sp.length===4&&/Allowance \$450\.00 ·<\/span>$/.test(sp[0])&&/price \$570\.00 ·<\/span>$/.test(sp[1])&&/\$120\.00 over ·<\/span>$/.test(sp[2])&&/needs your OK<\/span><\/span>$/.test(sp[3]);})(),(c0.split('cl-allow')[1]||'').slice(0,400));
   t('(c) the card never shows builder cost: only allowance, item price and the stored difference',(function(){const nums=(txt(c1).match(/\$[\d,]+/g)||[]);return nums.join(',')==='$450,$570,$120';})(),txt(c1));
   /* (a) same overage: approval kept */
   $("openEditSel("+s0.id+")");$("selAllowRefresh()");
   const h1=hint();
-  t('(a) sheet: an approved, unchanged overage says so and is not clay',h1.t==='$120 over the allowance. Approved by the homeowner.'&&!h1.clay,JSON.stringify(h1));
+  t('(a) sheet: an approved, unchanged overage says so and is not clay',h1.t==='$120.00 over the allowance. Approved by the homeowner.'&&!h1.clay,JSON.stringify(h1));
   setVal('selNote','sim note');$("saveSel()");
   t('(a) saving without changing the overage keeps the approval',get('Sim2 faucet').approved===true);
   /* (a) overage changes: approval resets */
   $("openEditSel("+s0.id+")");setVal('selCost','600');$("selAllowRefresh()");
   const h2=hint();
-  t('(a) sheet: a changed overage says the homeowner will be asked again, in clay',h2.t==='$150 over the allowance. The homeowner approved $120 before, so they have to approve the new amount.'&&h2.clay,JSON.stringify(h2));
+  t('(a) sheet: a changed overage says the homeowner will be asked again, in clay',h2.t==='$150.00 over the allowance. The homeowner approved $120.00 before, so they have to approve the new amount.'&&h2.clay,JSON.stringify(h2));
   const before=get('Sim2 faucet');$("saveSel()");const s2=get('Sim2 faucet');
   const w2=$("billingSummary(P()).waiting");
   t('(a) a changed overage resets the approval and waits again',s2.price===150&&s2.approved===false&&s2.signed==null&&w2>=150-0.005,JSON.stringify([s2.price,s2.approved,s2.signed,w2]));
   /* (b) the notice */
   const nt=JSON.parse($("JSON.stringify(Notify.selReapprove("+JSON.stringify(before)+","+JSON.stringify(s2)+",'p1'))"));
-  t('(b) the homeowner gets one notice: Needs your OK again, with the new overage',!!nt&&nt.aud==='client'&&nt.title==='Needs your OK again'&&nt.body==='Sim2 faucet is now $150 over the allowance'&&nt.key==='selre:p1:'+s2.id+':150',JSON.stringify(nt));
+  t('(b) the homeowner gets one notice: Needs your OK again, with the new overage',!!nt&&nt.aud==='client'&&nt.title==='Needs your OK again'&&nt.body==='Sim2 faucet is now $150.00 over the allowance'&&nt.key==='selre:p1:'+s2.id+':150',JSON.stringify(nt));
   const pushed=JSON.parse($("(function(){var o="+JSON.stringify(before)+",n="+JSON.stringify(s2)+";var p=P();var ses=state.session;var k0=Notify.list().length;"+
     "state.session={role:'builder',name:'You'};Notify.selChanged(p,o,n);var b=Notify.list().length-k0;"+
     "state.session={role:'client',site:'p1'};Notify.selChanged(p,o,n);var c=Notify.list().length-k0-b;var top=Notify.list()[0];Notify.selChanged(p,o,n);var again=Notify.list().length-k0-b-c;"+
@@ -3268,7 +3268,7 @@ S('allowances-2');
   t('(b) no notice for a plain upgrade, the homeowner\u2019s own un-approve, an item never approved, or a credit',quiet.every(x=>x===null),JSON.stringify(quiet));
   t('(b) the sync merge of a selection runs the notice check',$("String(Sync._attachColls)").indexOf("c.sub==='sel'")>=0&&$("String(Sync._attachColls)").indexOf('Notify.selChanged')>=0);
   const c2=card(s0.id);
-  t('(c) the card is waiting again after the change',txt(c2).indexOf('Allowance $450 · price $600 · $150 over · needs your OK')>=0&&/>Approve</.test(c2),txt(c2));
+  t('(c) the card is waiting again after the change',txt(c2).indexOf('Allowance $450.00 · price $600.00 · $150.00 over · needs your OK')>=0&&/>Approve</.test(c2),txt(c2));
   /* (a) drops under the allowance: no longer waits */
   approve(s0.id);
   $("openEditSel("+s0.id+")");setVal('selCost','400');$("selAllowRefresh()");$("saveSel()");
@@ -3276,7 +3276,7 @@ S('allowances-2');
   t('(a) at or under the allowance it no longer waits (a credit never needs approval)',s3.price===-50&&$("chargeState(selCharge("+SEL('Sim2 faucet')+")).state")==='credit'&&$("billingSummary(P()).waiting")===0,JSON.stringify(s3));
   $("openEditSel("+s0.id+")");setVal('selCost','500');$("selAllowRefresh()");
   const h4=hint();$("saveSel()");
-  t('(a) back over the allowance from a credit: waits again, with the plain hint',get('Sim2 faucet').approved===false&&get('Sim2 faucet').price===50&&h4.t==='$50 over the allowance. The homeowner has to approve it first.'&&h4.clay,JSON.stringify(h4));
+  t('(a) back over the allowance from a credit: waits again, with the plain hint',get('Sim2 faucet').approved===false&&get('Sim2 faucet').price===50&&h4.t==='$50.00 over the allowance. The homeowner has to approve it first.'&&h4.clay,JSON.stringify(h4));
   /* (a) a plain approved upgrade that becomes an allowance overage */
   $("openAddSel('Windows')");setVal('selItem','Sim2 plain');setVal('selStatus','selected');setVal('selPrice','300');$("saveSel()");
   const pl=get('Sim2 plain');approve(pl.id);
@@ -3293,10 +3293,10 @@ S('allowances-2');
   const base=$("billingSummary(P()).unbilled");
   $("openAddSel('Lighting')");setVal('selItem','Sim2 light');setVal('selStatus','selected');$("setSelMode(true)");setVal('selAllow','300');$("selAllowRefresh()");setVal('selCost',String(Math.round(300-base-40)));$("selAllowRefresh()");$("saveSel()");
   const mt=JSON.parse($("JSON.stringify({u:billingSummary(P()).unbilled,h:moneyTotHTML(P())})"));
-  t('(d) Money shows a credit that is not on an invoice yet',Math.abs(mt.u+40)<0.005&&mt.h.indexOf('$40 credit not yet invoiced')>=0,JSON.stringify(mt.u));
+  t('(d) Money shows a credit that is not on an invoice yet',Math.abs(mt.u+40)<0.005&&mt.h.indexOf('$40.00 credit not yet invoiced')>=0,JSON.stringify(mt.u));
   /* clean up */
   $("(function(){var p=P();p.selections=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim2 ')!==0;});})()");
-  t('wording: Agency\u2019s PR 2 strings',SRC.indexOf("before, so they have to approve the new amount.")>=0&&SRC.indexOf("approve it again")<0&&SRC.indexOf("' is now '+invUsd(amt)+' over the allowance'}")>=0&&SRC.indexOf("over the allowance.'}")<0&&SRC.indexOf("esc('price '+invUsd(s.cost))")>=0&&SRC.indexOf("' · item '")<0);
+  t('wording: Agency\u2019s PR 2 strings',SRC.indexOf("before, so they have to approve the new amount.")>=0&&SRC.indexOf("approve it again")<0&&SRC.indexOf("' is now '+fmtMoney(amt)+' over the allowance'}")>=0&&SRC.indexOf("over the allowance.'}")<0&&SRC.indexOf("esc('price '+fmtMoney(s.cost))")>=0&&SRC.indexOf("' · item '")<0);
 })();
 
 /* ════ APPROVE WAITS FOR THE SERVER (2.457.0) ════
@@ -3543,18 +3543,18 @@ S('allowances-3');
   t('(a) the approved overage goes on an invoice as before',i1.items.length===1&&i1.items[0].amount===120&&String(i1.items[0].selId)===String(s0.id)&&get('Sim3 faucet').invoicedIn===i1.id&&st('Sim3 faucet').state==='invoiced'&&unb('Sim3 faucet')===0,JSON.stringify(i1.items));
   /* (a) price up after the invoice: only the difference waits */
   const h1=edit(s0.id,700);
-  t('(a) sheet: the invoiced part is named and the new difference waits, in clay',h1.t==='$250 over the allowance. $120 is already invoiced. The homeowner has to approve the other $130 first.'&&h1.clay&&!el('selCost').readOnly,JSON.stringify(h1));
+  t('(a) sheet: the invoiced part is named and the new difference waits, in clay',h1.t==='$250.00 over the allowance. $120.00 is already invoiced. The homeowner has to approve the other $130.00 first.'&&h1.clay&&!el('selCost').readOnly,JSON.stringify(h1));
   const pre=get('Sim3 faucet');$("saveSel()");const s1=get('Sim3 faucet');const c1=st('Sim3 faucet');const b1=bs();
   t('(a) price up: the $130 difference waits; the invoiced $120 still counts and is not reset',s1.price===250&&s1.approved===false&&c1.state==='waiting'&&c1.billed===120&&c1.waiting===130&&c1.counted===120&&Math.abs(b1.net-b0.net)<0.005&&Math.abs(b1.waiting-b0.waiting-130)<0.005,JSON.stringify([c1,b0.net,b1.net]));
   t('(a) the sent invoice is never rewritten, and a waiting difference cannot be invoiced',JSON.stringify(lastInv().items)===JSON.stringify(i1.items)&&lastInv().total===i1.total&&unb('Sim3 faucet')===0&&!$("unbilledSelections(P()).some(function(x){return x.item==='Sim3 faucet';})"));
   const nt=JSON.parse($("JSON.stringify(Notify.selReapprove("+JSON.stringify(pre)+","+JSON.stringify(s1)+",'p1'))"));
-  t('(a) the homeowner is asked again (same notice as PR 2)',!!nt&&nt.title==='Needs your OK again'&&nt.body==='Sim3 faucet is now $250 over the allowance',JSON.stringify(nt));
+  t('(a) the homeowner is asked again (same notice as PR 2)',!!nt&&nt.title==='Needs your OK again'&&nt.body==='Sim3 faucet is now $250.00 over the allowance',JSON.stringify(nt));
   const cd=txt(card(s0.id));
-  t('(a) homeowner card waits on them and never shows builder cost',cd.indexOf('Allowance $450 · price $700 · $250 over · needs your OK')>=0&&(cd.match(/\$[\d,]+/g)||[]).join(',')==='$450,$700,$250',cd);
+  t('(a) homeowner card waits on them and never shows builder cost',cd.indexOf('Allowance $450.00 · price $700.00 · $250.00 over · needs your OK')>=0&&(cd.match(/\$[\d,]+/g)||[]).join(',')==='$450,$700,$250',cd);
   /* approve: the difference goes on the next invoice, alone */
   approve(s0.id);
   const h2=edit(s0.id,700);$("closeAddSel()");
-  t('(a) sheet: once approved, the difference goes on the next invoice (not clay)',h2.t==='$250 over the allowance. $120 is already invoiced. The other $130 goes on the next invoice.'&&!h2.clay,JSON.stringify(h2));
+  t('(a) sheet: once approved, the difference goes on the next invoice (not clay)',h2.t==='$250.00 over the allowance. $120.00 is already invoiced. The other $130.00 goes on the next invoice.'&&!h2.clay,JSON.stringify(h2));
   const b2=bs();
   t('(a) approved: the $130 counts and is the only unbilled part',get('Sim3 faucet').approved===true&&st('Sim3 faucet').state==='approved'&&unb('Sim3 faucet')===130&&Math.abs(b2.net-b0.net-130)<0.005&&Math.abs(b2.unbilled-b1.unbilled-130)<0.005,JSON.stringify([b0,b1,b2]));
   const row=compose(s0.id);$('invSave(false)');const i2=lastInv();
@@ -3562,7 +3562,7 @@ S('allowances-3');
   t('(a) after the second invoice nothing is left to bill or re-bill',st('Sim3 faucet').state==='invoiced'&&st('Sim3 faucet').billed===250&&unb('Sim3 faucet')===0&&$("composeSelections(P()).every(function(x){return x.item!=='Sim3 faucet';})"));
   /* price down after the invoice: a credit, no approval */
   const h3=edit(s0.id,500);
-  t('(a) sheet: a lower price is credited on the next invoice (not clay)',h3.t==='$50 over the allowance. $250 is already invoiced. The other $200 goes on the next invoice as a credit.'&&!h3.clay,JSON.stringify(h3));
+  t('(a) sheet: a lower price is credited on the next invoice (not clay)',h3.t==='$50.00 over the allowance. $250.00 is already invoiced. The other $200.00 goes on the next invoice as a credit.'&&!h3.clay,JSON.stringify(h3));
   $("saveSel()");const c3=st('Sim3 faucet');
   t('(a) price down: a $200 credit, no approval needed, invoiced $250 untouched',get('Sim3 faucet').approved===true&&c3.state==='credit'&&c3.waiting===0&&c3.delta===-200&&unb('Sim3 faucet')===-200&&Math.abs(bs().net-b0.net+70)<0.005,JSON.stringify(c3));
   compose(s0.id);$('invSave(false)');const i3=lastInv();
@@ -3570,10 +3570,10 @@ S('allowances-3');
   $("invVoid('p1','"+i3.id+"')");$("ocConfirm()");
   t('(a) voiding the credit invoice frees only the credit again',$("P().invoices.find(function(v){return v.id==='"+i3.id+"';}).status")==='void'&&unb('Sim3 faucet')===-200&&st('Sim3 faucet').billed===250);
   const h4=edit(s0.id,400);
-  t('(a) sheet: under the allowance after an invoice',h4.t==='$50 under the allowance. $250 is already invoiced. The other $300 goes on the next invoice as a credit.',JSON.stringify(h4));
+  t('(a) sheet: under the allowance after an invoice',h4.t==='$50.00 under the allowance. $250.00 is already invoiced. The other $300.00 goes on the next invoice as a credit.',JSON.stringify(h4));
   const h5=edit(s0.id,450);$("closeAddSel()");
-  t('(a) sheet: right at the allowance after an invoice',h5.t==='Right at the allowance. $250 is already invoiced. The other $250 goes on the next invoice as a credit.',JSON.stringify(h5));
-  t('(a) a credit already invoiced is named as a credit',$("(function(){var p=P();var s={id:'x3',item:'x',allowance:450,cost:400,price:-50,approved:true,invoicedIn:'inv_x3'};p.invoices.push({id:'inv_x3',status:'sent',items:[{selId:'x3',amount:-50}],total:-50});var r=selReapproval(s,-50,p);p.invoices.pop();return JSON.stringify([r.billed,r.delta]);})()")==='[-50,0]'&&SRC.indexOf("'A '+invUsd(-b)+' credit':invUsd(b))+' is already invoiced.'")>=0);
+  t('(a) sheet: right at the allowance after an invoice',h5.t==='Right at the allowance. $250.00 is already invoiced. The other $250.00 goes on the next invoice as a credit.',JSON.stringify(h5));
+  t('(a) a credit already invoiced is named as a credit',$("(function(){var p=P();var s={id:'x3',item:'x',allowance:450,cost:400,price:-50,approved:true,invoicedIn:'inv_x3'};p.invoices.push({id:'inv_x3',status:'sent',items:[{selId:'x3',amount:-50}],total:-50});var r=selReapproval(s,-50,p);p.invoices.pop();return JSON.stringify([r.billed,r.delta]);})()")==='[-50,0]'&&SRC.indexOf("'A '+fmtMoney(-b)+' credit':fmtMoney(b))+' is already invoiced.'")>=0);
   t('(a) a new selection never takes an id an invoice still names',$("(function(){var p=P();var hold=p.selections;var mx=hold.reduce(function(m,s){return Math.max(m,s.id);},0);p.invoices.push({id:'inv_idx',status:'void',items:[{selId:mx+5,amount:1}],total:1});openAddSel('Windows');document.getElementById('selItem').value='Sim3 id';document.getElementById('selPrice').value='10';saveSel();var s=p.selections.find(function(x){return x.item==='Sim3 id';});p.invoices.pop();return s&&s.id===mx+6;})()")===true);
   /* (f) plain selections: the old once-only rule */
   const pf=JSON.parse($("JSON.stringify(state.projects.map(function(p){var leg=(p.selections||[]).filter(function(x){return Number(x.price)&&SEL_STATUS.indexOf(x.status)>=1&&!x.invoicedIn&&!selIsAllowance(x);}).map(function(x){return x.id;}).join(',');var now=unbilledSelections(p).filter(function(x){return !selIsAllowance(x);}).map(function(x){return x.id;}).join(',');var plainInv=(p.selections||[]).filter(function(x){return x.invoicedIn&&!selIsAllowance(x);}).every(function(x){var c=chargeState(selCharge(x,p));return c.state==='invoiced'&&c.locked&&c.billed===undefined&&selUnbilledAmt(p,x)===0;});return {id:p.id,ok:leg===now&&plainInv};}))"));
@@ -3584,9 +3584,9 @@ S('allowances-3');
   t('(d) rollup: allowances on the line, and item prices picked so far',ar.n===2&&ar.allowance===750&&ar.used===500,JSON.stringify(ar));
   const mrow=txt($("moneyLineRowHTML(costLines(P()).find(function(l){return l.id==='"+L+"';}),costLineRollup(P(),'"+L+"'))"));
   const mrow2=$("moneyLineRowHTML(costLines(P()).find(function(l){return l.id==='"+L2+"';}),costLineRollup(P(),'"+L2+"'))");
-  t('(d) Money budget line says Allowances: $500 of $750 used; a line without allowances does not',mrow.indexOf('Allowances: $500 of $750 used')>=0&&mrow2.indexOf('Allowances:')<0,mrow);
+  t('(d) Money budget line says Allowances: $500.00 of $750.00 used; a line without allowances does not',mrow.indexOf('Allowances: $500.00 of $750.00 used')>=0&&mrow2.indexOf('Allowances:')<0,mrow);
   $("renderBudget()");
-  t('(d) the line shows on the Money page',$("isWideBudget()")||$("document.getElementById('budgetBody').textContent").indexOf('Allowances: $500 of $750 used')>=0);
+  t('(d) the line shows on the Money page',$("isWideBudget()")||$("document.getElementById('budgetBody').textContent").indexOf('Allowances: $500.00 of $750.00 used')>=0);
   t('(d) the homeowner never sees the rollup',['home','specs','money'].every(v=>{const h=clientHTML('p1',v);asBuilder();$("state.activeId='p1'");return String(h).indexOf('Allowances:')<0;}));
   /* (c) budget-line margin uses item price */
   const mg=JSON.parse($("JSON.stringify(costLineMargin(P(),'"+L+"'))"));const ex=$("costLineRollup(P(),'"+L+"').exposure");
@@ -3594,7 +3594,7 @@ S('allowances-3');
   $("costLines(P()).find(function(l){return l.id==='"+L+"';}).selId="+JSON.stringify(s0.id));
   t('(c) margin: a line tied to the same allowance counts it once',$("costLineMargin(P(),'"+L+"').price")===500);
   $("openCostLine('"+L+"')");const ch=txt($("document.getElementById('clMargin').innerHTML"));$("closeCostLine&&closeCostLine()");
-  t('(c) the cost-line sheet shows Homeowner pays the item price',ch.indexOf('Homeowner pays $500 · your cost '+$("invUsd(costLineRollup(P(),'"+L+"').exposure)"))===0,ch);
+  t('(c) the cost-line sheet shows Homeowner pays the item price',ch.indexOf('Homeowner pays $500.00 · your cost '+$("fmtMoney(costLineRollup(P(),'"+L+"').exposure)"))===0,ch);
   $("delete costLines(P()).find(function(l){return l.id==='"+L+"';}).selId");
   const pm=$("(function(){var p=P();var l=costLines(p).find(function(x){return x.selId;});if(!l)return true;var s=p.selections.find(function(x){return String(x.id)===String(l.selId);});return !s||selIsAllowance(s)||costLineMargin(p,l.id).price===(Number(s.price)||0)+p.selections.filter(function(x){return selIsAllowance(x)&&String(x.costLineId)===String(l.id)&&x!==s;}).reduce(function(a,x){return a+(Number(x.cost)||0);},0);})()");
   t('(c) a plain selection tied to a line still uses its price',pm===true);
@@ -3607,7 +3607,7 @@ S('allowances-3');
   /* clean up */
   $("(function(){var p=P();var ids=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim3 ')===0;}).map(function(x){return x.id;});p.selections=p.selections.filter(function(x){return ids.indexOf(x.id)<0;});p.invoices=p.invoices.filter(function(v){return !(v.items||[]).some(function(it){return ids.indexOf(it.selId)>=0;});});})()");
   t('clean up: no Sim3 records left',$("(P().invoices||[]).length")===nInv&&!$("P().selections.some(function(x){return String(x.item||'').indexOf('Sim3 ')===0;})"));
-  t('wording: PR 3 strings, curly apostrophes',SRC.indexOf("' The homeowner has to approve the other '+invUsd(d)+' first.'")>=0&&SRC.indexOf("homeowner\u2019s approval.'")<0&&SRC.indexOf("' goes on the next invoice.'")>=0&&SRC.indexOf("' goes on the next invoice as a credit.'")>=0&&SRC.indexOf("difference is credited on the next invoice")<0&&SRC.indexOf("'Right at the allowance.'")>=0&&SRC.indexOf("Allowances: '+invUsd(al.used)+' of '+invUsd(al.allowance)+' used")>=0&&SRC.indexOf('Already invoiced, so the allowance')<0);
+  t('wording: PR 3 strings, curly apostrophes',SRC.indexOf("' The homeowner has to approve the other '+fmtMoney(d)+' first.'")>=0&&SRC.indexOf("homeowner\u2019s approval.'")<0&&SRC.indexOf("' goes on the next invoice.'")>=0&&SRC.indexOf("' goes on the next invoice as a credit.'")>=0&&SRC.indexOf("difference is credited on the next invoice")<0&&SRC.indexOf("'Right at the allowance.'")>=0&&SRC.indexOf("Allowances: '+fmtMoney(al.used)+' of '+fmtMoney(al.allowance)+' used")>=0&&SRC.indexOf('Already invoiced, so the allowance')<0);
 })();
 
 /* ════ SELECTION SHEET: HOW IT’S PRICED (2.459.0) ════
@@ -3663,7 +3663,7 @@ S('price-switch');
   t('budget line sheet: the margin sits under Budget amount, not right under Tied to a homeowner selection',$("(function(){var m=document.getElementById('clMargin');var b=document.getElementById('clBudget');var s=document.getElementById('clSel');return !!(b.compareDocumentPosition(m)&4)&&!!(m.compareDocumentPosition(s)&4)&&s.nextElementSibling!==m;})()")===true);
   $("closeAddSel()");
   $("(function(){var p=P();p.selections=p.selections.filter(function(x){return String(x.item||'').indexOf('Sim4 ')!==0;});})()");
-  t('wording: switch strings word for word, curly apostrophes',SRC.indexOf('>How it\u2019s priced<')>=0&&SRC.indexOf("How it's priced")<0&&SRC.indexOf('>Upgrade or credit<')>=0&&SRC.indexOf('>The amount the contract sets aside for this item.<')>=0&&SRC.indexOf('>Price of what they picked<')>=0&&SRC.indexOf('>Item price<')<0&&SRC.indexOf("'Add the price once the homeowner picks.'")>=0&&SRC.indexOf('Add the item price once')<0&&SRC.indexOf('>Upgrade or credit amount<')>=0&&SRC.indexOf('Upgrade $ or credit')<0&&SRC.indexOf('placeholder="e.g. 2100, or -800 for a credit"')>=0&&SRC.indexOf('Allowance and price can\u2019t be less than $0.')>=0&&SRC.indexOf("'Std'")<0);
+  t('wording: switch strings word for word, curly apostrophes',SRC.indexOf('>How it\u2019s priced<')>=0&&SRC.indexOf("How it's priced")<0&&SRC.indexOf('>Upgrade or credit<')>=0&&SRC.indexOf('>The amount the contract sets aside for this item.<')>=0&&SRC.indexOf('>Price of what they picked<')>=0&&SRC.indexOf('>Item price<')<0&&SRC.indexOf("'Add the price once the homeowner picks.'")>=0&&SRC.indexOf('Add the item price once')<0&&SRC.indexOf('>Upgrade or credit amount<')>=0&&SRC.indexOf('Upgrade $ or credit')<0&&SRC.indexOf('placeholder="e.g. 2100"')>=0&&SRC.indexOf('placeholder="e.g. 2100, or -800 for a credit"')<0&&SRC.indexOf('Allowance and price can\u2019t be less than $0.')>=0&&SRC.indexOf("'Std'")<0);
 })();
 
 /* ════ MONEY WORDS (2.460.0) ════
@@ -3675,21 +3675,21 @@ S('money-words');
   asBuilder();$("state.activeId='p1'");
   /* house Money tile and briefing strip: Paid {paid} of {net} · owed {out} (Agency 10/4) */
   const ml=$("(function(){var p=JSON.parse(JSON.stringify(P()));p.selections=[{id:1,item:'x',cat:'Windows',status:'selected',price:1000}];p.invoices=[];p.payments=[{id:'y',amount:400,label:'Deposit'}];return houseMoneyLine(p);})()");
-  t('Money line: Paid {paid} of {net} · owed {out}',ml==='Paid\u00a0$400 of\u00a0$1,000\u00a0· owed\u00a0$600',ml);
+  t('Money line: Paid {paid} of {net} · owed {out}',ml==='Paid\u00a0$400.00 of\u00a0$1,000.00\u00a0· owed\u00a0$600.00',ml);
   $("nyOpenHouse('p1')");
   const hd=JSON.parse($("JSON.stringify({door:(document.querySelector('#houseBody [data-door=money] .m')||{}).textContent||'',strip:(document.querySelector('#houseBody .pkt-strip .meta')||{}).textContent||'',line:houseMoneyLine(P())})"));
   $("try{closeHouse();}catch(e){}");asBuilder();$("state.activeId='p1'");
   t('house Money tile and briefing strip both use the short line',hd.door===hd.line&&hd.line.indexOf('Paid\u00a0')===0&&hd.strip.indexOf(hd.line)>=0&&hd.strip.indexOf('Upgrades & credits')<0,JSON.stringify(hd));
   /* On budget only when exactly on */
   const bl=JSON.parse($("JSON.stringify([700,1000,1300].map(function(spent){var p=JSON.parse(JSON.stringify(P()));p.selections=[];p.invoices=[];p.payments=[];p.costs=[{rt:'line',id:'L',label:'x',budget:1000},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:spent}];return houseMoneyLine(p);}))"));
-  t('budget line: Under budget · {x} left when under; On budget only when exact; {x} over budget when gone over (Agency 10/5)',bl[0]==='Under\u00a0budget\u00a0· $300\u00a0left'&&bl[1]==='On budget'&&bl[2]==='$300\u00a0over\u00a0budget',JSON.stringify(bl));
+  t('budget line: Under budget · {x} left when under; On budget only when exact; {x} over budget when gone over (Agency 10/5)',bl[0]==='Under\u00a0budget\u00a0· $300.00\u00a0left'&&bl[1]==='On budget'&&bl[2]==='$300.00\u00a0over\u00a0budget',JSON.stringify(bl));
   /* homeowner credit balance (PM) */
-  t('homeowner line: below $0 reads as a credit, a positive amount',$("clientStillToPayLine(-250)")==='$250 credit'&&$("clientStillToPayLine(300)")==='$300 still to pay'&&$("clientStillToPayLine(0)")==='$0 still to pay');
+  t('homeowner line: below $0.00 reads as a credit, a positive amount',$("clientStillToPayLine(-250)")==='$250.00 credit'&&$("clientStillToPayLine(300)")==='$300.00 still to pay'&&$("clientStillToPayLine(0)")==='$0.00 still to pay');
   const out0=$("billingSummary(P()).out");
   $("P().payments=(P().payments||[]).concat([{id:'sim_mw_pay',amount:"+(Math.round(out0)+500)+",label:'Sim overpay',t:Date.now()}])");
   const neg=JSON.parse($("JSON.stringify({out:billingSummary(P()).out,line:clientCostsHTML(P()).line})"));
   const home=txt(clientHTML('p1','home'));asBuilder();$("state.activeId='p1'");
-  t('homeowner with a negative balance: the Money door says $X credit, never still to pay',neg.out<-0.005&&neg.line==='$'+Math.abs(neg.out).toLocaleString()+' credit'&&home.indexOf(neg.line)>=0&&home.indexOf('still to pay')<0,JSON.stringify(neg));
+  t('homeowner with a negative balance: the Money door says $X credit, never still to pay',neg.out<-0.005&&neg.line==='$'+Math.abs(neg.out).toLocaleString()+'.00 credit'&&home.indexOf(neg.line)>=0&&home.indexOf('still to pay')<0,JSON.stringify(neg));
   $("P().payments=P().payments.filter(function(x){return x.id!=='sim_mw_pay';})");
   /* approve words on the builder's selection list */
   const sl=$("(function(){renderSelections();return document.body.innerHTML;})()");
@@ -3703,7 +3703,7 @@ S('money-words');
   /* invoice chip and notice */
   t('a late invoice is Past due: chip and notice',$("invStatusChip('overdue')").indexOf('>Past due<')>=0&&SRC.indexOf("'Invoice past due · '+site")>=0&&SRC.indexOf('Invoice overdue')<0);
   /* every swap: new words in, old words out */
-  const IN=["'Paid\\u00a0'","' of\\u00a0'","'\\u00a0· owed\\u00a0'","'Under\\u00a0budget\\u00a0· '",'>Contracted</button>',"'Contracted','Paid'",'<span>Contracted</span>','<th class="n u-m25">Contracted</th>',"' contracted &middot; '","'Contract with'",'<i>contract ${invUsd(s)} · paid','— contract ${invUsd(contractSigned(c))}','paid over the contract</b>',"' from this contract. The original amount stays.'",'Budget, contracted, paid, and projected for the whole build on one sheet. Only your team sees it.',"<span>contracted</span>","'Payment':'Contract',",
+  const IN=["'Paid\\u00a0'","' of\\u00a0'","'\\u00a0· owed\\u00a0'","'Under\\u00a0budget\\u00a0· '",'>Contracted</button>',"'Contracted','Paid'",'<span>Contracted</span>','<th class="n u-m25">Contracted</th>',"' contracted &middot; '","'Contract with'",'<i>contract ${fmtMoney(s)} · paid','— contract ${fmtMoney(contractSigned(c))}','paid over the contract</b>',"' from this contract. The original amount stays.'",'Budget, contracted, paid, and projected for the whole build on one sheet. Only your team sees it.',"<span>contracted</span>","'Payment':'Contract',",
     "'The homeowner approves this from their own login.'",'See the homeowner\u2019s approval','Waiting for the homeowner to approve',"'\u2713 Approved':'Waiting'",'The homeowner approves each item from their own login.','<span>Approved</span><b>${date}</b>','<div class="so-k">Homeowner</div>','Approved from the homeowner\u2019s own login.',"' \\u00b7 approved'",
     '<h4>Upgrades &amp; credits</h4>','<span>Upgrades &amp; credits</span>','<div class="ld-sec">Upgrades &amp; overages</div>','No upgrades yet.','Total upgrades &amp; overages','<span>Upgrades &amp; overages</span>','<span>Upgrades minus credits</span>','No invoices yet. Bill the homeowner for upgrades and changes here.','its amount from upgrades &amp; credits.','Money the homeowner paid you. Add deposits and draws here. Payments on an invoice are entered on that invoice.','<div class="k">Upgrades &amp; payments</div>','<h2>Upgrades &amp; payments</h2>',
     '<span>Still owed</span>','What\u2019s still owed updates to match.','<span>Invoiced</span></div>',"' paid on invoices</span></div>'",'<span>Paid outside invoices</span>','paid outside invoices.</div>','Deposits and draws that aren\u2019t on an invoice go here. Payments on an invoice are entered on that invoice and show here too.','Every payment so far came in on an invoice.',"overdue:'Past due',paid",'invoice & past-due alerts','Approval and past-due alerts for',
@@ -3780,24 +3780,24 @@ S('budget-left');
   /* under, contracted greater than paid: 1000 budget, 600 contract, 200 paid on it */
   const u=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'},{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:200,toward:'C',payee:'Sub'}]);
   t('under, contracted > paid: left is budget minus contracted',u.left===400&&!u.over&&u.rem===400&&u.ro===false,JSON.stringify(u));
-  t('under, contracted > paid: phone row, desktop cell, card and house line all say $400',u.aside==='$400 left'&&u.cell==='$400'&&u.sub==='$600 used of $1,000'&&txt(u.card).indexOf('$400 Remaining')>=0&&u.house==='Under\u00a0budget\u00a0· $400\u00a0left',JSON.stringify([u.aside,u.cell,u.sub,u.house]));
+  t('under, contracted > paid: phone row, desktop cell, card and house line all say $400.00',u.aside==='$400.00 left'&&u.cell==='$400.00'&&u.sub==='$600.00 used of $1,000.00'&&txt(u.card).indexOf('$400.00 Remaining')>=0&&u.house==='Under\u00a0budget\u00a0· $400.00\u00a0left',JSON.stringify([u.aside,u.cell,u.sub,u.house]));
   /* paid greater than contracted: 400 contract, 700 paid not tied to it */
   const sp=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:400,payee:'Sub'},{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:700,payee:'Supplier'}]);
-  t('paid > contracted: left is budget minus paid',sp.left===300&&sp.exposure===700&&sp.aside==='$300 left'&&sp.cell==='$300'&&sp.sub==='$700 used of $1,000',JSON.stringify(sp));
+  t('paid > contracted: left is budget minus paid',sp.left===300&&sp.exposure===700&&sp.aside==='$300.00 left'&&sp.cell==='$300.00'&&sp.sub==='$700.00 used of $1,000.00',JSON.stringify(sp));
   /* paid only, no contract */
   const po=L([line(1000),{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:650,payee:'Supplier'}]);
-  t('paid only: left is budget minus paid',po.left===350&&po.aside==='$350 left'&&po.cell==='$350',JSON.stringify([po.left,po.aside,po.cell]));
+  t('paid only: left is budget minus paid',po.left===350&&po.aside==='$350.00 left'&&po.cell==='$350.00',JSON.stringify([po.left,po.aside,po.cell]));
   /* exact */
   const ex=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:1000,payee:'Sub'},{rt:'actual',id:'P',lineId:'L',kind:'spent',amount:300,toward:'C',payee:'Sub'}]);
-  t('exactly on budget: left $0, no aside on the phone row, $0 on desktop, On budget on the house',ex.left===0&&!ex.over&&ex.aside===''&&ex.cell==='$0'&&ex.house==='On budget',JSON.stringify([ex.left,ex.aside,ex.cell,ex.house]));
+  t('exactly on budget: left $0,.00 no aside on the phone row, $0.00 on desktop, On budget on the house',ex.left===0&&!ex.over&&ex.aside===''&&ex.cell==='$0.00'&&ex.house==='On budget',JSON.stringify([ex.left,ex.aside,ex.cell,ex.house]));
   /* over */
   const ov=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:1200,payee:'Sub'}]);
-  t('over budget: $200 over on the phone row, desktop, card and house',ov.left===-200&&ov.over&&ov.ro===true&&ov.aside==='$200 over'&&ov.cell==='$200 over'&&txt(ov.card).indexOf('$200 Over budget')>=0&&ov.house==='$200\u00a0over\u00a0budget',JSON.stringify([ov.aside,ov.cell,ov.house]));
+  t('over budget: $200.00 over on the phone row, desktop, card and house',ov.left===-200&&ov.over&&ov.ro===true&&ov.aside==='$200.00 over'&&ov.cell==='$200.00 over'&&txt(ov.card).indexOf('$200.00 Over budget')>=0&&ov.house==='$200.00\u00a0over\u00a0budget',JSON.stringify([ov.aside,ov.cell,ov.house]));
   /* the old disagreement: a builder projection does not move left */
   const pj=L([line(1000,{expect:1300}),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'}]);
-  t('a projected final cost above budget does not move left (it stays on Projected / vs budget)',pj.projected===1300&&pj.left===400&&pj.cell==='$400',JSON.stringify(pj));
+  t('a projected final cost above budget does not move left (it stays on Projected / vs budget)',pj.projected===1300&&pj.left===400&&pj.cell==='$400.00',JSON.stringify(pj));
   const nx=L([line(1000),{rt:'actual',id:'C',lineId:'L',kind:'contract',amount:600,payee:'Sub'}]);
-  t('no projection set: the phone row shows what is left (it used to show nothing)',nx.projected===1000&&nx.aside==='$400 left',JSON.stringify([nx.projected,nx.aside]));
+  t('no projection set: the phone row shows what is left (it used to show nothing)',nx.projected===1000&&nx.aside==='$400.00 left',JSON.stringify([nx.projected,nx.aside]));
   /* every demo line on every house: phone row and desktop agree */
   const all=JSON.parse($("JSON.stringify((function(){var bad=[],n=0;state.projects.forEach(function(p){var hold=state.activeId;state.activeId=p.id;var tb=budgetTableHTML(p);costLines(p).forEach(function(l){n++;var r=costLineRollup(p,l.id);var row=moneyLineRowHTML(l,r);var a=/row-aside[^\"]*\">([^<]*)</.exec(row);var re=new RegExp('id=\"bgtL-'+String(l.id).replace(/[^\\w-]/g,'')+'\">([^<]*)<');var m=re.exec(tb);var cell=m?m[1]:'?';var aside=a?a[1]:'';var want=aside===''?'$0':aside.replace(' left','');if(want!==cell)bad.push([p.id,l.id,aside,cell]);});state.activeId=hold;});return {n:n,bad:bad};})())"));
   t('every demo budget line: phone row left and desktop Remaining are the same number',all.n>=16&&all.bad.length===0,JSON.stringify(all.bad.slice(0,3)));
@@ -3817,29 +3817,29 @@ S('budget-left-words');
   const C=n=>({rt:'actual',id:'C',lineId:'L',kind:'contract',amount:n,payee:'Sub'});
   /* (a) used of */
   const a=R([line(1000),C(600)]);
-  t('(a) phone row: {x} used of {budget} · {y} left',a.sub==='$600 used of $1,000'&&a.aside==='$400 left'&&a.pieces===1,JSON.stringify(a));
+  t('(a) phone row: {x} used of {budget} · {y} left',a.sub==='$600.00 used of $1,000.00'&&a.aside==='$400.00 left'&&a.pieces===1,JSON.stringify(a));
   /* (b) projected over budget, used still under: projected {z} over on the money line, {y} left in the aside like every row (Agency 10/4) */
   const b=R([line(1000,{expect:1300}),C(600)]);
-  t('(b) projection over, used under: {x} used of {budget} · projected {z} over in clay, and the normal {y} left aside',b.sub==='$600 used of $1,000\u00a0· projected $300 over'&&b.aside==='$400 left'&&!b.warn&&b.clay&&b.pieces===2&&b.sub.indexOf('left')<0,JSON.stringify(b));
+  t('(b) projection over, used under: {x} used of {budget} · projected {z} over in clay, and the normal {y} left aside',b.sub==='$600.00 used of $1,000.00\u00a0· projected $300.00 over'&&b.aside==='$400.00 left'&&!b.warn&&b.clay&&b.pieces===2&&b.sub.indexOf('left')<0,JSON.stringify(b));
   t('(b) the aside is the plain left, never a combined form',b.aside.indexOf('projected')<0&&b.aside.indexOf('·')<0);
-  t('(b) each money amount sits inside a nowrap piece and the dot ends the first piece',/<span class="ws-nw">\$600 used of \$1,000(?:\u00a0|&nbsp;)·<\/span> <span class="ws-nw c-clay mn-proj">projected \$300 over<\/span>/.test(b.html),b.html);
+  t('(b) each money amount sits inside a nowrap piece and the dot ends the first piece',/<span class="ws-nw">\$600\.00 used of \$1,000\.00(?:\u00a0|&nbsp;)·<\/span> <span class="ws-nw c-clay mn-proj">projected \$300\.00 over<\/span>/.test(b.html),b.html);
   const be=R([line(1000,{expect:1250}),C(1000)]);
-  t('(b) exactly at budget with a projection over: projected {z} over, no left (nothing left, as on every row)',be.sub==='$1,000 used of $1,000\u00a0· projected $250 over'&&be.aside==='',JSON.stringify(be));
+  t('(b) exactly at budget with a projection over: projected {z} over, no left (nothing left, as on every row)',be.sub==='$1,000.00 used of $1,000.00\u00a0· projected $250.00 over'&&be.aside==='',JSON.stringify(be));
   const bo=R([line(1000,{expect:1500}),C(1200)]);
-  t('(b) a line actually over keeps its over display, no projected part',bo.aside==='$200 over'&&bo.warn&&bo.sub==='$1,200 used of $1,000'&&bo.html.indexOf('projected')<0,JSON.stringify(bo));
+  t('(b) a line actually over keeps its over display, no projected part',bo.aside==='$200.00 over'&&bo.warn&&bo.sub==='$1,200.00 used of $1,000.00'&&bo.html.indexOf('projected')<0,JSON.stringify(bo));
   const bu=R([line(1000,{expect:800}),C(600)]);
-  t('(b) a projection under budget adds nothing',bu.sub==='$600 used of $1,000'&&bu.aside==='$400 left',JSON.stringify(bu));
-  t('(b) the projected part reads Agency’s words',SRC.indexOf(">projected '+invUsd(r.projected-r.budget)+' over</span>'")>=0&&SRC.indexOf("' used of '")>=0);
+  t('(b) a projection under budget adds nothing',bu.sub==='$600.00 used of $1,000.00'&&bu.aside==='$400.00 left',JSON.stringify(bu));
+  t('(b) the projected part reads Agency’s words',SRC.indexOf(">projected '+fmtMoney(r.projected-r.budget)+' over</span>'")>=0&&SRC.indexOf("' used of '")>=0);
   /* Ink: house Money line never starts a line with the dot */
   const hl=$("houseMoneyLine(P())");
-  t('house Money line: the dot sticks to the end of the piece before it',hl.indexOf('\u00a0· owed\u00a0')>0&&hl.indexOf(' · ')<0&&/^Paid\u00a0\$[\d,]+ of\u00a0\$[\d,]+\u00a0· owed\u00a0\$[\d,]+$/.test(hl),JSON.stringify(hl));
+  t('house Money line: the dot sticks to the end of the piece before it',hl.indexOf('\u00a0· owed\u00a0')>0&&hl.indexOf(' · ')<0&&/^Paid\u00a0\$[\d,]+(?:\.\d\d)? of\u00a0\$[\d,]+(?:\.\d\d)?\u00a0· owed\u00a0\$[\d,]+(?:\.\d\d)?$/.test(hl),JSON.stringify(hl));
   t('house budget line: the same rule (Agency 10/5 words, no doubled over)',$("String(houseBudgetLine)").indexOf("'Under\\u00a0budget\\u00a0· '")>=0&&$("String(houseBudgetLine)").indexOf("'\\u00a0over\\u00a0budget'")>=0&&$("String(houseBudgetLine)").indexOf("'Projected '")>=0&&$("String(houseBudgetLine)").indexOf("Over\\u00a0budget")<0);
   /* 1 invoice card in credit */
   const out0=$("billingSummary(P()).out");
   $("P().payments=(P().payments||[]).concat([{id:'sim_bl_pay',amount:"+(Math.round(out0)+5000)+",label:'Sim overpay',t:Date.now()}])");
   const ic=JSON.parse($("JSON.stringify({out:billingSummary(P()).out,h:billingCardHTML(P())})"));
   $("P().payments=P().payments.filter(function(x){return x.id!=='sim_bl_pay';})");
-  const amt='$'+Math.abs(ic.out).toLocaleString();
+  const amt=$("fmtMoney(Math.abs("+ic.out+"))");
   t('1. invoice card in credit: Homeowner’s credit and a positive amount',ic.out<-0.005&&ic.h.indexOf('<b>'+amt+'</b><span>Homeowner\u2019s credit</span>')>=0&&ic.h.indexOf('Still owed')<0&&ic.h.indexOf('\u2212$')<0,ic.h.slice(0,300));
   t('1. invoice card not in credit: Still owed',$("billingCardHTML(P())").indexOf('<span>Still owed</span>')>=0);
   /* 2 Waiting chips and the filter label */
@@ -3873,10 +3873,11 @@ await (async function(){
   const FX=require('./qa-baseline/f2-money-2.462.0.json');
   const {EXTRACT,ALLOWANCE_HOUSE}=require('../scripts/f2-money-fixture.cjs');
   $2(EXTRACT);$2(ALLOWANCE_HOUSE);$2('__f2AddAllowanceHouse()');
-  const MONEY=['price','allowance','cost','costLineId','invoicedIn'];
+  const MONEY=['price','allowance','cost','costLineId','invoicedIn','priceC','allowanceC','costC'];
   const nFig=o=>(JSON.stringify(o).match(/\$|Included/g)||[]).length;
   const cmp=(got,want,fields)=>{const bad=[];Object.keys(want).forEach(h=>{(fields||Object.keys(want[h])).forEach(k=>{
-      const a=JSON.stringify((got[h]||{})[k]),b=JSON.stringify(want[h][k]);if(a!==b)bad.push(h+'.'+k+' got '+String(a).slice(0,90)+' want '+String(b).slice(0,90));});});return bad;};
+      const NZ=v=>typeof v==='string'?v.replace(/(\$[\d,]+)\.00(?!\d)/g,'$1'):Array.isArray(v)?v.map(NZ):(v&&typeof v==='object')?Object.keys(v).reduce((o,x)=>(o[x]=NZ(v[x]),o),{}):v;   /* 2.468.0: same figures, now with two decimals */
+      const a=JSON.stringify(NZ((got[h]||{})[k])),b=JSON.stringify(want[h][k]);if(a!==b)bad.push(h+'.'+k+' got '+String(a).slice(0,90)+' want '+String(b).slice(0,90));});});return bad;};
   const B_F=['houseLine','money','selLedger','selList','billingCard','invoices','ledger'],H_F=['homeowner','homeownerMoney'],C_F=['crew'];
 
   /* 1 · money guard, as built */
@@ -3912,7 +3913,7 @@ await (async function(){
       if(srt(selPutMoney(a,m))!==srt(want)){bad++;msg='round trip '+JSON.stringify(s);}}
     return {bad:bad,lazy:lazy,msg:msg};})()`);
   t('projection fuzz: 3000 random selections split into sel (no money) + selm (money only) and join back exactly',fz.bad===0&&fz.lazy>0,fz.msg);
-  t('the five money keys are exactly price, allowance, cost, costLineId, invoicedIn',$2("SEL_MONEY_KEYS.join()")===MONEY.join());
+  t('the money keys are the five (price, allowance, cost, costLineId, invoicedIn) plus their three cents twins',$2("SEL_MONEY_KEYS.join()")===MONEY.join());
 
   /* 3 · lazy selm: a selection with no selm shows no money and leaves totals alone */
   const lz=J(`(function(){state.session={role:'builder',name:'You',auth:{uid:'uB'}};var p=state.projects.find(function(x){return x.id==='p1';});
@@ -4065,26 +4066,26 @@ await (async function(){
   const subseq=(a,b)=>{let j=0;for(const x of b){if(j<a.length&&a[j]===x)j++;}return j===a.length;};
   const pmBad=[];Object.keys(FX.houses).forEach(h=>{const g=pmM[h],f=FX.houses[h];
     if(g.billingCard.length)pmBad.push(h+' invoice card shown');if(g.selLedger.length)pmBad.push(h+' selections ledger shown');
-    ['money'].forEach(k=>{if(!subseq(g[k],f[k]))pmBad.push(h+' '+k+' '+JSON.stringify(g[k]).slice(0,80)+' not within '+JSON.stringify(f[k]).slice(0,80));});
-    if(JSON.stringify(g.selList)!==JSON.stringify(f.selList))pmBad.push(h+' selList');});
+    ['money'].forEach(k=>{if(!subseq(g[k].map(x=>String(x).replace(/(\$[\d,]+)\.00(?!\d)/g,'$1')),f[k]))pmBad.push(h+' '+k+' '+JSON.stringify(g[k]).slice(0,80)+' not within '+JSON.stringify(f[k]).slice(0,80));});
+    if(JSON.stringify(g.selList).replace(/(\$[\d,]+)\.00(?!\d)/g,'$1')!==JSON.stringify(f.selList))pmBad.push(h+' selList');});
   const pmTxt=J(`state.projects.map(function(p){state.session=${JSON.stringify(PM)};return houseMoneyLine(p);}).join('|')`);
   const pmLines=pmTxt.split('|');
-  t('Money-only builder: invoice numbers hidden (card, ledger, paid/owed), never shown as $0; selection prices still shown',pmBad.length===0&&pmLines.every(x=>!/Paid|owed/.test(x)&&/^(|Under\u00a0budget\u00a0\u00b7 \$[\d,]+\u00a0left|\$[\d,]+\u00a0over\u00a0budget|Projected \$[\d,]+\u00a0over\u00a0budget|On budget)$/.test(x)),pmBad[0]||pmTxt.slice(0,160));
+  t('Money-only builder: invoice numbers hidden (card, ledger, paid/owed), never shown as $0.00; selection prices still shown',pmBad.length===0&&pmLines.every(x=>!/Paid|owed/.test(x)&&/^(|Under\u00a0budget\u00a0\u00b7 \$[\d,]+(?:\.\d\d)?\u00a0left|\$[\d,]+(?:\.\d\d)?\u00a0over\u00a0budget|Projected \$[\d,]+(?:\.\d\d)?\u00a0over\u00a0budget|On budget)$/.test(x)),pmBad[0]||pmTxt.slice(0,160));
   /* Ink (F-2) + Agency 10/5: the PM's house line falls back to the budget line. Direction always
      agrees with the Money sheet; a projection-only overage reads Projected {x} over budget with the
      sheet's amount; money already over reads {x} over budget with the amount gone over (the Build
      card's Over budget figure, budgetLeft). Never Under while the sheet says Over. */
   const agree=J(`(function(){var out=[];state.projects.forEach(function(p){state.session=${JSON.stringify(PM)};
       var line=houseMoneyLine(p).replace(/\u00a0/g,' ');var hero=moneyTotHTML(p).replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ');var cs=costSummary(p);
-      var hOver=/Over budget, projected/.test(hero),lProj=/^Projected \\$[\\d,]+ over budget$/.test(line),lAct=/^\\$[\\d,]+ over budget$/.test(line),lUnder=/^Under budget/.test(line);
-      var hAmt=(hero.match(/\\$[\\d,]+/)||[''])[0],lAmt=(line.match(/\\$[\\d,]+/)||[''])[0];
+      var hOver=/Over budget, projected/.test(hero),lProj=/^Projected \\$[\\d,]+(?:\\.\\d\\d)? over budget$/.test(line),lAct=/^\\$[\\d,]+(?:\\.\\d\\d)? over budget$/.test(line),lUnder=/^Under budget/.test(line);
+      var hAmt=(hero.match(/\\$[\\d,]+(?:\\.\\d\\d)?/)||[''])[0],lAmt=(line.match(/\\$[\\d,]+(?:\\.\\d\\d)?/)||[''])[0];
       var ok=!/Paid|owed/.test(line)&&!(lUnder&&hOver)&&(hOver===(lProj||lAct)||(lAct&&budgetOver(cs)))
-        &&(!lProj||(hAmt===lAmt&&!budgetOver(cs)))&&(!lAct||(budgetOver(cs)&&lAmt===invUsd(-budgetLeft(cs))));
+        &&(!lProj||(hAmt===lAmt&&!budgetOver(cs)))&&(!lAct||(budgetOver(cs)&&lAmt===fmtMoney(-budgetLeft(cs))));
       out.push({id:String(p.id),line:line,hero:hero.slice(0,40),over:hOver,form:lProj?'projected':lAct?'actual':lUnder?'under':line,ok:ok});});
     state.session={role:'builder',name:'You'};return out;})()`);
   t('Money-only builder: house line and Money sheet agree on direction on every house; projected-only = the sheet\u2019s amount; gone over = the amount gone over',agree.length===11&&agree.every(x=>x.ok)&&agree.filter(x=>x.over).length>=3,JSON.stringify(agree.filter(x=>!x.ok).slice(0,2)));
-  t('Money-only builder on p2: Projected $3,400 over budget (Money: $3,400 Over budget, projected)',(agree.find(x=>x.id==='p2')||{}).line==='Projected $3,400 over budget',JSON.stringify(agree.find(x=>x.id==='p2')));
-  t('Money-only builder on p3 (contracted already past budget): $1,400 over budget, the Build card\u2019s Over budget figure',(agree.find(x=>x.id==='p3')||{}).line==='$1,400 over budget',JSON.stringify(agree.find(x=>x.id==='p3')));
+  t('Money-only builder on p2: Projected $3,400.00 over budget (Money: $3,400.00 Over budget, projected)',(agree.find(x=>x.id==='p2')||{}).line==='Projected $3,400.00 over budget',JSON.stringify(agree.find(x=>x.id==='p2')));
+  t('Money-only builder on p3 (contracted already past budget): $1,400.00 over budget, the Build card\u2019s Over budget figure',(agree.find(x=>x.id==='p3')||{}).line==='$1,400.00 over budget',JSON.stringify(agree.find(x=>x.id==='p3')));
   /* Agency 10/5: no house line says over twice, for any builder, on any house, with or without invoices */
   const twice=J(`(function(){var bad=[],n=0;var S=[{role:'builder',name:'You'},${JSON.stringify(PM)},${JSON.stringify(SUP)},{role:'builder',name:'Kim',member:true,rpRole:'pm',gates:{moneyJob:true,moneyCo:true}}];
       state.projects.forEach(function(p0){[p0,Object.assign(JSON.parse(JSON.stringify(p0)),{invoices:[],selections:[],payments:[]})].forEach(function(p){S.forEach(function(se){state.session=se;var l=houseMoneyLine(p);n++;
@@ -4097,8 +4098,8 @@ await (async function(){
       var act=mk([{rt:'line',id:'L',label:'Framing',budget:20000},{rt:'actual',id:'A',lineId:'L',kind:'spent',amount:23400}]);
       var out={};[['owner',{role:'builder',name:'You'}],['pm',${JSON.stringify(PM)}]].forEach(function(x){state.session=x[1];out[x[0]]={proj:houseMoneyLine(proj),act:houseMoneyLine(act),projHero:moneyTotHTML(proj).replace(/<[^>]+>/g,' ').replace(/\\s+/g,' ').slice(0,40)};});
       state.session={role:'builder',name:'You'};return out;})()`);
-  t('projection only (contracted and paid still under): Projected $3,400 over budget, owner and PM alike',fx.owner.proj==='Projected $3,400\u00a0over\u00a0budget'&&fx.pm.proj===fx.owner.proj&&/\$3,400 Over budget, projected/.test(fx.owner.projHero),JSON.stringify(fx));
-  t('gone over (paid past the budget): $3,400 over budget, owner and PM alike, never Projected',fx.owner.act==='$3,400\u00a0over\u00a0budget'&&fx.pm.act===fx.owner.act,JSON.stringify(fx));
+  t('projection only (contracted and paid still under): Projected $3,400.00 over budget, owner and PM alike',fx.owner.proj==='Projected $3,400.00\u00a0over\u00a0budget'&&fx.pm.proj===fx.owner.proj&&/\$3,400\.00 Over budget, projected/.test(fx.owner.projHero),JSON.stringify(fx));
+  t('gone over (paid past the budget): $3,400.00 over budget, owner and PM alike, never Projected',fx.owner.act==='$3,400.00\u00a0over\u00a0budget'&&fx.pm.act===fx.owner.act,JSON.stringify(fx));
   t('Money-only builder: holds no invoices, writes nothing',J("state.projects.every(function(p){return !(p.invoices||[]).length;})")&&W().length===0);
   await phone('uX',SUP,'devX2');
   const supM=JSON.parse($2('__f2Money(null,'+JSON.stringify(SUP)+')'));
@@ -4198,6 +4199,102 @@ await (async function(){
   const pn=srvItems();
   t('a plain note with a photo reaches the server too',pn.length===1&&pn[0].photoId==='phTESTNOTE',JSON.stringify(pn));
   $2("__F.undefCheck=false;true");
+  /* ════ 2.468.0 · M-1 EXACT MONEY: one formatter, one amount box, whole cents ════ */
+  t('conversion report on the demo houses: zero amounts changed (every seeded amount was already a whole cent)',J("_moneyConv.length")===0,J("moneyConvText()"));
+  const TOAST_ON="window._simToasts=[];window._simOT=window.toast;window.toast=function(m){window._simToasts.push(m);};true";
+  const TOAST_OFF="(function(){var r=JSON.stringify(window._simToasts);window.toast=window._simOT;return r;})()";
+  $2("state.activeId='pdel';true");
+  /* parser table, on the real parseMoney */
+  const PT=J(`(function(){var o={};['2k','-500','$2,000.50','','$','1,2,3','12.345','2,000','2.000,50','500-600','1849.5','abc','5.','0'].forEach(function(x){var r=parseMoney(x,{});o[x]=r.ok?r.cents:('x:'+r.why);});o['0+']=parseMoney('0',{positive:true}).ok;return o;})()`);
+  t('parser table: "2k" refused',PT['2k']==='x:letters');
+  t('parser table: "-500" refused (no typed minus, so never for a payment)',PT['-500']==='x:minus');
+  t('parser table: "$2,000.50" is 200050 cents',PT['$2,000.50']===200050);
+  t('parser table: blank, "$", "1,2,3", "12.345", "2.000,50", a range, "5." are each refused',PT['']==='x:blank'&&PT['$']==='x:shape'&&PT['1,2,3']==='x:shape'&&PT['12.345']==='x:cents'&&PT['2.000,50']==='x:shape'&&PT['500-600']==='x:range'&&PT['5.']==='x:shape'&&PT['abc']==='x:letters',JSON.stringify(PT));
+  t('parser table: "2,000" and "1849.5" read exactly; $0 allowed unless an amount is required',PT['2,000']===200000&&PT['1849.5']===184950&&PT['0']===0&&PT['0+']===false);
+  t('formatter: always two decimals, a real minus ("$1,849.50", "−$400.00", "$10.13" half up)',$2("[fmtMoney(1849.5),fmtMoney(-400),fmtMoney(10.125),fmtMoney(1254.9199999999998),fmtMoney(0),fmtMoney(1234567)].join('|')")==='$1,849.50|\u2212$400.00|$10.13|$1,254.92|$0.00|$1,234,567.00');
+  t('invUsd and the inline $ joins are gone: no toLocaleString on an amount',SRC.indexOf('invUsd')<0&&!/'\$'\+Math\.abs\([^)]*\)\.toLocaleString/.test(SRC)&&SRC.indexOf('.toLocaleString()')<0);
+  /* property: 10,000 random invoices, line cents always sum to the total */
+  const PR=J(`(function(){var bad=0,seed=12345;function rnd(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;}
+    for(var n=0;n<10000;n++){var k=1+Math.floor(rnd()*8),items=[],sum=0;
+      for(var i=0;i<k;i++){var c=Math.floor((rnd()-0.35)*2000000);var amt=c/100;if(rnd()<0.3)amt=amt+(rnd()-0.5)*1e-9;items.push({label:'x',amount:amt});sum+=toC(amt);}
+      var tot=invTotalOf(items);if(toC(tot)!==sum||tot!==fromC(sum))bad++;
+      var p={id:'prop'+n,sample:true,invoices:[{id:'v',no:'INV-1',items:JSON.parse(JSON.stringify(items)),total:0.5,payments:[]}],selections:[],payments:[],costs:[]};
+      moneyStampProject(p,[]);var v=p.invoices[0];var ic=v.items.reduce(function(a,b){return a+b.amountC;},0);
+      if(v.totalC!==sum||ic!==sum||toC(v.total)!==sum)bad++;}
+    return {bad:bad};})()`);
+  t('property: 10,000 random invoices, line cents always sum to the total (and to totalC)',PR.bad===0,JSON.stringify(PR));
+  /* no rendered amount lacks two decimals: every money screen, every house, plus a house with awkward amounts */
+  $2(`(function(){var p=JSON.parse(JSON.stringify(__demo[1]));p.id='mf1';p.street='Cents test';p.sample=true;p.selections.push({id:9001,room:'Kitchen',cat:'Cabinets',item:'awkward',status:'selected',approved:true,price:1849.5});p.payments=(p.payments||[]).concat([{id:'pmx',label:'dep',amount:1254.9199999999998,date:'2026-10-01'}]);p.invoices.push({id:'inv_mf',no:'INV-77',title:'t',items:[{label:'a',amount:10.125},{label:'b',amount:-400}],total:0,status:'sent',payments:[],t:Date.now()});state.projects.push(p);return true;})()`);
+  const SCAN=J(`(function(){var bad=[],n=0;var re=/\\$[\\d,]+(?!\\.\\d\\d|[\\d,])/g;
+    state.projects.forEach(function(p){var hold=state.activeId;state.activeId=p.id;
+      var parts=[houseMoneyLine(p),billingCardHTML(p),budgetCardHTML(p),moneyTotHTML(p),moneyBillHTML(p),budgetTableHTML(p),ledgerDetailHTML(p),clientCostsHTML(p),paymentsListHTML(p)];
+      (p.invoices||[]).forEach(function(v){parts.push(invDetailHTML(p,v,'builder'));parts.push(invDetailHTML(p,v,'client'));});
+      (p.selections||[]).forEach(function(s){parts.push(selMoney(s.price));});
+      parts.forEach(function(h){var txt=String(h||'').replace(/<[^>]*>/g,' ').replace(/&[a-z]+;/g,' ');var m=txt.match(re);n+=(txt.match(/\\$/g)||[]).length;if(m)bad.push(m.slice(0,2).join(' '));});
+      state.activeId=hold;});
+    return {bad:bad.slice(0,5),n:n};})()`);
+  t('sim: no rendered amount anywhere lacks two decimals ('+SCAN.n+' amounts across every house and money screen)',SCAN.bad.length===0&&SCAN.n>150,JSON.stringify(SCAN));
+  $2("state.projects=state.projects.filter(function(x){return x.id!=='mf1';});true");
+  /* the amount box: what it understood, under the box, before Save; refuses; saves exactly */
+  const BOX=J(`(function(){function hint(){var h=document.querySelector('.mf-hint[data-for=payAmount]');return h?{t:h.textContent,bad:h.classList.contains('bad')}:null;}
+    var el=document.getElementById('payAmount'),out={};
+    function type(v){el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));return hint();}
+    out.k=type('2k');out.m=type('-500');out.c=type('12.345');out.ok=type('2,000');out.dollar=type('$2,000.50');out.blank=type('');return out;})()`);
+  t('amount box: "2k" says Numbers only under the box; "-500" says no minus; "12.345" says two decimals',BOX.k&&BOX.k.bad&&BOX.k.t==='Numbers only'&&BOX.m.bad&&/minus/i.test(BOX.m.t)&&BOX.c.bad&&/decimal/i.test(BOX.c.t),JSON.stringify(BOX));
+  t('amount box: "2,000" shows $2,000.00 under the box; "$2,000.50" shows $2,000.50; blank shows nothing',BOX.ok&&!BOX.ok.bad&&BOX.ok.t==='$2,000.00'&&BOX.dollar.t==='$2,000.50'&&BOX.blank&&BOX.blank.t==='',JSON.stringify(BOX));
+  const npay0=J("(P().payments||[]).length");
+  const TRY=(v)=>{$2(TOAST_ON);$2(`document.getElementById('payLabel').value='Deposit';document.getElementById('payAmount').value=${JSON.stringify(v)};addPayment();true`);return JSON.parse($2(TOAST_OFF));};
+  const t2k=TRY('2k'),tm=TRY('-500'),tb=TRY('');
+  t('"2k", "-500" and a blank payment are refused with a reason and nothing is saved',J("(P().payments||[]).length")===npay0&&t2k[0]==='Numbers only'&&/minus/i.test(tm[0])&&tb[0]==='Enter an amount',JSON.stringify([t2k,tm,tb]));
+  $2(TOAST_ON);$2("document.getElementById('payLabel').value='Deposit';document.getElementById('payAmount').value='2,000';addPayment();true");const tok=JSON.parse($2(TOAST_OFF));
+  const pay=J("(P().payments||[]).slice(-1)[0]");
+  t('"2,000" saves $2,000 exactly, with its cents twin amountC 200000',J("(P().payments||[]).length")===npay0+1&&pay.amount===2000&&pay.amountC===200000&&tok.indexOf('Payment recorded')>=0,JSON.stringify(pay));
+  await sleep(1500);await settle();
+  const SV=J(`(function(){var c=(__F.srv.pdel&&__F.srv.pdel.colls)||{};var pm=c.pmts||{},inv=c.inv||{},sl=c.sel||{},sm=c.selm||{};
+    var pk=Object.keys(pm).map(function(k){return pm[k].data;}).filter(function(d){return d.amount===2000;})[0]||null;
+    var ik=Object.keys(inv).map(function(k){return inv[k].data;});var skeys=[];Object.keys(sl).forEach(function(k){Object.keys(sl[k].data).forEach(function(x){if(/C$/.test(x)&&/^(price|allowance|cost)C$/.test(x))skeys.push(x);});});
+    var smk=[];Object.keys(sm).forEach(function(k){Object.keys(sm[k].data).forEach(function(x){if(/^(price|allowance|cost)C$/.test(x)&&smk.indexOf(x)<0)smk.push(x);});});
+    return {pk:pk,invAllTwin:ik.length>0&&ik.every(function(d){return d.totalC===Math.round(d.total*100)&&(d.items||[]).every(function(i){return i.amountC===Math.round(i.amount*100);});}),ninv:ik.length,selTwins:skeys,selmTwins:smk};})()`);
+  t('the server gets the payment with amount 2000 (old field kept) and amountC 200000',SV.pk&&SV.pk.amount===2000&&SV.pk.amountC===200000,JSON.stringify(SV.pk));
+  t('every invoice on the server carries totalC and each line amountC beside the old fields',SV.invAllTwin&&SV.ninv>0,JSON.stringify([SV.ninv,SV.invAllTwin]));
+  t('cents twins on a selection live on selm only: sel carries none, selm carries them',SV.selTwins.length===0&&SV.selmTwins.length>0,JSON.stringify([SV.selTwins,SV.selmTwins]));
+  /* a credit is chosen, never typed */
+  $2("openAddSel();document.getElementById('selItem').value='Credit test';document.getElementById('selPrice').value='-800';true");
+  const nsel=J("P().selections.length");$2(TOAST_ON);$2("saveSel();true");const tneg=JSON.parse($2(TOAST_OFF));
+  t('a typed minus on a selection price is refused: nothing saved, "pick credit" says so',J("P().selections.length")===nsel&&/Pick credit/.test(tneg[0]||''),JSON.stringify(tneg));
+  $2("setSelPriceKind(true);document.getElementById('selPrice').value='800';saveSel();true");
+  const csel=J("P().selections.find(function(s){return s.item==='Credit test';})");
+  t('choosing Credit and typing 800 saves −$800 (priceC −80000)',csel&&csel.price===-800&&csel.priceC===-80000,JSON.stringify(csel));
+  /* the invoice custom line */
+  $2("invCompose();document.getElementById('invExLabel').value='Extra';document.getElementById('invExAmount').value='2k';true");
+  const ninv=J("P().invoices.length");$2(TOAST_ON);$2("invSave(true);true");const tinv=JSON.parse($2(TOAST_OFF));
+  t('an invoice custom line typed "2k" is refused and no invoice is made',J("P().invoices.length")===ninv&&tinv[0]==='Numbers only',JSON.stringify(tinv));
+  $2("_invDraft=null;invMode='list';true");
+  /* one-time conversion: rounds half up, lists every amount it changed, adds twins, and is quiet after */
+  const CV=J(`(function(){var p=state.projects.find(function(x){return x.id==='pdel';});
+    p.payments.push({id:'dirty1',label:'dirty pay',amount:10.125});
+    p.selections.push({id:9992,room:'Kitchen',cat:'Cabinets',item:'dirty sel',status:'selected',price:1254.9199999999998});
+    p.invoices.push({id:'dirtyinv',no:'INV-D',title:'d',status:'draft',items:[{label:'a',amount:0.1},{label:'b',amount:0.2},{label:'c',amount:5.555}],total:5.855,payments:[],t:Date.now()});
+    var r1=moneyStampAll(),r2=moneyStampAll();
+    var inv=p.invoices.find(function(v){return v.id==='dirtyinv';});
+    return {r1:r1.map(function(r){return r.field+':'+r.from+'>'+r.to;}),n2:r2.length,payTwin:p.payments.find(function(x){return x.id==='dirty1';}),invTotal:[inv.total,inv.totalC],text:moneyConvText()};})()`);
+  t('conversion rounds half up and lists every amount it changed (10.125 > 10.13, 5.555 > 5.56, the invoice total 5.855 > 5.86)',CV.r1.indexOf('amount:10.125>10.13')>=0&&CV.r1.indexOf('amount:5.555>5.56')>=0&&CV.r1.indexOf('total:5.855>5.86')>=0,JSON.stringify(CV.r1));
+  t('conversion does not list float noise (1254.9199999999998 is already $1,254.92)',CV.r1.every(x=>x.indexOf('1254.92')<0),JSON.stringify(CV.r1));
+  t('conversion is one-time: the second pass changes nothing; twins and totals are in whole cents',CV.n2===0&&CV.payTwin.amount===10.13&&CV.payTwin.amountC===1013&&CV.invTotal[0]===5.86&&CV.invTotal[1]===586,JSON.stringify([CV.n2,CV.payTwin,CV.invTotal]));
+  t('the report text shows house, record, field and both values',/pdel|Robina/.test(CV.text)&&/10\.125 → 10\.13/.test(CV.text),CV.text.slice(0,200));
+  $2("(function(){var p=state.projects.find(function(x){return x.id==='pdel';});p.payments=p.payments.filter(function(x){return x.id!=='dirty1';});p.selections=p.selections.filter(function(x){return x.id!==9992&&x.item!=='Credit test';});p.invoices=p.invoices.filter(function(v){return v.id!=='dirtyinv';});_moneyConv=[];return true;})()");
+  /* gate: a REAL house is not converted until the flag is on; Preview changes nothing */
+  const GT=J(`(function(){var p=state.projects.find(function(x){return x.id==='pdel';});var was=p.sample;p.sample=false;var am=appMode;appMode=function(){return 'real';};
+    localStorage.removeItem('plumb.moneyConvReal');
+    p.selections.push({id:9993,room:'K',cat:'C',item:'gate sel',status:'selected',price:12.345});
+    var off=moneyStampAll().length,offTwin=('priceC' in p.selections.find(function(x){return x.id===9993;}));
+    var pv=moneyConvPreview().length,afterPv=p.selections.find(function(x){return x.id===9993;}).price;
+    localStorage.setItem('plumb.moneyConvReal','1');var on=moneyStampAll().length;var sel=p.selections.find(function(x){return x.id===9993;});
+    var res={off:off,offTwin:offTwin,pv:pv,afterPv:afterPv,on:on,onPrice:sel.price,onTwin:sel.priceC};
+    localStorage.removeItem('plumb.moneyConvReal');p.selections=p.selections.filter(function(x){return x.id!==9993;});appMode=am;p.sample=was;return res;})()`);
+  t('gate: a real house is NOT converted while the flag is off (no change, no twin)',GT.off===0&&GT.offTwin===false,JSON.stringify(GT));
+  t('gate: Preview lists what would change but saves nothing',GT.pv>=1&&GT.afterPv===12.345,JSON.stringify(GT));
+  t('gate: with the flag on, the real house converts (12.345 > 12.35, twin 1235)',GT.on>=1&&GT.onPrice===12.35&&GT.onTwin===1235,JSON.stringify(GT));
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();
