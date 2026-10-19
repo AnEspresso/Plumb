@@ -4697,11 +4697,10 @@ await (async function(){
   t('4d-2: a paper-signed change order prints "Signed on paper"',D2.indexOf('Signed on paper')>=0&&D2.indexOf('Days added')<0,D2);
   const DA=J("CO.daysApproved(P().id)");const DX=J("(function(){var a=0;CO.list(P().id).forEach(function(r){if(r.status==='approved'&&r.id!=='d_a'&&r.id!=='d_b'&&r.days>0)a+=r.days;});return a;})()");
   t('4d-2: approved days add up per house (sent ones do not count)',DA===DX+4,DA+' vs '+DX);
-  $2("renderSchedule();true");
-  t('4d-2: the schedule shows the days approved change orders add',J("document.getElementById('schedBody').textContent").indexOf('approved change orders add '+DA+' days')>=0);
+  t('4d-2: the Schedule door on the house shows the days approved change orders add',J("coDaysNote(P())")===' \u00b7 change orders add '+DA+' days'&&J("houseHTML(P())").indexOf('This house on the calendar \u00b7 change orders add '+DA+' days')>=0);
   t('4d-2: printing and the schedule write nothing',J("__co.writes.length")===0);
-  $2("PaperTrail.on=false;renderSchedule();CO.print('d_a');true");
-  t('4d-2: switch off: no print view and nothing on the schedule',J("!document.getElementById('invPrintView')")&&J("document.getElementById('schedBody').textContent").indexOf('change orders add')<0);
+  $2("PaperTrail.on=false;CO.print('d_a');true");
+  t('4d-2: switch off: no print view and nothing on the Schedule door',J("!document.getElementById('invPrintView')")&&J("coDaysNote(P())")==='');
   $2("PaperTrail.on=true;CO._view=null;closeInfo();true");
   $2(`(function(){var X=__co;X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};clientCostsHTML(P());return true;})()`);await sleep(40);
   $2("COH.openDetail('d_a');true");
@@ -4710,8 +4709,7 @@ await (async function(){
   t('4d-2: the homeowner print view shows the change order',J("(function(){var v=document.getElementById('invPrintView');return v?v.textContent:'';})()").indexOf('CO-052')>=0);
   $2("closePrintPreview();COH.openDetail('d_c');true");
   t('4d-2: no Print on one still waiting for the OK',J("document.getElementById('infoScrim').innerHTML").indexOf('COH.print(')<0&&($2("COH.print('d_c');true"),J("!document.getElementById('invPrintView')")));
-  $2("renderSchedule();true");
-  t('4d-2: the homeowner role sees no days banner on the schedule',J("document.getElementById('schedBody').textContent").indexOf('change orders add')<0);
+  t('4d-2: the homeowner role gets no days note on the Schedule door',J("coDaysNote(P())")==='');
   $2("closePrintPreview();COH.close();true");
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
   $2(COEND);

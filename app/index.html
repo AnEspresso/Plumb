@@ -9087,7 +9087,7 @@ function houseHTML(p){
   }
   h+='<div class="hs-band" data-band="job">On this house</div><div class="hs-doors">';
   if(!isClient&&canGate('field'))h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">A note, or a photo</div></button>';
-  if(canGate('schedule')||isClient)h+='<button class="hs-door" data-door="cal" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar')+'</div></button>';
+  if(canGate('schedule')||isClient)h+='<button class="hs-door" data-door="cal" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar'+coDaysNote(p))+'</div></button>';
   if(canGate('selections')||isClient)h+='<button class="hs-door" data-door="sel" onclick="houseGoDesk(\'selections\')"><div class="k">Selections</div><div class="m">'+(isClient?'Your finishes':'Finishes for this house')+'</div></button>';
   if(isBuilder&&canGate('moneyJob'))h+='<button class="hs-door" data-door="money" onclick="houseGoMoney()"><div class="k">Money</div><div class="m">'+esc(money)+'</div></button>';
   h+='</div>';
@@ -17543,6 +17543,8 @@ function bkDelete(){
   const bid=_bkEdit.bid;const b=(p.bookings||[]).find(x=>String(x.id)===String(bid));
   confirmDelete({title:'Remove this booking?',body:'<b>'+esc((b&&b.subName)||'This crew')+'</b> is un-scheduled for these dates and the booking drops off the calendar. The install packet and house history stay.',onConfirm:()=>{
     deleteBooking(p,bid);closeBk();renderCal();try{renderDay();}catch(e){}toast('Booking removed');}});}
+/* 4d-2: days approved change orders add, on the house's Schedule door (builder, switch on, rows already loaded; no extra read). */
+function coDaysNote(p){try{if(!p||!CO.allowed()||String(P().id)!==String(p.id))return '';const d=CO.daysApproved(String(p.id));return d>0?' \u00b7 change orders add '+d+' day'+(d===1?'':'s'):'';}catch(e){return '';}}
 function openSchedule(){renderSchedule();document.getElementById('schedScrim').classList.add('show');}
 function closeSchedule(){document.getElementById('schedScrim').classList.remove('show');}
 function renderSchedule(){
@@ -17550,7 +17552,6 @@ function renderSchedule(){
   const conf=scheduleConflicts();
   let h='';
   if(conf.length)h+=`<div class="pkt-banner warn mb-2"><b>${conf.length} double-booking${conf.length===1?'':'s'}.</b> ${conf.map(c=>esc(c.name)+' is planned at '+esc(c.a.p.street||c.a.p.name)+' and '+esc(c.b.p.street||c.b.p.name)+' in the same window').join('; ')}.</div>`;
-  try{if(PaperTrail.on&&(state.session||{}).role==='builder'&&(canGate('moneyJob')||canGate('moneyCo')))(state.projects||[]).forEach(p=>{if(siteRoleFor(p)!=='builder')return;const d=CO.daysApproved(String(p.id));if(d>0)h+='<div class="pkt-banner mb-2" id="coDays_'+esc(String(p.id))+'">'+esc(p.street||p.name)+': approved change orders add '+d+' day'+(d===1?'':'s')+'</div>';});}catch(e){}
   const entries=scheduleEntries();
   if(!entries.length){el.innerHTML=h+'<div class="empty">Nothing planned yet. Tap a stage below any house\u2019s schedule — or start here:</div>'+schedPlanList();return;}
   const weeks={};entries.forEach(e=>{const k=weekKey(e.w.start);(weeks[k]=weeks[k]||[]).push(e);});
