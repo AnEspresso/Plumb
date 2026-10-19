@@ -10,8 +10,11 @@
  */
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import * as firestoreModule from 'firebase-admin/firestore';
+import { installMoneyGuard } from './lib/moneyGuard.mjs';
 
 initializeApp({ credential: applicationDefault(), projectId: 'plumb-467a0' });
+installMoneyGuard(firestoreModule);   // M-16: repair scripts never write money
 const db = getFirestore();
 const want = String(process.env.RETIRE_STREET || '').trim().toLowerCase();
 const confirm = process.env.RETIRE_CONFIRM === '1';

@@ -20,10 +20,13 @@
  */
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldPath } from 'firebase-admin/firestore';
+import * as firestoreModule from 'firebase-admin/firestore';
+import { installMoneyGuard } from './lib/moneyGuard.mjs';
 
 const emulator = !!process.env.FIRESTORE_EMULATOR_HOST;
 initializeApp(emulator ? { projectId: process.env.GCLOUD_PROJECT || 'demo-plumb-rules' }
                        : { credential: applicationDefault(), projectId: 'plumb-467a0' });
+installMoneyGuard(firestoreModule);   // M-16: repair scripts never write money
 const db = getFirestore();
 const confirm = process.env.RESTAMP_CONFIRM === '1';
 

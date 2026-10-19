@@ -74,6 +74,12 @@ jobs:
       - name: Receipts, PDF, fingerprint, archive (dormant)
         run: npm run receipts
 
+      - name: Archive-on-delete and opened lines (dormant)
+        run: npm run archive
+
+      - name: Repair-script money guard (M-16)
+        run: npm run moneyguard
+
       - name: Live-rules check (compare logic, and nothing in it can publish)
         run: npm run liverules
 
