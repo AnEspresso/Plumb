@@ -62,7 +62,7 @@ async function cascadeSite(db, bucket, doc, onFail) {
   await doc.ref.delete();
 }
 
-async function deleteAccount(db, authAdmin, bucket, uid, confirm, email, log) {
+async function deleteAccount(db, authAdmin, bucket, uid, confirm, email, log, hooks) {
   const snap = await db.collection('sites').where('memberUids', 'array-contains', uid).get();
   const owned = [], memberOf = [];
   for (const d of snap.docs) {
@@ -76,11 +76,16 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email, log) {
     qb: !!(qbSnap.exists && (qbSnap.data() || {}).refreshToken),
   };
   if (!confirm) return { ok: true, preview };
-  const failed = [], lg = log || defaultLog;
+  const failed = [], lg = log || defaultLog; let archivedCount = 0;
   const fail = step => e => stepFailed(lg, failed, uid, step, e);
 
   /* 1 · sites they build: full cascade */
-  for (const d of owned) await cascadeSite(db, bucket, d, (step, e) => stepFailed(lg, failed, uid, step + ' (' + d.id + ')', e));
+  /* M-11 (dormant): a hook may archive a house that has sent money instead of erasing it. An archive error aborts the run
+     before anything else is destroyed (the Auth user is still there, so it can simply be retried). */
+  for (const d of owned) {
+    if (hooks && hooks.archive && await hooks.archive(d, uid)) { archivedCount++; continue; }
+    await cascadeSite(db, bucket, d, (step, e) => stepFailed(lg, failed, uid, step + ' (' + d.id + ')', e));
+  }
 
   /* 2 · sites they merely belong to: strip the identity, leave the project */
   for (const d of memberOf) {
@@ -124,7 +129,8 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email, log) {
   /* 7 · the Auth user itself — last, so any earlier failure is retryable */
   await authAdmin.deleteUser(uid);
 
-  const out = { ok: true, deleted: { sites: owned.length, memberships: memberOf.length } };
+  const out = { ok: true, deleted: { sites: owned.length - archivedCount, memberships: memberOf.length } };
+  if (archivedCount) out.archived = archivedCount;
   if (failed.length) out.cleanupFailed = failed;
   return out;
 }

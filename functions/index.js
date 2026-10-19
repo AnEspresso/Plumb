@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const qbo = require('./lib/qbo');
 const { exportCosts } = require('./lib/exportCosts');
 const { deleteAccount } = require('./lib/deleteAccount');
+const archiveSite = require('./lib/archiveSite');
 
 setGlobalOptions({ region: 'us-central1', maxInstances: 5 });
 admin.initializeApp();
@@ -116,7 +117,7 @@ exports.deleteAccount = onRequest(async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
   try {
     const bucket = admin.storage().bucket(process.env.PLUMB_BUCKET || 'plumb-467a0.firebasestorage.app');
-    const r = await deleteAccount(db, admin.auth(), bucket, user.uid, !!body(req).confirm, String(user.email || '').toLowerCase());
+    const r = await deleteAccount(db, admin.auth(), bucket, user.uid, !!body(req).confirm, String(user.email || '').toLowerCase(), undefined, { archive: archiveSite.accountArchiver(db, admin.storage().bucket(process.env.ARCHIVE_BUCKET || 'plumb-467a0-money-archive'), admin.firestore.FieldValue) });
     res.json({ result: r });
   } catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
 });
@@ -342,4 +343,21 @@ exports.paperTrailReceipt = onDocumentCreated({ document: 'sites/{siteId}/hist/{
     },
   };
   return receipts.handle(deps, event);
+});
+
+/* Step 3b-2 (dormant, same flags): M-11 deleteSite is a client tombstone; the first tombstone of a house with sent money
+   writes the archive snapshot and a 7-year retention mark. M-9 "opened": the homeowner's app calls this once per version. */
+exports.paperTrailSiteTombstone = onDocumentUpdated('sites/{siteId}', async (event) => {
+  const b = event.data.before.data() || null, a = event.data.after.data() || null;
+  if (!(a && a.meta && a.meta.deleted) || (b && b.meta && b.meta.deleted)) return;
+  return archiveSite.onSiteTombstone(db, admin.storage().bucket(process.env.ARCHIVE_BUCKET || 'plumb-467a0-money-archive'), b, a, event.params.siteId, event.data.after.ref);
+});
+exports.moneyOpened = onRequest(async (req, res) => {
+  if (cors(req, res)) return;
+  const user = await requireUser(req, res); if (!user) return;
+  try {
+    const b = body(req);
+    const r = await archiveSite.recordOpened(db, () => admin.firestore.FieldValue.serverTimestamp(), { uid: user.uid, siteId: String(b.siteId || ''), coll: String(b.coll || ''), docId: String(b.docId || '') });
+    res.json({ result: r });
+  } catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
 });
