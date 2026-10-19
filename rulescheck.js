@@ -647,6 +647,8 @@ async function main() {
     app_a2: sentOf({ id: 'app_a2', no: 65, rev: 2, verifiedRev: 1, verifiedTotal: 185000 }),
     app_dc: sentOf({ id: 'app_dc', no: 66, rev: 2 }),
     app_dc2: sentOf({ id: 'app_dc2', no: 67, rev: 2 }),
+    app_y1: sentOf({ id: 'app_y1', no: 71 }),
+    app_y2: sentOf({ id: 'app_y2', no: 72 }),
   };
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const sdb = ctx.firestore();
@@ -702,6 +704,13 @@ async function main() {
   await INV_A1('A1 app 4d-1: paper signature without the photo id is DENIED', mrg(db.builder, 'app_p2', (() => { const d = APAPER(); delete d.paperPhotoId; return d; })()));
   await INV_A1('A1 app 4d-1: paper signature carrying a homeowner name is DENIED (paper is the builder\'s record)', mrg(db.builder, 'app_p2', APAPER({ decidedName: 'Ana Ruiz' })));
   await INV('A1 app 4d-1: Record a paper signature by merge (photo id, builder, server time, current rev, sentence): ALLOWED', mrg(db.builder, 'app_p1', APAPER()), true);
+  /* 2.476.0 builder app (4d-2): print and the Schedule-door days note are read-only; the only write behind them is the days field
+     (More details), replayed here exactly as the app sends it: a whole number 0-365, and a sent one needs rev + 1. */
+  await INV('A1 app 4d-2: a new draft with days added (whole number): ALLOWED', putCo(db.builder, 'app_y0', coData({ id: 'app_y0', days: 3 })), true);
+  await INV_A1('A1 app 4d-2: days added over 365 is DENIED (the app refuses it first)', putCo(db.builder, 'app_y3', coData({ id: 'app_y3', days: 400 })));
+  await INV_A1('A1 app 4d-2: days added as text is DENIED', putCo(db.builder, 'app_y4', coData({ id: 'app_y4', days: '3' })));
+  await INV_A1('A1 app 4d-2: days added on a sent one without rev + 1 is DENIED', mrg(db.builder, 'app_y2', { days: 4 }));
+  await INV('A1 app 4d-2: days added on a sent one by merge with rev 2: ALLOWED', mrg(db.builder, 'app_y1', { days: 4, rev: 2 }), true);
   /* 2.474.0 builder app (4c-2): budget line under More details. Only the id is stored; it is chosen before sending and kept after. */
   await INV('A1 app 4c-2: a new draft with a budget line id: ALLOWED', setDoc(coRef(db.builder, 'app_l1'), Object.assign({ data: { id: 'app_l1', status: 'draft', t: 1, title: 'Bigger window', amountC: 200000, kind: 'change', lineId: 'L2' }, updatedAt: 9, updatedBy: 'devB' }, stampNow(U.builder))), true);
   await INV('A1 app 4c-2: that draft sent by merge with its claim, line kept: ALLOWED', (async () => {
