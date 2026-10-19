@@ -4347,9 +4347,10 @@ await (async function(){
   t('M-15: a high minimum does nothing while the switch is off',PT00[0]===false&&PT00[1]===false,JSON.stringify(PT00));
   const STUB=(en,min,fail)=>`window.__sdb=Sync.db;Sync.db={collection:function(c){return{doc:function(d){return{get:function(){if(${fail?'true':'false'})return Promise.reject(new Error('permission-denied'));var dat=d==='paperTrail'?{enabled:${en}}:{minAppV:${min}};return Promise.resolve({exists:true,data:function(){return dat;}});}};}};}};PaperTrail.load(true);true`;
   const RD=()=>J(`(function(){Sync.db=window.__sdb;return {on:PaperTrail.on,min:PaperTrail.minV,mine:PaperTrail.mine(),blocked:PaperTrail.blocked()};})()`);
-  $2(STUB('true',2471,false));await sleep(80);const PT1=RD();
-  t('M-15: switch on with a higher minimum: this phone (2470) is blocked',PT1.on&&PT1.min===2471&&PT1.mine===2470&&PT1.blocked,JSON.stringify(PT1));
-  $2(STUB('true',2470,false));await sleep(80);const PT2=RD();
+  const VN=(function(m){return +m[1]*1000+ +m[2];})(/^(\d+)\.(\d+)/.exec(String($('PLUMB_VERSION'))));
+  $2(STUB('true',VN+1,false));await sleep(80);const PT1=RD();
+  t('M-15: switch on with a higher minimum: this phone is blocked',PT1.on&&PT1.min===VN+1&&PT1.mine===VN&&PT1.blocked,JSON.stringify(PT1));
+  $2(STUB('true',VN,false));await sleep(80);const PT2=RD();
   t('M-15: a phone at the minimum is not blocked',PT2.on&&!PT2.blocked,JSON.stringify(PT2));
   $2(STUB('false',9999,false));await sleep(80);const PT3=RD();
   t('M-15: switch off ignores the minimum',!PT3.on&&PT3.min===0&&!PT3.blocked,JSON.stringify(PT3));
@@ -4368,6 +4369,120 @@ await (async function(){
   t('M-15: blocked, add payment shows "Update to continue" and adds nothing',BL.pay[0]&&BL.pay[1]&&BL.pay[2]==='Update to continue',JSON.stringify(BL.pay));
   t('M-15: blocked, the credit switch and void payment also stop at the dialog',BL.credit[0]&&BL.credit[1]&&BL.voidp,JSON.stringify(BL));
   t('M-15: every money action (send, record, void, approve, sign, credit switch) starts with the gate; saving a draft does not',BL.src.every(x=>x[1])&&BL.draft,JSON.stringify(BL.src.filter(x=>!x[1])));
+  /* ── 4a (2.471.0): change orders, builder side. A stub Firestore that enforces Rules A1's shapes. ── */
+  const COSETUP=`(function(){
+    var X=window.__co={saved:{db:Sync.db,on:Sync.on,mode:Sync.mode,uid:Sync.uid,dev:Sync.deviceId,sess:state.session,canGate:canGate,fb:window.firebase,pton:PaperTrail.on,ptmin:PaperTrail.minV,line:null}};
+    var store={},subs=[],batchN=0,reads=[],writes=[],staleNums=0,DEL='__DEL__',TS='__TS__';X.store=store;X.writes=writes;X.reads=reads;X.subs=subs;
+    function keys(o){return Object.keys(o||{});}
+    function only(o,a){return keys(o).every(function(k){return a.indexOf(k)>=0;});}
+    function denied(m){var e=new Error('denied: '+m);e.code='permission-denied';return e;}
+    var OUT=['data','updatedAt','updatedBy','byUid','at','tappedAt','appV'],CONT=['title','note','amountC','kind','photoId','days','lineId'];
+    var DRAFT=['id','title','note','amountC','kind','photoId','days','lineId','status','t'],SEND=DRAFT.concat(['no','rev','sentAt','sentBy','sentName','sentRole']);
+    function merge(a,b){var o=JSON.parse(JSON.stringify(a||{}));keys(b).forEach(function(k){if(b[k]===DEL)delete o[k];else o[k]=b[k];});return o;}
+    function check(path,v,merged,old,batchPaths){
+      var seg=path.split('/');var coll=seg[2];
+      if(coll==='numbers'){if(old)throw denied('number already claimed');if(!only(v,['kind','no','byUid','at','appV','tappedAt'])||v.kind!=='co'||!(v.no>0)||seg[3]!=='co-'+v.no||v.byUid!==Sync.uid||v.at!==TS)throw denied('number shape');return;}
+      if(coll!=='co')throw denied('collection '+coll);
+      if(!only(merged,OUT)||merged.byUid!==Sync.uid||merged.at!==TS||typeof merged.appV!=='string'||!merged.appV)throw denied('outer');
+      var n=merged.data||{},o=old?old.data:null;
+      if(typeof n.amountC!=='number'||n.amountC%1!==0||!n.title||!((n.kind==='change'&&n.amountC>0)||(n.kind==='credit'&&n.amountC<0))||'amount' in n)throw denied('body');
+      if(n.status==='sent'&&(!o||o.status==='draft')){ // send
+        if(!only(n,SEND)||n.rev!==1||!(n.no>0)||n.sentBy!==Sync.uid||n.sentAt!==TS||n.sentRole!=='builder'||!n.sentName||batchPaths.indexOf('sites/'+seg[1]+'/numbers/co-'+n.no)<0)throw denied('send');return;}
+      if(!o){if(n.status!=='draft'||!only(n,DRAFT))throw denied('create');return;}
+      if(o.status==='draft'&&n.status==='draft'){if(!only(n,DRAFT))throw denied('draft');return;}
+      if(o.status==='sent'&&n.status==='sent'){var ch=keys(n).concat(keys(o)).filter(function(k,i,a){return a.indexOf(k)===i&&JSON.stringify(n[k])!==JSON.stringify(o[k]);});
+        if(!ch.every(function(k){return CONT.concat(['rev']).indexOf(k)>=0;}))throw denied('sent keys');
+        var content=ch.some(function(k){return CONT.indexOf(k)>=0;});if(content&&n.rev!==o.rev+1)throw denied('rev not bumped');if((merged.data.verifiedRev!==(o.verifiedRev))||(merged.data.verifiedTotal!==o.verifiedTotal))throw denied('verified changed');return;}
+      if(o.status==='sent'&&n.status==='withdrawn'){if(n.withdrawnBy!==Sync.uid||n.withdrawnAt!==TS)throw denied('withdraw');return;}
+      throw denied('transition '+o.status+'>'+n.status);}
+    function apply(ops){var batchPaths=ops.filter(function(o){return o.k!=='del';}).map(function(o){return o.p;});var next={};keys(store).forEach(function(k){next[k]=store[k];});
+      ops.forEach(function(o){var old=next[o.p]||null;
+        if(o.k==='del'){var oo=old&&old.data;if(!old)return;if(oo&&oo.sentAt)throw denied('delete a sent co');delete next[o.p];return;}
+        var merged=o.merge&&old?Object.assign({},old,merge(old,o.v),{data:merge(old.data,o.v.data)}):JSON.parse(JSON.stringify(o.v));
+        if(o.merge&&old){merged=merge(old,o.v);merged.data=merge(old.data,o.v.data);}
+        check(o.p,o.v,merged,old,batchPaths);next[o.p]=merged;});
+      keys(store).forEach(function(k){delete store[k];});keys(next).forEach(function(k){store[k]=next[k];});ops.forEach(function(o){writes.push(o.k+' '+o.p+(o.b?' b'+o.b:''));});fire();}
+    function fire(){subs.forEach(function(s){s.cb(snap(s.p));});}
+    function snap(path){var d=keys(store).filter(function(k){return k.indexOf(path+'/')===0&&k.split('/').length===path.split('/').length+1;}).map(function(k){return {id:k.split('/').pop(),data:function(){return JSON.parse(JSON.stringify(store[k]));}};});return {docs:d};}
+    function docRef(p,b){return {path:p,id:p.split('/').pop(),set:function(v,o){var op={k:'set',p:p,v:v,merge:!!(o&&o.merge)};if(b){b.ops.push(op);return;}try{apply([op]);return Promise.resolve();}catch(e){return Promise.reject(e);}},delete:function(){try{apply([{k:'del',p:p}]);return Promise.resolve();}catch(e){return Promise.reject(e);}},collection:function(c){return colRef(p+'/'+c);}};}
+    function colRef(p){return {path:p,doc:function(id){return docRef(p+'/'+id);},get:function(){reads.push(p);if(staleNums>0&&/numbers$/.test(p)){staleNums--;return Promise.resolve({docs:[]});}return Promise.resolve(snap(p));},onSnapshot:function(cb,eb){subs.push({p:p,cb:cb,eb:eb});setTimeout(function(){cb(snap(p));},0);return function(){};}};}
+    X.stale=function(n){staleNums=n;};X.fire=fire;
+    Sync.db={collection:function(c){return {doc:function(id){var r=docRef(c+'/'+id);r.collection=function(cc){return colRef(c+'/'+id+'/'+cc);};return r;}};},batch:function(){var b={ops:[],id:++batchN};return {set:function(r,v,o){var op={k:'set',p:r.path,v:v,merge:!!(o&&o.merge),b:b.id};b.ops.push(op);},commit:function(){try{apply(b.ops);return Promise.resolve();}catch(e){return Promise.reject(e);}}};}};
+    Sync.on=true;Sync.mode='live';Sync.uid='uB';Sync.deviceId='devB';
+    state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};canGate=function(){return true;};
+    window.firebase={firestore:{FieldValue:{serverTimestamp:function(){return TS;},delete:function(){return DEL;}}}};
+    var p=P();p.members=Object.assign({},p.members,{uB:'builder'});p.memberInfo={uB:{name:'Dean Walsh'}};X.pid=String(p.id);X.pre='sites/'+X.pid+'/';
+    return true;})()`;
+  const COEND=`(function(){var X=window.__co;Sync.db=X.saved.db;Sync.on=X.saved.on;Sync.mode=X.saved.mode;Sync.uid=X.saved.uid;Sync.deviceId=X.saved.dev;state.session=X.saved.sess;canGate=X.saved.canGate;window.firebase=X.saved.fb;PaperTrail.on=X.saved.pton;PaperTrail.minV=X.saved.ptmin;CO._rows={};CO._unsub={};CO._err={};CO._edit=null;return true;})()`;
+  const COFILL=(title,kind,amt,note,days)=>`CO.newForm();document.getElementById('coTitle').value=${JSON.stringify(title)};CO.setKind('${kind}');document.getElementById('coAmt').value=${JSON.stringify(amt)};document.getElementById('coNote').value=${JSON.stringify(note||'')};document.getElementById('coDays').value=${JSON.stringify(days||'')};true`;
+  $2(COSETUP);
+  $2("PaperTrail.on=false;CO._edit=null;true");
+  const CO0=J(`(function(){var X=window.__co;var o={allowed:CO.allowed()};CO.open();o.subs=X.subs.length;o.writes=X.writes.length;o.reads=X.reads.length;
+    var ch=null;var oc=window.openChoice;window.openChoice=function(x){ch=x.items.map(function(i){return i.label;});};moneyMore();window.openChoice=oc;o.menu=ch.indexOf('Change orders')>=0;return o;})()`);
+  t('4a: switch off: no Change orders entry, no listener, no read, no write',!CO0.allowed&&CO0.subs===0&&CO0.writes===0&&CO0.reads===0&&!CO0.menu,JSON.stringify(CO0));
+  $2("PaperTrail.on=true;true");
+  const CO1=J(`(function(){var ch=null;var oc=window.openChoice;window.openChoice=function(x){ch=x.items.map(function(i){return i.label;});};moneyMore();window.openChoice=oc;return {menu:ch.indexOf('Change orders')>=0,allowed:CO.allowed()};})()`);
+  t('4a: switch on, builder with money access: the Change orders entry appears under Money',CO1.menu&&CO1.allowed,JSON.stringify(CO1));
+  $2("canGate=function(){return false;};true");const CO1b=J("CO.allowed()");$2("canGate=function(){return true;};true");
+  t('4a: a builder without money access gets no entry point',CO1b===false);
+  $2("CO.open();true");await sleep(30);
+  t('4a: opening the list listens to sites/<id>/co only',J("__co.subs.length")===1&&J("__co.subs[0].p")===J("__co.pre+'co'"),J("__co.subs.map(function(s){return s.p;})"));
+  /* Sign and send a change: one batch holds the co and its number claim */
+  $2(TOAST_ON);$2(COFILL('Add a window in the study','change','1,850','South wall','3'));await $2("CO.save(true)");await sleep(30);let ts1=JSON.parse($2(TOAST_OFF));
+  const S1=J(`(function(){var X=window.__co;var c=X.store[X.pre+'co']; var ids=Object.keys(X.store).filter(function(k){return /\\/co\\/co_/.test(k);});var d=ids.length?X.store[ids[0]]:null;return {n:ids.length,d:d,num:X.store[X.pre+'numbers/co-1'],w:X.writes.slice()};})()`);
+  t('4a: Sign and send writes the co as sent, rev 1, whole cents, number 1, signer copied, stamped',S1.n===1&&S1.d.data.status==='sent'&&S1.d.data.rev===1&&S1.d.data.no===1&&S1.d.data.amountC===185000&&S1.d.data.kind==='change'&&S1.d.data.sentBy==='uB'&&S1.d.data.sentName==='Dean Walsh'&&S1.d.data.sentRole==='builder'&&S1.d.data.sentAt==='__TS__'&&S1.d.data.days===3&&S1.d.data.note==='South wall'&&!('amount' in S1.d.data)&&S1.d.byUid==='uB'&&S1.d.at==='__TS__'&&/^2\.\d+\.\d+$/.test(S1.d.appV),JSON.stringify(S1.d));
+  t('4a: the number claim is created in the same batch as the change order (M-6)',S1.num&&S1.num.kind==='co'&&S1.num.no===1&&S1.w.length===2&&S1.w[0].split(' ').pop()===S1.w[1].split(' ').pop()&&/b\d+$/.test(S1.w[0]),JSON.stringify(S1.w));
+  t('4a: the toast says CO-001 sent',ts1.indexOf('CO-001 sent')>=0,JSON.stringify(ts1));
+  /* a credit is stored negative; the sentence reads right */
+  $2(COFILL('Drop the pantry door','credit','400'));await $2("CO.save(true)");await sleep(30);
+  const S2=J(`(function(){var X=window.__co;var d=X.store[X.pre+'co/'+Object.keys(X.store).filter(function(k){return /\\/co\\/co_/.test(k);}).map(function(k){return k.split('/').pop();}).filter(function(i){return X.store[X.pre+'co/'+i].data.no===2;})[0]];return d&&d.data;})()`);
+  t('4a: a credit is stored negative (amountC -40000, kind credit) and gets number 2',S2&&S2.amountC===-40000&&S2.kind==='credit'&&S2.no===2,JSON.stringify(S2));
+  t('4a: the sentence above the button matches the server wording',J("CO.sentence('change',210000)")==='This adds $2,100.00 to your contract.'&&J("CO.sentence('credit',-40000)")==='This credits $400.00.');
+  /* two phones: this phone's list is stale, the number is already claimed elsewhere: the retry takes the next one */
+  $2(`(function(){var X=__co;X.store[X.pre+'numbers/co-3']={kind:'co',no:3,byUid:'uP',at:'__TS__',appV:'2.471.0'};CO._rows[X.pid]=CO._rows[X.pid].filter(function(r){return r.no!==3;});X.stale(1);return true;})()`);
+  $2(COFILL('Third','change','10'));await $2("CO.save(true)");await sleep(30);
+  t('4a: a number claimed by another phone is refused and the retry gets the next number (4), never a duplicate',J(`(function(){var X=__co;return !!X.store[X.pre+'numbers/co-4']&&Object.keys(X.store).filter(function(k){return /numbers\\/co-/.test(k);}).length===4&&X.store[X.pre+'numbers/co-3'].byUid==='uP';})()`));
+  /* edit a sent change order: a new revision; the server's verification fields are untouched */
+  const cid=J(`(function(){var X=__co;return Object.keys(X.store).filter(function(k){return /\\/co\\/co_/.test(k)&&X.store[k].data.no===1;})[0].split('/').pop();})()`);
+  $2(`(function(){var X=__co;var d=X.store[X.pre+'co/${cid}'];d.data.verifiedRev=1;d.data.verifiedTotal=185000;X.fire();return true;})()`);await sleep(10);
+  $2(`CO.openEdit('${cid}');true`);
+  const EF=J("[document.getElementById('coAmt').value,document.getElementById('coTitle').value,CO._edit.status]");
+  t('4a: opening a sent change order shows its fields and keeps it Sent',EF[0]==='1850'&&EF[1]==='Add a window in the study'&&EF[2]==='sent',JSON.stringify(EF));
+  $2("document.getElementById('coAmt').value='2,100';true");const w0=J("__co.writes.length");await $2("CO.save(true)");await sleep(30);
+  const E1=J(`(function(){var X=__co;var d=X.store[X.pre+'co/${cid}'];return {d:d.data,w:X.writes.slice(${w0})};})()`);
+  t('4a: editing a sent amount is rev 2, status stays sent, and sends only the changed keys plus rev',E1.d.rev===2&&E1.d.amountC===210000&&E1.d.status==='sent'&&E1.d.no===1&&E1.w.length===1,JSON.stringify(E1));
+  t('4a: a rewrite keeps the server\'s verifiedRev and verifiedTotal (they are never overwritten)',E1.d.verifiedRev===1&&E1.d.verifiedTotal===185000,JSON.stringify(E1.d));
+  $2(`CO.openEdit('${cid}');true`);$2(TOAST_ON);const w1=J("__co.writes.length");await $2("CO.save(true)");await sleep(10);const ts2=JSON.parse($2(TOAST_OFF));
+  t('4a: saving with nothing changed writes nothing',J("__co.writes.length")===w1&&ts2.indexOf('Nothing changed')>=0,JSON.stringify(ts2));
+  /* withdraw */
+  const cid2=J(`(function(){var X=__co;return Object.keys(X.store).filter(function(k){return /\\/co\\/co_/.test(k)&&X.store[k].data.no===2;})[0].split('/').pop();})()`);
+  $2(`CO.openEdit('${cid2}');CO._withdraw();true`);await sleep(30);
+  const WD=J(`(function(){var d=__co.store[__co.pre+'co/${cid2}'].data;return [d.status,d.withdrawnBy,d.withdrawnAt,d.no,d.amountC];})()`);
+  t('4a: Withdraw keeps the record: status withdrawn, who and server time, amount and number kept',WD.join()==='withdrawn,uB,__TS__,2,-40000',WD.join());
+  /* drafts */
+  $2(COFILL('Draft only','change','50'));await $2("CO.save(false)");await sleep(30);
+  const dr=J(`(function(){var X=__co;var k=Object.keys(X.store).filter(function(k){return /\\/co\\/co_/.test(k)&&X.store[k].data.status==='draft';});return k.length?{id:k[0].split('/').pop(),d:X.store[k[0]].data}:null;})()`);
+  t('4a: Save draft writes a draft with no number, no rev, no claim',dr&&dr.d.status==='draft'&&dr.d.no===undefined&&dr.d.rev===undefined&&dr.d.amountC===5000&&J(`Object.keys(__co.store).filter(function(k){return /numbers\\/co-/.test(k);}).length`)===4,JSON.stringify(dr));
+  t('4a: a draft shows "Draft", not a number',J("CO.label(undefined)")==='Draft'&&J("CO.label(7)")==='CO-007');
+  $2(`CO.openEdit('${dr.id}');document.getElementById('coAmt').value='75';true`);await $2("CO.save(false)");await sleep(30);
+  t('4a: editing a draft rewrites the draft (amount 7500, still a draft)',J(`__co.store[__co.pre+'co/${dr.id}'].data.amountC`)===7500&&J(`__co.store[__co.pre+'co/${dr.id}'].data.status`)==='draft');
+  $2(`CO.openEdit('${dr.id}');CO._delDraft();true`);await sleep(30);
+  t('4a: a never-sent draft can be deleted',J(`!__co.store[__co.pre+'co/${dr.id}']`));
+  /* C-2: sent is never deleted (the stub enforces the rule; the app has no delete for it) */
+  const nodel=J(`(function(){var e=null;try{CO.openEdit('${cid}');}catch(x){}return typeof CO.delDraft==='function'&&(function(){CO._edit&&(CO._edit.status='sent');CO.delDraft();return document.getElementById('confirmScrim').classList.contains('show');})();})()`);
+  $2("ocCancel();CO._edit=null;true");
+  t('4a: there is no delete for a sent change order',nodel===false);
+  /* the race: the homeowner decided while the builder was editing */
+  $2(`(function(){var X=__co;X.store[X.pre+'co/${cid}'].data.status='approved';X.fire();CO.openEdit;true;})()`);await sleep(10);
+  $2(`CO._edit={id:'${cid}',status:'sent',title:'x',kind:'change',amount:'3,000',note:'',days:'',rev:2,orig:{title:'Add a window in the study',amountC:210000,kind:'change',note:'South wall',days:3,rev:2,no:1}};CO.draw();true`);
+  $2(TOAST_ON);await $2("CO.save(true)");await sleep(30);const ts3=JSON.parse($2(TOAST_OFF));
+  t('4a: editing after the homeowner approved is refused with "Already approved — make a new change order"',ts3.some(x=>/Already approved/.test(x)),JSON.stringify(ts3));
+  /* M-15: below the minimum nothing is written */
+  $2("PaperTrail.minV=99999;true");const wB=J("__co.writes.length");$2(COFILL('Blocked','change','5'));await $2("CO.save(true)");
+  const bl=J("[__co.writes.length,document.getElementById('confirmScrim').classList.contains('show'),document.getElementById('ocTitle').textContent]");$2("ocCancel();PaperTrail.minV=0;true");
+  t('4a: an out-of-date phone: Sign and send says Update to continue and writes nothing',bl[0]===wB&&bl[1]&&bl[2]==='Update to continue',JSON.stringify(bl));
+  t('4a: nothing outside sites/<id>/co and sites/<id>/numbers was ever written',J("__co.writes.every(function(w){return /(set|del) sites\\/[^/]+\\/(co|numbers)\\//.test(w);})"));
+  $2(COEND);
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();
