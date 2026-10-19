@@ -4784,9 +4784,9 @@ await (async function(){
   t('3c-3: Send claims the next number and writes the invoice in ONE batch',IV2.st==='sent'&&IV2.n===before+1&&IV2.claim&&IV2.w.length===2&&IV2.w.every(function(w){return / b\d+$/.test(w);})&&IV2.w[0].split(' b')[1]===IV2.w[1].split(' b')[1]&&IV2.rec&&IV2.rec.no===IV2.no&&IV2.rec.status==='sent',JSON.stringify(IV2));
   /* another phone already claimed the next number, and this phone's read of the claims is stale */
   $2(`(function(){var X=__co;var m=0;P().invoices.forEach(function(v){var x=/INV-(\\d+)/.exec(v.no||'');if(x&&+x[1]>m)m=+x[1];});X.store[X.pre+'numbers/inv-'+(m+1)]={kind:'inv',no:m+1,byUid:'uOther',at:'__TS__',appV:'x'};X.otherNo=m+1;X.stale(1);X.writes.length=0;return true;})()`);
-  $2(INVFILL('Race','75'));$2(TOAST_ON);const IVA=J("[InvNo.allowed(P()),navigator.onLine,Sync.ready(),Sync.mode,!!(Sync._pulled[String(P().id)]||{}).inv,syncWrites(P(),'inv'),moneyUpdateGate&&String(moneyUpdateGate()).slice(0,20)]");
+  $2(INVFILL('Race','75'));
   await $2("(async function(){invSave(false);await new Promise(function(r){setTimeout(r,40);});return true;})()");
-  const IV3=J("(function(){var v=P().invoices.slice(-1)[0];return {no:v.no,st:v.status,other:__co.otherNo};})()");IV3.dbg=IVA;IV3.toasts=JSON.parse($2(TOAST_OFF));IV3.err=J("InvNo._last||''");
+  const IV3=J("(function(){var v=P().invoices.slice(-1)[0];return {no:v.no,st:v.status,other:__co.otherNo};})()");IV3.err=J("InvNo._last||''");
   t('3c-3: two phones at once: a taken number is refused and this phone gets the next one',IV3.st==='sent'&&IV3.no==='INV-'+String(IV3.other+1).padStart(3,'0'),IV3.err+' '+JSON.stringify(IV3));
   /* the send fails (no signal): it stays a draft with no number */
   $2(`(function(){var X=__co;X.saved.batch=Sync.db.batch;Sync.db.batch=function(){return {set:function(){},commit:function(){var e=new Error('unavailable');e.code='unavailable';return Promise.reject(e);}};};X.writes.length=0;return true;})()`);
