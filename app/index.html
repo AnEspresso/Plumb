@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.471.0 - Builders can send change orders (Sign and send, edit, withdraw) once the paper-trail switch is on';
+const PLUMB_VERSION='2.472.0 - Homeowners can approve and sign or decline change orders; builders see the decision (paper-trail switch on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792430000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.471.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792440000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.472.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9568,7 +9568,7 @@ async function moneyUpdateNow(){
    (a credit is stored negative); Sign and send is rev 1 + sentAt/sentBy/sentName/sentRole + a numbers/co-N claim in the SAME
    batch (M-6); an edit of a sent change order bumps rev (C-1); sent is never deleted or un-sent, only withdrawn (C-2).
    Every write is a merge, so the server's verifiedRev and verifiedTotal are never touched. Online only (server time). */
-const CO={_rows:{},_unsub:{},_err:{},_edit:null,
+const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
   allowed(){try{const p=P();return !!(PaperTrail.on&&p&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&siteRoleFor(p)==='builder'&&(state.session||{}).role==='builder'&&(canGate('moneyJob')||canGate('moneyCo')));}catch(e){return false;}},
   ts(){return firebase.firestore.FieldValue.serverTimestamp();},
   del(){return firebase.firestore.FieldValue.delete();},
@@ -9586,10 +9586,11 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,
   attach(p){const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
     try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.render();},
       err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];this.render();});}catch(e){this._err[sid]='error';}},
-  open(){if(!this.allowed()){toast('Change orders are not on yet');return;}this._edit=null;this.attach(P());this.render();},
-  render(){const sc=document.getElementById('infoScrim');if(this._edit||!sc||!sc.classList.contains('show')||!document.getElementById('coRoot'))return;this.draw();},
+  open(){if(!this.allowed()){toast('Change orders are not on yet');return;}this._edit=null;this._view=null;this.attach(P());this.render();},
+  render(){const sc=document.getElementById('infoScrim');if(this._edit||this._view||!sc||!sc.classList.contains('show')||!document.getElementById('coRoot'))return;this.draw();},
   draw(){const p=P();if(!p)return;const sid=String(p.id);
     if(this._edit){showInfo('Change order',this.formHTML(p),true);return;}
+    if(this._view){const vr=this.row(sid,this._view);if(vr){showInfo('Change order',this.viewHTML(vr),true);return;}this._view=null;}
     const rows=this.list(sid);const grp=(t,f)=>{const g=rows.filter(f).sort((a,b)=>(a.no||1e9)-(b.no||1e9)||(a.t||0)-(b.t||0));return g.length?'<div class="sec"><h2>'+t+'</h2></div>'+g.map(r=>this.rowHTML(r)).join(''):'';};
     let h='<div id="coRoot">';
     if(this._err[sid])h+='<div class="empty">Change orders are not available yet. Try again later.</div>';
@@ -9598,8 +9599,13 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,
     h+='<button class="b1 b-go w-full mt-2 btn btn-primary" onclick="CO.newForm()">New change order</button><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button></div>';
     showInfo('Change orders',h,true);},
   rowHTML(r){const upd=r.status==='sent'&&r.rev>1?' \u00b7 Updated':'';
-    const click=(r.status==='draft'||r.status==='sent')?' onclick="CO.openEdit(\''+esc(r.id)+'\')"':'';
+    const click=(r.status==='draft'||r.status==='sent')?' onclick="CO.openEdit(\''+esc(r.id)+'\')"':' onclick="CO.openView(\''+esc(r.id)+'\')"';
     return '<div class="subrow'+(click?' cur-p':'')+'"'+click+'><div class="si"><div class="n">'+esc(this.label(r.no))+' \u00b7 '+esc(r.title||'')+'</div><div class="d">'+esc(this.amountText(r.amountC))+upd+(r.status==='withdrawn'?' \u00b7 Withdrawn':r.status==='declined'?' \u00b7 Declined':'')+'</div></div></div>';},
+  openView(id){const r=this.row(String(P().id),id);if(!r)return;this._view=id;this.draw();},
+  viewHTML(r){const w=(t)=>COH.when(t);
+    return '<div id="coRoot"><div class="meta">'+esc(this.label(r.no))+(r.rev>1?' \u00b7 revision '+r.rev:'')+'</div><div class="fs-md fw-6">'+esc(r.title||'')+'</div><div class="fs-lg fw-6 mt-1">'+esc(this.amountText(r.amountC))+'</div>'+(r.note?'<p class="mt-2">'+esc(r.note)+'</p>':'')
+      +(r.status==='approved'?'<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':''):r.status==='declined'?'<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':''):'<div class="meta mt-2">Withdrawn</div>')
+      +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO._view=null;CO.draw()">Back</button></div>';},
   newForm(){this._edit={id:null,status:'new',title:'',kind:'change',amount:'',note:'',days:'',rev:0};this.draw();},
   openEdit(id){const p=P();const r=this.row(String(p.id),id);if(!r||!(r.status==='draft'||r.status==='sent'))return;
     this._edit={id:r.id,status:r.status,title:r.title||'',kind:r.kind==='credit'?'credit':'change',amount:fmtPlain(fromC(Math.abs(r.amountC||0))),note:r.note||'',days:r.days==null?'':String(r.days),rev:r.rev||0,orig:r};this.draw();},
@@ -9678,6 +9684,100 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,
     openConfirm({title:'Delete this draft?',body:'It was never sent.',okLabel:'Delete',danger:true,onConfirm:()=>this._delDraft()});},
   async _delDraft(){const p=P();const sid=String(p.id);const e=this._edit;if(!e)return;
     try{await this.col(sid).doc(e.id).delete();toast('Draft deleted');this._edit=null;this.draw();}catch(err){this.fail(sid,e.id,err);}}
+};
+/* ── Step 4b (2.472.0): change orders, homeowner side ──
+   DORMANT like the builder side: nothing is read or written unless PaperTrail.on and this person is the homeowner on a
+   live house. The list is the status-filtered query the rules require (never drafts). The decision is one merge write in
+   Rules A1's clientCoOk() shape: status, decidedAt (server time), decidedBy (own uid), decidedRev (the revision shown),
+   decidedName and decidedRole copied from membership (M-17), and the exact sentence shown (M-8). The server's own check
+   (verifiedRev and verifiedTotal, M-14) must match before Approve and sign is offered; the first time the homeowner opens a
+   version, moneyOpened records it (M-9). A one-time consent comes first (M-8). Word choices are Agency placeholders. */
+const CONSENT_TEXT_V='v0-placeholder-2026-10';
+const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_slow:false,
+  allowed(p){try{p=p||clientProj();return !!(PaperTrail.on&&p&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&siteRoleFor(p)==='client'&&(state.session||{}).role==='client');}catch(e){return false;}},
+  col(sid){return CO.col(sid);},
+  list(sid){return (this._rows[String(sid)]||[]).slice();},
+  row(sid,id){return this.list(sid).find(r=>r.id===id)||null;},
+  verified(r){return !!r&&r.verifiedRev===r.rev&&r.verifiedTotal===r.amountC;},
+  sentence(r){return CO.sentence(r.kind,r.amountC);},
+  myName(p){try{const m=p.memberInfo&&p.memberInfo[Sync.uid];return (m&&m.name)||(state.session&&state.session.name)||'';}catch(e){return '';}},
+  attach(p){const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
+    try{
+      this._unsub[sid]=this.col(sid).where('data.status','in',['sent','approved','declined','withdrawn']).onSnapshot(snap=>{
+        this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.refresh();},
+        err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];});
+      Sync.db.collection('sites').doc(sid).collection('consent').doc(String(Sync.uid)).get().then(s=>{this._cons[sid]=!!(s&&s.exists);},()=>{});
+    }catch(e){this._err[sid]='error';}},
+  refresh(){try{if(document.getElementById('clientview').classList.contains('show'))renderClient();}catch(e){}
+    try{if(this._open&&document.getElementById('infoScrim').classList.contains('show')&&document.getElementById('cohRoot'))this.drawDetail();}catch(e){}},
+  cardHTML(p){
+    if(!this.allowed(p))return '';this.attach(p);const rows=this.list(p.id);if(!rows.length)return '';
+    const g=(f)=>rows.filter(f).sort((a,b)=>(b.no||0)-(a.no||0));
+    const row=(r)=>'<div class="subrow cur-p" onclick="COH.openDetail(\''+esc(r.id)+'\')"><div class="si"><div class="n">'+esc(CO.label(r.no))+' \u00b7 '+esc(r.title||'')+'</div><div class="d">'+esc(CO.amountText(r.amountC))+(r.status==='sent'&&r.rev>1?' \u00b7 Updated \u2014 needs your OK again':'')+'</div></div></div>';
+    const need=g(r=>r.status==='sent'),ok=g(r=>r.status==='approved'),closed=g(r=>r.status==='declined'||r.status==='withdrawn');
+    return '<div class="sec"><h2>Change orders</h2></div>'
+      +(need.length?'<div class="meta">Needs your OK</div>'+need.map(row).join(''):'')
+      +(ok.length?'<div class="meta">Approved</div>'+ok.map(row).join(''):'')
+      +(closed.length?'<details><summary class="meta">Closed ('+closed.length+')</summary>'+closed.map(row).join('')+'</details>':'');},
+  openDetail(id){const p=clientProj();if(!p||!this.allowed(p))return;const r=this.row(String(p.id),id);if(!r)return;
+    this._open={id:id,rev:r.rev,seen:r.rev};this._slow=false;this.drawDetail();
+    if(r.status==='sent'){const k=id+':'+r.rev;if(!this._opened[k]){this._opened[k]=1;try{fnCall('moneyOpened',{siteId:String(p.id),coll:'co',docId:id}).catch(function(){});}catch(e){}}}},
+  when(t){try{const ms=t&&t.toMillis?t.toMillis():(typeof t==='number'?t:0);return ms?new Date(ms).toLocaleString([],{dateStyle:'medium',timeStyle:'short'}):'';}catch(e){return '';}},
+  drawDetail(){const p=clientProj();if(!p||!this._open)return;const r=this.row(String(p.id),this._open.id);if(!r){this._open=null;closeInfo();return;}
+    const sent=r.status==='sent';const changed=sent&&this._open.seen!==r.rev;
+    let h='<div id="cohRoot"><div class="meta">'+esc(CO.label(r.no))+(r.rev>1?' \u00b7 revision '+r.rev:'')+'</div>'
+      +'<div class="fs-md fw-6">'+esc(r.title||'')+'</div><div class="fs-lg fw-6 mt-1">'+esc(CO.amountText(r.amountC))+'</div>'
+      +(r.note?'<p class="mt-2">'+esc(r.note)+'</p>':'')+(r.days?'<div class="meta">Adds '+r.days+' day'+(r.days===1?'':'s')+' to the schedule</div>':'');
+    if(changed)h+='<div class="meta c-clay mt-2">Updated \u2014 needs your OK again</div>';
+    if(sent){
+      const ok=this.verified(r);
+      h+='<div class="meta mt-2">'+esc(this.sentence(r))+'</div>'
+        +'<button class="b1 b-go w-full mt-1 btn btn-primary"'+(ok?'':' disabled aria-busy="true"')+' onclick="COH.approve(\''+esc(r.id)+'\')">'+(ok?'Approve and sign':'Checking\u2026')+'</button>'
+        +(ok||!this._slow?'':'<div class="meta">This one is taking longer than usual. Ask your builder to check it.</div>')
+        +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="COH.decline(\''+esc(r.id)+'\')">Decline</button>';
+      if(!ok&&!this._slowT){this._slowT=setTimeout(()=>{this._slowT=null;this._slow=true;try{if(this._open)this.drawDetail();}catch(e){}},15000);}
+    }else if(r.status==='approved'){
+      h+='<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(this.when(r.decidedAt)?' \u00b7 '+esc(this.when(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':'');
+    }else if(r.status==='declined'){
+      h+='<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':'');
+    }else h+='<div class="meta mt-2">Withdrawn by your builder</div>';
+    h+='<button class="add-sub-btn mt-2 btn btn-secondary" onclick="COH.close()">Back</button></div>';
+    showInfo('Change order',h,true);},
+  close(){this._open=null;closeInfo();},
+  consentScreen(id){
+    showInfo('Sign electronically','<div id="cohRoot"><p>To approve changes to your contract here, you agree to receive and sign documents electronically.</p>'
+      +'<p>You can ask your builder for paper at any time. Copies of what you sign are sent to you by email.</p>'
+      +'<button class="b1 b-go w-full mt-1 btn btn-primary" onclick="COH.agree(\''+esc(id)+'\')">I agree</button>'
+      +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="COH.drawDetail()">Not now</button></div>',true);},
+  async agree(id){const p=clientProj();if(!p||moneyUpdateGate())return;const sid=String(p.id);
+    if(!CO.online()){toast('Needs a connection \u2014 try again with a bar of signal');return;}
+    try{await Sync.db.collection('sites').doc(sid).collection('consent').doc(String(Sync.uid)).set(Object.assign({agreed:true,textV:CONSENT_TEXT_V},CO.stamp()));this._cons[sid]=true;this.drawDetail();}
+    catch(e){toast('Could not save \u2014 try again with a bar of signal');try{trapError('caught',String((e&&e.message)||e),'COH.agree');}catch(x){}}},
+  fail(sid,id,rev,e){const r=this.row(sid,id);
+    if(!r||r.status!=='sent')toast('This change order is no longer open');
+    else if(r.rev!==rev)toast('Updated \u2014 needs your OK again');
+    else toast((e&&e.code)==='permission-denied'?'Could not save \u2014 ask your builder to check your access':'Could not save \u2014 try again with a bar of signal');
+    try{trapError('caught',String((e&&e.message)||e),'COH');}catch(x){}
+    try{this.drawDetail();}catch(x){}},
+  async approve(id){
+    if(moneyUpdateGate())return;const p=clientProj();if(!p||!this.allowed(p))return;const sid=String(p.id);const r=this.row(sid,id);if(!r||r.status!=='sent')return;
+    if(!this.verified(r)){toast('Checking\u2026');return;}
+    if(!CO.online()){toast('Needs a connection \u2014 try again with a bar of signal');return;}
+    if(!this._cons[sid]){this.consentScreen(id);return;}
+    if(this._open&&this._open.seen!==r.rev){this._open.seen=r.rev;this.drawDetail();return;}   /* the builder changed it since it was opened: show the new one first */
+    const key=sid+':'+id;if(this._busy[key])return;this._busy[key]=1;
+    try{await this.col(sid).doc(id).set(Object.assign({data:{status:'approved',decidedAt:CO.ts(),decidedBy:String(Sync.uid),decidedRev:r.rev,decidedName:this.myName(p),decidedRole:'client',sentence:this.sentence(r)}},CO.outer()),{merge:true});
+      toast(CO.label(r.no)+' approved');try{logEvent('coApproved',CO.label(r.no));}catch(x){}}
+    catch(e){this.fail(sid,id,r.rev,e);}finally{delete this._busy[key];}},
+  decline(id){if(moneyUpdateGate())return;const p=clientProj();if(!p)return;const r=this.row(String(p.id),id);if(!r||r.status!=='sent')return;
+    openPrompt({title:'Decline '+CO.label(r.no),body:'You can add a reason for your builder. It is optional.',placeholder:'Reason (optional)',okLabel:'Decline',onOk:(v)=>this._decline(id,v)});},
+  async _decline(id,note){const p=clientProj();if(!p)return;const sid=String(p.id);const r=this.row(sid,id);if(!r||r.status!=='sent')return;
+    if(!CO.online()){toast('Needs a connection \u2014 try again with a bar of signal');return;}
+    if(!this._cons[sid]){this.consentScreen(id);return;}
+    const data={status:'declined',decidedAt:CO.ts(),decidedBy:String(Sync.uid),decidedRev:r.rev,decidedName:this.myName(p),decidedRole:'client'};
+    const n=String(note||'').trim().slice(0,500);if(n)data.declineNote=n;
+    try{await this.col(sid).doc(id).set(Object.assign({data:data},CO.outer()),{merge:true});toast(CO.label(r.no)+' declined');}
+    catch(e){this.fail(sid,id,r.rev,e);}}
 };
 const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_pulled:{},_held:{},_selm:{},_legInv:{},_legAdded:{},_selNp:{},_pushing:{},_pushAgain:{},
   _devId(){let d=null;try{d=localStorage.getItem('plumb.deviceId');}catch(e){}if(!d){d='dev_'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('plumb.deviceId',d);}catch(e){}}return d;},
@@ -11023,6 +11123,7 @@ function clientCostsHTML(p){
     invoices='<div class="sec"><h2>Invoices</h2></div>';
     invoices+=invs.map(function(inv){const st=invState(inv);return '<div class="subrow cur-p" onclick="openInvoiceDetail(\''+p.id+'\',\''+inv.id+'\',\'client\')"><div class="si"><div class="n">'+esc(inv.no)+' \u00b7 '+esc(inv.title)+'</div><div class="d">'+fmtMoney(inv.total)+((st==='partial'||st==='overdue')?' \u00b7 '+fmtMoney(invBalance(inv))+' left':'')+(inv.due&&st!=='paid'?(st==='overdue'?' \u00b7 <b style="color:var(--clay)">past due '+esc(inv.due)+'</b>':' \u00b7 due '+esc(inv.due)):'')+(st==='sent'?' \u00b7 <b style="color:var(--clay)">needs your OK</b>':'')+'</div></div>'+invStatusChip(st)+'</div>';}).join('');
   }
+  try{invoices+=COH.cardHTML(p);}catch(e){}
   return {line:clientStillToPayLine(bs.out),ledger:ledger,invoices:invoices,needOK:(p.invoices||[]).filter(invNeedsOK)};
 }
 /* Unified site billing: one balance shared by selections + invoices.

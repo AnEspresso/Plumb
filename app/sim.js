@@ -4381,6 +4381,14 @@ await (async function(){
     function merge(a,b){var o=JSON.parse(JSON.stringify(a||{}));keys(b).forEach(function(k){if(b[k]===DEL)delete o[k];else o[k]=b[k];});return o;}
     function check(path,v,merged,old,batchPaths){
       var seg=path.split('/');var coll=seg[2];
+      if(coll==='consent'){if(old||!only(v,['byUid','at','agreed','textV','appV','tappedAt'])||v.agreed!==true||v.byUid!==Sync.uid||v.at!==TS||seg[3]!==Sync.uid||!v.textV)throw denied('consent');return;}
+      if(coll==='co'&&X.role==='client'){var on=merged.data||{},oo=old?old.data:null;
+        if(!oo||oo.status!=='sent'||!only(merged,OUT)||merged.byUid!==Sync.uid||merged.at!==TS||!merged.appV)throw denied('client co');
+        var cc=keys(on).concat(keys(oo)).filter(function(k,i,a){return a.indexOf(k)===i&&JSON.stringify(on[k])!==JSON.stringify(oo[k]);});
+        if(!cc.every(function(k){return ['status','decidedAt','decidedBy','decidedRev','decidedName','decidedRole','declineNote','sentence'].indexOf(k)>=0;}))throw denied('client keys');
+        if(['approved','declined'].indexOf(on.status)<0||on.decidedRev!==oo.rev||on.decidedBy!==Sync.uid||on.decidedAt!==TS||on.decidedRole!=='client'||!on.decidedName)throw denied('client decision');
+        if(on.status==='approved'&&(!on.sentence||oo.verifiedRev!==oo.rev||oo.verifiedTotal!==oo.amountC))throw denied('client approve');
+        if(!store[seg[0]+'/'+seg[1]+'/consent/'+Sync.uid])throw denied('no consent');return;}
       if(coll==='numbers'){if(old)throw denied('number already claimed');if(!only(v,['kind','no','byUid','at','appV','tappedAt'])||v.kind!=='co'||!(v.no>0)||seg[3]!=='co-'+v.no||v.byUid!==Sync.uid||v.at!==TS)throw denied('number shape');return;}
       if(coll!=='co')throw denied('collection '+coll);
       if(!only(merged,OUT)||merged.byUid!==Sync.uid||merged.at!==TS||typeof merged.appV!=='string'||!merged.appV)throw denied('outer');
@@ -4404,16 +4412,16 @@ await (async function(){
       keys(store).forEach(function(k){delete store[k];});keys(next).forEach(function(k){store[k]=next[k];});ops.forEach(function(o){writes.push(o.k+' '+o.p+(o.b?' b'+o.b:''));});fire();}
     function fire(){subs.forEach(function(s){s.cb(snap(s.p));});}
     function snap(path){var d=keys(store).filter(function(k){return k.indexOf(path+'/')===0&&k.split('/').length===path.split('/').length+1;}).map(function(k){return {id:k.split('/').pop(),data:function(){return JSON.parse(JSON.stringify(store[k]));}};});return {docs:d};}
-    function docRef(p,b){return {path:p,id:p.split('/').pop(),set:function(v,o){var op={k:'set',p:p,v:v,merge:!!(o&&o.merge)};if(b){b.ops.push(op);return;}try{apply([op]);return Promise.resolve();}catch(e){return Promise.reject(e);}},delete:function(){try{apply([{k:'del',p:p}]);return Promise.resolve();}catch(e){return Promise.reject(e);}},collection:function(c){return colRef(p+'/'+c);}};}
-    function colRef(p){return {path:p,doc:function(id){return docRef(p+'/'+id);},get:function(){reads.push(p);if(staleNums>0&&/numbers$/.test(p)){staleNums--;return Promise.resolve({docs:[]});}return Promise.resolve(snap(p));},onSnapshot:function(cb,eb){subs.push({p:p,cb:cb,eb:eb});setTimeout(function(){cb(snap(p));},0);return function(){};}};}
-    X.stale=function(n){staleNums=n;};X.fire=fire;
+    function docRef(p,b){return {path:p,id:p.split('/').pop(),set:function(v,o){var op={k:'set',p:p,v:v,merge:!!(o&&o.merge)};if(b){b.ops.push(op);return;}try{apply([op]);return Promise.resolve();}catch(e){return Promise.reject(e);}},delete:function(){try{apply([{k:'del',p:p}]);return Promise.resolve();}catch(e){return Promise.reject(e);}},get:function(){reads.push(p);var v=store[p];return Promise.resolve({exists:!!v,data:function(){return v;}});},collection:function(c){return colRef(p+'/'+c);}};}
+    function colRef(p){return {path:p,where:function(f,op,vals){var self=colRef(p);self.filter=[f,op,vals];self.onSnapshot=function(cb,eb){subs.push({p:p,cb:function(sn){cb({docs:sn.docs.filter(function(d){var st=(d.data().data||{}).status;return vals.indexOf(st)>=0;})});},eb:eb,filter:[f,op,vals]});setTimeout(function(){subs[subs.length-1].cb(snap(p));},0);return function(){};};return self;},doc:function(id){return docRef(p+'/'+id);},get:function(){reads.push(p);if(staleNums>0&&/numbers$/.test(p)){staleNums--;return Promise.resolve({docs:[]});}return Promise.resolve(snap(p));},onSnapshot:function(cb,eb){subs.push({p:p,cb:cb,eb:eb});setTimeout(function(){cb(snap(p));},0);return function(){};}};}
+    X.stale=function(n){staleNums=n;};X.fire=fire;X.role='builder';X.calls=[];X.saved.fn=window.fnCall;window.fnCall=function(n,d){X.calls.push([n,d]);return Promise.resolve({});};
     Sync.db={collection:function(c){return {doc:function(id){var r=docRef(c+'/'+id);r.collection=function(cc){return colRef(c+'/'+id+'/'+cc);};return r;}};},batch:function(){var b={ops:[],id:++batchN};return {set:function(r,v,o){var op={k:'set',p:r.path,v:v,merge:!!(o&&o.merge),b:b.id};b.ops.push(op);},commit:function(){try{apply(b.ops);return Promise.resolve();}catch(e){return Promise.reject(e);}}};}};
     Sync.on=true;Sync.mode='live';Sync.uid='uB';Sync.deviceId='devB';
     state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};canGate=function(){return true;};
     window.firebase={firestore:{FieldValue:{serverTimestamp:function(){return TS;},delete:function(){return DEL;}}}};
     var p=P();p.members=Object.assign({},p.members,{uB:'builder'});p.memberInfo={uB:{name:'Dean Walsh'}};X.pid=String(p.id);X.pre='sites/'+X.pid+'/';
     return true;})()`;
-  const COEND=`(function(){var X=window.__co;Sync.db=X.saved.db;Sync.on=X.saved.on;Sync.mode=X.saved.mode;Sync.uid=X.saved.uid;Sync.deviceId=X.saved.dev;state.session=X.saved.sess;canGate=X.saved.canGate;window.firebase=X.saved.fb;PaperTrail.on=X.saved.pton;PaperTrail.minV=X.saved.ptmin;CO._rows={};CO._unsub={};CO._err={};CO._edit=null;return true;})()`;
+  const COEND=`(function(){var X=window.__co;Sync.db=X.saved.db;Sync.on=X.saved.on;Sync.mode=X.saved.mode;Sync.uid=X.saved.uid;Sync.deviceId=X.saved.dev;state.session=X.saved.sess;canGate=X.saved.canGate;window.firebase=X.saved.fb;window.fnCall=X.saved.fn;PaperTrail.on=X.saved.pton;PaperTrail.minV=X.saved.ptmin;CO._rows={};CO._unsub={};CO._err={};CO._edit=null;CO._view=null;COH._rows={};COH._unsub={};COH._err={};COH._cons={};COH._open=null;COH._opened={};return true;})()`;
   const COFILL=(title,kind,amt,note,days)=>`CO.newForm();document.getElementById('coTitle').value=${JSON.stringify(title)};CO.setKind('${kind}');document.getElementById('coAmt').value=${JSON.stringify(amt)};document.getElementById('coNote').value=${JSON.stringify(note||'')};document.getElementById('coDays').value=${JSON.stringify(days||'')};true`;
   $2(COSETUP);
   $2("PaperTrail.on=false;CO._edit=null;true");
@@ -4482,6 +4490,85 @@ await (async function(){
   const bl=J("[__co.writes.length,document.getElementById('confirmScrim').classList.contains('show'),document.getElementById('ocTitle').textContent]");$2("ocCancel();PaperTrail.minV=0;true");
   t('4a: an out-of-date phone: Sign and send says Update to continue and writes nothing',bl[0]===wB&&bl[1]&&bl[2]==='Update to continue',JSON.stringify(bl));
   t('4a: nothing outside sites/<id>/co and sites/<id>/numbers was ever written',J("__co.writes.every(function(w){return /(set|del) sites\\/[^/]+\\/(co|numbers)\\//.test(w);})"));
+  /* ---------- 4b: the homeowner side ---------- */
+  $2(`(function(){var X=__co;X.role='client';Sync.uid='uH';Sync.deviceId='devH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};var p=P();p.members=Object.assign({},p.members,{uH:'client'});p.memberInfo=Object.assign({},p.memberInfo,{uH:{name:'Ana Ruiz'}});
+    var o=function(d){return {data:d,byUid:'uB',at:'__TS__',appV:'2.471.0'};};
+    X.store[X.pre+'co/h_draft']=o({id:'h_draft',title:'SECRET DRAFT',amountC:1000,kind:'change',status:'draft'});
+    X.store[X.pre+'co/h_unv']=o({id:'h_unv',title:'Add a window',amountC:185000,kind:'change',status:'sent',no:11,rev:1,note:'South wall',days:3});
+    X.store[X.pre+'co/h_ver']=o({id:'h_ver',title:'Tile upgrade',amountC:-40000,kind:'credit',status:'sent',no:12,rev:1,verifiedRev:1,verifiedTotal:-40000});
+    X.store[X.pre+'co/h_old']=o({id:'h_old',title:'Old approved',amountC:5000,kind:'change',status:'approved',no:9,rev:1,decidedName:'Ana Ruiz',decidedRev:1});
+    X.store[X.pre+'co/h_dec']=o({id:'h_dec',title:'Old declined',amountC:7000,kind:'change',status:'declined',no:10,rev:1});
+    X.subs.length=0;X.writes.length=0;X.reads.length=0;X.calls.length=0;return true;})()`);
+  $2("PaperTrail.on=false;true");
+  const H0=J(`(function(){var X=__co;var o={allowed:COH.allowed(),card:clientCostsHTML(clientProj()).invoices.indexOf('Change orders')>=0,subs:X.subs.length,reads:X.reads.length,w:X.writes.length};return o;})()`);
+  t('4b: switch off: no card, no listener, no read, no write',!H0.allowed&&!H0.card&&H0.subs===0&&H0.reads===0&&H0.w===0,JSON.stringify(H0));
+  $2("PaperTrail.on=true;true");
+  const H1=J(`(function(){var X=__co;var h=clientCostsHTML(clientProj()).invoices;return {card:h.indexOf('Change orders')>=0,subs:X.subs.map(function(s){return s.filter;}),reads:X.reads.slice()};})()`);
+  await sleep(40);
+  t('4b: switch on: the homeowner listens with the status filter (never the draft)',H1.subs.length===1&&JSON.stringify(H1.subs[0])===JSON.stringify(['data.status','in',['sent','approved','declined','withdrawn']]),JSON.stringify(H1.subs));
+  const H2=J(`(function(){var h=COH.cardHTML(clientProj());return {h:h,draft:h.indexOf('SECRET')>=0,need:h.indexOf('Needs your OK')>=0,ok:h.indexOf('Approved')>=0,closed:/Closed \\(\\d+\\)/.test(h),w:__co.writes.length,consentRead:__co.reads.some(function(r){return /consent\\/uH$/.test(r);})};})()`);
+  t('4b: the card groups Needs your OK / Approved / Closed and hides drafts',H2.need&&H2.ok&&H2.closed&&!H2.draft&&H2.h.indexOf('Add a window')>=0&&H2.h.indexOf('Tile upgrade')>=0&&H2.w===0,JSON.stringify([H2.need,H2.ok,H2.closed,H2.draft,H2.w,H2.h.indexOf('Add a window'),H2.h.indexOf('Tile upgrade')]));
+  t('4b: the homeowner reads only their own consent doc',H2.consentRead);
+  /* unverified: Checking… */
+  $2("COH.openDetail('h_unv');true");
+  const H3=J(`(function(){var b=document.querySelector('#cohRoot .btn-primary');return {txt:b.textContent,dis:b.disabled,calls:__co.calls.slice(),sent:document.getElementById('cohRoot').textContent.indexOf('This adds $1,850.00 to your contract.')>=0};})()`);
+  t('4b: before the server verifies, the button reads Checking… and is disabled',H3.txt==='Checking\u2026'&&H3.dis,JSON.stringify(H3));
+  t('4b: opening records one moneyOpened call with the site, co and doc id',H3.calls.length===1&&H3.calls[0][0]==='moneyOpened'&&H3.calls[0][1].coll==='co'&&H3.calls[0][1].docId==='h_unv'&&H3.calls[0][1].siteId===J("String(P().id)"),JSON.stringify(H3.calls));
+  t('4b: the detail shows the signing sentence in the spec words',H3.sent);
+  $2(TOAST_ON);await $2("COH.approve('h_unv')");let tsH=JSON.parse($2(TOAST_OFF));
+  t('4b: Approve before verification does nothing but say Checking…',tsH.indexOf('Checking\u2026')>=0&&J("__co.writes.length")===0,JSON.stringify(tsH));
+  $2("COH.openDetail('h_unv');true");
+  t('4b: re-opening the same revision does not call moneyOpened again',J("__co.calls.length")===1);
+  /* the server verifies */
+  $2(`(function(){var X=__co;var r=X.store[X.pre+'co/h_unv'];r.data.verifiedRev=1;r.data.verifiedTotal=185000;X.fire();return true;})()`);
+  await sleep(20);
+  t('4b: once verified the button turns into Approve and sign',J("(function(){var b=document.querySelector('#cohRoot .btn-primary');return b.textContent+'|'+b.disabled;})()")==='Approve and sign|false');
+  /* consent first */
+  $2(TOAST_ON);await $2("COH.approve('h_unv')");$2(TOAST_OFF);
+  t('4b: no consent yet: Approve shows the consent screen and writes nothing',J("document.getElementById('infoScrim').textContent.indexOf('I agree')>=0")&&J("__co.writes.length")===0&&J("__co.store[__co.pre+'co/h_unv'].data.status")==='sent');
+  await $2("COH.agree('h_unv')");await sleep(20);
+  const HC=J(`(function(){var c=__co.store[__co.pre+'consent/uH'];return c;})()`);
+  t('4b: Agree writes consent: agreed, textV, stamped, doc id = own uid',HC&&HC.agreed===true&&HC.textV==='v0-placeholder-2026-10'&&HC.byUid==='uH'&&HC.at==='__TS__'&&!!HC.appV,JSON.stringify(HC));
+  /* approve and sign */
+  $2(TOAST_ON);await $2("COH.approve('h_unv')");let tsA=JSON.parse($2(TOAST_OFF));
+  const HA=J(`(function(){return __co.store[__co.pre+'co/h_unv'];})()`);
+  t('4b: Approve and sign: approved, decidedRev=rev, decidedBy, name, role, server time, sentence',HA.data.status==='approved'&&HA.data.decidedRev===1&&HA.data.decidedBy==='uH'&&HA.data.decidedName==='Ana Ruiz'&&HA.data.decidedRole==='client'&&HA.data.decidedAt==='__TS__'&&HA.data.sentence==='This adds $1,850.00 to your contract.',JSON.stringify(HA.data));
+  t('4b: approving leaves the amount and the server verified fields alone',HA.data.amountC===185000&&HA.data.verifiedRev===1&&HA.data.verifiedTotal===185000&&HA.byUid==='uH'&&tsA.join('|').indexOf('approved')>=0,JSON.stringify(tsA));
+  t('4b: the homeowner only ever wrote co and consent docs',J("__co.writes.every(function(w){return /\\/(co|consent)\\//.test(w);})"),J("JSON.stringify(__co.writes)"));
+  /* decline with and without a reason */
+  $2(`(function(){var X=__co;X.store[X.pre+'co/h_d1']={data:{id:'h_d1',title:'Deck',amountC:9000,kind:'change',status:'sent',no:13,rev:2,verifiedRev:2,verifiedTotal:9000},byUid:'uB',at:'__TS__',appV:'x'};X.store[X.pre+'co/h_d2']={data:{id:'h_d2',title:'Fence',amountC:9000,kind:'change',status:'sent',no:14,rev:1},byUid:'uB',at:'__TS__',appV:'x'};X.fire();return true;})()`);
+  await sleep(20);
+  await $2("COH._decline('h_d1','Too much')");await $2("COH._decline('h_d2','')");
+  const HD=J(`(function(){var a=__co.store[__co.pre+'co/h_d1'].data,b=__co.store[__co.pre+'co/h_d2'].data;return {a:a,b:b};})()`);
+  t('4b: Decline with a reason stores declined, decidedRev, decidedBy and the note (no sentence)',HD.a.status==='declined'&&HD.a.decidedRev===2&&HD.a.declineNote==='Too much'&&HD.a.decidedBy==='uH'&&!('sentence' in HD.a),JSON.stringify(HD.a));
+  t('4b: Decline works before the server has verified, with no note key when empty',HD.b.status==='declined'&&!('declineNote' in HD.b),JSON.stringify(HD.b));
+  /* builder changes it under the homeowner */
+  $2(`(function(){var X=__co;X.store[X.pre+'co/h_race']={data:{id:'h_race',title:'Paint',amountC:3000,kind:'change',status:'sent',no:15,rev:1,verifiedRev:1,verifiedTotal:3000},byUid:'uB',at:'__TS__',appV:'x'};X.fire();return true;})()`);
+  await sleep(20);$2("COH.openDetail('h_race');true");
+  $2(`(function(){var X=__co;var d=X.store[X.pre+'co/h_race'].data;d.rev=2;d.amountC=4000;X.fire();return true;})()`);
+  await sleep(20);
+  const HR=J(`(function(){var b=document.querySelector('#cohRoot .btn-primary');return {txt:b.textContent,upd:document.getElementById('cohRoot').textContent.indexOf('Updated \\u2014 needs your OK again')>=0};})()`);
+  t('4b: the builder updates it while open: banner "Updated — needs your OK again" and Checking… for the new revision',HR.upd&&HR.txt==='Checking\u2026',JSON.stringify(HR));
+  $2(`(function(){var X=__co;var d=X.store[X.pre+'co/h_race'].data;d.verifiedRev=2;d.verifiedTotal=4000;X.fire();return true;})()`);
+  await sleep(20);
+  $2(TOAST_ON);await $2("COH.approve('h_race')");$2(TOAST_OFF);
+  t('4b: the first tap on a changed revision shows it, it does not sign it',J("__co.store[__co.pre+'co/h_race'].data.status")==='sent');
+  await $2("COH.approve('h_race')");
+  const HR2=J("__co.store[__co.pre+'co/h_race'].data");
+  t('4b: the second tap signs the new revision (decidedRev 2)',HR2.status==='approved'&&HR2.decidedRev===2,JSON.stringify(HR2));
+  $2(TOAST_ON);$2("COH.fail(String(P().id),'h_d1',1,{code:'permission-denied'});");let tsF=JSON.parse($2(TOAST_OFF));
+  t('4b: a denial on a no-longer-open order says so',tsF.join('|').indexOf('no longer open')>=0,JSON.stringify(tsF));
+  /* M-15 gate */
+  $2(`(function(){var X=__co;X.store[X.pre+'co/h_g']={data:{id:'h_g',title:'Gate',amountC:100,kind:'change',status:'sent',no:16,rev:1,verifiedRev:1,verifiedTotal:100},byUid:'uB',at:'__TS__',appV:'x'};X.fire();X.writes.length=0;PaperTrail.minV=999999;return true;})()`);
+  await sleep(20);await $2("COH.approve('h_g')");
+  t('4b: Update to continue blocks approving on an old phone and writes nothing',J("__co.writes.length")===0&&J("__co.store[__co.pre+'co/h_g'].data.status")==='sent');
+  $2("PaperTrail.minV=0;closeInfo();true");
+  /* builder sees the decision */
+  $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
+  $2("CO._unsub={};CO._rows={};CO._view=null;CO.open();true");await sleep(30);
+  const HB=J(`(function(){var X=__co;var h=document.getElementById('infoScrim').textContent;CO.openView('h_unv');var v=document.getElementById('infoScrim').textContent;CO.openView('h_d1');var d=document.getElementById('infoScrim').textContent;return {list:h,v:v,d:d};})()`);
+  t('4b: the builder opens an approved change order read-only and sees who approved it and the sentence',HB.v.indexOf('Ana Ruiz')>=0&&HB.v.indexOf('This adds $1,850.00 to your contract.')>=0&&HB.v.indexOf('Approve and sign')<0,HB.v.slice(0,300));
+  t('4b: the builder sees a decline with its reason',HB.d.indexOf('Too much')>=0&&HB.d.toLowerCase().indexOf('declined')>=0,HB.d.slice(0,300));
   $2(COEND);
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}

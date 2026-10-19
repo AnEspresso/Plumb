@@ -641,6 +641,10 @@ async function main() {
     app_s: sentOf({ id: 'app_s', no: 60, note: 'South wall', days: 2 }),
     app_s2: sentOf({ id: 'app_s2', no: 62 }),
     app_s3: sentOf({ id: 'app_s3', no: 63 }),
+    app_a: sentOf({ id: 'app_a', no: 64, rev: 2, verifiedRev: 2, verifiedTotal: 185000 }),
+    app_a2: sentOf({ id: 'app_a2', no: 65, rev: 2, verifiedRev: 1, verifiedTotal: 185000 }),
+    app_dc: sentOf({ id: 'app_dc', no: 66, rev: 2 }),
+    app_dc2: sentOf({ id: 'app_dc2', no: 67, rev: 2 }),
   };
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const sdb = ctx.firestore();
@@ -724,6 +728,15 @@ async function main() {
   await INV_A1('A1 M-8: approving with no consent record is DENIED', upd(db.client, 'a_nocons', SEEDS.a_nocons, DEC(), U.client));
   await INV('A1 M-8: the homeowner records consent for themselves (own doc id, server time)',
     setDoc(doc(db.client, `sites/liveA/consent/${U.client}`), { byUid: U.client, at: SRV(), agreed: true, textV: 'esign-v1', appV: APPV }), true);
+  /* 2.472.0 homeowner app (4b): the decision is one merge write, exactly these keys; consent is {agreed, textV} + stamps. */
+  const hmrg = (id, part) => setDoc(coRef(db.client, id), Object.assign({ data: Object.fromEntries(Object.entries(part).filter(([, v]) => v !== undefined)), updatedAt: 9, updatedBy: 'devH' }, stampNow(U.client)), { merge: true });
+  const HDEC = (o) => Object.assign({ status: 'approved', decidedAt: SRV(), decidedBy: U.client, decidedRev: 2, decidedName: 'Ana Ruiz', decidedRole: 'client', sentence: 'This adds $1,850.00 to your contract.' }, o || {});
+  await INV('A1 app 4b: the consent the app writes ({agreed, textV, byUid, at, appV, tappedAt}) is ALLOWED', setDoc(doc(db.client, 'sites/liveGateJ/consent/' + U.client), { agreed: true, textV: 'v0-placeholder-2026-10', byUid: U.client, at: SRV(), appV: APPV, tappedAt: 1 }), true);
+  await INV('A1 app 4b: Approve and sign by merge (current rev, verified total, sentence, consent given): ALLOWED', hmrg('app_a', HDEC()), true);
+  await INV_A1('A1 app 4b: the same approve on a revision the server has not verified is DENIED', hmrg('app_a2', HDEC()));
+  await INV_A1('A1 app 4b: approving a stale revision (the builder updated it) is DENIED', hmrg('app_dc', HDEC({ decidedRev: 1 })));
+  await INV('A1 app 4b: Decline by merge with a reason: ALLOWED', hmrg('app_dc', HDEC({ status: 'declined', sentence: undefined, declineNote: 'Too much' })), true);
+  await INV('A1 app 4b: Decline by merge without a reason: ALLOWED', hmrg('app_dc2', (() => { const d = HDEC({ status: 'declined' }); delete d.sentence; return d; })()), true);
   await INV('A1 C-1: approve with the current decidedRev and a verified total ALLOWED', upd(db.client, 'a_ok', SEEDS.a_ok, DEC(), U.client), true);
   await INV_A1('A1 C-1: approve with a stale decidedRev is DENIED', upd(db.client, 'a_stale', SEEDS.a_stale, DEC({ decidedRev: 1 }), U.client));
   await INV_A1('A1 M-14: approve while verifiedRev != rev is DENIED', upd(db.client, 'a_unv', SEEDS.a_unv, DEC(), U.client));
