@@ -4599,6 +4599,47 @@ await (async function(){
   const K7=J(`(function(){var r=clientCostsHTML(P());var bs=billingSummary(P());return {l:r.ledger.indexOf('<span>Change orders</span>')>=0,co:bs.co,w:bs.coWaiting};})()`);
   t('4c: Costs & payments shows the same Change orders line to the homeowner',K7.l&&Math.round(K7.co*100)===Math.round(K2.a*100),JSON.stringify([K7,K2.a]));
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
+  /* ---------- 4c-2: an approved change order on an invoice (coId line), credits, budget line ---------- */
+  await sleep(40);
+  const L0=J(`(function(){PaperTrail.on=false;var off=coBillable(P(),null).length;invCompose();var h=document.getElementById('invScrim').innerHTML;PaperTrail.on=true;_invDraft=null;invMode='list';return {off:off,h:h.indexOf('Approved change orders')>=0};})()`);
+  t('4c-2: switch off: no change orders offered on an invoice',L0.off===0&&!L0.h,JSON.stringify(L0));
+  const L1=J(`(function(){var X=__co;var want=Object.keys(X.store).filter(function(k){return k.indexOf(X.pre+'co/')===0&&X.store[k].data.status==='approved';}).length;var cb=coBillable(P(),null);
+    invCompose();var h=document.getElementById('invScrim').innerHTML;invToggleCo('h_unv');invToggleCo('k_cr');var items=invDraftItems();_invDraft=null;invMode='list';
+    return {n:cb.length,want:want,ids:cb.map(function(r){return r.id;}),sent:cb.some(function(r){return r.status!=='approved';}),h:h.indexOf('Approved change orders')>=0&&h.indexOf('CO-011')>=0,items:items};})()`);
+  t('4c-2: the invoice composer offers every approved change order (and nothing else)',L1.n===L1.want&&L1.n>=3&&!L1.sent&&L1.h,JSON.stringify(L1.ids));
+  const it1=(L1.items||[]).find(i=>i.coId==='h_unv'),it2=(L1.items||[]).find(i=>i.coId==='k_cr');
+  t('4c-2: picking change orders makes coId lines at their exact amount; a credit is negative',it1&&it1.amount===1850&&/^CO-011 · /.test(it1.label)&&it2&&it2.amount===-400&&L1.items.length===2,JSON.stringify(L1.items));
+  const L2=J(`(function(){var p=P();var b0=billingSummary(p);var c0=clientLedger(p);p.invoices=p.invoices||[];
+    p.invoices.push({id:'inv_co_t',no:'INV-CO',title:'Change orders',due:'',items:[{label:'CO-011 · Add a window',amount:1850,coId:'h_unv'},{label:'CO-042 · Credit',amount:-400,coId:'k_cr'}],total:1450,status:'sent',t:Date.now(),payments:[]});
+    var b1=billingSummary(p),c1=clientLedger(p);var cb=coBillable(p,null).map(function(r){return r.id;});var cbE=coBillable(p,'inv_co_t').map(function(r){return r.id;});
+    invCompose('inv_co_t');var dr=JSON.parse(JSON.stringify(_invDraft));_invDraft=null;invMode='list';
+    return {b0:b0,b1:b1,c0:c0.out,c1:c1.out,cb:cb,cbE:cbE,dr:dr};})()`);
+  const B0=L2.b0,B1=L2.b1;const cents=x=>Math.round(x*100);
+  t('4c-2: an invoiced change order leaves Upgrades & credits and Not yet invoiced alone',B0.ups===B1.ups&&B0.crs===B1.crs&&B0.net===B1.net&&cents(B0.unbilled)===cents(B1.unbilled),JSON.stringify([B0,B1]));
+  t('4c-2: it is invoiced and owed: Invoiced, Balance due and Still owed each rise by $1,450.00',cents(B1.billed-B0.billed)===145000&&cents(B1.out-B0.out)===145000&&cents(B1.coBilled)===145000&&cents(B1.balanceDue-B0.balanceDue)===145000,JSON.stringify([B0.out,B1.out,B1.coBilled]));
+  t('4c-2: the homeowner ledger and billingSummary agree on what is owed',cents(L2.c1)===cents(B1.out)&&cents(L2.c0)===cents(B0.out),JSON.stringify([L2.c0,L2.c1,B0.out,B1.out]));
+  t('4c-2: a change order already on an invoice is not offered again (except when editing that invoice)',L2.cb.indexOf('h_unv')<0&&L2.cb.indexOf('k_cr')<0&&L2.cbE.indexOf('h_unv')>=0&&L2.cbE.indexOf('k_cr')>=0,JSON.stringify([L2.cb,L2.cbE]));
+  t('4c-2: editing that invoice re-picks its change orders, not as a custom line',L2.dr.coPicks&&L2.dr.coPicks.h_unv&&L2.dr.coPicks.k_cr&&L2.dr.exLabel==='',JSON.stringify(L2.dr));
+  const L3=J(`(function(){var p=P();var v=p.invoices.find(function(i){return i.id==='inv_co_t';});v.status='void';var a=billingSummary(p).coBilled;var cb=coBillable(p,null).map(function(r){return r.id;});v.status='draft';var d=billingSummary(p).coBilled;var cbd=coBillable(p,null).map(function(r){return r.id;});
+    p.invoices=p.invoices.filter(function(i){return i.id!=='inv_co_t';});return {a:a,cb:cb,d:d,cbd:cbd};})()`);
+  t('4c-2: voiding the invoice frees the change order and removes it from what is owed',L3.a===0&&L3.cb.indexOf('h_unv')>=0,JSON.stringify(L3));
+  t('4c-2: a draft invoice holds the change order (not offered twice) but is not owed yet',L3.d===0&&L3.cbd.indexOf('h_unv')<0,JSON.stringify(L3));
+  /* budget line picker */
+  $2(`costLines=(function(o){window.__clines=o;return function(){return [{id:'L1',rt:'line',label:'Framing'},{id:'L2',rt:'line',label:'Windows'}];};})(costLines);true`);
+  $2("CO.newForm();true");
+  const L4=J("(function(){var s=document.getElementById('coLine');return s?[].map.call(s.options,function(o){return o.textContent;}):null;})()");
+  t('4c-2: More details offers the budget lines (and No budget line)',L4&&L4.join('|')==='No budget line|Framing|Windows',JSON.stringify(L4));
+  $2(COFILL('Bigger window','change','2,000','',''));$2("document.getElementById('coLine').value='L2';true");await $2("CO.save(false)");await sleep(30);
+  const L5=J(`(function(){var X=__co;var k=Object.keys(X.store).filter(function(k){return k.indexOf(X.pre+'co/')===0&&X.store[k].data.title==='Bigger window';})[0];return X.store[k].data;})()`);
+  t('4c-2: a draft keeps the chosen budget line id (only the id; no cost on the co)',L5&&L5.lineId==='L2'&&!('cost' in L5)&&!('lineName' in L5),JSON.stringify(L5));
+  $2(`CO.openEdit('${L5&&L5.id}');true`);await $2("CO.save(true)");await sleep(30);
+  const L6=J(`(function(){var d=__co.store[__co.pre+'co/${L5&&L5.id}'].data;CO.openEdit(d.id);var h=document.getElementById('infoScrim').innerHTML;return {d:d,sel:!!document.getElementById('coLine'),name:h.indexOf('Budget line: Windows')>=0};})()`);
+  t('4c-2: sent with its line; once sent the line is shown, not editable',L6.d.status==='sent'&&L6.d.lineId==='L2'&&!L6.sel&&L6.name,JSON.stringify(L6));
+  $2("document.getElementById('coAmt').value='2,100';true");await $2("CO.save(true)");await sleep(30);
+  const L7=J(`__co.store[__co.pre+'co/${L5&&L5.id}'].data`);
+  t('4c-2: an update to a sent one keeps its budget line',L7.rev===2&&L7.lineId==='L2'&&L7.amountC===210000,JSON.stringify(L7));
+  $2("costLines=window.__clines;CO._edit=null;closeInfo();true");
+  t('4c-2: a homeowner is never offered change orders to invoice',J(`(function(){var s=state.session;state.session={role:'client',auth:{uid:'uH'}};var n=coBillable(P(),null).length;state.session=s;return n;})()`)===0);
   $2(COEND);
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
