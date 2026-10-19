@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.476.0 - Change orders can be printed; days added show on the schedule (paper-trail switch on)';
+const PLUMB_VERSION='2.477.0 - Money history: one shared, read-only list per house, and lines on each change order (paper-trail switch on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792785600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.476.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792872000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.477.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9610,6 +9610,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
       +(r.days?'<div class="meta mt-1">'+esc(this.daysText(r.days))+'</div>':'')
       +(r.lineId&&canGate('moneyJob')&&this.lineName(P(),r.lineId)?'<div class="meta mt-1">Budget line: '+esc(this.lineName(P(),r.lineId))+'</div>':'')
       +(r.status==='approved'&&canGate('moneyJob')?'<button class="lpay btn btn-quiet mt-2" onclick="CO.updateBudget()">Update budget</button>':'')   /* the builder's cost lives in the budget, never on the co (the homeowner reads it) */
+      +(function(){try{HIST.attach(P());return HIST.itemHTML(String(P().id),r.id,'co');}catch(e){return '';}})()
       +'<button class="lpay btn btn-quiet mt-2" onclick="CO.print(\''+esc(r.id)+'\')">Print</button>'
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO._view=null;CO.draw()">Back</button></div>';},
   /* 4d-2 (2.476.0): days added and a printable record. Read-only: no writes. Reuses the invoice print view (spec: same look, no new pattern). */
@@ -9756,6 +9757,50 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
    (verifiedRev and verifiedTotal, M-14) must match before Approve and sign is offered; the first time the homeowner opens a
    version, moneyOpened records it (M-9). A one-time consent comes first (M-8). Word choices are Agency placeholders. */
 const CONSENT_TEXT_V='v0-placeholder-2026-10';
+/* 3c-2 (2.477.0, M-9): the money history, read-only. The server writes sites/<id>/hist (sent, opened, changed, approved,
+   declined, withdrawn, paid, voided, payment, payment_voided, needs_check); the app never writes it. Money builders see it under
+   Money > History, the homeowner on their money card, and each change order shows its own lines. Never crews.
+   DORMANT: no listener at all unless the paper-trail switch is on; a denied read (published rules) shows nothing and is not retried. */
+const HIST={_rows:{},_unsub:{},_err:{},
+  allowed(p){try{if(!PaperTrail.on||!p||typeof Sync==='undefined'||!Sync.ready()||Sync.mode!=='live'||!Sync.uid)return false;
+    const r=siteRoleFor(p),s=(state.session||{}).role;
+    if(r==='builder'&&s==='builder')return !!(canGate('moneyJob')||canGate('moneyCo'));
+    return r==='client'&&s==='client';}catch(e){return false;}},
+  attach(p){if(!this.allowed(p))return;const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
+    try{this._unsub[sid]=Sync.db.collection('sites').doc(sid).collection('hist').onSnapshot(snap=>{
+        this._rows[sid]=snap.docs.map(d=>Object.assign({},d.data()||{},{id:d.id}));this.refresh();},
+      err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];this.refresh();});}catch(e){this._err[sid]='error';}},
+  ms(t){try{return t&&t.toMillis?t.toMillis():(typeof t==='number'?t:0);}catch(e){return 0;}},
+  list(sid){return (this._rows[String(sid)]||[]).slice().sort((a,b)=>(this.ms(a.at)-this.ms(b.at))||((a.seq||0)-(b.seq||0)));},
+  forItem(sid,ref,type){return this.list(sid).filter(r=>String(r.ref)===String(ref)&&(r.refType||'co')===type);},
+  label(r){if(r.refType==='co')return CO.label(r.no);if(r.refType==='pmt')return 'Payment';return r.no?String(r.no):'Invoice';},
+  amt(r){return Number.isInteger(r.amountC)?(r.refType==='co'?CO.amountText(r.amountC):fmtMoney(fromC(Math.abs(r.amountC)))):'';},
+  what(r){const rv=r.rev>1?' (revision '+r.rev+')':'';
+    switch(r.kind){
+      case 'sent':return 'Sent'+rv;case 'changed':return 'Updated'+rv;case 'opened':return 'Opened'+rv;
+      case 'approved':return 'Approved'+rv+(r.via==='paper'?' \u00b7 signed on paper':(r.signedName?' \u00b7 signed by '+r.signedName:''));
+      case 'declined':return 'Declined'+rv;case 'withdrawn':return 'Withdrawn';case 'paid':return 'Paid';case 'voided':return 'Voided';
+      case 'payment':return 'Payment recorded';case 'payment_voided':return 'Payment voided';case 'needs_check':return 'Needs a check';
+      default:return String(r.kind||'');}},
+  lineHTML(r,withLabel){const a=this.amt(r),w=COH.when(r.at);
+    return '<div class="subrow hist-line"><div class="si"><div class="n">'+(withLabel?esc(this.label(r))+' \u00b7 ':'')+esc(this.what(r))+(a&&r.kind!=='opened'?' \u00b7 '+esc(a):'')+'</div>'
+      +'<div class="d">'+esc([r.byName,w].filter(Boolean).join(' \u00b7 '))+'</div>'
+      +(r.kind==='approved'&&r.sentence?'<div class="d">'+esc(r.sentence)+'</div>':'')+(r.note?'<div class="d">'+esc(r.note)+'</div>':'')+'</div></div>';},
+  itemHTML(sid,ref,type){if(!PaperTrail.on)return '';const L=this.forItem(sid,ref,type);if(!L.length)return '';
+    return '<div class="meta mt-2">History</div>'+L.map(r=>this.lineHTML(r,false)).join('');},
+  screenHTML(sid){const L=this.list(sid).reverse();
+    if(this._err[sid])return '<div class="empty">History is not available yet.</div>';
+    return L.length?L.map(r=>this.lineHTML(r,true)).join(''):'<div class="empty">No history yet.</div>';},
+  _open:null,
+  open(p){p=p||(((state.session||{}).role==='client')?clientProj():P());if(!this.allowed(p))return;this.attach(p);this._open=String(p.id);this.draw();},
+  draw(){const sid=this._open;if(!sid)return;showInfo('History','<div id="histRoot">'+this.screenHTML(sid)+'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="HIST.close()">Done</button></div>',true);},
+  close(){this._open=null;closeInfo();},
+  refresh(){try{if(this._open&&document.getElementById('histRoot'))this.draw();}catch(e){}
+    try{if(CO._view&&document.getElementById('coRoot'))CO.draw();}catch(e){}
+    try{if(COH._open&&document.getElementById('cohRoot'))COH.drawDetail();}catch(e){}},
+  rowHTML(p){if(!this.allowed(p))return '';
+    return '<div class="subrow cur-p" onclick="HIST.open()"><div class="si"><div class="n">History</div><div class="d">Every money step on this house</div></div></div>';},
+};
 const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_slow:false,
   allowed(p){try{p=p||clientProj();return !!(PaperTrail.on&&p&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&siteRoleFor(p)==='client'&&(state.session||{}).role==='client');}catch(e){return false;}},
   col(sid){return CO.col(sid);},
@@ -9806,6 +9851,7 @@ const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_s
     }else if(r.status==='declined'){
       h+='<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':'');
     }else h+='<div class="meta mt-2">Withdrawn by your builder</div>';
+    try{HIST.attach(p);h+=HIST.itemHTML(String(p.id),r.id,'co');}catch(e){}
     if(r.status==='approved')h+='<button class="lpay btn btn-quiet mt-2" onclick="COH.print(\''+esc(r.id)+'\')">Print or download</button>';
     h+='<button class="add-sub-btn mt-2 btn btn-secondary" onclick="COH.close()">Back</button></div>';
     showInfo('Change order',h,true);},
@@ -11192,6 +11238,7 @@ function clientCostsHTML(p){
     invoices+=invs.map(function(inv){const st=invState(inv);return '<div class="subrow cur-p" onclick="openInvoiceDetail(\''+p.id+'\',\''+inv.id+'\',\'client\')"><div class="si"><div class="n">'+esc(inv.no)+' \u00b7 '+esc(inv.title)+'</div><div class="d">'+fmtMoney(inv.total)+((st==='partial'||st==='overdue')?' \u00b7 '+fmtMoney(invBalance(inv))+' left':'')+(inv.due&&st!=='paid'?(st==='overdue'?' \u00b7 <b style="color:var(--clay)">past due '+esc(inv.due)+'</b>':' \u00b7 due '+esc(inv.due)):'')+(st==='sent'?' \u00b7 <b style="color:var(--clay)">needs your OK</b>':'')+'</div></div>'+invStatusChip(st)+'</div>';}).join('');
   }
   try{invoices+=COH.cardHTML(p);}catch(e){}
+  try{invoices+=HIST.rowHTML(p);}catch(e){}
   return {line:clientStillToPayLine(bs.out),ledger:ledger,invoices:invoices,needOK:(p.invoices||[]).filter(invNeedsOK)};
 }
 /* Unified site billing: one balance shared by selections + invoices.
@@ -11655,6 +11702,7 @@ function moneyMore(){
     {label:'Record a payment',fn:moneyNewPayment},
     {label:'Credit unused allowances: '+(houseCreditsAllowances(p)?'On':'Off'),sub:'For this house only. If the price comes in under the allowance, the homeowner gets the difference as a credit.',fn:creditSwitch}
   ];
+  try{if(HIST.allowed(p))items.push({label:'History',sub:'Every money step on this house.',fn:function(){HIST.open(p);}});}catch(e){}
   try{if(CO.allowed())items.splice(3,0,{label:'Change orders',sub:'Send the homeowner a change or a credit to sign.',fn:function(){CO.open();}});}catch(e){}
   try{if(costLines(p).length)items.push({label:'Cost report',fn:openJobCost});}catch(e){}
   try{if(qbEligible()&&_qbState&&_qbState.connected)items.push({label:'Send new costs to QuickBooks',fn:qbExportNow});}catch(e){}

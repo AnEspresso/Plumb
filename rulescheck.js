@@ -799,6 +799,12 @@ async function main() {
   await INV('A1 hist: homeowner reads', getDoc(H(db.client)), true);
   await INV('A1 hist: crew DENIED read', getDoc(H(db.sub)), false);
   await INV('A1 hist: a builder without the money gate DENIED read', getDoc(doc(db.builder2, 'sites/liveGate/hist/h1')), false);
+  /* 2.477.0 app (3c-2): the History screen and each change order list the whole hist collection, exactly as the app queries it. */
+  const HL = (d, site) => getDocs(collection(d, `sites/${site || 'liveA'}/hist`));
+  await INV('A1 app 3c-2: builder lists the house history', HL(db.builder), true);
+  await INV('A1 app 3c-2: homeowner lists the house history', HL(db.client), true);
+  await INV('A1 app 3c-2: crew DENIED listing history', HL(db.sub), false);
+  await INV('A1 app 3c-2: a builder without the money gate DENIED listing history', HL(db.builder2, 'liveGate'), false);
   await INV_A1('A1 hist: any client write is DENIED (builder)', setDoc(doc(db.builder, 'sites/liveA/hist/h9'), { kind: 'sent', at: SRV() }));
   await INV_A1('A1 hist: any client write is DENIED (homeowner)', setDoc(doc(db.client, 'sites/liveA/hist/h9'), { kind: 'approved', at: SRV() }));
   await INV_A1('A1 hist: a builder cannot edit a line', setDoc(H(db.builder), { kind: 'void', at: SRV() }));
