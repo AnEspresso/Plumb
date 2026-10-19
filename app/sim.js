@@ -4389,6 +4389,8 @@ await (async function(){
         if(['approved','declined'].indexOf(on.status)<0||on.decidedRev!==oo.rev||on.decidedBy!==Sync.uid||on.decidedAt!==TS||on.decidedRole!=='client'||!on.decidedName)throw denied('client decision');
         if(on.status==='approved'&&(!on.sentence||oo.verifiedRev!==oo.rev||oo.verifiedTotal!==oo.amountC))throw denied('client approve');
         if(!store[seg[0]+'/'+seg[1]+'/consent/'+Sync.uid])throw denied('no consent');return;}
+      if(coll==='flags'){if(old)throw denied('flags are create-only');if(['builder','client'].indexOf(X.role)<0||!only(v,['kind','targetType','targetId','note','ref','byUid','at','appV','tappedAt'])||v.byUid!==Sync.uid||v.at!==TS||!v.appV
+          ||['flag','resolve'].indexOf(v.kind)<0||['inv','co','sel','pmt'].indexOf(v.targetType)<0||!v.targetId||typeof v.note!=='string'||!v.note||v.note.length>500||(v.kind==='resolve'&&!v.ref))throw denied('flag shape');return;}
       if(coll==='inv'){if(X.role!=='builder'||!only(v,['data','updatedAt','updatedBy','byUid','tappedAt','appV'])||v.byUid!==Sync.uid)throw denied('inv');
         var iv=v.data||{},io=old?old.data:null;var im=/^INV-([0-9]+)$/.exec(iv.no||'');
         if(iv.status==='sent'&&(!io||io.status==='draft')&&X.invClaims&&(!im||batchPaths.indexOf('sites/'+seg[1]+'/numbers/inv-'+(+im[1]))<0))throw denied('inv sent without its claim');return;}
@@ -4808,6 +4810,46 @@ await (async function(){
   $2("PaperTrail.on=false;true");
   t('3c-3: switch off: no history on invoice or payment pages',J("(function(){var p=P();var v=p.invoices.filter(function(x){return x.id===__co.hinv;})[0];return invDetailHTML(p,v,'builder').indexOf('hist-slot')<0&&paymentsListHTML(p).indexOf('hist-slot')<0;})()"));
   $2("PaperTrail.on=true;closeInfo();__co.invClaims=false;P().payments=P().payments.filter(function(x){return x.id!=='pmH';});true");
+  /* ---------- 3c-4: M-18 Something's wrong ---------- */
+  $2(`(function(){window.__pr=null;__co.saved.op=window.openPrompt;window.openPrompt=function(o){window.__pr=o;};__co.writes.length=0;FLAGS._rows={};FLAGS._unsub={};FLAGS._err={};return true;})()`);
+  const FLW=()=>J("__co.writes.filter(function(w){return w.indexOf('/flags/')>=0;}).length");
+  const FLDOCS=()=>J("Object.keys(__co.store).filter(function(k){return k.indexOf(__co.pre+'flags/')===0;}).map(function(k){return Object.assign({id:k.split('/').pop()},__co.store[k]);})");
+  $2("PaperTrail.on=false;CO._edit=null;CO._view=null;true");
+  const FS0=J("(function(){var p=P();return {co:CO.viewHTML(CO.row(String(p.id),'d_a')).indexOf('flag-slot')>=0,pay:paymentsListHTML(p).indexOf('flag-slot')>=0,ok:FLAGS.allowed(p)};})()");
+  await $2("FLAGS.write(P(),{kind:'flag',targetType:'co',targetId:'d_a',note:'x'})");
+  t('3c-4: switch off: no Something\u2019s wrong anywhere and no write',!FS0.co&&!FS0.pay&&!FS0.ok&&FLW()===0,JSON.stringify(FS0));
+  $2("PaperTrail.on=true;CO.openView('d_a');true");await sleep(30);
+  t('3c-4: the builder sees Something\u2019s wrong on a change order',J("document.getElementById('infoScrim').innerHTML").indexOf("FLAGS.raise(")>=0);
+  $2("FLAGS.raise(String(P().id),'co','d_a');true");
+  await $2("(async function(){window.__pr.onOk('   ');await new Promise(function(r){setTimeout(r,10);});return true;})()");
+  t('3c-4: an empty note sends nothing',FLW()===0);
+  const fAmt0=J("__co.store[__co.pre+'co/d_a'].data.amountC");
+  $2("FLAGS.raise(String(P().id),'co','d_a');true");
+  await $2("(async function(){window.__pr.onOk('Wrong room on the drawing');await new Promise(function(r){setTimeout(r,30);});return true;})()");
+  const FD1=FLDOCS();
+  t('3c-4: one flag doc, exactly the A1 shape (who, server time, note, target)',FD1.length===1&&FD1[0].kind==='flag'&&FD1[0].targetType==='co'&&FD1[0].targetId==='d_a'&&FD1[0].note==='Wrong room on the drawing'&&FD1[0].byUid==='uB'&&FD1[0].at==='__TS__'&&!!FD1[0].appV&&!('ref' in FD1[0]),JSON.stringify(FD1));
+  t('3c-4: a flag changes no amount',J("__co.store[__co.pre+'co/d_a'].data.amountC")===fAmt0);
+  await sleep(20);
+  const FS1=J("document.getElementById('infoScrim').innerHTML");
+  t('3c-4: the item shows Question open with the note, live',FS1.indexOf('Question open: Wrong room on the drawing')>=0&&FS1.indexOf('Mark resolved')>=0&&FS1.indexOf('FLAGS.raise(')<0,FS1.slice(0,200));
+  $2("CO._view=null;closeInfo();true");
+  $2(`(function(){var X=__co;X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};clientCostsHTML(P());return true;})()`);await sleep(40);
+  $2("COH.openDetail('d_a');true");await sleep(20);
+  t('3c-4: the homeowner sees the same Question open',J("document.getElementById('infoScrim').textContent").indexOf('Question open: Wrong room on the drawing')>=0);
+  const fFid=FD1[0].id;
+  $2("FLAGS.resolve(String(P().id),'co','d_a','"+fFid+"');true");
+  await $2("(async function(){window.__pr.onOk('Fixed on the new drawing');await new Promise(function(r){setTimeout(r,30);});return true;})()");
+  const FD2=FLDOCS();const fRs=FD2.filter(function(d){return d.kind==='resolve';})[0]||{};const fOrig=FD2.filter(function(d){return d.id===fFid;})[0]||{};
+  t('3c-4: resolving is a NEW entry naming the flag; the flag itself is untouched',FD2.length===2&&fRs.ref===fFid&&fRs.byUid==='uH'&&fRs.note==='Fixed on the new drawing'&&fOrig.kind==='flag'&&fOrig.note==='Wrong room on the drawing',JSON.stringify(FD2));
+  await sleep(20);
+  t('3c-4: after resolve the item offers Something\u2019s wrong again',J("document.getElementById('infoScrim').innerHTML").indexOf('FLAGS.raise(')>=0&&J("document.getElementById('infoScrim').textContent").indexOf('Question open')<0);
+  $2("COH.close();true");
+  $2(`(function(){state.session={role:'sub',name:'Crew',auth:{uid:'uC'}};return true;})()`);
+  t('3c-4: crews never get it',J("FLAGS.allowed(P())")===false&&J("FLAGS.slotHTML(P(),'co','d_a')")==='');
+  $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
+  t('3c-4: invoices (not drafts) and payments get the link',J("(function(){var p=P();var s=(p.invoices||[]).filter(function(v){return v.status==='sent';})[0];var d=(p.invoices||[]).filter(function(v){return v.status==='draft';})[0];p.payments=p.payments||[];p.payments.push({id:'pmF',label:'Deposit',amount:5,date:'2026-10-01'});var ok=(!s||invDetailHTML(p,s,'builder').indexOf('data-flag-type=\"inv\"')>=0)&&(!d||invDetailHTML(p,d,'builder').indexOf('flag-slot')<0)&&paymentsListHTML(p).indexOf('data-flag-id=\"pmF\"')>=0;p.payments=p.payments.filter(function(x){return x.id!=='pmF';});return ok;})()"));
+  t('3c-4: the history names flag lines',J("HIST.what({kind:'flagged'})")==='Something\u2019s wrong'&&J("HIST.what({kind:'flag_resolved'})")==='Resolved');
+  $2("window.openPrompt=__co.saved.op;true");
   $2(COEND);
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}

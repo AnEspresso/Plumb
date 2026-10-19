@@ -837,6 +837,16 @@ async function main() {
   await INV_A1('A1 flags: no one can delete a flag', deleteDoc(doc(db.builder, 'sites/liveA/flags/f1')));
   await INV('A1 flags: the homeowner reads flags', getDoc(doc(db.client, 'sites/liveA/flags/f1')), true);
   await INV('A1 flags: crew DENIED read', getDoc(doc(db.sub, 'sites/liveA/flags/f1')), false);
+  /* 2.479.0 app (3c-4, M-18): exactly the docs the app writes (CO.stamp adds tappedAt), and the list it listens to. */
+  const appFlag = (uid, o) => Object.assign({ kind: 'flag', targetType: 'co', targetId: 'app_s', note: 'Wrong room', byUid: uid, at: SRV(), appV: APPV, tappedAt: 9 }, o || {});
+  await INV('A1 app 3c-4: the homeowner raises Something\'s wrong on a change order', setDoc(doc(db.client, 'sites/liveA/flags/fl_app1'), appFlag(U.client)), true);
+  await INV('A1 app 3c-4: the builder raises one on a payment', setDoc(doc(db.builder, 'sites/liveA/flags/fl_app2'), appFlag(U.builder, { targetType: 'pmt', targetId: 'pm_9' })), true);
+  await INV('A1 app 3c-4: the builder marks it resolved (a new entry naming the flag)', setDoc(doc(db.builder, 'sites/liveA/flags/fl_app3'), appFlag(U.builder, { kind: 'resolve', ref: 'fl_app1', note: 'Moved to the den' })), true);
+  await INV_A1('A1 app 3c-4: a 501-character note is DENIED (the app cuts at 500)', setDoc(doc(db.client, 'sites/liveA/flags/fl_app4'), appFlag(U.client, { note: 'x'.repeat(501) })));
+  await INV_A1('A1 app 3c-4: resolving by editing the flag is DENIED', setDoc(doc(db.builder, 'sites/liveA/flags/fl_app1'), appFlag(U.builder, { kind: 'resolve', ref: 'fl_app1' })));
+  await INV('A1 app 3c-4: builder lists flags', getDocs(collection(db.builder, 'sites/liveA/flags')), true);
+  await INV('A1 app 3c-4: homeowner lists flags', getDocs(collection(db.client, 'sites/liveA/flags')), true);
+  await INV('A1 app 3c-4: crew DENIED listing flags', getDocs(collection(db.sub, 'sites/liveA/flags')), false);
 
   /* number claims: create once, never update or delete */
   await INV('A1 numbers: a builder claims co-100', setDoc(doc(db.builder, 'sites/liveA/numbers/co-100'), claimDoc(U.builder, 'co', 100)), true);

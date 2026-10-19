@@ -312,6 +312,8 @@ const _ptTs = () => admin.firestore.FieldValue.serverTimestamp();
 exports.paperTrailInv = onDocumentWritten('sites/{siteId}/inv/{docId}', (event) => paperTrail.handle(db, _ptTs, 'inv', event));
 exports.paperTrailCo = onDocumentWritten('sites/{siteId}/co/{docId}', (event) => paperTrail.handle(db, _ptTs, 'co', event));
 exports.paperTrailPmts = onDocumentWritten('sites/{siteId}/pmts/{docId}', (event) => paperTrail.handle(db, _ptTs, 'pmts', event));
+/* M-18 (2.479.0): each flag / resolve becomes one money-history line. Same switch. */
+exports.paperTrailFlags = onDocumentWritten('sites/{siteId}/flags/{docId}', (event) => paperTrail.handleFlag(db, _ptTs, event));
 
 /* Step 3b-1 (M-10 receipts, M-12 archive): for each money-history line the server archives a snapshot,
    emails each party the PDF with its SHA-256 fingerprint, and stamps the fingerprint on the line.

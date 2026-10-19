@@ -97,6 +97,29 @@ function linesFor(coll, before, after) {
   return out;
 }
 
+/* ---- M-18 (2.479.0): a flag or a resolve becomes one history line. Flags are raw docs (no data envelope), create-only. ---- */
+function flagLine(f, flagId) {
+  if (!f || (f.kind !== 'flag' && f.kind !== 'resolve')) return null;
+  if (!['inv', 'co', 'sel', 'pmt'].includes(f.targetType) || !f.targetId) return null;
+  const ln = { kind: f.kind === 'flag' ? 'flagged' : 'flag_resolved', ref: String(f.targetId), refType: f.targetType, flagId: String(flagId), note: String(f.note || '').slice(0, 500), by: f.byUid || null };
+  if (f.kind === 'resolve') ln.flagRef = String(f.ref || '');
+  return ln;
+}
+async function handleFlag(db, ts, event) {
+  if (!(await enabled(db))) return { skipped: 'off' };
+  const before = event.data && event.data.before && event.data.before.exists;
+  const after = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
+  if (before || !after) return { skipped: 'not a create' };
+  const ln = flagLine(after, event.params.docId);
+  if (!ln) return { skipped: 'shape' };
+  const siteId = event.params.siteId;
+  const site = (await db.collection('sites').doc(siteId).get()).data() || {};
+  const info = ((site.meta || {}).memberInfo) || {};
+  const row = Object.assign({}, ln, { byName: ln.by && info[ln.by] && info[ln.by].name ? String(info[ln.by].name) : '', at: ts(), seq: 0, src: 'flags/' + event.params.docId });
+  await db.collection('sites').doc(siteId).collection('hist').doc(String(event.id) + '_0').set(row);
+  return { lines: 1 };
+}
+
 /* ---- the switch: off unless settings/paperTrail.enabled === true; cached 30 s ---- */
 const _cache = { at: 0, on: false };
 async function enabled(db, now) {
@@ -145,4 +168,4 @@ async function handle(db, ts, coll, event) {
   return res;
 }
 
-module.exports = { dollarsToCents, centsOf, fmtCents, sentenceFor, invoiceTotalCents, verifyInvoice, verifyCo, linesFor, enabled, handle, _resetCache };
+module.exports = { flagLine, handleFlag, dollarsToCents, centsOf, fmtCents, sentenceFor, invoiceTotalCents, verifyInvoice, verifyCo, linesFor, enabled, handle, _resetCache };

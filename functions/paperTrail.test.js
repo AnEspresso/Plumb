@@ -115,3 +115,33 @@ const SITE = { meta: { memberInfo: { uB: { name: 'Dean Walsh' } } } };
   assert.deepStrictEqual(ids, ['sites/s1/hist/evE_0', 'sites/s1/hist/evE_0']);
   console.log('paperTrail: all checks passed (cents, sentences, M-14 verify, 10,000-invoice property, history lines, handler gate)');
 })().catch(e => { console.error(e); process.exit(1); });
+
+/* M-18: flags become one history line; a resolve names its flag; edits and odd shapes write nothing */
+{
+  const fl = pt.flagLine({ kind: 'flag', targetType: 'inv', targetId: 'inv_1', note: 'Tile price is wrong', byUid: 'uH' }, 'fl_a');
+  assert.deepStrictEqual([fl.kind, fl.ref, fl.refType, fl.flagId, fl.note, fl.by], ['flagged', 'inv_1', 'inv', 'fl_a', 'Tile price is wrong', 'uH']);
+  const rs = pt.flagLine({ kind: 'resolve', targetType: 'inv', targetId: 'inv_1', note: 'Fixed on INV-004', ref: 'fl_a', byUid: 'uB' }, 'fl_b');
+  assert.deepStrictEqual([rs.kind, rs.flagRef], ['flag_resolved', 'fl_a']);
+  assert.strictEqual(pt.flagLine({ kind: 'edit', targetType: 'inv', targetId: 'x' }, 'f'), null);
+  assert.strictEqual(pt.flagLine({ kind: 'flag', targetType: 'budget', targetId: 'x' }, 'f'), null);
+  (async () => {
+    const writes = [];
+    const fakeDb = { collection: (c) => ({ doc: (id) => ({ get: async () => (c === 'settings' ? { exists: true, data: () => ({ enabled: true }) } : { data: () => ({ meta: { memberInfo: { uH: { name: 'Ana Ruiz' } } } }) }), collection: (cc) => ({ doc: (d) => ({ set: async (row) => { writes.push([cc, d, row]); } }) }) }) }) };
+    pt._resetCache();
+    const ev = (before, after, id) => ({ id: 'ev' + id, params: { siteId: 's1', docId: 'fl_' + id }, data: { before: { exists: !!before, data: () => before }, after: { exists: !!after, data: () => after } } });
+    const F = { kind: 'flag', targetType: 'co', targetId: 'c1', note: 'Wrong room', byUid: 'uH' };
+    pt._resetCache(); let r = await pt.handleFlag(fakeDb, () => 'TS', ev(null, F, 1));
+    assert.strictEqual(r.lines, 1); assert.strictEqual(writes.length, 1);
+    assert.deepStrictEqual([writes[0][0], writes[0][1], writes[0][2].kind, writes[0][2].byName, writes[0][2].at, writes[0][2].src], ['hist', 'ev1_0', 'flagged', 'Ana Ruiz', 'TS', 'flags/fl_1']);
+    pt._resetCache(); r = await pt.handleFlag(fakeDb, () => 'TS', ev(F, Object.assign({}, F, { note: 'x' }), 2));
+    assert.strictEqual(writes.length, 1, 'an edit writes no line');
+    pt._resetCache(); r = await pt.handleFlag(fakeDb, () => 'TS', ev(null, { kind: 'resolve', targetType: 'co', targetId: 'c1', note: 'Moved', ref: 'fl_1', byUid: 'uB' }, 3));
+    assert.strictEqual(writes.length, 2); assert.strictEqual(writes[1][2].kind, 'flag_resolved'); assert.strictEqual(writes[1][2].flagRef, 'fl_1');
+    pt._resetCache();
+    const offDb = { collection: () => ({ doc: () => ({ get: async () => ({ exists: false }) }) }) };
+    r = await pt.handleFlag(offDb, () => 'TS', ev(null, F, 4));
+    assert.strictEqual(r.skipped, 'off');
+    pt._resetCache();
+    console.log('paperTrail flags (M-18): ok');
+  })().catch(e => { console.error(e); process.exit(1); });
+}

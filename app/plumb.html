@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.478.0 - Invoice numbers are claimed at send, drafts say Draft, invoices and payments show their history (paper-trail switch on)';
+const PLUMB_VERSION='2.479.0 - Something\u2019s wrong on change orders, invoices and payments: a question either side can raise and resolve (paper-trail switch on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792958400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.478.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793044800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.479.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9611,6 +9611,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
       +(r.lineId&&canGate('moneyJob')&&this.lineName(P(),r.lineId)?'<div class="meta mt-1">Budget line: '+esc(this.lineName(P(),r.lineId))+'</div>':'')
       +(r.status==='approved'&&canGate('moneyJob')?'<button class="lpay btn btn-quiet mt-2" onclick="CO.updateBudget()">Update budget</button>':'')   /* the builder's cost lives in the budget, never on the co (the homeowner reads it) */
       +(function(){try{HIST.attach(P());return HIST.itemHTML(String(P().id),r.id,'co');}catch(e){return '';}})()
+      +(r.status!=='draft'?FLAGS.slotHTML(P(),'co',r.id):'')
       +'<button class="lpay btn btn-quiet mt-2" onclick="CO.print(\''+esc(r.id)+'\')">Print</button>'
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO._view=null;CO.draw()">Back</button></div>';},
   /* 4d-2 (2.476.0): days added and a printable record. Read-only: no writes. Reuses the invoice print view (spec: same look, no new pattern). */
@@ -9780,7 +9781,7 @@ const HIST={_rows:{},_unsub:{},_err:{},
       case 'sent':return 'Sent'+rv;case 'changed':return 'Updated'+rv;case 'opened':return 'Opened'+rv;
       case 'approved':return 'Approved'+rv+(r.via==='paper'?' \u00b7 signed on paper':(r.signedName?' \u00b7 signed by '+r.signedName:''));
       case 'declined':return 'Declined'+rv;case 'withdrawn':return 'Withdrawn';case 'paid':return 'Paid';case 'voided':return 'Voided';
-      case 'payment':return 'Payment recorded';case 'payment_voided':return 'Payment voided';case 'needs_check':return 'Needs a check';
+      case 'payment':return 'Payment recorded';case 'payment_voided':return 'Payment voided';case 'needs_check':return 'Needs a check';case 'flagged':return 'Something\u2019s wrong';case 'flag_resolved':return 'Resolved';
       default:return String(r.kind||'');}},
   lineHTML(r,withLabel){const a=this.amt(r),w=COH.when(r.at);
     return '<div class="subrow hist-line"><div class="si"><div class="n">'+(withLabel?esc(this.label(r))+' \u00b7 ':'')+esc(this.what(r))+(a&&r.kind!=='opened'?' \u00b7 '+esc(a):'')+'</div>'
@@ -9804,6 +9805,42 @@ const HIST={_rows:{},_unsub:{},_err:{},
     try{if(COH._open&&document.getElementById('cohRoot'))COH.drawDetail();}catch(e){}},
   rowHTML(p){if(!this.allowed(p))return '';
     return '<div class="subrow cur-p" onclick="HIST.open()"><div class="si"><div class="n">History</div><div class="d">Every money step on this house</div></div></div>';},
+};
+/* 3c-4 (2.479.0, M-18): "Something's wrong" on money items (change orders, invoices, payments). One short note, written to
+   sites/<id>/flags as Rules A1 flagCreateOk wants it: {kind:'flag'|'resolve', targetType, targetId, note, ref (resolve only),
+   byUid, at (server time), appV, tappedAt}. Create-only: a flag is never edited or deleted; resolving is a new entry that names
+   the flag. The item shows "Question open" until a resolve names it. A flag changes no amount. The server writes the history
+   line. DORMANT: same gate as HIST (switch on, live, a money builder or the homeowner; never crews). */
+const FLAGS={_rows:{},_unsub:{},_err:{},_busy:false,
+  allowed(p){return HIST.allowed(p);},
+  attach(p){if(!this.allowed(p))return;const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
+    try{this._unsub[sid]=Sync.db.collection('sites').doc(sid).collection('flags').onSnapshot(snap=>{
+        this._rows[sid]=snap.docs.map(d=>Object.assign({},d.data()||{},{id:d.id}));this.refresh();},
+      err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];this.refresh();});}catch(e){this._err[sid]='error';}},
+  /* the open flag on an item: the newest flag that no resolve names */
+  openFlag(sid,type,id){const L=(this._rows[String(sid)]||[]).filter(r=>r.targetType===type&&String(r.targetId)===String(id));
+    const done={};L.forEach(r=>{if(r.kind==='resolve'&&r.ref)done[r.ref]=1;});
+    return L.filter(r=>r.kind==='flag'&&!done[r.id]).sort((a,b)=>HIST.ms(b.at)-HIST.ms(a.at))[0]||null;},
+  innerHTML(p,type,id){const sid=String(p.id);if(this._err[sid])return '';const o=this.openFlag(sid,type,id);const a="'"+esc(sid)+"','"+esc(type)+"','"+esc(String(id))+"'";
+    if(o)return '<div class="meta c-clay mt-1">Question open: '+esc(o.note||'')+'</div><button class="lpay btn btn-quiet" onclick="FLAGS.resolve('+a+',\''+esc(o.id)+'\')">Mark resolved</button>';
+    return '<button class="lpay btn btn-quiet mt-1" onclick="FLAGS.raise('+a+')">Something\u2019s wrong</button>';},
+  slotHTML(p,type,id){try{if(!this.allowed(p))return '';this.attach(p);
+    return '<div class="flag-slot" data-flag-sid="'+esc(String(p.id))+'" data-flag-type="'+esc(type)+'" data-flag-id="'+esc(String(id))+'">'+this.innerHTML(p,type,id)+'</div>';}catch(e){return '';}},
+  proj(sid){return (state.projects||[]).find(x=>String(x.id)===String(sid))||null;},
+  refresh(){try{document.querySelectorAll('.flag-slot').forEach(el=>{const p=this.proj(el.getAttribute('data-flag-sid'));if(p)el.innerHTML=this.innerHTML(p,el.getAttribute('data-flag-type'),el.getAttribute('data-flag-id'));});}catch(e){}},
+  raise(sid,type,id){const p=this.proj(sid);if(!p||!this.allowed(p))return;
+    openPrompt({title:'Something\u2019s wrong',body:'One short note. Your builder and homeowner both see it. It changes no amount.',placeholder:'What looks wrong?',okLabel:'Send',
+      onOk:note=>{note=String(note||'').trim().slice(0,500);if(!note){toast('Add a short note');return;}this.write(p,{kind:'flag',targetType:type,targetId:String(id),note:note});}});},
+  resolve(sid,type,id,flagId){const p=this.proj(sid);if(!p||!this.allowed(p))return;
+    openPrompt({title:'Mark resolved',placeholder:'What was done?',okLabel:'Mark resolved',
+      onOk:note=>{note=String(note||'').trim().slice(0,500);if(!note){toast('Add a short note');return;}this.write(p,{kind:'resolve',targetType:type,targetId:String(id),note:note,ref:String(flagId)});}});},
+  async write(p,body){if(this._busy||!this.allowed(p))return;if(moneyUpdateGate())return;
+    if(!CO.online()){toast('Needs a connection \u2014 try again with a bar of signal');return;}
+    this._busy=true;const sid=String(p.id);
+    try{await Sync.db.collection('sites').doc(sid).collection('flags').doc('fl_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)).set(Object.assign({},body,CO.stamp()));
+      toast(body.kind==='flag'?'Sent \u2014 it shows as a question until it is resolved':'Marked resolved');}
+    catch(e){trapError(e&&e.code==='permission-denied'?'rules':'caught','Flag write failed: '+String((e&&(e.code||e.message))||'').slice(0,100),'flag');toast('Not sent \u2014 try again with a bar of signal');}
+    finally{this._busy=false;}},
 };
 const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_slow:false,
   allowed(p){try{p=p||clientProj();return !!(PaperTrail.on&&p&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&siteRoleFor(p)==='client'&&(state.session||{}).role==='client');}catch(e){return false;}},
@@ -9856,6 +9893,7 @@ const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_s
       h+='<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':'');
     }else h+='<div class="meta mt-2">Withdrawn by your builder</div>';
     try{HIST.attach(p);h+=HIST.itemHTML(String(p.id),r.id,'co');}catch(e){}
+    try{h+=FLAGS.slotHTML(p,'co',r.id);}catch(e){}
     if(r.status==='approved')h+='<button class="lpay btn btn-quiet mt-2" onclick="COH.print(\''+esc(r.id)+'\')">Print or download</button>';
     h+='<button class="add-sub-btn mt-2 btn btn-secondary" onclick="COH.close()">Back</button></div>';
     showInfo('Change order',h,true);},
@@ -15202,6 +15240,7 @@ function invDetailHTML(p,inv,viewer){
     +`</div>`;
   h+=`<div class="mt-2">${invStatusChip(st)}${st==='overdue'?` <span class="fs-xs c-clay">past due ${esc(inv.due)}</span>`:''}${inv.approvedAt?` <span class="fs-xs c-ink-3">approved ${timeAgo(inv.approvedAt)}</span>`:''}${st==='paid'&&inv.paidAt?` <span class="fs-xs c-ink-3">paid ${timeAgo(inv.paidAt)}</span>`:''}${st==='void'&&inv.voidedAt?` <span class="fs-xs c-ink-3">voided ${timeAgo(inv.voidedAt)}</span>`:''}</div>`;
   h+=HIST.slotHTML(p,inv.id,'inv');
+  if(inv.status!=='draft')h+=FLAGS.slotHTML(p,'inv',inv.id);
   // payment history
   if((inv.payments||[]).length){
     const canEditPm=viewer==='builder'&&st!=='void';
@@ -15517,7 +15556,7 @@ function paymentsListHTML(p){const pmts=(p.payments||[]);const loose=fromC(sumC(
   const invPays=[];(p.invoices||[]).filter(v=>v&&v.status!=='void').forEach(v=>(v.payments||[]).forEach(pm=>invPays.push({label:(pm.note||'Payment')+'\u2002\u00b7\u2002'+(v.no||''),date:pm.date,amount:Number(pm.amount)||0,v:!!pm.voidedAt,why:pm.voidReason||''})));
   const invPaid=fromC(sumC(invPays.filter(x=>!x.v).map(x=>x.amount)));
   const total=loose+invPaid;                          // === sitePaidTotal(p): the one shared "received" figure
-  const looseHTML=pmts.length?pmts.map(x=>`<div class="pay-row${x.voidedAt?' pay-void':''}"><div class="pi"><div class="pl">${esc(x.label||'Payment')}</div><div class="pd">${x.date?fmtLogDate(x.date):''}${x.voidedAt?' \u00b7 Voided'+(x.voidReason?': '+esc(x.voidReason):''):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div>${x.voidedAt?'':`<button class="pay-rm" onclick="voidPayment('${x.id}')">Void payment</button>`}</div>${HIST.slotHTML(p,x.id,'pmt')}`).join('')
+  const looseHTML=pmts.length?pmts.map(x=>`<div class="pay-row${x.voidedAt?' pay-void':''}"><div class="pi"><div class="pl">${esc(x.label||'Payment')}</div><div class="pd">${x.date?fmtLogDate(x.date):''}${x.voidedAt?' \u00b7 Voided'+(x.voidReason?': '+esc(x.voidReason):''):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div>${x.voidedAt?'':`<button class="pay-rm" onclick="voidPayment('${x.id}')">Void payment</button>`}</div>${HIST.slotHTML(p,x.id,'pmt')}${FLAGS.slotHTML(p,'pmt',x.id)}`).join('')
     :(invPaid>0?'<div class="pay-empty">Every payment so far came in on an invoice.</div>':'<div class="pay-empty">No payments recorded yet.</div>');
   const invHTML=invPays.length?`<div class="fld-label mt-3">From invoices \u00b7 edited on each invoice</div>`+invPays.map(x=>`<div class="pay-row op-72${x.v?' pay-void':''}"><div class="pi"><div class="pl">${esc(x.label)}</div><div class="pd">${x.date?fmtLogDate(x.date):''}${x.v?' \u00b7 Voided'+(x.why?': '+esc(x.why):''):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div></div>`).join(''):'';
   return looseHTML+invHTML+`<div class="pay-total"><span>Total received</span><b>${fmtMoney(total)}</b></div>`;}
