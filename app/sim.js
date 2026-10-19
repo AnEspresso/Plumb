@@ -4283,6 +4283,18 @@ await (async function(){
   t('conversion is one-time: the second pass changes nothing; twins and totals are in whole cents',CV.n2===0&&CV.payTwin.amount===10.13&&CV.payTwin.amountC===1013&&CV.invTotal[0]===5.86&&CV.invTotal[1]===586,JSON.stringify([CV.n2,CV.payTwin,CV.invTotal]));
   t('the report text shows house, record, field and both values',/pdel|Robina/.test(CV.text)&&/10\.125 → 10\.13/.test(CV.text),CV.text.slice(0,200));
   $2("(function(){var p=state.projects.find(function(x){return x.id==='pdel';});p.payments=p.payments.filter(function(x){return x.id!=='dirty1';});p.selections=p.selections.filter(function(x){return x.id!==9992&&x.item!=='Credit test';});p.invoices=p.invoices.filter(function(v){return v.id!=='dirtyinv';});_moneyConv=[];return true;})()");
+  /* gate: a REAL house is not converted until the flag is on; Preview changes nothing */
+  const GT=J(`(function(){var p=state.projects.find(function(x){return x.id==='pdel';});var was=p.sample;p.sample=false;var am=appMode;appMode=function(){return 'real';};
+    localStorage.removeItem('plumb.moneyConvReal');
+    p.selections.push({id:9993,room:'K',cat:'C',item:'gate sel',status:'selected',price:12.345});
+    var off=moneyStampAll().length,offTwin=('priceC' in p.selections.find(function(x){return x.id===9993;}));
+    var pv=moneyConvPreview().length,afterPv=p.selections.find(function(x){return x.id===9993;}).price;
+    localStorage.setItem('plumb.moneyConvReal','1');var on=moneyStampAll().length;var sel=p.selections.find(function(x){return x.id===9993;});
+    var res={off:off,offTwin:offTwin,pv:pv,afterPv:afterPv,on:on,onPrice:sel.price,onTwin:sel.priceC};
+    localStorage.removeItem('plumb.moneyConvReal');p.selections=p.selections.filter(function(x){return x.id!==9993;});appMode=am;p.sample=was;return res;})()`);
+  t('gate: a real house is NOT converted while the flag is off (no change, no twin)',GT.off===0&&GT.offTwin===false,JSON.stringify(GT));
+  t('gate: Preview lists what would change but saves nothing',GT.pv>=1&&GT.afterPv===12.345,JSON.stringify(GT));
+  t('gate: with the flag on, the real house converts (12.345 > 12.35, twin 1235)',GT.on>=1&&GT.onPrice===12.35&&GT.onTwin===1235,JSON.stringify(GT));
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();

@@ -3883,9 +3883,9 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
       <div class="la-hint mt-2 ml-0 mr-0 mb-1">Layout snapshot captures the on-screen size/position of the shell, main, nav and overview cards — taken the moment you opened the Workbench. Use it for layout bugs (stranded nav, cut-off cards).</div>
       <div class="row2"><button class="lpay flex-1 btn btn-quiet" onclick="devCopyLayout()">Copy layout snapshot</button></div>
       <div class="dev-sec">Money conversion</div>
-      <div class="la-hint mt-0 ml-0 mr-0 mb-1">Every amount that was not a whole cent and got rounded (half up), with the house and record. Empty is the good answer.</div>
+      <div class="la-hint mt-0 ml-0 mr-0 mb-1">Every amount that was not a whole cent and got rounded (half up), with the house and record. Empty is the good answer. Real houses are converted only after you turn it on; Preview changes nothing.</div>
       <pre class="mono" id="moneyConvOut"></pre>
-      <div class="row2 mt-2"><button class="lpay flex-1 btn btn-quiet" onclick="devCopyMoneyConv()">Copy report</button></div>
+      <div class="row2 mt-2"><button class="lpay flex-1 btn btn-quiet" onclick="devCopyMoneyConv()">Copy report</button><button class="lpay btn btn-quiet" onclick="moneyConvPreview()">Preview on real houses</button><button class="lpay btn btn-quiet" id="moneyConvToggle" onclick="moneyConvToggleReal()">Turn conversion on</button></div>
       <div class="dev-sec">Sheet contract</div>
       <div class="la-hint mt-0 ml-0 mr-0 mb-1">One black action. Pills on one line. No sideways overflow. Same check the ship ritual runs.</div>
       <pre class="mono" id="censusOut">Open a sheet, then run census.</pre>
@@ -14552,9 +14552,18 @@ function _mcField(o,k,where,rep){
   if(Math.abs(n*100-Math.round(n*100))>1e-6)rep.push({where,field:k,from:v,to:d});   // a real rounding, not float noise
   if(d!==n)o[k]=d;
   if(o[k+'C']!==c)o[k+'C']=c;}
+var _mcPreview=false;
+function _moneyConvRealOn(){try{return localStorage.getItem('plumb.moneyConvReal')==='1';}catch(e){return false;}}
+function moneyConvToggleReal(){try{const on=!_moneyConvRealOn();if(on)localStorage.setItem('plumb.moneyConvReal','1');else localStorage.removeItem('plumb.moneyConvReal');toast(on?'Conversion is on for real houses':'Conversion is off for real houses');renderMoneyConv();}catch(e){}}
+/* Read-only: runs the conversion on copies of every house and lists what would change. Nothing is saved. */
+function moneyConvPreview(){const rep=[];_mcPreview=true;try{(state.projects||[]).forEach(function(p){try{moneyStampProject(JSON.parse(JSON.stringify(p)),rep);}catch(e){}});}finally{_mcPreview=false;}
+  const el=document.getElementById('moneyConvOut');if(el)el.textContent='PREVIEW, nothing saved. '+(rep.length?rep.length+' amounts would change:\n'+rep.map(r=>r.where+' \u00b7 '+r.field+': '+r.from+' \u2192 '+r.to).join('\n'):'No amounts would change.');return rep;}
 function moneyStampWho(p){
   let real=false;try{real=appMode()==='real';}catch(e){}
   if(!real||p.sample)return {sel:true,inv:true,pay:true,cost:true};
+  /* Gated: a real house is not converted until the flag is on (Workbench > Money conversion), after the report is signed off. Old dollar fields stay authoritative. */
+  if(!_moneyConvRealOn()&&!_mcPreview)return {sel:false,inv:false,pay:false,cost:false};
+  if(_mcPreview)return {sel:true,inv:true,pay:true,cost:true};
   return {sel:syncHas(p,'selm')&&siteRoleFor(p)==='builder',inv:syncWrites(p,'inv'),pay:siteRoleFor(p)==='builder',cost:syncWrites(p,'costs')};}
 function moneyStampProject(p,rep){
   const w=moneyStampWho(p);const hs=p.street||p.name||String(p.id);
@@ -14579,7 +14588,7 @@ function moneyStampAll(){
 function moneyConvText(){
   if(!_moneyConv.length)return 'No amounts were changed. Every amount was already a whole cent.';
   return _moneyConv.map(r=>new Date(r.t).toISOString().slice(0,16).replace('T',' ')+' · '+r.where+' · '+r.field+': '+r.from+' → '+r.to).join('\n');}
-function renderMoneyConv(){const el=document.getElementById('moneyConvOut');if(el)el.textContent=moneyConvText();}
+function renderMoneyConv(){const el=document.getElementById('moneyConvOut');if(el)el.textContent=(_moneyConvRealOn()?'Conversion is ON for real houses.\n':'Conversion is OFF for real houses (old amounts stay as they are).\n')+moneyConvText();const b=document.getElementById('moneyConvToggle');if(b)b.textContent=_moneyConvRealOn()?'Turn conversion off':'Turn conversion on';}
 function devCopyMoneyConv(){try{navigator.clipboard.writeText(moneyConvText()).then(()=>toast('Copied'),()=>toast('Could not copy'));}catch(e){toast('Could not copy');}}
 /* An amount for an input box: no symbol, no grouping, only the decimals it needs. */
 function fmtPlain(n){const c=toC(n);const a=Math.abs(c),w=Math.floor(a/100),f=a%100;return (c<0?'-':'')+w+(f?('.'+(f<10?'0'+f:String(f))).replace(/0$/,''):'');}
