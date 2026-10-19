@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.469.0 - A payment is voided, not deleted; the allowance credit moves to Money; money writes carry who and when';
+const PLUMB_VERSION='2.470.0 - Money actions say Update to continue when this phone is older than the server requires (dormant until the paper-trail switch is on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792410000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.469.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792420000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.470.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9530,6 +9530,37 @@ function fbConfig(){
 function appCheckKey(){if(emuOn())return null;try{const k=(localStorage.getItem('plumb.appcheck.sitekey')||'').trim();if(k)return k;}catch(e){}return PLUMB_APPCHECK_SITEKEY||null;}
 let syncStatus='local',syncTimer=null,_syncBusy=false,_syncAgain=false;
 const _syncDirty=typeof Set==='function'?new Set():{add:function(){},forEach:function(){},clear:function(){}};
+/* ── Step 3c-1 (2.470.0): the paper-trail switch and M-15 "Update to continue" ──
+   DORMANT: settings/paperTrail { enabled: true } is written only by the server/console. Until it says so, and while
+   the published rules still refuse the read (Rules A1 not published), PaperTrail stays off and nothing changes.
+   Once on, settings/money { minAppV } (2.470.0 = 2470) is the oldest build that may change money: below it every send,
+   approve, record and void shows "Update to continue" and does nothing else. Screens still show everything. */
+const PaperTrail={on:false,minV:0,_at:0,_busy:false,
+  verNum(v){const m=/^(\d+)\.(\d+)/.exec(String(v||''));return m?(+m[1])*1000+(+m[2]):0;},
+  mine(){return this.verNum(PLUMB_VERSION);},
+  blocked(){return !!this.on&&this.minV>0&&this.mine()<this.minV;},
+  async load(force){
+    if(this._busy)return;if(!force&&this._at&&Date.now()-this._at<600000)return;
+    try{if(typeof Sync==='undefined'||!Sync.ready()||Sync.mode!=='live')return;}catch(e){return;}
+    this._busy=true;let on=false,minV=0;
+    try{
+      const a=await Sync.db.collection('settings').doc('paperTrail').get();
+      on=!!(a&&a.exists&&a.data()&&a.data().enabled===true);
+      if(on){const m=await Sync.db.collection('settings').doc('money').get();minV=Number(m&&m.exists&&m.data()&&m.data().minAppV)||0;}
+    }catch(e){on=false;minV=0;}   /* a refused or failed read is OFF, never an error on screen */
+    this.on=on;this.minV=minV;this._at=Date.now();this._busy=false;
+  }};
+function moneyUpdateGate(){
+  if(!PaperTrail.blocked())return false;
+  try{logEvent('moneyUpdateGate','min '+PaperTrail.minV+' mine '+PaperTrail.mine());}catch(e){}
+  openConfirm({title:'Update to continue',body:'SitePlumb needs to be updated before you can change money on this phone. Everything is still here to look at.',okLabel:'Update now',cancelLabel:'Not now',onConfirm:function(){try{moneyUpdateNow();}catch(e){}}});
+  return true;
+}
+async function moneyUpdateNow(){
+  try{if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}
+    if(window.caches){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}}catch(e){}
+  location.reload();
+}
 const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_pulled:{},_held:{},_selm:{},_legInv:{},_legAdded:{},_selNp:{},_pushing:{},_pushAgain:{},
   _devId(){let d=null;try{d=localStorage.getItem('plumb.deviceId');}catch(e){}if(!d){d='dev_'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('plumb.deviceId',d);}catch(e){}}return d;},
   ready(){return this.on&&!!this.db;},
@@ -9562,6 +9593,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       try{if(this.mode==='live')this._loadBase();}catch(e){}
       this.on=true;this.err='';this._retries=0;this._reloginNudged=false;clearAccountLost();clearTimeout(this._retryT);setSync('synced');
       this._watchAuth();
+      try{setTimeout(function(){PaperTrail.load(true);},0);if(!PaperTrail._iv)PaperTrail._iv=setInterval(function(){PaperTrail.load();},600000);}catch(e){}
       try{if(this.mode==='live')applyLiveRole();}catch(e){}
       try{if(this.mode==='live')backfillMemberships();}catch(e){}
       try{if(this.mode==='live')stampMemberUids();}catch(e){}
@@ -11292,6 +11324,7 @@ function moneyActionsHTML(){
 /* M-2: the house's allowance-credit switch. Approved items keep their price until the builder confirms; those that change go back for a new OK. */
 function creditAffected(p,next){return (p.selections||[]).filter(function(x){return selIsAllowance(x)&&!x.invoicedIn&&x.cost!=null&&x.cost!==''&&Math.abs(allowanceMath(x.allowance,x.cost,next).amount-(Number(x.price)||0))>0.005;});}
 function creditSwitch(){
+  if(moneyUpdateGate())return;
   const p=P();if(!p)return;const next=!houseCreditsAllowances(p);
   const hit=creditAffected(p,next);const appr=hit.filter(function(x){return x.approved;});
   const apply=function(){
@@ -13796,7 +13829,7 @@ const _clSignBusy={};
    focus (_clientFocusSel) re-centred the list on every render, so approving
    another card jumped back to it; once they act on the list, it is done. */
 function _clRenderKeep(){const b=document.getElementById('clBody');const y=b?b.scrollTop:0;_clientFocusSel=null;renderClient();if(b)b.scrollTop=y;}
-async function clientSignoff(id){const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
+async function clientSignoff(id){if(moneyUpdateGate())return;const p=clientProj();const s=(p.selections||[]).find(x=>x.id===id);if(!s)return;
   if(s.status==='pending'){toast('Your builder is still preparing this option');return;}
   const now=!s.approved;const patch={approved:now,signed:now?{date:todayStr(),by:(p.buyers&&p.buyers.length?p.buyers:['Homeowner'])}:null};
   if(appMode()!=='real'||p.sample){Data.updateSelection(id,patch,p.id);logEvent('clientSignoff',(s.item||'')+(now?' ✓':' ✗'));
@@ -14710,6 +14743,7 @@ function invDraftItems(){
   if(_invDraft.exLabel.trim()&&exR.ok&&exR.cents!==0)items.push({label:_invDraft.exLabel.trim(),amount:fromC(exR.cents)*(_invDraft.exCredit?-1:1)});
   return items;}
 function invSave(asDraft){
+  if(!asDraft&&moneyUpdateGate())return;
   _invSnapInputs();
   {const _x=parseMoney(_invDraft.exAmount,{});if(!_x.ok&&!(_x.blank&&!_invDraft.exLabel.trim())){toast(_x.blank?'Enter an amount for the custom line':MONEY_WHY[_x.why]||'Check the amount');return;}}
   const p=P();const items=invDraftItems();
@@ -14847,6 +14881,7 @@ function _invOkRender(p,inv){
     document.getElementById('infoBody').innerHTML=invDetailHTML(p,inv,'client');}catch(e){}
   try{if(document.getElementById('clientview').classList.contains('show'))_clRenderKeep();}catch(e){}}
 async function invApprove(projId,invId){
+  if(moneyUpdateGate())return;
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status!=='sent')return;
   if(appMode()!=='real'||p.sample){
@@ -14880,6 +14915,7 @@ async function invApprove(projId,invId){
   persist();logEvent('invoiceApproved',inv.no);toast(inv.no+' approved');
   try{closeInfo();}catch(e){}try{renderClient();}catch(e){}}
 function invAddPayment(projId,invId,full){
+  if(moneyUpdateGate())return;
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status==='void')return;
   const bal=invBalance(inv);
@@ -14895,6 +14931,7 @@ function invAddPayment(projId,invId,full){
   openInvoiceDetail(projId,invId,'builder'); // reopen so the builder sees the updated balance
 }
 function invVoidPayment(projId,invId,idx){
+  if(moneyUpdateGate())return;
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status==='void')return;
   const pm=(inv.payments||[])[idx];if(!pm||pm.voidedAt)return;
@@ -14907,6 +14944,7 @@ function invVoidPayment(projId,invId,idx){
       try{closeInfo();}catch(e){}renderInvoices();openInvoiceDetail(projId,invId,'builder');}});
 }
 function invVoid(projId,invId){
+  if(moneyUpdateGate())return;
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status==='void')return;
   openConfirm({title:'Void '+inv.no+'?',danger:true,okLabel:'Void invoice',
@@ -15085,10 +15123,10 @@ function paymentsListHTML(p){const pmts=(p.payments||[]);const loose=fromC(sumC(
   const invHTML=invPays.length?`<div class="fld-label mt-3">From invoices \u00b7 edited on each invoice</div>`+invPays.map(x=>`<div class="pay-row op-72${x.v?' pay-void':''}"><div class="pi"><div class="pl">${esc(x.label)}</div><div class="pd">${x.date?fmtLogDate(x.date):''}${x.v?' \u00b7 Voided'+(x.why?': '+esc(x.why):''):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div></div>`).join(''):'';
   return looseHTML+invHTML+`<div class="pay-total"><span>Total received</span><b>${fmtMoney(total)}</b></div>`;}
 function renderPaymentsList(){const el=document.getElementById('payList');if(el)el.innerHTML=paymentsListHTML(P());}
-function addPayment(){const label=document.getElementById('payLabel').value.trim();const _r=moneyRead('payAmount',{positive:true});if(!_r)return;const amt=fromC(_r.cents);
+function addPayment(){if(moneyUpdateGate())return;const label=document.getElementById('payLabel').value.trim();const _r=moneyRead('payAmount',{positive:true});if(!_r)return;const amt=fromC(_r.cents);
   Data.addPayment({id:'pm'+Date.now().toString(36),label:label||'Payment',amount:amt,date:document.getElementById('payDate').value||todayStr()});
   logEvent('paymentAdded',(label||'Payment')+' '+fmtMoney(amt));renderPaymentsList();renderSelections();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}toast('Payment recorded');}
-function voidPayment(id){const p=(P().payments||[]).find(x=>x.id===id);if(!p||p.voidedAt)return;
+function voidPayment(id){if(moneyUpdateGate())return;const p=(P().payments||[]).find(x=>x.id===id);if(!p||p.voidedAt)return;
   openPrompt({title:'Void payment',body:(p.label||'Payment')+' \u00b7 '+fmtMoney(p.amount)+'. It stays on the list, crossed out, and stops counting.',placeholder:'Why is it void?',okLabel:'Void payment',
     onOk:why=>{if(!why){toast('Say why it is void');voidPayment(id);return;}
       Data.voidPayment(id,why);logEvent('paymentVoided',fmtMoney(p.amount)+' \u00b7 '+why);try{renderPaymentsList();}catch(e){}try{renderInvoices();}catch(e){}renderSelections();toast('Payment voided');}});}
