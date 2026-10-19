@@ -1,0 +1,40 @@
+name: Check live rules (read only)
+# Answers one question: do the rules that are live on plumb-467a0 match
+# firestore.rules and storage.rules in the repo? It only reads. It publishes
+# nothing, creates no release and writes nothing. Run it any time; no approval
+# step is needed because nothing can change.
+#   - Manual only (workflow_dispatch), and only runs once this file is on main.
+#   - Uses the FIREBASE_SERVICE_ACCOUNT_PLUMB repo secret, the same one the
+#     read-only "Fetch live Storage rules" workflow uses.
+#   - scripts/liveRules.test.js (in the Rules suite) fails if anything here or
+#     in the script could write.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read access token for the Firebase service account
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          gcloud auth activate-service-account --key-file="$RUNNER_TEMP/sa.json" --quiet
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/sa.json"
+
+      - name: Compare live rules with the repo
+        run: node scripts/check-live-rules.js
