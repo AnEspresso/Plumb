@@ -4776,4 +4776,4 @@ if(failures.length){
 }
 console.log('PASS: all lifecycles, sync matrices and fuzz hold.');
 process.exit(0);
-})().catch(e=>{console.log('FAIL: harness error (last check: '+(passes.concat(failures).slice(-1)[0]||'')+') — '+e.message+'\n'+e.stack.split('\n').slice(0,4).join('\n'));process.exit(1);});
+})().catch(e=>{console.log('FAIL: harness error (last passing check: '+(passes.slice(-1)[0]||'')+') — '+e.message+'\n'+e.stack.split('\n').slice(0,4).join('\n'));process.exit(1);});
