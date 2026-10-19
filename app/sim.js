@@ -4569,6 +4569,36 @@ await (async function(){
   const HB=J(`(function(){var X=__co;var h=document.getElementById('infoScrim').textContent;CO.openView('h_unv');var v=document.getElementById('infoScrim').textContent;CO.openView('h_d1');var d=document.getElementById('infoScrim').textContent;return {list:h,v:v,d:d};})()`);
   t('4b: the builder opens an approved change order read-only and sees who approved it and the sentence',HB.v.indexOf('Ana Ruiz')>=0&&HB.v.indexOf('This adds $1,850.00 to your contract.')>=0&&HB.v.indexOf('Approve and sign')<0,HB.v.slice(0,300));
   t('4b: the builder sees a decline with its reason',HB.d.indexOf('Too much')>=0&&HB.d.toLowerCase().indexOf('declined')>=0,HB.d.slice(0,300));
+  /* ---------- 4c-1: C-4 change orders are their own ledger line ---------- */
+  await sleep(80);
+  const K0=J(`(function(){var X=__co;var ap=0,n=0,w=0;Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')!==0)return;var d=X.store[k].data;if(d.status==='approved'){ap+=d.amountC;n++;}else if(d.status==='sent')w++;});
+    var on=billingSummary(P());PaperTrail.on=false;var off=billingSummary(P());var offL=coLedger(P());PaperTrail.on=true;
+    var same=['ups','crs','net','billed','unbilled','invPaid','paid','balanceDue','out','waiting'].every(function(k){return on[k]===off[k];});
+    return {ap:ap,n:n,w:w,on:on,off:off,offL:offL,same:same};})()`);
+  t('4c: switch off: no change-order component (off, $0, nothing waiting)',!K0.off.coOn&&K0.off.co===0&&K0.off.coN===0&&K0.off.coWaiting===0&&!K0.offL.on,JSON.stringify(K0.off));
+  t('4c: an approved change order counts once, in its own line (sum of approved amountC)',K0.on.coOn&&Math.round(K0.on.co*100)===K0.ap&&K0.on.coN===K0.n&&K0.n>=2,JSON.stringify([K0.ap,K0.n,K0.on.co,K0.on.coN]));
+  t('4c: sent ones are only counted as waiting on the homeowner',K0.on.coWaiting===K0.w&&K0.w>=1,JSON.stringify([K0.w,K0.on.coWaiting]));
+  t('4c: every existing upgrades, credits, invoiced, paid and owed number is unchanged',K0.same,JSON.stringify([K0.on,K0.off]));
+  const K1=J(`(function(){var X=__co;var before=billingSummary(P()).co;X.store[X.pre+'co/k_big']={data:{id:'k_big',title:'Big',amountC:99999900,kind:'change',status:'sent',no:40,rev:1},byUid:'uB',at:'__TS__',appV:'x'};
+    X.store[X.pre+'co/k_wd']={data:{id:'k_wd',title:'Gone',amountC:7700,kind:'change',status:'withdrawn',no:41,rev:1},byUid:'uB',at:'__TS__',appV:'x'};X.store[X.pre+'co/k_dr']={data:{id:'k_dr',title:'Draft',amountC:5500,kind:'change',status:'draft'},byUid:'uB',at:'__TS__',appV:'x'};X.fire();
+    var after=billingSummary(P());return {before:before,after:after.co,w:after.coWaiting};})()`);
+  t('4c: a sent, withdrawn or draft change order adds nothing to the line',K1.before===K1.after,JSON.stringify(K1));
+  const K2=J(`(function(){var X=__co;X.store[X.pre+'co/k_cr']={data:{id:'k_cr',title:'Credit',amountC:-40000,kind:'credit',status:'approved',no:42,rev:1,decidedRev:1},byUid:'uB',at:'__TS__',appV:'x'};var b=billingSummary(P()).co;X.fire();var a=billingSummary(P()).co;return {b:b,a:a};})()`);
+  t('4c: an approved credit drops the change-orders line by $400.00',Math.round((K2.b-K2.a)*100)===40000,JSON.stringify(K2));
+  const K3=J(`(function(){var bs=billingSummary(P());var usd=function(n){return fmtMoney(Math.abs(n));};var h=coLedgerHTML(bs,usd);PaperTrail.on=false;var off=coLedgerHTML(billingSummary(P()),usd);PaperTrail.on=true;return {h:h,off:off,co:bs.co};})()`);
+  t('4c: Money shows "Change orders ±$X" and the waiting count; nothing when off',K3.h.indexOf('<span>Change orders</span>')>=0&&K3.h.indexOf((K3.co<0?'\u2212':'+')+J("fmtMoney("+Math.abs(K3.co)+")"))>=0&&K3.h.indexOf('waiting on the homeowner')>=0&&K3.off==='',K3.h);
+  const K4=J(`(function(){return {plain:_siteExtraCharges({invoices:[{status:'sent',items:[{amount:100,coId:'co_1'},{amount:50},{amount:-20,coId:'co_2'}]}]}),old:_siteExtraCharges({invoices:[{status:'sent',items:[{amount:100},{amount:50},{amount:-20}]}]})};})()`);
+  t('4c: Upgrades & credits skips invoice lines that bill a change order (coId)',K4.plain.ups===50&&K4.plain.crs===0&&K4.old.ups===150&&K4.old.crs===-20,JSON.stringify(K4));
+  const K5=J(`(function(){var cl=costLines;costLines=function(){return [{id:'L1',name:'Framing'}];};var h='';try{h=budgetCardHTML(P());}catch(e){h='ERR '+e.message;}PaperTrail.on=false;var off='';try{off=budgetCardHTML(P());}catch(e){off='ERR';}PaperTrail.on=true;costLines=cl;var k=coLedger(P());return {h:h.indexOf('Change orders sold')>=0,txt:(h.match(/Change orders sold [^<]*/)||[''])[0],off:off.indexOf('Change orders sold')>=0,want:'Change orders sold '+(k.c<0?'\u2212':'+')+fmtMoney(fromC(Math.abs(k.c)))};})()`);
+  t('4c: the budget card shows "Change orders sold +$X" (off: not shown)',K5.h&&K5.txt===K5.want&&!K5.off,JSON.stringify(K5));
+  const K6=J(`(function(){var ob=openBudget,hit=0;openBudget=function(){hit++;};CO.openView('k_cr');var v=document.getElementById('infoScrim').innerHTML;var has=v.indexOf('Update budget')>=0;CO.updateBudget();openBudget=ob;CO.openView('k_big');var s=document.getElementById('infoScrim').innerHTML.indexOf('Update budget')>=0;return {has:has,hit:hit,sent:s};})()`);
+  t('4c: an approved change order offers a quiet Update budget link into the budget',K6.has&&K6.hit===1,JSON.stringify(K6));
+  /* the homeowner sees the same figure */
+  $2(`(function(){var X=__co;X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};return true;})()`);
+  J("clientCostsHTML(P()).ledger");await sleep(60);
+  const K7=J(`(function(){var r=clientCostsHTML(P());var bs=billingSummary(P());return {l:r.ledger.indexOf('<span>Change orders</span>')>=0,co:bs.co,w:bs.coWaiting};})()`);
+  t('4c: Costs & payments shows the same Change orders line to the homeowner',K7.l&&Math.round(K7.co*100)===Math.round(K2.a*100),JSON.stringify([K7,K2.a]));
+  $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
   $2(COEND);
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
