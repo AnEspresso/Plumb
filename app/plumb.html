@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.470.0 - Money actions say Update to continue when this phone is older than the server requires (dormant until the paper-trail switch is on)';
+const PLUMB_VERSION='2.471.0 - Builders can send change orders (Sign and send, edit, withdraw) once the paper-trail switch is on';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792420000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.470.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792430000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.471.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9561,6 +9561,124 @@ async function moneyUpdateNow(){
     if(window.caches){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}}catch(e){}
   location.reload();
 }
+/* ── Step 4a (2.471.0): change orders, builder side ──
+   DORMANT: the entry point exists only while PaperTrail.on (settings/paperTrail.enabled) and only for a builder with money
+   access on a live house. Nothing here is subscribed or written otherwise, so the published rules never see a co request.
+   Shapes are Rules A1's: outer {data, updatedAt, updatedBy, byUid, at (server time), appV, tappedAt}; amountC is whole cents
+   (a credit is stored negative); Sign and send is rev 1 + sentAt/sentBy/sentName/sentRole + a numbers/co-N claim in the SAME
+   batch (M-6); an edit of a sent change order bumps rev (C-1); sent is never deleted or un-sent, only withdrawn (C-2).
+   Every write is a merge, so the server's verifiedRev and verifiedTotal are never touched. Online only (server time). */
+const CO={_rows:{},_unsub:{},_err:{},_edit:null,
+  allowed(){try{const p=P();return !!(PaperTrail.on&&p&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&siteRoleFor(p)==='builder'&&(state.session||{}).role==='builder'&&(canGate('moneyJob')||canGate('moneyCo')));}catch(e){return false;}},
+  ts(){return firebase.firestore.FieldValue.serverTimestamp();},
+  del(){return firebase.firestore.FieldValue.delete();},
+  appV(){return String(PLUMB_VERSION).split(' ')[0];},
+  stamp(){return {byUid:String(Sync.uid),at:this.ts(),appV:this.appV(),tappedAt:Date.now()};},
+  outer(){return Object.assign({updatedAt:Date.now(),updatedBy:Sync.deviceId||''},this.stamp());},
+  col(sid){return Sync.db.collection('sites').doc(String(sid)).collection('co');},
+  nums(sid){return Sync.db.collection('sites').doc(String(sid)).collection('numbers');},
+  label(no){return no?'CO-'+String(no).padStart(3,'0'):'Draft';},
+  amountText(c){c=Number(c)||0;return c<0?'Credit '+fmtMoney(fromC(-c)):'+'+fmtMoney(fromC(c));},
+  sentence(kind,c){return c<0?'This credits '+fmtMoney(fromC(-c))+'.':'This adds '+fmtMoney(fromC(c))+' to your contract.';},
+  myName(p){try{const m=p.memberInfo&&p.memberInfo[Sync.uid];return (m&&m.name)||(state.session&&state.session.name)||'';}catch(e){return '';}},
+  list(sid){return (this._rows[String(sid)]||[]).slice();},
+  row(sid,id){return this.list(sid).find(r=>r.id===id)||null;},
+  attach(p){const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
+    try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.render();},
+      err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];this.render();});}catch(e){this._err[sid]='error';}},
+  open(){if(!this.allowed()){toast('Change orders are not on yet');return;}this._edit=null;this.attach(P());this.render();},
+  render(){const sc=document.getElementById('infoScrim');if(this._edit||!sc||!sc.classList.contains('show')||!document.getElementById('coRoot'))return;this.draw();},
+  draw(){const p=P();if(!p)return;const sid=String(p.id);
+    if(this._edit){showInfo('Change order',this.formHTML(p),true);return;}
+    const rows=this.list(sid);const grp=(t,f)=>{const g=rows.filter(f).sort((a,b)=>(a.no||1e9)-(b.no||1e9)||(a.t||0)-(b.t||0));return g.length?'<div class="sec"><h2>'+t+'</h2></div>'+g.map(r=>this.rowHTML(r)).join(''):'';};
+    let h='<div id="coRoot">';
+    if(this._err[sid])h+='<div class="empty">Change orders are not available yet. Try again later.</div>';
+    h+=grp('Drafts',r=>r.status==='draft')+grp('Waiting on the homeowner',r=>r.status==='sent')+grp('Approved',r=>r.status==='approved')+grp('Closed',r=>r.status==='declined'||r.status==='withdrawn');
+    if(!rows.length&&!this._err[sid])h+='<div class="empty">No change orders yet.</div>';
+    h+='<button class="b1 b-go w-full mt-2 btn btn-primary" onclick="CO.newForm()">New change order</button><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button></div>';
+    showInfo('Change orders',h,true);},
+  rowHTML(r){const upd=r.status==='sent'&&r.rev>1?' \u00b7 Updated':'';
+    const click=(r.status==='draft'||r.status==='sent')?' onclick="CO.openEdit(\''+esc(r.id)+'\')"':'';
+    return '<div class="subrow'+(click?' cur-p':'')+'"'+click+'><div class="si"><div class="n">'+esc(this.label(r.no))+' \u00b7 '+esc(r.title||'')+'</div><div class="d">'+esc(this.amountText(r.amountC))+upd+(r.status==='withdrawn'?' \u00b7 Withdrawn':r.status==='declined'?' \u00b7 Declined':'')+'</div></div></div>';},
+  newForm(){this._edit={id:null,status:'new',title:'',kind:'change',amount:'',note:'',days:'',rev:0};this.draw();},
+  openEdit(id){const p=P();const r=this.row(String(p.id),id);if(!r||!(r.status==='draft'||r.status==='sent'))return;
+    this._edit={id:r.id,status:r.status,title:r.title||'',kind:r.kind==='credit'?'credit':'change',amount:fmtPlain(fromC(Math.abs(r.amountC||0))),note:r.note||'',days:r.days==null?'':String(r.days),rev:r.rev||0,orig:r};this.draw();},
+  snap(){const e=this._edit;if(!e)return;const g=id=>{const x=document.getElementById(id);return x?x.value:null;};
+    const t=g('coTitle');if(t!=null)e.title=t;const a=g('coAmt');if(a!=null)e.amount=a;const n=g('coNote');if(n!=null)e.note=n;const d=g('coDays');if(d!=null)e.days=d;},
+  setKind(k){this.snap();this._edit.kind=k==='credit'?'credit':'change';this.draw();},
+  back(){this._edit=null;this.draw();},
+  hint(){const el=document.getElementById('coSentence');if(!el)return;const e=this._edit;const x=document.getElementById('coAmt');const r=parseMoney(x?x.value:'',{positive:true});
+    el.textContent=r.ok?this.sentence(e.kind,e.kind==='credit'?-r.cents:r.cents):'';},
+  formHTML(p){const e=this._edit;const sent=e.status==='sent';
+    const c0=(function(){const r=parseMoney(e.amount,{positive:true});return r.ok?(e.kind==='credit'?-r.cents:r.cents):0;})();
+    return '<div id="coRoot"><div class="meta">'+(sent?esc(this.label(e.orig&&e.orig.no))+' \u00b7 sent \u00b7 rev '+e.rev:(e.id?'Draft':'New'))+'</div>'
+     +'<input id="coTitle" placeholder="Title (e.g. Add a window in the study)" maxlength="120" value="'+esc(e.title)+'">'
+     +'<div class="seg mt-2"><button type="button" class="'+(e.kind==='change'?'on':'')+'" onclick="CO.setKind(\'change\')">Change</button><button type="button" class="'+(e.kind==='credit'?'on':'')+'" onclick="CO.setKind(\'credit\')">Credit</button></div>'
+     +'<div class="setup-roster-row"><input id="coAmt" placeholder="Amount" inputmode="decimal" data-money oninput="CO.hint()" value="'+esc(e.amount)+'"></div>'
+     +'<textarea id="coNote" placeholder="Note for the homeowner" maxlength="2000" rows="3">'+esc(e.note)+'</textarea>'
+     +'<details class="mt-2"><summary>More details</summary><input id="coDays" placeholder="Days added to the schedule" inputmode="numeric" value="'+esc(e.days)+'"></details>'
+     +'<div class="meta mt-2" id="coSentence">'+(c0?esc(this.sentence(e.kind,c0)):'')+'</div>'
+     +'<button class="b1 b-go w-full mt-1 btn btn-primary" onclick="CO.save(true)">'+(sent?'Sign and send update':'Sign and send')+'</button>'
+     +(sent?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="CO.withdraw()">Withdraw</button>':'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.save(false)">Save draft</button>')
+     +(e.id&&!sent?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="CO.delDraft()">Delete draft</button>':'')
+     +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.back()">Back</button></div>';},
+  online(){return !(typeof navigator!=='undefined'&&navigator.onLine===false);},
+  fail(sid,id,e){const r=this.row(sid,id);const code=e&&e.code;
+    if(r&&r.status!=='sent'&&r.status!=='draft')toast(r.status==='approved'?'Already approved \u2014 make a new change order':r.status==='declined'?'Already declined \u2014 make a new change order':'This change order is closed \u2014 make a new one');
+    else toast(code==='permission-denied'?'Could not save \u2014 check your access and try again':'Could not save \u2014 try again with a bar of signal');
+    try{trapError('caught',String((e&&e.message)||e),'CO');}catch(x){}},
+  async nextNo(sid){let max=0;this.list(sid).forEach(r=>{if(r.no>max)max=r.no;});
+    try{const s=await this.nums(sid).get();s.docs.forEach(d=>{const m=/^co-(\d+)$/.exec(d.id);if(m&&+m[1]>max)max=+m[1];});}catch(e){}
+    return max+1;},
+  async save(send){
+    if(moneyUpdateGate())return;
+    const p=P();if(!p||!this.allowed())return;const sid=String(p.id);this.snap();const e=this._edit;if(!e)return;
+    if(!this.online()){toast('Needs a connection \u2014 try again with a bar of signal');return;}
+    const title=String(e.title||'').trim();if(!title){toast('Add a title');return;}
+    const r=moneyRead('coAmt',{positive:true});if(!r)return;
+    const dr=String(e.days||'').trim();let days=null;
+    if(dr){if(!/^\d{1,3}$/.test(dr)||+dr>365){toast('Days must be a whole number from 0 to 365');return;}days=+dr;}
+    const amountC=e.kind==='credit'?-r.cents:r.cents;const note=String(e.note||'').trim().slice(0,2000);
+    const fresh=!e.id;const id=e.id||('co_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
+    const ref=this.col(sid).doc(id);
+    const body={title:title.slice(0,120),amountC:amountC,kind:e.kind};
+    const optional=(o)=>{if(note)o.note=note;else if(!fresh)o.note=this.del();if(days!=null)o.days=days;else if(!fresh)o.days=this.del();return o;};
+    try{
+      if(e.status==='sent'){   /* C-1: a change to a sent change order is a new revision */
+        const o=e.orig||{};const ch={};
+        if(o.title!==body.title)ch.title=body.title;if(o.amountC!==amountC)ch.amountC=amountC;if(o.kind!==e.kind)ch.kind=e.kind;
+        if((o.note||'')!==note)ch.note=note||this.del();if((o.days==null?null:o.days)!==days)ch.days=days==null?this.del():days;
+        if(!Object.keys(ch).length){toast('Nothing changed');return;}
+        ch.rev=(o.rev||1)+1;
+        await ref.set(Object.assign({data:ch},this.outer()),{merge:true});toast('Update sent \u2014 the homeowner is asked to OK it again');this._edit=null;this.draw();return;}
+      if(!send){
+        const d=optional(Object.assign({},body));
+        if(fresh)await ref.set(Object.assign({data:Object.assign({id:id,status:'draft',t:Date.now()},d)},this.outer()));
+        else await ref.set(Object.assign({data:d},this.outer()),{merge:true});
+        toast('Draft saved');this._edit=null;this.draw();return;}
+      /* Sign and send: claim the number in the same batch (M-6); a taken number is retried with the next one */
+      for(let tries=0;tries<4;tries++){
+        const no=await this.nextNo(sid);const b=Sync.db.batch();
+        const d=optional(Object.assign({},body,{status:'sent',no:no,rev:1,sentAt:this.ts(),sentBy:String(Sync.uid),sentName:this.myName(p),sentRole:'builder'}));
+        if(fresh)b.set(ref,Object.assign({data:Object.assign({id:id,t:Date.now()},d)},this.outer()));
+        else b.set(ref,Object.assign({data:d},this.outer()),{merge:true});
+        b.set(this.nums(sid).doc('co-'+no),Object.assign({kind:'co',no:no},this.stamp()));
+        try{await b.commit();toast(this.label(no)+' sent');try{logEvent('coSent',this.label(no));}catch(x){}this._edit=null;this.draw();return;}
+        catch(err){if(!(err&&err.code==='permission-denied')||tries===3)throw err;}
+      }
+    }catch(err){this.fail(sid,e.id,err);}
+  },
+  withdraw(){if(moneyUpdateGate())return;const e=this._edit;if(!e||e.status!=='sent')return;
+    openConfirm({title:'Withdraw '+this.label(e.orig&&e.orig.no)+'?',body:'The homeowner will still see it, marked Withdrawn. It cannot be un-sent.',okLabel:'Withdraw',danger:true,onConfirm:()=>this._withdraw()});},
+  async _withdraw(){const p=P();const sid=String(p.id);const e=this._edit;if(!e)return;
+    if(!this.online()){toast('Needs a connection \u2014 try again with a bar of signal');return;}
+    try{await this.col(sid).doc(e.id).set(Object.assign({data:{status:'withdrawn',withdrawnAt:this.ts(),withdrawnBy:String(Sync.uid)}},this.outer()),{merge:true});
+      toast('Withdrawn');this._edit=null;this.draw();}catch(err){this.fail(sid,e.id,err);}},
+  delDraft(){if(moneyUpdateGate())return;const e=this._edit;if(!e||e.status!=='draft')return;
+    openConfirm({title:'Delete this draft?',body:'It was never sent.',okLabel:'Delete',danger:true,onConfirm:()=>this._delDraft()});},
+  async _delDraft(){const p=P();const sid=String(p.id);const e=this._edit;if(!e)return;
+    try{await this.col(sid).doc(e.id).delete();toast('Draft deleted');this._edit=null;this.draw();}catch(err){this.fail(sid,e.id,err);}}
+};
 const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_pulled:{},_held:{},_selm:{},_legInv:{},_legAdded:{},_selNp:{},_pushing:{},_pushAgain:{},
   _devId(){let d=null;try{d=localStorage.getItem('plumb.deviceId');}catch(e){}if(!d){d='dev_'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('plumb.deviceId',d);}catch(e){}}return d;},
   ready(){return this.on&&!!this.db;},
@@ -11345,6 +11463,7 @@ function moneyMore(){
     {label:'Record a payment',fn:moneyNewPayment},
     {label:'Credit unused allowances: '+(houseCreditsAllowances(p)?'On':'Off'),sub:'For this house only. If the price comes in under the allowance, the homeowner gets the difference as a credit.',fn:creditSwitch}
   ];
+  try{if(CO.allowed())items.splice(3,0,{label:'Change orders',sub:'Send the homeowner a change or a credit to sign.',fn:function(){CO.open();}});}catch(e){}
   try{if(costLines(p).length)items.push({label:'Cost report',fn:openJobCost});}catch(e){}
   try{if(qbEligible()&&_qbState&&_qbState.connected)items.push({label:'Send new costs to QuickBooks',fn:qbExportNow});}catch(e){}
   try{if(budgetSources().length)items.push({label:'Copy budget lines from another house',fn:openBudgetCopy});}catch(e){}

@@ -28,7 +28,7 @@ const fs = require('fs');
 const { initializeTestEnvironment, assertSucceeds, assertFails } =
   require('@firebase/rules-unit-testing');
 const {
-  doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection,
+  doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, collection,
   query, where, onSnapshot, writeBatch, serverTimestamp,
 } = require('firebase/firestore');
 const { ref, uploadBytes, getBytes } = require('firebase/storage');
@@ -636,6 +636,11 @@ async function main() {
     dc1: sentOf({ id: 'dc1', no: 42, status: 'declined', decidedBy: U.client, decidedRev: 1 }),
     wd1: sentOf({ id: 'wd1', no: 43, status: 'withdrawn', withdrawnBy: U.builder }),
     sx: sentOf({ id: 'sx', no: 44 }),
+    app_d: coData({ id: 'app_d', note: 'South wall', days: 2 }),
+    app_d2: coData({ id: 'app_d2' }),
+    app_s: sentOf({ id: 'app_s', no: 60, note: 'South wall', days: 2 }),
+    app_s2: sentOf({ id: 'app_s2', no: 62 }),
+    app_s3: sentOf({ id: 'app_s3', no: 63 }),
   };
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const sdb = ctx.firestore();
@@ -672,6 +677,19 @@ async function main() {
     sendBatch(db.builder2, 'n17', sentOf({ id: 'n17', no: 5, sentAt: SRV(), sentBy: U.builder2, sentName: 'Pat PM' }), 5, U.builder2, 'liveGateJ'), true);
   await INV('A1 co: a draft becomes sent (rev 1, claim in the batch) ALLOWED',
     sendBatch(db.builder, 'd1', sentOf({ id: 'd1', no: 6, sentAt: SRV() }), 6), true);
+
+  /* 2.471.0 builder app (4a): it writes with merge: set({data: only the changed keys, ...outer stamps}, { merge: true }) and
+     clears an optional key with deleteField(). The rules read the merged result, so these must pass exactly as the app sends them. */
+  const mrg = (d, id, part) => setDoc(coRef(d, id), Object.assign({ data: part, updatedAt: 9, updatedBy: 'devB' }, stampNow(U.builder)), { merge: true });
+  await INV('A1 app 4a: a draft becomes sent by a merge in one batch, clearing its note and days, claim alongside: ALLOWED', (async () => {
+    const b = writeBatch(db.builder);
+    b.set(doc(db.builder, 'sites/liveA/numbers/co-61'), claimDoc(U.builder, 'co', 61));
+    b.set(coRef(db.builder, 'app_d'), Object.assign({ data: { title: 'Add a window', amountC: 185000, kind: 'change', status: 'sent', no: 61, rev: 1, sentAt: SRV(), sentBy: U.builder, sentName: 'Dean Walsh', sentRole: 'builder', note: deleteField(), days: deleteField() }, updatedAt: 9, updatedBy: 'devB' }, stampNow(U.builder)), { merge: true });
+    return b.commit(); })(), true);
+  await INV('A1 app 4a: a sent change order edited by merge (amountC, rev + 1, note cleared): ALLOWED', mrg(db.builder, 'app_s', { amountC: 210000, rev: 2, note: deleteField() }), true);
+  await INV_A1('A1 app 4a: the same merge without the rev bump is DENIED', mrg(db.builder, 'app_s2', { amountC: 210000 }));
+  await INV('A1 app 4a: withdraw by merge (status, withdrawnAt server time, withdrawnBy): ALLOWED', mrg(db.builder, 'app_s3', { status: 'withdrawn', withdrawnAt: SRV(), withdrawnBy: U.builder }), true);
+  await INV('A1 app 4a: a never-sent draft is deleted: ALLOWED', deleteDoc(coRef(db.builder, 'app_d2')), true);
 
   /* C-1: rev bumps on any content change of a sent change order */
   await INV_A1('A1 C-1: a builder changes a sent amount WITHOUT bumping rev: DENIED', upd(db.builder, 's_edit', SEEDS.s_edit, { amountC: 285000 }));
