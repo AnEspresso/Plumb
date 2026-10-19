@@ -3166,7 +3166,7 @@ S('allowances');
   $("openAddSel('Plumbing Fixtures')");
   t('sheet: a new item starts on Upgrade or credit: only the upgrade field shows',el('selAllow')&&el('selModeUp').classList.contains('on')&&!el('selModeAl').classList.contains('on')&&el('selAllowBox').style.display==='none'&&el('selPriceBox').style.display!=='none');
   setVal('selItem','Sim faucet allowance');setVal('selStatus','selected');$("setSelMode(true)");setVal('selAllow','450');$("selAllowRefresh()");setVal('selCost','570');$("selAllowRefresh()");
-  t('sheet: with an allowance, Item price + Budget line + credit switch replace the upgrade field',el('selAllowBox').style.display===''&&el('selPriceBox').style.display==='none'&&el('selCredit').classList.contains('on')&&el('selLine').options.length===1+$("costLines(P()).length"));
+  t('sheet: with an allowance, Item price + Budget line + credit switch replace the upgrade field',el('selAllowBox').style.display===''&&el('selPriceBox').style.display==='none'&&$("houseCreditsAllowances(P())")===true&&el('selLine').options.length===1+$("costLines(P()).length"));
   $("initSearchSelects()");
   t('sheet: Budget line uses the same picker (with chevron) as Trade section, Room and Status',!!el('selCat__ss')&&!!el('selLine__ss')&&!!el('selLine__ss').querySelector('.ss-chev')&&el('selLine').classList.contains('ss-hidden')&&$("ssTitleOf('selLine')")==='Budget line');
   t('sheet: live hint says the overage waits for the homeowner, in clay',el('selCostHint').textContent==='$120.00 over the allowance. The homeowner has to approve it first.'&&el('selCostHint').classList.contains('c-clay'),el('selCostHint').textContent+' | '+el('selCostHint').className);
@@ -3190,12 +3190,13 @@ S('allowances');
   t('credit: under the allowance credits the homeowner at once, no approval needed',c1.price===-40&&Math.abs(c1.net-(ap.net-40))<0.005,JSON.stringify(c1));
   $("openEditSel("+c1.id+")");
   t('credit: editing reloads the allowance and item price',el('selAllow').value==='300'&&el('selCost').value==='260'&&el('selAllowBox').style.display==='');
-  $("document.getElementById('selCredit').click()");
+  t('M-2: the item sheet no longer has the credit switch',!el('selCredit'));
+  $("closeAddSel()");$("creditSwitch()");$("openEditSel("+c1.id+")");$("selAllowRefresh()");
   t('credit: switched off, the hint says no credit on this house',el('selCostHint').textContent==='$40.00 under the allowance. No credit on this house.',el('selCostHint').textContent);
-  $("saveSel()");
+  $("closeAddSel()");
   const c2=JSON.parse($("JSON.stringify((function(p){var s=p.selections.find(function(x){return x.item==='Sim light allowance';});return {price:s.price,net:billingSummary(p).net,flag:p.allowanceCredit};})(P()))"));
   t('credit: off for the house, under the allowance is $0 and the setting is saved on the house',c2.price===0&&c2.flag===false&&Math.abs(c2.net-ap.net)<0.005,JSON.stringify(c2));
-  $("openEditSel("+c1.id+")");$("document.getElementById('selCredit').click()");$("saveSel()");
+  $("creditSwitch()");
   t('credit: back on, the credit returns',$("P().selections.find(function(x){return x.item==='Sim light allowance';}).price")===-40&&$("P().allowanceCredit")===true);
 
   /* plain upgrades and invoiced allowances */
@@ -3628,9 +3629,9 @@ S('price-switch');
   t('switch: label How it\u2019s priced, two options, in-sheet .seg (not a tab bar), above the price fields',$("(function(){var m=document.getElementById('selMode');var l=m.previousElementSibling;return m.classList.contains('seg')&&m.querySelectorAll('button').length===2&&l.textContent==='How it\u2019s priced'&&m.querySelectorAll('button')[0].textContent==='Upgrade or credit'&&m.querySelectorAll('button')[1].textContent==='Allowance'&&!!(m.compareDocumentPosition(document.getElementById('selAllow'))&4)&&!!(m.compareDocumentPosition(document.getElementById('selPrice'))&4)&&!m.closest('.tabbar,.tabs,nav');})()")===true);
   t('default: a new item starts on Upgrade or credit',on('selModeUp')&&!on('selModeAl'));
   /* show/hide */
-  t('Upgrade or credit: only the upgrade field and its hint',shown('selPrice')&&!shown('selAllow')&&!shown('selAllowHint')&&!shown('selCost')&&!shown('selLine')&&!shown('selCredit'));
+  t('Upgrade or credit: only the upgrade field and its hint',shown('selPrice')&&!shown('selAllow')&&!shown('selAllowHint')&&!shown('selCost')&&!shown('selLine')&&!el('selCredit'));
   $("setSelMode(true)");
-  t('Allowance: allowance + explainer + price + budget line + credit setting; no upgrade field',on('selModeAl')&&!on('selModeUp')&&shown('selAllow')&&el('selAllowHint').textContent==='The amount the contract sets aside for this item.'&&shown('selCost')&&shown('selLine')&&shown('selCredit')&&!shown('selPrice'));
+  t('Allowance: allowance + explainer + price + budget line + credit setting; no upgrade field',on('selModeAl')&&!on('selModeUp')&&shown('selAllow')&&el('selAllowHint').textContent==='The amount the contract sets aside for this item.'&&shown('selCost')&&shown('selLine')&&!el('selCredit')&&!shown('selPrice'));
   t('Allowance: the price field is "Price of what they picked", with Agency\u2019s hint',$("document.getElementById('selCost').previousElementSibling.textContent")==='Price of what they picked'&&el('selCostHint').textContent==='Add the price once the homeowner picks.',el('selCostHint').textContent);
   setVal('selItem','Sim4 sconce allowance');setVal('selStatus','selected');setVal('selAllow','300');$("selAllowRefresh()");setVal('selCost','360');$("selAllowRefresh()");$("saveSel()");
   const a0=get('Sim4 sconce allowance');
@@ -3706,7 +3707,7 @@ S('money-words');
   const IN=["'Paid\\u00a0'","' of\\u00a0'","'\\u00a0· owed\\u00a0'","'Under\\u00a0budget\\u00a0· '",'>Contracted</button>',"'Contracted','Paid'",'<span>Contracted</span>','<th class="n u-m25">Contracted</th>',"' contracted &middot; '","'Contract with'",'<i>contract ${fmtMoney(s)} · paid','— contract ${fmtMoney(contractSigned(c))}','paid over the contract</b>',"' from this contract. The original amount stays.'",'Budget, contracted, paid, and projected for the whole build on one sheet. Only your team sees it.',"<span>contracted</span>","'Payment':'Contract',",
     "'The homeowner approves this from their own login.'",'See the homeowner\u2019s approval','Waiting for the homeowner to approve',"'\u2713 Approved':'Waiting'",'The homeowner approves each item from their own login.','<span>Approved</span><b>${date}</b>','<div class="so-k">Homeowner</div>','Approved from the homeowner\u2019s own login.',"' \\u00b7 approved'",
     '<h4>Upgrades &amp; credits</h4>','<span>Upgrades &amp; credits</span>','<div class="ld-sec">Upgrades &amp; overages</div>','No upgrades yet.','Total upgrades &amp; overages','<span>Upgrades &amp; overages</span>','<span>Upgrades minus credits</span>','No invoices yet. Bill the homeowner for upgrades and changes here.','its amount from upgrades &amp; credits.','Money the homeowner paid you. Add deposits and draws here. Payments on an invoice are entered on that invoice.','<div class="k">Upgrades &amp; payments</div>','<h2>Upgrades &amp; payments</h2>',
-    '<span>Still owed</span>','What\u2019s still owed updates to match.','<span>Invoiced</span></div>',"' paid on invoices</span></div>'",'<span>Paid outside invoices</span>','paid outside invoices.</div>','Deposits and draws that aren\u2019t on an invoice go here. Payments on an invoice are entered on that invoice and show here too.','Every payment so far came in on an invoice.',"overdue:'Past due',paid",'invoice & past-due alerts','Approval and past-due alerts for',
+    '<span>Still owed</span>','<span>Invoiced</span></div>',"' paid on invoices</span></div>'",'<span>Paid outside invoices</span>','paid outside invoices.</div>','Deposits and draws that aren\u2019t on an invoice go here. Payments on an invoice are entered on that invoice and show here too.','Every payment so far came in on an invoice.',"overdue:'Past due',paid",'invoice & past-due alerts','Approval and past-due alerts for',
     'Projected final cost (optional)',"'<i>you set '",' · your cost <b>',"' loss'","'Delete this payment?'","'Payment deleted'",'It comes off this house\u2019s budget right away.','This cost is already in QuickBooks. Deleting it here won\u2019t remove it there, so delete it in QuickBooks too.','A credit lowers what the homeowner owes. A charge adds to it. The homeowner gets a notice that the invoice changed.',"n:'Money',d:'Budget, costs, and what the homeowner owes'",'Money is off for this role','Tap to add homeowner notes, allowances, or build-wide instructions.',"' credit':' still to pay'"];
   const OUT=["'Upgrades & credits\\u00a0'","'Contract\\u00a0'","'On budget · '",'>Signed for<',"'Signed for'",'Signed with','paid more than signed</b>','from the signed total','Budget · signed · paid',"'Payment':'Signed contract'",'\u2713 Signed','View homeowner sign-off','Awaiting homeowner sign-off\'','signs off from their login','Sign-off is the homeowner','Homeowner hasn\\u2019t signed off','Buyer under contract','binding approval','\\u00b7 signed\'','Upcharge ledger','>Overages<','No overages on this build.','Total overages','<div class="lr net"><span>Net change<','bill the homeowner for selection upcharges','toward the upcharge balance','Costs & payments','Amount outstanding','To collect','amount outstanding will recalculate','<span>Billed</span>',"' received</div>'",'Credit on account','credit on account','Loose payments are deposits','No loose payments here',"overdue:'Overdue'",'Invoice overdue','& overdue alerts','Approval and overdue alerts','Now expecting','(your call)','underwater',"'Delete this cost?'",'off the budget math','deleting here does NOT','credit note)','Job costs','billed the buyer','buyer notes'];
   const miss=IN.filter(x=>SRC.indexOf(x)<0),left=OUT.filter(x=>SRC.indexOf(x)>=0);
@@ -3957,7 +3958,7 @@ await (async function(){
     state.session={role:'builder',name:'You'};return out;})()`);
   t('homeowner phone: never an inv or selm write, no invoices in meta, no money on sel',who.client.inv===0&&who.client.selm===0&&!who.client.metaInv&&!who.client.selMoney,JSON.stringify(who.client));
   t('crew phone: does not listen to inv or selm and writes neither',who.crew.colls==='items,bk,sel,logs'&&who.crew.inv+who.crew.selm===0&&!who.crew.metaInv&&!who.crew.selMoney,JSON.stringify(who.crew));
-  t('builder without Money (super): no costs, inv or selm; writes none',who.super.colls==='items,bk,sel,logs,pmts,mail'&&who.super.inv+who.super.selm===0&&!who.super.selMoney,JSON.stringify(who.super));
+  t('builder without Money (super): no costs, inv or selm; writes none',who.super.colls==='items,bk,sel,logs,mail'&&who.super.inv+who.super.selm===0&&!who.super.selMoney,JSON.stringify(who.super));
   t('Money-only builder (PM): selm yes, inv no (Claude lock Q3)',who.pm.colls==='items,bk,sel,logs,pmts,mail,costs,selm'&&who.pm.inv===0&&who.pm.selm>0,JSON.stringify(who.pm));
 
   /* 5 · a fake Firestore that applies set/merge/deleteField like the server */
@@ -4295,6 +4296,50 @@ await (async function(){
   t('gate: a real house is NOT converted while the flag is off (no change, no twin)',GT.off===0&&GT.offTwin===false,JSON.stringify(GT));
   t('gate: Preview lists what would change but saves nothing',GT.pv>=1&&GT.afterPv===12.345,JSON.stringify(GT));
   t('gate: with the flag on, the real house converts (12.345 > 12.35, twin 1235)',GT.on>=1&&GT.onPrice===12.35&&GT.onTwin===1235,JSON.stringify(GT));
+  /* ════ 2.469.0 · M-2 credit switch, M-5 void payment, M-7 stamps, pmts subscription ════ */
+  const M2=J(`(function(){var p=P();var o={};var A=function(id){return p.selections.find(function(x){return x.id===id;});};
+    p.allowanceCredit=true;
+    p.selections.push({id:9801,room:'K',cat:'L',item:'m2 approved',status:'selected',allowance:300,cost:260,price:-40,approved:true,signed:{name:'x',t:1}});
+    p.selections.push({id:9802,room:'K',cat:'L',item:'m2 open',status:'selected',allowance:300,cost:260,price:-40,approved:false});
+    creditSwitch();
+    o.shown=document.getElementById('confirmScrim').classList.contains('show');o.body=document.getElementById('ocBody').textContent;
+    o.before=[p.allowanceCredit,A(9801).price];
+    ocCancel();
+    o.cancel=[p.allowanceCredit,A(9801).price,A(9801).approved,A(9802).price];
+    var old=JSON.parse(JSON.stringify(A(9801)));
+    creditSwitch();ocConfirm();
+    o.after=[p.allowanceCredit,A(9801).price,A(9801).approved,A(9801).signed,A(9802).price];
+    o.notice=Notify.selReapprove(old,A(9801),p.id);
+    p.selections=p.selections.filter(function(x){return x.id!==9801&&x.id!==9802;});p.allowanceCredit=true;return o;})()`);
+  t('M-2: switching with an approved item asks first and lists it; nothing has changed yet',M2.shown&&/1 approved item changes/.test(M2.body)&&/m2 approved/.test(M2.body)&&M2.before[0]===true&&M2.before[1]===-40,JSON.stringify(M2));
+  t('M-2: Cancel changes nothing at all (switch, approved price, approval, open item)',M2.cancel[0]===true&&M2.cancel[1]===-40&&M2.cancel[2]===true&&M2.cancel[3]===-40,JSON.stringify(M2.cancel));
+  t('M-2: confirming moves the approved item to $0, back for a new OK; the open item reprices too',M2.after[0]===false&&M2.after[1]===0&&M2.after[2]===false&&M2.after[3]===null&&M2.after[4]===0,JSON.stringify(M2.after));
+  t('M-2: the homeowner notice covers a credit that goes away',M2.notice&&M2.notice.title==='Needs your OK again'&&/\$40\.00 credit is now \$0\.00/.test(M2.notice.body),JSON.stringify(M2.notice));
+  const M5=J(`(function(){var p=P();var o={};p.payments=p.payments||[];
+    Data.addPayment({id:'vp1',label:'Void me',amount:250.5,date:'2026-10-02'});var before=sitePaidTotal(p);
+    var h0=paymentsListHTML(p);o.btn=h0.indexOf("voidPayment('vp1')")>=0&&h0.indexOf('removePayment')<0&&h0.indexOf('Void payment')>=0;
+    voidPayment('vp1');document.getElementById('promptInput').value='';confirmPrompt();o.emptyRefused=!p.payments.find(function(x){return x.id==='vp1';}).voidedAt;
+    document.getElementById('promptInput').value='Wrong job';confirmPrompt();
+    var x=p.payments.find(function(y){return y.id==='vp1';});o.v=[x.voidedAt>0,x.voidReason];
+    var h=paymentsListHTML(p);o.html=[h.indexOf('pay-void')>=0,h.indexOf('Voided: Wrong job')>=0,h.indexOf("voidPayment('vp1')")<0];
+    o.paid=[before,sitePaidTotal(p)];o.stays=!!p.payments.find(function(y){return y.id==='vp1';});o.noRemove=[typeof removePayment,typeof invDelPayment,typeof Data.removePayment];
+    p.invoices.push({id:'vinv',no:'V-1',title:'v',status:'paid',approvedAt:1,items:[{label:'a',amount:100}],total:100,payments:[{amount:100,date:'2026-10-03'}],t:Date.now()});
+    var inv=p.invoices.find(function(v){return v.id==='vinv';});o.inv0=[invPaidAmt(inv),invBalance(inv)];o.invBtn=invDetailHTML(p,inv,'builder').indexOf('invVoidPayment')>=0;
+    invVoidPayment(p.id,'vinv',0);document.getElementById('promptInput').value='Bounced';confirmPrompt();
+    o.inv1=[invPaidAmt(inv),invBalance(inv),inv.status,inv.payments.length,inv.payments[0].voidReason];
+    var d=invDetailHTML(p,inv,'builder');o.invHtml=[d.indexOf('Voided: Bounced')>=0,d.indexOf('td-lt')>=0,d.indexOf('invVoidPayment')<0];
+    p.invoices=p.invoices.filter(function(v){return v.id!=='vinv';});p.payments=p.payments.filter(function(y){return y.id!=='vp1';});return o;})()`);
+  t('M-5: the loose payment row has "Void payment", not the trash icon',M5.btn,JSON.stringify(M5));
+  t('M-5: a blank reason is refused; a voided payment stays, crossed out, with its reason, and no longer counts',M5.emptyRefused&&M5.v[0]&&M5.v[1]==='Wrong job'&&M5.html.every(Boolean)&&M5.stays&&Math.abs(M5.paid[0]-M5.paid[1]-250.5)<0.005,JSON.stringify(M5));
+  t('M-5: remove functions are gone (payments are add-only in the app)',M5.noRemove.every(x=>x==='undefined'),JSON.stringify(M5.noRemove));
+  t('M-5: on an invoice the same Void payment: struck through, reason shown, balance returns, a paid invoice reopens',M5.invBtn&&M5.inv0[0]===100&&M5.inv1[0]===0&&M5.inv1[1]===100&&M5.inv1[2]==='approved'&&M5.inv1[3]===1&&M5.inv1[4]==='Bounced'&&M5.invHtml.every(Boolean),JSON.stringify(M5));
+  await sleep(1500);await settle();
+  const ST=J(`(function(){var c=(__F.srv.pdel&&__F.srv.pdel.colls)||{};var o={};['pmts','inv','selm'].forEach(function(sub){var ds=Object.keys(c[sub]||{}).map(function(k){return c[sub][k];});o[sub]=[ds.length,ds.filter(function(d){return !(d.byUid===Sync.uid&&!!Sync.uid&&typeof d.tappedAt==='number'&&d.appV==='2.469.0'&&typeof d.updatedAt==='number');}).length];});
+    o.sel=Object.keys(c.sel||{}).some(function(k){return 'byUid' in c.sel[k]||'appV' in c.sel[k];});return o;})()`);
+  t('M-7: every pmts, inv and selm doc carries byUid, tappedAt and appV; updatedAt is still a number',ST.pmts[0]>0&&ST.inv[0]>0&&ST.selm[0]>0&&ST.pmts[1]===0&&ST.inv[1]===0&&ST.selm[1]===0&&!ST.sel,JSON.stringify(ST));
+  const SB=J(`(function(){var og=canGate;var o={};try{canGate=function(){return false;};o.blind=syncCollsFor('builder').map(function(c){return c.sub;});
+      canGate=function(k){return k==='moneyJob';};o.job=syncCollsFor('builder').map(function(c){return c.sub;});}finally{canGate=og;}return o;})()`);
+  t('pmts: a builder with no money access does not subscribe to pmts, selm, costs or inv; one with Job money still reads pmts',SB.blind.indexOf('pmts')<0&&SB.blind.indexOf('selm')<0&&SB.blind.indexOf('costs')<0&&SB.job.indexOf('pmts')>=0,JSON.stringify(SB));
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();
