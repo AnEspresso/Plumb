@@ -4389,7 +4389,10 @@ await (async function(){
         if(['approved','declined'].indexOf(on.status)<0||on.decidedRev!==oo.rev||on.decidedBy!==Sync.uid||on.decidedAt!==TS||on.decidedRole!=='client'||!on.decidedName)throw denied('client decision');
         if(on.status==='approved'&&(!on.sentence||oo.verifiedRev!==oo.rev||oo.verifiedTotal!==oo.amountC))throw denied('client approve');
         if(!store[seg[0]+'/'+seg[1]+'/consent/'+Sync.uid])throw denied('no consent');return;}
-      if(coll==='numbers'){if(old)throw denied('number already claimed');if(!only(v,['kind','no','byUid','at','appV','tappedAt'])||v.kind!=='co'||!(v.no>0)||seg[3]!=='co-'+v.no||v.byUid!==Sync.uid||v.at!==TS)throw denied('number shape');return;}
+      if(coll==='inv'){if(X.role!=='builder'||!only(v,['data','updatedAt','updatedBy','byUid','tappedAt','appV'])||v.byUid!==Sync.uid)throw denied('inv');
+        var iv=v.data||{},io=old?old.data:null;var im=/^INV-([0-9]+)$/.exec(iv.no||'');
+        if(iv.status==='sent'&&(!io||io.status==='draft')&&X.invClaims&&(!im||batchPaths.indexOf('sites/'+seg[1]+'/numbers/inv-'+(+im[1]))<0))throw denied('inv sent without its claim');return;}
+      if(coll==='numbers'){if(old)throw denied('number already claimed');if(!only(v,['kind','no','byUid','at','appV','tappedAt'])||['co','inv'].indexOf(v.kind)<0||!(v.no>0)||seg[3]!==v.kind+'-'+v.no||v.byUid!==Sync.uid||v.at!==TS)throw denied('number shape');return;}
       if(coll!=='co')throw denied('collection '+coll);
       if(!only(merged,OUT)||merged.byUid!==Sync.uid||merged.at!==TS||typeof merged.appV!=='string'||!merged.appV)throw denied('outer');
       var n=merged.data||{},o=old?old.data:null;
@@ -4762,6 +4765,49 @@ await (async function(){
   /* a denied read (published rules) shows a quiet note, no retry */
   $2(`(function(){var X=__co;HIST._rows={};HIST._unsub={};HIST._err={};var s=X.subs.filter(function(s){return s.p===X.pre+'hist';});s.forEach(function(x){x.eb&&x.eb({code:'permission-denied'});});return true;})()`);
   t('3c-2: a denied history read is recorded and not retried',J("(function(){var n=__co.subs.length;HIST._err[String(P().id)]='permission-denied';HIST.attach(P());return __co.subs.length===n;})()"));
+  /* ---------- 3c-3: M-6 invoice number claims, Draft, invoice/payment history ---------- */
+  const INVFILL=(lbl,amt)=>`invCompose();document.getElementById('invExLabel').value=${JSON.stringify(lbl)};document.getElementById('invExAmount').value=${JSON.stringify(amt)};true`;
+  $2(`(function(){var X=__co;X.invClaims=true;Sync._pulled=Sync._pulled||{};Sync._pulled[X.pid]=Object.assign({},Sync._pulled[X.pid],{inv:true});X.writes.length=0;return true;})()`);
+  $2("PaperTrail.on=false;true");
+  const IV0=J(`(function(){var p=P();var nb=(p.invoices||[]).length;${INVFILL('Old path','100')};invSave(false);var v=p.invoices[p.invoices.length-1];return {no:v.no,st:v.status,w:__co.writes.filter(function(w){return w.indexOf('numbers/inv')>=0||w.indexOf('/inv/')>=0;}).length,n:p.invoices.length-nb,ok:InvNo.allowed(p),draft:invNoText({no:''})};})()`);
+  t('3c-3: switch off: the old path numbers and sends with no claim and no direct write',IV0.n===1&&/^INV-\d{3}$/.test(IV0.no)&&IV0.st==='sent'&&IV0.w===0&&!IV0.ok&&IV0.draft==='',JSON.stringify(IV0));
+  $2("PaperTrail.on=true;true");
+  t('3c-3: switch on: a draft shows "Draft" instead of a number',J("invNoText({no:''})")==='Draft'&&J("invNoText({no:'INV-004'})")==='INV-004');
+  $2(INVFILL('Claimed one','250'));$2("invSave(true);true");
+  const IV1=J("(function(){var p=P();var v=p.invoices[p.invoices.length-1];renderInvoices();return {st:v.status,no:v.no,html:document.getElementById('invBody').innerHTML.indexOf('Draft \u00b7 '+v.title)>=0};})()");
+  t('3c-3: a saved draft has no number and the list says Draft',IV1.st==='draft'&&IV1.no===''&&IV1.html,JSON.stringify(IV1));
+  $2(`(function(){__co.writes.length=0;var p=P();var v=p.invoices[p.invoices.length-1];invCompose(v.id);return true;})()`);
+  const before=J("(function(){var m=0;P().invoices.forEach(function(v){var x=/INV-(\\d+)/.exec(v.no||'');if(x&&+x[1]>m)m=+x[1];});return m;})()");
+  await $2("(async function(){invSave(false);await new Promise(function(r){setTimeout(r,30);});return true;})()");
+  const IV2=J(`(function(){var X=__co;var p=P();var v=p.invoices.filter(function(x){return x.title&&x.title.length>=0;}).slice(-1)[0];var n=+(/INV-(\\d+)/.exec(v.no||'')||[0,0])[1];
+    return {no:v.no,st:v.status,w:X.writes.slice(),claim:!!X.store[X.pre+'numbers/inv-'+n],rec:(X.store[X.pre+'inv/'+v.id]||{}).data,sh:(function(){try{var sh=Sync._shadow[X.pid];if(!sh)return 'no shadow';var op=diffSiteOps(sh,p).filter(function(o){return o.sub==='inv'&&o.id===v.id;})[0];return op?('op '+JSON.stringify(op.data).slice(0,60)+' vs '+String((sh.colls.inv||{})[v.id])+' '+_syncHash(JSON.stringify(op.data))):true;}catch(e){return 'err '+e.message;}})(),n:n};})()`);
+  t('3c-3: Send claims the next number and writes the invoice in ONE batch',IV2.st==='sent'&&IV2.n===before+1&&IV2.claim&&IV2.w.length===2&&IV2.w.every(function(w){return / b\d+$/.test(w);})&&IV2.w[0].split(' b')[1]===IV2.w[1].split(' b')[1]&&IV2.rec&&IV2.rec.no===IV2.no&&IV2.rec.status==='sent',JSON.stringify(IV2));
+  /* another phone already claimed the next number, and this phone's read of the claims is stale */
+  $2(`(function(){var X=__co;var m=0;P().invoices.forEach(function(v){var x=/INV-(\\d+)/.exec(v.no||'');if(x&&+x[1]>m)m=+x[1];});X.store[X.pre+'numbers/inv-'+(m+1)]={kind:'inv',no:m+1,byUid:'uOther',at:'__TS__',appV:'x'};X.otherNo=m+1;X.stale(1);X.writes.length=0;return true;})()`);
+  $2(INVFILL('Race','75'));$2(TOAST_ON);const IVA=J("[InvNo.allowed(P()),navigator.onLine,Sync.ready(),Sync.mode,!!(Sync._pulled[String(P().id)]||{}).inv,syncWrites(P(),'inv'),moneyUpdateGate&&String(moneyUpdateGate()).slice(0,20)]");
+  await $2("(async function(){invSave(false);await new Promise(function(r){setTimeout(r,40);});return true;})()");
+  const IV3=J("(function(){var v=P().invoices.slice(-1)[0];return {no:v.no,st:v.status,other:__co.otherNo};})()");IV3.dbg=IVA;IV3.toasts=JSON.parse($2(TOAST_OFF));IV3.err=J("InvNo._last||''");
+  t('3c-3: two phones at once: a taken number is refused and this phone gets the next one',IV3.st==='sent'&&IV3.no==='INV-'+String(IV3.other+1).padStart(3,'0'),IV3.err+' '+JSON.stringify(IV3));
+  /* the send fails (no signal): it stays a draft with no number */
+  $2(`(function(){var X=__co;X.saved.batch=Sync.db.batch;Sync.db.batch=function(){return {set:function(){},commit:function(){var e=new Error('unavailable');e.code='unavailable';return Promise.reject(e);}};};X.writes.length=0;return true;})()`);
+  $2(INVFILL('Offline','60'));
+  await $2("(async function(){invSave(false);await new Promise(function(r){setTimeout(r,30);});return true;})()");
+  const IV4=J("(function(){var v=P().invoices.slice(-1)[0];return {no:v.no,st:v.status};})()");
+  $2("Sync.db.batch=__co.saved.batch;true");
+  t('3c-3: a failed send stays a draft with no number',IV4.st==='draft'&&IV4.no==='',JSON.stringify(IV4));
+  t('3c-3: Draft shows on the invoice page too',J("(function(){var p=P();var v=p.invoices.slice(-1)[0];return invDetailHTML(p,v,'builder').indexOf('Draft \u00b7 ')>=0;})()"));
+  /* history lines on the invoice page and under each payment */
+  $2(`(function(){var X=__co;var p=P();var v=p.invoices.filter(function(x){return x.status==='sent';}).slice(-1)[0];X.hinv=v.id;p.payments=p.payments||[];p.payments.push({id:'pmH',label:'Deposit',amount:500,date:'2026-10-01'});
+    X.store[X.pre+'hist/i1_0']={kind:'sent',ref:v.id,refType:'inv',no:v.no,amountC:7500,by:'uB',byName:'Dean Walsh',at:7000,seq:0};
+    X.store[X.pre+'hist/p1_0']={kind:'payment',ref:'pmH',refType:'pmt',amountC:50000,by:'uB',byName:'Dean Walsh',at:7100,seq:0};X.fire();return true;})()`);
+  $2("HIST._rows={};HIST._unsub={};HIST._err={};openInvoiceDetail(P().id,__co.hinv,'builder');true");await sleep(30);
+  const IV5=J("document.getElementById('infoScrim').textContent");
+  t('3c-3: the invoice page shows its own history lines, live',IV5.indexOf('History')>=0&&IV5.indexOf('Sent')>=0&&IV5.indexOf('Payment recorded')<0,IV5.slice(0,300));
+  const IV6=J("paymentsListHTML(P())");
+  t('3c-3: each payment shows its own history line',IV6.indexOf('data-hist-ref="pmH"')>=0&&IV6.indexOf('Payment recorded')>=0&&IV6.indexOf('Sent')<0,IV6.slice(0,300));
+  $2("PaperTrail.on=false;true");
+  t('3c-3: switch off: no history on invoice or payment pages',J("(function(){var p=P();var v=p.invoices.filter(function(x){return x.id===__co.hinv;})[0];return invDetailHTML(p,v,'builder').indexOf('hist-slot')<0&&paymentsListHTML(p).indexOf('hist-slot')<0;})()"));
+  $2("PaperTrail.on=true;closeInfo();__co.invClaims=false;P().payments=P().payments.filter(function(x){return x.id!=='pmH';});true");
   $2(COEND);
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}

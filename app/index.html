@@ -15160,7 +15160,7 @@ function invSave(asDraft){
     if(typeof navigator!=='undefined'&&navigator.onLine===false){inv.status='draft';persist();toast('Saved as a draft \u2014 sending needs a bar of signal');_invDraft=null;invMode='list';renderInvoices();return;}
     inv.status='draft';_invDraft=null;invMode='list';
     InvNo.send(p,inv).then(no=>{persist();logEvent('invoiceSent',no+' · '+fmtMoney(total));toast(no+' sent — '+fmtMoney(total));try{renderInvoices();}catch(e){}try{renderSelections();}catch(e){}},
-      err=>{persist();trapError(err&&err.code==='permission-denied'?'rules':'caught','Invoice send refused: '+String((err&&(err.code||err.message))||'').slice(0,100),'invSend');toast('Not sent \u2014 saved as a draft. Try again with a bar of signal');try{renderInvoices();}catch(e){}});
+      err=>{InvNo._last=String((err&&((err.code||'')+' '+(err.message||'')))||'');persist();trapError(err&&err.code==='permission-denied'?'rules':'caught','Invoice send refused: '+String((err&&(err.code||err.message))||'').slice(0,100),'invSend');toast('Not sent \u2014 saved as a draft. Try again with a bar of signal');try{renderInvoices();}catch(e){}});
     renderInvoices();return;
   }else{
     if(!inv.no)inv.no=nextInvNo(p);
