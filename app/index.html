@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.474.0 - Approved change orders can go on an invoice (credits too); change orders can name a budget line (paper-trail switch on)';
+const PLUMB_VERSION='2.475.0 - Builders can record a paper signature (photo required) on a change order (paper-trail switch on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792612800000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.474.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792699200000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.475.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9605,7 +9605,8 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
   openView(id){const r=this.row(String(P().id),id);if(!r)return;this._view=id;this.draw();},
   viewHTML(r){const w=(t)=>COH.when(t);
     return '<div id="coRoot"><div class="meta">'+esc(this.label(r.no))+(r.rev>1?' \u00b7 revision '+r.rev:'')+'</div><div class="fs-md fw-6">'+esc(r.title||'')+'</div><div class="fs-lg fw-6 mt-1">'+esc(this.amountText(r.amountC))+'</div>'+(r.note?'<p class="mt-2">'+esc(r.note)+'</p>':'')
-      +(r.status==='approved'?'<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':''):r.status==='declined'?'<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':''):'<div class="meta mt-2">Withdrawn</div>')
+      +(r.status==='approved'&&r.approvedVia==='paper'?'<div class="meta mt-2">Approved'+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div><div class="meta">Signed on paper \u00b7 <a href="#" onclick="event.preventDefault();CO.paperPhoto(\''+esc(r.id)+'\')">photo</a></div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':'')
+      :r.status==='approved'?'<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':''):r.status==='declined'?'<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':''):'<div class="meta mt-2">Withdrawn</div>')
       +(r.lineId&&canGate('moneyJob')&&this.lineName(P(),r.lineId)?'<div class="meta mt-1">Budget line: '+esc(this.lineName(P(),r.lineId))+'</div>':'')
       +(r.status==='approved'&&canGate('moneyJob')?'<button class="lpay btn btn-quiet mt-2" onclick="CO.updateBudget()">Update budget</button>':'')   /* the builder's cost lives in the budget, never on the co (the homeowner reads it) */
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO._view=null;CO.draw()">Back</button></div>';},
@@ -9635,6 +9636,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
      +'<details class="mt-2"><summary>More details</summary>'+this.lineHTML(p,e)+'<input id="coDays" placeholder="Days added to the schedule" inputmode="numeric" value="'+esc(e.days)+'"></details>'
      +'<div class="meta mt-2" id="coSentence">'+(c0?esc(this.sentence(e.kind,c0)):'')+'</div>'
      +'<button class="b1 b-go w-full mt-1 btn btn-primary" onclick="CO.save(true)">'+(sent?'Sign and send update':'Sign and send')+'</button>'
+     +(sent?'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.paperForm()">Record a paper signature</button>':'')
      +(sent?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="CO.withdraw()">Withdraw</button>':'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.save(false)">Save draft</button>')
      +(e.id&&!sent?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="CO.delDraft()">Delete draft</button>':'')
      +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.back()">Back</button></div>';},
@@ -9691,6 +9693,37 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
     if(!this.online()){toast('Needs a connection \u2014 try again with a bar of signal');return;}
     try{await this.col(sid).doc(e.id).set(Object.assign({data:{status:'withdrawn',withdrawnAt:this.ts(),withdrawnBy:String(Sync.uid)}},this.outer()),{merge:true});
       toast('Withdrawn');this._edit=null;this.draw();}catch(err){this.fail(sid,e.id,err);}},
+  /* C-5 (2.475.0): Record a paper signature. Sent -> approved only with approvedVia 'paper', a photo of the signed page
+     (paperPhotoId), decidedBy = this builder, server time, and the revision on screen. The photo goes to the builder-only
+     'costs' storage folder so crew can never list it; the homeowner gets it by email from the server (M-10). */
+  paperForm(){if(moneyUpdateGate())return;const e=this._edit;if(!e||e.status!=='sent')return;this._paper={id:e.id,rev:e.rev,file:null};
+    showInfo('Record a paper signature','<div id="coRoot"><div class="meta">'+esc(this.label(e.orig&&e.orig.no))+' \u00b7 revision '+e.rev+'</div>'
+      +'<p>Take a photo of the page the homeowner signed. It is required.</p>'
+      +'<input id="coPaperPhoto" type="file" accept="image/*" capture="environment" onchange="CO.paperPick(this)">'
+      +'<div class="meta mt-1" id="coPaperName"></div>'
+      +'<div class="meta mt-2">'+esc(this.sentence(e.kind,(e.orig&&e.orig.amountC)||0))+'</div>'
+      +'<button class="b1 b-go w-full mt-1 btn btn-primary" id="coPaperSave" disabled onclick="CO.paperSave()">Save paper signature</button>'
+      +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO._paper=null;CO.draw()">Back</button></div>',true);},
+  paperPick(inp){const f=inp&&inp.files&&inp.files[0];if(!this._paper)return;
+    if(f&&!/^image\//.test(f.type||'')){toast('Choose a photo');f&&(inp.value='');this._paper.file=null;}
+    else this._paper.file=f||null;
+    const b=document.getElementById('coPaperSave');if(b)b.disabled=!this._paper.file;const n=document.getElementById('coPaperName');if(n)n.textContent=this._paper.file?'Photo ready':'';},
+  async paperSave(){if(moneyUpdateGate())return;const p=P();if(!p||!this.allowed())return;const sid=String(p.id);const pp=this._paper;
+    if(!pp||!pp.file){toast('A photo of the signed page is required');return;}
+    if(pp.busy)return;
+    const r=this.row(sid,pp.id);if(!r||r.status!=='sent'){this.fail(sid,pp.id,{code:'permission-denied'});return;}
+    if(r.rev!==pp.rev){toast('Updated \u2014 open it again to record the signature on the new version');return;}
+    if(!this.online()){toast('Needs a connection \u2014 try again with a bar of signal');return;}
+    pp.busy=1;const photoId='copaper_'+pp.id+'_r'+pp.rev+'_'+Math.random().toString(36).slice(2,8);
+    try{
+      const ref=firebase.storage().ref('live/sites/'+sid+'/costs/'+photoId);
+      await ref.put(pp.file,{contentType:pp.file.type||'image/jpeg'});
+    }catch(err){pp.busy=0;toast('Could not upload the photo \u2014 try again with a bar of signal');try{trapError('caught',String((err&&err.message)||err),'CO.paper');}catch(x){}return;}
+    try{await this.col(sid).doc(pp.id).set(Object.assign({data:{status:'approved',approvedVia:'paper',paperPhotoId:photoId,decidedBy:String(Sync.uid),decidedAt:this.ts(),decidedRev:pp.rev,sentence:this.sentence(r.kind,r.amountC)}},this.outer()),{merge:true});
+      toast(this.label(r.no)+' approved \u2014 signed on paper');try{logEvent('coPaper',this.label(r.no));}catch(x){}this._paper=null;this._edit=null;this.draw();}
+    catch(err){pp.busy=0;this.fail(sid,pp.id,err);}},
+  async paperPhoto(id){const p=P();const r=this.row(String(p.id),id);if(!r||!r.paperPhotoId)return;
+    try{const u=await firebase.storage().ref('live/sites/'+String(p.id)+'/costs/'+r.paperPhotoId).getDownloadURL();window.open(u,'_blank','noopener');}catch(e){toast('Could not open the photo')}},
   delDraft(){if(moneyUpdateGate())return;const e=this._edit;if(!e||e.status!=='draft')return;
     openConfirm({title:'Delete this draft?',body:'It was never sent.',okLabel:'Delete',danger:true,onConfirm:()=>this._delDraft()});},
   async _delDraft(){const p=P();const sid=String(p.id);const e=this._edit;if(!e)return;
@@ -9747,6 +9780,8 @@ const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_s
         +(ok||!this._slow?'':'<div class="meta">This one is taking longer than usual. Ask your builder to check it.</div>')
         +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="COH.decline(\''+esc(r.id)+'\')">Decline</button>';
       if(!ok&&!this._slowT){this._slowT=setTimeout(()=>{this._slowT=null;this._slow=true;try{if(this._open)this.drawDetail();}catch(e){}},15000);}
+    }else if(r.status==='approved'&&r.approvedVia==='paper'){
+      h+='<div class="meta mt-2">Approved'+(this.when(r.decidedAt)?' \u00b7 '+esc(this.when(r.decidedAt)):'')+'</div><div class="meta">Signed on paper \u00b7 photo</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':'')+'<div class="meta">Not you? Tell your builder.</div>';
     }else if(r.status==='approved'){
       h+='<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(this.when(r.decidedAt)?' \u00b7 '+esc(this.when(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':'');
     }else if(r.status==='declined'){
