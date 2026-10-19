@@ -4334,12 +4334,40 @@ await (async function(){
   t('M-5: remove functions are gone (payments are add-only in the app)',M5.noRemove.every(x=>x==='undefined'),JSON.stringify(M5.noRemove));
   t('M-5: on an invoice the same Void payment: struck through, reason shown, balance returns, a paid invoice reopens',M5.invBtn&&M5.inv0[0]===100&&M5.inv1[0]===0&&M5.inv1[1]===100&&M5.inv1[2]==='approved'&&M5.inv1[3]===1&&M5.inv1[4]==='Bounced'&&M5.invHtml.every(Boolean),JSON.stringify(M5));
   await sleep(1500);await settle();
-  const ST=J(`(function(){var c=(__F.srv.pdel&&__F.srv.pdel.colls)||{};var o={};['pmts','inv','selm'].forEach(function(sub){var ds=Object.keys(c[sub]||{}).map(function(k){return c[sub][k];});o[sub]=[ds.length,ds.filter(function(d){return !(d.byUid===Sync.uid&&!!Sync.uid&&typeof d.tappedAt==='number'&&d.appV==='2.469.0'&&typeof d.updatedAt==='number');}).length];});
+  const ST=J(`(function(){var c=(__F.srv.pdel&&__F.srv.pdel.colls)||{};var o={};['pmts','inv','selm'].forEach(function(sub){var ds=Object.keys(c[sub]||{}).map(function(k){return c[sub][k];});o[sub]=[ds.length,ds.filter(function(d){return !(d.byUid===Sync.uid&&!!Sync.uid&&typeof d.tappedAt==='number'&&d.appV===String(PLUMB_VERSION).split(' ')[0]&&typeof d.updatedAt==='number');}).length];});
     o.sel=Object.keys(c.sel||{}).some(function(k){return 'byUid' in c.sel[k]||'appV' in c.sel[k];});return o;})()`);
   t('M-7: every pmts, inv and selm doc carries byUid, tappedAt and appV; updatedAt is still a number',ST.pmts[0]>0&&ST.inv[0]>0&&ST.selm[0]>0&&ST.pmts[1]===0&&ST.inv[1]===0&&ST.selm[1]===0&&!ST.sel,JSON.stringify(ST));
   const SB=J(`(function(){var og=canGate;var o={};try{canGate=function(){return false;};o.blind=syncCollsFor('builder').map(function(c){return c.sub;});
       canGate=function(k){return k==='moneyJob';};o.job=syncCollsFor('builder').map(function(c){return c.sub;});}finally{canGate=og;}return o;})()`);
   t('pmts: a builder with no money access does not subscribe to pmts, selm, costs or inv; one with Job money still reads pmts',SB.blind.indexOf('pmts')<0&&SB.blind.indexOf('selm')<0&&SB.blind.indexOf('costs')<0&&SB.job.indexOf('pmts')>=0,JSON.stringify(SB));
+  /* ── M-15 (2.470.0): PaperTrail switch + "Update to continue" ── */
+  const PT0=J(`(function(){return {on:PaperTrail.on,blocked:PaperTrail.blocked(),gate:moneyUpdateGate(),scrim:document.getElementById('confirmScrim').classList.contains('show')};})()`);
+  t('M-15: the switch is off after a normal boot (the F-2 server has no settings), nothing blocked, no dialog',PT0.on===false&&PT0.blocked===false&&PT0.gate===false&&PT0.scrim===false,JSON.stringify(PT0));
+  const PT00=J(`(function(){PaperTrail.on=false;PaperTrail.minV=9999;var b=PaperTrail.blocked(),g=moneyUpdateGate();PaperTrail.minV=0;return [b,g];})()`);
+  t('M-15: a high minimum does nothing while the switch is off',PT00[0]===false&&PT00[1]===false,JSON.stringify(PT00));
+  const STUB=(en,min,fail)=>`window.__sdb=Sync.db;Sync.db={collection:function(c){return{doc:function(d){return{get:function(){if(${fail?'true':'false'})return Promise.reject(new Error('permission-denied'));var dat=d==='paperTrail'?{enabled:${en}}:{minAppV:${min}};return Promise.resolve({exists:true,data:function(){return dat;}});}};}};}};PaperTrail.load(true);true`;
+  const RD=()=>J(`(function(){Sync.db=window.__sdb;return {on:PaperTrail.on,min:PaperTrail.minV,mine:PaperTrail.mine(),blocked:PaperTrail.blocked()};})()`);
+  $2(STUB('true',2471,false));await sleep(80);const PT1=RD();
+  t('M-15: switch on with a higher minimum: this phone (2470) is blocked',PT1.on&&PT1.min===2471&&PT1.mine===2470&&PT1.blocked,JSON.stringify(PT1));
+  $2(STUB('true',2470,false));await sleep(80);const PT2=RD();
+  t('M-15: a phone at the minimum is not blocked',PT2.on&&!PT2.blocked,JSON.stringify(PT2));
+  $2(STUB('false',9999,false));await sleep(80);const PT3=RD();
+  t('M-15: switch off ignores the minimum',!PT3.on&&PT3.min===0&&!PT3.blocked,JSON.stringify(PT3));
+  $2(STUB('true',9999,true));await sleep(80);const PT4=RD();
+  t('M-15: a refused read (rules not published) is off, silently',!PT4.on&&!PT4.blocked,JSON.stringify(PT4));
+  /* blocked: each money action shows Update to continue and changes nothing */
+  const BL=J(`(function(){var p=P();var o={};PaperTrail.on=true;PaperTrail.minV=9999;
+    var n0=(p.payments||[]).length,inv0=(p.invoices||[]).length,cr0=houseCreditsAllowances(p);
+    document.getElementById('payLabel').value='Deposit';document.getElementById('payAmount').value='2,000';addPayment();
+    o.pay=[(p.payments||[]).length===n0,document.getElementById('confirmScrim').classList.contains('show'),document.getElementById('ocTitle').textContent];
+    ocCancel();creditSwitch();o.credit=[houseCreditsAllowances(p)===cr0,document.getElementById('confirmScrim').classList.contains('show')];ocCancel();
+    voidPayment('nope');o.voidp=document.getElementById('confirmScrim').classList.contains('show');ocCancel();
+    o.src=['invSave','invAddPayment','invVoidPayment','invVoid','invApprove','creditSwitch','addPayment','voidPayment','clientSignoff'].map(function(f){return [f,String(window[f]||eval(f)).indexOf('moneyUpdateGate()')>=0];});
+    o.draft=(function(){var s=String(invSave);return s.indexOf('!asDraft&&moneyUpdateGate()')>=0;})();
+    PaperTrail.on=false;PaperTrail.minV=0;ocCancel();return o;})()`);
+  t('M-15: blocked, add payment shows "Update to continue" and adds nothing',BL.pay[0]&&BL.pay[1]&&BL.pay[2]==='Update to continue',JSON.stringify(BL.pay));
+  t('M-15: blocked, the credit switch and void payment also stop at the dialog',BL.credit[0]&&BL.credit[1]&&BL.voidp,JSON.stringify(BL));
+  t('M-15: every money action (send, record, void, approve, sign, credit switch) starts with the gate; saving a draft does not',BL.src.every(x=>x[1])&&BL.draft,JSON.stringify(BL.src.filter(x=>!x[1])));
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();
