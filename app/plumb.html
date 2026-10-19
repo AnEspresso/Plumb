@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.477.0 - Money history: one shared, read-only list per house, and lines on each change order (paper-trail switch on)';
+const PLUMB_VERSION='2.478.0 - Invoice numbers are claimed at send, drafts say Draft, invoices and payments show their history (paper-trail switch on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792872000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.477.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792958400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.478.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9795,7 +9795,11 @@ const HIST={_rows:{},_unsub:{},_err:{},
   open(p){p=p||(((state.session||{}).role==='client')?clientProj():P());if(!this.allowed(p))return;this.attach(p);this._open=String(p.id);this.draw();},
   draw(){const sid=this._open;if(!sid)return;showInfo('History','<div id="histRoot">'+this.screenHTML(sid)+'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="HIST.close()">Done</button></div>',true);},
   close(){this._open=null;closeInfo();},
-  refresh(){try{if(this._open&&document.getElementById('histRoot'))this.draw();}catch(e){}
+  /* 3c-3: a slot that keeps an item's lines live (invoice page, payments list) */
+  slotHTML(p,ref,type){try{if(!this.allowed(p))return '';this.attach(p);const sid=String(p.id);
+    return '<div class="hist-slot" data-hist-sid="'+esc(sid)+'" data-hist-ref="'+esc(String(ref))+'" data-hist-type="'+esc(type)+'">'+this.itemHTML(sid,ref,type)+'</div>';}catch(e){return '';}},
+  refresh(){try{document.querySelectorAll('.hist-slot').forEach(el=>{el.innerHTML=this.itemHTML(el.getAttribute('data-hist-sid'),el.getAttribute('data-hist-ref'),el.getAttribute('data-hist-type'));});}catch(e){}
+    try{if(this._open&&document.getElementById('histRoot'))this.draw();}catch(e){}
     try{if(CO._view&&document.getElementById('coRoot'))CO.draw();}catch(e){}
     try{if(COH._open&&document.getElementById('cohRoot'))COH.drawDetail();}catch(e){}},
   rowHTML(p){if(!this.allowed(p))return '';
@@ -15039,6 +15043,31 @@ function moneyHintFor(el){if(!el||!el.matches||!el.matches('[data-money]')||el.c
   else if(r.blank){h.textContent='';h.classList.remove('bad');}
   else{h.textContent=MONEY_WHY[r.why]||'Check the amount';h.classList.add('bad');}}
 try{['input','focusin'].forEach(ev=>document.addEventListener(ev,e=>{try{moneyHintFor(e.target);}catch(x){}}));}catch(e){}
+/* 3c-3 (2.478.0, M-6): invoice numbers are claimed at send. With the paper-trail switch on, Send writes the invoice record and a
+   numbers/inv-N claim in ONE batch (Rules A1 numberCreateOk: create-only, so a second claim of the same number is refused and
+   the app retries with the next one). The invoice record is the same replace write the sync makes (F-2). Drafts show "Draft".
+   Switch off (or not a money builder on a live house): the old path (nextInvNo + sync) runs unchanged. */
+function invNoText(inv){return inv&&inv.no?String(inv.no):(PaperTrail.on?'Draft':'');}
+const InvNo={
+  allowed(p){try{return !!(PaperTrail.on&&p&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&siteRoleFor(p)==='builder'&&(state.session||{}).role==='builder'&&syncWrites(p,'inv')&&(Sync._pulled[String(p.id)]||{}).inv);}catch(e){return false;}},
+  num(no){const m=/^INV-(\d+)$/.exec(String(no||''));return m?+m[1]:0;},
+  async nextNo(p){const sid=String(p.id);let max=0;(p.invoices||[]).forEach(v=>{const n=this.num(v.no);if(n>max)max=n;});
+    try{const s=await CO.nums(sid).get();s.docs.forEach(d=>{const m=/^inv-(\d+)$/.exec(d.id);if(m&&+m[1]>max)max=+m[1];});}catch(e){}
+    return max+1;},
+  /* returns the claimed 'INV-NNN', or throws */
+  async send(p,inv){const sid=String(p.id);
+    for(let tries=0;tries<4;tries++){
+      const n=await this.nextNo(p);const no='INV-'+String(n).padStart(3,'0');
+      const data=Object.assign({},inv,{no:no,status:'sent',t:Date.now(),sentBy:(state.session||{}).name||''});
+      const b=Sync.db.batch();
+      b.set(Sync.db.collection('sites').doc(sid).collection('inv').doc(String(inv.id)),Object.assign({data:fbClean(data),updatedAt:Date.now(),updatedBy:Sync.deviceId},Sync._stamp()));
+      b.set(CO.nums(sid).doc('inv-'+n),Object.assign({kind:'inv',no:n},CO.stamp()));
+      try{await b.commit();}catch(err){if(!(err&&err.code==='permission-denied')||tries===3)throw err;continue;}
+      Object.assign(inv,{no:no,status:'sent',t:data.t,sentBy:data.sentBy});
+      try{const sh=Sync._shadow[sid]||(Sync._shadow[sid]={meta:'',colls:{}});sh.colls=sh.colls||{};(sh.colls.inv||(sh.colls.inv={}))[String(inv.id)]=_syncHash(JSON.stringify(inv));Sync._saveBase();}catch(e){}
+      return no;}
+    throw new Error('no number');},
+};
 function nextInvNo(p){let max=0;(p.invoices||[]).forEach(v=>{const m=/INV-(\d+)/.exec(v.no||'');if(m){const n=+m[1];if(n>max)max=n;}});return 'INV-'+String(max+1).padStart(3,'0');}
 /* Partial-payment + lifecycle helpers. An invoice carries a payments[] array;
    its effective state is derived from how much of the total is covered. */
@@ -15127,6 +15156,12 @@ function invSave(asDraft){
   if(asDraft){
     inv.status='draft';
     persist();logEvent('invoiceDraft','Draft · '+fmtMoney(total));toast('Draft saved');
+  }else if(InvNo.allowed(p)&&!inv.no){
+    if(typeof navigator!=='undefined'&&navigator.onLine===false){inv.status='draft';persist();toast('Saved as a draft \u2014 sending needs a bar of signal');_invDraft=null;invMode='list';renderInvoices();return;}
+    inv.status='draft';_invDraft=null;invMode='list';
+    InvNo.send(p,inv).then(no=>{persist();logEvent('invoiceSent',no+' · '+fmtMoney(total));toast(no+' sent — '+fmtMoney(total));try{renderInvoices();}catch(e){}try{renderSelections();}catch(e){}},
+      err=>{persist();trapError(err&&err.code==='permission-denied'?'rules':'caught','Invoice send refused: '+String((err&&(err.code||err.message))||'').slice(0,100),'invSend');toast('Not sent \u2014 saved as a draft. Try again with a bar of signal');try{renderInvoices();}catch(e){}});
+    renderInvoices();return;
   }else{
     if(!inv.no)inv.no=nextInvNo(p);
     inv.status='sent';inv.t=Date.now();inv.sentBy=sess.name||'';
@@ -15157,7 +15192,7 @@ function billersSummaryLine(){try{const p=P();if(!p)return 'Choose who gets invo
 function invStatusChip(st){const lbl={draft:'Draft',sent:'Sent',approved:'Approved',partial:'Partial',overdue:'Past due',paid:'Paid',void:'Void'}[st]||st;return `<span class="inv-chip ${st}">${lbl}</span>`;}
 function invDetailHTML(p,inv,viewer){
   const st=invState(inv);const paid=invPaidAmt(inv);const bal=invBalance(inv);
-  let h=`<div class="pkt-head"><div class="pk-site">${esc(inv.no)} · ${esc(inv.title)}</div><div class="pk-trade">${esc(p.street||p.name)}${inv.due?' · due '+esc(inv.due):''} · sent ${timeAgo(inv.t)}${inv.sentBy?' by '+(viewer==='client'?'your builder':esc(inv.sentBy)):''}</div></div>`;
+  let h=`<div class="pkt-head"><div class="pk-site">${esc(invNoText(inv))} · ${esc(inv.title)}</div><div class="pk-trade">${esc(p.street||p.name)}${inv.due?' · due '+esc(inv.due):''} · sent ${timeAgo(inv.t)}${inv.sentBy?' by '+(viewer==='client'?'your builder':esc(inv.sentBy)):''}</div></div>`;
   const canAdj=viewer==='builder'&&st!=='void';
   h+='<div class="spec-ro">'+inv.items.map((it,idx)=>it.adj
       ?`<div class="sro"><span class="k fst-i">${esc(it.label)}${canAdj?` <button onclick="invDelAdjustment('${p.id}','${inv.id}',${idx})" class="ml-1 fs-xs c-clay bd-0 p-0 cur-p td-u u-m28">Remove</button>`:''}</span><span class="v fst-i">${fmtMoney(it.amount)}</span></div>`
@@ -15166,6 +15201,7 @@ function invDetailHTML(p,inv,viewer){
     +(paid>0?`<div class="sro"><span class="k">Paid</span><span class="v">−${fmtMoney(paid)}</span></div><div class="sro fw-7"><span class="k">Balance due</span><span class="v">${fmtMoney(bal)}</span></div>`:'')
     +`</div>`;
   h+=`<div class="mt-2">${invStatusChip(st)}${st==='overdue'?` <span class="fs-xs c-clay">past due ${esc(inv.due)}</span>`:''}${inv.approvedAt?` <span class="fs-xs c-ink-3">approved ${timeAgo(inv.approvedAt)}</span>`:''}${st==='paid'&&inv.paidAt?` <span class="fs-xs c-ink-3">paid ${timeAgo(inv.paidAt)}</span>`:''}${st==='void'&&inv.voidedAt?` <span class="fs-xs c-ink-3">voided ${timeAgo(inv.voidedAt)}</span>`:''}</div>`;
+  h+=HIST.slotHTML(p,inv.id,'inv');
   // payment history
   if((inv.payments||[]).length){
     const canEditPm=viewer==='builder'&&st!=='void';
@@ -15383,7 +15419,7 @@ function invPrint(projId,invId){
       <button class="pv-print" onclick="doPrintPreview()">Print / Save as PDF</button>
     </div>
     <div class="pv-doc">
-      <h1>${esc(inv.no)} — ${esc(inv.title)}</h1>
+      <h1>${esc(invNoText(inv))} — ${esc(inv.title)}</h1>
       <div class="pv-sub">${esc(p.street||p.name)}${inv.due?' · Due '+esc(inv.due):''}${inv.sentBy?' · From '+esc(inv.sentBy):''}</div>
       <table>${rows}${totals}</table>
       ${st==='void'?'<div class="pv-void">VOID</div>':''}
@@ -15472,7 +15508,7 @@ function renderInvoices(){
   const _bset=billersOf(p);const _bsub=_bset.length?(_bset.length<=2?_bset.join(', '):_bset.length+' teammates')+' get alerts':'Whole team gets alerts';
   const ownerRow=`<div class="subrow cur-p mb-2" onclick="invMode='owner';renderInvoices()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(_bsub)}</div></div><span class="ed">Change</span></div>`;
   el.innerHTML=(_invAnyHouse?houseSwitchHTML(p,'invChangeHouse'):'')+seg+summary+ownerRow+(list.length?list.map(inv=>{const st=invState(inv);const bal=invBalance(inv);
-    return `<div class="subrow" style="cursor:pointer${st==='void'?';opacity:.6':''}" onclick="${st==='draft'?`invCompose('${inv.id}')`:`openInvoiceDetail('${p.id}','${inv.id}','builder')`}"><div class="si"><div class="n">${inv.no?esc(inv.no)+' · ':''}${esc(inv.title)}</div><div class="d">${inv.items.length} line${inv.items.length===1?'':'s'} · ${fmtMoney(inv.total)}${st==='partial'?' · '+fmtMoney(bal)+' left':''}${st==='draft'?' · not sent yet':st==='overdue'?' · <b class="c-clay">past due '+esc(inv.due)+'</b>':(inv.due&&st!=='paid'&&st!=='void'?' · due '+esc(inv.due):'')}</div></div>${invStatusChip(st)}</div>`;}).join('')
+    return `<div class="subrow" style="cursor:pointer${st==='void'?';opacity:.6':''}" onclick="${st==='draft'?`invCompose('${inv.id}')`:`openInvoiceDetail('${p.id}','${inv.id}','builder')`}"><div class="si"><div class="n">${invNoText(inv)?esc(invNoText(inv))+' · ':''}${esc(inv.title)}</div><div class="d">${inv.items.length} line${inv.items.length===1?'':'s'} · ${fmtMoney(inv.total)}${st==='partial'?' · '+fmtMoney(bal)+' left':''}${st==='draft'?' · not sent yet':st==='overdue'?' · <b class="c-clay">past due '+esc(inv.due)+'</b>':(inv.due&&st!=='paid'&&st!=='void'?' · due '+esc(inv.due):'')}</div></div>${invStatusChip(st)}</div>`;}).join('')
     :'<div class="empty py-2 px-0">No invoices yet. Bill the homeowner for upgrades and changes here.</div>')
     +`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="invCompose()">New invoice…</button>`;}
 function openPayments(){renderPaymentsList();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';document.getElementById('payDate').value=todayStr();document.getElementById('payScrim').classList.add('show');}
@@ -15481,7 +15517,7 @@ function paymentsListHTML(p){const pmts=(p.payments||[]);const loose=fromC(sumC(
   const invPays=[];(p.invoices||[]).filter(v=>v&&v.status!=='void').forEach(v=>(v.payments||[]).forEach(pm=>invPays.push({label:(pm.note||'Payment')+'\u2002\u00b7\u2002'+(v.no||''),date:pm.date,amount:Number(pm.amount)||0,v:!!pm.voidedAt,why:pm.voidReason||''})));
   const invPaid=fromC(sumC(invPays.filter(x=>!x.v).map(x=>x.amount)));
   const total=loose+invPaid;                          // === sitePaidTotal(p): the one shared "received" figure
-  const looseHTML=pmts.length?pmts.map(x=>`<div class="pay-row${x.voidedAt?' pay-void':''}"><div class="pi"><div class="pl">${esc(x.label||'Payment')}</div><div class="pd">${x.date?fmtLogDate(x.date):''}${x.voidedAt?' \u00b7 Voided'+(x.voidReason?': '+esc(x.voidReason):''):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div>${x.voidedAt?'':`<button class="pay-rm" onclick="voidPayment('${x.id}')">Void payment</button>`}</div>`).join('')
+  const looseHTML=pmts.length?pmts.map(x=>`<div class="pay-row${x.voidedAt?' pay-void':''}"><div class="pi"><div class="pl">${esc(x.label||'Payment')}</div><div class="pd">${x.date?fmtLogDate(x.date):''}${x.voidedAt?' \u00b7 Voided'+(x.voidReason?': '+esc(x.voidReason):''):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div>${x.voidedAt?'':`<button class="pay-rm" onclick="voidPayment('${x.id}')">Void payment</button>`}</div>${HIST.slotHTML(p,x.id,'pmt')}`).join('')
     :(invPaid>0?'<div class="pay-empty">Every payment so far came in on an invoice.</div>':'<div class="pay-empty">No payments recorded yet.</div>');
   const invHTML=invPays.length?`<div class="fld-label mt-3">From invoices \u00b7 edited on each invoice</div>`+invPays.map(x=>`<div class="pay-row op-72${x.v?' pay-void':''}"><div class="pi"><div class="pl">${esc(x.label)}</div><div class="pd">${x.date?fmtLogDate(x.date):''}${x.v?' \u00b7 Voided'+(x.why?': '+esc(x.why):''):''}</div></div><div class="pa">${fmtMoney(x.amount)}</div></div>`).join(''):'';
   return looseHTML+invHTML+`<div class="pay-total"><span>Total received</span><b>${fmtMoney(total)}</b></div>`;}
