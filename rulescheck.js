@@ -642,6 +642,8 @@ async function main() {
     app_s2: sentOf({ id: 'app_s2', no: 62 }),
     app_s3: sentOf({ id: 'app_s3', no: 63 }),
     app_a: sentOf({ id: 'app_a', no: 64, rev: 2, verifiedRev: 2, verifiedTotal: 185000 }),
+    app_p1: sentOf({ id: 'app_p1', no: 69, rev: 2 }),
+    app_p2: sentOf({ id: 'app_p2', no: 70, rev: 2 }),
     app_a2: sentOf({ id: 'app_a2', no: 65, rev: 2, verifiedRev: 1, verifiedTotal: 185000 }),
     app_dc: sentOf({ id: 'app_dc', no: 66, rev: 2 }),
     app_dc2: sentOf({ id: 'app_dc2', no: 67, rev: 2 }),
@@ -694,6 +696,12 @@ async function main() {
   await INV_A1('A1 app 4a: the same merge without the rev bump is DENIED', mrg(db.builder, 'app_s2', { amountC: 210000 }));
   await INV('A1 app 4a: withdraw by merge (status, withdrawnAt server time, withdrawnBy): ALLOWED', mrg(db.builder, 'app_s3', { status: 'withdrawn', withdrawnAt: SRV(), withdrawnBy: U.builder }), true);
   await INV('A1 app 4a: a never-sent draft is deleted: ALLOWED', deleteDoc(coRef(db.builder, 'app_d2')), true);
+  /* 2.475.0 builder app (4d-1): Record a paper signature, exactly the merge the app sends. */
+  const APAPER = (o) => Object.assign({ status: 'approved', approvedVia: 'paper', paperPhotoId: 'copaper_app_p1_r2_abc123', decidedBy: U.builder, decidedAt: SRV(), decidedRev: 2, sentence: 'This adds $1,850.00 to your contract.' }, o || {});
+  await INV_A1('A1 app 4d-1: paper signature on an old revision is DENIED', mrg(db.builder, 'app_p1', APAPER({ decidedRev: 1 })));
+  await INV_A1('A1 app 4d-1: paper signature without the photo id is DENIED', mrg(db.builder, 'app_p2', (() => { const d = APAPER(); delete d.paperPhotoId; return d; })()));
+  await INV_A1('A1 app 4d-1: paper signature carrying a homeowner name is DENIED (paper is the builder\'s record)', mrg(db.builder, 'app_p2', APAPER({ decidedName: 'Ana Ruiz' })));
+  await INV('A1 app 4d-1: Record a paper signature by merge (photo id, builder, server time, current rev, sentence): ALLOWED', mrg(db.builder, 'app_p1', APAPER()), true);
   /* 2.474.0 builder app (4c-2): budget line under More details. Only the id is stored; it is chosen before sending and kept after. */
   await INV('A1 app 4c-2: a new draft with a budget line id: ALLOWED', setDoc(coRef(db.builder, 'app_l1'), Object.assign({ data: { id: 'app_l1', status: 'draft', t: 1, title: 'Bigger window', amountC: 200000, kind: 'change', lineId: 'L2' }, updatedAt: 9, updatedBy: 'devB' }, stampNow(U.builder))), true);
   await INV('A1 app 4c-2: that draft sent by merge with its claim, line kept: ALLOWED', (async () => {
