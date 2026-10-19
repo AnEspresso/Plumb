@@ -6,7 +6,8 @@
     "rules": "node scripts/rules.mjs",
     "rules:next": "node scripts/rules.mjs --next",
     "claimstamp": "node functions/claimStamp.test.js",
-    "filecleanup": "node functions/fileCleanup.test.js"
+    "filecleanup": "node functions/fileCleanup.test.js",
+    "liverules": "node scripts/liveRules.test.js"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.2",
