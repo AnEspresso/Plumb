@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.472.0 - Homeowners can approve and sign or decline change orders; builders see the decision (paper-trail switch on)';
+const PLUMB_VERSION='2.473.0 - Change orders get their own money line; the budget card shows Change orders sold (paper-trail switch on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1792440000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.472.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1792526400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.473.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9584,8 +9584,9 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
   list(sid){return (this._rows[String(sid)]||[]).slice();},
   row(sid,id){return this.list(sid).find(r=>r.id===id)||null;},
   attach(p){const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
-    try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.render();},
+    try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.render();this.money();},
       err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];this.render();});}catch(e){this._err[sid]='error';}},
+  money(){clearTimeout(this._mt);this._mt=setTimeout(()=>{try{renderBuild();}catch(e){}try{renderSelections();}catch(e){}},60);},
   open(){if(!this.allowed()){toast('Change orders are not on yet');return;}this._edit=null;this._view=null;this.attach(P());this.render();},
   render(){const sc=document.getElementById('infoScrim');if(this._edit||this._view||!sc||!sc.classList.contains('show')||!document.getElementById('coRoot'))return;this.draw();},
   draw(){const p=P();if(!p)return;const sid=String(p.id);
@@ -9605,7 +9606,9 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
   viewHTML(r){const w=(t)=>COH.when(t);
     return '<div id="coRoot"><div class="meta">'+esc(this.label(r.no))+(r.rev>1?' \u00b7 revision '+r.rev:'')+'</div><div class="fs-md fw-6">'+esc(r.title||'')+'</div><div class="fs-lg fw-6 mt-1">'+esc(this.amountText(r.amountC))+'</div>'+(r.note?'<p class="mt-2">'+esc(r.note)+'</p>':'')
       +(r.status==='approved'?'<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':''):r.status==='declined'?'<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':''):'<div class="meta mt-2">Withdrawn</div>')
+      +(r.status==='approved'&&canGate('moneyJob')?'<button class="lpay btn btn-quiet mt-2" onclick="CO.updateBudget()">Update budget</button>':'')   /* the builder's cost lives in the budget, never on the co (the homeowner reads it) */
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO._view=null;CO.draw()">Back</button></div>';},
+  updateBudget(){this._view=null;try{closeInfo();}catch(e){}openBudget();},
   newForm(){this._edit={id:null,status:'new',title:'',kind:'change',amount:'',note:'',days:'',rev:0};this.draw();},
   openEdit(id){const p=P();const r=this.row(String(p.id),id);if(!r||!(r.status==='draft'||r.status==='sent'))return;
     this._edit={id:r.id,status:r.status,title:r.title||'',kind:r.kind==='credit'?'credit':'change',amount:fmtPlain(fromC(Math.abs(r.amountC||0))),note:r.note||'',days:r.days==null?'':String(r.days),rev:r.rev||0,orig:r};this.draw();},
@@ -11104,6 +11107,7 @@ function clientCostsHTML(p){
   ledger+='<div class="lr"><span>Upgrades &amp; overages</span><b class="up">+'+usd(bs.ups)+'</b></div>';
   if(bs.crs)ledger+='<div class="lr"><span>Credits</span><b class="cr">\u2212'+usd(bs.crs)+'</b></div>';
   ledger+='<div class="lr net"><span>Upgrades minus credits</span><b class="'+(bs.net<0?'cr':'')+'">'+(bs.net<0?'\u2212':'')+usd(bs.net)+'</b></div>';
+  ledger+=coLedgerHTML(bs,usd);
   ledger+='<div class="lr"><span>Invoiced</span><b>'+usd(bs.billed)+'</b></div>';
   if(bs.invPaid>0.005)ledger+='<div class="lr"><span>'+(loose>0.005?'Paid on invoices':'Paid')+'</span><b class="cr">\u2212'+usd(bs.invPaid)+'</b></div>';
   if(Math.abs(bs.unbilled)>0.005||loose>0.005){
@@ -11213,7 +11217,19 @@ function selReapproval(s,next,p){
   return {reset,kept:!reset,was:was.amount};
 }
 function repriceAllowances(p){(p&&p.selections||[]).forEach(s=>{if(selIsAllowance(s)&&!s.invoicedIn&&!s.approved)s.price=selAllowanceAmount(s,p);});}
-function _siteExtraCharges(p){let ups=0,crs=0;(p.invoices||[]).forEach(v=>{if(v&&(v.status==='void'||v.status==='draft'))return;((v&&v.items)||[]).forEach(it=>{if(it.selId)return;const n=Number(it.amount)||0;if(n>0)ups+=n;else if(n<0)crs+=n;});});return {ups,crs};}
+function _siteExtraCharges(p){let ups=0,crs=0;(p.invoices||[]).forEach(v=>{if(v&&(v.status==='void'||v.status==='draft'))return;((v&&v.items)||[]).forEach(it=>{if(it.selId||it.coId)return;const n=Number(it.amount)||0;if(n>0)ups+=n;else if(n<0)crs+=n;});});return {ups,crs};}   /* C-4: a line billing a change order (coId) is counted on the Change orders line, never in Upgrades & credits */
+/* C-4 (2.473.0): change orders are their own ledger line. Approved ones count once, here only;
+   sent ones are "waiting on the homeowner" and count nowhere. Off (all zero, nothing read) unless the
+   paper-trail switch is on and this phone may see change orders (builder with money, or the homeowner). */
+function coLedger(p){const z={on:false,c:0,n:0,waiting:0};
+  try{if(!p)return z;const cl=(state.session||{}).role==='client';
+    if(cl?!COH.allowed(p):!(CO.allowed()&&String(P().id)===String(p.id)))return z;
+    const M=cl?COH:CO;M.attach(p);z.on=true;
+    M.list(p.id).forEach(r=>{const c=Number(r.amountC);if(r.status==='approved'&&Number.isInteger(c)){z.c+=c;z.n++;}else if(r.status==='sent')z.waiting++;});
+  }catch(e){return {on:false,c:0,n:0,waiting:0};}return z;}
+function coLedgerHTML(bs,usd){if(!bs.coOn||!(bs.coN||bs.coWaiting))return '';
+  return '<div class="lr"><span>Change orders</span><b class="'+(bs.co<0?'cr':'up')+'">'+(bs.co<0?'\u2212':'+')+usd(bs.co)+'</b></div>'
+    +(bs.coWaiting?'<div class="lr"><span class="meta">'+bs.coWaiting+' waiting on the homeowner</span><b></b></div>':'');}
 function siteCharges(p){let ups=0,crs=0,waiting=0;(p.selections||[]).forEach(s=>{const c=chargeState(selCharge(s,p));waiting+=c.waiting;const n=c.counted;if(n>0)ups+=n;else if(n<0)crs+=n;});const ex=_siteExtraCharges(p);return {ups:ups+ex.ups,crs:crs+ex.crs,waiting};}
 function sitePaidTotal(p){const loose=fromC(sumC((p.payments||[]).filter(payLive).map(x=>Number(x.amount)||0)));const inv=(p.invoices||[]).filter(v=>v&&v.status!=='void').reduce((a,v)=>a+invPaidAmt(v),0);return loose+inv;}
 function clientLedger(p){const c=siteCharges(p);const net=c.ups+c.crs;const paid=sitePaidTotal(p);return {ups:c.ups,crs:c.crs,net,paid,out:net-paid};}
@@ -11232,7 +11248,8 @@ function billingSummary(p){
   const billed=live.reduce((a,v)=>a+(Number(v.total)||0),0);
   const invPaid=live.reduce((a,v)=>a+invPaidAmt(v),0);
   const paid=sitePaidTotal(p);
-  return {ups:c.ups,crs:c.crs,net,billed,unbilled:net-billed,invPaid,paid,balanceDue:Math.max(0,billed-invPaid),out:net-paid,waiting:c.waiting};
+  const co=coLedger(p);   /* C-4: its own component; every existing figure above is untouched */
+  return {ups:c.ups,crs:c.crs,net,billed,unbilled:net-billed,invPaid,paid,balanceDue:Math.max(0,billed-invPaid),out:net-paid,waiting:c.waiting,coOn:co.on,co:fromC(co.c),coN:co.n,coWaiting:co.waiting};
 }
 
 /* ── Job costing rollups (builder-private; separate ledger from homeowner billing).
@@ -11492,6 +11509,7 @@ function budgetCardHTML(p){
         <div><b class="${cs.projected-cs.budget>0.005?'ov':''}">${cs.projected-cs.budget>0.005?fmtMoney(cs.projected-cs.budget)+' over':(cs.budget-cs.projected>0.005?fmtMoney(cs.budget-cs.projected)+' under':'On budget')}</b><span>Tracking</span></div>
       </div>
       <div class="pbar"><i class="${budgetOver(cs)?'bgt-overbar':''}" style="width:${pct}%"></i></div>
+      ${(function(){const k=coLedger(p);return k.on&&k.n?'<div class="meta mt-1">Change orders sold '+(k.c<0?'\u2212':'+')+fmtMoney(fromC(Math.abs(k.c)))+'</div>':'';})()}
       <div class="bgt-open">${cs.overLines?`<b class="c-clay">${cs.overLines} line${cs.overLines===1?'':'s'} over</b><span class="mt-0 mb-0 ml-1 mr-1">·</span>`:''}View &amp; edit budget<span class="bgt-chev">›</span></div>
     </div>`;
 }
@@ -14601,6 +14619,7 @@ function renderSelections(){
       <div class="lr"><span>Upgrades &amp; overages</span><b class="up">+${usd(ups)}</b></div>
       ${crs?`<div class="lr"><span>Credits</span><b class="cr">−${usd(crs)}</b></div>`:''}
       <div class="lr net"><span>Upgrades minus credits</span><b class="${net<0?'cr':''}">${net<0?'−':''}${usd(net)}</b></div>
+      ${coLedgerHTML(bs,usd)}
       <div class="lr"><span>Invoiced</span><b>${usd(bs.billed)}</b></div>
       ${bs.invPaid>0.005?`<div class="lr"><span>${loose>0.005?'Paid on invoices':'Paid'}</span><b class="cr">−${usd(bs.invPaid)}</b></div>`:''}
       ${(Math.abs(bs.unbilled)>0.005||loose>0.005)
