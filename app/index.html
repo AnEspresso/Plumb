@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.482.0 - Tell the other side: credits, charges, voids and payment voids give the homeowner a notice; the void reason shows on the invoice';
+const PLUMB_VERSION='2.483.0 - Something\u2019s wrong on selection prices; money history kept with the switch off; draft deletes leave a line; real pushes for flags and money notices';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793304000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.482.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793390400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.483.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9781,7 +9781,7 @@ const HIST={_rows:{},_unsub:{},_err:{},
       case 'sent':return 'Sent'+rv;case 'changed':return 'Updated'+rv;case 'opened':return 'Opened'+rv;
       case 'approved':return 'Approved'+rv+(r.via==='paper'?' \u00b7 signed on paper':(r.signedName?' \u00b7 signed by '+r.signedName:''));
       case 'declined':return 'Declined'+rv;case 'withdrawn':return 'Withdrawn';case 'paid':return 'Paid';case 'voided':return 'Voided';
-      case 'payment':return 'Payment recorded';case 'payment_voided':return 'Payment voided';case 'credit_added':return 'Credit added';case 'charge_added':return 'Charge added';case 'needs_check':return 'Needs a check';case 'flagged':return 'Something\u2019s wrong';case 'flag_resolved':return 'Resolved';
+      case 'payment':return 'Payment recorded';case 'payment_voided':return 'Payment voided';case 'draft_deleted':return 'Draft deleted';case 'credit_added':return 'Credit added';case 'charge_added':return 'Charge added';case 'needs_check':return 'Needs a check';case 'flagged':return 'Something\u2019s wrong';case 'flag_resolved':return 'Resolved';
       default:return String(r.kind||'');}},
   lineHTML(r,withLabel){const a=this.amt(r),w=COH.when(r.at);
     return '<div class="subrow hist-line"><div class="si"><div class="n">'+(withLabel?esc(this.label(r))+' \u00b7 ':'')+esc(this.what(r))+(a&&r.kind!=='opened'?' \u00b7 '+esc(a):'')+'</div>'
@@ -14236,6 +14236,7 @@ function renderClient(){
             ${al?clientAllowanceLine(s,p):''}
             <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
             ${selTimelineRO(s)}
+            ${(m||al)?FLAGS.slotHTML(p,'sel',s.id):''}
           </div>
           ${s.status==='pending'?'<span class="cl-info">In progress</span>':_clSignBusy[p.id+':'+s.id]?'<button class="cl-sign" disabled aria-busy="true">Saving…</button>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Approved':'Approve'}</button>`}
         </div>`;}).join('');
@@ -14873,6 +14874,7 @@ function renderSelections(){
           <div class="it">${esc(s.item||'(unspecified)')}${m?`<span class="price ${cls}">${m}</span>`:''}</div>
           <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
           ${selTimeline(s)}
+          ${m?'<div onclick="event.stopPropagation()">'+FLAGS.slotHTML(P(),'sel',s.id)+'</div>':''}
           <div class="spec-line">${specChipHTML(s)}</div>
         </div>
         <span class="approve-ro ${s.approved?'on':'off'}" onclick="${s.approved?`openSignoffInfo(${s.id})`:`toast('The homeowner approves this from their own login.')`}" title="${s.approved?'See the homeowner’s approval':'Waiting for the homeowner to approve'}">${s.approved?'✓ Approved':'Waiting'}</span>
