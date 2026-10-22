@@ -132,6 +132,10 @@ const INV_DOC = (over) => ({ data: Object.assign({ id: 'inv_r1', num: 3, status:
 const SELM_DOC = (over) => ({ data: Object.assign({ selId: 's9a', price: 850, allowance: 1200, cost: 640,
   costLineId: 'cl_plumb_fix', invoicedIn: 'inv_r1' }, over || {}), updatedAt: 1, updatedBy: 'dev-builder' });
 
+/* Rules A2: what 2.481.0 writes beside data on every money record (the sync's Sync._stamp). */
+const A2V = '2.481.0';
+const A2S = (uid) => ({ byUid: uid, at: serverTimestamp(), appV: A2V, tappedAt: 1791200000000 });
+
 const results = [];
 let testEnv;
 
@@ -360,7 +364,7 @@ async function main() {
   await INV('records: sub of liveA DENIED read liveB pmts (cross-site)', getDoc(doc(db.sub, 'sites/liveB/pmts/r1')), false);
   await INV('records: unauth DENIED read liveA items', getDoc(doc(db.unauth, 'sites/liveA/items/r1')), false);
 
-  await INV('records: builder writes pmts', setDoc(doc(db.builder, 'sites/liveA/pmts/p2'), { amt: 1 }), true);
+  await INV('records: builder writes pmts', setDoc(doc(db.builder, 'sites/liveA/pmts/p2'), Object.assign({ amt: 1 }, A2S(U.builder))), true);
   await INV('records: builder writes mail status', setDoc(doc(db.builder, 'sites/liveA/mail/m2'), { status: 'filed' }), true);
   await INV('records: sub writes items', setDoc(doc(db.sub, 'sites/liveA/items/i2'), { crew: 'Plumbing' }), true);
   await INV('records: sub writes logs', setDoc(doc(db.sub, 'sites/liveA/logs/l2'), { note: 'day' }), true);
@@ -456,7 +460,7 @@ async function main() {
 
   /* ══════════ COSTS (job costing — builder-only) ══════════ */
   await INV('costs: builder reads', getDoc(doc(db.builder, 'sites/liveA/costs/r1')), true);
-  await INV('costs: builder writes', setDoc(doc(db.builder, 'sites/liveA/costs/c2'), { line: 'Framing', budget: 42000 }), true);
+  await INV('costs: builder writes', setDoc(doc(db.builder, 'sites/liveA/costs/c2'), Object.assign({ line: 'Framing', budget: 42000 }, A2S(U.builder))), true);
   await INV('costs: sub DENIED write', setDoc(doc(db.sub, 'sites/liveA/costs/c3'), { x: 1 }), false);
   await INV('costs: client DENIED write', setDoc(doc(db.client, 'sites/liveA/costs/c4'), { x: 1 }), false);
   await INV('costs: stranger DENIED everything', getDoc(doc(db.stranger, 'sites/liveA/costs/r1')), false);
@@ -479,12 +483,12 @@ async function main() {
     // builder who passes moneyOk(): full create / read / update / delete
     await INV(`${c}: builder (owner) reads`, getDoc(at(db.builder, 'liveA')), true);
     await INV(`${c}: builder (owner) lists`, getDocs(collection(db.builder, `sites/liveA/${c}`)), true);
-    await INV(`${c}: builder (owner) creates`, setDoc(at(db.builder, 'liveA', 'n1'), mk({ id: 'n1' })), true);
-    await INV(`${c}: builder (owner) updates`, updateDoc(at(db.builder, 'liveA', 'n1'), { 'data.amount': 1, updatedAt: 2 }), true);
+    await INV(`${c}: builder (owner) creates`, setDoc(at(db.builder, 'liveA', 'n1'), Object.assign(mk({ id: 'n1', status: 'draft' }), A2S(U.builder))), true);
+    await INV(`${c}: builder (owner) updates`, updateDoc(at(db.builder, 'liveA', 'n1'), Object.assign({ 'data.amount': 1, updatedAt: 2 }, A2S(U.builder))), true);
     await INV(`${c}: builder (owner) deletes`, deleteDoc(at(db.builder, 'liveA', 'n1')), true);
     await INV(`${c}: builder with moneyJob reads`, getDoc(at(db.builder2, 'liveGateJ')), true);
-    await INV(`${c}: builder with moneyJob creates`, setDoc(at(db.builder2, 'liveGateJ', 'n2'), mk()), true);
-    await INV(`${c}: builder with moneyJob updates`, updateDoc(at(db.builder2, 'liveGateJ', 'n2'), { updatedAt: 3 }), true);
+    await INV(`${c}: builder with moneyJob creates`, setDoc(at(db.builder2, 'liveGateJ', 'n2'), Object.assign(mk({ status: 'draft' }), A2S(U.builder2))), true);
+    await INV(`${c}: builder with moneyJob updates`, updateDoc(at(db.builder2, 'liveGateJ', 'n2'), Object.assign({ updatedAt: 3 }, A2S(U.builder2))), true);
     await INV(`${c}: builder with moneyJob deletes`, deleteDoc(at(db.builder2, 'liveGateJ', 'n2')), true);
     // builder on the roster without the money gate: refused, same as costs
     await INV(`${c}: builder without the money gate DENIED read`, getDoc(at(db.builder2, 'liveGate')), false);
@@ -520,8 +524,9 @@ async function main() {
   /* ══════════ F-2 R2: LOCK meta.invoices + sel money; F-1 clientInvOk ══════════ */
   const invBody = (over) => Object.assign({ id: 'inv_r1', num: 3, status: 'sent', amount: 18500,
     lines: [{ label: 'Draw 3: framing', amount: 18500 }] }, over || {});
-  const invWrite = (d, id, data, at) => setDoc(doc(d, `sites/liveA/inv/${id}`), {
-    data, updatedAt: at || 2, updatedBy: 'dev-client' }, { merge: true });
+  /* 2.481.0 stamps the homeowner's Approve (A2); stamp=null replays the 2.480.0 shape. */
+  const invWrite = (d, id, data, at, stamp) => setDoc(doc(d, `sites/liveA/inv/${id}`), Object.assign({
+    data, updatedAt: at || 2, updatedBy: 'dev-client' }, stamp === null ? {} : (stamp || A2S(d === db.client ? U.client : d === db.sub ? U.sub : 'uid-authed-stranger'))), { merge: true });
   const houseMeta = (d, invoices) => setDoc(doc(d, 'sites/liveA'), {
     meta: { invoices }, updatedAt: 9, updatedBy: 'dev-builder', updatedByUid: U.builder,
   }, { merge: true });
@@ -544,7 +549,7 @@ async function main() {
   await INV('R2: builder create sel without money keys - ALLOWED',
     setDoc(doc(db.builder, 'sites/liveA/sel/r2ok'), { data: selRec({ id: 42, item: 'No money' }), updatedAt: 1, updatedBy: 'dev-builder' }), true);
   await INV('R2: builder writing selm with money - still ALLOWED',
-    setDoc(doc(db.builder, 'sites/liveA/selm/s9a'), SELM_DOC({ price: 999 }), { merge: true }), true);
+    setDoc(doc(db.builder, 'sites/liveA/selm/s9a'), Object.assign(SELM_DOC({ price: 999 }), A2S(U.builder)), { merge: true }), true);
 
   // 3. clientInvOk suite
   await INV('R2 clientInvOk: homeowner sent→approved + approvedAt - ALLOWED',
@@ -559,15 +564,15 @@ async function main() {
     invWrite(db.sub, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000004 })), false);
   await INV('R2 clientInvOk: stranger DENIED approve',
     invWrite(db.stranger, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000005 })), false);
-  await INV('R2: builder still full write on inv',
-    setDoc(doc(db.builder, 'sites/liveA/inv/inv_sent2'), INV_DOC({ id: 'inv_sent2', status: 'void', amount: 0 }), { merge: true }), true);
+  await INV('A2: builder voids a sent invoice with a reason (status and voidReason only)',
+    setDoc(doc(db.builder, 'sites/liveA/inv/inv_sent2'), Object.assign({ data: { status: 'void', voidReason: 'Billed the wrong house', voidedAt: 3 }, updatedAt: 3, updatedBy: 'dev-builder' }, A2S(U.builder)), { merge: true }), true);
 
   /* ══════════ STEP 1 (2.469.0): the app's new money fields against the CURRENT rules ══════════
      Cents twins (amountC, totalC, priceC ...) sit inside data; the stamp (byUid, tappedAt, appV) sits
      beside data. A money builder may write both on every money collection. The homeowner's Approve is
      exactly the old write: the current clientInvOk refuses anything beside status and approvedAt, so the
      app does not stamp that one write until rules A2 allows it. */
-  const STAMP = { byUid: U.builder, tappedAt: 1791130000100, appV: '2.469.0' };
+  const STAMP = A2S(U.builder);   /* A2: the stamp now carries the server time and 2.481.0 */
   const twinDoc = (data) => Object.assign({ data, updatedAt: 5, updatedBy: 'dev-builder' }, STAMP);
   await INV('step 1: builder writes an invoice with totalC, line amountC, payment amountC and the stamp - ALLOWED',
     setDoc(doc(db.builder, 'sites/liveA/inv/inv_c1'), twinDoc({ id: 'inv_c1', status: 'draft', total: 5.86, totalC: 586,
@@ -876,13 +881,103 @@ async function main() {
   await INV_A1('A1 numbers: crew DENIED claiming', setDoc(doc(db.sub, 'sites/liveA/numbers/co-104'), claimDoc(U.sub, 'co', 104)));
   await INV_A1('A1 numbers: a claim with a phone time is DENIED', setDoc(doc(db.builder, 'sites/liveA/numbers/co-105'), Object.assign(claimDoc(U.builder, 'co', 105), { at: 1790000000000 })));
   /* 2.478.0 app (3c-3, M-6): Send writes the invoice record (the sync's replace shape) and numbers/inv-N in ONE batch. */
-  const appInv = (id, no) => Object.assign({ data: { id, no: 'INV-' + String(no).padStart(3, '0'), title: 'Selections invoice', due: '', items: [{ label: 'Tile', amount: 250 }], total: 250, status: 'sent', t: 1791000000000, sentBy: 'Dean Walsh', payments: [] }, updatedAt: 9, updatedBy: 'devB' }, { byUid: U.builder, tappedAt: 9, appV: APPV });
+  const appInv = (id, no) => Object.assign({ data: { id, no: 'INV-' + String(no).padStart(3, '0'), title: 'Selections invoice', due: '', items: [{ label: 'Tile', amount: 250 }], total: 250, status: 'sent', t: 1791000000000, sentBy: 'Dean Walsh', payments: [] }, updatedAt: 9, updatedBy: 'devB' }, { byUid: U.builder, tappedAt: 9, appV: A2V, at: SRV() });
   const invSendBatch = (d, id, no, uid) => { const b = writeBatch(d); b.set(doc(d, `sites/liveA/inv/${id}`), appInv(id, no)); b.set(doc(d, `sites/liveA/numbers/inv-${no}`), claimDoc(uid || U.builder, 'inv', no)); return b.commit(); };
   await INV('A1 app 3c-3: Send an invoice: the record and its inv-15 claim in one batch: ALLOWED', invSendBatch(db.builder, 'inv_app1', 15), true);
   await INV_A1('A1 app 3c-3: a second phone sending with the same number (inv-15) is DENIED, record and all', invSendBatch(db.builder, 'inv_app2', 15));
   await INV('A1 app 3c-3: ... the invoice from the refused batch was not written', getDoc(doc(db.builder, 'sites/liveA/inv/inv_app2')).then(s => { if (s.exists()) throw new Error('written'); }), true);
   await INV('A1 app 3c-3: the builder lists claims to find the next number', getDocs(collection(db.builder, 'sites/liveA/numbers')), true);
   await INV('A1 app 3c-3: crew DENIED listing claims', getDocs(collection(db.sub, 'sites/liveA/numbers')), false);
+
+  /* ══════════ STEP 5: Rules A2 (files only, not published) ══════════
+     Allowed: the 2.481.0 app's real writes, replayed. Denied: each hole A2 closes, and the 2.480.0 shapes
+     (no server time), which is the version break A2 brings (every phone must be on 2.481.0 first). */
+  const i15 = (over, stamp) => Object.assign({ data: Object.assign({ id: 'inv_app1', no: 'INV-015', title: 'Selections invoice', due: '',
+    items: [{ label: 'Tile', amount: 250 }], total: 250, status: 'sent', t: 1791000000000, sentBy: 'Dean Walsh', payments: [] }, over || {}),
+    updatedAt: 20, updatedBy: 'devB' }, stamp === null ? { byUid: U.builder, tappedAt: 20, appV: '2.480.0' } : A2S(U.builder));
+  const i15w = (over, stamp, d) => setDoc(doc(d || db.builder, 'sites/liveA/inv/inv_app1'), i15(over, stamp));
+  // allowed: the sync's whole-record replace for what a builder really does to a sent invoice
+  await INV('A2 app: record a payment on a sent invoice (sync replace, payments grow, status paid): ALLOWED',
+    i15w({ status: 'paid', paidAt: 21, payments: [{ id: 'pm_a', amount: 250, t: 21 }] }), true);
+  await INV('A2 app: void that payment (reason kept, the list keeps it, back to sent): ALLOWED',
+    i15w({ status: 'sent', payments: [{ id: 'pm_a', amount: 250, t: 21, voidedAt: 22, voidReason: 'Check bounced', voidedBy: 'Dean Walsh' }] }), true);
+  await INV('A2 app: append a credit line to a sent invoice (adj, new total): ALLOWED',
+    i15w({ status: 'sent', items: [{ label: 'Tile', amount: 250 }, { label: 'Credit: chipped tile', amount: -50, adj: true }], total: 200,
+      payments: [{ id: 'pm_a', amount: 250, t: 21, voidedAt: 22, voidReason: 'Check bounced', voidedBy: 'Dean Walsh' }] }), true);
+  const i15now = { items: [{ label: 'Tile', amount: 250 }, { label: 'Credit: chipped tile', amount: -50, adj: true }], total: 200,
+    payments: [{ id: 'pm_a', amount: 250, t: 21, voidedAt: 22, voidReason: 'Check bounced', voidedBy: 'Dean Walsh' }] };
+  await INV('A2 app: save a draft with no number claim: ALLOWED',
+    setDoc(doc(db.builder, 'sites/liveA/inv/inv_d1'), Object.assign({ data: { id: 'inv_d1', status: 'draft', items: [], total: 0, payments: [] }, updatedAt: 1, updatedBy: 'devB' }, A2S(U.builder))), true);
+  await INV('A2 app: edit the draft freely: ALLOWED',
+    setDoc(doc(db.builder, 'sites/liveA/inv/inv_d1'), Object.assign({ data: { id: 'inv_d1', status: 'draft', title: 'Draw 2', items: [{ label: 'x', amount: 9 }], total: 9, payments: [] }, updatedAt: 2, updatedBy: 'devB' }, A2S(U.builder))), true);
+  // gap 2 (#71): a stale sync writing an old draft over a sent invoice
+  await INV('A2 gap 2: a stale draft written over a sent invoice is DENIED', i15w(Object.assign({}, i15now, { status: 'draft' })), false);
+  // gap 1 (#71): an old or switch-off phone that numbers on its own (no claim in the batch)
+  await INV('A2 gap 1: sending a draft without claiming its number is DENIED',
+    setDoc(doc(db.builder, 'sites/liveA/inv/inv_d1'), Object.assign({ data: { id: 'inv_d1', no: 'INV-016', status: 'sent', items: [{ label: 'x', amount: 9 }], total: 9, payments: [] }, updatedAt: 3, updatedBy: 'devB' }, A2S(U.builder))), false);
+  await INV('A2 gap 1: sending with a number someone already claimed (inv-15) is DENIED',
+    (() => { const b = writeBatch(db.builder); b.set(doc(db.builder, 'sites/liveA/inv/inv_d1'), Object.assign({ data: { id: 'inv_d1', no: 'INV-015', status: 'sent', items: [], total: 0, payments: [] }, updatedAt: 3, updatedBy: 'devB' }, A2S(U.builder))); return b.commit(); })(), false);
+  await INV('A2 gap 1: a sent invoice created outright without a claim is DENIED',
+    setDoc(doc(db.builder, 'sites/liveA/inv/inv_d2'), Object.assign({ data: { id: 'inv_d2', no: 'INV-017', status: 'sent', items: [], total: 0, payments: [] }, updatedAt: 3, updatedBy: 'devB' }, A2S(U.builder))), false);
+  await INV('A2 gap 1: a number that is not INV-<digits> is DENIED',
+    (() => { const b = writeBatch(db.builder); b.set(doc(db.builder, 'sites/liveA/inv/inv_d1'), Object.assign({ data: { id: 'inv_d1', no: 'X-18', status: 'sent', items: [], total: 0, payments: [] }, updatedAt: 3, updatedBy: 'devB' }, A2S(U.builder))); b.set(doc(db.builder, 'sites/liveA/numbers/inv-18'), claimDoc(U.builder, 'inv', 18)); return b.commit(); })(), false);
+  await INV('A2 app: sending the draft with its inv-16 claim in the same batch: ALLOWED',
+    (() => { const b = writeBatch(db.builder); b.set(doc(db.builder, 'sites/liveA/inv/inv_d1'), Object.assign({ data: { id: 'inv_d1', no: 'INV-016', status: 'sent', items: [{ label: 'x', amount: 9 }], total: 9, payments: [] }, updatedAt: 3, updatedBy: 'devB' }, A2S(U.builder))); b.set(doc(db.builder, 'sites/liveA/numbers/inv-16'), claimDoc(U.builder, 'inv', 16)); return b.commit(); })(), true);
+  // M-3: a sent invoice is locked
+  await INV('A2 M-3: changing a sent invoice\'s number is DENIED', i15w(Object.assign({}, i15now, { status: 'sent', no: 'INV-099' })), false);
+  await INV('A2 M-3: changing a sent invoice\'s title is DENIED', i15w(Object.assign({}, i15now, { status: 'sent', title: 'Something else' })), false);
+  await INV('A2 M-3: editing an original line of a sent invoice is DENIED',
+    i15w(Object.assign({}, i15now, { status: 'sent', items: [{ label: 'Tile', amount: 999 }, i15now.items[1]] })), false);
+  await INV('A2 M-3: removing a credit line is DENIED', i15w(Object.assign({}, i15now, { status: 'sent', items: [i15now.items[0]] })), false);
+  await INV('A2 M-3: appending a line that is not marked adj is DENIED',
+    i15w(Object.assign({}, i15now, { status: 'sent', items: i15now.items.concat([{ label: 'Sneaky', amount: 500 }]) })), false);
+  await INV('A2 M-3: dropping a payment from a sent invoice is DENIED', i15w(Object.assign({}, i15now, { status: 'sent', payments: [] })), false);
+  await INV('A2 M-3: voiding without a reason is DENIED', i15w(Object.assign({}, i15now, { status: 'void', voidedAt: 30 })), false);
+  await INV('A2 M-3: deleting a sent invoice is DENIED', deleteDoc(doc(db.builder, 'sites/liveA/inv/inv_app1')), false);
+  await INV('A2 app: void with a reason: ALLOWED', i15w(Object.assign({}, i15now, { status: 'void', voidedAt: 30, voidReason: 'Duplicate of INV-016' })), true);
+  await INV('A2 M-3: a void invoice cannot come back to sent', i15w(Object.assign({}, i15now, { status: 'sent', voidedAt: 30, voidReason: 'Duplicate of INV-016' })), false);
+  await INV('A2 app: deleting a never-sent draft: ALLOWED', (async () => {
+    await setDoc(doc(db.builder, 'sites/liveA/inv/inv_d3'), Object.assign({ data: { id: 'inv_d3', status: 'draft', items: [], total: 0, payments: [] }, updatedAt: 1, updatedBy: 'devB' }, A2S(U.builder)));
+    await deleteDoc(doc(db.builder, 'sites/liveA/inv/inv_d3')); })(), true);
+  // M-7: who and the server time
+  await INV('A2 M-7: a 2.480.0 invoice write (no server time) is DENIED', i15w(Object.assign({}, i15now, { status: 'void', voidedAt: 30, voidReason: 'x' }), null), false);
+  await INV('A2 M-7: an invoice write naming someone else as byUid is DENIED',
+    setDoc(doc(db.builder, 'sites/liveA/inv/inv_d4'), Object.assign({ data: { id: 'inv_d4', status: 'draft' }, updatedAt: 1, updatedBy: 'devB' }, A2S(U.builder2))), false);
+  await INV('A2 M-7: an invoice write with a phone time in "at" is DENIED',
+    setDoc(doc(db.builder, 'sites/liveA/inv/inv_d4'), Object.assign({ data: { id: 'inv_d4', status: 'draft' }, updatedAt: 1, updatedBy: 'devB' }, A2S(U.builder), { at: 1791200000000 })), false);
+  await INV('A2 M-7: a 2.480.0 cost write is DENIED', setDoc(doc(db.builder, 'sites/liveA/costs/c_old'), { data: { id: 'c_old', amount: 1 }, updatedAt: 1, updatedBy: 'devB', byUid: U.builder, tappedAt: 1, appV: '2.480.0' }), false);
+  await INV('A2 M-7: a 2.480.0 selection-money write is DENIED', setDoc(doc(db.builder, 'sites/liveA/selm/s9a'), Object.assign(SELM_DOC({ price: 1 }), { byUid: U.builder, tappedAt: 1, appV: '2.480.0' }), { merge: true }), false);
+  await INV('A2 M-7: a 2.480.0 payment write is DENIED', setDoc(doc(db.builder, 'sites/liveA/pmts/pm_old'), { data: { id: 'pm_old', amount: 1 }, updatedAt: 1, updatedBy: 'devB', byUid: U.builder, tappedAt: 1, appV: '2.480.0' }), false);
+  await INV('A2 M-7: the 2.480.0 homeowner Approve (unstamped) is DENIED',
+    invWrite(db.client, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000009 }), 2, null), false);
+  // M-5: payments are add-only
+  const pmA = (over) => Object.assign({ data: { id: 'pm_a5', label: 'Deposit', amount: 2000 }, updatedAt: 1, updatedBy: 'devB' }, A2S(U.builder), over || {});
+  await INV('A2 app: record a payment (pmts): ALLOWED', setDoc(doc(db.builder, 'sites/liveA/pmts/pm_a5'), pmA()), true);
+  await INV('A2 app: the sync re-pushing the same payment: ALLOWED', setDoc(doc(db.builder, 'sites/liveA/pmts/pm_a5'), pmA({ updatedAt: 2 }), { merge: true }), true);
+  await INV('A2 M-5: changing a payment\'s amount is DENIED', setDoc(doc(db.builder, 'sites/liveA/pmts/pm_a5'), pmA({ data: { id: 'pm_a5', label: 'Deposit', amount: 20 } })), false);
+  const pmV = (why, at) => setDoc(doc(db.builder, 'sites/liveA/pmts/pm_a5'), pmA({ data: { id: 'pm_a5', label: 'Deposit', amount: 2000, voidedAt: at || 5, voidReason: why, voidedBy: 'Dean Walsh' }, updatedAt: at || 5 }), { merge: true });
+  await INV('A2 M-5: voiding a payment without a reason is DENIED', pmV(''), false);
+  await INV('A2 M-5: a key outside the record next to a payment is DENIED', setDoc(doc(db.builder, 'sites/liveA/pmts/pm_a5'), pmA({ amount: 1 }), { merge: true }), false);
+  await INV('A2 M-5: deleting a payment is DENIED', deleteDoc(doc(db.builder, 'sites/liveA/pmts/pm_a5')), false);
+  await INV('A2 app: void a payment with a reason: ALLOWED', pmV('Entered twice'), true);
+  await INV('A2 M-5: voiding it a second time is DENIED', pmV('Again', 6), false);
+  await INV('A2 app: the sync re-pushing the voided payment (new stamp, same record): ALLOWED', pmV('Entered twice'), true);
+  await INV('A2 M-5: crew DENIED reading payments', getDoc(doc(db.sub, 'sites/liveA/pmts/pm_a5')), false);
+  await INV('A2 M-5: a builder without the money gate DENIED reading payments', getDoc(doc(db.builder2, 'sites/liveGate/pmts/p1')), false);
+  await INV('A2 M-5: a builder without the money gate DENIED writing a payment', setDoc(doc(db.builder2, 'sites/liveGate/pmts/pm_g1'), Object.assign({ data: { id: 'pm_g1', amount: 5 }, updatedAt: 1, updatedBy: 'devB2' }, A2S(U.builder2))), false);
+  await INV('A2 setup: a fresh sent invoice inv_app3 (claim inv-19)', invSendBatch(db.builder, 'inv_app3', 19), true);
+  const appr = (stamp, n) => setDoc(doc(db.client, 'sites/liveA/inv/inv_app3'), Object.assign({ data: { status: 'approved', approvedAt: 1791130000020 + n }, updatedAt: 30 + n, updatedBy: 'dev-client' }, stamp), { merge: true });
+  await INV('A2 M-7: a homeowner Approve naming someone else as byUid is DENIED', appr(A2S(U.builder), 1), false);
+  await INV('A2 M-7: a homeowner Approve with a phone time in "at" is DENIED', appr(Object.assign(A2S(U.client), { at: 1791130000012 }), 2), false);
+  await INV('A2 app: the 2.481.0 homeowner Approve (stamped, merge): ALLOWED', appr(A2S(U.client), 4), true);
+  await INV('A2 M-5: the homeowner reads payments', getDoc(doc(db.client, 'sites/liveA/pmts/pm_a5')), true);
+  // M-15: a minimum app version
+  await testEnv.withSecurityRulesDisabled(async (ctx) => { await setDoc(doc(ctx.firestore(), 'settings/money'), { minAppV: 2482 }); });
+  await INV('A2 M-15: with minAppV 2482, a 2.481.0 invoice write is DENIED', setDoc(doc(db.builder, 'sites/liveA/inv/inv_d5'), Object.assign({ data: { id: 'inv_d5', status: 'draft' }, updatedAt: 1, updatedBy: 'devB' }, A2S(U.builder))), false);
+  await INV('A2 M-15: ... and a 2.481.0 homeowner Approve is DENIED', invWrite(db.client, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000010 })), false);
+  await INV('A2 M-15: ... and a 2.481.0 flag (A1 collection) is DENIED', setDoc(doc(db.client, 'sites/liveA/flags/fl_v1'), appFlag(U.client, { appV: A2V })), false);
+  await INV('A2 M-15: ... a 2.482.0 invoice write: ALLOWED', setDoc(doc(db.builder, 'sites/liveA/inv/inv_d5'), Object.assign({ data: { id: 'inv_d5', status: 'draft' }, updatedAt: 1, updatedBy: 'devB' }, A2S(U.builder), { appV: '2.482.0' })), true);
+  await testEnv.withSecurityRulesDisabled(async (ctx) => { await deleteDoc(doc(ctx.firestore(), 'settings/money')); });
   await INV('A1 numbers: the builder reads claims', getDoc(doc(db.builder, 'sites/liveA/numbers/co-100')), true);
   await INV('A1 numbers: homeowner DENIED read', getDoc(doc(db.client, 'sites/liveA/numbers/co-100')), false);
 

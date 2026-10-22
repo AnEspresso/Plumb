@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.480.0 - Past houses: a homeowner keeps the money records of a closed house, with a download (paper-trail switch on)';
+const PLUMB_VERSION='2.481.0 - Money writes carry who and the server time, every sent invoice claims its number, a void needs a reason (ready for Rules A2)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793131200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.480.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793217600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.481.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -10075,7 +10075,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     }catch(e){}});}catch(e){}},
   async pushAll(){if(!this.ready())return;for(const p of state.projects){try{await this._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}},
   /* M-7: every money write says who wrote it, when the tap happened, and which app version. updatedAt keeps its type. */
-  _stamp(){const o={tappedAt:Date.now(),appV:String(PLUMB_VERSION).split(' ')[0]};const u=this.uid||(state.session&&state.session.auth&&state.session.auth.uid);if(u)o.byUid=String(u);return o;},
+  _stamp(){const o={tappedAt:Date.now(),appV:String(PLUMB_VERSION).split(' ')[0]};try{o.at=CO.ts();}catch(e){}   /* 2.481.0 (A2 M-7): the server's clock on every money record */const u=this.uid||(state.session&&state.session.auth&&state.session.auth.uid);if(u)o.byUid=String(u);return o;},
   async _pushOne(p){if(!this.ready()||!p)return;
     if(p.sample||(this.mode||'demo')!=='live')return;     // demo is local-only: nothing in demo (sample or not) syncs to the cloud
     const id=String(p.id);
@@ -15140,7 +15140,8 @@ try{['input','focusin'].forEach(ev=>document.addEventListener(ev,e=>{try{moneyHi
    Switch off (or not a money builder on a live house): the old path (nextInvNo + sync) runs unchanged. */
 function invNoText(inv){return inv&&inv.no?String(inv.no):(PaperTrail.on?'Draft':'');}
 const InvNo={
-  allowed(p){try{return !!(PaperTrail.on&&p&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&siteRoleFor(p)==='builder'&&(state.session||{}).role==='builder'&&syncWrites(p,'inv')&&(Sync._pulled[String(p.id)]||{}).inv);}catch(e){return false;}},
+  /* 2.481.0: Rules A1 is live (10/22) and A2 refuses a send without a claim, so every live money builder claims, switch or not. */
+  allowed(p){try{return !!(p&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&siteRoleFor(p)==='builder'&&(state.session||{}).role==='builder'&&syncWrites(p,'inv')&&(Sync._pulled[String(p.id)]||{}).inv);}catch(e){return false;}},
   num(no){const m=/^INV-(\d+)$/.exec(String(no||''));return m?+m[1]:0;},
   async nextNo(p){const sid=String(p.id);let max=0;(p.invoices||[]).forEach(v=>{const n=this.num(v.no);if(n>max)max=n;});
     try{const s=await CO.nums(sid).get();s.docs.forEach(d=>{const m=/^inv-(\d+)$/.exec(d.id);if(m&&+m[1]>max)max=+m[1];});}catch(e){}
@@ -15284,7 +15285,7 @@ function invStatusChip(st){const lbl={draft:'Draft',sent:'Sent',approved:'Approv
 function invDetailHTML(p,inv,viewer){
   const st=invState(inv);const paid=invPaidAmt(inv);const bal=invBalance(inv);
   let h=`<div class="pkt-head"><div class="pk-site">${esc(invNoText(inv))} · ${esc(inv.title)}</div><div class="pk-trade">${esc(p.street||p.name)}${inv.due?' · due '+esc(inv.due):''} · sent ${timeAgo(inv.t)}${inv.sentBy?' by '+(viewer==='client'?'your builder':esc(inv.sentBy)):''}</div></div>`;
-  const canAdj=viewer==='builder'&&st!=='void';
+  const canAdj=false;   /* 2.481.0 (A2 M-3): a credit or charge is appended, never removed; a mistake is a new credit or a void */
   h+='<div class="spec-ro">'+inv.items.map((it,idx)=>it.adj
       ?`<div class="sro"><span class="k fst-i">${esc(it.label)}${canAdj?` <button onclick="invDelAdjustment('${p.id}','${inv.id}',${idx})" class="ml-1 fs-xs c-clay bd-0 p-0 cur-p td-u u-m28">Remove</button>`:''}</span><span class="v fst-i">${fmtMoney(it.amount)}</span></div>`
       :`<div class="sro"><span class="k">${esc(it.label)}</span><span class="v">${fmtMoney(it.amount)}</span></div>`).join('')
@@ -15390,8 +15391,12 @@ async function invApprove(projId,invId){
     toast('Not approved yet. Ask your builder to check your access.');return;}
   const at=Date.now();
   _invOkBusy[key]=true;_invOkRender(p,inv);
-  try{await Sync.db.collection('sites').doc(String(p.id)).collection('inv').doc(String(invId))
-      .set({data:{status:'approved',approvedAt:at},updatedAt:at,updatedBy:Sync.deviceId},{merge:true});}
+  try{const ref=Sync.db.collection('sites').doc(String(p.id)).collection('inv').doc(String(invId));const base={data:{status:'approved',approvedAt:at},updatedAt:at,updatedBy:Sync.deviceId};
+    /* 2.481.0: Rules A2 wants who, the server time and the app version (M-7, M-15); Rules A1 (live until A2 is published) refuses them, so try the A2 shape first and fall back once. */
+    let ts=null;try{ts=Sync.uid?CO.ts():null;}catch(e){}
+    if(!ts)await ref.set(base,{merge:true});
+    else try{await ref.set(Object.assign({},base,{byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at}),{merge:true});}
+    catch(e1){if(!(e1&&e1.code==='permission-denied'))throw e1;await ref.set(base,{merge:true});}}
   catch(e){delete _invOkBusy[key];const denied=!!(e&&e.code==='permission-denied');
     trapError(denied?'rules':'caught','Invoice approve write '+(denied?'refused':'failed')+': '+String((e&&(e.code||e.message))||'').slice(0,100),'invApprove');
     _invOkRender(p,inv);toast(denied?'Not approved yet. Ask your builder to check your access.':SIGNAL);return;}
@@ -15436,10 +15441,10 @@ function invVoid(projId,invId){
   if(moneyUpdateGate())return;
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status==='void')return;
-  openConfirm({title:'Void '+inv.no+'?',danger:true,okLabel:'Void invoice',
-    body:'This cancels the invoice and frees its selections to be billed again. The record is kept, marked Void.',
-    onConfirm:()=>{
-      inv.status='void';inv.voidedAt=Date.now();
+  openPrompt({title:'Void '+inv.no+'?',okLabel:'Void invoice',placeholder:'Why is it void?',
+    body:'This cancels the invoice and frees its selections to be billed again. The record is kept, marked Void, with your reason.',
+    onOk:why=>{why=String(why||'').trim();if(!why){toast('Say why it is void');return;}
+      inv.status='void';inv.voidedAt=Date.now();inv.voidReason=why;
       // release the selections this invoice billed so they become unbilled again
       selReleaseInv(p,inv.id);
       persist();logEvent('invoiceVoided',inv.no);toast(inv.no+' voided');

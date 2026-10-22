@@ -219,7 +219,65 @@ service cloud.firestore {
         function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers']; }
         function stampOk() {
           let r = request.resource.data;
-          return r.byUid == uid() && r.at == request.time && r.appV is string && r.appV.size() > 0;
+          return r.byUid == uid() && r.at == request.time && r.appV is string && r.appV.size() > 0 && verOk();
+        }
+        /* ───────── Rules A2 (step 5, tightening) ─────────
+           M-15: every money write carries appV ('2.481.0'); when settings/money.minAppV is set (major*1000+minor,
+           e.g. 2481), a write from an older app is refused. No settings/money doc = no minimum. */
+        function verNum(v) { let p = v.split('[.]'); return int(p[0]) * 1000 + int(p[1]); }
+        function verOk() {
+          return !exists(/databases/$(database)/documents/settings/money)
+            || verNum(request.resource.data.appV) >= get(/databases/$(database)/documents/settings/money).data.get('minAppV', 0);
+        }
+        /* M-7: a real person and the server clock on every write to inv, selm, pmts, costs (co is A1). */
+        function a2Coll() { return recordColl in ['inv', 'selm', 'pmts', 'costs']; }
+        function moneyStampOk() { return !a2Coll() || stampOk(); }
+        /* M-3 + #71 gaps: a sent invoice is locked. Number, title and the original lines never change; it never goes back
+           to draft (gap 2: a stale sync can't write an old draft over a sent invoice); void needs a reason and stays void;
+           payments are add-only. A credit or charge may be appended as one adj line at a time (the app's existing
+           correction), never removed. Going from draft (or nothing) to sent needs numbers/inv-N created in the SAME
+           batch (M-6; gap 1: an old or switch-off phone that numbers on its own is refused). */
+        function invClaimOk(n) {
+          let id = 'inv-' + string(int(n.get('no', 'INV-0').split('-')[1]));
+          return n.get('no', '') is string && n.get('no', '').matches('^INV-[0-9]+$')
+            && existsAfter(/databases/$(database)/documents/sites/$(siteId)/numbers/$(id))
+            && !exists(/databases/$(database)/documents/sites/$(siteId)/numbers/$(id))
+            && getAfter(/databases/$(database)/documents/sites/$(siteId)/numbers/$(id)).data.byUid == uid();
+        }
+        function invItemsOk(n, o) {
+          let ni = n.get('items', []);
+          let oi = o.get('items', []);
+          return ni == oi
+            || (ni.size() == oi.size() + 1 && ni[0:oi.size()] == oi && ni[oi.size()].get('adj', false) == true);
+        }
+        function invLockedOk(n, o) {
+          return n.get('no', null) == o.get('no', null) && n.get('num', null) == o.get('num', null)
+            && n.get('title', null) == o.get('title', null)
+            && n.get('lines', null) == o.get('lines', null)
+            && invItemsOk(n, o)
+            && n.get('status', 'draft') != 'draft'
+            && (o.get('status', '') != 'void' || n.get('status', '') == 'void')
+            && (n.get('status', '') != 'void' || o.get('status', '') == 'void'
+                || (n.get('voidReason', '') is string && n.get('voidReason', '').size() > 0))
+            && n.get('payments', []).size() >= o.get('payments', []).size();
+        }
+        function invCreateOk() {
+          return recordColl != 'inv' || recNew().get('status', 'draft') == 'draft' || invClaimOk(recNew());
+        }
+        function invUpdateOk() {
+          let n = recNew();
+          let o = rec();
+          return recordColl != 'inv'
+            || (o.get('status', 'draft') == 'draft' ? (n.get('status', 'draft') == 'draft' || invClaimOk(n)) : invLockedOk(n, o));
+        }
+        /* M-5: a payment is add-only. The one change allowed is voiding it, once, with a reason; it is never deleted. */
+        function pmtUpdateOk() {
+          let ch = recNew().diff(rec()).affectedKeys();
+          return recordColl != 'pmts'
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt', 'updatedBy', 'byUid', 'at', 'appV', 'tappedAt'])
+                && (ch.size() == 0
+                    || (ch.hasOnly(['voidedAt', 'voidReason', 'voidedBy']) && rec().get('voidedAt', null) == null
+                        && recNew().get('voidReason', '') is string && recNew().get('voidReason', '').size() > 0)));
         }
         function outerOk() {
           return request.resource.data.keys().hasOnly(['data', 'updatedAt', 'updatedBy', 'byUid', 'at', 'tappedAt', 'appV'])
@@ -315,7 +373,7 @@ service cloud.firestore {
           return (moneyOk() || sRole() == 'client')
             && r.keys().hasOnly(['kind', 'targetType', 'targetId', 'note', 'ref', 'byUid', 'at', 'appV', 'tappedAt'])
             && r.keys().hasAll(['kind', 'targetType', 'targetId', 'note', 'byUid', 'at'])
-            && r.byUid == uid() && r.at == request.time
+            && r.byUid == uid() && r.at == request.time && verOk()
             && r.kind in ['flag', 'resolve']
             && r.targetType in ['inv', 'co', 'sel', 'pmt']
             && r.targetId is string && r.targetId.size() > 0 && r.targetId.size() <= 80
@@ -329,12 +387,12 @@ service cloud.firestore {
             && r.keys().hasAll(['kind', 'no', 'byUid', 'at'])
             && r.kind in ['inv', 'co'] && r.no is int && r.no > 0 && r.no < 1000000
             && recordId == r.kind + '-' + string(r.no)
-            && r.byUid == uid() && r.at == request.time;
+            && r.byUid == uid() && r.at == request.time && verOk();
         }
         /* F-2 R: inv (invoices, off the house doc) and selm (a selection's
            money, doc id = the selection id) are money collections: only a
            builder who passes moneyOk() creates, updates or deletes them. */
-        function moneyColl() { return recordColl in ['costs', 'mail', 'inv', 'selm']; }
+        function moneyColl() { return recordColl in ['costs', 'mail', 'inv', 'selm', 'pmts']; }   /* A2 M-5: pmts joins the money gate */
         /* PR 0 (R-1 prep): a homeowner's selection write is an allowlist.
            The app writes a whole record as {data, updatedAt, updatedBy}. A
            homeowner Approves (data.approved + data.signed, clientSignoff) and
@@ -402,7 +460,8 @@ service cloud.firestore {
           let ch = n.diff(o).affectedKeys();
           return recordColl == 'inv'
             && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['data', 'updatedAt', 'updatedBy'])
+              .hasOnly(['data', 'updatedAt', 'updatedBy', 'byUid', 'at', 'appV', 'tappedAt'])
+            && stampOk()
             && ch.hasOnly(['status', 'approvedAt'])
             && o.get('status', '') == 'sent'
             && n.get('status', '') == 'approved'
@@ -415,7 +474,7 @@ service cloud.firestore {
            money gate are refused. F-2 R2: homeowner may update inv through
            clientInvOk (Approve); create/delete stay builder-only. */
         allow read: if signedIn() && sScoped() && !newColl()
-          && (recordColl == 'pmts' ? sMember() && sRole() != 'sub'
+          && (recordColl == 'pmts' ? moneyOk() || sRole() == 'client'
               : recordColl in ['mail','costs'] ? moneyOk()
               : recordColl in ['inv','selm'] ? moneyOk() || sRole() == 'client'
               : recordColl == 'bk' && sRole() == 'sub' ? crewOwnBk()
@@ -423,13 +482,13 @@ service cloud.firestore {
 
         allow create: if signedIn() && sScoped() && !newColl()
           && selNoMoney()
-          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
+          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invCreateOk())
               || (sRole() == 'sub' && recordColl in ['items','logs'])
               || (sRole() == 'client' && recordColl == 'items'));
 
         allow update: if signedIn() && sScoped() && !newColl()
           && selNoMoney()
-          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()))
+          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invUpdateOk() && pmtUpdateOk())
               || (sRole() == 'sub' && crewItemOk())
               || (sRole() == 'sub' && crewBkRespOk())
               || (sRole() == 'client' && recordColl == 'items')
@@ -437,7 +496,9 @@ service cloud.firestore {
               || (sRole() == 'client' && clientInvOk()));
 
         allow delete: if signedIn() && sScoped() && !newColl()
-          && sRole() == 'builder' && (!moneyColl() || moneyOk());
+          && sRole() == 'builder' && (!moneyColl() || moneyOk())
+          && recordColl != 'pmts'                                              /* A2 M-5: never deleted */
+          && (recordColl != 'inv' || rec().get('status', 'draft') == 'draft');   /* A2 M-3: only a never-sent draft */
 
         /* Rules A1: the five new collections, each its own strict rule. */
         allow read: if signedIn() && sScoped() && (

@@ -3568,7 +3568,7 @@ S('allowances-3');
   t('(a) price down: a $200 credit, no approval needed, invoiced $250 untouched',get('Sim3 faucet').approved===true&&c3.state==='credit'&&c3.waiting===0&&c3.delta===-200&&unb('Sim3 faucet')===-200&&Math.abs(bs().net-b0.net+70)<0.005,JSON.stringify(c3));
   compose(s0.id);$('invSave(false)');const i3=lastInv();
   t('(a) the credit goes on the next invoice as its own line',i3.items.length===1&&i3.items[0].amount===-200&&unb('Sim3 faucet')===0,JSON.stringify(i3.items));
-  $("invVoid('p1','"+i3.id+"')");$("ocConfirm()");
+  $("invVoid('p1','"+i3.id+"')");$("document.getElementById('promptInput').value='Wrong credit';true");$("confirmPrompt()");
   t('(a) voiding the credit invoice frees only the credit again',$("P().invoices.find(function(v){return v.id==='"+i3.id+"';}).status")==='void'&&unb('Sim3 faucet')===-200&&st('Sim3 faucet').billed===250);
   const h4=edit(s0.id,400);
   t('(a) sheet: under the allowance after an invoice',h4.t==='$50.00 under the allowance. $250.00 is already invoiced. The other $300.00 goes on the next invoice as a credit.',JSON.stringify(h4));
@@ -4391,7 +4391,7 @@ await (async function(){
         if(!store[seg[0]+'/'+seg[1]+'/consent/'+Sync.uid])throw denied('no consent');return;}
       if(coll==='flags'){if(old)throw denied('flags are create-only');if(['builder','client'].indexOf(X.role)<0||!only(v,['kind','targetType','targetId','note','ref','byUid','at','appV','tappedAt'])||v.byUid!==Sync.uid||v.at!==TS||!v.appV
           ||['flag','resolve'].indexOf(v.kind)<0||['inv','co','sel','pmt'].indexOf(v.targetType)<0||!v.targetId||typeof v.note!=='string'||!v.note||v.note.length>500||(v.kind==='resolve'&&!v.ref))throw denied('flag shape');return;}
-      if(coll==='inv'){if(X.role!=='builder'||!only(v,['data','updatedAt','updatedBy','byUid','tappedAt','appV'])||v.byUid!==Sync.uid)throw denied('inv');
+      if(coll==='inv'){if(X.role!=='builder'||!only(v,['data','updatedAt','updatedBy','byUid','tappedAt','appV','at'])||v.byUid!==Sync.uid||v.at!==TS)throw denied('inv');
         var iv=v.data||{},io=old?old.data:null;var im=/^INV-([0-9]+)$/.exec(iv.no||'');
         if(iv.status==='sent'&&(!io||io.status==='draft')&&X.invClaims&&(!im||batchPaths.indexOf('sites/'+seg[1]+'/numbers/inv-'+(+im[1]))<0))throw denied('inv sent without its claim');return;}
       if(coll==='numbers'){if(old)throw denied('number already claimed');if(!only(v,['kind','no','byUid','at','appV','tappedAt'])||['co','inv'].indexOf(v.kind)<0||!(v.no>0)||seg[3]!==v.kind+'-'+v.no||v.byUid!==Sync.uid||v.at!==TS)throw denied('number shape');return;}
@@ -4772,7 +4772,9 @@ await (async function(){
   $2(`(function(){var X=__co;X.invClaims=true;Sync._pulled=Sync._pulled||{};Sync._pulled[X.pid]=Object.assign({},Sync._pulled[X.pid],{inv:true});X.writes.length=0;return true;})()`);
   $2("PaperTrail.on=false;true");
   const IV0=J(`(function(){var p=P();var nb=(p.invoices||[]).length;${INVFILL('Old path','100')};invSave(false);var v=p.invoices[p.invoices.length-1];return {no:v.no,st:v.status,w:__co.writes.filter(function(w){return w.indexOf('numbers/inv')>=0||w.indexOf('/inv/')>=0;}).length,n:p.invoices.length-nb,ok:InvNo.allowed(p),draft:invNoText({no:''})};})()`);
-  t('3c-3: switch off: the old path numbers and sends with no claim and no direct write',IV0.n===1&&/^INV-\d{3}$/.test(IV0.no)&&IV0.st==='sent'&&IV0.w===0&&!IV0.ok&&IV0.draft==='',JSON.stringify(IV0));
+  t('A2: switch off: Send still goes through the claim (no number until the server takes it)',IV0.n===1&&IV0.no===''&&IV0.st==='draft'&&IV0.w===0,JSON.stringify(IV0));
+  await $2("(async function(){await new Promise(function(r){setTimeout(r,40);});return true;})()");
+  t('A2: switch off: ... then it is sent with a claimed number',J("(function(){var v=P().invoices.find(function(x){return x.title&&x.items&&x.items.some(function(i){return i.label==='Old path';});})||P().invoices.slice(-1)[0];return /^INV-[0-9]{3}$/.test(v.no)&&v.status==='sent'&&!!__co.store[__co.pre+'numbers/inv-'+(+v.no.slice(4))];})()")===true);
   $2("PaperTrail.on=true;true");
   t('3c-3: switch on: a draft shows "Draft" instead of a number',J("invNoText({no:''})")==='Draft'&&J("invNoText({no:'INV-004'})")==='INV-004');
   $2(INVFILL('Claimed one','250'));$2("invSave(true);true");
@@ -4886,7 +4888,14 @@ await (async function(){
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
   t('3c-5: builders never get Past houses',J("PAST.allowed()")===false&&J("PAST.rowHTML()")==='');
   $2("PAST._sites={};PAST._data={};true");
+  /* ---------- step 5: ready for Rules A2 (2.481.0); app side only, rules cases live in rulescheck.js ---------- */
+  t('A2: the sync stamp carries the server time (M-7)',J("(function(){try{var s=Sync._stamp();return ('at' in s)&&typeof s.appV==='string'&&s.appV.split('.').length===3;}catch(e){return 'err '+e.message;}})()")===true);
+  t('A2: every live money builder claims an invoice number, switch or not',SRC.indexOf("allowed(p){try{return !!(p&&typeof Sync")>=0&&SRC.indexOf("allowed(p){try{return !!(PaperTrail.on&&p")<0);
+  t('A2: the homeowner approval is stamped first and falls back to the A1 shape',SRC.indexOf("byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at")>=0&&SRC.indexOf("if(!(e1&&e1.code==='permission-denied'))throw e1;await ref.set(base,{merge:true});")>=0);
+  t('A2: voiding an invoice asks why and keeps the reason',SRC.indexOf("inv.status='void';inv.voidedAt=Date.now();inv.voidReason=why;")>=0&&SRC.indexOf("if(!why){toast('Say why it is void');return;}")>=0);
+  t('A2: a credit or charge is never removed from a sent invoice',SRC.indexOf("const canAdj=false;")>=0);
   $2(COEND);
+
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();
