@@ -3958,7 +3958,7 @@ await (async function(){
     state.session={role:'builder',name:'You'};return out;})()`);
   t('homeowner phone: never an inv or selm write, no invoices in meta, no money on sel',who.client.inv===0&&who.client.selm===0&&!who.client.metaInv&&!who.client.selMoney,JSON.stringify(who.client));
   t('crew phone: does not listen to inv or selm and writes neither',who.crew.colls==='items,bk,sel,logs'&&who.crew.inv+who.crew.selm===0&&!who.crew.metaInv&&!who.crew.selMoney,JSON.stringify(who.crew));
-  t('builder without Money (super): no costs, inv or selm; writes none',who.super.colls==='items,bk,sel,logs,mail'&&who.super.inv+who.super.selm===0&&!who.super.selMoney,JSON.stringify(who.super));
+  t('builder without Money (super): no costs, inv, selm or mail (2.484.0); writes none',who.super.colls==='items,bk,sel,logs'&&who.super.inv+who.super.selm===0&&!who.super.selMoney,JSON.stringify(who.super));
   t('Money-only builder (PM): selm yes, inv no (Claude lock Q3)',who.pm.colls==='items,bk,sel,logs,pmts,mail,costs,selm'&&who.pm.inv===0&&who.pm.selm>0,JSON.stringify(who.pm));
 
   /* 5 · a fake Firestore that applies set/merge/deleteField like the server */
@@ -4340,6 +4340,8 @@ await (async function(){
   const SB=J(`(function(){var og=canGate;var o={};try{canGate=function(){return false;};o.blind=syncCollsFor('builder').map(function(c){return c.sub;});
       canGate=function(k){return k==='moneyJob';};o.job=syncCollsFor('builder').map(function(c){return c.sub;});}finally{canGate=og;}return o;})()`);
   t('pmts: a builder with no money access does not subscribe to pmts, selm, costs or inv; one with Job money still reads pmts',SB.blind.indexOf('pmts')<0&&SB.blind.indexOf('selm')<0&&SB.blind.indexOf('costs')<0&&SB.job.indexOf('pmts')>=0,JSON.stringify(SB));
+  t('2.484.0: a builder with no money access does not subscribe to mail (rules: moneyOk); one with Job money still does',SB.blind.indexOf('mail')<0&&SB.job.indexOf('mail')>=0,JSON.stringify(SB));
+  t('2.484.0: both Record a payment sheets have a Cancel',(SRC.match(/pay-cancel/g)||[]).length>=2);
   /* ── M-15 (2.470.0): PaperTrail switch + "Update to continue" ── */
   const PT0=J(`(function(){return {on:PaperTrail.on,blocked:PaperTrail.blocked(),gate:moneyUpdateGate(),scrim:document.getElementById('confirmScrim').classList.contains('show')};})()`);
   t('M-15: the switch is off after a normal boot (the F-2 server has no settings), nothing blocked, no dialog',PT0.on===false&&PT0.blocked===false&&PT0.gate===false&&PT0.scrim===false,JSON.stringify(PT0));
