@@ -29,4 +29,11 @@ assert.deepStrictEqual([f.key, f.title], ['flag:fl_1', 'Something\u2019s wrong â
 assert.strictEqual(P.flagNotice({ kind: 'flag', targetType: 'inv', targetId: 'i1', note: 'x' }, 'f2', 'y').body, 'On an invoice: x', 'other targets unchanged');
 assert.strictEqual(P.flagNotice({ kind: 'resolve' }, 'x', 'y'), null, 'a resolve is not pushed');
 assert.strictEqual(P.streetOf({ street: '12 Elm Â· Lot 4' }, 's'), '12 Elm');
+/* 10/22 decision: homeowner pushes regardless of the switch; builder pushes only with it */
+assert.deepStrictEqual(P.moneyRecipients(SITE, 'client', false), ['uH'], 'switch off: the homeowner still gets G1-G3');
+assert.deepStrictEqual(P.moneyRecipients(SITE, 'builder', false), [], 'switch off: no builder push (G5 waits for the switch)');
+assert.deepStrictEqual(P.moneyRecipients(SITE, 'builder', true).sort(), ['uM', 'uO']);
+assert.deepStrictEqual(P.flagRecipients(SITE, 'uO', false), ['uH'], 'switch off: a flag reaches the homeowner only');
+assert.deepStrictEqual(P.flagRecipients(SITE, 'uO', true).sort(), ['uH', 'uM']);
+assert.deepStrictEqual(P.flagRecipients(SITE, 'uH', false), [], 'the raiser never gets their own flag');
 console.log('push: all checks passed (money notices G1-G3 and G5, flag push, money audience)');

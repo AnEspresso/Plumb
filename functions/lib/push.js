@@ -131,4 +131,11 @@ function flagNotice(f, flagId, street) {
   return { key: 'flag:' + flagId, title: 'Something\u2019s wrong — ' + street, body: lead + ': ' + cut(f.note, 160) };
 }
 
-module.exports = { builderUids, packetNotice, tokensFor, sendPush, pushMessage, roleUids, moneyBuilderUids, audUids, moneyNotices, flagNotice, streetOf };
+/* Decision 10/22 (relayed by PM as Peter's decision): homeowner pushes go out regardless of the paper-trail switch;
+   builder pushes (G5, and builders on a flag) still wait for it. on = the switch. */
+function moneyRecipients(site, aud, on) { return aud === 'client' ? roleUids(site, 'client') : (on ? moneyBuilderUids(site) : []); }
+function flagRecipients(site, byUid, on) {
+  return (on ? moneyBuilderUids(site) : []).concat(roleUids(site, 'client')).filter(u => u !== byUid);
+}
+
+module.exports = { moneyRecipients, flagRecipients, builderUids, packetNotice, tokensFor, sendPush, pushMessage, roleUids, moneyBuilderUids, audUids, moneyNotices, flagNotice, streetOf };

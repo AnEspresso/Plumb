@@ -312,28 +312,28 @@ const _ptTs = () => admin.firestore.FieldValue.serverTimestamp();
 exports.paperTrailInv = onDocumentWritten('sites/{siteId}/inv/{docId}', (event) => paperTrail.handle(db, _ptTs, 'inv', event));
 exports.paperTrailCo = onDocumentWritten('sites/{siteId}/co/{docId}', (event) => paperTrail.handle(db, _ptTs, 'co', event));
 exports.paperTrailPmts = onDocumentWritten('sites/{siteId}/pmts/{docId}', (event) => paperTrail.handle(db, _ptTs, 'pmts', event));
-/* 2.483.0: real pushes for the money notices (G1-G3, G5) and for a new flag. DORMANT behind the paper-trail switch,
-   like the rest of the paper trail; the app's bell shows the same notices (same keys) either way. */
+/* 2.483.0: real pushes for the money notices (G1-G3, G5) and for a new flag. 10/22 decision: pushes to homeowners go out
+   regardless of the paper-trail switch; pushes to builders still wait for it. The app's bell shows the same notices (same keys). */
 async function moneyPush(coll, event) {
-  if (!(await paperTrail.enabled(db))) return { skipped: 'off' };
+  const on = await paperTrail.enabled(db);   /* 10/22: homeowner pushes go regardless; builder pushes need the switch */
   const b = event.data && event.data.before && event.data.before.exists ? event.data.before.data() : null;
   const a = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
   if (!b || !a) return { skipped: 'create or delete' };
   const site = (await db.collection('sites').doc(event.params.siteId).get()).data() || {};
   const list = push.moneyNotices(coll, b, a, push.streetOf(site, event.params.siteId));
   const res = [];
-  for (const n of list) { const uids = push.audUids(site, n.aud); if (uids.length) res.push(await deliver(uids, n)); }
+  for (const n of list) { const uids = push.moneyRecipients(site, n.aud, on); if (uids.length) res.push(await deliver(uids, n)); }
   return { sent: res.length };
 }
 exports.moneyPushInv = onDocumentWritten('sites/{siteId}/inv/{docId}', (event) => moneyPush('inv', event));
 exports.moneyPushPmts = onDocumentWritten('sites/{siteId}/pmts/{docId}', (event) => moneyPush('pmts', event));
 exports.flagPush = onDocumentCreated('sites/{siteId}/flags/{docId}', async (event) => {
-  if (!(await paperTrail.enabled(db))) return;
+  const on = await paperTrail.enabled(db);   /* 10/22: homeowners always; builders with the switch on */
   const f = event.data && event.data.data ? event.data.data() : null;
   const site = (await db.collection('sites').doc(event.params.siteId).get()).data() || {};
   const n = push.flagNotice(f, event.params.docId, push.streetOf(site, event.params.siteId));
   if (!n) return;
-  const uids = push.moneyBuilderUids(site).concat(push.roleUids(site, 'client')).filter(u => u !== (f && f.byUid));
+  const uids = push.flagRecipients(site, f && f.byUid, on);
   if (uids.length) await deliver(uids, n);
 });
 /* M-18 (2.479.0): each flag / resolve becomes one money-history line. Same switch. */
