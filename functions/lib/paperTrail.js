@@ -127,6 +127,12 @@ async function handleFlag(db, ts, event) {
   return { lines: 1 };
 }
 
+function draftDeletedLine(coll, before, docId) {
+  const b = before && before.data;
+  if (coll !== 'inv' || !b || (b.status || 'draft') !== 'draft') return null;
+  return { kind: 'draft_deleted', ref: String(b.id != null ? b.id : docId), refType: 'inv', by: null, note: String(b.title || '').slice(0, 200) };
+}
+
 /* ---- the switch: off unless settings/paperTrail.enabled === true; cached 30 s ---- */
 const _cache = { at: 0, on: false };
 async function enabled(db, now) {
@@ -139,12 +145,21 @@ async function enabled(db, now) {
 function _resetCache() { _cache.at = 0; _cache.on = false; }
 
 /* ---- the handler (db and a server timestamp factory are passed in so tests can fake them) ---- */
+/* 2.483.0 (G4): invoice and payment history is written with the switch off too, so the record exists from day one.
+   The app still shows it only with the switch on; receipts and the archive keep their own switches; co checks stay behind it. */
+const ALWAYS = ['inv', 'pmts'];
 async function handle(db, ts, coll, event) {
-  if (!(await enabled(db))) return { skipped: 'off' };
+  if (!ALWAYS.includes(coll) && !(await enabled(db))) return { skipped: 'off' };
   const siteId = event.params.siteId;
   const before = event.data && event.data.before && event.data.before.exists ? event.data.before.data() : null;
   const after = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
-  if (!after) return { skipped: 'delete' };
+  if (!after) {
+    /* 2.483.0 (G6): a deleted never-sent draft leaves one line, so another builder on the house can see it went */
+    const ln = draftDeletedLine(coll, before, event.params.docId);
+    if (!ln) return { skipped: 'delete' };
+    await db.collection('sites').doc(siteId).collection('hist').doc(String(event.id) + '_0').set(Object.assign(ln, { byName: '', at: ts(), seq: 0, src: coll + '/' + event.params.docId }));
+    return { lines: 1, verified: null };
+  }
   const res = { lines: 0, verified: null };
   const lines = linesFor(coll, before, after);
   if (lines.length) {
@@ -175,4 +190,4 @@ async function handle(db, ts, coll, event) {
   return res;
 }
 
-module.exports = { flagLine, handleFlag, dollarsToCents, centsOf, fmtCents, sentenceFor, invoiceTotalCents, verifyInvoice, verifyCo, linesFor, enabled, handle, _resetCache };
+module.exports = { draftDeletedLine, ALWAYS, flagLine, handleFlag, dollarsToCents, centsOf, fmtCents, sentenceFor, invoiceTotalCents, verifyInvoice, verifyCo, linesFor, enabled, handle, _resetCache };

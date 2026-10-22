@@ -1,0 +1,31 @@
+'use strict';
+/* 2.483.0: money and flag pushes (pure parts). */
+const assert = require('assert');
+const P = require('./lib/push');
+const SITE = { street: '12 Elm', members: { uO: 'builder', uM: { role: 'builder' }, uN: 'builder', uH: 'client', uC: 'sub' },
+  meta: { memberInfo: { uM: { gates: { moneyJob: true } }, uN: { gates: {} } } } };
+assert.deepStrictEqual(P.moneyBuilderUids(SITE).sort(), ['uM', 'uO'], 'owner and money-gated builders only');
+assert.deepStrictEqual(P.audUids(SITE, 'client'), ['uH']);
+assert.ok(!P.audUids(SITE, 'builder').includes('uC') && !P.audUids(SITE, 'builder').includes('uN'), 'crew and non-money builders never get money pushes');
+const R = (d) => ({ data: d });
+const iv = (o) => Object.assign({ id: 'i1', no: 'INV-007', title: 'Draw 2', status: 'sent', total: 250, items: [{ label: 'Tile', amount: 250 }], payments: [{ id: 'p1', amount: 100 }] }, o || {});
+let n = P.moneyNotices('inv', R(iv()), R(iv({ items: iv().items.concat([{ label: 'Chipped tile', amount: -50, adj: true }]), total: 200 })), '12 Elm');
+assert.deepStrictEqual(n.map(x => [x.aud, x.key]), [['client', 'inv:i1:adj:2']]); assert.ok(n[0].title.startsWith('Credit on your invoice') && n[0].body.includes('$50.00') && n[0].body.includes('now $200.00'));
+n = P.moneyNotices('inv', R(iv()), R(iv({ items: iv().items.concat([{ label: 'Trim', amount: 80, adj: true }]), total: 330 })), '12 Elm');
+assert.ok(n[0].title.startsWith('Charge added to your invoice'));
+n = P.moneyNotices('inv', R(iv()), R(iv({ status: 'void', voidReason: 'Wrong house' })), '12 Elm');
+assert.deepStrictEqual(n.map(x => [x.aud, x.key]), [['client', 'inv:i1:void']]); assert.ok(n[0].body.includes('Wrong house'));
+assert.deepStrictEqual(P.moneyNotices('inv', R(iv({ status: 'draft' })), R(iv({ status: 'void' })), 'x'), [], 'a draft voided tells nobody');
+n = P.moneyNotices('inv', R(iv()), R(iv({ status: 'approved' })), '12 Elm');
+assert.deepStrictEqual(n.map(x => [x.aud, x.key]), [['builder', 'inv:i1:ok']], 'G5: the builder hears the approval');
+n = P.moneyNotices('inv', R(iv()), R(iv({ payments: [{ id: 'p1', amount: 100, voidedAt: 5, voidReason: 'Bounced' }] })), '12 Elm');
+assert.deepStrictEqual(n.map(x => x.key), ['pmv:p1']); assert.ok(n[0].body.includes('Bounced') && n[0].body.includes('INV-007'));
+n = P.moneyNotices('pmts', R({ id: 'pz', amount: 2000, label: 'Deposit' }), R({ id: 'pz', amount: 2000, label: 'Deposit', voidedAt: 6, voidReason: 'Twice' }), '12 Elm');
+assert.deepStrictEqual(n.map(x => [x.aud, x.key]), [['client', 'pmv:pz']]);
+assert.deepStrictEqual(P.moneyNotices('inv', null, R(iv()), 'x'), [], 'a create is not news here');
+assert.deepStrictEqual(P.moneyNotices('inv', R(iv()), R(iv()), 'x'), [], 'no change, no push');
+const f = P.flagNotice({ kind: 'flag', targetType: 'sel', targetId: 's9', note: 'Price is off', byUid: 'uH' }, 'fl_1', '12 Elm');
+assert.deepStrictEqual([f.key, f.title], ['flag:fl_1', 'Something\u2019s wrong — 12 Elm']); assert.ok(f.body.includes('a selection price') && f.body.includes('Price is off'));
+assert.strictEqual(P.flagNotice({ kind: 'resolve' }, 'x', 'y'), null, 'a resolve is not pushed');
+assert.strictEqual(P.streetOf({ street: '12 Elm · Lot 4' }, 's'), '12 Elm');
+console.log('push: all checks passed (money notices G1-G3 and G5, flag push, money audience)');
