@@ -964,6 +964,12 @@ async function main() {
   await INV('A2 app: the sync re-pushing the voided payment (new stamp, same record): ALLOWED', pmV('Entered twice'), true);
   await INV('A2 M-5: crew DENIED reading payments', getDoc(doc(db.sub, 'sites/liveA/pmts/pm_a5')), false);
   await INV('A2 M-5: a builder without the money gate DENIED reading payments', getDoc(doc(db.builder2, 'sites/liveGate/pmts/p1')), false);
+  await INV('A2 M-5: a builder without the money gate DENIED writing a payment', setDoc(doc(db.builder2, 'sites/liveGate/pmts/pm_g1'), Object.assign({ data: { id: 'pm_g1', amount: 5 }, updatedAt: 1, updatedBy: 'devB2' }, A2S(U.builder2))), false);
+  await INV('A2 setup: a fresh sent invoice inv_app3 (claim inv-19)', invSendBatch(db.builder, 'inv_app3', 19), true);
+  const appr = (stamp, n) => setDoc(doc(db.client, 'sites/liveA/inv/inv_app3'), Object.assign({ data: { status: 'approved', approvedAt: 1791130000020 + n }, updatedAt: 30 + n, updatedBy: 'dev-client' }, stamp), { merge: true });
+  await INV('A2 M-7: a homeowner Approve naming someone else as byUid is DENIED', appr(A2S(U.builder), 1), false);
+  await INV('A2 M-7: a homeowner Approve with a phone time in "at" is DENIED', appr(Object.assign(A2S(U.client), { at: 1791130000012 }), 2), false);
+  await INV('A2 app: the 2.481.0 homeowner Approve (stamped, merge): ALLOWED', appr(A2S(U.client), 4), true);
   await INV('A2 M-5: the homeowner reads payments', getDoc(doc(db.client, 'sites/liveA/pmts/pm_a5')), true);
   // M-15: a minimum app version
   await testEnv.withSecurityRulesDisabled(async (ctx) => { await setDoc(doc(ctx.firestore(), 'settings/money'), { minAppV: 2482 }); });
