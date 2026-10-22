@@ -107,18 +107,18 @@ function moneyNotices(coll, before, after, street) {
   if (!i) return out;
   if (coll === 'inv') {
     if (!o) return out;
-    if (o.status !== 'void' && i.status === 'void' && o.status !== 'draft') out.push({ aud: 'client', key: 'inv:' + i.id + ':void', title: 'Invoice voided — ' + street, body: i.no + (i.voidReason ? ' · ' + cut(i.voidReason) : '') + ' · you don\u2019t owe this one' });
+    if (o.status !== 'void' && i.status === 'void' && o.status !== 'draft') out.push({ aud: 'client', key: 'inv:' + i.id + ':void', title: 'Invoice canceled — ' + street, body: i.no + (i.voidReason ? ' · ' + cut(i.voidReason) : '') + ' · you don\u2019t owe this one' });
     else if (o.status !== i.status && i.status === 'approved') out.push({ aud: 'builder', key: 'inv:' + i.id + ':ok', title: 'Invoice approved — ' + street, body: i.no + ' approved by the homeowner' });
     else if (i.status !== 'void' && i.status !== 'draft' && (i.items || []).length > (o.items || []).length) {
       const it = i.items[i.items.length - 1];
-      if (it && it.adj) out.push({ aud: 'client', key: 'inv:' + i.id + ':adj:' + i.items.length, title: ((Number(it.amount) || 0) < 0 ? 'Credit on your invoice — ' : 'Charge added to your invoice — ') + street, body: i.no + ' · ' + (it.label || '') + ' ' + money(it.amount) + ' · now ' + money(i.total) });
+      if (it && it.adj) out.push({ aud: 'client', key: 'inv:' + i.id + ':adj:' + i.items.length, title: ((Number(it.amount) || 0) < 0 ? 'Credit added to your invoice — ' : 'Charge added to your invoice — ') + street, body: i.no + ' · ' + (it.label || '') + ' ' + money(it.amount) + ' · now ' + money(i.total) });
     }
     if (i.status !== 'draft') {
       const op = {}; (o.payments || []).forEach(x => { if (x && x.id) op[x.id] = x; });
-      (i.payments || []).forEach(x => { if (x && x.voidedAt && x.id && op[x.id] && !op[x.id].voidedAt) out.push({ aud: 'client', key: 'pmv:' + x.id, title: 'Payment voided — ' + street, body: money(x.amount) + ' on ' + i.no + (x.voidReason ? ' · ' + cut(x.voidReason) : '') }); });
+      (i.payments || []).forEach(x => { if (x && x.voidedAt && x.id && op[x.id] && !op[x.id].voidedAt) out.push({ aud: 'client', key: 'pmv:' + x.id, title: 'Payment no longer counted — ' + street, body: money(x.amount) + ' on ' + i.no + (x.voidReason ? ' · ' + cut(x.voidReason) : '') }); });
     }
   }
-  if (coll === 'pmts' && o && i.voidedAt && !o.voidedAt) out.push({ aud: 'client', key: 'pmv:' + i.id, title: 'Payment voided — ' + street, body: money(i.amount) + (i.label ? ' · ' + i.label : '') + (i.voidReason ? ' · ' + cut(i.voidReason) : '') });
+  if (coll === 'pmts' && o && i.voidedAt && !o.voidedAt) out.push({ aud: 'client', key: 'pmv:' + i.id, title: 'Payment no longer counted — ' + street, body: money(i.amount) + (i.label ? ' · ' + i.label : '') + (i.voidReason ? ' · ' + cut(i.voidReason) : '') });
   return out;
 }
 

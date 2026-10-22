@@ -355,6 +355,14 @@ exports.paperTrailReceipt = onDocumentCreated({ document: 'sites/{siteId}/hist/{
     db, bucket: admin.storage().bucket(bucketName), bucketName,
     from: process.env.RECEIPT_FROM || 'SitePlumb <receipts@siteplumb.com>',
     sendEmail: receipts.resendSender(key),
+    /* 2.483.0: the paper-signature photo (live/sites/<house>/costs/<photoId> in the app bucket), size-checked before download */
+    photo: async (siteId, photoId) => {
+      const file = admin.storage().bucket(process.env.PLUMB_BUCKET || 'plumb-467a0.firebasestorage.app').file('live/sites/' + siteId + '/costs/' + photoId);
+      const [md] = await file.getMetadata(); if (Number(md.size) > receipts.PHOTO_MAX) return null;
+      const [buf] = await file.download();
+      const ext = /png/.test(md.contentType || '') ? '.png' : /heic/.test(md.contentType || '') ? '.heic' : '.jpg';
+      return { buf, ext };
+    },
     emailOf: async (uid) => { try { return (await admin.auth().getUser(uid)).email || ''; } catch (e) { return ''; } },
     claim: (s, l, uid) => db.runTransaction(async (tx) => {
       const snap = await tx.get(histRef(s, l)); const rc = ((snap.data() || {}).rc) || {};

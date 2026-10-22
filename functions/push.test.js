@@ -10,7 +10,7 @@ assert.ok(!P.audUids(SITE, 'builder').includes('uC') && !P.audUids(SITE, 'builde
 const R = (d) => ({ data: d });
 const iv = (o) => Object.assign({ id: 'i1', no: 'INV-007', title: 'Draw 2', status: 'sent', total: 250, items: [{ label: 'Tile', amount: 250 }], payments: [{ id: 'p1', amount: 100 }] }, o || {});
 let n = P.moneyNotices('inv', R(iv()), R(iv({ items: iv().items.concat([{ label: 'Chipped tile', amount: -50, adj: true }]), total: 200 })), '12 Elm');
-assert.deepStrictEqual(n.map(x => [x.aud, x.key]), [['client', 'inv:i1:adj:2']]); assert.ok(n[0].title.startsWith('Credit on your invoice') && n[0].body.includes('$50.00') && n[0].body.includes('now $200.00'));
+assert.deepStrictEqual(n.map(x => [x.aud, x.key]), [['client', 'inv:i1:adj:2']]); assert.ok(n[0].title.startsWith('Credit added to your invoice') && n[0].body.includes('$50.00') && n[0].body.includes('now $200.00'));
 n = P.moneyNotices('inv', R(iv()), R(iv({ items: iv().items.concat([{ label: 'Trim', amount: 80, adj: true }]), total: 330 })), '12 Elm');
 assert.ok(n[0].title.startsWith('Charge added to your invoice'));
 n = P.moneyNotices('inv', R(iv()), R(iv({ status: 'void', voidReason: 'Wrong house' })), '12 Elm');
