@@ -126,7 +126,9 @@ function moneyNotices(coll, before, after, street) {
 function flagNotice(f, flagId, street) {
   if (!f || f.kind !== 'flag') return null;
   const what = { inv: 'an invoice', co: 'a change order', sel: 'a selection price', pmt: 'a payment' }[f.targetType] || 'a record';
-  return { key: 'flag:' + flagId, title: 'Something\u2019s wrong — ' + street, body: 'On ' + what + ': ' + cut(f.note, 160) };
+  /* Agency final (10/22): a selection price reads 'Selection price: <note>' */
+  const lead = f.targetType === 'sel' ? 'Selection price' : 'On ' + what;
+  return { key: 'flag:' + flagId, title: 'Something\u2019s wrong — ' + street, body: lead + ': ' + cut(f.note, 160) };
 }
 
 module.exports = { builderUids, packetNotice, tokensFor, sendPush, pushMessage, roleUids, moneyBuilderUids, audUids, moneyNotices, flagNotice, streetOf };
