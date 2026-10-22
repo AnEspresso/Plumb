@@ -4888,7 +4888,7 @@ await (async function(){
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
   t('3c-5: builders never get Past houses',J("PAST.allowed()")===false&&J("PAST.rowHTML()")==='');
   $2("PAST._sites={};PAST._data={};true");
-  /* ---------- step 5: ready for Rules A2 (2.481.0) ---------- */
+  /* ---------- step 5: ready for Rules A2 (2.481.0); app side only, rules cases live in rulescheck.js ---------- */
   t('A2: the sync stamp carries the server time (M-7)',J("(function(){try{var s=Sync._stamp();return ('at' in s)&&typeof s.appV==='string'&&s.appV.split('.').length===3;}catch(e){return 'err '+e.message;}})()")===true);
   t('A2: every live money builder claims an invoice number, switch or not',SRC.indexOf("allowed(p){try{return !!(p&&typeof Sync")>=0&&SRC.indexOf("allowed(p){try{return !!(PaperTrail.on&&p")<0);
   t('A2: the homeowner approval is stamped first and falls back to the A1 shape',SRC.indexOf("byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at")>=0&&SRC.indexOf("if(!(e1&&e1.code==='permission-denied'))throw e1;await ref.set(base,{merge:true});")>=0);
