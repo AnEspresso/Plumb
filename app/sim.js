@@ -4888,7 +4888,7 @@ await (async function(){
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
   t('3c-5: builders never get Past houses',J("PAST.allowed()")===false&&J("PAST.rowHTML()")==='');
   $2("PAST._sites={};PAST._data={};true");
-  /* ---------- 2.483.0: G6 words, Something's wrong on selection prices ---------- */
+  /* ---------- 2.483.0: G6 words, Something's wrong on selection prices (server parts in functions/*.test.js) ---------- */
   t('G6: the history line for a deleted draft reads Draft deleted',J("HIST.what({kind:'draft_deleted'})")==='Draft deleted');
   t('2.483.0: the homeowner gets Something\u2019s wrong under a selection price (or allowance line)',SRC.indexOf("${(m||al)?FLAGS.slotHTML(p,'sel',s.id):''}")>=0);
   t('2.483.0: the builder gets it under a priced selection, without opening the edit sheet',SRC.indexOf(`\${m?'<div onclick="event.stopPropagation()">'+FLAGS.slotHTML(P(),'sel',s.id)+'</div>':''}`)>=0);
