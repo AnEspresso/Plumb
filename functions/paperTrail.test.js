@@ -62,6 +62,14 @@ assert.deepStrictEqual(l.map(x => x.kind), ['payment']); assert.strictEqual(l[0]
 l = pt.linesFor('inv', inv({ status: 'sent', payments: [{ id: 'p1', amountC: 25000 }] }), inv({ status: 'sent', payments: [{ id: 'p1', amountC: 25000, voidedAt: 5, voidReason: 'bounced' }] }));
 assert.deepStrictEqual(l.map(x => x.kind), ['payment_voided']); assert.strictEqual(l[0].note, 'bounced');
 assert.deepStrictEqual(pt.linesFor('inv', inv({ status: 'sent' }), inv({ status: 'sent' })), [], 'no change, no line');
+/* 2.482.0 G1: an appended credit or charge on a sent invoice is its own line */
+const it0 = [{ label: 'Tile', amount: 250, amountC: 25000 }];
+l = pt.linesFor('inv', inv({ status: 'sent', items: it0 }), inv({ status: 'sent', items: it0.concat([{ label: 'Chipped tile', amount: -50, amountC: -5000, adj: true }]), total: 200, totalC: 20000 }));
+assert.deepStrictEqual(l.map(x => x.kind), ['credit_added']); assert.strictEqual(l[0].amountC, -5000); assert.strictEqual(l[0].note, 'Chipped tile');
+l = pt.linesFor('inv', inv({ status: 'approved', items: it0 }), inv({ status: 'approved', items: it0.concat([{ label: 'Extra trim', amount: 80, amountC: 8000, adj: true }]) }));
+assert.deepStrictEqual(l.map(x => x.kind), ['charge_added']);
+assert.deepStrictEqual(pt.linesFor('inv', inv({ status: 'draft', items: it0 }), inv({ status: 'draft', items: it0.concat([{ label: 'x', amount: 1, adj: true }]) })), [], 'a draft edit is not a line');
+assert.deepStrictEqual(pt.linesFor('inv', inv({ status: 'sent', items: it0 }), inv({ status: 'sent', items: it0.concat([{ label: 'x', amount: 1 }]) })), [], 'only adj lines count');
 const pm = (o) => ({ data: Object.assign({ id: 'p9', amountC: 200000, amount: 2000 }, o || {}), byUid: 'uB' });
 assert.deepStrictEqual(pt.linesFor('pmts', null, pm()).map(x => x.kind), ['payment']);
 assert.deepStrictEqual(pt.linesFor('pmts', pm(), pm({ voidedAt: 9, voidReason: 'typo' })).map(x => x.kind), ['payment_voided']);

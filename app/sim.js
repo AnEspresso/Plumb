@@ -4888,6 +4888,24 @@ await (async function(){
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
   t('3c-5: builders never get Past houses',J("PAST.allowed()")===false&&J("PAST.rowHTML()")==='');
   $2("PAST._sites={};PAST._data={};true");
+  /* ---------- 2.482.0: tell the other side (G1-G3) ---------- */
+  const NDIFF=(pv,nx)=>J("JSON.stringify(Notify.diffs("+JSON.stringify(pv)+","+JSON.stringify(nx)+",'12 Elm'))");
+  const iv0={id:'iq1',no:'INV-007',title:'Draw 2',status:'sent',total:250,items:[{label:'Tile',amount:250}],payments:[{id:'pq1',amount:100}]};
+  const ivx=o=>Object.assign(JSON.parse(JSON.stringify(iv0)),o);
+  const g1=JSON.parse(NDIFF({invoices:[iv0]},{invoices:[ivx({items:iv0.items.concat([{label:'Chipped tile',amount:-50,adj:true}]),total:200})]}));
+  t('G1: a credit on a sent invoice gives the homeowner one notice that names it',g1.length===1&&g1[0].aud==='client'&&g1[0].title.indexOf('Credit on your invoice')===0&&g1[0].body.indexOf('Chipped tile')>=0&&g1[0].body.indexOf('$50.00')>=0&&g1[0].body.indexOf('now $200.00')>=0,JSON.stringify(g1));
+  const g1b=JSON.parse(NDIFF({invoices:[iv0]},{invoices:[ivx({items:iv0.items.concat([{label:'Extra trim',amount:80,adj:true}]),total:330})]}));
+  t('G1: a charge says Charge added',g1b.length===1&&g1b[0].title.indexOf('Charge added to your invoice')===0,JSON.stringify(g1b));
+  t('G1: the history line has words for credit_added and charge_added',J("HIST.what({kind:'credit_added'})")==='Credit added'&&J("HIST.what({kind:'charge_added'})")==='Charge added');
+  const g2=JSON.parse(NDIFF({invoices:[iv0]},{invoices:[ivx({status:'void',voidedAt:5,voidReason:'Billed the wrong house'})]}));
+  t('G2: a void tells the homeowner, with the reason',g2.length===1&&g2[0].aud==='client'&&g2[0].title.indexOf('Invoice voided')===0&&g2[0].body.indexOf('Billed the wrong house')>=0,JSON.stringify(g2));
+  t('G2: voiding a draft tells nobody',JSON.parse(NDIFF({invoices:[ivx({status:'draft'})]},{invoices:[ivx({status:'void',voidReason:'x'})]})).length===0);
+  t('G2: the invoice page shows Void and the reason to both sides',['builder','client'].every(v=>J("(function(){var i="+JSON.stringify(ivx({status:'void',voidedAt:1791200000000,voidReason:'Billed the wrong house'}))+";return invDetailHTML(P(),i,'"+v+"');})()").indexOf('Billed the wrong house')>=0));
+  const g3=JSON.parse(NDIFF({invoices:[iv0]},{invoices:[ivx({payments:[{id:'pq1',amount:100,voidedAt:5,voidReason:'Check bounced'}]})]}));
+  t('G3: a payment voided on an invoice tells the homeowner, with the reason',g3.length===1&&g3[0].title.indexOf('Payment voided')===0&&g3[0].body.indexOf('Check bounced')>=0&&g3[0].body.indexOf('INV-007')>=0,JSON.stringify(g3));
+  const g3b=JSON.parse(NDIFF({payments:[{id:'pz',amount:2000,label:'Deposit'}]},{payments:[{id:'pz',amount:2000,label:'Deposit',voidedAt:6,voidReason:'Entered twice'}]}));
+  t('G3: a payment voided on the payments list tells the homeowner',g3b.length===1&&g3b[0].aud==='client'&&g3b[0].body.indexOf('Entered twice')>=0&&g3b[0].body.indexOf('Deposit')>=0,JSON.stringify(g3b));
+  t('G3: the notice snapshot carries payments and the pmts listener scans it',J("Array.isArray(Notify.snap({payments:[{id:'a',amount:1}]}).payments)")===true&&SRC.indexOf("if(c.sub==='pmts'&&changed&&_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}")>=0);
   /* ---------- step 5: ready for Rules A2 (2.481.0); app side only, rules cases live in rulescheck.js ---------- */
   t('A2: the sync stamp carries the server time (M-7)',J("(function(){try{var s=Sync._stamp();return ('at' in s)&&typeof s.appV==='string'&&s.appV.split('.').length===3;}catch(e){return 'err '+e.message;}})()")===true);
   t('A2: every live money builder claims an invoice number, switch or not',SRC.indexOf("allowed(p){try{return !!(p&&typeof Sync")>=0&&SRC.indexOf("allowed(p){try{return !!(PaperTrail.on&&p")<0);

@@ -81,6 +81,13 @@ function linesFor(coll, before, after) {
     if (as === 'approved' && bs !== 'approved') out.push(base('approved', { amountC: tot, no: a.no || a.num, sentence: a.sentence || '' }));
     if (as === 'paid' && bs !== 'paid') out.push(base('paid', { amountC: tot, no: a.no || a.num }));
     if (as === 'void' && bs !== 'void') out.push(base('voided', { amountC: tot, no: a.no || a.num, note: a.voidReason || '' }));
+    /* 2.482.0 (G1): a credit or charge appended to a sent invoice is its own line, with the new total */
+    const bi = (b && b.items) || [], ai = a.items || [];
+    if (b && bs && bs !== 'draft' && ai.length > bi.length) ai.slice(bi.length).forEach(it => {
+      if (!it || !it.adj) return;
+      const c = centsOf(it, 'amount');
+      out.push(base(c < 0 ? 'credit_added' : 'charge_added', { amountC: c, no: a.no || a.num, note: String(it.label || '').slice(0, 200), totalC: tot }));
+    });
     const bp = (b && b.payments) || [], ap = a.payments || [];
     ap.forEach((p, i) => {
       const o = bp[i];
