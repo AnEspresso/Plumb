@@ -4878,6 +4878,7 @@ await (async function(){
   $2("PAST.download('past1');true");
   const PAT=J("PAST._lastDl||''");
   t('3c-5: Download these records gives one file with every invoice line, payment, change order and history line',PAT.indexOf('12 Elm St')>=0&&PAT.indexOf('INV-007')>=0&&PAT.indexOf('Upper cabinets')>=0&&PAT.indexOf('CO-009')>=0&&PAT.indexOf('This adds $650.00 to your contract.')>=0&&PAT.indexOf('Deposit')>=0&&PAT.indexOf('HISTORY')>=0&&PAT.indexOf('Never sent')<0,PAT.slice(0,200));
+  t('3c-5: the change order line itself carries the signed sentence (not only the history)',PAT.split('\n').some(function(l){return l.indexOf('CO-009')===0&&l.indexOf('"This adds $650.00 to your contract."')>=0;}),PAT.split('\n').filter(function(l){return l.indexOf('CO-009')===0;}).join(' | ').slice(0,200));
   $2(`(function(){var X=__co;X.saved.pdb=Sync.db;var real=Sync.db;Sync.db={collection:function(c){return {doc:function(id){return {collection:function(cc){return {get:function(){var e=new Error('denied');e.code='permission-denied';return Promise.reject(e);},where:function(){return this;}};}};}};},batch:real.batch};PAST._data={};return true;})()`);
   await $2("PAST.openHouse('past1')");await sleep(20);
   t('3c-5: a refused read says the records are not available (no crash)',J("document.getElementById('infoScrim').textContent").indexOf('not available right now')>=0);
