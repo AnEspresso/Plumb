@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.481.0 - Money writes carry who and the server time, every sent invoice claims its number, a void needs a reason (ready for Rules A2)';
+const PLUMB_VERSION='2.482.0 - Tell the other side: credits, charges, voids and payment voids give the homeowner a notice; the void reason shows on the invoice';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793217600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.481.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793304000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.482.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9781,7 +9781,7 @@ const HIST={_rows:{},_unsub:{},_err:{},
       case 'sent':return 'Sent'+rv;case 'changed':return 'Updated'+rv;case 'opened':return 'Opened'+rv;
       case 'approved':return 'Approved'+rv+(r.via==='paper'?' \u00b7 signed on paper':(r.signedName?' \u00b7 signed by '+r.signedName:''));
       case 'declined':return 'Declined'+rv;case 'withdrawn':return 'Withdrawn';case 'paid':return 'Paid';case 'voided':return 'Voided';
-      case 'payment':return 'Payment recorded';case 'payment_voided':return 'Payment voided';case 'needs_check':return 'Needs a check';case 'flagged':return 'Something\u2019s wrong';case 'flag_resolved':return 'Resolved';
+      case 'payment':return 'Payment recorded';case 'payment_voided':return 'Payment voided';case 'credit_added':return 'Credit added';case 'charge_added':return 'Charge added';case 'needs_check':return 'Needs a check';case 'flagged':return 'Something\u2019s wrong';case 'flag_resolved':return 'Resolved';
       default:return String(r.kind||'');}},
   lineHTML(r,withLabel){const a=this.amt(r),w=COH.when(r.at);
     return '<div class="subrow hist-line"><div class="si"><div class="n">'+(withLabel?esc(this.label(r))+' \u00b7 ':'')+esc(this.what(r))+(a&&r.kind!=='opened'?' \u00b7 '+esc(a):'')+'</div>'
@@ -10385,7 +10385,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(!Array.isArray(p[c.f]))p[c.f]=[];
         const sh=this._shadow[sid]||(this._shadow[sid]={meta:'',colls:{}});sh.colls=sh.colls||{};const prev=sh.colls[c.sub]||(sh.colls[c.sub]={});
         const isSel=c.sub==='sel';const view=r=>isSel?selNoMoney(r):r;   // F-2: a selection syncs (and compares) without its money
-        const _nv=(c.sub==='inv'&&this._notifReady[sid+c.sub])?Notify.snap(p):null;
+        const _nv=((c.sub==='inv'||c.sub==='pmts')&&this._notifReady[sid+c.sub])?Notify.snap(p):null;   /* 2.482.0 G3: pmts too */
         let changed=false;
         /* F-2: a phone that does not read selm keeps no selection money, even a copy saved before 2.463.0 */
         if(isSel&&!syncHas(p,'selm')){p[c.f]=p[c.f].map(r=>{if(!selHasMoney(r))return r;changed=true;return selNoMoney(r);});}
@@ -10416,6 +10416,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
                selm and is deleted from sel on this builder's next push. */
             if(isSel&&selMoneyKeyed(rec)&&syncWrites(p,'selm')){prev[key]='f2-move';this._held[sid]=p;}}});
         if(c.sub==='inv'&&changed){invOrder(p);if(_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}}
+        if(c.sub==='pmts'&&changed&&_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}
         this._notifReady[sid+c.sub]=true;                               // first snapshot is history, not news
         const got=this._pulled[sid]||(this._pulled[sid]={});
         if(!(snap.metadata&&snap.metadata.fromCache)&&!got[c.sub]){
@@ -10572,7 +10573,7 @@ const Notify={
     if(aud.indexOf('trade:')===0){if(sx.role!=='subs')return false;
       const sb=(p.subs||[]).find(x=>x.name===sx.name);return !!sb&&sb.specialty===aud.slice(6);}
     return false;},
-  snap(p){try{return JSON.parse(JSON.stringify({invoices:p.invoices||[],subs:(p.subs||[]).map(x=>({id:x.id,name:x.name,specialty:x.specialty,cleared:x.cleared,specsDue:x.specsDue})),docs:(p.docs||[]).map(d=>({n:d.n,trade:d.trade||''})),bookings:(p.bookings||[]).map(b=>({id:b.id,subName:b.subName,start:b.start,end:b.end,note:b.note||'',status:b.status||''})),avail:(p.avail||[]).map(a=>({id:a.id,subName:a.subName,start:a.start,end:a.end}))}));}catch(e){return null;}},
+  snap(p){try{return JSON.parse(JSON.stringify({invoices:p.invoices||[],payments:(p.payments||[]).map(x=>({id:x.id,amount:x.amount,label:x.label||'',voidedAt:x.voidedAt||null,voidReason:x.voidReason||''})),subs:(p.subs||[]).map(x=>({id:x.id,name:x.name,specialty:x.specialty,cleared:x.cleared,specsDue:x.specsDue})),docs:(p.docs||[]).map(d=>({n:d.n,trade:d.trade||''})),bookings:(p.bookings||[]).map(b=>({id:b.id,subName:b.subName,start:b.start,end:b.end,note:b.note||'',status:b.status||''})),avail:(p.avail||[]).map(a=>({id:a.id,subName:a.subName,start:a.start,end:a.end}))}));}catch(e){return null;}},
   /* pure: diff a site's meta before/after a remote merge → notice list */
   diffs(prev,next,site){
     const out=[];if(!prev||!next)return out;
@@ -10582,7 +10583,16 @@ const Notify={
       if(becameSent)out.push({key:'inv:'+i.id+':sent',aud:'client',title:'Invoice from your builder',body:i.no+' · '+i.title+' — needs your OK'});
       else if(o&&o.status!==i.status&&i.status==='approved')out.push({key:'inv:'+i.id+':ok',aud:'biller',title:'Invoice approved — '+site,body:i.no+' approved by the homeowner'});
       else if(o&&o.status!==i.status&&i.status==='paid')out.push({key:'inv:'+i.id+':paid',aud:'client',title:'Invoice marked paid',body:i.no+' · '+i.title});
-      else if(o&&Math.abs((+o.total||0)-(+i.total||0))>0.005&&i.status!=='void'&&i.status!=='draft')out.push({key:'inv:'+i.id+':upd:'+i.total,aud:'client',title:'Invoice updated — '+site,body:i.no+' · now '+fmtMoney(i.total)});});
+      else if(o&&o.status!=='void'&&i.status==='void'&&o.status!=='draft')out.push({key:'inv:'+i.id+':void',aud:'client',title:'Invoice voided — '+site,body:i.no+(i.voidReason?' · '+String(i.voidReason).slice(0,140):'')+' · you don\u2019t owe this one'});   /* 2.482.0 G2 */
+      else if(o&&i.status!=='void'&&i.status!=='draft'&&(i.items||[]).length>(o.items||[]).length&&(i.items||[])[(i.items||[]).length-1]&&(i.items||[])[(i.items||[]).length-1].adj){const it=i.items[i.items.length-1];   /* 2.482.0 G1: say what changed */
+        out.push({key:'inv:'+i.id+':adj:'+i.items.length,aud:'client',title:((+it.amount||0)<0?'Credit on your invoice — ':'Charge added to your invoice — ')+site,body:i.no+' · '+(it.label||'')+' '+fmtMoney(Math.abs(+it.amount||0))+' · now '+fmtMoney(i.total)});}
+      else if(o&&Math.abs((+o.total||0)-(+i.total||0))>0.005&&i.status!=='void'&&i.status!=='draft')out.push({key:'inv:'+i.id+':upd:'+i.total,aud:'client',title:'Invoice updated — '+site,body:i.no+' · now '+fmtMoney(i.total)});
+      /* 2.482.0 G3: a payment voided on an invoice */
+      if(o&&i.status!=='draft'){const op={};(o.payments||[]).forEach(x=>{if(x&&x.id)op[x.id]=x;});
+        (i.payments||[]).forEach(x=>{if(x&&x.voidedAt&&x.id&&op[x.id]&&!op[x.id].voidedAt)out.push({key:'pmv:'+x.id,aud:'client',title:'Payment voided — '+site,body:fmtMoney(x.amount)+' on '+i.no+(x.voidReason?' · '+String(x.voidReason).slice(0,140):'')});});}});
+    /* 2.482.0 G3: a payment on the payments list voided */
+    const pp={};(prev.payments||[]).forEach(x=>{if(x&&x.id)pp[x.id]=x;});
+    (next.payments||[]).forEach(x=>{if(x&&x.id&&x.voidedAt&&pp[x.id]&&!pp[x.id].voidedAt)out.push({key:'pmv:'+x.id,aud:'client',title:'Payment voided — '+site,body:fmtMoney(x.amount)+(x.label?' · '+x.label:'')+(x.voidReason?' · '+String(x.voidReason).slice(0,140):'')});});
     const ps={};(prev.subs||[]).forEach(x=>ps[x.id]=x);
     (next.subs||[]).forEach(x=>{const o=ps[x.id];if(!o)return;
       if(!o.cleared&&x.cleared)out.push({key:'clr:'+site+':'+x.id+':'+x.cleared,aud:'sub:'+x.name,title:'House ready — '+site,body:'You\u2019re cleared to start. Your install packet is up to date.'});
@@ -15285,6 +15295,7 @@ function invStatusChip(st){const lbl={draft:'Draft',sent:'Sent',approved:'Approv
 function invDetailHTML(p,inv,viewer){
   const st=invState(inv);const paid=invPaidAmt(inv);const bal=invBalance(inv);
   let h=`<div class="pkt-head"><div class="pk-site">${esc(invNoText(inv))} · ${esc(inv.title)}</div><div class="pk-trade">${esc(p.street||p.name)}${inv.due?' · due '+esc(inv.due):''} · sent ${timeAgo(inv.t)}${inv.sentBy?' by '+(viewer==='client'?'your builder':esc(inv.sentBy)):''}</div></div>`;
+  if(st==='void')h+=`<div class="inv-void-why mt-2 mb-2 c-ink-2 fs-sm"><b>Void</b>${inv.voidReason?' \u00b7 '+esc(inv.voidReason):''}${inv.voidedAt?' \u00b7 '+esc(fmtLogDate(inv.voidedAt)):''}</div>`;   /* 2.482.0 G2: both sides see why */
   const canAdj=false;   /* 2.481.0 (A2 M-3): a credit or charge is appended, never removed; a mistake is a new credit or a void */
   h+='<div class="spec-ro">'+inv.items.map((it,idx)=>it.adj
       ?`<div class="sro"><span class="k fst-i">${esc(it.label)}${canAdj?` <button onclick="invDelAdjustment('${p.id}','${inv.id}',${idx})" class="ml-1 fs-xs c-clay bd-0 p-0 cur-p td-u u-m28">Remove</button>`:''}</span><span class="v fst-i">${fmtMoney(it.amount)}</span></div>`
