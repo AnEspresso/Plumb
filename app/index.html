@@ -15295,7 +15295,7 @@ function invStatusChip(st){const lbl={draft:'Draft',sent:'Sent',approved:'Approv
 function invDetailHTML(p,inv,viewer){
   const st=invState(inv);const paid=invPaidAmt(inv);const bal=invBalance(inv);
   let h=`<div class="pkt-head"><div class="pk-site">${esc(invNoText(inv))} · ${esc(inv.title)}</div><div class="pk-trade">${esc(p.street||p.name)}${inv.due?' · due '+esc(inv.due):''} · sent ${timeAgo(inv.t)}${inv.sentBy?' by '+(viewer==='client'?'your builder':esc(inv.sentBy)):''}</div></div>`;
-  if(st==='void')h+=`<div class="inv-void-why mt-2 mb-2 c-ink-2 fs-sm"><b>Void</b>${inv.voidReason?' \u00b7 '+esc(inv.voidReason):''}${inv.voidedAt?' \u00b7 '+esc(fmtLogDate(inv.voidedAt)):''}</div>`;   /* 2.482.0 G2: both sides see why */
+  if(st==='void')h+=`<div class="inv-void-why mt-2 mb-2 c-ink-2 fs-sm"><b>Void</b>${inv.voidReason?' \u00b7 '+esc(inv.voidReason):''}${inv.voidedAt?' \u00b7 '+esc(new Date(inv.voidedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'})):''}</div>`;   /* 2.482.0 G2: both sides see why */
   const canAdj=false;   /* 2.481.0 (A2 M-3): a credit or charge is appended, never removed; a mistake is a new credit or a void */
   h+='<div class="spec-ro">'+inv.items.map((it,idx)=>it.adj
       ?`<div class="sro"><span class="k fst-i">${esc(it.label)}${canAdj?` <button onclick="invDelAdjustment('${p.id}','${inv.id}',${idx})" class="ml-1 fs-xs c-clay bd-0 p-0 cur-p td-u u-m28">Remove</button>`:''}</span><span class="v fst-i">${fmtMoney(it.amount)}</span></div>`
