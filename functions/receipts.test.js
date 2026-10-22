@@ -115,7 +115,7 @@ const EV = (line, id) => ({ params: { siteId: 's1', lineId: id || 'evA_0' }, tim
   await R.handle(w.deps, EV(PL, 'evQ_0')); assert.ok(w.emails.length >= 1 && w.emails.every(m => m.attachments.length === 1), 'a photo that fails: receipt without it');
   R._reset(); w = world({ co: PCO }); w.deps.photo = async () => ({ buf: Buffer.alloc(R.PHOTO_MAX + 1), ext: '.jpg' });
   await R.handle(w.deps, EV(PL, 'evR_0')); assert.ok(w.emails.every(m => m.attachments.length === 1), 'too big: left off');
-  R._reset(); w = world(); asked = []; w.deps.photo = async (s2, id) => { asked.push(id); return { buf: Buffer.from('x') }; };
+  R._reset(); w = world({ co: PCO }); asked = []; w.deps.photo = async (s2, id) => { asked.push(id); return { buf: Buffer.from('x') }; };
   await R.handle(w.deps, EV(LINE())); assert.deepStrictEqual(asked, [], 'only a paper approval asks for a photo');
   console.log('receipts: all checks passed (pdf, fingerprint = archived bytes, one email per party, flags off, archive-first, verification hold, provider)');
 })().catch(e => { console.error(e); process.exit(1); });
