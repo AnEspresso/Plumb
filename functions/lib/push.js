@@ -133,7 +133,8 @@ function flagNotice(f, flagId, street) {
 
 /* Decision 10/22 (relayed by PM as Peter's decision): homeowner pushes go out regardless of the paper-trail switch;
    builder pushes (G5, and builders on a flag) still wait for it. on = the switch. */
-function moneyRecipients(site, aud, on) { return aud === 'client' ? roleUids(site, 'client') : (on ? moneyBuilderUids(site) : []); }
+/* 10/22 (later): G5 'Invoice approved' to money builders also goes regardless; flag pushes to builders still wait (flagRecipients). */
+function moneyRecipients(site, aud, on) { return aud === 'client' ? roleUids(site, 'client') : moneyBuilderUids(site); }
 function flagRecipients(site, byUid, on) {
   return (on ? moneyBuilderUids(site) : []).concat(roleUids(site, 'client')).filter(u => u !== byUid);
 }

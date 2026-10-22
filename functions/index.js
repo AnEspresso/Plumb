@@ -313,9 +313,9 @@ exports.paperTrailInv = onDocumentWritten('sites/{siteId}/inv/{docId}', (event) 
 exports.paperTrailCo = onDocumentWritten('sites/{siteId}/co/{docId}', (event) => paperTrail.handle(db, _ptTs, 'co', event));
 exports.paperTrailPmts = onDocumentWritten('sites/{siteId}/pmts/{docId}', (event) => paperTrail.handle(db, _ptTs, 'pmts', event));
 /* 2.483.0: real pushes for the money notices (G1-G3, G5) and for a new flag. 10/22 decision: pushes to homeowners go out
-   regardless of the paper-trail switch; pushes to builders still wait for it. The app's bell shows the same notices (same keys). */
+   regardless of the paper-trail switch; G5 to money builders goes regardless too; flag pushes to builders still wait for it. The app's bell shows the same notices (same keys). */
 async function moneyPush(coll, event) {
-  const on = await paperTrail.enabled(db);   /* 10/22: homeowner pushes go regardless; builder pushes need the switch */
+  const on = await paperTrail.enabled(db);   /* 10/22: homeowner pushes and G5 go regardless */
   const b = event.data && event.data.before && event.data.before.exists ? event.data.before.data() : null;
   const a = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
   if (!b || !a) return { skipped: 'create or delete' };
