@@ -273,9 +273,11 @@ service cloud.firestore {
         /* M-5: a payment is add-only. The one change allowed is voiding it, once, with a reason; it is never deleted. */
         function pmtUpdateOk() {
           let ch = recNew().diff(rec()).affectedKeys();
-          return recordColl != 'pmts' || ch.size() == 0
-            || (ch.hasOnly(['voidedAt', 'voidReason', 'voidedBy']) && rec().get('voidedAt', null) == null
-                && recNew().get('voidReason', '') is string && recNew().get('voidReason', '').size() > 0);
+          return recordColl != 'pmts'
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt', 'updatedBy', 'byUid', 'at', 'appV', 'tappedAt'])
+                && (ch.size() == 0
+                    || (ch.hasOnly(['voidedAt', 'voidReason', 'voidedBy']) && rec().get('voidedAt', null) == null
+                        && recNew().get('voidReason', '') is string && recNew().get('voidReason', '').size() > 0)));
         }
         function outerOk() {
           return request.resource.data.keys().hasOnly(['data', 'updatedAt', 'updatedBy', 'byUid', 'at', 'tappedAt', 'appV'])
@@ -371,7 +373,7 @@ service cloud.firestore {
           return (moneyOk() || sRole() == 'client')
             && r.keys().hasOnly(['kind', 'targetType', 'targetId', 'note', 'ref', 'byUid', 'at', 'appV', 'tappedAt'])
             && r.keys().hasAll(['kind', 'targetType', 'targetId', 'note', 'byUid', 'at'])
-            && r.byUid == uid() && r.at == request.time
+            && r.byUid == uid() && r.at == request.time && verOk()
             && r.kind in ['flag', 'resolve']
             && r.targetType in ['inv', 'co', 'sel', 'pmt']
             && r.targetId is string && r.targetId.size() > 0 && r.targetId.size() <= 80
@@ -385,7 +387,7 @@ service cloud.firestore {
             && r.keys().hasAll(['kind', 'no', 'byUid', 'at'])
             && r.kind in ['inv', 'co'] && r.no is int && r.no > 0 && r.no < 1000000
             && recordId == r.kind + '-' + string(r.no)
-            && r.byUid == uid() && r.at == request.time;
+            && r.byUid == uid() && r.at == request.time && verOk();
         }
         /* F-2 R: inv (invoices, off the house doc) and selm (a selection's
            money, doc id = the selection id) are money collections: only a
