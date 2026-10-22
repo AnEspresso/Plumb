@@ -79,4 +79,54 @@ async function sendPush(admin, tokens, notice) {
   return { sent: r.successCount || 0, failed: r.failureCount || 0 };
 }
 
-module.exports = { builderUids, packetNotice, tokensFor, sendPush, pushMessage };
+/* 2.483.0: people on a house by role (members map: uid -> role or {role}) */
+function roleUids(site, want) {
+  const out = []; const m = (site && site.members) || {};
+  Object.keys(m).forEach(uid => { const role = typeof m[uid] === 'string' ? m[uid] : String((m[uid] && m[uid].role) || ''); if (role.toLowerCase() === want) out.push(uid); });
+  return out;
+}
+/* builders who pass the rules' moneyOk(): no memberInfo entry (the owner), owner, or a money gate */
+function moneyBuilderUids(site) {
+  const info = (site && site.meta && site.meta.memberInfo) || {};
+  return roleUids(site, 'builder').filter(uid => {
+    const m = info[uid]; if (!m) return true;
+    const g = m.gates || {};
+    return m.rpRole === 'owner' || m.owner === true || g.moneyJob === true || g.moneyJob === 1 || g.moneyCo === true || g.moneyCo === 1;
+  });
+}
+/* who gets a notice: 'client' = homeowners, 'builder' = money builders only (M-5: crew and non-money builders never hear money) */
+function audUids(site, aud) { return aud === 'client' ? roleUids(site, 'client') : moneyBuilderUids(site); }
+const money = (n) => { const v = Math.abs(Number(n) || 0); return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+const cut = (t, n) => String(t || '').slice(0, n || 140);
+function streetOf(site, id) { return String((site && (site.street || (site.meta && site.meta.street) || site.name)) || id || 'your house').split(' · ')[0]; }
+
+/* 2.483.0: the same notices the app shows in its bell (same keys, so a phone that is open shows one, not two).
+   coll is 'inv' or 'pmts'; b/a are the {data} records before/after. Returns [{aud:'client'|'builder', key, title, body}]. */
+function moneyNotices(coll, before, after, street) {
+  const o = before && before.data, i = after && after.data, out = [];
+  if (!i) return out;
+  if (coll === 'inv') {
+    if (!o) return out;
+    if (o.status !== 'void' && i.status === 'void' && o.status !== 'draft') out.push({ aud: 'client', key: 'inv:' + i.id + ':void', title: 'Invoice canceled — ' + street, body: i.no + (i.voidReason ? ' · ' + cut(i.voidReason) : '') + ' · you don\u2019t owe this one' });
+    else if (o.status !== i.status && i.status === 'approved') out.push({ aud: 'builder', key: 'inv:' + i.id + ':ok', title: 'Invoice approved — ' + street, body: i.no + ' approved by the homeowner' });
+    else if (i.status !== 'void' && i.status !== 'draft' && (i.items || []).length > (o.items || []).length) {
+      const it = i.items[i.items.length - 1];
+      if (it && it.adj) out.push({ aud: 'client', key: 'inv:' + i.id + ':adj:' + i.items.length, title: ((Number(it.amount) || 0) < 0 ? 'Credit added to your invoice — ' : 'Charge added to your invoice — ') + street, body: i.no + ' · ' + (it.label || '') + ' ' + money(it.amount) + ' · now ' + money(i.total) });
+    }
+    if (i.status !== 'draft') {
+      const op = {}; (o.payments || []).forEach(x => { if (x && x.id) op[x.id] = x; });
+      (i.payments || []).forEach(x => { if (x && x.voidedAt && x.id && op[x.id] && !op[x.id].voidedAt) out.push({ aud: 'client', key: 'pmv:' + x.id, title: 'Payment no longer counted — ' + street, body: money(x.amount) + ' on ' + i.no + (x.voidReason ? ' · ' + cut(x.voidReason) : '') }); });
+    }
+  }
+  if (coll === 'pmts' && o && i.voidedAt && !o.voidedAt) out.push({ aud: 'client', key: 'pmv:' + i.id, title: 'Payment no longer counted — ' + street, body: money(i.amount) + (i.label ? ' · ' + i.label : '') + (i.voidReason ? ' · ' + cut(i.voidReason) : '') });
+  return out;
+}
+
+/* 2.483.0: a new flag reaches everyone with money on the house except the person who raised it. */
+function flagNotice(f, flagId, street) {
+  if (!f || f.kind !== 'flag') return null;
+  const what = { inv: 'an invoice', co: 'a change order', sel: 'a selection price', pmt: 'a payment' }[f.targetType] || 'a record';
+  return { key: 'flag:' + flagId, title: 'Something\u2019s wrong — ' + street, body: 'On ' + what + ': ' + cut(f.note, 160) };
+}
+
+module.exports = { builderUids, packetNotice, tokensFor, sendPush, pushMessage, roleUids, moneyBuilderUids, audUids, moneyNotices, flagNotice, streetOf };

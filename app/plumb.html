@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.482.0 - Tell the other side: credits, charges, voids and payment voids give the homeowner a notice; the void reason shows on the invoice';
+const PLUMB_VERSION='2.483.0 - Something\u2019s wrong on selection prices; money history kept with the switch off; draft deletes leave a line; real pushes for flags and money notices';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793304000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.482.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793390400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.483.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9781,7 +9781,7 @@ const HIST={_rows:{},_unsub:{},_err:{},
       case 'sent':return 'Sent'+rv;case 'changed':return 'Updated'+rv;case 'opened':return 'Opened'+rv;
       case 'approved':return 'Approved'+rv+(r.via==='paper'?' \u00b7 signed on paper':(r.signedName?' \u00b7 signed by '+r.signedName:''));
       case 'declined':return 'Declined'+rv;case 'withdrawn':return 'Withdrawn';case 'paid':return 'Paid';case 'voided':return 'Voided';
-      case 'payment':return 'Payment recorded';case 'payment_voided':return 'Payment voided';case 'credit_added':return 'Credit added';case 'charge_added':return 'Charge added';case 'needs_check':return 'Needs a check';case 'flagged':return 'Something\u2019s wrong';case 'flag_resolved':return 'Resolved';
+      case 'payment':return 'Payment recorded';case 'payment_voided':return 'Payment voided';case 'draft_deleted':return 'Draft deleted';case 'credit_added':return 'Credit added';case 'charge_added':return 'Charge added';case 'needs_check':return 'Needs a check';case 'flagged':return 'Something\u2019s wrong';case 'flag_resolved':return 'Resolved';
       default:return String(r.kind||'');}},
   lineHTML(r,withLabel){const a=this.amt(r),w=COH.when(r.at);
     return '<div class="subrow hist-line"><div class="si"><div class="n">'+(withLabel?esc(this.label(r))+' \u00b7 ':'')+esc(this.what(r))+(a&&r.kind!=='opened'?' \u00b7 '+esc(a):'')+'</div>'
@@ -10583,16 +10583,16 @@ const Notify={
       if(becameSent)out.push({key:'inv:'+i.id+':sent',aud:'client',title:'Invoice from your builder',body:i.no+' · '+i.title+' — needs your OK'});
       else if(o&&o.status!==i.status&&i.status==='approved')out.push({key:'inv:'+i.id+':ok',aud:'biller',title:'Invoice approved — '+site,body:i.no+' approved by the homeowner'});
       else if(o&&o.status!==i.status&&i.status==='paid')out.push({key:'inv:'+i.id+':paid',aud:'client',title:'Invoice marked paid',body:i.no+' · '+i.title});
-      else if(o&&o.status!=='void'&&i.status==='void'&&o.status!=='draft')out.push({key:'inv:'+i.id+':void',aud:'client',title:'Invoice voided — '+site,body:i.no+(i.voidReason?' · '+String(i.voidReason).slice(0,140):'')+' · you don\u2019t owe this one'});   /* 2.482.0 G2 */
+      else if(o&&o.status!=='void'&&i.status==='void'&&o.status!=='draft')out.push({key:'inv:'+i.id+':void',aud:'client',title:'Invoice canceled — '+site,body:i.no+(i.voidReason?' · '+String(i.voidReason).slice(0,140):'')+' · you don\u2019t owe this one'});   /* 2.482.0 G2 */
       else if(o&&i.status!=='void'&&i.status!=='draft'&&(i.items||[]).length>(o.items||[]).length&&(i.items||[])[(i.items||[]).length-1]&&(i.items||[])[(i.items||[]).length-1].adj){const it=i.items[i.items.length-1];   /* 2.482.0 G1: say what changed */
-        out.push({key:'inv:'+i.id+':adj:'+i.items.length,aud:'client',title:((+it.amount||0)<0?'Credit on your invoice — ':'Charge added to your invoice — ')+site,body:i.no+' · '+(it.label||'')+' '+fmtMoney(Math.abs(+it.amount||0))+' · now '+fmtMoney(i.total)});}
+        out.push({key:'inv:'+i.id+':adj:'+i.items.length,aud:'client',title:((+it.amount||0)<0?'Credit added to your invoice — ':'Charge added to your invoice — ')+site,body:i.no+' · '+(it.label||'')+' '+fmtMoney(Math.abs(+it.amount||0))+' · now '+fmtMoney(i.total)});}
       else if(o&&Math.abs((+o.total||0)-(+i.total||0))>0.005&&i.status!=='void'&&i.status!=='draft')out.push({key:'inv:'+i.id+':upd:'+i.total,aud:'client',title:'Invoice updated — '+site,body:i.no+' · now '+fmtMoney(i.total)});
       /* 2.482.0 G3: a payment voided on an invoice */
       if(o&&i.status!=='draft'){const op={};(o.payments||[]).forEach(x=>{if(x&&x.id)op[x.id]=x;});
-        (i.payments||[]).forEach(x=>{if(x&&x.voidedAt&&x.id&&op[x.id]&&!op[x.id].voidedAt)out.push({key:'pmv:'+x.id,aud:'client',title:'Payment voided — '+site,body:fmtMoney(x.amount)+' on '+i.no+(x.voidReason?' · '+String(x.voidReason).slice(0,140):'')});});}});
+        (i.payments||[]).forEach(x=>{if(x&&x.voidedAt&&x.id&&op[x.id]&&!op[x.id].voidedAt)out.push({key:'pmv:'+x.id,aud:'client',title:'Payment no longer counted — '+site,body:fmtMoney(x.amount)+' on '+i.no+(x.voidReason?' · '+String(x.voidReason).slice(0,140):'')});});}});
     /* 2.482.0 G3: a payment on the payments list voided */
     const pp={};(prev.payments||[]).forEach(x=>{if(x&&x.id)pp[x.id]=x;});
-    (next.payments||[]).forEach(x=>{if(x&&x.id&&x.voidedAt&&pp[x.id]&&!pp[x.id].voidedAt)out.push({key:'pmv:'+x.id,aud:'client',title:'Payment voided — '+site,body:fmtMoney(x.amount)+(x.label?' · '+x.label:'')+(x.voidReason?' · '+String(x.voidReason).slice(0,140):'')});});
+    (next.payments||[]).forEach(x=>{if(x&&x.id&&x.voidedAt&&pp[x.id]&&!pp[x.id].voidedAt)out.push({key:'pmv:'+x.id,aud:'client',title:'Payment no longer counted — '+site,body:fmtMoney(x.amount)+(x.label?' · '+x.label:'')+(x.voidReason?' · '+String(x.voidReason).slice(0,140):'')});});
     const ps={};(prev.subs||[]).forEach(x=>ps[x.id]=x);
     (next.subs||[]).forEach(x=>{const o=ps[x.id];if(!o)return;
       if(!o.cleared&&x.cleared)out.push({key:'clr:'+site+':'+x.id+':'+x.cleared,aud:'sub:'+x.name,title:'House ready — '+site,body:'You\u2019re cleared to start. Your install packet is up to date.'});
@@ -14236,6 +14236,7 @@ function renderClient(){
             ${al?clientAllowanceLine(s,p):''}
             <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
             ${selTimelineRO(s)}
+            ${(m||al)?FLAGS.slotHTML(p,'sel',s.id):''}
           </div>
           ${s.status==='pending'?'<span class="cl-info">In progress</span>':_clSignBusy[p.id+':'+s.id]?'<button class="cl-sign" disabled aria-busy="true">Saving…</button>':`<button class="cl-sign" onclick="clientSignoff(${s.id})" style="${s.approved?'border-color:var(--sage);color:var(--sage)':''}">${s.approved?'✓ Approved':'Approve'}</button>`}
         </div>`;}).join('');
@@ -14873,6 +14874,7 @@ function renderSelections(){
           <div class="it">${esc(s.item||'(unspecified)')}${m?`<span class="price ${cls}">${m}</span>`:''}</div>
           <div class="ct">${esc(s.room||'—')}${s.note?' · '+esc(s.note):''}</div>
           ${selTimeline(s)}
+          ${m?'<div onclick="event.stopPropagation()">'+FLAGS.slotHTML(P(),'sel',s.id)+'</div>':''}
           <div class="spec-line">${specChipHTML(s)}</div>
         </div>
         <span class="approve-ro ${s.approved?'on':'off'}" onclick="${s.approved?`openSignoffInfo(${s.id})`:`toast('The homeowner approves this from their own login.')`}" title="${s.approved?'See the homeowner’s approval':'Waiting for the homeowner to approve'}">${s.approved?'✓ Approved':'Waiting'}</span>
@@ -15441,7 +15443,7 @@ function invVoidPayment(projId,invId,idx){
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status==='void')return;
   const pm=(inv.payments||[])[idx];if(!pm||pm.voidedAt)return;
   openPrompt({title:'Void payment',body:fmtMoney(pm.amount)+(pm.date?' recorded '+pm.date:'')+'. It stays on the invoice, crossed out, and stops counting. If the invoice was paid, it reopens.',placeholder:'Why is it void?',okLabel:'Void payment',
-    onOk:why=>{if(!why){toast('Say why it is void');invVoidPayment(projId,invId,idx);return;}
+    onOk:why=>{if(!why){toast('Add a reason first.');invVoidPayment(projId,invId,idx);return;}
       pm.voidedAt=Date.now();pm.voidReason=why;pm.voidedBy=(state.session&&state.session.name)||'';
       if(invBalance(inv)>0.005&&inv.status==='paid'){inv.status=inv.approvedAt?'approved':'sent';inv.paidAt=null;}
       persist();logEvent('invoicePaymentVoided',inv.no+' \u00b7 '+fmtMoney(pm.amount)+' \u00b7 '+why);
@@ -15454,7 +15456,7 @@ function invVoid(projId,invId){
   const inv=(p.invoices||[]).find(x=>x.id===invId);if(!inv||inv.status==='void')return;
   openPrompt({title:'Void '+inv.no+'?',okLabel:'Void invoice',placeholder:'Why is it void?',
     body:'This cancels the invoice and frees its selections to be billed again. The record is kept, marked Void, with your reason.',
-    onOk:why=>{why=String(why||'').trim();if(!why){toast('Say why it is void');return;}
+    onOk:why=>{why=String(why||'').trim();if(!why){toast('Add a reason first.');return;}
       inv.status='void';inv.voidedAt=Date.now();inv.voidReason=why;
       // release the selections this invoice billed so they become unbilled again
       selReleaseInv(p,inv.id);
@@ -15635,8 +15637,8 @@ function addPayment(){if(moneyUpdateGate())return;const label=document.getElemen
   logEvent('paymentAdded',(label||'Payment')+' '+fmtMoney(amt));renderPaymentsList();renderSelections();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}toast('Payment recorded');}
 function voidPayment(id){if(moneyUpdateGate())return;const p=(P().payments||[]).find(x=>x.id===id);if(!p||p.voidedAt)return;
   openPrompt({title:'Void payment',body:(p.label||'Payment')+' \u00b7 '+fmtMoney(p.amount)+'. It stays on the list, crossed out, and stops counting.',placeholder:'Why is it void?',okLabel:'Void payment',
-    onOk:why=>{if(!why){toast('Say why it is void');voidPayment(id);return;}
-      Data.voidPayment(id,why);logEvent('paymentVoided',fmtMoney(p.amount)+' \u00b7 '+why);try{renderPaymentsList();}catch(e){}try{renderInvoices();}catch(e){}renderSelections();toast('Payment voided');}});}
+    onOk:why=>{if(!why){toast('Add a reason first.');voidPayment(id);return;}
+      Data.voidPayment(id,why);logEvent('paymentVoided',fmtMoney(p.amount)+' \u00b7 '+why);try{renderPaymentsList();}catch(e){}try{renderInvoices();}catch(e){}renderSelections();toast('Payment no longer counted');}});}
 
 
 /* ════════ build: progress + crews ════════ */

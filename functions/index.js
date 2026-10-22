@@ -312,6 +312,30 @@ const _ptTs = () => admin.firestore.FieldValue.serverTimestamp();
 exports.paperTrailInv = onDocumentWritten('sites/{siteId}/inv/{docId}', (event) => paperTrail.handle(db, _ptTs, 'inv', event));
 exports.paperTrailCo = onDocumentWritten('sites/{siteId}/co/{docId}', (event) => paperTrail.handle(db, _ptTs, 'co', event));
 exports.paperTrailPmts = onDocumentWritten('sites/{siteId}/pmts/{docId}', (event) => paperTrail.handle(db, _ptTs, 'pmts', event));
+/* 2.483.0: real pushes for the money notices (G1-G3, G5) and for a new flag. DORMANT behind the paper-trail switch,
+   like the rest of the paper trail; the app's bell shows the same notices (same keys) either way. */
+async function moneyPush(coll, event) {
+  if (!(await paperTrail.enabled(db))) return { skipped: 'off' };
+  const b = event.data && event.data.before && event.data.before.exists ? event.data.before.data() : null;
+  const a = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
+  if (!b || !a) return { skipped: 'create or delete' };
+  const site = (await db.collection('sites').doc(event.params.siteId).get()).data() || {};
+  const list = push.moneyNotices(coll, b, a, push.streetOf(site, event.params.siteId));
+  const res = [];
+  for (const n of list) { const uids = push.audUids(site, n.aud); if (uids.length) res.push(await deliver(uids, n)); }
+  return { sent: res.length };
+}
+exports.moneyPushInv = onDocumentWritten('sites/{siteId}/inv/{docId}', (event) => moneyPush('inv', event));
+exports.moneyPushPmts = onDocumentWritten('sites/{siteId}/pmts/{docId}', (event) => moneyPush('pmts', event));
+exports.flagPush = onDocumentCreated('sites/{siteId}/flags/{docId}', async (event) => {
+  if (!(await paperTrail.enabled(db))) return;
+  const f = event.data && event.data.data ? event.data.data() : null;
+  const site = (await db.collection('sites').doc(event.params.siteId).get()).data() || {};
+  const n = push.flagNotice(f, event.params.docId, push.streetOf(site, event.params.siteId));
+  if (!n) return;
+  const uids = push.moneyBuilderUids(site).concat(push.roleUids(site, 'client')).filter(u => u !== (f && f.byUid));
+  if (uids.length) await deliver(uids, n);
+});
 /* M-18 (2.479.0): each flag / resolve becomes one money-history line. Same switch. */
 exports.paperTrailFlags = onDocumentWritten('sites/{siteId}/flags/{docId}', (event) => paperTrail.handleFlag(db, _ptTs, event));
 
@@ -331,6 +355,14 @@ exports.paperTrailReceipt = onDocumentCreated({ document: 'sites/{siteId}/hist/{
     db, bucket: admin.storage().bucket(bucketName), bucketName,
     from: process.env.RECEIPT_FROM || 'SitePlumb <receipts@siteplumb.com>',
     sendEmail: receipts.resendSender(key),
+    /* 2.483.0: the paper-signature photo (live/sites/<house>/costs/<photoId> in the app bucket), size-checked before download */
+    photo: async (siteId, photoId) => {
+      const file = admin.storage().bucket(process.env.PLUMB_BUCKET || 'plumb-467a0.firebasestorage.app').file('live/sites/' + siteId + '/costs/' + photoId);
+      const [md] = await file.getMetadata(); if (Number(md.size) > receipts.PHOTO_MAX) return null;
+      const [buf] = await file.download();
+      const ext = /png/.test(md.contentType || '') ? '.png' : /heic/.test(md.contentType || '') ? '.heic' : '.jpg';
+      return { buf, ext };
+    },
     emailOf: async (uid) => { try { return (await admin.auth().getUser(uid)).email || ''; } catch (e) { return ''; } },
     claim: (s, l, uid) => db.runTransaction(async (tx) => {
       const snap = await tx.get(histRef(s, l)); const rc = ((snap.data() || {}).rc) || {};

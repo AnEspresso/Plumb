@@ -11,7 +11,8 @@
     "liverules": "node scripts/liveRules.test.js",
     "receipts": "node functions/receipts.test.js",
     "archive": "node functions/archiveSite.test.js",
-    "moneyguard": "node scripts/moneyGuard.test.mjs"
+    "moneyguard": "node scripts/moneyGuard.test.mjs",
+    "pushtest": "node functions/push.test.js"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.2",

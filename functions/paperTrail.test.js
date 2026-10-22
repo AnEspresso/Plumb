@@ -121,6 +121,22 @@ const SITE = { meta: { memberInfo: { uB: { name: 'Dean Walsh' } } } };
   await pt.handle(db, ts, 'pmts', ev(null, pm(), 'evE')); await pt.handle(db, ts, 'pmts', ev(null, pm(), 'evE'));
   const ids = db.writes.filter(w => w[0] === 'set').map(w => w[1]);
   assert.deepStrictEqual(ids, ['sites/s1/hist/evE_0', 'sites/s1/hist/evE_0']);
+  /* 2.483.0 G4: invoice and payment history is written with the switch off; change orders still wait for it */
+  pt._resetCache(); db = fakeDb({ enabled: false }, SITE);
+  r = await pt.handle(db, ts, 'inv', ev(inv(), inv({ status: 'sent' }), 'evF'));
+  assert.strictEqual(r.lines, 1); assert.strictEqual(db.writes[0][1], 'sites/s1/hist/evF_0'); assert.strictEqual(db.writes[0][2].kind, 'sent');
+  pt._resetCache(); db = fakeDb(undefined, SITE);
+  r = await pt.handle(db, ts, 'pmts', ev(null, pm(), 'evG')); assert.strictEqual(r.lines, 1, 'no settings doc: payments still get their line');
+  pt._resetCache(); db = fakeDb({ enabled: false }, SITE);
+  assert.deepStrictEqual(await pt.handle(db, ts, 'co', ev(null, co())), { skipped: 'off' }); assert.strictEqual(db.writes.length, 0, 'co stays behind the switch');
+  /* 2.483.0 G6: a deleted draft leaves a line; a deleted sent invoice (refused by A2 anyway) does not */
+  pt._resetCache(); db = fakeDb({ enabled: false }, SITE);
+  r = await pt.handle(db, ts, 'inv', ev(inv({ status: 'draft', title: 'Draw 3' }), null, 'evH'));
+  assert.strictEqual(r.lines, 1); assert.deepStrictEqual([db.writes[0][1], db.writes[0][2].kind, db.writes[0][2].refType, db.writes[0][2].note, db.writes[0][2].at], ['sites/s1/hist/evH_0', 'draft_deleted', 'inv', 'Draw 3', 'SERVER_TS']);
+  db = fakeDb({ enabled: false }, SITE);
+  assert.deepStrictEqual(await pt.handle(db, ts, 'inv', ev(inv({ status: 'sent' }), null, 'evI')), { skipped: 'delete' }); assert.strictEqual(db.writes.length, 0);
+  db = fakeDb({ enabled: false }, SITE);
+  assert.deepStrictEqual(await pt.handle(db, ts, 'pmts', ev(pm(), null, 'evJ')), { skipped: 'delete' });
   console.log('paperTrail: all checks passed (cents, sentences, M-14 verify, 10,000-invoice property, history lines, handler gate)');
 })().catch(e => { console.error(e); process.exit(1); });
 

@@ -122,6 +122,7 @@ async function flags(db, now) {
 }
 function _reset() { _c.at = 0; _c.v = { on: false, receipts: false }; }
 
+const PHOTO_MAX = 8 * 1024 * 1024;   /* Resend allows 40 MB per email; keep the photo well under it */
 /* deps: { db, bucket, bucketName, sendEmail, emailOf, ts, notify, from } */
 async function handle(deps, event) {
   const f = await flags(deps.db);
@@ -171,6 +172,12 @@ async function handle(deps, event) {
   /* 2. stamp the fingerprint on the line (server-only collection) */
   await deps.db.collection('sites').doc(siteId).collection('hist').doc(lineId).update({ fp, archived: (deps.bucketName || '') + '/' + base + '.pdf' });
   /* 3. one email per party, once: the claim is a transaction on the line itself */
+  /* 2.483.0: a paper signature's photo rides along with the receipt. Best effort: a missing or too-big photo never blocks the receipt. */
+  const atts = [{ filename: 'receipt-' + lineId + '.pdf', content: pdf.toString('base64') }];
+  const photoId = line.kind === 'approved' && line.via === 'paper' && record && record.data && record.data.paperPhotoId;
+  if (photoId && deps.photo) {
+    try { const ph = await deps.photo(siteId, String(photoId)); if (ph && ph.buf && ph.buf.length && ph.buf.length <= PHOTO_MAX) atts.push({ filename: 'paper-signature-' + lineId + (ph.ext || '.jpg'), content: ph.buf.toString('base64') }); } catch (e) { /* receipt goes without it */ }
+  }
   const parties = partiesOf(site, line.by);
   const sent = [];
   for (const uid of parties) {
@@ -180,7 +187,7 @@ async function handle(deps, event) {
     if (!to) { await deps.release(siteId, lineId, uid); continue; }
     try {
       await deps.sendEmail({ from: deps.from, to, subject: 'SitePlumb receipt: ' + (KIND_WORDS[line.kind] || line.kind) + ' ' + whatOf(line) + (Number.isInteger(line.amountC) ? ' ' + fmtCents(line.amountC) : ''),
-        text: emailBody(line, house, line.byName, fp), attachments: [{ filename: 'receipt-' + lineId + '.pdf', content: pdf.toString('base64') }] });
+        text: emailBody(line, house, line.byName, fp), attachments: atts });
       sent.push(uid);
     } catch (e) { await deps.release(siteId, lineId, uid); throw e; }
   }
@@ -198,4 +205,4 @@ function resendSender(apiKey, fetchFn) {
   };
 }
 
-module.exports = { sha256, buildPdf, pdfFor, snapshotOf, canonJson, describe, partiesOf, emailBody, flags, handle, resendSender, _reset, RECEIPT_KINDS };
+module.exports = { PHOTO_MAX, sha256, buildPdf, pdfFor, snapshotOf, canonJson, describe, partiesOf, emailBody, flags, handle, resendSender, _reset, RECEIPT_KINDS };

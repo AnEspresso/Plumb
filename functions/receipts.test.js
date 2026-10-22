@@ -102,5 +102,20 @@ const EV = (line, id) => ({ params: { siteId: 's1', lineId: id || 'evA_0' }, tim
   await send({ from: 'a@b', to: 'c@d', subject: 's', text: 't', attachments: [{ filename: 'f.pdf', content: 'AA==' }] });
   assert.strictEqual(seen[0], 'https://api.resend.com/emails'); assert.strictEqual(seen[1].headers.Authorization, 'Bearer KEY'); assert.deepStrictEqual(JSON.parse(seen[1].body).to, ['c@d']);
   await assert.rejects(R.resendSender('K', async () => ({ ok: false, status: 403 }))({ from: 'a', to: 'b', subject: 's', text: 't', attachments: [] }), /refused: 403/);
+  /* 2.483.0: a paper signature's photo is attached; a missing, failing or huge photo never blocks the receipt */
+  const PCO = { data: { id: 'c1', rev: 1, verifiedRev: 1, verifiedTotal: 185000, amountC: 185000, status: 'approved', approvedVia: 'paper', paperPhotoId: 'ph1' } };
+  const PL = LINE({ kind: 'approved', via: 'paper', decidedRev: 1 });
+  R._reset(); w = world({ co: PCO }); let asked = [];
+  w.deps.photo = async (sid, id) => { asked.push(sid + '/' + id); return { buf: Buffer.from('JPEGDATA'), ext: '.jpg' }; };
+  await R.handle(w.deps, EV(PL, 'evP_0'));
+  assert.deepStrictEqual(asked, ['s1/ph1']);
+  w.emails.forEach(m => { assert.strictEqual(m.attachments.length, 2); assert.strictEqual(m.attachments[1].filename, 'paper-signature-evP_0.jpg'); assert.strictEqual(Buffer.from(m.attachments[1].content, 'base64').toString(), 'JPEGDATA'); });
+  assert.ok(w.emails.length >= 1);
+  R._reset(); w = world({ co: PCO }); w.deps.photo = async () => { throw new Error('gone'); };
+  await R.handle(w.deps, EV(PL, 'evQ_0')); assert.ok(w.emails.length >= 1 && w.emails.every(m => m.attachments.length === 1), 'a photo that fails: receipt without it');
+  R._reset(); w = world({ co: PCO }); w.deps.photo = async () => ({ buf: Buffer.alloc(R.PHOTO_MAX + 1), ext: '.jpg' });
+  await R.handle(w.deps, EV(PL, 'evR_0')); assert.ok(w.emails.every(m => m.attachments.length === 1), 'too big: left off');
+  R._reset(); w = world({ co: PCO }); asked = []; w.deps.photo = async (s2, id) => { asked.push(id); return { buf: Buffer.from('x') }; };
+  await R.handle(w.deps, EV(LINE())); assert.deepStrictEqual(asked, [], 'only a paper approval asks for a photo');
   console.log('receipts: all checks passed (pdf, fingerprint = archived bytes, one email per party, flags off, archive-first, verification hold, provider)');
 })().catch(e => { console.error(e); process.exit(1); });
