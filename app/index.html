@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.479.0 - Something\u2019s wrong on change orders, invoices and payments: a question either side can raise and resolve (paper-trail switch on)';
+const PLUMB_VERSION='2.480.0 - Past houses: a homeowner keeps the money records of a closed house, with a download (paper-trail switch on)';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793044800000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.479.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793131200000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.480.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9842,6 +9842,57 @@ const FLAGS={_rows:{},_unsub:{},_err:{},_busy:false,
     catch(e){trapError(e&&e.code==='permission-denied'?'rules':'caught','Flag write failed: '+String((e&&(e.code||e.message))||'').slice(0,100),'flag');toast('Not sent \u2014 try again with a bar of signal');}
     finally{this._busy=false;}},
 };
+/* 3c-5 (2.480.0, M-11): Past houses. When the server archives a deleted house that had sent money (meta.deleted + meta.archivedAt),
+   the house drops from every list as before, but the homeowner still holds membership. This phone remembers those tombstones
+   (memory only, no write) and, with the paper-trail switch on, the homeowner gets "Past houses": each house with a read-only
+   list of its invoices, change orders, payments and history, read once on open, and a download of all of it.
+   Reads only: inv, pmts, hist, and co with the homeowner's status filter. No writes. Never builders or crews. */
+const PAST={_sites:{},_data:{},_err:{},_open:null,
+  note(id,d,myUid){try{const m=d.meta||{};if(!m.deleted||!m.archivedAt)return;const mem=Object.assign({},m.members||{},d.members||{});
+    if(!myUid||mem[myUid]!=='client')return;
+    this._sites[String(id)]={id:String(id),street:String(m.street||d.street||m.name||'A past house'),archivedAt:Number(m.archivedAt)||0,retainUntil:Number(m.retainUntil)||0};}catch(e){}},
+  allowed(){try{return !!(PaperTrail.on&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&(state.session||{}).role==='client');}catch(e){return false;}},
+  list(){return Object.keys(this._sites).map(k=>this._sites[k]).sort((a,b)=>b.archivedAt-a.archivedAt);},
+  rowHTML(){if(!this.allowed()||!this.list().length)return '';
+    return '<div class="subrow cur-p" onclick="PAST.openList()"><div class="si"><div class="n">Past houses</div><div class="d">Money records from houses that were closed</div></div></div>';},
+  openList(){if(!this.allowed())return;this._open=null;
+    showInfo('Past houses','<div id="pastRoot">'+this.list().map(h=>'<div class="subrow cur-p" onclick="PAST.openHouse(\''+esc(h.id)+'\')"><div class="si"><div class="n">'+esc(h.street)+'</div><div class="d">Closed '+esc(h.archivedAt?new Date(h.archivedAt).toLocaleDateString():'')+(h.retainUntil?' \u00b7 kept until '+esc(new Date(h.retainUntil).toLocaleDateString()):'')+'</div></div></div>').join('')
+      +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button></div>',true);},
+  async load(id){const sid=String(id);const S=Sync.db.collection('sites').doc(sid);const one=async(q)=>{const sn=await q.get();return sn.docs.map(d=>Object.assign({},d.data()||{},{id:d.id}));};
+    const out={inv:[],pmts:[],co:[],hist:[]};
+    try{out.inv=(await one(S.collection('inv'))).map(r=>Object.assign({},r.data||{},{id:r.id}));
+      out.pmts=(await one(S.collection('pmts'))).map(r=>Object.assign({},r.data||{},{id:r.id}));
+      out.co=(await one(S.collection('co').where('data.status','in',['sent','approved','declined','withdrawn']))).map(r=>Object.assign({},r.data||{},{id:r.id}));
+      out.hist=(await one(S.collection('hist')));
+      this._data[sid]=out;delete this._err[sid];}catch(e){this._err[sid]=String((e&&e.code)||'error');}
+    return this._data[sid]||null;},
+  async openHouse(id){if(!this.allowed())return;const h=this._sites[String(id)];if(!h)return;this._open=String(id);
+    showInfo(h.street,'<div id="pastRoot"><div class="meta">Loading\u2026</div></div>',true);
+    const d=await this.load(id);if(this._open!==String(id))return;this.drawHouse(id);},
+  drawHouse(id){const sid=String(id);const h=this._sites[sid];const d=this._data[sid];
+    let b='<div id="pastRoot">';
+    if(!d)b+='<div class="empty">These records are not available right now. Try again later.</div>';
+    else{
+      const sec=(t,rows)=>rows.length?'<div class="sec"><h2>'+t+'</h2></div>'+rows.join(''):'';
+      b+=sec('Invoices',d.inv.filter(v=>v.status&&v.status!=='draft').map(v=>'<div class="subrow"><div class="si"><div class="n">'+esc(invNoText(v))+' \u00b7 '+esc(v.title||'')+'</div><div class="d">'+esc(fmtMoney(Number(v.total)||0))+' \u00b7 '+esc(v.status)+'</div></div></div>'));
+      b+=sec('Change orders',d.co.map(r=>'<div class="subrow"><div class="si"><div class="n">'+esc(CO.label(r.no))+' \u00b7 '+esc(r.title||'')+'</div><div class="d">'+esc(CO.amountText(r.amountC))+' \u00b7 '+esc(r.status||'')+'</div></div></div>'));
+      b+=sec('Payments',d.pmts.map(x=>'<div class="subrow"><div class="si"><div class="n">'+esc(x.label||'Payment')+'</div><div class="d">'+esc(fmtMoney(Number(x.amount)||0))+(x.voidedAt?' \u00b7 Voided':'')+'</div></div></div>'));
+      const hl=d.hist.slice().sort((a,c)=>(HIST.ms(c.at)-HIST.ms(a.at))||((c.seq||0)-(a.seq||0)));
+      b+=sec('History',hl.map(r=>HIST.lineHTML(r,true)));
+      b+='<button class="b1 b-go w-full mt-2 btn btn-primary" onclick="PAST.download(\''+esc(sid)+'\')">Download these records</button>';}
+    b+='<button class="add-sub-btn mt-2 btn btn-secondary" onclick="PAST.openList()">Back</button></div>';
+    showInfo(h?h.street:'Past house',b,true);},
+  text(sid){const h=this._sites[sid]||{};const d=this._data[sid];if(!d)return '';const L=[];
+    L.push('SitePlumb \u2014 money records for '+(h.street||sid));L.push('Closed: '+(h.archivedAt?new Date(h.archivedAt).toISOString():'')+(h.retainUntil?'  Kept until: '+new Date(h.retainUntil).toISOString():''));L.push('');
+    L.push('INVOICES');d.inv.filter(v=>v.status&&v.status!=='draft').forEach(v=>{L.push(invNoText(v)+'  '+(v.title||'')+'  '+fmtMoney(Number(v.total)||0)+'  '+v.status);(v.items||[]).forEach(it=>L.push('    '+(it.label||'')+'  '+fmtMoney(Number(it.amount)||0)));(v.payments||[]).forEach(pm=>L.push('    payment '+fmtMoney(Number(pm.amount)||0)+' '+(pm.date||'')+(pm.voidedAt?' (voided)':'')));});
+    L.push('');L.push('CHANGE ORDERS');d.co.forEach(r=>L.push(CO.label(r.no)+'  '+(r.title||'')+'  '+CO.amountText(r.amountC)+'  '+r.status+(r.sentence?'  "'+r.sentence+'"':'')+(r.decidedName?'  signed by '+r.decidedName:'')+(r.approvedVia==='paper'?'  signed on paper':'')));
+    L.push('');L.push('PAYMENTS');d.pmts.forEach(x=>L.push((x.label||'Payment')+'  '+fmtMoney(Number(x.amount)||0)+'  '+(x.date||'')+(x.voidedAt?'  (voided: '+(x.voidReason||'')+')':'')));
+    L.push('');L.push('HISTORY');d.hist.slice().sort((a,c)=>(HIST.ms(a.at)-HIST.ms(c.at))||((a.seq||0)-(c.seq||0))).forEach(r=>{const ms=HIST.ms(r.at);L.push((ms?new Date(ms).toISOString():'')+'  '+HIST.label(r)+'  '+HIST.what(r)+(Number.isInteger(r.amountC)&&r.kind!=='opened'?'  '+HIST.amt(r):'')+(r.byName?'  '+r.byName:'')+(r.sentence?'  "'+r.sentence+'"':'')+(r.note?'  '+r.note:''));});
+    return L.join('\n')+'\n';},
+  download(sid){if(!this.allowed())return;const t=this.text(String(sid));if(!t)return;this._lastDl=t;
+    try{const blob=new Blob([t],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='siteplumb-'+String((this._sites[sid]||{}).street||sid).replace(/[^A-Za-z0-9]+/g,'-').toLowerCase()+'-money.txt';document.body.appendChild(a);a.click();a.remove();}
+    catch(e){toast('Could not download on this device');}},
+};
 const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_slow:false,
   allowed(p){try{p=p||clientProj();return !!(PaperTrail.on&&p&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid&&siteRoleFor(p)==='client'&&(state.session||{}).role==='client');}catch(e){return false;}},
   col(sid){return CO.col(sid);},
@@ -10227,6 +10278,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         const docMode=d.mode||'demo';if(docMode!==(this.mode||'demo'))return;   // demo and live houses never cross
         if(docMode==='live'){                                                    // live: members-only (Step 4/5)
           if(d.meta&&d.meta.deleted){                                            // tombstoned: drop everywhere
+            try{PAST.note(id,d,((state.session||{}).auth||{}).uid||this.uid);}catch(e){}   // 3c-5: an archived house stays under Past houses (memory only)
             const di=state.projects.findIndex(p=>String(p.id)===String(id));
             if(di>=0){state.projects.splice(di,1);
               if(String(state.activeId)===String(id))state.activeId=state.projects.length?state.projects[0].id:null;
@@ -11281,6 +11333,7 @@ function clientCostsHTML(p){
   }
   try{invoices+=COH.cardHTML(p);}catch(e){}
   try{invoices+=HIST.rowHTML(p);}catch(e){}
+  try{invoices+=PAST.rowHTML();}catch(e){}
   return {line:clientStillToPayLine(bs.out),ledger:ledger,invoices:invoices,needOK:(p.invoices||[]).filter(invNeedsOK)};
 }
 /* Unified site billing: one balance shared by selections + invoices.
@@ -14043,7 +14096,7 @@ function renderClient(){
     const b=document.getElementById('clBody');
     const home=clientTab==='home'||!clientTab;
     try{const bar=document.getElementById('clHouseBar');if(bar){if(home)bar.setAttribute('hidden','');else bar.removeAttribute('hidden');}}catch(e){}
-    if(b)b.innerHTML='<div class="empty py-4 px-3">Waiting for your builder to share this house. Ask them to open SitePlumb. It appears when they do.</div>';
+    if(b)b.innerHTML='<div class="empty py-4 px-3">Waiting for your builder to share this house. Ask them to open SitePlumb. It appears when they do.</div>'+(function(){try{return PAST.rowHTML();}catch(e){return '';}})();
     return;}
   document.getElementById('clWho').textContent='Homeowner · '+(p.street||p.name);
   const SS=stagesFor(p);
