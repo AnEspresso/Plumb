@@ -4341,6 +4341,7 @@ await (async function(){
       canGate=function(k){return k==='moneyJob';};o.job=syncCollsFor('builder').map(function(c){return c.sub;});}finally{canGate=og;}return o;})()`);
   t('pmts: a builder with no money access does not subscribe to pmts, selm, costs or inv; one with Job money still reads pmts',SB.blind.indexOf('pmts')<0&&SB.blind.indexOf('selm')<0&&SB.blind.indexOf('costs')<0&&SB.job.indexOf('pmts')>=0,JSON.stringify(SB));
   t('2.484.0: a builder with no money access does not subscribe to mail (rules: moneyOk); one with Job money still does',SB.blind.indexOf('mail')<0&&SB.job.indexOf('mail')>=0,JSON.stringify(SB));
+  t('2.485.0: the credit switch says No allowance items to change when nothing changes; the list path is kept',SRC.indexOf("toast(!hit.length?'No allowance items to change':")>=0&&SRC.indexOf("openConfirm({title:'Change allowance credits?'")>=0);
   t('2.484.0: both Record a payment sheets have a Cancel',(SRC.match(/pay-cancel/g)||[]).length>=2);
   /* ── M-15 (2.470.0): PaperTrail switch + "Update to continue" ── */
   const PT0=J(`(function(){return {on:PaperTrail.on,blocked:PaperTrail.blocked(),gate:moneyUpdateGate(),scrim:document.getElementById('confirmScrim').classList.contains('show')};})()`);
