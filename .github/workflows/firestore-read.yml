@@ -1,0 +1,53 @@
+name: Firestore read (read only)
+# Prints the fields of the Firestore docs or collections you list, so data can be
+# checked before a fix. It only reads: GET requests to the Firestore REST API,
+# nothing else. Emails and phone numbers are masked in the log.
+#   - Manual only (workflow_dispatch), and only runs once this file is on main.
+#   - Uses the GCP_READONLY_KEY_JSON repo secret (the agent-readonly service
+#     account, which needs roles/datastore.viewer). No other secret.
+#   - The guard step fails the run if the script mentions any write call.
+on:
+  workflow_dispatch:
+    inputs:
+      paths:
+        description: 'Doc or collection paths, comma- or newline-separated (collections list up to 50 docs)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Guard - the script must be read only
+        run: |
+          set -euo pipefail
+          if grep -nE "\b(set|update|delete|create|commit|batch|batchWrite|runTransaction|transaction|beginTransaction|patch)\s*\(|method:\s*'(POST|PATCH|PUT|DELETE)'|:commit|:batchWrite|:beginTransaction|firebase-admin" scripts/firestore-read.js; then
+            echo "scripts/firestore-read.js references a write. Refusing to run."; exit 1
+          fi
+          test "$(grep -c "method: 'GET'" scripts/firestore-read.js)" -ge 1
+
+      - name: Read access token for the read-only service account
+        env:
+          SA_JSON: ${{ secrets.GCP_READONLY_KEY_JSON }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          gcloud auth activate-service-account --key-file="$RUNNER_TEMP/sa.json" --quiet
+          rm -f "$RUNNER_TEMP/sa.json"
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Read
+        env:
+          PATHS: ${{ inputs.paths }}
+        run: node scripts/firestore-read.js
