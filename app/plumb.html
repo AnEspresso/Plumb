@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.487.0 - Invoices that bill missing items no longer show as a credit';
+const PLUMB_VERSION='2.488.0 - Own-write skip per account; houses this phone lacks are always added';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793736000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.487.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793822400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.488.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5824,7 +5824,11 @@ function houseMoney(){
     const isB=(p&&p.members&&p.members[uid]==='builder')||(p&&(p.memberUids||[]).indexOf(uid)>=0)||!!mi;
     if(!isB||(p.members&&p.members[uid]&&p.members[uid]!=='builder'))return;
     n++;
-    if(!mi){own=true;return;}
+    /* 2.488.0: no entry on a copy the server has not confirmed yet is not proof of
+       ownership (a stale local copy): no money until the fresh copy arrives. */
+    if(!mi){const conf=(typeof Sync!=='undefined')&&Sync._onServer&&Sync._onServer[String(p.id)];
+      if(!conf&&s.owner!==true&&s.rpRole!=='owner'){n--;return;}
+      own=true;return;}
     if(mi.owner===true||mi.rpRole==='owner')own=true;
     const g=mi.gates||{};
     if(g.moneyJob===true||g.moneyJob===1)job=true;
@@ -10153,14 +10157,14 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(op.sub==='inv'||op.sub==='selm'){
           /* F-2: a money record is the builder's whole record: replace it, so a
              key that left the invoice or the selection's money leaves the cloud too. */
-          await ref.set(Object.assign({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId},this._stamp()));
+          await ref.set(Object.assign({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
         }else{
           let data=fbClean(op.data);
           /* F-2 (correction 2): a merge never deletes a field. Until R2 refuses
              money on sel, every sel write from a builder who writes selm deletes
              the five money keys; selm already holds them (diffSiteOps order). */
           if(op.sub==='sel'&&syncWrites(p,'selm')){const del=fbDelete();if(del!==undefined){data=Object.assign({},data);SEL_MONEY_KEYS.forEach(k=>{data[k]=del;});}}
-          await ref.set(Object.assign({data:data,updatedAt:Date.now(),updatedBy:this.deviceId},(op.sub==='pmts'||op.sub==='costs'||op.sub==='co')?this._stamp():{}),{merge:true});
+          await ref.set(Object.assign({data:data,updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},(op.sub==='pmts'||op.sub==='costs'||op.sub==='co')?this._stamp():{}),{merge:true});
         }
         (sh.colls[op.sub]||(sh.colls[op.sub]={}))[op.id]=_syncHash(JSON.stringify(op.data));
       } else if(op.kind==='del'){
@@ -10250,7 +10254,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       const row=selmRow(Object.assign({},rec,{id:rec.id!=null?rec.id:key}));
       if(!row){delete cache[key];return;}
       cache[key]=Object.assign({},row,{_at:Number(d.updatedAt)||0});
-      if(d.updatedBy===this.deviceId)return;
+      if(this._mine(d))return;
       const i=at(key);if(i<0)return;
       const rh=_syncHash(JSON.stringify(row));
       /* unchanged on the server since this phone last synced, but edited here: the phone's money goes up after the pull */
@@ -10268,6 +10272,18 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
   /* What this phone last synced (hashes only, per house) survives a restart,
      so a reopened phone can tell its own offline edits from its stale copy. */
   _baseKey(){return 'plumb.syncBase.'+storeKey()+'.'+(this.uid||'');},
+  /* 2.488.0: a write is this phone's own echo only when BOTH this device and this
+     signed-in account wrote it. plumb.deviceId is per browser, not per account:
+     another account's writes from this browser are not ours. No updatedByUid
+     (older docs) = not ours, so it is applied, never skipped. */
+  _me(){return String((state.session&&state.session.auth&&state.session.auth.uid)||this.uid||'');},
+  _mine(d){if(!d||!this.deviceId||d.updatedBy!==this.deviceId)return false;const u=d.updatedByUid;const me=this._me();return !!(u&&me&&String(u)===me);},
+  /* 2.488.0: the local houses belong to one account. A different signed-in uid
+     drops the old copy (houses, sync base) before the pull. */
+  _storeOwnerCheck(){const me=this._me();if(!me||(this.mode||'demo')!=='live')return false;
+    const was=state.storeUid;state.storeUid=me;
+    if(was&&was!==me){state.projects=[];state.activeId=null;this._shadow={};try{localStorage.removeItem(this._baseKey());}catch(e){}try{persistLocalOnly();}catch(e){}return true;}
+    return false;},
   _loadBase(){let b={};try{b=JSON.parse(localStorage.getItem(this._baseKey())||'{}')||{};}catch(e){b={};}
     this._shadow={};Object.keys(b).forEach(id=>{const x=b[id]||{};this._shadow[id]={meta:x.meta||'',mk:x.mk||{},mem:x.mem||{},colls:x.colls||{}};});},
   _saveBase(){clearTimeout(this._baseT);this._baseT=setTimeout(()=>{try{
@@ -10296,6 +10312,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     }}catch(e){}},
   subscribe(){if(!this.ready())return;this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._selm={};this._legInv={};this._legAdded={};this._pushing={};this._pushAgain={};
     this._sitesPulled=false;this._onServer={};this._pulled={};this._held=this._held||{};
+    try{this._storeOwnerCheck();}catch(e){}
     const handler=snap=>{let changed=false;
       try{if(typeof syncStatus!=='undefined'&&syncStatus==='offline')setSync('synced');}catch(e){}
       snap.docChanges().forEach(ch=>{const id=ch.doc.id;const d=ch.doc.data()||{};
@@ -10314,7 +10331,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           const uids=Array.isArray(d.memberUids)?d.memberUids.slice():Object.keys(mem);
           if(Object.keys(mem).length||uids.length){
             const still=!!(myUid&&(mem[myUid]||uids.indexOf(myUid)>=0));
-            if(!still&&d.updatedBy!==this.deviceId){              // not (or no longer) a member
+            if(!still&&!this._mine(d)){              // not (or no longer) a member
               if((sess.role==='client'||sess.role==='subs')&&String(sess.site||'')===String(id))return;
               const idx=state.projects.findIndex(p=>String(p.id)===String(id));
               if(idx>=0){state.projects.splice(idx,1);                           // removal propagates: drop stale copy
@@ -10325,7 +10342,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           else if(sess.role&&sess.role!=='builder')return;                        // legacy live doc w/o members: builders only
         }
         const meta=d.meta||d.data;
-        if(meta&&d.updatedBy!==this.deviceId){
+        if(meta&&(!this._mine(d)||!state.projects.some(x=>String(x.id)===String(id)))){   // 2.488.0: a house this phone lacks is always added
           const sh=this._shadow[id]||(this._shadow[id]={meta:'',colls:{}});let kept=false;
           let p=state.projects.find(x=>String(x.id)===String(id));
           if(!p){p=Object.assign({},meta);delete p.invoices;SYNC_COLLS.forEach(c=>{if(!c.joined&&!Array.isArray(p[c.f]))p[c.f]=[];});   // F-2: legacy meta.invoices goes through _legacyInv below
@@ -10416,7 +10433,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         snap.docChanges().forEach(ch=>{const d=ch.doc.data()||{};const key=ch.doc.id;
           if(ch.type==='removed'){const idx=p[c.f].findIndex(r=>c.key(r)===key);if(idx>=0){p[c.f].splice(idx,1);changed=true;}delete prev[key];}
           else{const rec=d.data;
-            if(d.updatedBy===this.deviceId){
+            if(this._mine(d)){
               /* F-2: a builder's own phone wrote most sel records before 2.463.0;
                  money still on one of them moves too (this phone's copy wins). */
               if(isSel&&rec&&selMoneyKeyed(rec)&&syncWrites(p,'selm')){const i0=p[c.f].findIndex(r=>c.key(r)===key);
@@ -11478,7 +11495,7 @@ function clientLedger(p){const c=siteCharges(p);const net=c.ups+c.crs;const paid
 /* 2.487.0: live invoice lines that bill a selection no longer on this house. */
 function _orphanBilled(p){const have={};(p.selections||[]).forEach(s=>{if(s&&s.id!=null)have[String(s.id)]=1;});let n=0;
   (p.invoices||[]).forEach(v=>{if(!v||v.status==='void'||v.status==='draft')return;(v.items||[]).forEach(it=>{if(it&&it.selId!=null&&it.selId!==''&&!have[String(it.selId)])n++;});});return n;}
-const ORPHAN_INV_NOTE='Some invoices bill items that are no longer on this house.';   /* placeholder, Agency to word */
+const ORPHAN_INV_NOTE='Some invoices bill for items that were taken off this house.';   /* Agency's final words (10/22) */
 function orphanNoteHTML(bs,cls){return bs&&bs.orphan?'<div class="'+(cls||'lr')+' inv-orphan"><span>'+esc(ORPHAN_INV_NOTE)+'</span></div>':'';}
 /* 4c-2: the sum of invoice lines that bill a change order (coId) on live (sent, not void or draft) invoices, exact in cents. */
 function _coBilled(p){return fromC(sumC([].concat.apply([],(p.invoices||[]).filter(v=>v&&v.status!=='void'&&v.status!=='draft').map(v=>(v.items||[]).filter(it=>it&&it.coId).map(it=>Number(it.amount)||0)))));}
