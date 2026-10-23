@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.489.0 - Team login: role from the server, house entry decides money, cache cleared on account change';
+const PLUMB_VERSION='2.490.0 - Error log per account; Needs you says what it hides; sign-in after another account finishes';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793908800000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.489.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793995200000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.490.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6136,6 +6136,10 @@ async function liveAuthSubmit(){
   if(laMode==='signup'&&pass!==(document.getElementById('laPass2').value||'')){laErr('Those passwords do not match.');return;}
   if(!pass){laErr('Enter your password.');return;}
   const btn=document.getElementById('laGo');btn.disabled=true;const old=btn.textContent;btn.textContent='…';
+  /* 2.490.0: while this form signs in, Sync does not react to the auth change on
+     its own: its account-change cache clear reloads the page, which raced the
+     users-doc reads below and lost the new profile (the old session came back). */
+  try{Sync._signingIn=true;}catch(e){}
   try{
     if(laFirebaseReady()){
       if(!firebase.apps.length)firebase.initializeApp(fbConfig());emuWire();
@@ -6177,7 +6181,7 @@ async function liveAuthSubmit(){
       :code==='auth/user-not-found'?'No account with that email — create one.'
       :code==='auth/weak-password'?'Password is too weak.'
       :authPlain(e,'Sign-in didn\u2019t work. Try again in a minute.'));
-  }finally{btn.disabled=false;btn.textContent=old;}
+  }finally{btn.disabled=false;btn.textContent=old;try{Sync._signingIn=false;}catch(e){}}
 }
 function laOk(msg){const e=document.getElementById('laErr');if(!e)return;
   e.textContent=msg;e.style.display='';e.classList.add('ok');}
@@ -9437,6 +9441,7 @@ function renderOvSortRow(){
   row.innerHTML=`<div class="ov-sortpills">${pills}</div>`;
 }
 function setOvSort(m){_ovSort=m;_keepScrollY.home=0;try{localStorage.setItem('plumb.ovSort',m);}catch(e){}renderOvSortRow();renderOvCards();}
+function ovHiddenLine(n){return n+' more '+(n===1?'house has':'houses have')+' nothing waiting \u00b7 Show all';}   /* placeholder, Agency to word */
 function renderOvCards(){
   const projs=visibleProjects();
   const live=liveProjects();
@@ -9504,7 +9509,11 @@ function renderOvCards(){
     :(_ovSort==='attn'&&!list.length&&!finished.length)
     ?'<div class="td-clear">All clear.</div>'
     :((!list.length&&!finished.length)?'<div class="empty">No houses match.</div>':'');
-  cards.innerHTML=head+body+fin+empty;
+  /* 2.490.0: Needs you shows only houses with something waiting; say how many it
+     leaves out and offer them all (words: placeholder for Agency). */
+  const hid=(_ovSort==='attn'&&!q)?Math.max(0,live.length-list.length)+done.length:0;
+  const more=hid?'<button type="button" class="ov-more add-sub-btn w-full mt-3 btn btn-secondary" onclick="setOvSort(\'az\')">'+esc(ovHiddenLine(hid))+'</button>':'';
+  cards.innerHTML=head+body+fin+empty+more;
   if(_sc)_sc.scrollTop=_keepScroll;
 }
 
@@ -10099,7 +10108,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
      write is rejected — sites silently never arrive. */
   _watchAuth(){if(this._authWatched)return;this._authWatched=true;
     try{firebase.auth().onAuthStateChanged(u=>{try{
-      if(this._initing)return;
+      if(this._initing||this._signingIn)return;   // 2.490.0: the sign-in form rebinds itself (laEnter) after the profile is saved
       const uid=u?u.uid:null;
       if(uid===this.uid)return;
       try{logEvent('authChange',(this.uid?this.uid.slice(0,8):'none')+' → '+(uid?uid.slice(0,8):'none')+(u&&u.isAnonymous?' (anon)':''));}catch(e){}
@@ -11086,12 +11095,17 @@ function rerenderCurrent(){try{
 }catch(e){}}
 /* ── error trap: every uncaught error is recorded for the Workbench bug report ── */
 function pruneErrors(a){const cut=Date.now()-14*86400000;return (a||[]).filter(x=>x&&x.t>cut).slice(0,20);}
+/* 2.490.0: the error log is per browser; each line names the account it happened
+   under, and Errors on this device shows only the signed-in account's lines
+   (plus untagged lines from before 2.490.0). */
+function errUid(){try{return String((state.session&&state.session.auth&&state.session.auth.uid)||(typeof Sync!=='undefined'&&Sync.uid)||'').slice(0,8);}catch(e){return '';}}
+function errMine(x,me){me=me===undefined?errUid():me;return !me||!x||!x.u||x.u===me;}
 function trapError(kind,msg,where){try{
   let a=JSON.parse(localStorage.getItem('plumb.errors')||'[]');
-  a.unshift({t:Date.now(),k:kind,m:String(msg).slice(0,300),w:String(where||'').slice(0,120),v:(typeof PLUMB_VERSION!=='undefined'?PLUMB_VERSION.split(' ')[0]:'?'),mode:appMode()});
+  a.unshift({u:errUid(),t:Date.now(),k:kind,m:String(msg).slice(0,300),w:String(where||'').slice(0,120),v:(typeof PLUMB_VERSION!=='undefined'?PLUMB_VERSION.split(' ')[0]:'?'),mode:appMode()});
   a=pruneErrors(a);
   localStorage.setItem('plumb.errors',JSON.stringify(a));
-  const b=document.getElementById('errBadge');if(b){b.textContent=a.length;b.style.display='';}
+  const b=document.getElementById('errBadge');if(b){b.textContent=a.filter(x=>errMine(x)).length;b.style.display='';}
   _forwardError(kind,msg,where);
 }catch(e){}}
 /* Real-user errors report home. Until now a trapped error lived only in the
@@ -11112,7 +11126,7 @@ if(typeof window!=='undefined'){
   window.addEventListener('error',e=>trapError('error',(e.error&&e.error.message)||e.message,(e.filename||'')+':'+(e.lineno||'')));
   window.addEventListener('unhandledrejection',e=>trapError('promise',(e.reason&&e.reason.message)||e.reason,''));
 }
-function devErrors(){try{return pruneErrors(JSON.parse(localStorage.getItem('plumb.errors')||'[]'));}catch(e){return [];}}
+function devErrors(){try{const me=errUid();return pruneErrors(JSON.parse(localStorage.getItem('plumb.errors')||'[]')).filter(x=>errMine(x,me));}catch(e){return [];}}
 function devCopyBugReport(){
   const errs=devErrors();const ev=(state.eventLog||[]).slice(-30).reverse();
   const tl=(window._tourLog||[]).slice(-120).map(x=>new Date(x.t).toISOString().slice(11,23)+' '+x.ev+': '+x.d);
@@ -11123,7 +11137,7 @@ function devCopyBugReport(){
   const txt=rep.join('\n');
   try{navigator.clipboard.writeText(txt).then(()=>toast('Bug report copied — paste it to Claude'),()=>toast('Couldn\u2019t copy'));}catch(e){toast('Couldn\u2019t copy');}
   return txt;}
-function devClearErrors(){try{localStorage.removeItem('plumb.errors');}catch(e){}renderDevErrors();toast('Cleared');}
+function devClearErrors(){try{const me=errUid();const rest=JSON.parse(localStorage.getItem('plumb.errors')||'[]').filter(x=>!errMine(x,me));if(rest.length)localStorage.setItem('plumb.errors',JSON.stringify(rest));else localStorage.removeItem('plumb.errors');}catch(e){}   /* 2.490.0: clears this account's lines only */renderDevErrors();toast('Cleared');}
 /* ── layout snapshot: on-screen geometry for diagnosing UI/layout bugs ── */
 let _lastLayoutSnap='';
 let _snapAt=0;

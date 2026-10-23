@@ -366,6 +366,36 @@ t('2.489.0: a cache from before 2.489.0 (owner unknown) is cleared once',c3.ret&
 t('2.489.0: Sync init runs the cache guard before the device id and listeners',SRC.indexOf("if(await this._cacheGuard())return false;")>=0&&SRC.indexOf("if(await this._cacheGuard())return false;")<SRC.indexOf("this.deviceId=this._devId();\n      try{if(this.mode==='live')this._loadBase();}catch(e){}"));
 $("(function(){var o=__o2;state.projects=o.p;state.session=o.s;Sync._sitesPulled=o.sp;Sync._onServer=o.os;Sync.uid=o.uid;Sync.db=o.db;Sync.authKind=o.ak;Sync.on=o.on;Sync._reload=o.rl;if(o.cu===null)localStorage.removeItem('plumb.cacheUid');else localStorage.setItem('plumb.cacheUid',o.cu);delete window.__o2;delete window.__cg;return true;})()");
 }
+/* ── 2.490.0: check 4 follow-ups ── */
+{
+$("window.__o3={s:state.session,p:state.projects,e:localStorage.getItem('plumb.errors'),srt:_ovSort,uid:Sync.uid};true");
+// (1) error log per account
+const E=JSON.parse($(`JSON.stringify((function(){localStorage.setItem('plumb.errors',JSON.stringify([{t:1,k:'old',m:'untagged',w:'',v:'2.489.0',mode:'real'}]));Sync.uid=null;
+  state.session={role:'builder',auth:{uid:'uOwner123x'}};trapError('rules','owner line','Sync');
+  state.session={role:'builder',auth:{uid:'uTeam456yz'}};trapError('rules','Cloud read blocked (site records)','Sync');
+  var team=devErrors().map(function(x){return x.m;});
+  state.session={role:'builder',auth:{uid:'uOwner123x'}};var owner=devErrors().map(function(x){return x.m;});
+  state.session={role:'builder',auth:{uid:'uTeam456yz'}};devClearErrors();
+  state.session={role:'builder',auth:{uid:'uOwner123x'}};var after=devErrors().map(function(x){return x.m;});
+  var raw=JSON.parse(localStorage.getItem('plumb.errors')||'[]');
+  return {team:team,owner:owner,after:after,tag:(raw.find(function(x){return x.m==='owner line';})||{}).u};})())`));
+t('2.490.0: each error line names the account it happened under',E.tag==='uOwner12',JSON.stringify(E));
+t('2.490.0: the owner does not see the team account\'s Cloud read blocked lines, but keeps their own',E.owner.indexOf('owner line')>=0&&E.owner.indexOf('Cloud read blocked (site records)')<0&&E.team.indexOf('Cloud read blocked (site records)')>=0&&E.team.indexOf('owner line')<0,JSON.stringify(E));
+t('2.490.0: Clear on one account keeps the other account\'s lines',E.after.indexOf('owner line')>=0,JSON.stringify(E.after));
+// (2) Needs you says what it hides
+const O=JSON.parse($(`JSON.stringify((function(){state.session={role:'builder',name:'Peter',rpRole:'owner',owner:true,auth:{uid:'uOwner123x'}};
+  state.projects=[1,2,3,4,5].map(function(i){return {id:'nq'+i,street:i+' Quiet Ln',items:[],bookings:[],selections:[],logs:[],payments:[],subs:[],docs:[],permits:[],inspections:{},stageDone:{}};});
+  _ovSort='attn';renderOvCards();var el=document.querySelector('#ovCards .ov-more');var a={txt:el?el.textContent:'',cards:document.querySelectorAll('#ovCards .ov-card:not(.allh)').length};
+  if(el)el.click();var b={sort:_ovSort,cards:document.querySelectorAll('#ovCards .ov-card:not(.allh)').length,more:!!document.querySelector('#ovCards .ov-more')};return {a:a,b:b};})())`));
+t('2.490.0: Needs you says how many houses it leaves out and why',/^\d+ more houses? (has|have) nothing waiting · Show all$/.test(O.a.txt)&&parseInt(O.a.txt,10)===5-O.a.cards,JSON.stringify(O.a));
+t('2.490.0: Show all lists every house (A–Z) and the line goes away',O.b.sort==='az'&&O.b.cards===5&&!O.b.more,JSON.stringify(O.b));
+t('2.490.0: one house hidden reads in the singular',$("ovHiddenLine(1)")==='1 more house has nothing waiting \u00b7 Show all');
+// (3) sign-in after another account: no auth-change reload races the form
+t('2.490.0: Sync ignores the auth change while the sign-in form is signing in',SRC.indexOf("if(this._initing||this._signingIn)return;")>=0);
+t('2.490.0: the sign-in form sets the flag before signing in and always clears it',(function(){const a=SRC.indexOf("try{Sync._signingIn=true;}catch(e){}"),b=SRC.indexOf("firebase.auth().signInWithEmailAndPassword(email,pass)"),c=SRC.indexOf("finally{btn.disabled=false;btn.textContent=old;try{Sync._signingIn=false;}catch(e){}}");return a>0&&b>a&&c>b;})());
+t('2.490.0: the profile is saved and entered before Sync re-inits (cache clear reload comes after)',(function(){const f=SRC.slice(SRC.indexOf('async function liveAuthSubmit'));return f.indexOf('laSaveProfile(prof);laSaveHat(prof);laEnter(prof);')>0;})());
+$("(function(){var o=__o3;state.session=o.s;state.projects=o.p;_ovSort=o.srt;Sync.uid=o.uid;if(o.e===null)localStorage.removeItem('plumb.errors');else localStorage.setItem('plumb.errors',o.e);delete window.__o3;return true;})()");
+}
 
 t('SEED_VERSION 21',$('SEED_VERSION')===21);
 t('10 seed sites',$('state.projects.length')===10);
