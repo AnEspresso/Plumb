@@ -2474,6 +2474,9 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 .lightbox,.install-gate,#guestScrim,#legalDocScrim,.invbar,.toast{z-index:var(--z-toast);}
 .exc-banner{z-index:var(--z-nav);}
 .tour-catch,.tc-p,.tour-holeframe,.tour-bubble,.devpanel{z-index:var(--z-tour);}
+/* 2.492.0: the workbench sits at --z-tour, above --z-toast, so "Copied" was painted behind it.
+   While it is open the toast takes --z-tour too; toast() keeps #toast after #devpanel so it paints on top. */
+body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 </style>
 </head>
 <body>
@@ -3977,15 +3980,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.491.0 - Bug report copies on iPhone and +N more opens; each house once in the book';
+const PLUMB_VERSION='2.492.0 - Copied toast shows over the workbench';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1794081600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.491.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1794168000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.492.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5285,7 +5288,8 @@ function photoSrc(it){if(!it)return null;const local=it.photoId&&photoURLs[it.ph
   if(it.photoUrl){try{scheduleBackfill();}catch(e){}return it.photoUrl;}return null;}
 function thumbHTML(it){const u=photoSrc(it);if(u)return`<img src="${u}" alt="">`;return swatch(SW[it.sw]||SW.dove,noteGlyph(it));}
 function esc(s){return(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function toast(msg){const t=document.getElementById('toast');t.className='toast';t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+function toastOverDev(t){try{const d=document.getElementById('devpanel');if(d&&d.parentNode===t.parentNode&&!(d.compareDocumentPosition(t)&Node.DOCUMENT_POSITION_FOLLOWING))d.after(t);}catch(e){}}
+function toast(msg){const t=document.getElementById('toast');toastOverDev(t);t.className='toast';t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 /* ── One stacking rule (P2-1). A sheet that opens sits above every sheet already
    open, and always below toasts and confirm dialogs (--z-toast). No sheet needs a
    hand-assigned z-index any more; that was the recurring "broken button". ── */
