@@ -411,7 +411,7 @@ const CP=JSON.parse($(`JSON.stringify((function(){var r={};
   r.box=copyOrShow('report text','errReportBox');r.t2=document.getElementById('toast').textContent;var b=document.getElementById('errReportBox');r.val=b?b.value:'';r.ro=b?b.readOnly:false;
   return r;})())`));
 t('2.491.0: Copy bug report copies synchronously inside the tap (execCommand) and says Copied',CP.exec==='exec'&&CP.t1==='Copied',JSON.stringify(CP));
-t('2.491.0: when copying fails, the report shows in a selectable box and the toast says so',CP.box==='box'&&CP.val==='report text'&&CP.ro&&CP.t2==='Couldn\u2019t copy, select the text below',JSON.stringify(CP));
+t('2.491.0: when copying fails, the report shows in a selectable box and the toast says so',CP.box==='box'&&CP.val==='report text'&&CP.ro&&CP.t2==='Couldn\u2019t copy. Select the text below and copy it.',JSON.stringify(CP));
 t('2.491.0: the bug report copy has no await or promise before the copy',(function(){const f=$("String(devCopyBugReport)");return f.indexOf('await')<0&&f.indexOf('copyOrShow(txt')>0;})());
 const BK=JSON.parse($(`JSON.stringify((function(){state.session={role:'builder',name:'Peter',rpRole:'owner',owner:true,auth:{uid:'uP123456x'}};
   var mk=function(id,st,extra){return Object.assign({id:id,street:st,items:[],bookings:[],selections:[],logs:[],payments:[],subs:[],docs:[],permits:[],inspections:{},stageDone:{}},extra||{});};

@@ -11152,7 +11152,7 @@ function devCopyBugReport(){
    write it cannot tie to the gesture): a selected textarea + execCommand('copy')
    first, then navigator.clipboard, then the text in a selectable box under the
    buttons. Words are placeholders for Agency. */
-const COPY_OK='Copied',COPY_FAIL='Couldn\u2019t copy, select the text below';
+const COPY_OK='Copied',COPY_FAIL='Couldn\u2019t copy. Select the text below and copy it.';
 function copyTextSync(txt){let ok=false;const ta=document.createElement('textarea');
   ta.value=txt;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
   document.body.appendChild(ta);
