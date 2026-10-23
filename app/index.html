@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.483.0 - Something\u2019s wrong on selection prices; money history kept with the switch off; draft deletes leave a line; real pushes for flags and money notices';
+const PLUMB_VERSION='2.484.0 - team logins without money no longer sync mail review (rules block); Cancel on Record a payment';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793390400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.483.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793476800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.484.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -10965,7 +10965,7 @@ function syncCollsFor(role){
     const job=canGate('moneyJob'),co=canGate('moneyCo');
     if(!job)cols=cols.filter(c=>c.sub!=='costs');
     if(!co)cols=cols.filter(c=>c.sub!=='inv');
-    if(!job&&!co)cols=cols.filter(c=>c.sub!=='selm'&&c.sub!=='pmts');}}catch(e){}   /* M-5/M-7: a builder with no money access does not read payments either */
+    if(!job&&!co)cols=cols.filter(c=>c.sub!=='selm'&&c.sub!=='pmts'&&c.sub!=='mail');}}catch(e){}   /* M-5/M-7: a builder with no money access does not read payments either; 2.484.0: nor mail (rules: mail needs moneyOk) */
   return cols;
 }
 function syncHas(p,sub){return syncCollsFor(siteRoleFor(p)).some(c=>c.sub===sub);}
@@ -15331,6 +15331,7 @@ function invDetailHTML(p,inv,viewer){
       <div class="d-flex gap-2 mt-2">
         <button class="b1 b-go flex-1 btn btn-primary" onclick="invAddPayment('${p.id}','${inv.id}')">Add payment</button>
         <button class="lpay u-m29 btn btn-quiet" onclick="invAddPayment('${p.id}','${inv.id}',true)">Paid in full</button>
+        <button class="lpay btn btn-quiet pay-cancel" onclick="closeInvoices()">Cancel</button>
       </div>`;
   }
   // builder: issue a credit note or add a charge to a sent invoice (append-only correction)
@@ -15602,7 +15603,8 @@ function renderInvoices(){
       +`<div class="sec"><h2>Record a payment</h2></div>
         <input id="bpLabel" placeholder="e.g. Deposit, Draw #2" class="w-full">
         <div class="setup-roster-row mt-2"><input id="bpAmount" inputmode="decimal" data-money placeholder="Amount"><input id="bpDate" type="date" class="fld-date flex-1"></div>
-        <button class="b1 b-go w-full mt-2 btn btn-primary" onclick="addBillingPayment()">Add payment</button>
+        <div class="d-flex gap-2 mt-2"><button class="b1 b-go flex-1 btn btn-primary" onclick="addBillingPayment()">Add payment</button>
+        <button class="lpay btn btn-quiet pay-cancel" onclick="closeInvoices()">Cancel</button></div>
         <p class="mt-1 ml-1 mr-1 mb-0 c-ink-3 fs-xs">Deposits and draws that aren’t on an invoice go here. Payments on an invoice are entered on that invoice and show here too.</p>`;
     const d=document.getElementById('bpDate');if(d&&!d.value)d.value=todayStr();
     return;}
