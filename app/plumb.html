@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.486.0 - A team builder gets money only from their entry on the house';
+const PLUMB_VERSION='2.487.0 - Invoices that bill missing items no longer show as a credit';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793649600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.486.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793736000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.487.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8834,7 +8834,7 @@ function houseBudgetLine(cs){
 function houseMoneyLine(p){
   try{
     const b=billingSummary(p);
-    const contract=Number(b.net)||0;
+    const contract=Number(b.contract)||0;   /* 2.487.0: max(selections, invoiced) when invoices bill missing items */
     const paid=Number(b.paid)||0;
     const left=Math.max(0,Number(b.out)||0);
     /* F-2: a builder without Invoices does not hold invoices: no Paid/owed line */
@@ -11358,6 +11358,7 @@ function clientCostsHTML(p){
   }else{
     ledger+='<div class="lr out"><span>Balance due</span><b class="'+(bs.balanceDue>0?'':'cr')+'">'+usd(bs.balanceDue)+'</b></div>';
   }
+  ledger+=orphanNoteHTML(bs);
   ledger+='</div>';
   const invs=(p.invoices||[]).filter(function(i){const s=invState(i);return s!=='void'&&s!=='draft';}).slice().reverse();
   let invoices='';
@@ -11472,7 +11473,13 @@ function coLedgerHTML(bs,usd){if(!bs.coOn||!(bs.coN||bs.coWaiting))return '';
     +(bs.coWaiting?'<div class="lr"><span class="meta">'+bs.coWaiting+' waiting on the homeowner</span><b></b></div>':'');}
 function siteCharges(p){let ups=0,crs=0,waiting=0;(p.selections||[]).forEach(s=>{const c=chargeState(selCharge(s,p));waiting+=c.waiting;const n=c.counted;if(n>0)ups+=n;else if(n<0)crs+=n;});const ex=_siteExtraCharges(p);return {ups:ups+ex.ups,crs:crs+ex.crs,waiting};}
 function sitePaidTotal(p){const loose=fromC(sumC((p.payments||[]).filter(payLive).map(x=>Number(x.amount)||0)));const inv=(p.invoices||[]).filter(v=>v&&v.status!=='void').reduce((a,v)=>a+invPaidAmt(v),0);return loose+inv;}
-function clientLedger(p){const c=siteCharges(p);const net=c.ups+c.crs;const paid=sitePaidTotal(p);return {ups:c.ups,crs:c.crs,net,paid,out:net+_coBilled(p)-paid};}
+function clientLedger(p){const c=siteCharges(p);const net=c.ups+c.crs;const paid=sitePaidTotal(p);const coB=_coBilled(p);const base=(p.invoices||[]).filter(v=>v&&v.status!=='void'&&v.status!=='draft').reduce((a,v)=>a+(Number(v.total)||0),0)-coB;
+  const contract=(net-base<-0.005&&_orphanBilled(p)>0)?Math.max(net,base):net;return {ups:c.ups,crs:c.crs,net,paid,out:contract+coB-paid};}   /* 2.487.0: the same orphan-invoice rule as billingSummary (no change-order attach here) */
+/* 2.487.0: live invoice lines that bill a selection no longer on this house. */
+function _orphanBilled(p){const have={};(p.selections||[]).forEach(s=>{if(s&&s.id!=null)have[String(s.id)]=1;});let n=0;
+  (p.invoices||[]).forEach(v=>{if(!v||v.status==='void'||v.status==='draft')return;(v.items||[]).forEach(it=>{if(it&&it.selId!=null&&it.selId!==''&&!have[String(it.selId)])n++;});});return n;}
+const ORPHAN_INV_NOTE='Some invoices bill items that are no longer on this house.';   /* placeholder, Agency to word */
+function orphanNoteHTML(bs,cls){return bs&&bs.orphan?'<div class="'+(cls||'lr')+' inv-orphan"><span>'+esc(ORPHAN_INV_NOTE)+'</span></div>':'';}
 /* 4c-2: the sum of invoice lines that bill a change order (coId) on live (sent, not void or draft) invoices, exact in cents. */
 function _coBilled(p){return fromC(sumC([].concat.apply([],(p.invoices||[]).filter(v=>v&&v.status!=='void'&&v.status!=='draft').map(v=>(v.items||[]).filter(it=>it&&it.coId).map(it=>Number(it.amount)||0)))));}
 /* 4c-2: approved change orders a builder can put on an invoice: each once, at its exact amount (credits negative).
@@ -11498,7 +11505,9 @@ function billingSummary(p){
   const paid=sitePaidTotal(p);
   const co=coLedger(p);   /* C-4: its own component; every existing figure above is untouched */
   const coB=_coBilled(p);   /* 4c-2: invoiced change-order lines are owed, but are not "not yet invoiced" upgrades. Zero when no line has a coId. */
-  return {ups:c.ups,crs:c.crs,net,billed,unbilled:net-(billed-coB),invPaid,paid,balanceDue:Math.max(0,billed-invPaid),out:net+coB-paid,coBilled:coB,waiting:c.waiting,coOn:co.on,co:fromC(co.c),coN:co.n,coWaiting:co.waiting};
+  /* 2.487.0: invoices that bill selections no longer on the house are not a credit: no negative not-yet-invoiced, and the contract is the larger figure. */
+  const base=billed-coB;const orphan=net-base<-0.005&&_orphanBilled(p)>0;const contract=orphan?Math.max(net,base):net;
+  return {ups:c.ups,crs:c.crs,net,contract,orphan,billed,unbilled:orphan?0:net-base,invPaid,paid,balanceDue:Math.max(0,billed-invPaid),out:contract+coB-paid,coBilled:coB,waiting:c.waiting,coOn:co.on,co:fromC(co.c),coN:co.n,coWaiting:co.waiting};
 }
 
 /* ── Job costing rollups (builder-private; separate ledger from homeowner billing).
@@ -11727,7 +11736,7 @@ function billingCardHTML(p){
     return `<div class="overall bgt-tap" onclick="openInvoices()">
         <div class="top"><span class="meta">No homeowner invoices on this house yet. Invoices live here</span><span class="bgt-chev">›</span></div></div>`;
   const okN=(p.invoices||[]).filter(invNeedsOK).length;
-  const pct=b.net>0?Math.min(100,Math.round(b.paid/b.net*100)):0;
+  const pct=b.contract>0?Math.min(100,Math.round(b.paid/b.contract*100)):0;
   return `<div class="overall bgt-tap" onclick="openInvoices()">
       <div class="bgt-cardgrid">
         ${b.out<-0.005?`<div><b>${fmtMoney(-b.out)}</b><span>Homeowner’s credit</span></div>`:`<div><b>${fmtMoney(b.out)}</b><span>Still owed</span></div>`}
@@ -11736,6 +11745,7 @@ function billingCardHTML(p){
         <div><b>${fmtMoney(b.paid)}</b><span>Paid</span></div>
       </div>
       <div class="pbar"><i style="width:${pct}%"></i></div>
+      ${orphanNoteHTML(b,'meta')}
       <div class="bgt-open">View invoices<span class="bgt-chev">›</span></div>
     </div>`;
 }
@@ -11785,7 +11795,7 @@ function moneyTotHTML(p){
      yet (R-1): it shows as its own line. */
   const wait=bill.waiting>0.005?'<div class="row-sub mn-waiting">'+fmtMoney(bill.waiting)+' waiting on the homeowner</div>':'';
   /* A net credit not on an invoice yet (R-1 PR 2): its own line, like not yet invoiced. */
-  const cred=bill.unbilled<-0.005?'<div class="row-sub mn-credit">'+fmtMoney(-bill.unbilled)+' credit not yet invoiced</div>':'';
+  const cred=(bill.unbilled<-0.005?'<div class="row-sub mn-credit">'+fmtMoney(-bill.unbilled)+' credit not yet invoiced</div>':'')+orphanNoteHTML(bill,'row-sub');
   if(bill.billed>0.005){
     /* Due is what the homeowner has been invoiced and not yet paid on those
        invoices. Charges not on an invoice yet are shown on their own line, not
@@ -14384,6 +14394,7 @@ function ledgerDetailHTML(p){
   h+=`<div class="ld-sub"><span>Total credits</span><b class="cr">\u2212${usd(crs)}</b></div>`;
   h+=`<div class="ld-tot"><span>Upgrades minus credits</span><b class="${net<0?'cr':''}">${net<0?'\u2212':''}${usd(net)}</b></div>`;
   h+=`<div class="ld-sub"><span>Invoiced</span><b>${usd(bs.billed)}</b></div>`;
+  h+=orphanNoteHTML(bs,'ld-sub');
   if(Math.abs(bs.unbilled)>0.005)h+=`<div class="ld-sub"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'−':'+'}${usd(bs.unbilled)}</b></div>`;
   h+=`<div class="ld-sec">Payments received</div>`;
   h+=payRows.length?payRows.map(r=>`<div class="ld-li${r.v?' ld-void':''}"><div class="ld-d"><div class="ld-n">${esc(r.n)}</div><div class="ld-m">${esc(r.m||'')}</div></div><b class="cr">${r.v?'':'\u2212'}${usd(r.amt)}</b></div>`).join(''):`<div class="ld-empty">No payments recorded yet.</div>`;
@@ -14879,6 +14890,7 @@ function renderSelections(){
           ${loose>0.005?`<div class="lr"><span>Paid outside invoices</span><b class="cr">−${usd(loose)}</b></div>`:''}
           ${bs.out<-0.005?`<div class="lr out"><span>Homeowner’s credit</span><b class="cr">${usd(bs.out)}</b></div>`:`<div class="lr out"><span>Still owed</span><b>${usd(bs.out)}</b></div>`}`
         :`<div class="lr out"><span>Balance due</span><b class="${bs.balanceDue>0?'':'cr'}">${usd(bs.balanceDue)}</b></div>`}
+      ${orphanNoteHTML(bs)}
       <div class="ldr-hint">Tap for itemized breakdown ›</div>
     </div>`;
   } else sum.innerHTML='';
@@ -15640,6 +15652,7 @@ function renderInvoices(){
       ${Math.abs(bs.unbilled)>0.005?`<div class="lr"><span>Not yet invoiced</span><b class="${bs.unbilled<0?'cr':'up'}">${bs.unbilled<0?'':'+'}${fmtMoney(bs.unbilled)}</b></div>`:''}
       <div class="lr"><span>Paid</span><b>${fmtMoney(bs.paid)}</b></div>
       <div class="lr out"><span>Balance due on invoices</span><b class="${bs.balanceDue>0?'up':''}">${fmtMoney(bs.balanceDue)}</b></div>
+      ${orphanNoteHTML(bs)}
     </div>`:'');
   const _bset=billersOf(p);const _bsub=_bset.length?(_bset.length<=2?_bset.join(', '):_bset.length+' teammates')+' get alerts':'Whole team gets alerts';
   const ownerRow=`<div class="subrow cur-p mb-2" onclick="invMode='owner';renderInvoices()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(_bsub)}</div></div><span class="ed">Change</span></div>`;
