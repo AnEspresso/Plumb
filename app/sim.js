@@ -4400,6 +4400,26 @@ await (async function(){
   t('2.486.0: a builder with empty hatRole, rpRole pm and no gates gets no money listeners and no money UI',TMC.every(function(c){return TM.team.colls.indexOf(c)<0;})&&!TM.team.job&&!TM.team.co&&TM.team.blind&&TM.team.selHid&&TM.team.invHid&&!TM.team.owner&&TM.team.field,JSON.stringify(TM.team));
   t('2.486.0: a builder gated on the house entry gets money',TMC.every(function(c){return TM.gated.colls.indexOf(c)>=0;})&&TM.gated.job&&TM.gated.co&&!TM.gated.blind,JSON.stringify(TM.gated));
   t('2.486.0: the owner (rpRole owner or owner flag) is unchanged',[TM.own,TM.ownFlag].every(function(x){return x.owner&&x.job&&x.co&&!x.blind&&TMC.every(function(c){return x.colls.indexOf(c)>=0;});}),JSON.stringify([TM.own,TM.ownFlag]));
+  const OR=J(`(function(){var ss=state.session,o={};try{
+      var base=JSON.parse(JSON.stringify(__demo.find(function(p){return (p.invoices||[]).length&&p.selections.some(selHasMoney);})));delete base.sample;
+      var orph={id:'or1',selections:[],payments:[],costs:[],members:{},memberInfo:{},invoices:[
+        {id:'i1',no:'INV-001',status:'sent',total:4200,items:[{selId:3,label:'A',amount:2000},{selId:4,label:'B',amount:2200}],payments:[{amount:4200,date:'2026-09-01'}]},
+        {id:'i2',no:'INV-002',status:'sent',total:3500,items:[{selId:5,label:'C',amount:1500},{selId:7,label:'D',amount:2000}],payments:[{amount:950,date:'2026-09-10'}]}]};
+      function look(p,sess){state.session=sess;var b=billingSummary(p);var cl=clientCostsHTML(p);
+        return {orphan:b.orphan,unbilled:b.unbilled,out:b.out,contract:b.contract,line:houseMoneyLine(p),
+          clNote:cl.ledger.indexOf(ORPHAN_INV_NOTE)>=0,clCredit:/Your credit|credit not yet invoiced/.test(cl.ledger)||/ credit$/.test(cl.line),clLine:cl.line};}
+      o.b=look(orph,{role:'builder',name:'You',auth:{uid:'uB'}});
+      o.h=look(orph,{role:'client',site:'or1',auth:{uid:'uH'}});
+      o.hl=(state.session={role:'client',site:'or1',auth:{uid:'uH'}},clientLedger(orph).out);
+      state.session={role:'builder',name:'You',auth:{uid:'uB'}};
+      var nb=billingSummary(base);o.norm={orphan:nb.orphan,contract:nb.contract,net:nb.net,out:nb.out,un:nb.unbilled,want:nb.net-(nb.billed-nb.coBilled)};
+      var cr=JSON.parse(JSON.stringify(base));cr.id='cr1';cr.selections.push({id:999,room:'Den',cat:'Flooring',item:'Credit',status:'selected',approved:true,price:-5000});
+      var cb=billingSummary(cr);o.cred={orphan:cb.orphan,un:cb.unbilled,want:cb.net-(cb.billed-cb.coBilled),contract:cb.contract,net:cb.net};
+    }finally{state.session=ss;}return o;})()`);
+  t('2.487.0: builder, orphan invoices: no credit, the note, Paid $5,150.00 of $7,700.00 · owed $2,550.00',OR.b.orphan&&OR.b.unbilled===0&&Math.abs(OR.b.out-2550)<0.01&&OR.b.line.replace(/\u00a0/g,' ')==='Paid $5,150.00 of $7,700.00 · owed $2,550.00',JSON.stringify(OR.b));
+  t('2.487.0: homeowner, orphan invoices: no credit, the note, owes $2,550.00',OR.h.orphan&&OR.h.clNote&&!OR.h.clCredit&&Math.abs(OR.h.out-2550)<0.01&&Math.abs(OR.hl-2550)<0.01,JSON.stringify([OR.h,OR.hl]));
+  t('2.487.0: a genuine credit is unchanged',!OR.cred.orphan&&OR.cred.un<-0.005&&Math.abs(OR.cred.un-OR.cred.want)<0.01&&OR.cred.contract===OR.cred.net,JSON.stringify(OR.cred));
+  t('2.487.0: a normal house is unchanged',!OR.norm.orphan&&OR.norm.contract===OR.norm.net&&Math.abs(OR.norm.un-OR.norm.want)<0.01,JSON.stringify(OR.norm));
   t('2.484.0: both Record a payment sheets have a Cancel',(SRC.match(/pay-cancel/g)||[]).length>=2);
   /* ── M-15 (2.470.0): PaperTrail switch + "Update to continue" ── */
   const PT0=J(`(function(){return {on:PaperTrail.on,blocked:PaperTrail.blocked(),gate:moneyUpdateGate(),scrim:document.getElementById('confirmScrim').classList.contains('show')};})()`);
