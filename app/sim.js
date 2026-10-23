@@ -426,6 +426,34 @@ $("(function(){var o=__o4;state.session=o.s;state.projects=o.p;_ovSort=o.srt;doc
 
 t('SEED_VERSION 21',$('SEED_VERSION')===21);
 t('10 seed sites',$('state.projects.length')===10);
+/* 2.493.0: a signed-in account never keeps demo houses; the demo still seeds */
+t('2.493.0: the app starts with an empty list in memory',/let state=emptyState\(\);/.test(SRC));
+const SH=JSON.parse(await $(`(async function(){var ls={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);ls[k]=localStorage.getItem(k);}
+  var keep=state,cd=window.confirmDelete,ic=window.idbClear,r={};
+  try{
+    localStorage.setItem('plumb.mode','real');localStorage.setItem('plumb.liveAuth',JSON.stringify({provider:'firebase',uid:'uSIM493'}));
+    var demo=sampleState();
+    var st={projects:demo.projects.concat([{id:'qamsu7063s_3',street:'741 Whitaker Ave',items:[]}]),activeId:'p2',pkLog:[{pid:'p2',t:1},{pid:'qamsu7063s_3',t:2}],eventLog:[],feedback:[],session:null};
+    localStorage.setItem(storeKey(),JSON.stringify(st));
+    load();
+    r.ids=state.projects.map(function(p){return p.id;}).join();r.act=state.activeId;r.pk=state.pkLog.map(function(x){return x.pid;}).join();
+    r.ev=state.eventLog.some(function(e){return e.type==='sampleStripped';});
+    r.saved=JSON.parse(localStorage.getItem(storeKey())).projects.map(function(p){return p.id;}).join();
+    devReseed();r.reseed=state.projects.filter(function(p){return p.sample;}).length+'/'+state.projects.length;
+        window.idbClear=async function(){};var _p;window.confirmDelete=function(o){_p=o.onConfirm();};devReset();await _p;
+    r.reset=state.projects.length;
+    localStorage.setItem('plumb.mode','demo');localStorage.removeItem('plumb.state.v1');load();
+    r.demo=state.projects.filter(function(p){return p.sample;}).length;
+  }catch(e){r.err=String(e&&e.message)+" @ "+String(e&&e.stack).split(String.fromCharCode(10)).slice(1,4).join(" | ");}
+  finally{window.confirmDelete=cd;window.idbClear=ic;
+    var ks=[];for(var j=0;j<localStorage.length;j++)ks.push(localStorage.key(j));ks.forEach(function(k){localStorage.removeItem(k);});
+    Object.keys(ls).forEach(function(k){localStorage.setItem(k,ls[k]);});state=keep;}
+  return JSON.stringify(r);})()`));
+t('2.493.0: a signed-in load drops demo houses, their pkLog rows and an activeId on one',SH.ids==='qamsu7063s_3'&&SH.pk==='qamsu7063s_3'&&SH.act==='qamsu7063s_3',JSON.stringify(SH));
+t('2.493.0: the strip is saved once and logged',SH.saved==='qamsu7063s_3'&&SH.ev===true,JSON.stringify(SH));
+t('2.493.0: Reload demo content adds no demo houses when signed in',SH.reseed==='0/1',JSON.stringify(SH));
+t('2.493.0: Erase all data when signed in leaves an empty list',SH.reset===0,JSON.stringify(SH));
+t('2.493.0: the demo path still loads its 10 sample houses',SH.demo===10,JSON.stringify(SH));
 t('no boot errors',w.__thrown.length===0,w.__thrown[0]);
 
 /* ════ 2 · SCHEDULING LIFECYCLE (p1 Linden Ridge, Timberline Framing) ════ */
@@ -1036,6 +1064,7 @@ t('guide orb present, guarded, choreographed', $("!!document.getElementById('tou
 t('grand tour rides the spotlight engine', $("typeof startGrandTour")==='function'&&$("Array.isArray(TOUR.grand)")===true&&$("TOUR.grand.length")===16&&$("TOUR.grand.every(s=>s.title&&s.body)")===true&&$("TOUR.grand.slice(1).every(s=>s.sel)")===true&&$("typeof tourGoto")==='function');
 // excursion from a live session: flip out, come home with session + activeId intact
 asBuilder();
+$("window.__simDemoState=JSON.stringify(state)");   /* 2.493.0: a signed-in load now drops demo houses, so the later sections get these back */
 $("localStorage.setItem('plumb.mode','real')");
 $("state.session={role:'builder',name:'Real Me',auth:{uid:'uTest'}};state.activeId=null;persist&&persist()");
 $('enterDemo()');
@@ -1137,7 +1166,7 @@ t('crash marker + demo mode is the recovery precondition', $("!!localStorage.get
 $("localStorage.removeItem('plumbSuspend');localStorage.setItem('plumb.mode','demo')");
 // settings + devpanel doors exist
 t('gear rows offer tour + example build', $("!!document.getElementById('welcomeScrim')")===true&&el('devpanel').innerHTML.includes('Replay the tour'));
-asBuilder();$("state.activeId='p2'");$("localStorage.removeItem('plumbWelcomed')");
+$("state=JSON.parse(window.__simDemoState);delete window.__simDemoState");asBuilder();$("state.activeId='p2'");$("localStorage.removeItem('plumbWelcomed')");
 
 /* ════ 14k2 · GUEST SUB PACKET LINKS ════ */
 S('guest packets');
