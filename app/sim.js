@@ -4342,6 +4342,17 @@ await (async function(){
   t('pmts: a builder with no money access does not subscribe to pmts, selm, costs or inv; one with Job money still reads pmts',SB.blind.indexOf('pmts')<0&&SB.blind.indexOf('selm')<0&&SB.blind.indexOf('costs')<0&&SB.job.indexOf('pmts')>=0,JSON.stringify(SB));
   t('2.484.0: a builder with no money access does not subscribe to mail (rules: moneyOk); one with Job money still does',SB.blind.indexOf('mail')<0&&SB.job.indexOf('mail')>=0,JSON.stringify(SB));
   t('2.485.0: the credit switch says No allowance items to change when nothing changes; the list path is kept',SRC.indexOf("toast(!hit.length?'No allowance items to change':")>=0&&SRC.indexOf("openConfirm({title:'Change allowance credits?'")>=0);
+  const TM=J(`(function(){var ss=state.session,sp=state.projects,o={};function run(sess,mi){state.session=sess;state.projects=[{id:'tm1',members:{uT:'builder',uO:'builder'},memberUids:['uT','uO'],memberInfo:mi}];
+      return {colls:syncCollsFor('builder').map(function(c){return c.sub;}),job:canGate('moneyJob'),co:canGate('moneyCo'),blind:moneyBlindBuilder(),selHid:moneyHidden('selm'),invHid:moneyHidden('inv'),owner:isOrgOwner(),field:canGate('field')};}
+    try{o.team=run({role:'builder',name:'Alex',rpRole:'pm',auth:{uid:'uT'}},{uO:{rpRole:'owner'},uT:{rpRole:'pm'}});
+      o.gated=run({role:'builder',name:'Alex',rpRole:'pm',auth:{uid:'uT'}},{uO:{rpRole:'owner'},uT:{rpRole:'pm',gates:{moneyJob:1,moneyCo:true}}});
+      o.own=run({role:'builder',name:'Olly',rpRole:'owner',auth:{uid:'uO'}},{uO:{rpRole:'owner'},uT:{rpRole:'pm'}});
+      o.ownFlag=run({role:'builder',name:'Olly',rpRole:'',auth:{uid:'uO'}},{uO:{owner:true},uT:{rpRole:'pm'}});
+    }finally{state.session=ss;state.projects=sp;}return o;})()`);
+  const TMC=['costs','selm','pmts','mail','inv'];
+  t('2.486.0: a builder with empty hatRole, rpRole pm and no gates gets no money listeners and no money UI',TMC.every(function(c){return TM.team.colls.indexOf(c)<0;})&&!TM.team.job&&!TM.team.co&&TM.team.blind&&TM.team.selHid&&TM.team.invHid&&!TM.team.owner&&TM.team.field,JSON.stringify(TM.team));
+  t('2.486.0: a builder gated on the house entry gets money',TMC.every(function(c){return TM.gated.colls.indexOf(c)>=0;})&&TM.gated.job&&TM.gated.co&&!TM.gated.blind,JSON.stringify(TM.gated));
+  t('2.486.0: the owner (rpRole owner or owner flag) is unchanged',[TM.own,TM.ownFlag].every(function(x){return x.owner&&x.job&&x.co&&!x.blind&&TMC.every(function(c){return x.colls.indexOf(c)>=0;});}),JSON.stringify([TM.own,TM.ownFlag]));
   t('2.484.0: both Record a payment sheets have a Cancel',(SRC.match(/pay-cancel/g)||[]).length>=2);
   /* ── M-15 (2.470.0): PaperTrail switch + "Update to continue" ── */
   const PT0=J(`(function(){return {on:PaperTrail.on,blocked:PaperTrail.blocked(),gate:moneyUpdateGate(),scrim:document.getElementById('confirmScrim').classList.contains('show')};})()`);
