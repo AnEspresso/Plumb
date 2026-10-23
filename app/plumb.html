@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.490.0 - Error log per account; Needs you says what it hides; sign-in after another account finishes';
+const PLUMB_VERSION='2.491.0 - Bug report copies on iPhone and +N more opens; each house once in the book';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793995200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.490.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1794081600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.491.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9442,10 +9442,20 @@ function renderOvSortRow(){
 }
 function setOvSort(m){_ovSort=m;_keepScrollY.home=0;try{localStorage.setItem('plumb.ovSort',m);}catch(e){}renderOvSortRow();renderOvCards();}
 function ovHiddenLine(n){return n+' more '+(n===1?'house has':'houses have')+' nothing waiting \u00b7 Show all';}   /* placeholder, Agency to word */
+/* 2.491.0: one card per house id (a finished id only under Finished), and two
+   different houses on the same street carry a short id so they can be told
+   apart (placeholder for Agency). */
+function ovOnce(live,done){const seen={};const d=[];(done||[]).forEach(function(p){const k=String(p.id);if(seen[k])return;seen[k]=1;d.push(p);});
+  const l=[];(live||[]).forEach(function(p){const k=String(p.id);if(seen[k])return;seen[k]=1;l.push(p);});return {live:l,done:d};}
+function ovTwinTag(p,all){const st=String((p&&(p.street||p.name))||'').trim().toLowerCase();if(!st)return '';
+  const twins=(all||[]).filter(function(x){return String((x.street||x.name)||'').trim().toLowerCase()===st;});
+  return twins.length>1?'#'+String(p.id).slice(-5):'';}
 function renderOvCards(){
   const projs=visibleProjects();
-  const live=liveProjects();
-  const done=offBookProjects();
+  const _once=ovOnce(liveProjects(),offBookProjects());
+  const live=_once.live;
+  const done=_once.done;
+  const _all=live.concat(done);
   const q=((document.getElementById('ovSearch')||{}).value||'').trim().toLowerCase();
   const match=function(p){return !q||((p.street||'')+' '+(p.name||'')+' '+(p.city||'')+' '+(p.state||'')).toLowerCase().includes(q);};
   const need=_nyByHouse(live);
@@ -9485,7 +9495,8 @@ function renderOvCards(){
   }
   const cardOf=function(p,i){
     const n=(need.map[String(p.id)]||{}).n||0;
-    const _ttl=p.street||p.name||'Untitled house';
+    const _tw=ovTwinTag(p,_all);
+    const _ttl=(p.street||p.name||'Untitled house')+(_tw?' \u00b7 '+_tw:'');
     if(_ovSort==='recent'){
       return `<div class="ov-card${_ent?' enter':''}"${_ent?` style="animation-delay:${i*60}ms"`:''} onclick="nyOpenHouse('${p.id}')">
       <div class="ct"><div><div class="st">${esc(_ttl)}</div></div><span class="td-chev">\u203a</span></div>
@@ -11135,8 +11146,30 @@ function devCopyBugReport(){
     '— errors ('+errs.length+') —'].concat(errs.map(x=>new Date(x.t).toISOString()+' ['+x.k+'] '+x.m+(x.w?' @'+x.w:'')+' ('+x.v+' '+x.mode+')'))
     .concat(tl.length?['','— tour flight log —'].concat(tl):[]).concat(['','— recent events (newest first) —']).concat(ev.map(x=>new Date(x.t).toISOString()+' '+x.type+(x.detail?' · '+x.detail:'')));
   const txt=rep.join('\n');
-  try{navigator.clipboard.writeText(txt).then(()=>toast('Bug report copied — paste it to Claude'),()=>toast('Couldn\u2019t copy'));}catch(e){toast('Couldn\u2019t copy');}
+  copyOrShow(txt,'errReportBox');
   return txt;}
+/* 2.491.0: copy inside the tap, synchronously (iOS Safari refuses a clipboard
+   write it cannot tie to the gesture): a selected textarea + execCommand('copy')
+   first, then navigator.clipboard, then the text in a selectable box under the
+   buttons. Words are placeholders for Agency. */
+const COPY_OK='Copied',COPY_FAIL='Couldn\u2019t copy, select the text below';
+function copyTextSync(txt){let ok=false;const ta=document.createElement('textarea');
+  ta.value=txt;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+  document.body.appendChild(ta);
+  try{ta.focus();ta.select();ta.setSelectionRange(0,txt.length);ok=!!(document.execCommand&&document.execCommand('copy'));}catch(e){ok=false;}
+  try{document.body.removeChild(ta);}catch(e){}
+  return ok;}
+function copyShowBox(txt,boxId){let b=document.getElementById(boxId);
+  if(!b){b=document.createElement('textarea');b.id=boxId;b.readOnly=true;b.className='dev-ta w-full mt-2';b.rows=8;
+    const anchor=document.getElementById('errList');const row=anchor&&anchor.nextElementSibling;
+    (row&&row.parentNode?row.parentNode.insertBefore(b,row.nextSibling):document.body.appendChild(b));}
+  b.value=txt;b.style.display='';try{b.focus();b.select();}catch(e){}
+  return b;}
+function copyOrShow(txt,boxId){
+  if(copyTextSync(txt)){toast(COPY_OK);return 'exec';}
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast(COPY_OK);},function(){copyShowBox(txt,boxId);toast(COPY_FAIL);});return 'clip';}}catch(e){}
+  copyShowBox(txt,boxId);toast(COPY_FAIL);return 'box';}
 function devClearErrors(){try{const me=errUid();const rest=JSON.parse(localStorage.getItem('plumb.errors')||'[]').filter(x=>!errMine(x,me));if(rest.length)localStorage.setItem('plumb.errors',JSON.stringify(rest));else localStorage.removeItem('plumb.errors');}catch(e){}   /* 2.490.0: clears this account's lines only */renderDevErrors();toast('Cleared');}
 /* ── layout snapshot: on-screen geometry for diagnosing UI/layout bugs ── */
 let _lastLayoutSnap='';
@@ -11232,11 +11265,14 @@ let _lastCensus='';
 function devRunCensus(){let txt='';try{txt=sheetCensusText();_lastCensus=txt;}catch(e){txt='Census failed';}const el=document.getElementById('censusOut');if(el)el.textContent=txt;}
 function devCopyCensus(){const txt=_lastCensus||sheetCensusText();try{navigator.clipboard.writeText(txt).then(()=>toast('Census copied'),()=>toast('Could not copy'));}catch(e){toast('Could not copy');}}
 function toggleDevDot(){try{const d=document.getElementById('devDot');if(d)d.classList.toggle('show',devAllowed());}catch(e){}}
+function errRowHTML(x){return `<div class="subrow"><div class="si"><div class="n fs-xs">${esc(x.m)}</div><div class="d">${timeAgo(x.t)}${x.w?' \u00b7 '+esc(x.w):''} \u00b7 ${esc(x.v)} ${esc(x.mode)}</div></div></div>`;}
+/* 2.491.0: "+N more" is a button that shows the rest in place (it was plain text). */
 function renderDevErrors(){
   const el=document.getElementById('errList');if(!el)return;
   const a=devErrors();
-  el.innerHTML=a.length?a.slice(0,8).map(x=>`<div class="subrow"><div class="si"><div class="n fs-xs">${esc(x.m)}</div><div class="d">${timeAgo(x.t)}${x.w?' \u00b7 '+esc(x.w):''} \u00b7 ${esc(x.v)} ${esc(x.mode)}</div></div></div>`).join('')+(a.length>8?'<div class="empty py-1 px-0">+'+(a.length-8)+' more in the report</div>':'')
+  el.innerHTML=a.length?a.slice(0,window._errAll?a.length:8).map(errRowHTML).join('')+((!window._errAll&&a.length>8)?'<button type="button" class="err-more lpay w-full btn btn-quiet" onclick="devErrorsAll()">+'+(a.length-8)+' more in the report</button>':'')
     :'<div class="empty py-1 px-0">No errors recorded. When a button misbehaves, it lands here automatically.</div>';}
+function devErrorsAll(){window._errAll=true;renderDevErrors();}
 function setSync(s){syncStatus=s;
   const live=(typeof Sync!=='undefined'&&Sync.on&&appMode()==='real');   // demo is local-only: a telemetry connection is not cross-device site sync
   const lost=typeof Sync!=='undefined'&&!!Sync.lost&&!live;              // the account is gone: say so until sync connects again

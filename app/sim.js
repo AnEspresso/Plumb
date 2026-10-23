@@ -396,6 +396,33 @@ t('2.490.0: the sign-in form sets the flag before signing in and always clears i
 t('2.490.0: the profile is saved and entered before Sync re-inits (cache clear reload comes after)',(function(){const f=SRC.slice(SRC.indexOf('async function liveAuthSubmit'));return f.indexOf('laSaveProfile(prof);laSaveHat(prof);laEnter(prof);')>0;})());
 $("(function(){var o=__o3;state.session=o.s;state.projects=o.p;_ovSort=o.srt;Sync.uid=o.uid;if(o.e===null)localStorage.removeItem('plumb.errors');else localStorage.setItem('plumb.errors',o.e);delete window.__o3;return true;})()");
 }
+/* ── 2.491.0: bug report copy on iPhone, +N more, each house once ── */
+{
+$("window.__o4={s:state.session,p:state.projects,e:localStorage.getItem('plumb.errors'),srt:_ovSort,ex:document.execCommand,cb:navigator.clipboard,all:window._errAll};true");
+const DE=JSON.parse($(`JSON.stringify((function(){state.session={role:'builder',auth:{uid:'uP123456x'}};window._errAll=false;
+  var a=[];for(var i=0;i<20;i++)a.push({u:'uP123456',t:Date.now()-i,k:'rules',m:'line '+i,w:'',v:'2.490.0',mode:'real'});localStorage.setItem('plumb.errors',JSON.stringify(a));
+  renderDevErrors();var L=document.getElementById('errList');var btn=L.querySelector('button.err-more');var r={rows0:L.querySelectorAll('.subrow').length,btn:btn?btn.textContent:''};
+  if(btn)btn.click();r.rows1=L.querySelectorAll('.subrow').length;r.btn1=!!L.querySelector('button.err-more');return r;})())`));
+t('2.491.0: +12 more is a button',DE.rows0===8&&DE.btn==='+12 more in the report',JSON.stringify(DE));
+t('2.491.0: tapping +12 more shows every line in place',DE.rows1===20&&!DE.btn1,JSON.stringify(DE));
+const CP=JSON.parse($(`JSON.stringify((function(){var r={};
+  document.execCommand=function(c){return c==='copy';};r.exec=copyOrShow('report text','errReportBox');r.t1=document.getElementById('toast').textContent;
+  document.execCommand=function(){return false;};try{Object.defineProperty(navigator,'clipboard',{value:undefined,configurable:true});}catch(e){}
+  r.box=copyOrShow('report text','errReportBox');r.t2=document.getElementById('toast').textContent;var b=document.getElementById('errReportBox');r.val=b?b.value:'';r.ro=b?b.readOnly:false;
+  return r;})())`));
+t('2.491.0: Copy bug report copies synchronously inside the tap (execCommand) and says Copied',CP.exec==='exec'&&CP.t1==='Copied',JSON.stringify(CP));
+t('2.491.0: when copying fails, the report shows in a selectable box and the toast says so',CP.box==='box'&&CP.val==='report text'&&CP.ro&&CP.t2==='Couldn\u2019t copy, select the text below',JSON.stringify(CP));
+t('2.491.0: the bug report copy has no await or promise before the copy',(function(){const f=$("String(devCopyBugReport)");return f.indexOf('await')<0&&f.indexOf('copyOrShow(txt')>0;})());
+const BK=JSON.parse($(`JSON.stringify((function(){state.session={role:'builder',name:'Peter',rpRole:'owner',owner:true,auth:{uid:'uP123456x'}};
+  var mk=function(id,st,extra){return Object.assign({id:id,street:st,items:[],bookings:[],selections:[],logs:[],payments:[],subs:[],docs:[],permits:[],inspections:{},stageDone:{}},extra||{});};
+  state.projects=[mk('qamsu7063s_9','884 Orchard Row'),mk('qamsu7063s_9','884 Orchard Row',{doneAt:1}),mk('qamsu7063s_3','741 Whitaker Ave'),mk('p3','741 Whitaker Ave'),mk('qamsu7063s_4','92 Maple Court')];
+  _ovSort='az';renderOvCards();var t=[].map.call(document.querySelectorAll('#ovCards .ov-card:not(.allh) .st'),function(e){return e.textContent;});
+  var h=document.getElementById('ovCards').innerHTML;var fin=h.indexOf('Finished');var orch=[];var i=-1;while((i=h.indexOf('884 Orchard Row',i+1))>=0)orch.push(i);
+  return {titles:t,orch:orch,fin:fin};})())`));
+t('2.491.0: one house id is drawn once, and a finished house only under Finished',BK.orch.length===1&&BK.fin>=0&&BK.orch[0]>BK.fin,JSON.stringify(BK));
+t('2.491.0: two different houses on the same street are told apart by a short id',BK.titles.indexOf('741 Whitaker Ave \u00b7 #63s_3')>=0&&BK.titles.indexOf('741 Whitaker Ave \u00b7 #p3')>=0&&BK.titles.indexOf('92 Maple Court')>=0,JSON.stringify(BK.titles));
+$("(function(){var o=__o4;state.session=o.s;state.projects=o.p;_ovSort=o.srt;document.execCommand=o.ex;try{Object.defineProperty(navigator,'clipboard',{value:o.cb,configurable:true});}catch(e){}window._errAll=o.all;if(o.e===null)localStorage.removeItem('plumb.errors');else localStorage.setItem('plumb.errors',o.e);var b=document.getElementById('errReportBox');if(b)b.remove();delete window.__o4;return true;})()");
+}
 
 t('SEED_VERSION 21',$('SEED_VERSION')===21);
 t('10 seed sites',$('state.projects.length')===10);
