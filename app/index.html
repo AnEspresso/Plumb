@@ -20819,7 +20819,7 @@ function devImport(e){const f=e.target.files[0];if(!f)return;const r=new FileRea
   if(!state.projects.find(x=>x.id===state.activeId))state.activeId=state.projects[0].id;
   logEvent('dataImport',state.projects.length+' sites');Data.commit();updateHeader();renderAll();refreshDev();renderLocalState();renderFeedbackList();toast('Data imported');}catch(err){logEvent('dataImportError',err.message);toast('Invalid JSON file');}};r.readAsText(f);e.target.value='';}
 function devAddTest(){Data.addItem({id:Data.nextItemId(),cap:'Test record '+new Date().toLocaleTimeString(),area:AREAS[Math.floor(Math.random()*AREAS.length)],crew:'',issue:false,sw:'sage',t:Date.now(),day:0});logEvent('testRecord','');renderFeed();refreshDev();renderLocalState();toast('Test record added');}
-function devReseed(){if(appMode()==='real'){toast('Demo content is only for the example build');return;}   /* 2.493.0: placeholder, Agency to word */
+function devReseed(){if(appMode()==='real'){toast('Demo content only loads in the example build.');return;}   /* 2.493.0: Agency's words */
   const fb=state.feedback,evl=state.eventLog,show=state.showSamples,active=state.activeId;
   // keep any captured (photo) items per project, restore sample sites
   const keptByName={};state.projects.forEach(p=>{keptByName[p.id]=p.items.filter(i=>!i.sample&&i.photoId);});
