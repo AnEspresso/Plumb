@@ -277,6 +277,53 @@ t('what this phone synced is saved for the next open', (function(){$("clearTimeo
 await new Promise(r=>setTimeout(r,450));
 t('the saved sync record holds fingerprints, not copies', (function(){const b=$("localStorage.getItem(Sync._baseKey())")||'';return b.indexOf('stale1')>=0&&b.indexOf('v1b')<0&&b.indexOf('New name')<0;})());
 $("state.projects=state.projects.filter(p=>p.id!=='stale1');localStorage.removeItem(Sync._baseKey());clearTimeout(Sync._baseT);state.session=null;Object.assign(Sync,{mode:null,db:null,on:false,uid:null,_listening:{},_collGen:{},_reArmed:{},_shadow:{},_held:{},_pulled:{},_onServer:{},_sitesPulled:false,_gateDelays:null,unsub:[]});delete window.__s;delete window.__serverMeta;true");
+/* ── 2.488.0: own-write skip per account (team login on the QA owner's browser) ── */
+{
+const SAVE=$("window.__o={p:state.projects,s:state.session,su:state.storeUid,ac:state.activeId};true");
+const setup=(uid,locals)=>$(`(function(){window.__q={att:[],h:{}};
+  state.session={role:'builder',name:'T',rpRole:'pm',auth:{uid:'${uid}'}};state.projects=${JSON.stringify(locals)};state.storeUid='${uid}';
+  Object.assign(Sync,{mode:'live',uid:'${uid}',authKind:'account',deviceId:'devS',on:true,_listening:{},_collGen:{},_reArmed:{},_notifReady:{},_shadow:{},unsub:[],_held:{},_gateDelays:[0]});
+  const coll=sub=>({doc:id=>({set:()=>Promise.resolve(),delete:()=>Promise.resolve()}),where:()=>coll(sub),onSnapshot:(o,h)=>{__q.att.push(sub);return ()=>{};}});
+  Sync.db={collection:()=>({where:()=>({onSnapshot:(o,h)=>{__q.h.sites=h;return ()=>{};}}),doc:id=>({set:()=>Promise.resolve(),get:()=>Promise.resolve({exists:true}),collection:sub=>coll(sub)})})};
+  Sync.subscribe();return true;})()`);
+const site=(id,o)=>Object.assign({mode:'live',members:{uO:'builder',uT:'builder'},memberUids:['uO','uT'],updatedBy:'devS',updatedByUid:'uO',
+  meta:{id:id,street:'S '+id,members:{uO:'builder',uT:'builder'},memberInfo:{uO:{rpRole:'owner'},uT:{rpRole:'pm',name:'Alex'}}}},o||{});
+const fire=docs=>$(`(function(){var D=${JSON.stringify(docs)};__q.h.sites({metadata:{fromCache:false},docs:D.map(function(d){return {id:d.meta.id};}),docChanges:function(){return D.map(function(d){return {type:'added',doc:{id:d.meta.id,data:function(){return d;}}};});}});return true;})()`);
+const MC=['costs','selm','pmts','mail','inv'];
+// (a) same device, different account: the owner's writes from this browser load for the team login
+setup('uT',[{id:'c7',street:'7 Cottage',members:{uO:'builder'},items:[],bookings:[],selections:[],logs:[],payments:[],mailReview:[],costs:[]}]);
+fire([site('h1'),site('h2'),site('c7')]);
+await new Promise(r=>setTimeout(r,120));
+const A=JSON.parse($("JSON.stringify({ids:state.projects.map(p=>p.id).sort(),c7:(state.projects.find(p=>p.id==='c7')||{}).memberInfo,att:__q.att})"));
+t('2.488.0: same browser, another account: every house written by the other account loads (sites 3)',A.ids.join()==='c7,h1,h2',JSON.stringify(A.ids));
+t('2.488.0: the stale local house takes the server copy (memberInfo for this member arrives)',!!(A.c7&&A.c7.uT),JSON.stringify(A.c7));
+t('2.488.0: a pm team member with no gates attaches no money listeners on those houses',MC.every(c=>A.att.indexOf(c)<0)&&A.att.indexOf('items')>=0,JSON.stringify(A.att));
+// (b) same device, same account: its own echo is still skipped
+setup('uO',[{id:'h1',street:'Local edit',members:{uO:'builder',uT:'builder'},items:[],bookings:[],selections:[],logs:[],payments:[],mailReview:[],costs:[]}]);
+fire([site('h1',{meta:{id:'h1',street:'Server',members:{uO:'builder'}}})]);
+await new Promise(r=>setTimeout(r,60));
+t('2.488.0: same browser, same account: its own echo is skipped (local edit kept)',$("state.projects.find(p=>p.id==='h1').street")==='Local edit');
+// an older doc without updatedByUid is never skipped
+setup('uO',[{id:'h1',street:'Local edit',members:{uO:'builder'},items:[],bookings:[],selections:[],logs:[],payments:[],mailReview:[],costs:[]}]);
+fire([site('h1',{updatedByUid:undefined,meta:{id:'h1',street:'Server',members:{uO:'builder'}}})]);
+await new Promise(r=>setTimeout(r,60));
+t('2.488.0: a doc with no updatedByUid is applied, not skipped',$("state.projects.find(p=>p.id==='h1').street")==='Server');
+t('2.488.0: _mine needs device AND account',$("Sync.deviceId='devS';state.session={role:'builder',auth:{uid:'uO'}};[Sync._mine({updatedBy:'devS',updatedByUid:'uO'}),Sync._mine({updatedBy:'devS',updatedByUid:'uT'}),Sync._mine({updatedBy:'devS'}),Sync._mine({updatedBy:'devX',updatedByUid:'uO'})].join()")==='true,false,false,false');
+t('2.488.0: record writes stamp updatedByUid',(SRC.match(/updatedBy:this\.deviceId,updatedByUid:this\._me\(\)/g)||[]).length>=2);
+// (c) missing entry on an unconfirmed local copy: no money until the server copy arrives
+const M=JSON.parse($(`JSON.stringify((function(){state.session={role:'builder',name:'T',rpRole:'pm',auth:{uid:'uT'}};Sync.uid='uT';
+  state.projects=[{id:'m1',members:{uT:'builder',uO:'builder'},memberUids:['uT','uO'],memberInfo:{uO:{rpRole:'owner'}}}];Sync._onServer={};
+  var a={colls:syncCollsFor('builder').map(c=>c.sub),owner:isOrgOwner(),job:canGate('moneyJob')};
+  Sync._onServer={m1:true};var b={owner:isOrgOwner()};return {a:a,b:b};})())`));
+t('2.488.0: a non-owner whose local copy lacks their entry gets no money listeners and is not owner',MC.every(c=>M.a.colls.indexOf(c)<0)&&!M.a.owner&&!M.a.job,JSON.stringify(M.a));
+t('2.488.0: once the server confirms the house, the rules\' no-entry = owner branch is unchanged',M.b.owner===true,JSON.stringify(M.b));
+// (d) account change drops the previous account's local copy
+const C=JSON.parse($(`JSON.stringify((function(){Sync.mode='live';state.session={role:'builder',auth:{uid:'uB'}};Sync.uid='uB';state.storeUid='uA';state.projects=[{id:'old'}];var dropped=Sync._storeOwnerCheck();var a={dropped:dropped,n:state.projects.length,su:state.storeUid};
+  state.projects=[{id:'mine'}];var b={dropped:Sync._storeOwnerCheck(),n:state.projects.length};return {a:a,b:b};})())`));
+t('2.488.0: a different signed-in account drops the old local houses',C.a.dropped&&C.a.n===0&&C.a.su==='uB',JSON.stringify(C.a));
+t('2.488.0: the same account keeps its local houses',!C.b.dropped&&C.b.n===1,JSON.stringify(C.b));
+$("state.projects=__o.p;state.session=__o.s;state.storeUid=__o.su;state.activeId=__o.ac;Object.assign(Sync,{mode:null,db:null,on:false,uid:null,deviceId:null,_listening:{},_collGen:{},_reArmed:{},_shadow:{},_held:{},_pulled:{},_onServer:{},_sitesPulled:false,_gateDelays:null,unsub:[]});delete window.__q;delete window.__o;true");
+}
 
 t('SEED_VERSION 21',$('SEED_VERSION')===21);
 t('10 seed sites',$('state.projects.length')===10);
