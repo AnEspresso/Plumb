@@ -324,6 +324,48 @@ t('2.488.0: a different signed-in account drops the old local houses',C.a.droppe
 t('2.488.0: the same account keeps its local houses',!C.b.dropped&&C.b.n===1,JSON.stringify(C.b));
 $("state.projects=__o.p;state.session=__o.s;state.storeUid=__o.su;state.activeId=__o.ac;Object.assign(Sync,{mode:null,db:null,on:false,uid:null,deviceId:null,_listening:{},_collGen:{},_reArmed:{},_shadow:{},_held:{},_pulled:{},_onServer:{},_sitesPulled:false,_gateDelays:null,unsub:[]});delete window.__q;delete window.__o;true");
 }
+/* ── 2.489.0: check 4 — role from the server, house entry decides money, cache guard, invoice notices gated ── */
+{
+$("window.__o2={p:state.projects,s:state.session,sp:Sync._sitesPulled,os:Sync._onServer,uid:Sync.uid,db:Sync.db,ak:Sync.authKind,on:Sync.on,rl:Sync._reload,cu:localStorage.getItem('plumb.cacheUid')};true");
+// fix 1
+t('2.489.0: sign-in role comes from users/{uid}.rpRole, not the form',$("[signInRole({rpRole:'pm'},'owner'),signInRole({rpRole:'owner'},''),signInRole({},'pm'),signInRole({},''),signInRole(null,'')].join()")==='pm,owner,pm,,');
+t('2.489.0: a sign-in never falls back to the form default role',SRC.indexOf("laProfile().rpRole)||rpRole)")<0&&SRC.indexOf("laProfile().email===email&&laProfile().rpRole)||'')}")>=0&&SRC.indexOf("prof.rpRole=signInRole(ud,prof.rpRole)")>=0);
+// fix 2
+const R=JSON.parse($(`JSON.stringify((function(){var MC=['costs','selm','pmts','mail','inv'];
+  function run(sess,mi,pulled){state.session=sess;Sync.uid=sess.auth.uid;state.projects=[{id:'b8',members:{uT:'builder',uO:'builder'},memberUids:['uT','uO'],memberInfo:mi}];Sync._sitesPulled=pulled;Sync._onServer=pulled?{b8:true}:{};
+    var c=syncCollsFor('builder').map(function(x){return x.sub;});return {owner:isOrgOwner(),co:canGate('moneyCo'),invHid:moneyHidden('inv'),money:MC.filter(function(m){return c.indexOf(m)>=0;}).length,biller:Notify._audMatch('biller',state.projects[0])};}
+  var team={role:'builder',name:'Alex',rpRole:'owner',owner:true,auth:{uid:'uT'}};
+  return {leak:run(team,{uO:{rpRole:'owner'},uT:{rpRole:'pm'}},true),
+    early:run(team,{uO:{rpRole:'owner'},uT:{rpRole:'pm'}},false),
+    own:run({role:'builder',name:'Peter',rpRole:'owner',owner:true,auth:{uid:'uO'}},{uO:{rpRole:'owner'},uT:{rpRole:'pm'}},true),
+    legacy:run({role:'builder',name:'Peter',rpRole:'owner',owner:true,auth:{uid:'uO'}},{uT:{rpRole:'pm'}},true),
+    pmTeam:run({role:'builder',name:'Alex',rpRole:'pm',auth:{uid:'uT'}},{uO:{rpRole:'owner'},uT:{rpRole:'pm'}},true)};})())`));
+t('2.489.0: once houses are pulled, a stale owner flag loses to the house entry (no owner, no money listeners, invoices hidden)',!R.leak.owner&&!R.leak.co&&R.leak.invHid&&R.leak.money===0,JSON.stringify(R.leak));
+t('2.489.0: the real owner (entry rpRole owner) still gets money and every money listener',R.own.owner&&R.own.co&&!R.own.invHid&&R.own.money===5&&R.own.biller,JSON.stringify(R.own));
+t('2.489.0: a legacy owner with no entry on a pulled house keeps money (rules: no entry = owner)',R.legacy.owner&&R.legacy.money===5,JSON.stringify(R.legacy));
+t('2.489.0: a pm team member with rpRole from the server gets no money',!R.pmTeam.owner&&R.pmTeam.money===0&&R.pmTeam.invHid,JSON.stringify(R.pmTeam));
+// fix 4
+t('2.489.0: invoice notices (past due, approved) skip a builder without Invoices',R.leak.biller===false&&R.pmTeam.biller===false&&R.own.biller===true,JSON.stringify([R.leak.biller,R.pmTeam.biller,R.own.biller]));
+const SW=JSON.parse($(`JSON.stringify((function(){var pushed=[],op=Notify.push;Notify.push=function(k,ti){pushed.push(ti);};
+  try{state.session={role:'builder',name:'Alex',rpRole:'pm',auth:{uid:'uT'}};Sync.uid='uT';Sync._sitesPulled=true;Sync._onServer={b9:true};
+    state.projects=[{id:'b9',street:'509 Beaumont Park',members:{uT:'builder'},memberUids:['uT'],memberInfo:{uT:{rpRole:'pm'}},subs:[],selections:[],invoices:[{id:'iq',no:'INV-002',status:'sent',total:4550,due:'2020-01-01',payments:[{id:'p',amount:2000}]}]}];
+    Notify.sweep();var a=pushed.slice();pushed.length=0;
+    state.session={role:'builder',name:'Peter',rpRole:'owner',owner:true,auth:{uid:'uT'}};state.projects[0].memberInfo={uT:{rpRole:'owner'}};Notify.sweep();
+    return {team:a,owner:pushed.slice()};}finally{Notify.push=op;}})())`));
+t('2.489.0: Notify.sweep gives the no-money team member no Invoice past due',!SW.team.some(x=>/Invoice past due/.test(x)),JSON.stringify(SW.team));
+t('2.489.0: the owner still gets Invoice past due',SW.owner.some(x=>/Invoice past due/.test(x)),JSON.stringify(SW.owner));
+// fix 3
+const CG=JSON.parse($(`JSON.stringify((async function(){return 0;})()&&(function(){window.__cg={t:0,c:0,r:0};Sync._reload=function(){__cg.r++;};
+  Sync.db={terminate:function(){__cg.t++;return Promise.resolve();},clearPersistence:function(){__cg.c++;return Promise.resolve();}};return true;})())`));
+const run3=async(prev,uid)=>{$(`(function(){if(${JSON.stringify(prev)}===null)localStorage.removeItem('plumb.cacheUid');else localStorage.setItem('plumb.cacheUid',${JSON.stringify(prev)});__cg.t=0;__cg.c=0;__cg.r=0;Sync.uid='${uid}';Sync.authKind='account';Sync.db={terminate:function(){__cg.t++;return Promise.resolve();},clearPersistence:function(){__cg.c++;return Promise.resolve();}};return true;})()`);
+  const r=await $("Sync._cacheGuard()");return JSON.parse($("JSON.stringify({ret:"+r+",t:__cg.t,c:__cg.c,r:__cg.r,cu:localStorage.getItem('plumb.cacheUid')})"));};
+const c1=await run3('uA','uB'),c2=await run3('uB','uB'),c3=await run3(null,'uB');
+t('2.489.0: a different account clears the offline cache (terminate + clearPersistence) and reloads once',c1.ret&&c1.t===1&&c1.c===1&&c1.r===1&&c1.cu==='uB',JSON.stringify(c1));
+t('2.489.0: the same account keeps its cache (no reload)',!c2.ret&&c2.t===0&&c2.c===0&&c2.r===0,JSON.stringify(c2));
+t('2.489.0: a cache from before 2.489.0 (owner unknown) is cleared once',c3.ret&&c3.c===1&&c3.cu==='uB',JSON.stringify(c3));
+t('2.489.0: Sync init runs the cache guard before the device id and listeners',SRC.indexOf("if(await this._cacheGuard())return false;")>=0&&SRC.indexOf("if(await this._cacheGuard())return false;")<SRC.indexOf("this.deviceId=this._devId();\n      try{if(this.mode==='live')this._loadBase();}catch(e){}"));
+$("(function(){var o=__o2;state.projects=o.p;state.session=o.s;Sync._sitesPulled=o.sp;Sync._onServer=o.os;Sync.uid=o.uid;Sync.db=o.db;Sync.authKind=o.ak;Sync.on=o.on;Sync._reload=o.rl;if(o.cu===null)localStorage.removeItem('plumb.cacheUid');else localStorage.setItem('plumb.cacheUid',o.cu);delete window.__o2;delete window.__cg;return true;})()");
+}
 
 t('SEED_VERSION 21',$('SEED_VERSION')===21);
 t('10 seed sites',$('state.projects.length')===10);

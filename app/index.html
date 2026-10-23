@@ -3977,15 +3977,15 @@ button.row,a.row{width:100%;background:transparent;border:0;font:inherit;color:i
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.488.0 - Own-write skip per account; houses this phone lacks are always added';
+const PLUMB_VERSION='2.489.0 - Team login: role from the server, house entry decides money, cache cleared on account change';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1793822400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.488.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1793908800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.489.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5803,7 +5803,11 @@ function isOrgOwner(){
   try{
     const s=state.session||{};
     if(s.role!=='builder')return false;
-    if(s.owner===true)return true;
+    /* 2.489.0: once the houses are known (pulled from the server), the house's
+       member entry decides, over the session's owner flag (rules moneyOk). */
+    if(s.owner===true){
+      try{if(!s.member&&typeof Sync!=='undefined'&&Sync._sitesPulled){const hk=houseMoney();if(hk&&!hk.own)return false;}}catch(e){}
+      return true;}
     /* 2.486.0: once this phone holds houses that list this builder, the house entries decide (rules moneyOk) — no fallback to owner. */
     const h=s.member?null:houseMoney();
     if(h)return h.own;
@@ -6051,6 +6055,9 @@ function accountGone(why){
   if(gone){try{logEvent('authLostBlocked',String(why||'').slice(0,60));}catch(e){}accountLostPrompt();}
   return gone;
 }
+/* 2.489.0: sign-in role = users/{uid}.rpRole when the server has one, else what
+   this account saved before (same email), else none. Never the form default. */
+function signInRole(userDoc,saved){const r=userDoc&&typeof userDoc.rpRole==='string'?userDoc.rpRole:'';return r||saved||'';}
 async function laEnter(p){
   /* A Firebase profile may only enter on a REAL Firebase account session.
      The legacy anonymous fallback overwrote account sessions on devices, so a
@@ -6141,12 +6148,14 @@ async function liveAuthSubmit(){
       }else{
         cred=await firebase.auth().signInWithEmailAndPassword(email,pass);
       }
-      const prof={provider:'firebase',uid:cred.user.uid,email,emailVerified:!!cred.user.emailVerified,name:laMode==='signup'?name:(cred.user.displayName||email),rpRole:laMode==='signup'?rpRole:( (laProfile()&&laProfile().email===email&&laProfile().rpRole)||rpRole)};
+      const prof={provider:'firebase',uid:cred.user.uid,email,emailVerified:!!cred.user.emailVerified,name:laMode==='signup'?name:(cred.user.displayName||email),rpRole:laMode==='signup'?rpRole:((laProfile()&&laProfile().email===email&&laProfile().rpRole)||'')};   /* 2.489.0: a sign-in never takes the form's default role (it says Owner) */
       if(invCode){const m=await redeemInvite(invCode,prof);if(m===false)return;if(m){prof.member=m;if(m.rpRole)prof.rpRole=m.rpRole;if(m.gates)prof.gates=m.gates;_invClearHandoff();}}
       else{const old=laProfile();if(old&&old.email===email&&old.member)prof.member=old.member;
         if(!prof.member&&prof.uid){const hat=laHats()[prof.uid];if(hat&&hat.member){prof.member=hat.member;if(hat.rpRole)prof.rpRole=hat.rpRole;if(hat.name)prof.name=hat.name;}}
         if(!prof.member){try{const snap=await firebase.firestore().collection('users').doc(cred.user.uid).get();const d=snap.data()||{};
-          if(d.hatRole==='client'||d.hatRole==='sub'||d.hatRole==='team'){prof.member={role:d.hatRole,siteId:d.hatSite||'',rpRole:d.rpRole||'',gates:null};if(d.rpRole)prof.rpRole=d.rpRole;}}catch(e){}}}
+          if(d.hatRole==='client'||d.hatRole==='sub'||d.hatRole==='team'){prof.member={role:d.hatRole,siteId:d.hatSite||'',rpRole:d.rpRole||'',gates:null};if(d.rpRole)prof.rpRole=d.rpRole;}}catch(e){}}
+        /* 2.489.0: the role (and so owner) comes from the server's users doc on every sign-in. */
+        if(laMode!=='signup'&&prof.uid){try{const us=await firebase.firestore().collection('users').doc(cred.user.uid).get();const ud=(us&&us.data&&us.data())||{};prof.rpRole=signInRole(ud,prof.rpRole);}catch(e){}}}
       laSaveProfile(prof);laSaveHat(prof);laEnter(prof);
       if(laMode==='signup')try{_evAfterSignup(email);}catch(e){}
     }else{
@@ -10041,6 +10050,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         try{logEvent('uidHeal',state.session.auth.uid.slice(0,8)+' -> '+this.uid.slice(0,8));}catch(e){}
         state.session.auth.uid=this.uid;try{persist();}catch(e){}
       }}catch(e){}
+      if(await this._cacheGuard())return false;   // 2.489.0: another account's offline cache was cleared; reloading
       this.deviceId=this._devId();
       try{if(this.mode==='live')this._loadBase();}catch(e){}
       this.on=true;this.err='';this._retries=0;this._reloginNudged=false;clearAccountLost();clearTimeout(this._retryT);setSync('synced');
@@ -10271,6 +10281,20 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     this._saveBase();this._flushHeld();},
   /* What this phone last synced (hashes only, per house) survives a restart,
      so a reopened phone can tell its own offline edits from its stale copy. */
+  /* 2.489.0: Firestore's offline cache is per browser, not per account: a listener
+     fires from it before the server refuses. A different signed-in account (or a
+     cache from before 2.489.0, owner unknown) clears it once and reloads. */
+  async _cacheGuard(){try{
+    if(!this.uid||this.authKind!=='account'||!this.db)return false;
+    const was=localStorage.getItem('plumb.cacheUid');
+    if(was===this.uid)return false;
+    localStorage.setItem('plumb.cacheUid',this.uid);           // set first: never a reload loop
+    try{logEvent('cacheCleared',(was?was.slice(0,8):'unknown')+' -> '+this.uid.slice(0,8));}catch(e){}
+    try{await this.db.terminate();}catch(e){}
+    try{await this.db.clearPersistence();}catch(e){console.warn('[SitePlumb] clearPersistence',e);}
+    this.db=null;this.on=false;
+    (this._reload||function(){location.reload();})();
+    return true;}catch(e){return false;}},
   _baseKey(){return 'plumb.syncBase.'+storeKey()+'.'+(this.uid||'');},
   /* 2.488.0: a write is this phone's own echo only when BOTH this device and this
      signed-in account wrote it. plumb.deviceId is per browser, not per account:
@@ -10608,7 +10632,7 @@ const Notify={
   _audMatch(aud,p){
     const sx=state.session||{};
     if(aud==='builder')return sx.role==='builder';
-    if(aud==='biller'){if(sx.role!=='builder')return false;const set=billersOf(p);return set.length?set.includes(sx.name):true;}
+    if(aud==='biller'){if(sx.role!=='builder')return false;if(moneyHidden('inv'))return false;   /* 2.489.0: invoice notices (past due, approved) only for builders with Invoices */const set=billersOf(p);return set.length?set.includes(sx.name):true;}
     if(aud==='client')return sx.role==='client'&&String(sx.site||'')===String(p.id);
     if(aud.indexOf('sub:')===0)return sx.role==='subs'&&sx.name===aud.slice(4);
     if(aud.indexOf('trade:')===0){if(sx.role!=='subs')return false;
