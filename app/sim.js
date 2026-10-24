@@ -4600,7 +4600,7 @@ await (async function(){
         if(!store[seg[0]+'/'+seg[1]+'/consent/'+Sync.uid])throw denied('no consent');return;}
       if(coll==='flags'){if(old)throw denied('flags are create-only');if(['builder','client'].indexOf(X.role)<0||!only(v,['kind','targetType','targetId','note','ref','byUid','at','appV','tappedAt'])||v.byUid!==Sync.uid||v.at!==TS||!v.appV
           ||['flag','resolve'].indexOf(v.kind)<0||['inv','co','sel','pmt'].indexOf(v.targetType)<0||!v.targetId||typeof v.note!=='string'||!v.note||v.note.length>500||(v.kind==='resolve'&&!v.ref))throw denied('flag shape');return;}
-      if(coll==='inv'){if(X.role!=='builder'||!only(v,['data','updatedAt','updatedBy','byUid','tappedAt','appV','at'])||v.byUid!==Sync.uid||v.at!==TS)throw denied('inv');
+      if(coll==='inv'){if(X.role!=='builder'||!only(v,['data','updatedAt','updatedBy','updatedByUid','byUid','tappedAt','appV','at'])||v.byUid!==Sync.uid||v.at!==TS)throw denied('inv');
         var iv=v.data||{},io=old?old.data:null;var im=/^INV-([0-9]+)$/.exec(iv.no||'');
         if(iv.status==='sent'&&(!io||io.status==='draft')&&X.invClaims&&(!im||batchPaths.indexOf('sites/'+seg[1]+'/numbers/inv-'+(+im[1]))<0))throw denied('inv sent without its claim');return;}
       if(coll==='numbers'){if(old)throw denied('number already claimed');if(!only(v,['kind','no','byUid','at','appV','tappedAt'])||['co','inv'].indexOf(v.kind)<0||!(v.no>0)||seg[3]!==v.kind+'-'+v.no||v.byUid!==Sync.uid||v.at!==TS)throw denied('number shape');return;}
@@ -5126,6 +5126,23 @@ await (async function(){
   t('A2: the homeowner approval is stamped first and falls back to the A1 shape',SRC.indexOf("byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at")>=0&&SRC.indexOf("if(!(e1&&e1.code==='permission-denied'))throw e1;await ref.set(base,{merge:true});")>=0);
   t('A2: voiding an invoice asks why and keeps the reason',SRC.indexOf("inv.status='void';inv.voidedAt=Date.now();inv.voidReason=why;")>=0&&SRC.indexOf("if(!why){toast('Add a reason first.');return;}")>=0);
   t('A2: a credit or charge is never removed from a sent invoice',SRC.indexOf("const canAdj=false;")>=0);
+  t('2.495.0: InvNo.send writes amountC on every item, totalC on the invoice, and updatedByUid on the initial batch.set',
+    Array.isArray(IV2.rec&&IV2.rec.items)&&IV2.rec.items.length===1&&IV2.rec.items.every(function(it){return Number.isSafeInteger(it.amountC)&&it.amountC===Math.round(it.amount*100);})&&IV2.rec.totalC===25000&&J("(__co.store[__co.pre+'inv/'+P().invoices.filter(function(x){return x.no==="+JSON.stringify(IV2.no)+";})[0].id]||{}).updatedByUid")==='uB',
+    JSON.stringify(IV2.rec));
+  const A2HEAL=await $2(`(async function(){var p=P();var sid=String(p.id);var savedDb=Sync.db;var tries=0,payloads=[];
+    var fakeRef={set:function(v){tries++;payloads.push(JSON.parse(JSON.stringify(v)));if(tries===1&&v.data&&v.data.items&&v.data.items[0]&&'amountC' in v.data.items[0]){var e=new Error('denied');e.code='permission-denied';return Promise.reject(e);}return Promise.resolve();},delete:function(){return Promise.resolve();}};
+    var noopRef={set:function(){return Promise.resolve();},delete:function(){return Promise.resolve();}};
+    Sync.db={collection:function(){return {doc:function(){return {set:function(){return Promise.resolve();},collection:function(sub){return {doc:function(did){return (sub==='inv'&&did==='inv_legacy_no_ac')?fakeRef:noopRef;}};}};}};}};
+    try{
+      p.invoices=p.invoices||[];
+      p.invoices.push({id:'inv_legacy_no_ac',no:'INV-999',title:'Legacy',status:'void',voidedAt:123,voidReason:'Test',total:50,totalC:5000,items:[{label:'A2 Test',amount:50,amountC:5000},{label:'Adj',amount:-10,amountC:-1000,adj:true}],payments:[]});
+      await Sync._pushOne(p);
+      p.invoices=p.invoices.filter(function(x){return x.id!=='inv_legacy_no_ac';});
+      if(Sync._shadow[sid]&&Sync._shadow[sid].colls&&Sync._shadow[sid].colls.inv)delete Sync._shadow[sid].colls.inv.inv_legacy_no_ac;
+      return {tries:tries,firstHas:!!(payloads[0]&&'amountC' in payloads[0].data.items[0]),secondHas:payloads[1]?('amountC' in payloads[1].data.items[0]):true,adjHas:payloads[1]?payloads[1].data.items[1].amountC:null};
+    }finally{Sync.db=savedDb;}})()`);
+  t('2.495.0: Sync._pushOne heals a pre-2.495 sent invoice whose server items lacked amountC on permission-denied',
+    A2HEAL&&A2HEAL.tries===2&&A2HEAL.firstHas===true&&A2HEAL.secondHas===false&&A2HEAL.adjHas===-1000,JSON.stringify(A2HEAL));
   $2(COEND);
 
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);

@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.494.0 - Copied toast over the workbench; no demo houses in a signed-in book';
+const PLUMB_VERSION='2.495.0 - Copied toast over the workbench; no demo houses in a signed-in book';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1794340800000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.494.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1794427200000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.495.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5071,7 +5071,7 @@ function sampleState(){
 }
 function P(){return state.projects.find(p=>p.id===state.activeId)||state.projects[0];}
 
-let state=emptyState();   /* 2.494.0: start empty; load() seeds the demo in demo mode only */
+let state=emptyState();   /* 2.495.0: start empty; load() seeds the demo in demo mode only */
 let issueFilter='open';
 const photoURLs={};   // photoId -> objectURL
 
@@ -5209,7 +5209,7 @@ function load(){
     if(act&&state.projects.find(p=>String(p.id)===String(act)))state.activeId=act;
     try{persist();}catch(e){}
   }
-  /* 2.494.0: a signed-in account never keeps demo houses (p1..p10). They never
+  /* 2.495.0: a signed-in account never keeps demo houses (p1..p10). They never
      sync, so nothing else would ever remove them from this phone. */
   if(appMode()==='real')stripSampleHouses();
   if(state.projects.length && !state.projects.find(p=>p.id===state.activeId)) state.activeId=state.projects[0].id;
@@ -10202,7 +10202,13 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(op.sub==='inv'||op.sub==='selm'){
           /* F-2: a money record is the builder's whole record: replace it, so a
              key that left the invoice or the selection's money leaves the cloud too. */
-          await ref.set(Object.assign({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
+          try{
+            await ref.set(Object.assign({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
+          }catch(e1){
+            if(!(op.sub==='inv'&&e1&&e1.code==='permission-denied'&&Array.isArray(op.data&&op.data.items)))throw e1;
+            const healed=Object.assign({},op.data,{items:op.data.items.map(it=>(it&&!it.adj&&typeof it==='object')?Object.assign({},it,{amountC:undefined}):it)});
+            await ref.set(Object.assign({data:fbClean(healed),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
+          }
         }else{
           let data=fbClean(op.data);
           /* F-2 (correction 2): a merge never deletes a field. Until R2 refuses
@@ -15302,14 +15308,19 @@ const InvNo={
     return max+1;},
   /* returns the claimed 'INV-NNN', or throws */
   async send(p,inv){const sid=String(p.id);
+    try{moneyStampProject(p,[]);}catch(e){}
+    if(inv&&typeof inv==='object'){
+      if(Array.isArray(inv.items)){inv.items.forEach(it=>{if(it&&typeof it==='object'&&it.amount!=null&&it.amount!==''){const c=toC(it.amount);it.amount=fromC(c);it.amountC=c;}});
+        if(inv.items.length){const tc=sumC(inv.items.map(i=>i.amount));inv.total=fromC(tc);inv.totalC=tc;}else if(inv.total!=null){const tc=toC(inv.total);inv.total=fromC(tc);inv.totalC=tc;}}
+      else if(inv.total!=null){const tc=toC(inv.total);inv.total=fromC(tc);inv.totalC=tc;}}
     for(let tries=0;tries<4;tries++){
       const n=await this.nextNo(p);const no='INV-'+String(n).padStart(3,'0');
       const data=Object.assign({},inv,{no:no,status:'sent',t:Date.now(),sentBy:(state.session||{}).name||''});
       const b=Sync.db.batch();
-      b.set(Sync.db.collection('sites').doc(sid).collection('inv').doc(String(inv.id)),Object.assign({data:fbClean(data),updatedAt:Date.now(),updatedBy:Sync.deviceId},Sync._stamp()));
+      b.set(Sync.db.collection('sites').doc(sid).collection('inv').doc(String(inv.id)),Object.assign({data:fbClean(data),updatedAt:Date.now(),updatedBy:Sync.deviceId,updatedByUid:Sync._me()},Sync._stamp()));
       b.set(CO.nums(sid).doc('inv-'+n),Object.assign({kind:'inv',no:n},CO.stamp()));
       try{await b.commit();}catch(err){if(!(err&&err.code==='permission-denied')||tries===3)throw err;continue;}
-      Object.assign(inv,{no:no,status:'sent',t:data.t,sentBy:data.sentBy});
+      Object.assign(inv,data);
       try{const sh=Sync._shadow[sid]||(Sync._shadow[sid]={meta:'',colls:{}});sh.colls=sh.colls||{};(sh.colls.inv||(sh.colls.inv={}))[String(inv.id)]=_syncHash(JSON.stringify(inv));Sync._saveBase();}catch(e){}
       return no;}
     throw new Error('no number');},
@@ -15373,10 +15384,10 @@ function _invSnapInputs(){const g=i=>(document.getElementById(i)||{value:''}).va
   _invDraft.exLabel=g('invExLabel');_invDraft.exAmount=g('invExAmount');if(document.getElementById('invExKind'))_invDraft.exCredit=g('invExKind')==='credit';}
 function invDraftItems(){
   const p=P();const items=[];
-  composeSelections(p).forEach(x=>{if(_invDraft.picks[x.id])items.push({label:(x.item||'(selection)')+' — '+(x.cat||'')+(x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+x.room:''),amount:selUnbilledAmt(p,x,_invDraft.editId||null),selId:x.id});});
-  {const cp=_invDraft.coPicks||{};coBillable(p,_invDraft.editId||null).forEach(r=>{if(cp[r.id])items.push({label:CO.label(r.no)+' \u00b7 '+String(r.title||''),amount:fromC(r.amountC),coId:r.id});});}
+  composeSelections(p).forEach(x=>{if(_invDraft.picks[x.id]){const a=selUnbilledAmt(p,x,_invDraft.editId||null),c=toC(a);items.push({label:(x.item||'(selection)')+' — '+(x.cat||'')+(x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+x.room:''),amount:fromC(c),amountC:c,selId:x.id});}});
+  {const cp=_invDraft.coPicks||{};coBillable(p,_invDraft.editId||null).forEach(r=>{if(cp[r.id]){const c=toC(fromC(r.amountC));items.push({label:CO.label(r.no)+' \u00b7 '+String(r.title||''),amount:fromC(c),amountC:c,coId:r.id});}});}
   const exR=parseMoney(_invDraft.exAmount,{});
-  if(_invDraft.exLabel.trim()&&exR.ok&&exR.cents!==0)items.push({label:_invDraft.exLabel.trim(),amount:fromC(exR.cents)*(_invDraft.exCredit?-1:1)});
+  if(_invDraft.exLabel.trim()&&exR.ok&&exR.cents!==0){const c=exR.cents*(_invDraft.exCredit?-1:1);items.push({label:_invDraft.exLabel.trim(),amount:fromC(c),amountC:c});}
   return items;}
 function invSave(asDraft){
   if(!asDraft&&moneyUpdateGate())return;
@@ -20692,7 +20703,7 @@ async function devRefreshUsage(){const box=document.getElementById('usageList');
     return '<div class="usage-row"><div class="ur-top"><b>'+esc(r.role||'—')+'</b>'+(r.name?' · '+esc(r.name):'')+me+'<span class="ur-when">'+ago+'</span></div><div class="ur-ev">'+ev+'</div></div>';}).join('');}
 function closeDev(){document.getElementById('devpanel').classList.remove('show');}
 async function refreshDev(){
-  document.getElementById('st-items').textContent=((P()||{}).items||[]).length;   /* 2.494.0: an erased account has no house */
+  document.getElementById('st-items').textContent=((P()||{}).items||[]).length;   /* 2.495.0: an erased account has no house */
   const keys=await idbKeys();document.getElementById('st-photos').textContent=keys.length;
   const bytes=new Blob([JSON.stringify(state)]).size;document.getElementById('st-meta').textContent=(bytes/1024).toFixed(1)+' KB';
   if(navigator.storage&&navigator.storage.estimate){const est=await navigator.storage.estimate();document.getElementById('st-quota').textContent=(est.usage/1048576).toFixed(1)+' MB';}
@@ -20738,7 +20749,7 @@ async function devForceUpdate(){
 
 /* ── Local State inspector ── */
 function renderLocalState(){
-  const p=P()||{items:[],logs:[],docs:[],subs:[],stageDone:{}};   /* 2.494.0: an erased account has no house */
+  const p=P()||{items:[],logs:[],docs:[],subs:[],stageDone:{}};   /* 2.495.0: an erased account has no house */
   const view={activeSite:p.name,street:p.street,sites:state.projects.length,
     items:p.items.length,logs:p.logs.length,docs:p.docs.length,subs:p.subs.length,
     openItems:p.items.filter(i=>i.issue&&i.status==='open').length,
@@ -20819,7 +20830,7 @@ function devImport(e){const f=e.target.files[0];if(!f)return;const r=new FileRea
   if(!state.projects.find(x=>x.id===state.activeId))state.activeId=state.projects[0].id;
   logEvent('dataImport',state.projects.length+' sites');Data.commit();updateHeader();renderAll();refreshDev();renderLocalState();renderFeedbackList();toast('Data imported');}catch(err){logEvent('dataImportError',err.message);toast('Invalid JSON file');}};r.readAsText(f);e.target.value='';}
 function devAddTest(){Data.addItem({id:Data.nextItemId(),cap:'Test record '+new Date().toLocaleTimeString(),area:AREAS[Math.floor(Math.random()*AREAS.length)],crew:'',issue:false,sw:'sage',t:Date.now(),day:0});logEvent('testRecord','');renderFeed();refreshDev();renderLocalState();toast('Test record added');}
-function devReseed(){if(appMode()==='real'){toast('Demo content only loads in the example build.');return;}   /* 2.494.0: Agency's words */
+function devReseed(){if(appMode()==='real'){toast('Demo content only loads in the example build.');return;}   /* 2.495.0: Agency's words */
   const fb=state.feedback,evl=state.eventLog,show=state.showSamples,active=state.activeId;
   // keep any captured (photo) items per project, restore sample sites
   const keptByName={};state.projects.forEach(p=>{keptByName[p.id]=p.items.filter(i=>!i.sample&&i.photoId);});
@@ -20831,7 +20842,7 @@ function devToggleSamples(el){Data.setSamples(!state.showSamples);el.classList.t
 async function devPersist(){if(navigator.storage&&navigator.storage.persist){const ok=await navigator.storage.persist();toast(ok?'Persistent storage granted':'Browser declined');refreshDev();}else toast('Not supported here');}
 async function devReset(){confirmDelete({title:'Erase ALL data?',body:'Every record, log and photo on this device will be permanently erased. This cannot be undone.',onConfirm:async()=>{
   try{await idbClear();}catch(e){}Object.keys(photoURLs).forEach(k=>{URL.revokeObjectURL(photoURLs[k]);delete photoURLs[k];});
-  Data.clearStored();Data.replaceState(appMode()==='real'?emptyState():sampleState());   /* 2.494.0: a signed-in account erases to an empty list */
+  Data.clearStored();Data.replaceState(appMode()==='real'?emptyState():sampleState());   /* 2.495.0: a signed-in account erases to an empty list */
   updateHeader();renderAll();refreshDev();renderLocalState();renderEventLog();renderFeedbackList();toast('All data erased');}});}
 async function devSelfTest(){
   const out=document.getElementById('testOut');out.classList.remove('hidden');const log=[];
