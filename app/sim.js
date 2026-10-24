@@ -5126,6 +5126,20 @@ await (async function(){
   t('A2: the homeowner approval is stamped first and falls back to the A1 shape',SRC.indexOf("byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at")>=0&&SRC.indexOf("if(!(e1&&e1.code==='permission-denied'))throw e1;await ref.set(base,{merge:true});")>=0);
   t('A2: voiding an invoice asks why and keeps the reason',SRC.indexOf("inv.status='void';inv.voidedAt=Date.now();inv.voidReason=why;")>=0&&SRC.indexOf("if(!why){toast('Add a reason first.');return;}")>=0);
   t('A2: a credit or charge is never removed from a sent invoice',SRC.indexOf("const canAdj=false;")>=0);
+  t('2.495.0: InvNo.send writes amountC on every item, totalC on the invoice, and updatedByUid on the initial batch.set',
+    Array.isArray(IV2.rec&&IV2.rec.items)&&IV2.rec.items.length===1&&IV2.rec.items.every(function(it){return Number.isSafeInteger(it.amountC)&&it.amountC===Math.round(it.amount*100);})&&IV2.rec.totalC===25000&&J("(__co.store[__co.pre+'inv/'+P().invoices.filter(function(x){return x.no==="+JSON.stringify(IV2.no)+";})[0].id]||{}).updatedByUid")==='uB',
+    JSON.stringify(IV2.rec));
+  const A2HEAL=await $2(`(async function(){var X=__co;var p=P();var savedSet=Sync.db.collection;var tries=0,payloads=[];
+    var fakeRef={set:function(v){tries++;payloads.push(JSON.parse(JSON.stringify(v)));if(tries===1&&v.data&&v.data.items&&v.data.items[0]&&'amountC' in v.data.items[0]){var e=new Error('denied');e.code='permission-denied';return Promise.reject(e);}return Promise.resolve();}};
+    Sync.db.collection=function(c){if(c==='sites')return {doc:function(sid){return {collection:function(sub){if(sub==='inv')return {doc:function(id){if(id==='inv_legacy_no_ac')return fakeRef;return savedSet.call(Sync.db,c).doc(sid).collection(sub).doc(id);}};return savedSet.call(Sync.db,c).doc(sid).collection(sub);},set:savedSet.call(Sync.db,c).doc(sid).set};}};return savedSet.call(Sync.db,c);};
+    try{
+      p.invoices.push({id:'inv_legacy_no_ac',no:'INV-999',title:'Legacy',status:'void',voidedAt:123,voidReason:'Test',total:50,totalC:5000,items:[{label:'A2 Test',amount:50,amountC:5000},{label:'Adj',amount:-10,amountC:-1000,adj:true}],payments:[]});
+      await Sync._pushOne(p);
+      p.invoices=p.invoices.filter(function(x){return x.id!=='inv_legacy_no_ac';});
+      return {tries:tries,firstHas:'amountC' in payloads[0].data.items[0],secondHas:payloads[1]?('amountC' in payloads[1].data.items[0]):true,adjHas:payloads[1]?payloads[1].data.items[1].amountC:null};
+    }finally{Sync.db.collection=savedSet;}})()`);
+  t('2.495.0: Sync._pushOne heals a pre-2.495 sent invoice whose server items lacked amountC on permission-denied',
+    A2HEAL&&A2HEAL.tries===2&&A2HEAL.firstHas===true&&A2HEAL.secondHas===false&&A2HEAL.adjHas===-1000,JSON.stringify(A2HEAL));
   $2(COEND);
 
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
