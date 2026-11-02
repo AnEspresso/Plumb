@@ -17899,11 +17899,11 @@ function bkDelete(){
   confirmDelete({title:'Remove this booking?',body:'<b>'+esc((b&&b.subName)||'This crew')+'</b> is un-scheduled for these dates and the booking drops off the calendar. The install packet and house history stay.',onConfirm:()=>{
     deleteBooking(p,bid);closeBk();renderCal();try{renderDay();}catch(e){}toast('Booking removed');}});}
 /* 4d-2: days approved change orders add, on the house's Schedule door (builder, switch on, rows already loaded; no extra read). */
-/* 2.496.0: approved change orders that add days, shown on the Schedule with where they came from ("+3 days from CO-002"). Read-only. */
+/* 2.496.0: approved change orders that add days, shown on the Schedule with where they came from ("+3 days from change order 002"). Read-only. */
 function coDaysRows(p){try{if(!p)return [];const sid=String(p.id);let rows=[];
   if(CO.allowed()&&String(P().id)===sid)rows=CO.list(sid);else if(typeof COH!=='undefined'&&COH.allowed(p))rows=COH.list(sid);else return [];
   return rows.filter(function(r){return r.status==='approved'&&Number.isInteger(r.days)&&r.days>0;}).sort(function(a,b){return (a.no||1e9)-(b.no||1e9);});}catch(e){return [];}}
-function coDaysSrc(r){return '+'+r.days+' day'+(r.days===1?'':'s')+' from '+CO.label(r.no);}
+function coDaysSrc(r){return '+'+r.days+' day'+(r.days===1?'':'s')+' from change order '+String(r.no||'').padStart(3,'0');}   /* 2.499.0: Agency words */
 function coDaysCalHTML(p){const rs=coDaysRows(p);return rs.map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r))+'</span>';}).join('');}
 function coDaysNote(p){try{if(!p||!CO.allowed()||String(P().id)!==String(p.id))return '';const d=CO.daysApproved(String(p.id));return d>0?' \u00b7 change orders add '+d+' day'+(d===1?'':'s'):'';}catch(e){return '';}}
 function openSchedule(){renderSchedule();document.getElementById('schedScrim').classList.add('show');}

@@ -4915,12 +4915,12 @@ await (async function(){
   t('4d-2: printing and the schedule write nothing',J("__co.writes.length")===0);
   /* 2.496.0: approved change-order days on the Schedule, each with its source */
   const CD=J("coDaysCalHTML(P())");
-  t('2.496.0: the Schedule lists each approved change order that adds days with its source',CD.indexOf('+3 days from CO-052')>=0&&CD.indexOf('+1 day from CO-053')>=0,CD);
-  t('2.496.0: a sent (pending) change order adds no days to the Schedule',CD.indexOf('CO-054')<0&&CD.indexOf('+9 days')<0,CD);
+  t('2.496.0: the Schedule lists each approved change order that adds days with its source',CD.indexOf('+3 days from change order 052')>=0&&CD.indexOf('+1 day from change order 053')>=0&&CD.indexOf('CO-05')<0,CD);
+  t('2.496.0: a sent (pending) change order adds no days to the Schedule',CD.indexOf('order 054')<0&&CD.indexOf('+9 days')<0,CD);
   $2("calCrewFilter=null;calSiteFilter=String(P().id);true");
-  t('2.496.0: renderCal for this house shows the change order days',(function(){try{$2("renderCal();true");}catch(e){}return J("(document.getElementById('calBody')||{}).innerHTML||''").indexOf('+3 days from CO-052')>=0;})());
+  t('2.496.0: renderCal for this house shows the change order days',(function(){try{$2("renderCal();true");}catch(e){}return J("(document.getElementById('calBody')||{}).innerHTML||''").indexOf('+3 days from change order 052')>=0;})());
   $2("calSiteFilter='all';renderCal();true");
-  t('2.496.0: the all-houses calendar shows no change order days',J("(document.getElementById('calBody')||{}).innerHTML||''").indexOf('days from CO-')<0);
+  t('2.496.0: the all-houses calendar shows no change order days',J("(document.getElementById('calBody')||{}).innerHTML||''").indexOf('days from change order')<0);
   $2("PaperTrail.on=false;true");t('2.496.0: switch off: no change order days on the Schedule',J("coDaysCalHTML(P())")==='');$2("PaperTrail.on=true;true");
   $2("PaperTrail.on=false;CO.print('d_a');true");
   t('4d-2: switch off: no print view and nothing on the Schedule door',J("!document.getElementById('invPrintView')")&&J("coDaysNote(P())")==='');
