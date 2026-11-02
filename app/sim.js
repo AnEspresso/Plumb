@@ -4945,6 +4945,11 @@ await (async function(){
   t('2.501.0: the crew app has no change order or money rows loaded',J("!CO.allowed()&&!COH.allowed(P())&&!HIST.allowed(P())"));
   $2("calCrewFilter='';calSiteFilter='all';renderCal();true");
   t('2.501.0: the crew "My schedule" shows the days lines',J("(document.getElementById('calBody')||{}).innerHTML||''").indexOf('+3 days from change order 052')>=0);
+  const CST=J(`["1418 Calderwood Ct, Ann Arbor, MI 48104","22B Calderwood","Calderwood Street","9 Elm St Apt 4, Detroit","12-14 Oak Ave.","","Lakeview"].map(function(x){return coDaysStreet({street:x,name:'House'});})`);
+  t('2.501.0: the crew suffix is the street name only (no number, unit, type, city)',JSON.stringify(CST)===JSON.stringify(['Calderwood','Calderwood','Calderwood','Elm','Oak','House','Lakeview']),JSON.stringify(CST));
+  $2(`(function(){window.__sp=subProjects;window.__st=P().street;subProjects=function(){return [P(),{id:'zz',street:'7 Other Rd',subs:[]}];};P().street='1418 Calderwood Ct, Ann Arbor, MI';return true;})()`);
+  const KM=J("coDaysCrewHTML()");$2("subProjects=window.__sp;P().street=window.__st;true");
+  t('2.501.0: on more than one house the crew line ends with the street name only',KM.indexOf('+3 days from change order 052 \u00b7 Calderwood<')>=0&&KM.indexOf('1418')<0&&KM.indexOf('Ann Arbor')<0,KM);
   t('2.501.0: the crew cannot write the days-only record',J("(function(){try{CODAYS.col(P().id).doc('d_a').set({no:52,days:9,byUid:'uC',at:'__TS__',appV:'x'}).catch(function(){});}catch(e){}return __co.store[__co.pre+'coDays/d_a'].days===3;})()"));
   $2("CODAYS._rows={};CODAYS._unsub={};CODAYS._err={};true");
   t('2.501.0: a missing days-only collection (rules not published) shows no lines and no error',($2(`(function(){CODAYS._err[String(P().id)]='permission-denied';return true;})()`),J("coDaysCrewHTML()")===''));

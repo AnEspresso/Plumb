@@ -17925,9 +17925,15 @@ function coDaysRows(p){try{if(!p)return [];const sid=String(p.id);let rows=[];
   else if(CODAYS.crewOk(p)){CODAYS.attach(p);rows=CODAYS.list(sid);}else return [];
   return rows.filter(function(r){return r.status==='approved'&&Number.isInteger(r.days)&&r.days>0;}).sort(function(a,b){return (a.no||1e9)-(b.no||1e9);});}catch(e){return [];}}
 function coDaysSrc(r){return '+'+r.days+' day'+(r.days===1?'':'s')+' from change order '+String(r.no||'').padStart(3,'0');}   /* 2.499.0: Agency words */
+/* Agency 11/2: the crew suffix is the street name only, "1418 Calderwood Ct, Ann Arbor, MI 48104" -> "Calderwood".
+   Keeps the part before the first comma, drops a leading house number, a unit (Apt/Unit/Suite/#) and a trailing street type. */
+function coDaysStreet(p){let s=String((p&&(p.street||p.name))||'').split(',')[0].trim();
+  s=s.replace(/\s+(?:apt|apartment|unit|suite|ste|#)\.?\s*\S+$/i,'').replace(/^#?\d+[a-z]?(?:[-\/]\d+[a-z]?)?\s+/i,'').trim();
+  const t=s.replace(/\s+(?:st|street|ave|avenue|rd|road|ct|court|ln|lane|dr|drive|blvd|boulevard|way|pl|place|cir|circle|ter|terrace|pkwy|parkway|hwy|highway|trl|trail|loop|row|sq|square)\.?$/i,'').trim();
+  return t||s||String((p&&p.name)||'');}
 /* a crew's schedule covers every house they are on: one line per change order, with the street when there is more than one house */
 function coDaysCrewHTML(){try{if(!calIsSub())return '';const ps=(typeof subProjects==='function'?subProjects():[])||[];const many=ps.length>1;
-  return ps.map(function(p){return coDaysRows(p).map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r)+(many?' \u00b7 '+(p.street||p.name||''):''))+'</span>';}).join('');}).join('');}catch(e){return '';}}
+  return ps.map(function(p){return coDaysRows(p).map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r)+(many?' \u00b7 '+coDaysStreet(p):''))+'</span>';}).join('');}).join('');}catch(e){return '';}}
 function coDaysCalHTML(p){const rs=coDaysRows(p);return rs.map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r))+'</span>';}).join('');}
 function coDaysNote(p){try{if(!p||!CO.allowed()||String(P().id)!==String(p.id))return '';const d=CO.daysApproved(String(p.id));return d>0?' \u00b7 change orders add '+d+' day'+(d===1?'':'s'):'';}catch(e){return '';}}
 function openSchedule(){renderSchedule();document.getElementById('schedScrim').classList.add('show');}
