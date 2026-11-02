@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.495.0 - Copied toast over the workbench; no demo houses in a signed-in book';
+const PLUMB_VERSION='2.498.0 - Homeowner money History is one row on the money card';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1794427200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.495.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1794686400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.498.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9876,7 +9876,10 @@ const HIST={_rows:{},_unsub:{},_err:{},
     try{if(CO._view&&document.getElementById('coRoot'))CO.draw();}catch(e){}
     try{if(COH._open&&document.getElementById('cohRoot'))COH.drawDetail();}catch(e){}},
   rowHTML(p){if(!this.allowed(p))return '';
+    if(siteRoleFor(p)==='client')return this.clientRowHTML(p);
     return '<div class="subrow cur-p" onclick="HIST.open()"><div class="si"><div class="n">History</div><div class="d">Every money step on this house</div></div></div>';},
+  /* 2.498.0: the homeowner's money History is one row on their money card; it opens the full list. Read-only. */
+  clientRowHTML(p){return '<div class="subrow cur-p hist-row" onclick="HIST.open()"><div class="si"><div class="n">History</div><div class="d">Payments, credits, charges and voids</div></div></div>';},
 };
 /* 3c-4 (2.479.0, M-18): "Something's wrong" on money items (change orders, invoices, payments). One short note, written to
    sites/<id>/flags as Rules A1 flagCreateOk wants it: {kind:'flag'|'resolve', targetType, targetId, note, ref (resolve only),
@@ -11472,6 +11475,7 @@ function clientCostsHTML(p){
   }
   ledger+=orphanNoteHTML(bs);
   ledger+='</div>';
+  try{ledger+=HIST.rowHTML(p);}catch(e){}   /* 2.498.0: History is one row right under the money card */
   const invs=(p.invoices||[]).filter(function(i){const s=invState(i);return s!=='void'&&s!=='draft';}).slice().reverse();
   let invoices='';
   if(invs.length){
@@ -11479,7 +11483,6 @@ function clientCostsHTML(p){
     invoices+=invs.map(function(inv){const st=invState(inv);return '<div class="subrow cur-p" onclick="openInvoiceDetail(\''+p.id+'\',\''+inv.id+'\',\'client\')"><div class="si"><div class="n">'+esc(inv.no)+' \u00b7 '+esc(inv.title)+'</div><div class="d">'+fmtMoney(inv.total)+((st==='partial'||st==='overdue')?' \u00b7 '+fmtMoney(invBalance(inv))+' left':'')+(inv.due&&st!=='paid'?(st==='overdue'?' \u00b7 <b style="color:var(--clay)">past due '+esc(inv.due)+'</b>':' \u00b7 due '+esc(inv.due)):'')+(st==='sent'?' \u00b7 <b style="color:var(--clay)">needs your OK</b>':'')+'</div></div>'+invStatusChip(st)+'</div>';}).join('');
   }
   try{invoices+=COH.cardHTML(p);}catch(e){}
-  try{invoices+=HIST.rowHTML(p);}catch(e){}
   try{invoices+=PAST.rowHTML();}catch(e){}
   return {line:clientStillToPayLine(bs.out),ledger:ledger,invoices:invoices,needOK:(p.invoices||[]).filter(invNeedsOK)};
 }
