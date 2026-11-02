@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.500.0 - Homeowner money History is one row on the money card';
+const PLUMB_VERSION='2.501.0 - Crews see change order days on their Schedule';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1794859200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.500.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1794945600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.501.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9656,7 +9656,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
   list(sid){return (this._rows[String(sid)]||[]).slice();},
   row(sid,id){return this.list(sid).find(r=>r.id===id)||null;},
   attach(p){const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
-    try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.render();this.money();},
+    try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.render();this.money();try{CODAYS.sync(sid);}catch(e){}},
       err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];this.render();});}catch(e){this._err[sid]='error';}},
   money(){clearTimeout(this._mt);this._mt=setTimeout(()=>{try{renderBuild();}catch(e){}try{renderSelections();}catch(e){}try{if(document.getElementById('invScrim').classList.contains('show')&&!document.activeElement.closest('#invScrim input'))renderInvoices();}catch(e){}},60);},
   open(){if(!this.allowed()){toast('Change orders are not on yet');return;}this._edit=null;this._view=null;this.attach(P());this.render();},
@@ -17491,7 +17491,7 @@ function renderCal(){
     +Object.keys(byName).sort().map(n=>calIsClient()
       ?`<span class="li"><span class="sw" style="background:${tradeColor(byName[n].trade)}"></span>${esc(specLabel(byName[n].trade)||'Crew')} crew</span>`
       :`<span class="li cur-p"${calIsSub()?'':` onclick="calCrews('${esc(n)}')"`}><span class="sw" style="background:${tradeColor(byName[n].trade)}"></span>${esc(n)} \u00b7 ${byName[n].days}d${crewsOf(n)>1?' \u00b7 '+crewsOf(n)+' crews':''}</span>`).join('')
-    +(calCrewFilter?'':coDaysCalHTML(calIsClient()?clientProj():fp))
+    +(calCrewFilter?'':(calIsSub()?coDaysCrewHTML():coDaysCalHTML(calIsClient()?clientProj():fp)))
     +(idle.length?`<span class="li idle cur-p" onclick="openIdle()"><span class="sw"></span>${idle.length} idle this month \u2014 see who</span>`:'')
     +(calIsSub()?'<span class="li idle"><span class="sw u-m36"></span>Striped = time you\u2019ve blocked</span>'
       :(calIsClient()?'':'<span class="li idle"><span class="sw op-4 u-m37"></span>Faded = awaiting the crew reply</span>'))
@@ -17900,10 +17900,43 @@ function bkDelete(){
     deleteBooking(p,bid);closeBk();renderCal();try{renderDay();}catch(e){}toast('Booking removed');}});}
 /* 4d-2: days approved change orders add, on the house's Schedule door (builder, switch on, rows already loaded; no extra read). */
 /* 2.496.0: approved change orders that add days, shown on the Schedule with where they came from ("+3 days from change order 002"). Read-only. */
+/* 2.501.0: crews read change-order days from a days-only record, sites/<id>/coDays/<coId> = {no, days} (no money).
+   A builder with money access writes it from the change orders it already reads: added when a change order with days
+   is approved, changed when its number or days change, removed when it is no longer approved. Missing or refused = no lines. */
+const CODAYS={_rows:{},_unsub:{},_err:{},_busy:{},_wErr:{},
+  col(sid){return Sync.db.collection('sites').doc(String(sid)).collection('coDays');},
+  live(){try{return !!(PaperTrail.on&&typeof Sync!=='undefined'&&Sync.ready()&&Sync.mode==='live'&&Sync.uid);}catch(e){return false;}},
+  crewOk(p){try{return !!(p&&this.live()&&(state.session||{}).role==='subs'&&siteRoleFor(p)==='sub');}catch(e){return false;}},
+  attach(p){const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
+    try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>{const v=d.data()||{};return {id:d.id,no:v.no,days:v.days};});delete this._err[sid];
+        try{this.sync(sid);}catch(e){}try{if(document.getElementById('calBody'))renderCal();}catch(e){}},
+      err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];});}catch(e){this._err[sid]='error';}},
+  list(sid){return (this._rows[String(sid)]||[]).filter(r=>Number.isInteger(r.no)&&r.no>0&&Number.isInteger(r.days)&&r.days>0).map(r=>({id:r.id,no:r.no,days:r.days,status:'approved'}));},
+  want(sid){const w={};CO.list(sid).forEach(r=>{if(r.status==='approved'&&Number.isInteger(r.no)&&r.no>0&&Number.isInteger(r.days)&&r.days>0&&r.days<=365)w[r.id]={no:r.no,days:r.days};});return w;},
+  /* builder only: bring the days-only records in line with the approved change orders */
+  sync(sid){sid=String(sid);if(!this.live()||!CO.allowed()||String((P()||{}).id)!==sid)return;
+    if(!this._unsub[sid]&&!this._err[sid]){this.attach({id:sid});return;}
+    if(this._err[sid]||this._wErr[sid]||!this._rows[sid])return;
+    const w=this.want(sid),have={};(this._rows[sid]||[]).forEach(r=>{have[r.id]=r;});const B=this._busy;
+    Object.keys(w).forEach(id=>{const h=have[id];const k=sid+'/'+id;if(B[k]||(h&&h.no===w[id].no&&h.days===w[id].days))return;B[k]=1;
+      this.col(sid).doc(id).set(Object.assign({no:w[id].no,days:w[id].days},CO.stamp())).then(()=>{delete B[k];},()=>{delete B[k];this._wErr[sid]=1;});});
+    Object.keys(have).forEach(id=>{const k=sid+'/'+id;if(w[id]||B[k])return;B[k]=1;
+      this.col(sid).doc(id).delete().then(()=>{delete B[k];},()=>{delete B[k];this._wErr[sid]=1;});});},
+};
 function coDaysRows(p){try{if(!p)return [];const sid=String(p.id);let rows=[];
-  if(CO.allowed()&&String(P().id)===sid)rows=CO.list(sid);else if(typeof COH!=='undefined'&&COH.allowed(p))rows=COH.list(sid);else return [];
+  if(CO.allowed()&&String(P().id)===sid)rows=CO.list(sid);else if(typeof COH!=='undefined'&&COH.allowed(p))rows=COH.list(sid);
+  else if(CODAYS.crewOk(p)){CODAYS.attach(p);rows=CODAYS.list(sid);}else return [];
   return rows.filter(function(r){return r.status==='approved'&&Number.isInteger(r.days)&&r.days>0;}).sort(function(a,b){return (a.no||1e9)-(b.no||1e9);});}catch(e){return [];}}
 function coDaysSrc(r){return '+'+r.days+' day'+(r.days===1?'':'s')+' from change order '+String(r.no||'').padStart(3,'0');}   /* 2.499.0: Agency words */
+/* Agency 11/2: the crew suffix is the street name only, "1418 Calderwood Ct, Ann Arbor, MI 48104" -> "Calderwood".
+   Keeps the part before the first comma, drops a leading house number, a unit (Apt/Unit/Suite/#) and a trailing street type. */
+function coDaysStreet(p){let s=String((p&&(p.street||p.name))||'').split(',')[0].trim();
+  s=s.replace(/\s+(?:apt|apartment|unit|suite|ste|#)\.?\s*\S+$/i,'').replace(/^#?\d+[a-z]?(?:[-\/]\d+[a-z]?)?\s+/i,'').trim();
+  const t=s.replace(/\s+(?:st|street|ave|avenue|rd|road|ct|court|ln|lane|dr|drive|blvd|boulevard|way|pl|place|cir|circle|ter|terrace|pkwy|parkway|hwy|highway|trl|trail|loop|row|sq|square)\.?$/i,'').trim();
+  return t||s||String((p&&p.name)||'');}
+/* a crew's schedule covers every house they are on: one line per change order, with the street when there is more than one house */
+function coDaysCrewHTML(){try{if(!calIsSub())return '';const ps=(typeof subProjects==='function'?subProjects():[])||[];const many=ps.length>1;
+  return ps.map(function(p){return coDaysRows(p).map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r)+(many?' \u00b7 '+coDaysStreet(p):''))+'</span>';}).join('');}).join('');}catch(e){return '';}}
 function coDaysCalHTML(p){const rs=coDaysRows(p);return rs.map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r))+'</span>';}).join('');}
 function coDaysNote(p){try{if(!p||!CO.allowed()||String(P().id)!==String(p.id))return '';const d=CO.daysApproved(String(p.id));return d>0?' \u00b7 change orders add '+d+' day'+(d===1?'':'s'):'';}catch(e){return '';}}
 function openSchedule(){renderSchedule();document.getElementById('schedScrim').classList.add('show');}

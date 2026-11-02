@@ -216,7 +216,7 @@ service cloud.firestore {
            Every client write to them carries byUid == uid() and at == request.time
            (a server timestamp) and an appV string (M-7; the minimum-version check
            is A2/M-15). co money is whole cents (amountC), never dollars. */
-        function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers']; }
+        function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers', 'coDays']; }
         function stampOk() {
           let r = request.resource.data;
           return r.byUid == uid() && r.at == request.time && r.appV is string && r.appV.size() > 0 && verOk();
@@ -356,6 +356,17 @@ service cloud.firestore {
         }
         function coReadOk() {
           return moneyOk() || (sRole() == 'client' && rec().status in ['sent', 'approved', 'declined', 'withdrawn']);
+        }
+        /* 2.501.0: coDays/<coId> is a days-only copy of an approved change order ({no, days}, never money) so
+           crews can see schedule days. Any member reads it; only a builder with money access writes it, and only to
+           match the approved change order with the same id. */
+        function coDaysWriteOk() {
+          let r = request.resource.data;
+          let c = get(/databases/$(database)/documents/sites/$(siteId)/co/$(recordId)).data.get('data', {});
+          return recordColl == 'coDays' && moneyOk() && stampOk()
+            && r.keys().hasOnly(['no', 'days', 'byUid', 'at', 'appV', 'tappedAt'])
+            && r.no is int && r.days is int && r.days > 0 && r.days <= 365
+            && c.get('status', '') == 'approved' && c.get('no', 0) == r.no && c.get('days', 0) == r.days;
         }
         function coDeleteOk() {
           return moneyOk() && !rec().keys().hasAny(['sentAt']);
@@ -505,14 +516,16 @@ service cloud.firestore {
           (recordColl == 'co' && coReadOk())
           || (recordColl in ['hist', 'flags'] && (moneyOk() || sRole() == 'client'))
           || (recordColl == 'consent' && (recordId == uid() || moneyOk()))
-          || (recordColl == 'numbers' && moneyOk()));
+          || (recordColl == 'numbers' && moneyOk())
+          || (recordColl == 'coDays' && sMember()));
         allow create: if signedIn() && sScoped() && (
-          coCreateOk()
+          coDaysWriteOk()
+          || coCreateOk()
           || (recordColl == 'consent' && consentCreateOk())
           || (recordColl == 'flags' && flagCreateOk())
           || (recordColl == 'numbers' && numberCreateOk()));
-        allow update: if signedIn() && sScoped() && (coBuilderUpdOk() || clientCoOk());
-        allow delete: if signedIn() && sScoped() && recordColl == 'co' && coDeleteOk();
+        allow update: if signedIn() && sScoped() && (coDaysWriteOk() || coBuilderUpdOk() || clientCoOk());
+        allow delete: if signedIn() && sScoped() && ((recordColl == 'co' && coDeleteOk()) || (recordColl == 'coDays' && moneyOk()));
       }
     }
 

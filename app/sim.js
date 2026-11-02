@@ -4590,6 +4590,8 @@ await (async function(){
     function merge(a,b){var o=JSON.parse(JSON.stringify(a||{}));keys(b).forEach(function(k){if(b[k]===DEL)delete o[k];else o[k]=b[k];});return o;}
     function check(path,v,merged,old,batchPaths){
       var seg=path.split('/');var coll=seg[2];
+      if(coll==='coDays'){var cs=store[seg[0]+'/'+seg[1]+'/co/'+seg[3]];var cd=cs&&cs.data;   /* 2.501.0: mirrors firestore.rules coDaysWriteOk */
+        if(X.role!=='builder'||!only(v,['no','days','byUid','at','appV','tappedAt'])||v.byUid!==Sync.uid||v.at!==TS||!v.appV||!cd||cd.status!=='approved'||cd.no!==v.no||cd.days!==v.days||!(v.days>0))throw denied('coDays');return;}
       if(coll==='consent'){if(old||!only(v,['byUid','at','agreed','textV','appV','tappedAt'])||v.agreed!==true||v.byUid!==Sync.uid||v.at!==TS||seg[3]!==Sync.uid||!v.textV)throw denied('consent');return;}
       if(coll==='co'&&X.role==='client'){var on=merged.data||{},oo=old?old.data:null;
         if(!oo||oo.status!=='sent'||!only(merged,OUT)||merged.byUid!==Sync.uid||merged.at!==TS||!merged.appV)throw denied('client co');
@@ -4621,15 +4623,15 @@ await (async function(){
       throw denied('transition '+o.status+'>'+n.status);}
     function apply(ops){var batchPaths=ops.filter(function(o){return o.k!=='del';}).map(function(o){return o.p;});var next={};keys(store).forEach(function(k){next[k]=store[k];});
       ops.forEach(function(o){var old=next[o.p]||null;
-        if(o.k==='del'){var oo=old&&old.data;if(!old)return;if(oo&&oo.sentAt)throw denied('delete a sent co');delete next[o.p];return;}
+        if(o.k==='del'){var oo=old&&old.data;if(!old)return;if(o.p.indexOf('/coDays/')>=0&&X.role!=='builder')throw denied('coDays delete');if(oo&&oo.sentAt)throw denied('delete a sent co');delete next[o.p];return;}
         var merged=o.merge&&old?Object.assign({},old,merge(old,o.v),{data:merge(old.data,o.v.data)}):JSON.parse(JSON.stringify(o.v));
         if(o.merge&&old){merged=merge(old,o.v);merged.data=merge(old.data,o.v.data);}
         check(o.p,o.v,merged,old,batchPaths);next[o.p]=merged;});
-      keys(store).forEach(function(k){delete store[k];});keys(next).forEach(function(k){store[k]=next[k];});ops.forEach(function(o){writes.push(o.k+' '+o.p+(o.b?' b'+o.b:''));});fire();}
+      keys(store).forEach(function(k){delete store[k];});keys(next).forEach(function(k){store[k]=next[k];});ops.forEach(function(o){(o.p.indexOf('/coDays/')>=0?(X.cdWrites=X.cdWrites||[]):writes).push(o.k+' '+o.p+(o.b?' b'+o.b:''));});fire();}
     function fire(){subs.forEach(function(s){s.cb(snap(s.p));});}
     function snap(path){var d=keys(store).filter(function(k){return k.indexOf(path+'/')===0&&k.split('/').length===path.split('/').length+1;}).map(function(k){return {id:k.split('/').pop(),data:function(){return JSON.parse(JSON.stringify(store[k]));}};});return {docs:d};}
     function docRef(p,b){return {path:p,id:p.split('/').pop(),set:function(v,o){var op={k:'set',p:p,v:v,merge:!!(o&&o.merge)};if(b){b.ops.push(op);return;}try{apply([op]);return Promise.resolve();}catch(e){return Promise.reject(e);}},delete:function(){try{apply([{k:'del',p:p}]);return Promise.resolve();}catch(e){return Promise.reject(e);}},get:function(){reads.push(p);var v=store[p];return Promise.resolve({exists:!!v,data:function(){return v;}});},collection:function(c){return colRef(p+'/'+c);}};}
-    function colRef(p){return {path:p,where:function(f,op,vals){var self=colRef(p);self.filter=[f,op,vals];self.onSnapshot=function(cb,eb){subs.push({p:p,cb:function(sn){cb({docs:sn.docs.filter(function(d){var st=(d.data().data||{}).status;return vals.indexOf(st)>=0;})});},eb:eb,filter:[f,op,vals]});setTimeout(function(){subs[subs.length-1].cb(snap(p));},0);return function(){};};return self;},doc:function(id){return docRef(p+'/'+id);},get:function(){reads.push(p);if(staleNums>0&&/numbers$/.test(p)){staleNums--;return Promise.resolve({docs:[]});}return Promise.resolve(snap(p));},onSnapshot:function(cb,eb){subs.push({p:p,cb:cb,eb:eb});setTimeout(function(){cb(snap(p));},0);return function(){};}};}
+    function colRef(p){return {path:p,where:function(f,op,vals){var self=colRef(p);self.filter=[f,op,vals];self.onSnapshot=function(cb,eb){subs.push({p:p,cb:function(sn){cb({docs:sn.docs.filter(function(d){var st=(d.data().data||{}).status;return vals.indexOf(st)>=0;})});},eb:eb,filter:[f,op,vals]});var me=subs[subs.length-1];setTimeout(function(){me.cb(snap(p));},0);return function(){};};return self;},doc:function(id){return docRef(p+'/'+id);},get:function(){reads.push(p);if(staleNums>0&&/numbers$/.test(p)){staleNums--;return Promise.resolve({docs:[]});}return Promise.resolve(snap(p));},onSnapshot:function(cb,eb){subs.push({p:p,cb:cb,eb:eb});setTimeout(function(){cb(snap(p));},0);return function(){};}};}
     X.stale=function(n){staleNums=n;};X.fire=fire;X.role='builder';X.calls=[];X.saved.fn=window.fnCall;window.fnCall=function(n,d){X.calls.push([n,d]);return Promise.resolve({});};
     Sync.db={collection:function(c){return {doc:function(id){var r=docRef(c+'/'+id);r.collection=function(cc){return colRef(c+'/'+id+'/'+cc);};return r;}};},batch:function(){var b={ops:[],id:++batchN};return {set:function(r,v,o){var op={k:'set',p:r.path,v:v,merge:!!(o&&o.merge),b:b.id};b.ops.push(op);},commit:function(){try{apply(b.ops);return Promise.resolve();}catch(e){return Promise.reject(e);}}};}};
     Sync.on=true;Sync.mode='live';Sync.uid='uB';Sync.deviceId='devB';
@@ -4650,7 +4652,7 @@ await (async function(){
   $2("canGate=function(){return false;};true");const CO1b=J("CO.allowed()");$2("canGate=function(){return true;};true");
   t('4a: a builder without money access gets no entry point',CO1b===false);
   $2("CO.open();true");await sleep(30);
-  t('4a: opening the list listens to sites/<id>/co only',J("__co.subs.length")===1&&J("__co.subs[0].p")===J("__co.pre+'co'"),J("__co.subs.map(function(s){return s.p;})"));
+  t('4a: opening the list listens to sites/<id>/co only (plus the days-only coDays, 2.501.0)',J("__co.subs.filter(function(s){return !/\\/coDays$/.test(s.p);}).length")===1&&J("__co.subs[0].p")===J("__co.pre+'co'")&&J("__co.subs.every(function(s){return s.p===__co.pre+'co'||s.p===__co.pre+'coDays';})"),J("__co.subs.map(function(s){return s.p;})"));
   /* Sign and send a change: one batch holds the co and its number claim */
   $2(TOAST_ON);$2(COFILL('Add a window in the study','change','1,850','South wall','3'));await $2("CO.save(true)");await sleep(30);let ts1=JSON.parse($2(TOAST_OFF));
   const S1=J(`(function(){var X=window.__co;var c=X.store[X.pre+'co']; var ids=Object.keys(X.store).filter(function(k){return /\\/co\\/co_/.test(k);});var d=ids.length?X.store[ids[0]]:null;return {n:ids.length,d:d,num:X.store[X.pre+'numbers/co-1'],w:X.writes.slice()};})()`);
@@ -4714,7 +4716,7 @@ await (async function(){
     X.store[X.pre+'co/h_ver']=o({id:'h_ver',title:'Tile upgrade',amountC:-40000,kind:'credit',status:'sent',no:12,rev:1,verifiedRev:1,verifiedTotal:-40000});
     X.store[X.pre+'co/h_old']=o({id:'h_old',title:'Old approved',amountC:5000,kind:'change',status:'approved',no:9,rev:1,decidedName:'Ana Ruiz',decidedRev:1});
     X.store[X.pre+'co/h_dec']=o({id:'h_dec',title:'Old declined',amountC:7000,kind:'change',status:'declined',no:10,rev:1});
-    X.subs.length=0;X.writes.length=0;X.reads.length=0;X.calls.length=0;return true;})()`);
+    X.subs.length=0;X.writes.length=0;X.reads.length=0;X.calls.length=0;CODAYS._rows={};CODAYS._unsub={};CODAYS._err={};return true;})()`);
   $2("PaperTrail.on=false;true");
   const H0=J(`(function(){var X=__co;var o={allowed:COH.allowed(),card:clientCostsHTML(clientProj()).invoices.indexOf('Change orders')>=0,subs:X.subs.length,reads:X.reads.length,w:X.writes.length};return o;})()`);
   t('4b: switch off: no card, no listener, no read, no write',!H0.allowed&&!H0.card&&H0.subs===0&&H0.reads===0&&H0.w===0,JSON.stringify(H0));
@@ -4922,6 +4924,36 @@ await (async function(){
   $2("calSiteFilter='all';renderCal();true");
   t('2.496.0: the all-houses calendar shows no change order days',J("(document.getElementById('calBody')||{}).innerHTML||''").indexOf('days from change order')<0);
   $2("PaperTrail.on=false;true");t('2.496.0: switch off: no change order days on the Schedule',J("coDaysCalHTML(P())")==='');$2("PaperTrail.on=true;true");
+  /* 2.501.0: the builder keeps a days-only record per approved change order; crews read only that */
+  $2("CODAYS._rows={};CODAYS._unsub={};CODAYS._err={};CODAYS._wErr={};CODAYS.sync(String(P().id));true");await sleep(40);
+  const CW=J("(function(){var X=__co,o={};Object.keys(X.store).filter(function(k){return k.indexOf(X.pre+'coDays/')===0;}).forEach(function(k){o[k.split('/').pop()]=X.store[k];});return o;})()");
+  t('2.501.0: the builder writes a days-only record for each approved change order with days',CW.d_a&&CW.d_a.no===52&&CW.d_a.days===3&&CW.d_b&&CW.d_b.days===1,JSON.stringify(CW).slice(0,300));
+  t('2.501.0: no record for a change order still waiting on the homeowner',!CW.d_c);
+  t('2.501.0: the days-only record holds no money (only number, days and the stamp)',Object.keys(CW).every(function(k){return Object.keys(CW[k]).every(function(f){return ['no','days','byUid','at','appV','tappedAt'].indexOf(f)>=0;});}),JSON.stringify(CW).slice(0,300));
+  t('2.501.0: change order money writes are unchanged (days-only writes are separate)',J("__co.writes.length")===0&&J("(__co.cdWrites||[]).length")>=2);
+  $2(`(function(){var X=__co;X.store[X.pre+'co/d_b'].data.status='withdrawn';X.fire();return true;})()`);await sleep(30);
+  t('2.501.0: a change order that is no longer approved loses its days-only record',J("!__co.store[__co.pre+'coDays/d_b']")&&J("!!__co.store[__co.pre+'coDays/d_a']"));
+  $2(`(function(){var X=__co;X.store[X.pre+'co/d_b'].data.status='approved';X.fire();return true;})()`);await sleep(30);
+  /* crew session on this house */
+  $2(`(function(){var X=__co;X._ss=state.session;X._subN=X.subs.length;X.role='sub';Sync.uid='uC';var p=P();p.members=Object.assign({},p.members,{uC:'sub'});p.subs=p.subs||[];if(!p.subs.some(function(s){return s.name==='Crew Kim';}))p.subs.push({id:'sK',name:'Crew Kim',trade:'plumbing'});state.session={role:'subs',name:'Crew Kim',auth:{uid:'uC'}};CODAYS._rows={};CODAYS._unsub={};CODAYS._err={};return true;})()`);
+  J("coDaysCrewHTML()");await sleep(30);
+  const KH=J("coDaysCrewHTML()");
+  t('2.501.0: the crew Schedule shows "+N days from change order NNN" for each approved change order',KH.indexOf('+3 days from change order 052')>=0&&KH.indexOf('+1 day from change order 053')>=0,KH);
+  t('2.501.0: the crew sees nothing from a pending change order and no money',KH.indexOf('054')<0&&KH.indexOf('$')<0,KH);
+  const KS=J("__co.subs.slice(__co._subN).map(function(s){return s.p;})");
+  t('2.501.0: the crew listens only to the days-only records (never co, hist, inv)',KS.length>=1&&KS.every(function(p){return /\/coDays$/.test(p);}),JSON.stringify(KS));
+  t('2.501.0: the crew app has no change order or money rows loaded',J("!CO.allowed()&&!COH.allowed(P())&&!HIST.allowed(P())"));
+  $2("calCrewFilter='';calSiteFilter='all';renderCal();true");
+  t('2.501.0: the crew "My schedule" shows the days lines',J("(document.getElementById('calBody')||{}).innerHTML||''").indexOf('+3 days from change order 052')>=0);
+  const CST=J(`["1418 Calderwood Ct, Ann Arbor, MI 48104","22B Calderwood","Calderwood Street","9 Elm St Apt 4, Detroit","12-14 Oak Ave.","","Lakeview"].map(function(x){return coDaysStreet({street:x,name:'House'});})`);
+  t('2.501.0: the crew suffix is the street name only (no number, unit, type, city)',JSON.stringify(CST)===JSON.stringify(['Calderwood','Calderwood','Calderwood','Elm','Oak','House','Lakeview']),JSON.stringify(CST));
+  $2(`(function(){window.__sp=subProjects;window.__st=P().street;subProjects=function(){return [P(),{id:'zz',street:'7 Other Rd',subs:[]}];};P().street='1418 Calderwood Ct, Ann Arbor, MI';return true;})()`);
+  const KM=J("coDaysCrewHTML()");$2("subProjects=window.__sp;P().street=window.__st;true");
+  t('2.501.0: on more than one house the crew line ends with the street name only',KM.indexOf('+3 days from change order 052 \u00b7 Calderwood<')>=0&&KM.indexOf('1418')<0&&KM.indexOf('Ann Arbor')<0,KM);
+  t('2.501.0: the crew cannot write the days-only record',J("(function(){try{CODAYS.col(P().id).doc('d_a').set({no:52,days:9,byUid:'uC',at:'__TS__',appV:'x'}).catch(function(){});}catch(e){}return __co.store[__co.pre+'coDays/d_a'].days===3;})()"));
+  $2("CODAYS._rows={};CODAYS._unsub={};CODAYS._err={};true");
+  t('2.501.0: a missing days-only collection (rules not published) shows no lines and no error',($2(`(function(){CODAYS._err[String(P().id)]='permission-denied';return true;})()`),J("coDaysCrewHTML()")===''));
+  $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session=X._ss;CODAYS._rows={};CODAYS._unsub={};CODAYS._err={};return true;})()`);
   $2("PaperTrail.on=false;CO.print('d_a');true");
   t('4d-2: switch off: no print view and nothing on the Schedule door',J("!document.getElementById('invPrintView')")&&J("coDaysNote(P())")==='');
   $2("PaperTrail.on=false;true");
