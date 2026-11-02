@@ -4929,8 +4929,13 @@ await (async function(){
   $2("closePrintPreview();COH.openDetail('d_c');true");
   t('4d-2: no Print on one still waiting for the OK',J("document.getElementById('infoScrim').innerHTML").indexOf('COH.print(')<0&&($2("COH.print('d_c');true"),J("!document.getElementById('invPrintView')")));
   t('4d-2: the homeowner role gets no days note on the Schedule door',J("coDaysNote(P())")==='');
+  /* 2.497.0: homeowners print only approved change orders; pending ones stay on screen */
+  t('2.497.0: the shared print view refuses a pending change order for a homeowner',J("CO.printOpen(P(),COH.row(String(P().id),'d_c'))")===false&&J("!document.getElementById('invPrintView')"));
+  t('2.497.0: the homeowner still sees the pending change order on screen',($2("closePrintPreview();COH.openDetail('d_c');true"),J("document.getElementById('infoScrim').textContent").indexOf('Extra bath')>=0));
+  t('2.497.0: the shared print view still prints an approved one for a homeowner',J("CO.printOpen(P(),COH.row(String(P().id),'d_a'))")===true);$2("closePrintPreview();true");
   $2("closePrintPreview();COH.close();true");
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
+  t('2.497.0: a builder can still print a change order waiting on the homeowner',J("CO.printOpen(P(),CO.row(String(P().id),'d_c'))")===true&&J("document.getElementById('invPrintView').textContent").indexOf('Extra bath')>=0);$2("closePrintPreview();true");
   /* ---------- 3c-2: money history screens (M-9), read-only ---------- */
   $2(`(function(){var X=__co;var H=X.pre+'hist/';
     X.store[H+'e1_0']={kind:'sent',ref:'d_a',refType:'co',no:52,rev:1,amountC:250000,by:'uB',byName:'Dean Walsh',at:1000,seq:0};
@@ -4968,7 +4973,7 @@ await (async function(){
   /* 2.498.0: one History row on the money card that opens the full list */
   const HRW=J("(function(){var c=clientCostsHTML(P());return {l:c.ledger,i:c.invoices};})()");
   t('2.498.0: the homeowner money card has exactly one History row',(HRW.l+HRW.i).split('HIST.open()').length-1===1&&HRW.i.indexOf('HIST.open()')<0,JSON.stringify(HRW).slice(0,300));
-  t('2.498.0: the History row says payments, credits, charges and voids',HRW.l.indexOf('Payments, credits, charges and voids')>=0,HRW.l.slice(-400));
+  t('2.498.0: the History row says payments, credits, charges and voids',HRW.l.indexOf('All payments, credits and charges')>=0,HRW.l.slice(-400));
   t('2.498.0: tapping the History row opens the full list',($2("HIST.open();true"),J("document.getElementById('infoScrim').textContent").indexOf('Payment recorded')>=0&&J("document.getElementById('infoScrim').textContent").indexOf('INV-009 · Paid')>=0));$2("HIST.close();true");
   $2("COH.openDetail('d_a');true");
   t('3c-2: the homeowner change order shows the same lines',J("document.getElementById('infoScrim').textContent").indexOf('Approved \u00b7 signed by Ana Ruiz')>=0);
