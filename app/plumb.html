@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.495.0 - Copied toast over the workbench; no demo houses in a signed-in book';
+const PLUMB_VERSION='2.497.0 - Homeowners print only approved change orders';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1794427200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.495.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1794600000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.497.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9699,7 +9699,8 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
       +(r.note?'<p>'+esc(r.note)+'</p>':'')
       +'<table>'+rows+'<tr class="tot"><td>Total</td><td class="ta-r">'+esc(this.amountText(r.amountC))+'</td></tr></table>'
       +'<p class="pv-sub" style="margin-top:14px">'+esc(this.statusText(r))+'</p>'+(r.sentence&&r.status==='approved'?'<p class="pv-sub">'+esc(r.sentence)+'</p>':'');},
-  printOpen(p,r){if(!PaperTrail.on||!p||!r)return false;_pvEnsureStyle();closePrintPreview();const v=document.createElement('div');v.id='invPrintView';
+  printOpen(p,r){if(!PaperTrail.on||!p||!r)return false;if(r.status!=='approved'&&((state.session||{}).role!=='builder'||siteRoleFor(p)!=='builder'))return false;   /* 2.497.0: homeowners print only approved change orders; builders print any */
+    _pvEnsureStyle();closePrintPreview();const v=document.createElement('div');v.id='invPrintView';
     v.innerHTML='<div class="pv-bar"><button class="pv-done" onclick="closePrintPreview()">Done</button><button class="pv-print" onclick="doPrintPreview()">Print / Save as PDF</button></div><div class="pv-doc">'+this.printDoc(p,r)+'</div>';
     document.body.appendChild(v);return true;},
   print(id){if(!this.allowed())return;const p=P();const r=this.row(String(p.id),id);if(!r)return;this.printOpen(p,r);},
