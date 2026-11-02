@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.495.0 - Copied toast over the workbench; no demo houses in a signed-in book';
+const PLUMB_VERSION='2.496.0 - Change order days on the Schedule';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1794427200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.495.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1794513600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.496.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -17487,6 +17487,7 @@ function renderCal(){
     +Object.keys(byName).sort().map(n=>calIsClient()
       ?`<span class="li"><span class="sw" style="background:${tradeColor(byName[n].trade)}"></span>${esc(specLabel(byName[n].trade)||'Crew')} crew</span>`
       :`<span class="li cur-p"${calIsSub()?'':` onclick="calCrews('${esc(n)}')"`}><span class="sw" style="background:${tradeColor(byName[n].trade)}"></span>${esc(n)} \u00b7 ${byName[n].days}d${crewsOf(n)>1?' \u00b7 '+crewsOf(n)+' crews':''}</span>`).join('')
+    +(calCrewFilter?'':coDaysCalHTML(calIsClient()?clientProj():fp))
     +(idle.length?`<span class="li idle cur-p" onclick="openIdle()"><span class="sw"></span>${idle.length} idle this month \u2014 see who</span>`:'')
     +(calIsSub()?'<span class="li idle"><span class="sw u-m36"></span>Striped = time you\u2019ve blocked</span>'
       :(calIsClient()?'':'<span class="li idle"><span class="sw op-4 u-m37"></span>Faded = awaiting the crew reply</span>'))
@@ -17894,6 +17895,12 @@ function bkDelete(){
   confirmDelete({title:'Remove this booking?',body:'<b>'+esc((b&&b.subName)||'This crew')+'</b> is un-scheduled for these dates and the booking drops off the calendar. The install packet and house history stay.',onConfirm:()=>{
     deleteBooking(p,bid);closeBk();renderCal();try{renderDay();}catch(e){}toast('Booking removed');}});}
 /* 4d-2: days approved change orders add, on the house's Schedule door (builder, switch on, rows already loaded; no extra read). */
+/* 2.496.0: approved change orders that add days, shown on the Schedule with where they came from ("+3 days from CO-002"). Read-only. */
+function coDaysRows(p){try{if(!p)return [];const sid=String(p.id);let rows=[];
+  if(CO.allowed()&&String(P().id)===sid)rows=CO.list(sid);else if(typeof COH!=='undefined'&&COH.allowed(p))rows=COH.list(sid);else return [];
+  return rows.filter(function(r){return r.status==='approved'&&Number.isInteger(r.days)&&r.days>0;}).sort(function(a,b){return (a.no||1e9)-(b.no||1e9);});}catch(e){return [];}}
+function coDaysSrc(r){return '+'+r.days+' day'+(r.days===1?'':'s')+' from '+CO.label(r.no);}
+function coDaysCalHTML(p){const rs=coDaysRows(p);return rs.map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r))+'</span>';}).join('');}
 function coDaysNote(p){try{if(!p||!CO.allowed()||String(P().id)!==String(p.id))return '';const d=CO.daysApproved(String(p.id));return d>0?' \u00b7 change orders add '+d+' day'+(d===1?'':'s'):'';}catch(e){return '';}}
 function openSchedule(){renderSchedule();document.getElementById('schedScrim').classList.add('show');}
 function closeSchedule(){document.getElementById('schedScrim').classList.remove('show');}
