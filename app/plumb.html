@@ -9877,7 +9877,10 @@ const HIST={_rows:{},_unsub:{},_err:{},
     try{if(CO._view&&document.getElementById('coRoot'))CO.draw();}catch(e){}
     try{if(COH._open&&document.getElementById('cohRoot'))COH.drawDetail();}catch(e){}},
   rowHTML(p){if(!this.allowed(p))return '';
+    if(siteRoleFor(p)==='client')return this.clientRowHTML(p);
     return '<div class="subrow cur-p" onclick="HIST.open()"><div class="si"><div class="n">History</div><div class="d">Every money step on this house</div></div></div>';},
+  /* 2.498.0: the homeowner's money History is one row on their money card; it opens the full list. Read-only. */
+  clientRowHTML(p){return '<div class="subrow cur-p hist-row" onclick="HIST.open()"><div class="si"><div class="n">History</div><div class="d">All payments, credits and charges</div></div></div>';},
 };
 /* 3c-4 (2.479.0, M-18): "Something's wrong" on money items (change orders, invoices, payments). One short note, written to
    sites/<id>/flags as Rules A1 flagCreateOk wants it: {kind:'flag'|'resolve', targetType, targetId, note, ref (resolve only),
@@ -11473,6 +11476,7 @@ function clientCostsHTML(p){
   }
   ledger+=orphanNoteHTML(bs);
   ledger+='</div>';
+  try{ledger+=HIST.rowHTML(p);}catch(e){}   /* 2.498.0: History is one row right under the money card */
   const invs=(p.invoices||[]).filter(function(i){const s=invState(i);return s!=='void'&&s!=='draft';}).slice().reverse();
   let invoices='';
   if(invs.length){
@@ -11480,7 +11484,6 @@ function clientCostsHTML(p){
     invoices+=invs.map(function(inv){const st=invState(inv);return '<div class="subrow cur-p" onclick="openInvoiceDetail(\''+p.id+'\',\''+inv.id+'\',\'client\')"><div class="si"><div class="n">'+esc(inv.no)+' \u00b7 '+esc(inv.title)+'</div><div class="d">'+fmtMoney(inv.total)+((st==='partial'||st==='overdue')?' \u00b7 '+fmtMoney(invBalance(inv))+' left':'')+(inv.due&&st!=='paid'?(st==='overdue'?' \u00b7 <b style="color:var(--clay)">past due '+esc(inv.due)+'</b>':' \u00b7 due '+esc(inv.due)):'')+(st==='sent'?' \u00b7 <b style="color:var(--clay)">needs your OK</b>':'')+'</div></div>'+invStatusChip(st)+'</div>';}).join('');
   }
   try{invoices+=COH.cardHTML(p);}catch(e){}
-  try{invoices+=HIST.rowHTML(p);}catch(e){}
   try{invoices+=PAST.rowHTML();}catch(e){}
   return {line:clientStillToPayLine(bs.out),ledger:ledger,invoices:invoices,needOK:(p.invoices||[]).filter(invNeedsOK)};
 }

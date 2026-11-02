@@ -5009,8 +5009,13 @@ await (async function(){
   t('3c-2: history writes nothing',J("__co.writes.length")===0);
   $2("CO._view=null;closeInfo();true");
   $2(`(function(){var X=__co;X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};return true;})()`);
-  const HS4=J("clientCostsHTML(P()).invoices");await sleep(30);
+  const HS4=J("clientCostsHTML(P()).ledger");await sleep(30);
   t('3c-2: the homeowner gets History on the money card',HS4.indexOf('HIST.open()')>=0&&J("HIST.allowed(P())")===true);
+  /* 2.498.0: one History row on the money card that opens the full list */
+  const HRW=J("(function(){var c=clientCostsHTML(P());return {l:c.ledger,i:c.invoices};})()");
+  t('2.498.0: the homeowner money card has exactly one History row',(HRW.l+HRW.i).split('HIST.open()').length-1===1&&HRW.i.indexOf('HIST.open()')<0,JSON.stringify(HRW).slice(0,300));
+  t('2.498.0: the History row says payments, credits, charges and voids',HRW.l.indexOf('All payments, credits and charges')>=0,HRW.l.slice(-400));
+  t('2.498.0: tapping the History row opens the full list',($2("HIST.open();true"),J("document.getElementById('infoScrim').textContent").indexOf('Payment recorded')>=0&&J("document.getElementById('infoScrim').textContent").indexOf('INV-009 · Paid')>=0));$2("HIST.close();true");
   $2("COH.openDetail('d_a');true");
   t('3c-2: the homeowner change order shows the same lines',J("document.getElementById('infoScrim').textContent").indexOf('Approved \u00b7 signed by Ana Ruiz')>=0);
   $2("COH.close();HIST.open(P());true");
