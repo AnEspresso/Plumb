@@ -654,12 +654,15 @@ async function main() {
     app_dc2: sentOf({ id: 'app_dc2', no: 67, rev: 2 }),
     app_y1: sentOf({ id: 'app_y1', no: 71 }),
     app_y2: sentOf({ id: 'app_y2', no: 72 }),
+    cd_ok: sentOf({ id: 'cd_ok', no: 80, days: 3, status: 'approved', approvedVia: 'paper', decidedBy: U.builder, decidedRev: 1 }),
+    cd_sent: sentOf({ id: 'cd_sent', no: 81, days: 2 }),
   };
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const sdb = ctx.firestore();
     for (const [id, data] of Object.entries(SEEDS))
       await setDoc(doc(sdb, `sites/liveA/co/${id}`), { data, updatedAt: 1, updatedBy: 'dev-b', byUid: U.builder, at: 1790000000000, appV: '2.470.0' });
     await setDoc(doc(sdb, 'sites/liveA/hist/h1'), { kind: 'sent', ref: 'co1', at: 1790000000000 });
+    await setDoc(doc(sdb, 'sites/liveA/coDays/cd_old'), { no: 79, days: 1, byUid: U.builder, at: 1790000000000, appV: '2.501.0' });
     await setDoc(doc(sdb, 'sites/liveGateJ/co/dj1'), { data: sentOf({ id: 'dj1', no: 50 }), updatedAt: 1, updatedBy: 'dev-b', byUid: U.builder2, at: 1790000000000, appV: '2.470.0' });
   });
   const upd = (d, id, base, over, uid, extra) => { const m = Object.assign({}, base, over); Object.keys(m).forEach(k => { if (m[k] === undefined) delete m[k]; }); return putCo(d, id, m, uid || U.builder, undefined, extra); };
@@ -741,6 +744,27 @@ async function main() {
   for (const [nm, id] of [['sent', 's_del'], ['approved', 'ap1'], ['declined', 'dc1'], ['withdrawn', 'wd1']])
     await INV_RULE(`A1 C-2: delete of a ${nm} change order is DENIED`, deleteDoc(coRef(db.builder, id)));
   await INV('A1 C-2: delete of a never-sent draft is ALLOWED', deleteDoc(coRef(db.builder, 'd2')), true);
+
+  /* 2.501.0: coDays, a days-only copy of approved change orders ({no, days}, never money) that crews can read */
+  const cdRef = (d, id, site) => doc(d, `sites/${site || 'liveA'}/coDays/${id}`);
+  const cdDoc = (uid, o) => Object.assign({ no: 80, days: 3 }, stampNow(uid || U.builder), o || {});
+  await INV('coDays: crew reads the days-only record', getDoc(cdRef(db.sub, 'cd_old')), true);
+  await INV('coDays: crew lists the days-only records', getDocs(collection(db.sub, 'sites/liveA/coDays')), true);
+  await INV('coDays: homeowner reads it', getDoc(cdRef(db.client, 'cd_old')), true);
+  await INV('coDays: a stranger DENIED read', getDoc(cdRef(db.stranger, 'cd_old')), false);
+  await INV('coDays: crew still DENIED reading a change order (money)', getDoc(coRef(db.sub, 'cd_ok')), false);
+  await INV('coDays: crew still DENIED listing change orders', getDocs(collection(db.sub, 'sites/liveA/co')), false);
+  await INV('coDays: crew still DENIED reading money history', getDoc(doc(db.sub, 'sites/liveA/hist/h1')), false);
+  await INV('coDays: builder writes the record for an approved change order (number + days match)', setDoc(cdRef(db.builder, 'cd_ok'), cdDoc()), true);
+  await INV_RULE('coDays: a record carrying money (amountC) is DENIED', setDoc(cdRef(db.builder, 'cd_ok'), cdDoc(U.builder, { amountC: 185000 })));
+  await INV_RULE('coDays: days that do not match the change order are DENIED', setDoc(cdRef(db.builder, 'cd_ok'), cdDoc(U.builder, { days: 9 })));
+  await INV_RULE('coDays: a record for a change order still waiting on the homeowner is DENIED', setDoc(cdRef(db.builder, 'cd_sent'), cdDoc(U.builder, { no: 81, days: 2 })));
+  await INV_RULE('coDays: a record with no change order behind it is DENIED', setDoc(cdRef(db.builder, 'nope'), cdDoc()));
+  await INV_RULE('coDays: crew DENIED writing it', setDoc(cdRef(db.sub, 'cd_ok'), cdDoc(U.sub)));
+  await INV_RULE('coDays: homeowner DENIED writing it', setDoc(cdRef(db.client, 'cd_ok'), cdDoc(U.client)));
+  await INV_RULE('coDays: a phone time instead of server time is DENIED', setDoc(cdRef(db.builder, 'cd_ok'), cdDoc(U.builder, { at: 1790000000000 })));
+  await INV_RULE('coDays: crew DENIED deleting it', deleteDoc(cdRef(db.sub, 'cd_old')));
+  await INV('coDays: builder removes a record that no longer matches', deleteDoc(cdRef(db.builder, 'cd_old')), true);
   await INV_A1('A1 C-2: the homeowner cannot delete a change order', deleteDoc(coRef(db.client, 'a_draft')));
   /* C-5: paper signature */
   const PAPER = { status: 'approved', approvedVia: 'paper', paperPhotoId: 'ph_1', decidedBy: U.builder, decidedAt: SRV(), decidedRev: 1 };
