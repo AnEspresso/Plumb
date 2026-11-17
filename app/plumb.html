@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.501.0 - Crews see change order days on their Schedule';
+const PLUMB_VERSION='2.502.0 - Find a street looks at every house';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1794945600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.501.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795032000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.502.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9480,11 +9480,11 @@ function renderOvCards(){
   cards.classList.remove('scroll');
   let list=live.slice();
   if(_ovSort==='attn'){
-    list=list.filter(function(p){return !!need.map[String(p.id)]||!!_siteWhisper(p);})
-      .sort(function(a,b){
-        const A=need.map[String(a.id)]||{pri:9,ts:0};const B=need.map[String(b.id)]||{pri:9,ts:0};
-        return (A.pri-B.pri)||((B.ts||0)-(A.ts||0));
-      });
+    if(!q)list=list.filter(function(p){return !!need.map[String(p.id)]||!!_siteWhisper(p);});   /* 2.502.0: a Find a street query looks at every house, not only ones Needs you kept */
+    list.sort(function(a,b){
+      const A=need.map[String(a.id)]||{pri:9,ts:0};const B=need.map[String(b.id)]||{pri:9,ts:0};
+      return (A.pri-B.pri)||((B.ts||0)-(A.ts||0));
+    });
   }else if(_ovSort==='recent'){
     list.sort(function(a,b){
       const ta=(pkRowsFor(a.id)[0]||{}).t||lastActivityTs(a)||0;
