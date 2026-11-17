@@ -77,6 +77,9 @@ jobs:
       - name: Archive-on-delete and opened lines (dormant)
         run: npm run archive
 
+      - name: Account delete keeps shared houses (only a sole builder's house is erased)
+        run: npm run deleteaccount
+
       - name: Repair-script money guard (M-16)
         run: npm run moneyguard
       - name: Money and flag pushes (pure checks)
