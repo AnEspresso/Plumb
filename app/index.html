@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.506.0 - Homeowners see change orders waiting on them';
+const PLUMB_VERSION='2.507.0 - Home summary counts waiting change orders and invoices';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795377600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.506.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795464000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.507.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -14290,16 +14290,19 @@ function renderClient(){
   const decisions=sels.filter(s=>!s.approved||s.status==='pending');
   const openQs=sels.filter(s=>s.status!=='installed'&&specStatus(s).homeownerPending.length);
   const decisionCount=new Set([...decisions,...openQs].map(s=>s.id)).size;
+  const invNeed=(p.invoices||[]).filter(invNeedsOK).length;
+  let coNeed=0;try{coNeed=COH.waiting(p).length;}catch(e){}
+  const needCount=decisionCount+invNeed+coNeed;   /* 2.507.0: the Home strip counts waiting change orders and invoices that need the homeowner, same as Still open */
   const T=clientTab;let h='';
   h+=`<div class="mt-0 ml-0 mr-0 mb-3"><span class="syncpill"><span class="sd"></span>On this device</span></div>`;
   try{const bar=document.getElementById('clHouseBar');if(bar){if(T==='home')bar.setAttribute('hidden','');else bar.removeAttribute('hidden');}}catch(e){}
   if(T==='home'){
-    const stripSt=decisionCount?(decisionCount===1?'One thing still needs you':(decisionCount+' still need you')):'All clear on this house';
+    const stripSt=needCount?(needCount===1?'One thing still needs you':(needCount+' still need you')):'All clear on this house';
     const meta=[];
     meta.push(p.street||p.name||'Your house');
     if(stageName)meta.push('Now building \u00b7 '+stageName);
     if(nb)meta.push((nbTrade?specLabel(nbTrade):'Crew')+' \u00b7 '+_fmtD(nb.start));
-    h+='<div class="pkt-strip '+(decisionCount?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div><div class="meta">'+esc(track.txt)+(meta.length?('<br>'+meta.map(esc).join('<br>')):'')+'</div></div>';
+    h+='<div class="pkt-strip '+(needCount?'warn':'ok')+'"><div class="st">'+esc(stripSt)+'</div><div class="meta">'+esc(track.txt)+(meta.length?('<br>'+meta.map(esc).join('<br>')):'')+'</div></div>';
     h+=buildBriefRowHTML(p);
     const facts=[];
     decisions.forEach(function(s){

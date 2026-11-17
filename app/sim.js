@@ -5080,6 +5080,53 @@ await (async function(){
   $2(`(function(){var X=__co;COH._open=null;closeInfo();_clientMoneyOpen=false;clientTab='home';Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0)delete X.store[k];});Object.keys(X.pwSave).forEach(function(k){X.store[k]=X.pwSave[k];});delete X.pwSave;COH._unsub={};COH._rows={};COH._err={};X.fire();return true;})()`);await sleep(20);
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
   t('2.497.0: a builder can still print a change order waiting on the homeowner',J("CO.printOpen(P(),CO.row(String(P().id),'d_c'))")===true&&J("document.getElementById('invPrintView').textContent").indexOf('Extra bath')>=0);$2("closePrintPreview();true");
+  /* 2.507.0: Home top summary counts waiting change orders and invoices that need the homeowner (Peter 11/17) */
+  $2(`(function(){var p=P();var X=__co;
+    X.smSave={sels:p.selections,invs:p.invoices,items:p.items,sess:state.session,role:X.role,uid:Sync.uid};
+    X.smCo={};Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0){X.smCo[k]=X.store[k];delete X.store[k];}});
+    p.selections=[];p.invoices=[];p.items=[];
+    X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};
+    COH._unsub={};COH._rows={};COH._err={};COH._open=null;_clientMoneyOpen=false;clientTab='home';
+    return true;})()`);
+  $2(`(function(){var X=__co;X.store[X.pre+'co/s_w']={data:{id:'s_w',title:'Wider pantry',amountC:100,kind:'change',status:'sent',no:1,rev:1},byUid:'uB',at:'__TS__',appV:'x'};X.store[X.pre+'co/s_a']={data:{id:'s_a',title:'Porch light',amountC:100,kind:'change',status:'approved',no:2,rev:1},byUid:'uH',at:'__TS__',appV:'x'};X.fire();COH._unsub={};COH._rows={};COH._err={};renderClient();return true;})()`);
+  await sleep(40);$2("renderClient();true");
+  const SM1=J("document.getElementById('clBody').innerHTML");
+  t('2.507.0: only a waiting change order — Home says "One thing still needs you", not All clear',SM1.indexOf('One thing still needs you')>=0&&SM1.indexOf('All clear on this house')<0,SM1.slice(0,500));
+  $2(`(function(){var X=__co;P().invoices=[{id:'s_inv',no:'INV-009',title:'Tile',status:'sent',total:100,payments:[]}];
+    Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0)delete X.store[k];});
+    COH._unsub={};COH._rows={};COH._err={};X.fire();renderClient();return true;})()`);
+  await sleep(40);$2("renderClient();true");
+  const SM2=J("document.getElementById('clBody').innerHTML");
+  t('2.507.0: only an invoice awaiting the homeowner — Home says "One thing still needs you", not All clear',SM2.indexOf('One thing still needs you')>=0&&SM2.indexOf('All clear on this house')<0,SM2.slice(0,500));
+  $2(`(function(){var X=__co;X.store[X.pre+'co/s_w']={data:{id:'s_w',title:'Wider pantry',amountC:100,kind:'change',status:'sent',no:1,rev:1},byUid:'uB',at:'__TS__',appV:'x'};X.fire();COH._unsub={};COH._rows={};COH._err={};renderClient();return true;})()`);
+  await sleep(40);$2("renderClient();true");
+  const SM3=J("document.getElementById('clBody').innerHTML");
+  t('2.507.0: a waiting change order and an invoice awaiting OK — Home says "2 still need you"',SM3.indexOf('2 still need you')>=0&&SM3.indexOf('All clear on this house')<0,SM3.slice(0,500));
+  $2(`(function(){var X=__co;P().invoices=[{id:'s_paid',no:'INV-010',title:'Paid one',status:'sent',total:100,payments:[{id:'pp',amount:100}]}];
+    Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0)delete X.store[k];});
+    X.store[X.pre+'co/s_a']={data:{id:'s_a',title:'Porch light',amountC:100,kind:'change',status:'approved',no:2,rev:1},byUid:'uH',at:'__TS__',appV:'x'};
+    X.fire();COH._unsub={};COH._rows={};COH._err={};renderClient();return true;})()`);
+  await sleep(40);$2("renderClient();true");
+  const SM4=J("document.getElementById('clBody').innerHTML");
+  t('2.507.0: an approved change order and a paid invoice do not count — Home says All clear',SM4.indexOf('All clear on this house')>=0&&SM4.indexOf('still need')<0,SM4.slice(0,500));
+  $2(`(function(){var yesterday=(function(){var d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+    P().invoices=[
+      {id:'s_over',no:'INV-014',title:'Overdue',status:'sent',total:80,due:yesterday,payments:[]},
+      {id:'s_appr',no:'INV-011',title:'Approved unpaid',status:'approved',total:50,payments:[]},
+      {id:'s_draft',no:'',title:'Draft',status:'draft',total:20,payments:[]},
+      {id:'s_void',no:'INV-012',title:'Void',status:'void',total:20,payments:[]},
+      {id:'s_part',no:'INV-013',title:'Partial',status:'sent',total:100,payments:[{id:'p2',amount:40}]}
+    ];
+    var X=__co;Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0)delete X.store[k];});
+    X.fire();COH._unsub={};COH._rows={};COH._err={};renderClient();return true;})()`);
+  await sleep(40);$2("renderClient();true");
+  const SM5=J("document.getElementById('clBody').innerHTML");
+  t('2.507.0: an overdue unpaid invoice counts; approved, draft, void, and partial do not',SM5.indexOf('One thing still needs you')>=0&&SM5.indexOf('All clear on this house')<0&&SM5.indexOf('2 still need you')<0,SM5.slice(0,500));
+  $2(`(function(){var p=P();var X=__co;var s=X.smSave;
+    p.selections=s.sels;p.invoices=s.invs;p.items=s.items;state.session=s.sess;X.role=s.role;Sync.uid=s.uid;
+    Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0)delete X.store[k];});
+    Object.keys(X.smCo).forEach(function(k){X.store[k]=X.smCo[k];});
+    delete X.smSave;delete X.smCo;COH._unsub={};COH._rows={};COH._err={};COH._open=null;X.fire();return true;})()`);await sleep(20);
   /* ---------- 3c-2: money history screens (M-9), read-only ---------- */
   $2(`(function(){var X=__co;var H=X.pre+'hist/';
     X.store[H+'e1_0']={kind:'sent',ref:'d_a',refType:'co',no:52,rev:1,amountC:250000,by:'uB',byName:'Dean Walsh',at:1000,seq:0};
