@@ -3982,15 +3982,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.510.0 - A refused save stops only itself and says Not saved';
+const PLUMB_VERSION='2.515.0 - A homeowner can\'t redeem a crew code on their own house';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795723200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.510.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796155200000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.515.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8278,6 +8278,23 @@ function approveClaim(code,uid,c){
       toast((jn||'Invitee')+' joined '+(p.street||p.name));
       logEvent('memberJoined',role+' · '+(c.name||''));}
     return;}}
+/* 2.515.0 A homeowner on a house may not redeem a crew code for that house
+   and turn into crew. The house doc says it when this phone can read it; a
+   phone that can't falls back on the membership this login already has. */
+function isHomeownerOn(site,uid,member,siteId){
+  uid=String(uid||'');
+  if(!uid)return false;
+  if(site){
+    const mem=((site.members||((site.meta||{}).members)||{})[uid]);
+    return String(typeof mem==='string'?mem:((mem&&mem.role)||'')).toLowerCase()==='client';
+  }
+  const m=member||{};
+  return m.role==='client'&&!!siteId&&String(m.siteId||'')===String(siteId||'');
+}
+/* placeholder, Agency to word */
+function homeownerCrewMsg(){
+  return 'You\'re already on this house as the homeowner. To join as crew, sign in with a different email.';
+}
 async function redeemInvite(code,prof,err){
   err=err||laErr;
   code=(code||'').trim().toUpperCase();if(!code)return null;
@@ -8290,6 +8307,10 @@ async function redeemInvite(code,prof,err){
     if(!doc.exists){err('That invite code wasn\u2019t found — double-check it with your builder.');return false;}
     const inv=doc.data()||{};
     if(inv.revoked){err('Your builder canceled that code. Ask them for a new one.');return false;}
+    if(inv.role==='sub'&&inv.siteId){
+      let site=null;
+      try{const sd=await db.collection('sites').doc(String(inv.siteId)).get();site=sd&&sd.exists?(sd.data()||{}):null;}catch(e){}
+      if(isHomeownerOn(site,prof.uid,prof.member,inv.siteId)){err(homeownerCrewMsg());return false;}}
     /* N-2 (Release D): one code, one person. Your own earlier claim (another
        phone, a reinstall) still lets you back in; anyone else's does not. */
     const iref=db.collection('invites').doc(code);
