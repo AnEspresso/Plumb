@@ -9480,11 +9480,11 @@ function renderOvCards(){
   cards.classList.remove('scroll');
   let list=live.slice();
   if(_ovSort==='attn'){
-    list=list.filter(function(p){return !!need.map[String(p.id)]||!!_siteWhisper(p);})
-      .sort(function(a,b){
-        const A=need.map[String(a.id)]||{pri:9,ts:0};const B=need.map[String(b.id)]||{pri:9,ts:0};
-        return (A.pri-B.pri)||((B.ts||0)-(A.ts||0));
-      });
+    if(!q)list=list.filter(function(p){return !!need.map[String(p.id)]||!!_siteWhisper(p);});   /* 2.502.0: a Find a street query looks at every house, not only ones Needs you kept */
+    list.sort(function(a,b){
+      const A=need.map[String(a.id)]||{pri:9,ts:0};const B=need.map[String(b.id)]||{pri:9,ts:0};
+      return (A.pri-B.pri)||((B.ts||0)-(A.ts||0));
+    });
   }else if(_ovSort==='recent'){
     list.sort(function(a,b){
       const ta=(pkRowsFor(a.id)[0]||{}).t||lastActivityTs(a)||0;
