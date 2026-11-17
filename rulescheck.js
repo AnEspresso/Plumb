@@ -218,6 +218,10 @@ async function seed() {
       await setDoc(doc(db, `sites/${id}/inv/inv_r1`), INV_DOC());
       await setDoc(doc(db, `sites/${id}/selm/s9a`), SELM_DOC());
     }
+    // #1: a house whose builder2 is on the roster as the owner (rpRole owner)
+    await setDoc(doc(db, 'sites/liveRpOwner'), { mode: 'live', street: 'liveRpOwner',
+      members: { [U.builder]: 'builder', [U.builder2]: 'builder' }, memberUids: [U.builder, U.builder2],
+      meta: { memberInfo: { [U.builder]: { name: 'Pat PM', rpRole: 'pm' }, [U.builder2]: { name: 'Owner Two', rpRole: 'owner' } } } });
     // PR 0: realistic selections, written the way the app writes a record
     // F-2 R2: default sel has no money keys; sGap keeps leftover money for the residual GAP
     for (const id of SEL_IDS) await setDoc(doc(db, `sites/liveA/sel/${id}`), selDoc());
@@ -1056,10 +1060,10 @@ async function main() {
   await INV('invites: get by exact code allowed signed-in', getDoc(doc(db.stranger, 'invites/SECRETCODE1')), true);
   await INV('invites: unauth DENIED get', getDoc(doc(db.unauth, 'invites/SECRETCODE1')), false);
   await INV('invites: LIST denied (no enumeration/harvest)', getDocs(collection(db.stranger, 'invites')), false);
-  await INV('invites: create with createdBy=self allowed',
-    setDoc(doc(db.builder, 'invites/NEWCODE1'), { createdBy: U.builder, site: 'liveA' }), true);
+  await INV('invites: create with createdBy=self allowed (owner, crew code)',
+    setDoc(doc(db.builder, 'invites/NEWCODE1'), { createdBy: U.builder, role: 'sub', siteId: 'liveA' }), true);
   await INV('invites: create claiming someone else denied',
-    setDoc(doc(db.stranger, 'invites/NEWCODE2'), { createdBy: U.builder, site: 'liveA' }), false);
+    setDoc(doc(db.stranger, 'invites/NEWCODE2'), { createdBy: U.builder, role: 'sub', siteId: 'liveA' }), false);
   await INV('invites: another builder DENIED revoking a code they did not send',
     updateDoc(doc(db.builder2, 'invites/SECRETCODE1'), { revoked: true, revokedAt: 1 }), false);
   await INV('invites: stranger holding the code DENIED revoking it',
@@ -1072,10 +1076,71 @@ async function main() {
     updateDoc(doc(db.builder, 'invites/SECRETCODE1'), { trade: 'elec' }), false);
   await INV('invites: delete denied', deleteDoc(doc(db.builder, 'invites/SECRETCODE1')), false);
   await INV('invites: create with claimed already set denied',
-    setDoc(doc(db.builder, 'invites/NEWCODE3'), { createdBy: U.builder, site: 'liveA', claimed: true }), false);
+    setDoc(doc(db.builder, 'invites/NEWCODE3'), { createdBy: U.builder, role: 'sub', siteId: 'liveA', claimed: true }), false);
   /* Option B must never widen reads on invites/{code}: signed out still gets nothing. */
   await INV('invites: option B - unauth still DENIED get of an open invite', getDoc(doc(db.unauth, 'invites/OPENCODE2')), false);
   await INV('invites: option B - unauth still DENIED list', getDocs(collection(db.unauth, 'invites')), false);
+
+  /* ══════════ #1 (pre-launch review): who may make a code ══════════
+     Homeowner or crew: the house owner or a builder with the money gate there.
+     Team: only the owner of the house the code names. A role or money gates ride
+     along only from the owner. Written exactly as the app writes them. */
+  const codeDoc = (code, role, siteId, by, extra) => Object.assign({ code, role, siteId, subId: '', name: '', trade: '', mode: 'live', createdBy: by, t: 1 }, extra || {});
+  const TEAM_EXTRA = { setup: false, rpRole: 'pm', gates: { moneyJob: true, moneyCo: false } };
+  await INV('#1 invites: owner makes a homeowner code (app createInvite shape)',
+    setDoc(doc(db.builder, 'invites/OWNHO1'), codeDoc('OWNHO1', 'client', 'liveA', U.builder)), true);
+  await INV('#1 invites: owner makes a crew code (app createInvite shape)',
+    setDoc(doc(db.builder, 'invites/OWNCR1'), codeDoc('OWNCR1', 'sub', 'liveA', U.builder, { subId: 's1', name: 'Clearwater Plumbing', trade: 'plumb' })), true);
+  await INV('#1 invites: owner makes a team code naming a house they own (app mintTeamInvite shape)',
+    setDoc(doc(db.builder, 'invites/OWNTM1'), codeDoc('OWNTM1', 'team', 'liveA', U.builder, TEAM_EXTRA)), true);
+  await INV('#1 invites: owner may hand out rpRole owner and gates',
+    setDoc(doc(db.builder, 'invites/OWNTM2'), codeDoc('OWNTM2', 'team', 'liveA', U.builder, { rpRole: 'owner', gates: { moneyJob: true, moneyCo: true } })), true);
+  await INV('#1 invites: a roster entry with rpRole owner counts as the owner',
+    setDoc(doc(db.builder2, 'invites/RPOWN1'), codeDoc('RPOWN1', 'team', 'liveRpOwner', U.builder2, TEAM_EXTRA)), true);
+  await INV('#1 invites: money builder (moneyJob) makes a homeowner code',
+    setDoc(doc(db.builder2, 'invites/MBHO1'), codeDoc('MBHO1', 'client', 'liveGateJ', U.builder2)), true);
+  await INV('#1 invites: money builder makes a crew code',
+    setDoc(doc(db.builder2, 'invites/MBCR1'), codeDoc('MBCR1', 'sub', 'liveGateJ', U.builder2, { name: 'Brightpath Electric', trade: 'elec' })), true);
+  await INV('#1 invites: money builder DENIED a team code',
+    setDoc(doc(db.builder2, 'invites/MBTM1'), codeDoc('MBTM1', 'team', 'liveGateJ', U.builder2, TEAM_EXTRA)), false);
+  await INV('#1 invites: money builder DENIED handing out rpRole',
+    setDoc(doc(db.builder2, 'invites/MBRP1'), codeDoc('MBRP1', 'client', 'liveGateJ', U.builder2, { rpRole: 'owner' })), false);
+  await INV('#1 invites: money builder DENIED handing out gates',
+    setDoc(doc(db.builder2, 'invites/MBGT1'), codeDoc('MBGT1', 'sub', 'liveGateJ', U.builder2, { gates: { moneyJob: true } })), false);
+  await INV('#1 invites: builder without money DENIED a homeowner code',
+    setDoc(doc(db.builder2, 'invites/PMHO1'), codeDoc('PMHO1', 'client', 'liveGate', U.builder2)), false);
+  await INV('#1 invites: builder without money DENIED a crew code',
+    setDoc(doc(db.builder2, 'invites/PMCR1'), codeDoc('PMCR1', 'sub', 'liveGate', U.builder2)), false);
+  await INV('#1 EXPLOIT: crew X DENIED a team code (owner role + money gates) on a house they work on',
+    setDoc(doc(db.sub, 'invites/EVILTM1'), codeDoc('EVILTM1', 'team', 'liveA', U.sub, { rpRole: 'owner', gates: { moneyJob: true, moneyCo: true } })), false);
+  await INV('#1 EXPLOIT: crew X DENIED a plain team code too',
+    setDoc(doc(db.sub, 'invites/EVILTM2'), codeDoc('EVILTM2', 'team', 'liveA', U.sub, TEAM_EXTRA)), false);
+  await INV('#1 EXPLOIT: crew X DENIED a team code with no house named (the pre-#1 app shape)',
+    setDoc(doc(db.sub, 'invites/EVILTM3'), codeDoc('EVILTM3', 'team', '', U.sub, TEAM_EXTRA)), false);
+  await INV('#1 EXPLOIT: crew X DENIED a homeowner code (would read the money)',
+    setDoc(doc(db.sub, 'invites/EVILHO1'), codeDoc('EVILHO1', 'client', 'liveA', U.sub)), false);
+  await INV('#1 EXPLOIT: crew X DENIED a crew code for a second account',
+    setDoc(doc(db.sub, 'invites/EVILCR1'), codeDoc('EVILCR1', 'sub', 'liveA', U.sub)), false);
+  /* The exploit end to end: even after X made a code, Y has nothing to claim. */
+  await INV('#1 EXPLOIT: account Y cannot claim the code X was refused (it does not exist)',
+    (() => { const b = writeBatch(db.stranger);
+      b.update(doc(db.stranger, 'invites/EVILTM1'), { claimed: true, claimedAt: 1 });
+      b.set(doc(db.stranger, `invites/EVILTM1/claims/${U.stranger}`), { name: 'Y', t: 1 });
+      return b.commit(); })(), false);
+  await INV('#1 invites: homeowner DENIED any code',
+    setDoc(doc(db.client, 'invites/HOCR1'), codeDoc('HOCR1', 'sub', 'liveA', U.client)), false);
+  await INV('#1 invites: stranger DENIED a code for a house they are not on',
+    setDoc(doc(db.stranger, 'invites/STRHO1'), codeDoc('STRHO1', 'client', 'liveA', U.stranger)), false);
+  await INV('#1 invites: owner of liveB DENIED a code naming liveA',
+    setDoc(doc(db.otherBuilder, 'invites/XHO1'), codeDoc('XHO1', 'client', 'liveA', U.otherBuilder)), false);
+  await INV('#1 invites: DENIED for a house that does not exist',
+    setDoc(doc(db.builder, 'invites/NOHOUSE1'), codeDoc('NOHOUSE1', 'client', 'noSuchHouse', U.builder)), false);
+  await INV('#1 invites: DENIED on a non-live house, even for its builder',
+    setDoc(doc(db.demoMember, 'invites/DEMO1'), codeDoc('DEMO1', 'client', 'demoStamped', U.demoMember)), false);
+  await INV('#1 invites: DENIED with no role or an unknown role',
+    setDoc(doc(db.builder, 'invites/BADROLE1'), codeDoc('BADROLE1', 'builder', 'liveA', U.builder)), false);
+  await INV('#1 invites: DENIED with no siteId',
+    setDoc(doc(db.builder, 'invites/NOSITE1'), { code: 'NOSITE1', role: 'client', createdBy: U.builder }), false);
 
   /* ══════════ N-2: one code, one person ══════════ */
   const claimBatch = (d, code, who) => {
