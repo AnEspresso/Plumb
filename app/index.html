@@ -10234,7 +10234,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           if(leg.every(v=>onInv[String(v.id)]!==undefined)){metaOut=Object.assign({},op.data,{invoices:[]});legClear=true;}}
         /* #10: only the fields (and map entries) that changed here; members ride along as before */
         const delta=metaDelta(sh,metaOut);
-        if(delta){delta.members=mem;if(legClear)delta.invoices=[];metaOut=delta;}
+        if(delta){delta.members=(metaOut&&metaOut.members)||mem;if(legClear)delta.invoices=[];metaOut=delta;}
         const payload={meta:metaOut,id:p.id,mode:this.mode||'demo',updatedAt:Date.now(),updatedBy:this.deviceId,
           updatedByUid:myUid,
           members:mem,memberUids:Object.keys(mem)};                          // top-level copies: rules + scoped queries read these
