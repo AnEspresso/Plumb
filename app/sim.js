@@ -5440,6 +5440,45 @@ await (async function(){
     $2("String(__renderPeople)").indexOf("canGate('people')||isOrgOwner()")<0&&$2("String(__renderPeople)").indexOf("isOrgOwner()?`<button class=\"add-sub-btn btn btn-secondary\" onclick=\"openTeamInvite({})\">")>=0);
   t('2.509.0: a refused homeowner or crew code says to ask the owner',$2("String(createInvite)").indexOf("permission-denied'?INV_MONEY_ONLY")>=0);
 
+  /* 2.514.0 (Beaumont): a crew already on a house can't redeem another crew's code */
+  const CSRUN=`(async function(siteDoc,inv,code,member){
+    var saved={fb:window.firebase,fc:window.fbConfig,ew:window.emuWire,tr:window.trapError};
+    var writes=[],errs=[];
+    var mkDoc=function(path){return {get:function(){
+        if(path==='invites/'+code)return Promise.resolve({exists:true,data:function(){return inv;}});
+        if(path==='sites/'+inv.siteId){if(siteDoc==='denied')return Promise.reject({code:'permission-denied'});return Promise.resolve({exists:!!siteDoc,data:function(){return siteDoc;}});}
+        return Promise.resolve({exists:false,data:function(){return null;}});},
+      set:function(d){writes.push(['set',path]);return Promise.resolve();},
+      collection:function(c){return {doc:function(id){return mkDoc(path+'/'+c+'/'+id);}};}};};
+    var db={collection:function(c){return {doc:function(id){return mkDoc(c+'/'+id);}};},
+      batch:function(){var w=[];return {update:function(r){w.push('update');},set:function(r){w.push('set');},commit:function(){writes.push(['batch'].concat(w));return Promise.resolve();}};}};
+    window.firebase={apps:[1],firestore:function(){return db;},initializeApp:function(){}};
+    window.fbConfig=function(){return {projectId:'x'};};window.emuWire=function(){};window.trapError=function(){};
+    var prof={uid:'cA',name:'typed',email:'a@example.com',member:member};
+    var m=null;try{m=await redeemInvite(code,prof,function(e){errs.push(String(e));});}catch(e){errs.push('THROW '+e.message);}
+    window.firebase=saved.fb;window.fbConfig=saved.fc;window.emuWire=saved.ew;window.trapError=saved.tr;
+    return JSON.stringify({m:m,writes:writes,errs:errs});
+  })`;
+  const CSHOUSE=JSON.stringify({members:{own:'builder',cA:'sub'},meta:{memberInfo:{own:{rpRole:'owner'},cA:{name:'Crew A',trade:'appl'}},
+    invites:[{code:'PB-A',role:'sub',subId:'s1',name:'Crew A',status:'joined',uid:'cA'},{code:'PB-M',role:'sub',subId:'s2',name:'Crew M',status:'open'}]}});
+  const CSM=JSON.stringify({code:'PB-M',role:'sub',siteId:'h1',subId:'s2',name:'Crew M',trade:'appl',createdBy:'own'});
+  const CS1=JSON.parse(await $2(`(async function(){return await `+CSRUN+`(${CSHOUSE},${CSM},'PB-M',{code:'PB-A',siteId:'h1',role:'sub',name:'Crew A',subId:'s1'});})()`));
+  t('2.514.0: a crew on the house redeeming another crew\'s code is refused before anything is claimed, and keeps its own name',
+    CS1.m===false&&CS1.writes.length===0&&CS1.errs.length===1&&CS1.errs[0]===$2("crewOtherSlotMsg('Crew A','Crew M')"),JSON.stringify(CS1));
+  const CS2=JSON.parse(await $2(`(async function(){return await `+CSRUN+`(${CSHOUSE},Object.assign(${CSM},{code:'PB-A2',subId:'s1',name:'Crew A'}),'PB-A2',null);})()`));
+  t('2.514.0: a new code for the same crew slot still joins (claimed once, roster slot kept)',
+    CS2.m&&CS2.m.name==='Crew A'&&CS2.m.subId==='s1'&&CS2.writes.length===1&&CS2.writes[0][0]==='batch'&&CS2.errs.length===0,JSON.stringify(CS2));
+  const CS3=JSON.parse(await $2(`(async function(){return await `+CSRUN+`('denied',${CSM},'PB-M',null);})()`));
+  t('2.514.0: a crew not on the house yet (no read) joins as before',CS3.m&&CS3.m.name==='Crew M'&&CS3.errs.length===0,JSON.stringify(CS3));
+  const CS4=JSON.parse(await $2(`(async function(){return await `+CSRUN+`('denied',${CSM},'PB-M',{code:'PB-A',siteId:'h1',role:'sub',name:'Crew A'});})()`));
+  t('2.514.0: with no house read, the code this phone joined with still refuses another crew\'s code',CS4.m===false&&CS4.writes.length===0,JSON.stringify(CS4));
+  const CS5=JSON.parse(await $2(`(async function(){return await `+CSRUN+`(${JSON.stringify({members:{own:'builder'},meta:{}})},${CSM},'PB-M',{code:'PB-A',siteId:'h1',role:'sub',name:'Crew A'});})()`));
+  t('2.514.0: a crew taken off the house may take a new code',CS5.m&&CS5.m.name==='Crew M',JSON.stringify(CS5));
+  t('2.514.0: the builder phone stamps the crew slot with the name',$2("String(approveClaim)").indexOf("p.memberInfo[uid].subId=String(inv.subId)")>=0);
+  t('2.514.0: one test, same as the server: a stamped slot is the authority',
+    $2("JSON.stringify(crewSlotClash({members:{c:'sub'},meta:{memberInfo:{c:{name:'A',subId:'s1'}}}},'c',{role:'sub',subId:'s2',name:'M',siteId:'h'},'X',null))")==='{"mine":"A"}'
+    &&$2("crewSlotClash({members:{c:'sub'},meta:{memberInfo:{c:{name:'typed'}}}},'c',{role:'sub',subId:'s2',name:'M',siteId:'h'},'X',null)")===null);
+
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();
