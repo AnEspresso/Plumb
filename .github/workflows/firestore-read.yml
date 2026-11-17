@@ -3,6 +3,9 @@ name: Firestore read (read only)
 # before a fix. It only reads: GET requests to the Firestore REST API,
 # nothing else. The log prints counts, document IDs, field names and value
 # types — never field values (no addresses, names, emails or phone numbers).
+# Equality checks (eq:<doc>#<field>=<doc>#<field>) print only equal, different
+# or missing — never either value. A check can only compare two stored fields,
+# never a literal.
 #   - The live read is manual only (workflow_dispatch), and only runs once
 #     this file is on main.
 #   - Uses the GCP_READONLY_KEY_JSON repo secret (the agent-readonly service
@@ -13,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       paths:
-        description: 'Doc or collection paths, comma- or newline-separated (collections list up to 50 docs)'
+        description: 'Doc or collection paths, or eq:doc#field=doc#field checks, comma- or newline-separated (collections list up to 50 docs)'
         required: true
         type: string
   pull_request:

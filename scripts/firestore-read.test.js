@@ -4,7 +4,7 @@
 'use strict';
 
 const assert = require('assert');
-const { parsePaths, shape, formatDoc, formatCollection, formatError, docPath } = require('./firestore-read.js');
+const { parseCheck, valueAt, compareValues, formatCheck, parsePaths, shape, formatDoc, formatCollection, formatError, docPath } = require('./firestore-read.js');
 
 const FORBIDDEN = [
   '7 Cottage Ln',
@@ -124,6 +124,28 @@ t('formatError never echoes a response body', function () {
   const out = formatError('sites/abc123', new Error('PERMISSION_DENIED: street is secret'));
   assert.equal(out, '=== sites/abc123\nREAD FAILED');
   checkClean('formatError', out);
+});
+
+t('EQ: compares two stored values and prints only equal, different or missing', function () {
+  const c = parseCheck('eq:sites/abc123#members.u1=sites/abc123#payments.1.note');
+  const out = [
+    formatCheck(c.label, compareValues(valueAt(sample, c.a.field), valueAt(sample, c.b.field))),
+    formatCheck('x', compareValues(valueAt(sample, ['payments', '0']), valueAt(sample, ['payments', '1', 'amountC']))),
+    formatCheck('y', compareValues(valueAt(sample, ['street']), valueAt(sample, ['nope']))),
+    formatCheck('z', compareValues(valueAt(sample, ['__id']), { stringValue: 'abc123' }))
+  ];
+  assert.ok(/: different$/.test(out[0]) && /: equal$/.test(out[1]) && /: missing$/.test(out[2]) && /: equal$/.test(out[3]), out.join('\n'));
+  checkClean('EQ output', out.join('\n'));
+});
+
+t('EQ: no literals, no bad paths, and a rejection never echoes the entry', function () {
+  ['eq:sites/abc123#street=7 Cottage Ln', 'eq:sites/abc123#street', 'eq:sites#street=sites/abc123#city', 'eq:sites/abc123#street=sites/abc123#a.__id', 'eq:sites/7 Cottage Ln#x=sites/a#y']
+    .forEach(function (e) { let msg = ''; try { parseCheck(e); } catch (x) { msg = x.message; } assert.equal(msg, 'Rejected check.', e); checkClean('EQ rejection', msg); });
+});
+
+t('EQ entries are left out of the path list', function () {
+  const p = parsePaths('sites/abc123,eq:sites/abc123#a=sites/abc123#b');
+  assert.equal(p.length, 1);
 });
 
 console.log('firestore-read test: ' + n + ' checks passed');
