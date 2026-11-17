@@ -390,6 +390,26 @@ const O=JSON.parse($(`JSON.stringify((function(){state.session={role:'builder',n
 t('2.490.0: Needs you says how many houses it leaves out and why',/^\d+ more houses? (has|have) nothing waiting · Show all$/.test(O.a.txt)&&parseInt(O.a.txt,10)===5-O.a.cards,JSON.stringify(O.a));
 t('2.490.0: Show all lists every house (A–Z) and the line goes away',O.b.sort==='az'&&O.b.cards===5&&!O.b.more,JSON.stringify(O.b));
 t('2.490.0: one house hidden reads in the singular',$("ovHiddenLine(1)")==='1 more house has nothing waiting \u00b7 Show all');
+/* 2.502.0: Find a street looks at every house, including all-clear ones the Needs you sort hid */
+{
+$("window.__oSt={s:state.session,p:state.projects,srt:_ovSort,q:(document.getElementById('ovSearch')||{}).value};true");
+const ST=JSON.parse($(`JSON.stringify((function(){
+  state.session={role:'builder',name:'Peter',rpRole:'owner',owner:true,auth:{uid:'uOwner123x'}};
+  var quiet={id:'qcot',street:'7 Cottage Ln',items:[],bookings:[],selections:[],logs:[],payments:[],subs:[],docs:[],permits:[],inspections:{},stageDone:{}};
+  var wait={id:'qwait',street:'1 Busy St',items:[{id:1,issue:true,status:'open',t:1,cap:'Punch left'}],bookings:[],selections:[],logs:[],payments:[],subs:[],docs:[],permits:[],inspections:{},stageDone:{}};
+  state.projects=[quiet,wait];
+  var sb=document.getElementById('ovSearch');if(sb)sb.value='';
+  _ovSort='attn';renderOvCards();
+  var hid=[].map.call(document.querySelectorAll('#ovCards .ov-card:not(.allh) .st'),function(e){return e.textContent;});
+  if(sb)sb.value='7 Cottage Ln';renderOvCards();
+  var found=[].map.call(document.querySelectorAll('#ovCards .ov-card:not(.allh) .st'),function(e){return e.textContent;});
+  var empty=!!document.querySelector('#ovCards .empty')&&((document.querySelector('#ovCards .empty')||{}).textContent||'').indexOf('No house matches')>=0;
+  return {hid:hid,found:found,empty:empty,html:document.getElementById('ovCards').textContent};
+})())`));
+t('2.502.0: Needs you without a search hides an all-clear 7 Cottage Ln',ST.hid.indexOf('7 Cottage Ln')<0&&ST.hid.indexOf('1 Busy St')>=0,JSON.stringify(ST.hid));
+t('2.502.0: typing 7 Cottage Ln in Find a street shows that all-clear house on Needs you',ST.found.indexOf('7 Cottage Ln')>=0&&!ST.empty,JSON.stringify({found:ST.found,empty:ST.empty,html:(ST.html||'').slice(0,200)}));
+$("(function(){var o=__oSt;state.session=o.s;state.projects=o.p;_ovSort=o.srt;var sb=document.getElementById('ovSearch');if(sb)sb.value=o.q||'';delete window.__oSt;return true;})()");
+}
 // (3) sign-in after another account: no auth-change reload races the form
 t('2.490.0: Sync ignores the auth change while the sign-in form is signing in',SRC.indexOf("if(this._initing||this._signingIn)return;")>=0);
 t('2.490.0: the sign-in form sets the flag before signing in and always clears it',(function(){const a=SRC.indexOf("try{Sync._signingIn=true;}catch(e){}"),b=SRC.indexOf("firebase.auth().signInWithEmailAndPassword(email,pass)"),c=SRC.indexOf("finally{btn.disabled=false;btn.textContent=old;try{Sync._signingIn=false;}catch(e){}}");return a>0&&b>a&&c>b;})());
