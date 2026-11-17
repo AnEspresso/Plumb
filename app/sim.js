@@ -4178,7 +4178,9 @@ await (async function(){
       setTimeout(function(){if(l.dead)return;var dd=path==='sites'?siteDocs():collDocs(sid,sub);l.h(snap(dd.map(function(d){return {type:'added',doc:d};}),dd));},0);return function(){l.dead=true;};};
     var log=function(kind,path,d,o){var dels=[];if(d&&isObj(d.data))Object.keys(d.data).forEach(function(k){if(d.data[k]===DEL)dels.push(k);});
       F.writes.push({kind:kind,path:path,data:d?strip(d):null,dels:dels,merge:!!(o&&o.merge),uid:F.uid});};
-    F.db={collection:function(){return {
+    F.db={runTransaction:function(fn){F.tx=(F.tx||0)+1;var ps=[];var tx={get:function(r){return r.get();},set:function(r,d,o){ps.push(function(){return r.set(d,o);});return tx;}};
+        return Promise.resolve(fn(tx)).then(function(v){return ps.reduce(function(a,f){return a.then(f);},Promise.resolve()).then(function(){return v;});});},
+      collection:function(){return {
       where:function(){return {onSnapshot:function(o,h){return listen('sites',null,null,o,h);}};},
       doc:function(sid){return {
         get:function(){return Promise.resolve(ds(sid,F.site(sid).doc));},
@@ -4188,6 +4190,8 @@ await (async function(){
           s.doc=nd;fire('sites',t,sid,s.doc);return Promise.resolve();},
         collection:function(sub){var C={where:function(){return C;},onSnapshot:function(o,h){return listen(sid+'/'+sub,sid,sub,o,h);},
           doc:function(id){return {
+            /* 2.511.0 (#4): a record read, for the invoice merge's transaction */
+            get:function(){var c=F.site(sid).colls[sub]||{};return Promise.resolve(ds(id,c[id]));},
             set:function(d,o){if(F.undefCheck&&hasUndef(d)){F.undefHits=(F.undefHits||0)+1;throw new Error('Unsupported field value: undefined (found in field data in document '+sid+'/'+sub+'/'+id+')');}log('set',sid+'/'+sub+'/'+id,d,o);var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
             delete:function(){log('del',sid+'/'+sub+'/'+id);var c=F.site(sid).colls[sub]||{};var had=!!c[id];delete c[id];if(had)fire(sid+'/'+sub,'removed',id,null);return Promise.resolve();}};}};return C;}};}};}};
     /* a fresh phone: new device, no shadow, no houses */
@@ -4399,6 +4403,56 @@ await (async function(){
   t('conversion report on the demo houses: zero amounts changed (every seeded amount was already a whole cent)',J("_moneyConv.length")===0,J("moneyConvText()"));
   const TOAST_ON="window._simToasts=[];window._simOT=window.toast;window.toast=function(m){window._simToasts.push(m);};true";
   const TOAST_OFF="(function(){var r=JSON.stringify(window._simToasts);window.toast=window._simOT;return r;})()";
+  /* ════ 2.511.0 · #4: a stale phone adds its payment to the server's invoice and keeps the homeowner's OK ════ */
+  {
+    const push=async()=>{await $2("Sync._pushOne(state.projects.find(function(x){return x.id==='pdel';})).then(function(){return 'ok';},function(e){return 'threw '+(e&&e.code);})");await settle();};
+    const loc=()=>J("state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';})");
+    const srv=()=>J("(__F.srv.pdel.colls.inv||{}).inv_s1.data");
+    const ids=a=>(a||[]).map(x=>x.id+(x.voidedAt?'(void)':'')).join(',');
+    /* phone B (this phone) and the server both hold INV-031, sent, $300, no payments */
+    $2("(function(){var p=state.projects.find(function(x){return x.id==='pdel';});p.invoices=(p.invoices||[]).filter(function(v){return v.id!=='inv_s1';});p.invoices.push({id:'inv_s1',no:'INV-031',title:'Selections',due:'',items:[{label:'Tile',amount:300,amountC:30000}],total:300,totalC:30000,status:'sent',t:1791000000000,sentBy:'You',payments:[]});return true;})()");
+    await push();
+    t('2.511.0 #4 setup: INV-031 is on the server, sent, no payments',!!srv()&&srv().status==='sent'&&ids(srv().payments)==='');
+    /* phone A records a payment; this phone has not heard yet */
+    $2("(function(){__F.srv.pdel.colls.inv.inv_s1.data.payments.push({id:'pm_A',amount:100,date:'2026-11-17',note:''});return true;})()");
+    const tx0=J("__F.tx||0");
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});v.payments.push({id:'pm_B',amount:50,date:'2026-11-17',note:'phone B'});return true;})()");
+    await push();
+    t('2.511.0 #4 STALE PHONE: phone B\'s payment is added after phone A\'s; A\'s is not lost',ids(srv().payments)==='pm_A,pm_B',ids(srv().payments));
+    t('2.511.0 #4: the write is a read-then-write transaction',J("__F.tx||0")>tx0);
+    t('2.511.0 #4: phone B now shows phone A\'s payment too, and nothing is queued again',ids(loc().payments)==='pm_A,pm_B'&&J("diffSiteOps(Sync._shadow.pdel,state.projects.find(function(x){return x.id==='pdel';})).filter(function(o){return o.sub==='inv';}).length")===0,ids(loc().payments));
+    /* the homeowner approves on the server; phone B still holds "sent" and pays the rest */
+    $2("(function(){var d=__F.srv.pdel.colls.inv.inv_s1.data;d.status='approved';d.approvedAt=1791300000000;return true;})()");
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});v.payments.push({id:'pm_C',amount:150,date:'2026-11-18',note:''});v.status='paid';v.paidAt=1791400000000;return true;})()");
+    await push();
+    t('2.511.0 #4 STALE PHONE: paying in full on an old copy keeps the homeowner\'s OK (approvedAt) and marks it paid',srv().approvedAt===1791300000000&&srv().status==='paid'&&ids(srv().payments)==='pm_A,pm_B,pm_C',JSON.stringify({s:srv().status,a:srv().approvedAt,p:ids(srv().payments)}));
+    t('2.511.0 #4: phone B now holds the OK too',loc().approvedAt===1791300000000);
+    /* phone B voids phone A's payment: the invoice reopens as approved, never back to sent */
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});var pm=v.payments.find(function(x){return x.id==='pm_A';});pm.voidedAt=1791500000000;pm.voidReason='Bounced';pm.voidedBy='You';v.status='approved';v.paidAt=null;return true;})()");
+    await push();
+    t('2.511.0 #4: a void keeps every payment, in place, and reopens the invoice as approved',ids(srv().payments)==='pm_A(void),pm_B,pm_C'&&srv().status==='approved'&&srv().approvedAt===1791300000000,JSON.stringify({s:srv().status,p:ids(srv().payments)}));
+    /* a stale phone that never had A's payment or the OK writes an old copy with a new due date */
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});v.payments=[{id:'pm_B',amount:50,date:'2026-11-17',note:'phone B'}];v.status='sent';delete v.approvedAt;v.due='2026-12-01';return true;})()");
+    await push();
+    t('2.511.0 #4 STALE PHONE: an old copy written over the server drops no payment and keeps the OK',ids(srv().payments)==='pm_A(void),pm_B,pm_C'&&srv().status==='approved'&&srv().approvedAt===1791300000000&&srv().due==='2026-12-01',JSON.stringify({s:srv().status,a:srv().approvedAt,p:ids(srv().payments)}));
+    /* a void on the server wins */
+    $2("(function(){var d=__F.srv.pdel.colls.inv.inv_s1.data;d.status='void';d.voidedAt=1791600000000;d.voidReason='Re-issued';return true;})()");
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});v.due='2026-12-15';return true;})()");
+    await push();
+    t('2.511.0 #4: a void made on another phone stays void',srv().status==='void'&&srv().voidReason==='Re-issued'&&loc().status==='void');
+    /* the merge on its own */
+    const MG=J(`(function(){var o={};
+      o.same=JSON.stringify(invMergeServer({id:'i',status:'paid',paidAt:5,total:10,items:[{label:'a',amount:10}],payments:[]},{id:'i',status:'paid',paidAt:5,total:10,items:[{label:'a',amount:10}],payments:[]}));
+      o.legacyPaid=invMergeServer({id:'i',status:'paid',paidAt:5,total:10,items:[{label:'a',amount:10}],payments:[]},{id:'i',status:'paid',paidAt:5,total:10,items:[{label:'a',amount:10}],payments:[]}).status;
+      o.draft=invMergeServer({id:'i',status:'draft',title:'mine'},{id:'i',status:'draft',title:'theirs'}).title;
+      o.adj=invMergeServer({id:'i',status:'sent',no:'INV-1',total:8,items:[{label:'a',amount:10},{label:'Credit',amount:-2,adj:true}],payments:[]},{id:'i',status:'sent',no:'INV-1',total:10,items:[{label:'a',amount:10}],payments:[]});
+      o.title=invMergeServer({id:'i',status:'sent',no:'INV-9',title:'x',total:10,items:[{label:'a',amount:10}],payments:[]},{id:'i',status:'sent',no:'INV-1',title:'y',total:10,items:[{label:'a',amount:10}],payments:[]});
+      return o;})()`);
+    t('2.511.0 #4: merging an unchanged invoice changes nothing (a paid invoice with no payment entries stays paid)',MG.legacyPaid==='paid'&&MG.same.indexOf('"status":"paid"')>=0);
+    t('2.511.0 #4: a draft is never merged (this phone\'s draft is the record)',MG.draft==='mine');
+    t('2.511.0 #4: a credit appended here after the server\'s lines is kept, with its total',MG.adj.items.length===2&&MG.adj.total===8);
+    t('2.511.0 #4: number and title are the server\'s',MG.title.no==='INV-1'&&MG.title.title==='y');
+  }
   $2("state.activeId='pdel';true");
   /* parser table, on the real parseMoney */
   const PT=J(`(function(){var o={};['2k','-500','$2,000.50','','$','1,2,3','12.345','2,000','2.000,50','500-600','1849.5','abc','5.','0'].forEach(function(x){var r=parseMoney(x,{});o[x]=r.ok?r.cents:('x:'+r.why);});o['0+']=parseMoney('0',{positive:true}).ok;return o;})()`);
