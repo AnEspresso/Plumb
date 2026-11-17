@@ -9,6 +9,11 @@
    emails, phones, addresses, names, or anything nested in a map or array.
    Error lines never echo a response body or other data.
 
+   EQ checks (2026-11-17): an entry "eq:<doc>#<field.path>=<doc>#<field.path>" in PATHS prints only
+   whether the two stored values are equal, different, or missing - never either value. A field path walks
+   maps by name and arrays by index; "__id" is the document ID (already printed above). There are no
+   literals, so a check can only compare two things already in the database, never test a guess.
+
    Exit 0 = all read, 1 = a bad path, 2 = a read failed. */
 'use strict';
 
@@ -30,8 +35,50 @@ const SCALAR = {
   geoPointValue: 'geopoint'
 };
 
+function parseSide(side) {
+  const i = side.indexOf('#');
+  if (i <= 0) throw new Error('Rejected check.');
+  const doc = side.slice(0, i), field = side.slice(i + 1);
+  const segs = doc.split('/');
+  if (segs.length % 2 !== 0 || segs.some(s => !SEG.test(s) || s === '.' || s === '..' || s.startsWith('__')))
+    throw new Error('Rejected check.');
+  const fsegs = field.split('.');
+  if (!field || fsegs.some(f => !/^[A-Za-z0-9_-]{1,128}$/.test(f)) || (fsegs.length > 1 && fsegs.includes('__id')))
+    throw new Error('Rejected check.');
+  return { doc, field: fsegs };
+}
+function parseCheck(entry) {
+  const body = entry.slice(3);
+  const parts = body.split('=');
+  if (parts.length !== 2) throw new Error('Rejected check.');
+  return { label: body, a: parseSide(parts[0].trim()), b: parseSide(parts[1].trim()) };
+}
+/* the stored value at a field path, as the REST API's typed value; undefined when missing */
+function valueAt(doc, field) {
+  if (!doc) return undefined;
+  if (field.length === 1 && field[0] === '__id') return { stringValue: docPath(doc.name).split('/').pop() };
+  let cur = { mapValue: { fields: doc.fields || {} } };
+  for (const f of field) {
+    if (cur && cur.mapValue) cur = (cur.mapValue.fields || {})[f];
+    else if (cur && cur.arrayValue && /^\d+$/.test(f)) cur = ((cur.arrayValue.values) || [])[Number(f)];
+    else return undefined;
+    if (cur === undefined) return undefined;
+  }
+  return cur;
+}
+function canonValue(v) {
+  if (Array.isArray(v)) return '[' + v.map(canonValue).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canonValue(v[k])).join(',') + '}';
+  return JSON.stringify(v);
+}
+function compareValues(a, b) {
+  if (a === undefined || b === undefined) return 'missing';
+  return canonValue(a) === canonValue(b) ? 'equal' : 'different';
+}
+function formatCheck(label, result) { return 'EQ ' + label + ': ' + result; }
+
 function parsePaths(raw) {
-  const list = String(raw || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+  const list = String(raw || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).filter(s => !/^eq:/.test(s));
   if (!list.length) throw new Error('No paths given.');
   if (list.length > MAX_PATHS) throw new Error('Too many paths (max ' + MAX_PATHS + ').');
   return list.map(p => {
@@ -126,8 +173,12 @@ async function get(url) {
 }
 
 if (require.main === module) (async () => {
-  let items;
-  try { items = parsePaths(process.env.PATHS); } catch (e) { console.error(e.message); process.exit(1); }
+  let items, checks;
+  try {
+    checks = String(process.env.PATHS || '').split(/[\n,]+/).map(s => s.trim()).filter(s => /^eq:/.test(s)).map(parseCheck);
+    if (checks.length > MAX_PATHS) throw new Error('Too many checks (max ' + MAX_PATHS + ').');
+    items = String(process.env.PATHS || '').split(/[\n,]+/).some(s => s.trim() && !/^eq:/.test(s.trim())) ? parsePaths(process.env.PATHS) : [];
+  } catch (e) { console.error(e.message); process.exit(1); }
   if (!process.env.TOKEN) { console.error('No TOKEN in the environment.'); process.exit(2); }
   let broke = 0;
   for (const it of items) {
@@ -143,7 +194,16 @@ if (require.main === module) (async () => {
       }
     } catch (e) { broke++; console.log(formatError(it.path)); }
   }
+  const cache = {};
+  const docOf = async (p) => {
+    if (!(p in cache)) cache[p] = await get(BASE + p.split('/').map(encodeURIComponent).join('/'));
+    return cache[p];
+  };
+  for (const c of checks) {
+    try { console.log(formatCheck(c.label, compareValues(valueAt(await docOf(c.a.doc), c.a.field), valueAt(await docOf(c.b.doc), c.b.field)))); }
+    catch (e) { broke++; console.log(formatCheck(c.label, 'READ FAILED')); }
+  }
   process.exit(broke ? 2 : 0);
 })();
 
-module.exports = { parsePaths, typeOf, shape, formatDoc, formatCollection, formatError, docPath, MAX_DOCS };
+module.exports = { parseCheck, valueAt, compareValues, formatCheck, parsePaths, typeOf, shape, formatDoc, formatCollection, formatError, docPath, MAX_DOCS };
