@@ -227,6 +227,12 @@ async function seed() {
     await setDoc(doc(db, 'sites/liveA/inv/inv_sent2'), INV_DOC({ id: 'inv_sent2', status: 'sent' }));
     // House-doc sign-off houses: 6 and all 29 trades signed by the builder
     for (const [id, n] of [['so6', 6], ['so29', 29], ['so29d', 29]]) await setDoc(doc(db, `sites/${id}`), soHouse(n));
+    // #3 (2.510.0): the owner removes a teammate (builder2, a PM) from a house
+    await setDoc(doc(db, 'sites/liveRm'), { mode: 'live', street: 'Live Rm',
+      members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.sub]: 'sub' },
+      memberUids: [U.builder, U.builder2, U.sub],
+      meta: { members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.sub]: 'sub' }, memberInfo: { [U.builder2]: { name: 'Pat PM', rpRole: 'pm' } } } });
+    await setDoc(doc(db, 'sites/liveRm/items/r1'), { seeded: true });
     // liveB: a different builder's live site — our personas are strangers here
     await setDoc(doc(db, 'sites/liveB'), {
       mode: 'live', street: 'Live B',
@@ -1076,6 +1082,20 @@ async function main() {
   /* Option B must never widen reads on invites/{code}: signed out still gets nothing. */
   await INV('invites: option B - unauth still DENIED get of an open invite', getDoc(doc(db.unauth, 'invites/OPENCODE2')), false);
   await INV('invites: option B - unauth still DENIED list', getDocs(collection(db.unauth, 'invites')), false);
+
+  /* ══════════ #3 (2.510.0): removing a teammate deletes them on the server ══════════
+     A merge never deletes a map key: before 2.510.0 the removed person stayed in members, so their record access stayed.
+     2.510.0 sends deleteField() for members, meta.members and meta.memberInfo. Only the owner may. */
+  const rmWrite = (d, by, gone, keep) => setDoc(doc(d, 'sites/liveRm'), {
+    meta: { members: { [gone]: deleteField() }, memberInfo: { [gone]: deleteField() } },
+    members: { [gone]: deleteField() }, memberUids: keep, mode: 'live', updatedAt: 9, updatedBy: 'dev-x', updatedByUid: by }, { merge: true });
+  await INV('#3 a non-owner builder (PM) removing the crew from a house - DENIED', rmWrite(db.builder2, U.builder2, U.sub, [U.builder, U.builder2]), false);
+  await INV('#3 the teammate reads the house records before removal', getDoc(doc(db.builder2, 'sites/liveRm/items/r1')), true);
+  await INV('#3 the owner removes the teammate the 2.510.0 way (deleteField on members, meta.members, meta.memberInfo): ALLOWED',
+    rmWrite(db.builder, U.builder, U.builder2, [U.builder, U.sub]), true);
+  await INV('#3 ... the removed teammate can no longer read the house records', getDoc(doc(db.builder2, 'sites/liveRm/items/r1')), false);
+  await INV('#3 ... nor the house', getDoc(doc(db.builder2, 'sites/liveRm')), false);
+  await INV('#3 ... the crew still can', getDoc(doc(db.sub, 'sites/liveRm/items/r1')), true);
 
   /* ══════════ N-2: one code, one person ══════════ */
   const claimBatch = (d, code, who) => {
