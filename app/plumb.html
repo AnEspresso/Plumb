@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.503.0 - Change orders open from Money';
+const PLUMB_VERSION='2.504.0 - Homeowner Schedule shows change order days';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795118400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.503.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795204800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.504.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9980,7 +9980,7 @@ const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_s
   attach(p){const sid=String(p.id);if(this._unsub[sid]||this._err[sid])return;
     try{
       this._unsub[sid]=this.col(sid).where('data.status','in',['sent','approved','declined','withdrawn']).onSnapshot(snap=>{
-        this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.refresh();},
+        this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.refresh();try{if(document.getElementById('calview').classList.contains('show'))renderCal();}catch(e){}},
         err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];});
       Sync.db.collection('sites').doc(sid).collection('consent').doc(String(Sync.uid)).get().then(s=>{this._cons[sid]=!!(s&&s.exists);},()=>{});
     }catch(e){this._err[sid]='error';}},
@@ -17924,7 +17924,7 @@ const CODAYS={_rows:{},_unsub:{},_err:{},_busy:{},_wErr:{},
       this.col(sid).doc(id).delete().then(()=>{delete B[k];},()=>{delete B[k];this._wErr[sid]=1;});});},
 };
 function coDaysRows(p){try{if(!p)return [];const sid=String(p.id);let rows=[];
-  if(CO.allowed()&&String(P().id)===sid)rows=CO.list(sid);else if(typeof COH!=='undefined'&&COH.allowed(p))rows=COH.list(sid);
+  if(CO.allowed()&&String(P().id)===sid)rows=CO.list(sid);else if(typeof COH!=='undefined'&&COH.allowed(p)){COH.attach(p);rows=COH.list(sid);}   /* 2.504.0: the homeowner's Schedule loads its own change orders */
   else if(CODAYS.crewOk(p)){CODAYS.attach(p);rows=CODAYS.list(sid);}else return [];
   return rows.filter(function(r){return r.status==='approved'&&Number.isInteger(r.days)&&r.days>0;}).sort(function(a,b){return (a.no||1e9)-(b.no||1e9);});}catch(e){return [];}}
 function coDaysSrc(r){return '+'+r.days+' day'+(r.days===1?'':'s')+' from change order '+String(r.no||'').padStart(3,'0');}   /* 2.499.0: Agency words */

@@ -4997,6 +4997,18 @@ await (async function(){
   t('2.497.0: the homeowner still sees the pending change order on screen',($2("closePrintPreview();COH.openDetail('d_c');true"),J("document.getElementById('infoScrim').textContent").indexOf('Extra bath')>=0));
   t('2.497.0: the shared print view still prints an approved one for a homeowner',J("CO.printOpen(P(),COH.row(String(P().id),'d_a'))")===true);$2("closePrintPreview();true");
   $2("closePrintPreview();COH.close();true");
+  /* 2.504.0: the homeowner's Schedule loads its own change orders (only Home rendered, never Selections) */
+  $2(`(function(){var X=__co;X.hoSave={};Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0){X.hoSave[k]=X.store[k];delete X.store[k];}});
+    X.store[X.pre+'co/h_ap']={data:{id:'h_ap',title:'Porch posts',amountC:100,kind:'change',status:'approved',no:1,rev:1,days:3},byUid:'uH',at:'__TS__',appV:'x'};
+    X.store[X.pre+'co/h_se']={data:{id:'h_se',title:'Wider door',amountC:200,kind:'change',status:'sent',no:2,rev:1,days:5},byUid:'uB',at:'__TS__',appV:'x'};
+    X.store[X.pre+'co/h_wd']={data:{id:'h_wd',title:'Skylight',amountC:300,kind:'change',status:'withdrawn',no:3,rev:1,days:7},byUid:'uB',at:'__TS__',appV:'x'};
+    X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};COH._err={};
+    clientTab='home';calCrewFilter='';calMonth=null;openClientCal();return true;})()`);
+  await sleep(40);
+  const HOC=J("(document.getElementById('calBody')||{}).innerHTML||''");
+  t('2.504.0: a homeowner who opens Schedule from Home sees "+3 days from change order 001" for an approved change order',HOC.indexOf('+3 days from change order 001')>=0,HOC.slice(0,300));
+  t('2.504.0: the homeowner Schedule shows nothing for a sent or withdrawn change order',HOC.indexOf('change order 002')<0&&HOC.indexOf('change order 003')<0&&HOC.indexOf('+5 days')<0&&HOC.indexOf('+7 days')<0,HOC.slice(0,300));
+  $2(`(function(){var X=__co;document.getElementById('calview').classList.remove('show');calSiteFilter='all';['h_ap','h_se','h_wd'].forEach(function(i){delete X.store[X.pre+'co/'+i];});Object.keys(X.hoSave).forEach(function(k){X.store[k]=X.hoSave[k];});delete X.hoSave;COH._unsub={};COH._rows={};COH._err={};X.fire();return true;})()`);await sleep(20);
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
   t('2.497.0: a builder can still print a change order waiting on the homeowner',J("CO.printOpen(P(),CO.row(String(P().id),'d_c'))")===true&&J("document.getElementById('invPrintView').textContent").indexOf('Extra bath')>=0);$2("closePrintPreview();true");
   /* ---------- 3c-2: money history screens (M-9), read-only ---------- */
