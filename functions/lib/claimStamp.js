@@ -41,6 +41,37 @@ function inviterOk(site, invite) {
   return false;
 }
 
+/* One login is one crew on a house (Beaumont, 2.509.0): a crew already on the
+   house who redeems another crew's code must not take over that crew's slot
+   and name. A crew slot is the roster row (invite.subId); old stamps carry no
+   subId, so the house's own invite list says which slot the uid joined, and an
+   old code with no subId falls back to the roster name on the invite. A code
+   for the same slot (a new phone, a re-sent code) still goes through, and so
+   does a crew with no slot on record (the roster-name heal below). */
+function crewSlotClash(site, uid, invite) {
+  site = site || {};
+  invite = invite || {};
+  uid = String(uid || '');
+  if (!uid || invite.role !== 'sub') return false;
+  const meta = site.meta || {};
+  const members = site.members || meta.members || {};
+  const cur = members[uid];
+  if (String(typeof cur === 'string' ? cur : ((cur && cur.role) || '')).toLowerCase() !== 'sub') return false;
+  const want = String(invite.subId || '');
+  const nm = String(invite.name || '');
+  const same = (subId, name) => (want && subId) ? String(subId) === want : ((nm && name) ? String(name) === nm : null);
+  const info = (meta.memberInfo || {})[uid] || {};
+  if (info.subId && want) return String(info.subId) !== want;
+  let clash = false;
+  for (const i of (Array.isArray(meta.invites) ? meta.invites : [])) {
+    if (!i || i.uid !== uid || i.code === invite.code) continue;
+    const s = same(i.subId, i.name);
+    if (s === true) return false;
+    if (s === false) clash = true;
+  }
+  return clash;
+}
+
 function applyClaimToSite(site, invite, uid, claim) {
   site = site || {};
   invite = invite || {};
@@ -58,6 +89,7 @@ function applyClaimToSite(site, invite, uid, claim) {
   const cur = members[uid];
   if (role === 'builder' && (cur === 'client' || cur === 'sub')) return null;
   if (cur === 'builder' && role !== 'builder') return null;
+  if (role === 'sub' && crewSlotClash(site, uid, invite)) return null;
   members[uid] = role;
   const prev = info[uid] || {};
   /* A crew is booked under the roster name on the invite, and the rule
@@ -74,6 +106,7 @@ function applyClaimToSite(site, invite, uid, claim) {
     email: String(claim.email || prev.email || '').slice(0, 120),
     trade: String(invite.trade || prev.trade || ''),
   });
+  if (role === 'sub' && invite.subId) info[uid].subId = String(invite.subId);
   /* An owner may hand out a role and money gates; nobody else may. */
   if (isOwnerOn(site, invite.createdBy)) {
     if (invite.rpRole) info[uid].rpRole = invite.rpRole;
@@ -104,4 +137,4 @@ function claimWins(uid, claims) {
   return String(list[0].id) === uid;
 }
 
-module.exports = { applyClaimToSite, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn };
+module.exports = { applyClaimToSite, crewSlotClash, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn };
