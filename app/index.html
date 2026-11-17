@@ -6689,8 +6689,8 @@ function teamRoster(){const r={};(state.projects||[]).forEach(p=>{Object.keys(p.
 function ensureTeam(p){const r=teamRoster();let ch=false;p.members=p.members||{};p.memberInfo=p.memberInfo||{};
   Object.keys(r).forEach(uid=>{if(p.members[uid]!=='builder'){p.members[uid]='builder';p.memberInfo[uid]=r[uid]||{};ch=true;}});return ch;}
 /* #3 (2.510.0) placeholder words, for Agency: removing a teammate. */
-const TEAM_REMOVE_OWNER_ONLY='Only the owner can remove a teammate.';
-const TEAM_REMOVE_REFUSED='Not removed \u2014 only the owner can remove a teammate.';
+const TEAM_REMOVE_OWNER_ONLY='Only the owner can remove teammates.';
+const TEAM_REMOVE_REFUSED='Not removed. Only the owner can remove teammates.';
 const TEAM_REMOVE_PENDING='Removal saved on this phone. It finishes when you\u2019re back online.';
 /* #3 (2.510.0): only the owner removes a teammate, and "removed from all houses" shows only once every house took it. */
 function removeTeamMember(uid){
@@ -11435,8 +11435,8 @@ function renderDevErrors(){
 function devErrorsAll(){window._errAll=true;renderDevErrors();}
 /* #3 (2.510.0) placeholder words, for Agency: a save the server refused. */
 const NOT_SAVED_PILL='Not saved';
-const NOT_SAVED_TOAST='Not saved \u2014 this change was refused';
-const NOT_SAVED_HELP='Some changes on this phone were not saved. Ask the owner to check your access.';
+const NOT_SAVED_TOAST='Not saved. You don\'t have access to change this.';
+const NOT_SAVED_HELP='Some of your changes didn\'t save. Ask the owner to check your access.';
 function setSync(s){syncStatus=s;
   const live=(typeof Sync!=='undefined'&&Sync.on&&appMode()==='real');   // demo is local-only: a telemetry connection is not cross-device site sync
   const lost=typeof Sync!=='undefined'&&!!Sync.lost&&!live;              // the account is gone: say so until sync connects again
