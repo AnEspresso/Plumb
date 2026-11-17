@@ -5409,6 +5409,37 @@ await (async function(){
     Org._unsub=o.unsub;Org._timer=o.timer;Org._tries=o.tries;Org._pushDenied=o.denied;Org._cache=o.cache||{};
     delete window.__orgSaved;return true;})()`);
 
+  /* 2.509.0 (#1): a team code names a house the owner owns (the rules' proof); a non-owner gets no code */
+  const TIRUN=`(async function(houses,uid,onServer){
+    var saved={db:Sync.db,on:Sync.on,mode:Sync.mode,uid:Sync.uid,os:Sync._onServer,sess:state.session,proj:state.projects,ti:_teamInv,
+      wp:window.writeInvitePreview,sc:window.showInviteCode,wc:window.watchClaims,toast:window.toast,modeLs:localStorage.getItem('plumb.mode'),tis:localStorage.getItem('plumb.teamInvites')};
+    var sets=[],toasts=[];
+    Sync.db={collection:function(c){return {doc:function(id){return {set:function(d){sets.push({c:c,id:id,d:JSON.parse(JSON.stringify(d))});return Promise.resolve();}};}};}};
+    Sync.on=true;Sync.mode='live';Sync.uid=uid;Sync._onServer=onServer;Sync.lost=false;
+    localStorage.setItem('plumb.mode','real');
+    state.session={role:'builder',name:'B',auth:{uid:uid}};state.projects=houses;
+    window.writeInvitePreview=function(){};window.showInviteCode=function(){};window.watchClaims=function(){};window.toast=function(m){toasts.push(String(m));};
+    _teamInv={rpRole:'pm',gates:{moneyJob:true},setup:false,kind:'invite'};
+    try{await mintTeamInvite();}catch(e){toasts.push('THROW '+e.message);}
+    Sync.db=saved.db;Sync.on=saved.on;Sync.mode=saved.mode;Sync.uid=saved.uid;Sync._onServer=saved.os;state.session=saved.sess;state.projects=saved.proj;_teamInv=saved.ti;
+    window.writeInvitePreview=saved.wp;window.showInviteCode=saved.sc;window.watchClaims=saved.wc;window.toast=saved.toast;
+    if(saved.modeLs==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',saved.modeLs);
+    if(saved.tis==null)localStorage.removeItem('plumb.teamInvites');else localStorage.setItem('plumb.teamInvites',saved.tis);
+    return JSON.stringify({sets:sets,toasts:toasts});
+  })`;
+  const TI1=JSON.parse(await $2(`(async function(){return await `+TIRUN+`([{id:'hPm',members:{uO:'builder',uP:'builder'},memberInfo:{uO:{rpRole:'pm'}}},{id:'hOwn',members:{uO:'builder'},memberInfo:{}}],'uO',{hPm:true,hOwn:true});})()`));
+  t('2.509.0: an owner\'s team code names a house the owner owns (no roster entry), not one they only help on',
+    TI1.sets.length===1&&TI1.sets[0].c==='invites'&&TI1.sets[0].d.role==='team'&&TI1.sets[0].d.siteId==='hOwn'&&TI1.sets[0].d.createdBy==='uO',JSON.stringify(TI1));
+  const TI2=JSON.parse(await $2(`(async function(){return await `+TIRUN+`([{id:'hR',members:{uO:'builder'},memberInfo:{uO:{rpRole:'owner',name:'O'}}}],'uO',{hR:true});})()`));
+  t('2.509.0: rpRole owner on the roster counts as the owner',TI2.sets.length===1&&TI2.sets[0].d.siteId==='hR',JSON.stringify(TI2));
+  const TI3=JSON.parse(await $2(`(async function(){return await `+TIRUN+`([{id:'hPm',members:{uO:'builder',uP:'builder'},memberInfo:{uP:{rpRole:'pm',gates:{moneyJob:true}}}},{id:'hCrew',members:{uO:'builder',uP:'sub'},memberInfo:{}}],'uP',{hPm:true,hCrew:true});})()`));
+  t('2.509.0: a PM or a crew makes no team code (nothing is written, the owner-only note shows)',TI3.sets.length===0&&TI3.toasts.length===1&&TI3.toasts[0]===$('TEAM_INV_OWNER_ONLY'),JSON.stringify(TI3));
+  const TI4=JSON.parse(await $2(`(async function(){return await `+TIRUN+`([{id:'hNew',members:{uO:'builder'},memberInfo:{}}],'uO',{});})()`));
+  t('2.509.0: a house the server has not confirmed yet is not proof of ownership',TI4.sets.length===0,JSON.stringify(TI4));
+  t('2.509.0: Invite a teammate shows for the owner only (the rules take team codes from the owner only)',
+    $2("String(__renderPeople)").indexOf("canGate('people')||isOrgOwner()")<0&&$2("String(__renderPeople)").indexOf("isOrgOwner()?`<button class=\"add-sub-btn btn btn-secondary\" onclick=\"openTeamInvite({})\">")>=0);
+  t('2.509.0: a refused homeowner or crew code says to ask the owner',$2("String(createInvite)").indexOf("permission-denied'?INV_MONEY_ONLY")>=0);
+
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
 })();
