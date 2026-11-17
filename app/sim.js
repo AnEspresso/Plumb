@@ -4651,7 +4651,9 @@ await (async function(){
   t('4a: switch on, builder with money access: the Change orders entry appears under Money',CO1.menu&&CO1.allowed,JSON.stringify(CO1));
   $2("canGate=function(){return false;};true");const CO1b=J("CO.allowed()");$2("canGate=function(){return true;};true");
   t('4a: a builder without money access gets no entry point',CO1b===false);
-  $2("CO.open();true");await sleep(30);
+  $2("closeInfo();CO.open();true");await sleep(30);
+  const COV=J(`(function(){var sc=document.getElementById('infoScrim');var r=document.getElementById('coRoot');var b=r?[].slice.call(r.querySelectorAll('button')).some(function(x){return x.textContent.trim()==='New change order';}):false;return {shown:!!(sc&&sc.classList.contains('show')),root:!!r,newBtn:b};})()`);
+  t('2.503.0: with the info sheet closed, CO.open() shows the Change orders list with a New change order button',COV.shown&&COV.root&&COV.newBtn,JSON.stringify(COV));
   t('4a: opening the list listens to sites/<id>/co only (plus the days-only coDays, 2.501.0)',J("__co.subs.filter(function(s){return !/\\/coDays$/.test(s.p);}).length")===1&&J("__co.subs[0].p")===J("__co.pre+'co'")&&J("__co.subs.every(function(s){return s.p===__co.pre+'co'||s.p===__co.pre+'coDays';})"),J("__co.subs.map(function(s){return s.p;})"));
   /* Sign and send a change: one batch holds the co and its number claim */
   $2(TOAST_ON);$2(COFILL('Add a window in the study','change','1,850','South wall','3'));await $2("CO.save(true)");await sleep(30);let ts1=JSON.parse($2(TOAST_OFF));
