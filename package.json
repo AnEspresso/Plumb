@@ -12,6 +12,7 @@
     "firestore-read": "node scripts/firestore-read.test.js",
     "receipts": "node functions/receipts.test.js",
     "archive": "node functions/archiveSite.test.js",
+    "deleteaccount": "node functions/deleteAccount.test.js",
     "moneyguard": "node scripts/moneyGuard.test.mjs",
     "pushtest": "node functions/push.test.js"
   },

@@ -1,7 +1,8 @@
 /* lib/deleteAccount.js — the whole account-erasure lifecycle, server-side.
    One entry point, two phases:
-     preview (confirm=false): reports what deletion will touch — sites the user
-       builds (cascade-destroyed), memberships elsewhere (stripped), QuickBooks.
+     preview (confirm=false): reports what deletion will touch — houses where the
+       user is the only builder (cascade-destroyed), memberships everywhere else
+       (stripped, the house stays), QuickBooks.
      execute (confirm=true): does it, in crash-safe order. The Auth user is
        deleted LAST so a run that dies partway can simply be retried while the
        person is still signed in; every step is a re-runnable query, not a
@@ -18,6 +19,26 @@ function roleOf(members, uid) {
   return String(typeof m === 'string' ? m : (m.role || '')).toLowerCase();
 }
 function isBuilderRole(r) { return r === 'builder'; }  // strict: ambiguity strips membership, never cascades
+/* #2 (pre-launch review): a house is erased with an account only when that
+   person is its one and only builder. A teammate leaving, or an owner leaving a
+   house other builders still run, just steps off it; the house, its records
+   and everyone else stay. */
+function soleBuilder(members, uid) {
+  if (!isBuilderRole(roleOf(members, uid))) return false;
+  return !Object.keys(members || {}).some(u => u !== uid && isBuilderRole(roleOf(members, u)));
+}
+/* Every place a membership lives: the top-level copies the rules read, and the
+   meta copies the claim stamp and the app write (#16: meta.memberInfo holds the
+   name and email; meta.members would put the role back on the next push). */
+function stripPatch(uid) {
+  return {
+    memberUids: FieldValue.arrayRemove(uid),
+    ['members.' + uid]: FieldValue.delete(),
+    ['memberInfo.' + uid]: FieldValue.delete(),
+    ['meta.members.' + uid]: FieldValue.delete(),
+    ['meta.memberInfo.' + uid]: FieldValue.delete(),
+  };
+}
 
 /* A cleanup step that fails must not stop the erasure (later steps and the Auth
    delete still run, as before), but it must not vanish either (P2-5). Each one
@@ -66,7 +87,7 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email, log, ho
   const snap = await db.collection('sites').where('memberUids', 'array-contains', uid).get();
   const owned = [], memberOf = [];
   for (const d of snap.docs) {
-    (isBuilderRole(roleOf((d.data() || {}).members, uid)) ? owned : memberOf).push(d);
+    (soleBuilder((d.data() || {}).members, uid) ? owned : memberOf).push(d);
   }
   const qbSnap = await db.collection('qb').doc(uid).get();
   const preview = {
@@ -89,11 +110,7 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email, log, ho
 
   /* 2 · sites they merely belong to: strip the identity, leave the project */
   for (const d of memberOf) {
-    await d.ref.update({
-      memberUids: FieldValue.arrayRemove(uid),
-      ['members.' + uid]: FieldValue.delete(),
-      ['memberInfo.' + uid]: FieldValue.delete(),
-    });
+    await d.ref.update(stripPatch(uid));
   }
 
   /* 3 · QuickBooks tokens */
@@ -135,4 +152,4 @@ async function deleteAccount(db, authAdmin, bucket, uid, confirm, email, log, ho
   return out;
 }
 
-module.exports = { deleteAccount, cascadeSite, roleOf, isBuilderRole };
+module.exports = { deleteAccount, cascadeSite, roleOf, isBuilderRole, soleBuilder, stripPatch };
