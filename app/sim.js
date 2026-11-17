@@ -272,7 +272,8 @@ t('a deleted record is never uploaded again', !wr.some(x=>/items\/i2/.test(x)), 
 t('the old house name is never uploaded', !wr.some(x=>/Old name/.test(x)), wr.join());
 t('this phone\'s offline edit still goes up', wr.indexOf('items/i4 v1b')>=0&&iv('i4')==='v1b', wr.join());
 t('a record added offline still goes up', wr.indexOf('items/i3 new')>=0, wr.join());
-t('an offline field edit is kept and sent with the new name', stale.phase==='drywall'&&wr.indexOf('site/stale1 New name drywall')>=0, wr.join());
+/* #10 (2.513.0): the house write carries only what this phone changed (phase); the other phone's new name is not re-sent */
+t('an offline field edit is kept and sent alone, under the new name', stale.phase==='drywall'&&stale.name==='New name'&&wr.indexOf('site/stale1 undefined drywall')>=0, wr.join());
 t('what this phone synced is saved for the next open', (function(){$("clearTimeout(Sync._baseT);Sync._saveBase()");return true;})());
 await new Promise(r=>setTimeout(r,450));
 t('the saved sync record holds fingerprints, not copies', (function(){const b=$("localStorage.getItem(Sync._baseKey())")||'';return b.indexOf('stale1')>=0&&b.indexOf('v1b')<0&&b.indexOf('New name')<0;})());
@@ -4368,6 +4369,106 @@ await (async function(){
   t('F-1 R2: on the server every legacy invoice is in inv, meta.invoices is [], and the edit landed',JSON.stringify(rs.inv)===JSON.stringify(R.legacy)&&Array.isArray(rs.meta)&&rs.meta.length===0&&rs.name===R.name,JSON.stringify(rs));
   t('F-1 R2: no write anywhere puts a non-empty invoice list on the house doc',rw.every(x=>!(x.data&&x.data.meta&&Array.isArray(x.data.meta.invoices)&&x.data.meta.invoices.length)));
   $2("__F.r2=false;true");
+  /* #10 (2.513.0) · two phones, one house: each changes different house details before it has seen the other's.
+     Before, the house write carried the whole block, so the later phone put back the earlier phone's old values. */
+  $2(`(function(){
+    __F.restore=function(snap,uid,sess,dev,listen){__F.L.forEach(function(l){l.dead=true;});__F.L=[];__F.writes=[];__F.uid=uid;
+      try{(Sync.unsub||[]).forEach(function(u){try{u&&u();}catch(e){}});}catch(e){}
+      state.session=sess;state.projects=JSON.parse(snap.projects);
+      Object.assign(Sync,{db:__F.db,mode:'live',uid:uid,authKind:'account',deviceId:dev,on:true,_listening:{},_collGen:{},_reArmed:{},_notifReady:{},unsub:[],_held:{},_gateDelays:[0],_pushing:{},_pushAgain:{}});
+      Sync._shadow=JSON.parse(snap.shadow);
+      if(listen){Sync.subscribe();return true;}
+      Sync._sitesPulled=true;Sync._onServer={};Sync._pulled={};
+      state.projects.forEach(function(p){Sync._onServer[String(p.id)]=true;var g=Sync._pulled[String(p.id)]={};syncCollsFor(siteRoleFor(p)).forEach(function(c){g[c.sub]=true;});});return true;};
+    __F.srv={};var p=JSON.parse(JSON.stringify(__demo[1]));p.id='t10';p.name='Ten Oak';
+    p.schedule={framing:{start:'2026-11-02',end:'2026-11-06'},drywall:{start:'2026-11-16',end:'2026-11-20'}};
+    p.stageDone={foundation:true};p.packetSignoff={plumbing:{by:'You',at:1}};
+    __F.seedOld(p,${JSON.stringify(MEM)},{});return true;})()`);
+  await phone('uB',B,'devA10');
+  const snapA=J(`(function(){return {projects:JSON.stringify(state.projects),shadow:JSON.stringify(Sync._shadow)};})()`);
+  const before10=J("__F.srv.t10.doc.meta.schedule");
+  t('#10 setup: both phones start from the same house',!!(before10&&before10.framing&&before10.framing.start==='2026-11-02'),JSON.stringify(before10));
+  /* phone B: moves framing, renames the house, signs off electrical */
+  await phone('uB',B,'devB10');
+  $2(`(function(){var p=state.projects.find(function(x){return String(x.id)==='t10';});
+    p.schedule.framing={start:'2026-11-09',end:'2026-11-13'};p.name='Ten Oak Lane';p.packetSignoff.electrical={by:'You',at:2};
+    Sync._pushOne(p);return true;})()`);
+  await settle();
+  const bW=W().filter(x=>x.path==='sites/t10');
+  t('#10 phone B sends only what it changed',bW.length===1&&JSON.stringify(Object.keys(bW[0].data.meta).sort())===JSON.stringify(['members','name','packetSignoff','schedule'])&&JSON.stringify(Object.keys(bW[0].data.meta.schedule))==='["framing"]'&&JSON.stringify(Object.keys(bW[0].data.meta.packetSignoff))==='["electrical"]',JSON.stringify(bW.map(x=>x.data.meta)));
+  /* phone A, still on its old copy (B's change has not reached it): moves drywall, signs off framing, changes the permits list */
+  $2("__F.restore("+JSON.stringify(snapA)+",'uB',"+JSON.stringify(B)+",'devA10',false)");
+  $2(`(function(){var p=state.projects.find(function(x){return String(x.id)==='t10';});
+    p.schedule.drywall={start:'2026-11-23',end:'2026-11-25'};p.stageDone.framing=true;p.permits=(p.permits||[]).concat([{name:'Fence permit',status:'applied'}]);
+    Sync._pushOne(p);return true;})()`);
+  await settle();
+  const aW=W().filter(x=>x.path==='sites/t10');
+  const m10=J("__F.srv.t10.doc.meta");
+  t('#10 phone A sends only what it changed, never its old framing dates or old name',aW.length===1&&!('name' in aW[0].data.meta)&&JSON.stringify(Object.keys(aW[0].data.meta.schedule||{}))==='["drywall"]'&&!('packetSignoff' in aW[0].data.meta),JSON.stringify(aW.map(x=>x.data.meta)).slice(0,300));
+  t('#10 both phones\' edits are on the server: B\'s framing move and rename, A\'s drywall move',m10.schedule.framing.start==='2026-11-09'&&m10.schedule.drywall.start==='2026-11-23'&&m10.name==='Ten Oak Lane',JSON.stringify({s:m10.schedule,n:m10.name}));
+  t('#10 both sign-offs are on the server, and A\'s stage sign-off and permit landed',!!(m10.packetSignoff.electrical&&m10.packetSignoff.plumbing&&m10.stageDone.framing&&m10.stageDone.foundation&&(m10.permits||[]).some(function(x){return x.name==='Fence permit';})),JSON.stringify({ps:m10.packetSignoff,sd:m10.stageDone}));
+  /* phone A again from its old copy, this time it reconnects first: its unsent drywall move must survive B's framing move arriving */
+  $2(`(function(){var a=${JSON.stringify(snapA)};var ps=JSON.parse(a.projects);var p=ps.find(function(x){return String(x.id)==='t10';});
+    p.schedule.insulation={start:'2026-11-30',end:'2026-12-02'};a.projects=JSON.stringify(ps);window.__snapA2=a;return true;})()`);
+  $2("__F.restore(__snapA2,'uB',"+JSON.stringify(B)+",'devA10b',true);Sync.pushAll();true");   /* the app pushes on reconnect; held until pulled */
+  await settle();
+  const l10=J("(function(){var p=state.projects.find(function(x){return String(x.id)==='t10';});return p.schedule;})()");
+  const m10b=J("__F.srv.t10.doc.meta.schedule");
+  t('#10 reconnecting phone keeps its unsent insulation dates and takes both moves made meanwhile',l10.insulation&&l10.insulation.start==='2026-11-30'&&l10.framing.start==='2026-11-09'&&l10.drywall.start==='2026-11-23',JSON.stringify(l10));
+  t('#10 and sends only the insulation dates',m10b.insulation&&m10b.insulation.start==='2026-11-30'&&m10b.framing.start==='2026-11-09'&&m10b.drywall.start==='2026-11-23'&&W().filter(x=>x.path==='sites/t10').some(function(x){return x.data.meta.schedule;})&&W().filter(x=>x.path==='sites/t10').every(function(x){return !x.data.meta.schedule||JSON.stringify(Object.keys(x.data.meta.schedule))==='["insulation"]';}),JSON.stringify(m10b));
+  /* money stays on its own records: no money key rides on a house write */
+  t('#10 the house writes carry no invoices or selection money',aW.concat(bW).every(function(x){return !('invoices' in x.data.meta)&&!('selMoney' in x.data.meta);}));
+  $2("delete window.__snapA2;delete __F.restore;true");
+  /* #11 (2.513.0) · uploads: the document type is named from the file, a refused upload stops after CloudFiles.MAX tries,
+     the file shows "didn't upload" with a retry tap, and the tap tries again */
+  $2(`(function(){window.__u11={puts:[],fail:true};
+    window.__u11.st=firebase.storage;window.__u11.get=idbGetDoc;window.__u11.q=localStorage.getItem(CloudFiles.KEY);
+    firebase.storage=function(){return {ref:function(path){return {put:function(b,m){__u11.puts.push({path:path,ct:m&&m.contentType});return __u11.fail?Promise.reject({code:'storage/unauthorized',message:'denied'}):Promise.resolve();},getDownloadURL:function(){return Promise.resolve('https://files.test/'+path);}};}};};
+    idbGetDoc=function(){return Promise.resolve(new Blob(['x'],{type:''}));};
+    state.activeId='t10';var p=P();p.docs=[{n:'Bid sheet.xlsx',m:'Uploaded',k:'pdf',trade:'',aud:'team',fileId:'docT11',mime:docMimeOf({name:'Bid sheet.xlsx',type:''})}];
+    localStorage.setItem(CloudFiles.KEY,JSON.stringify([{kind:'docs',siteId:'t10',id:'docT11',mode:'live',tries:0}]));return true;})()`);
+  for(let i=0;i<7;i++){await $2("(async function(){clearTimeout(CloudFiles._retryT);await CloudFiles.flush();return true;})()");}
+  const u11=J("({puts:__u11.puts.length,ct:__u11.puts[0]&&__u11.puts[0].ct,failed:CloudFiles.failed('docT11'),q:JSON.parse(localStorage.getItem(CloudFiles.KEY)||'[]')})");
+  t('#11 a refused upload stops after CloudFiles.MAX tries (7 flushes, '+u11.puts+' tries)',u11.puts===J('CloudFiles.MAX')&&u11.failed,JSON.stringify(u11));
+  t('#11 the upload names the document type (xlsx) instead of sending a blank one',u11.ct==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',u11.ct);
+  t('#11 the stopped upload stays in the queue for the retry tap',u11.q.length===1&&u11.q[0].failed===true);
+  const docs11=J("(function(){renderDocs();return document.getElementById('docList').innerHTML;})()");
+  t('#11 the document shows the didn\'t-upload badge with a retry tap',docs11.indexOf('up-fail-link')>=0&&docs11.indexOf("CloudFiles.retry('docT11')")>=0&&docs11.indexOf(J('UPLOAD_FAILED'))>=0,docs11.slice(0,200));
+  $2("__u11.fail=false;CloudFiles.retry('docT11');true");await sleep(200);await settle();
+  const u11b=J("({puts:__u11.puts.length,failed:CloudFiles.failed('docT11'),q:JSON.parse(localStorage.getItem(CloudFiles.KEY)||'[]').length,toast:document.getElementById('toast').textContent})");
+  t('#11 the retry tap tries again and the upload goes through',u11b.puts===u11.puts+1&&!u11b.failed&&u11b.q===0&&u11b.toast===J('UPLOAD_RETRYING'),JSON.stringify(u11b));
+  t('#11 a photo that stopped shows the badge on its tile',J("(function(){localStorage.setItem(CloudFiles.KEY,JSON.stringify([{kind:'photos',siteId:'t10',id:'phT11',mode:'live',tries:5,failed:true}]));var h=upFailHTML('phT11');var none=upFailHTML('phOther');return h.indexOf(\"CloudFiles.retry('phT11')\")>=0&&none==='';})()"));
+  t('#11 the document picker takes only what storage accepts',J(`(function(){var M=function(n,t){return docMimeOf({name:n,type:t||''});};
+    return M('a.pdf')==='application/pdf'&&M('a.docx')!==''&&M('a.doc')==='application/msword'&&M('a.xls')==='application/vnd.ms-excel'&&M('a.xlsx')!==''&&M('IMG_1.HEIC')==='image/heic'&&M('p.jpg','image/jpeg')==='image/jpeg'
+      &&M('a.exe','application/x-msdownload')===''&&M('a.xlsm','application/vnd.ms-excel.sheet.macroEnabled.12')===''&&M('a.zip')===''&&M('notes.txt','text/plain')==='';})()`));
+  t('#11 saving a document checks its type before storing it',/if\(file&&!docMimeOf\(file\)\)\{toast\(DOC_TYPE_NO\);return;\}[\s\S]{0,1500}idbPutDoc/.test(SRC));
+  $2(`(function(){firebase.storage=__u11.st;idbGetDoc=__u11.get;if(__u11.q==null)localStorage.removeItem(CloudFiles.KEY);else localStorage.setItem(CloudFiles.KEY,__u11.q);clearTimeout(CloudFiles._retryT);P().docs=[];delete window.__u11;return true;})()`);
+  /* #8 (2.513.0) · a sent change order the server has not checked yet says so, and the builder can ask for a re-check */
+  const co8=J(`(function(){var r={id:'co8',status:'sent',no:4,title:'Window',kind:'change',amountC:50000,rev:2,verifiedRev:1,verifiedTotal:50000};
+    var ok=Object.assign({},r,{verifiedRev:2});
+    return {un:CO.unchecked(r),ok:CO.unchecked(ok),draft:CO.unchecked({status:'draft',rev:0}),row:CO.rowHTML(r),rowOk:CO.rowHTML(ok)};})()`);
+  t('#8 a sent change order not checked at this revision is "not checked yet"; a checked one and a draft are not',co8.un===true&&co8.ok===false&&co8.draft===false&&co8.row.indexOf(J('CO_NOT_CHECKED'))>=0&&co8.rowOk.indexOf(J('CO_NOT_CHECKED'))<0,JSON.stringify(co8).slice(0,200));
+  const form8=J(`(function(){var r={id:'co8',status:'sent',no:4,title:'Window',kind:'change',amountC:50000,rev:2,verifiedRev:1,verifiedTotal:50000};
+    var keep=CO._edit;CO._edit={id:'co8',status:'sent',title:'Window',kind:'change',amount:'500.00',note:'',days:'',lineId:'',rev:2,orig:r};var h=CO.formHTML(P());
+    CO._edit.orig=Object.assign({},r,{verifiedRev:2});var h2=CO.formHTML(P());CO._edit=keep;return {h:h,h2:h2};})()`);
+  t('#8 the builder\'s form offers Re-check only while it is not checked',form8.h.indexOf("CO.recheck('co8')")>=0&&form8.h2.indexOf('CO.recheck(')<0);
+  await $2(`(async function(){window.__fn8=[];window.__fnKeep=fnCall;fnCall=function(n,d){__fn8.push([n,d]);return Promise.resolve(window.__fnRes);};
+    window.__fnRes={ok:true,verified:true,rev:2};await CO.recheck('co8');window.__t8a=document.getElementById('toast').textContent;
+    window.__fnRes={ok:true,verified:false,rev:2};await CO.recheck('co8');window.__t8b=document.getElementById('toast').textContent;
+    fnCall=function(){return Promise.reject(new Error('server 500'));};await CO.recheck('co8');window.__t8c=document.getElementById('toast').textContent;
+    fnCall=__fnKeep;return true;})()`);
+  const r8=J("({calls:__fn8,a:__t8a,b:__t8b,c:__t8c})");
+  t('#8 Re-check asks the server for this house and change order',r8.calls.length===2&&r8.calls[0][0]==='coRecheck'&&r8.calls[0][1].siteId==='t10'&&r8.calls[0][1].coId==='co8',JSON.stringify(r8.calls));
+  t('#8 Re-check says what happened',r8.a===J('CO_RECHECK_OK')&&r8.b===J('CO_RECHECK_BAD')&&r8.c===J('CO_RECHECK_FAIL'),JSON.stringify(r8));
+  t('#8 coRecheck is a call the person asked for (sign-in prompt if needed)',J("FN_ASKED.coRecheck===1"));
+  /* #13 (2.513.0) · the QuickBooks export says why it was refused and counts costs another tap is sending */
+  await $2(`(async function(){window.__fnKeep=fnCall;
+    fnCall=function(){return Promise.resolve({ok:false,reason:'no-money-access'});};await qbExportNow();window.__t13a=document.getElementById('toast').textContent;
+    fnCall=function(){return Promise.resolve({ok:true,created:1,skipped:2,busy:1,failures:[]});};await qbExportNow();window.__t13b=document.getElementById('toast').textContent;
+    fnCall=__fnKeep;return true;})()`);
+  t('#13 a refused export says only money builders can send costs',J('__t13a')===J('QB_NO_MONEY'),J('__t13a'));
+  t('#13 the export counts costs already being sent',J('__t13b')==='1 sent · 2 already in QuickBooks · 1 '+J('QB_BUSY'),J('__t13b'));
+  $2("delete window.__fn8;delete window.__fnKeep;delete window.__fnRes;true");
   /* 2.467.0 · a Decision with a photo: it must reach the server, its delete must too (so onRecordDeleted fires), and it must leave the book list */
   $2(`(function(){__F.srv={};var p=JSON.parse(JSON.stringify(__demo[1]));p.id='pdel';p.items=[];p.street='3863 Robina Ave';__F.seedOld(p,${JSON.stringify(MEM)},{});__F.undefCheck=true;__F.undefHits=0;return true;})()`);
   await phone('uB',B,'devPD');

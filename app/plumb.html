@@ -2054,6 +2054,8 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
    must become a block. Apply to .bgt-tot and its equivalents. ────────── */
 .hero-host{display:block;}
 .row-aside.warn{color:var(--clay);}
+.up-fail{position:absolute;top:var(--s-2);left:var(--s-2);right:var(--s-2);padding:2px 6px;border:0;border-radius:6px;background:var(--clay);color:#fff;font-size:var(--t-xs);font-weight:600;line-height:1.3;text-align:left;cursor:pointer;}
+.row-sub .up-fail-link{color:var(--clay);font-weight:600;cursor:pointer;}
 .row-aside.ok{color:var(--sage);}
 .row-thumb{flex:none;width:48px;height:48px;border-radius:var(--r-sm);overflow:hidden;background:var(--surface-2);}
 .row-thumb img,.row-thumb svg{width:100%;height:100%;object-fit:cover;display:block;}
@@ -3512,7 +3514,7 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
       <div class="fld-label mt-2">Status / note (optional)</div>
       <input id="docStatus" placeholder="e.g. Signed, Complete, Collecting…">
       <div class="fld-label mt-2">File (optional)</div>
-      <input id="docFile" type="file" class="fld-file" accept="application/pdf,image/*,.pdf,.doc,.docx,.xls,.xlsx,.heic">
+      <input id="docFile" type="file" class="fld-file" accept="application/pdf,image/*,.pdf,.doc,.docx,.xls,.xlsx,.heic,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
       <div class="fld-hint">Pick a standard name so the file stays organized — or choose “Other” to name it yourself. Attach a PDF, photo, or scan; it’s stored on this device for now.</div>
 </div>
 <div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAddDoc()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveDoc()">Add document</button></div></div>
@@ -3980,15 +3982,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.509.0 - Team invites name a house the owner owns';
+const PLUMB_VERSION='2.513.0 - Change orders re-check, house saves send only what changed, uploads that stop and say so, Word and Excel documents';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795636800000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.509.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795982400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.513.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5295,6 +5297,15 @@ async function backfillPhotos(){            /* pull cloud photos into local IDB 
     delete _bf.inflight[it.photoId];
   }
 }
+/* #11 (2.513.0): a document is a PDF, a photo, or a Word or Excel file: exactly what storage.rules accepts for docs.
+   The type comes from the file, or from its name when the phone gives none (some phones send docx as blank or octet-stream). */
+const DOC_MIME={pdf:'application/pdf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',heic:'image/heic',heif:'image/heif',webp:'image/webp',gif:'image/gif'};
+function docMimeOf(f){if(!f)return '';const t=String(f.type||'').toLowerCase();
+  if(/^image\//.test(t)||Object.keys(DOC_MIME).some(k=>DOC_MIME[k]===t))return t;
+  const m=String(f.name||'').toLowerCase().match(/\.([a-z0-9]{2,5})$/);return (m&&DOC_MIME[m[1]])||'';}
+function upFailHTML(id){try{return id&&CloudFiles.failed(id)?'<button type="button" class="up-fail" onclick="event.stopPropagation();CloudFiles.retry(\''+esc(id)+'\')">'+esc(UPLOAD_FAILED)+'</button>':'';}catch(e){return '';}}
 function photoSrc(it){if(!it)return null;const local=it.photoId&&photoURLs[it.photoId];if(local)return local;
   if(it.photoUrl){try{scheduleBackfill();}catch(e){}return it.photoUrl;}return null;}
 function thumbHTML(it){const u=photoSrc(it);if(u)return`<img src="${u}" alt="">`;return swatch(SW[it.sw]||SW.dove,noteGlyph(it));}
@@ -5372,7 +5383,7 @@ function renderPhotos(){
   items.forEach(it=>{const d=Number.isFinite(+it.day)?+it.day:0;(byDay[d]=byDay[d]||[]).push(it);});
   const days=Object.keys(byDay).map(Number).sort((a,b)=>a-b);
   wrap.innerHTML=days.map(day=>{const cells=byDay[day]||[];return `<div class="day-group"><div class="sec"><h2>${dayLabel(day)}</h2></div>
-    <div class="grid">${cells.map(it=>`<div class="cell" onclick='openLightbox(${it.id})'>${thumbHTML(it)}<div class="area">${esc(areaText(it.area))}</div></div>`).join('')}</div></div>`;}).join('')||`<div class="empty">${q?'No photos match “'+esc(q)+'”.':'No photos yet — snap one from the daily log and it files here by date & area.'}</div>`;
+    <div class="grid">${cells.map(it=>`<div class="cell" onclick='openLightbox(${it.id})'>${thumbHTML(it)}${upFailHTML(it.photoId)}<div class="area">${esc(areaText(it.area))}</div></div>`).join('')}</div></div>`;}).join('')||`<div class="empty">${q?'No photos match “'+esc(q)+'”.':'No photos yet — snap one from the daily log and it files here by date & area.'}</div>`;
 }
 function renderIssues(){
   const fil=visibleItems().filter(it=>it.issue&&it.status===issueFilter).sort((a,b)=>b.t-a.t);
@@ -5407,9 +5418,10 @@ function renderDocs(){
     const d=o.d,i=o.i;
     const trade=d.trade?specLabel(d.trade):'Shared';
     const sub=[trade,d.m||'',d.fileId?'file attached':''].filter(Boolean).join(' \u00b7 ');
+    const upFail=d.fileId&&CloudFiles.failed(d.fileId)?' \u00b7 <span class="up-fail-link" onclick="event.stopPropagation();CloudFiles.retry(\''+esc(d.fileId)+'\')">'+esc(UPLOAD_FAILED)+'</span>':'';
     const mixed=rows.some(function(x){return docAudClient(x.d);})&&rows.some(function(x){return !docAudClient(x.d);});
     const warn=mixed&&docAudClient(d);
-    return '<div class="row row-tap" onclick="openDoc('+i+')"><div class="row-main"><div class="row-title">'+esc(d.n)+'</div><div class="row-sub">'+esc(sub)+'</div></div><span class="row-aside'+(warn?' warn':'')+'" onclick="event.stopPropagation();cycleDocAud('+i+')" title="Tap to change who can see this">'+esc(DOC_AUD_LABEL[docAud(d)]||'')+'</span><span class="row-chev">\u203a</span></div>';
+    return '<div class="row row-tap" onclick="openDoc('+i+')"><div class="row-main"><div class="row-title">'+esc(d.n)+'</div><div class="row-sub">'+esc(sub)+upFail+'</div></div><span class="row-aside'+(warn?' warn':'')+'" onclick="event.stopPropagation();cycleDocAud('+i+')" title="Tap to change who can see this">'+esc(DOC_AUD_LABEL[docAud(d)]||'')+'</span><span class="row-chev">\u203a</span></div>';
   }
   let list='';
   if(!rows.length){
@@ -5502,6 +5514,7 @@ async function saveDoc(){
   const sel=document.getElementById('docType');let name=sel.value==='__other'?document.getElementById('docName').value.trim():sel.value;
   if(!name){toast('Pick or name a document');return;}
   const fileEl=document.getElementById('docFile');const file=fileEl&&fileEl.files&&fileEl.files[0];
+  if(file&&!docMimeOf(file)){toast(DOC_TYPE_NO);return;}   /* #11: only what storage.rules lets a document be */
   const extM=file&&file.name&&file.name.match(/\.[a-z0-9]{2,5}$/i);
   if(extM&&!/\.[a-z0-9]{2,5}$/i.test(name))name+=extM[0];
   else if(!/\.[a-z0-9]{2,4}$/i.test(name))name+='.pdf';
@@ -5510,7 +5523,7 @@ async function saveDoc(){
   const aud=(document.getElementById('docAud')||{}).value||'subs';
   const rec={n:name,m:status,k:'pdf',trade,aud};
   if(file){
-    try{const id='doc_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await idbPutDoc(id,file);rec.fileId=id;rec.mime=file.type||'';try{CloudFiles.queue('docs',String(P().id),id);}catch(e){}}
+    try{const id='doc_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await idbPutDoc(id,file);rec.fileId=id;rec.mime=docMimeOf(file);try{CloudFiles.queue('docs',String(P().id),id);}catch(e){}}
     catch(e){toast('Couldn’t store the file');return;}
   }
   if(!P().docs)P().docs=[];P().docs.unshift(rec);Data.commit();
@@ -9687,7 +9700,12 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
     if(!rows.length&&!this._err[sid])h+='<div class="empty">No change orders yet.</div>';
     h+='<button class="b1 b-go w-full mt-2 btn btn-primary" onclick="CO.newForm()">New change order</button><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button></div>';
     showInfo('Change orders',h,true);},
-  rowHTML(r){const upd=r.status==='sent'&&r.rev>1?' \u00b7 Updated':'';
+  /* #8 (2.513.0): a sent change order the server has not checked yet (its stamp is not this revision and amount) */
+  unchecked(r){return !!r&&r.status==='sent'&&!(r.verifiedRev===r.rev&&r.verifiedTotal===r.amountC);},
+  async recheck(id){if(this._rck)return;const p=P();if(!p)return;this._rck=true;
+    try{const r=await fnCall('coRecheck',{siteId:String(p.id),coId:String(id)});toast(r&&r.verified?CO_RECHECK_OK:(r&&r.ok?CO_RECHECK_BAD:CO_RECHECK_FAIL));}
+    catch(e){toast(CO_RECHECK_FAIL);}finally{this._rck=false;}},
+  rowHTML(r){const upd=(r.status==='sent'&&r.rev>1?' \u00b7 Updated':'')+(this.unchecked(r)?' \u00b7 '+CO_NOT_CHECKED:'');
     const click=(r.status==='draft'||r.status==='sent')?' onclick="CO.openEdit(\''+esc(r.id)+'\')"':' onclick="CO.openView(\''+esc(r.id)+'\')"';
     return '<div class="subrow'+(click?' cur-p':'')+'"'+click+'><div class="si"><div class="n">'+esc(this.label(r.no))+' \u00b7 '+esc(r.title||'')+'</div><div class="d">'+esc(this.amountText(r.amountC))+upd+(r.status==='withdrawn'?' \u00b7 Withdrawn':r.status==='declined'?' \u00b7 Declined':'')+'</div></div></div>';},
   openView(id){const r=this.row(String(P().id),id);if(!r)return;this._view=id;this.draw();},
@@ -9746,6 +9764,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
      +'<details class="mt-2"><summary>More details</summary>'+this.lineHTML(p,e)+'<input id="coDays" placeholder="Days added to the schedule. Use \u2212 to take days off." value="'+esc(e.days)+'"></details>'
      +'<div class="meta mt-2" id="coSentence">'+(c0?esc(this.sentence(e.kind,c0)):'')+'</div>'
      +'<button class="b1 b-go w-full mt-1 btn btn-primary" onclick="CO.save(true)">'+(sent?'Sign and send update':'Sign and send')+'</button>'
+     +(sent&&this.unchecked(e.orig)?'<div class="meta mt-2">'+esc(CO_NOT_CHECKED)+'</div><button class="add-sub-btn mt-1 btn btn-secondary" onclick="CO.recheck(\''+esc(e.id)+'\')">'+esc(CO_RECHECK_BTN)+'</button>':'')
      +(sent?'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.paperForm()">Record a paper signature</button>':'')
      +(sent?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="CO.withdraw()">Withdraw</button>':'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.save(false)">Save draft</button>')
      +(e.id&&!sent?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="CO.delDraft()">Delete draft</button>':'')
@@ -10213,13 +10232,16 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         let metaOut=op.data,legClear=false;
         if(legPend){const leg=this._legInv[id]||[];const onInv=sh.colls.inv||{};
           if(leg.every(v=>onInv[String(v.id)]!==undefined)){metaOut=Object.assign({},op.data,{invoices:[]});legClear=true;}}
+        /* #10: only the fields (and map entries) that changed here; members ride along as before */
+        const delta=metaDelta(sh,metaOut);
+        if(delta){delta.members=mem;if(legClear)delta.invoices=[];metaOut=delta;}
         const payload={meta:metaOut,id:p.id,mode:this.mode||'demo',updatedAt:Date.now(),updatedBy:this.deviceId,
           updatedByUid:myUid,
           members:mem,memberUids:Object.keys(mem)};                          // top-level copies: rules + scoped queries read these
         const del=fbDelete();if(del!==undefined)payload.data=del;            // retire legacy whole-blob field
         await this.db.collection('sites').doc(id).set(payload,{merge:true});
         sh.meta=_syncHash(JSON.stringify(op.data));sh.mem=Object.assign({},mem);
-        sh.mk={};Object.keys(op.data||{}).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(op.data[k]));});
+        sh.mk={};Object.keys(op.data||{}).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(op.data[k]));});sh.mk2=metaSubHashes(op.data);
         if(legClear){this._legInv[id]=[];sh.mk.invoices=_syncHash('[]');}
       } else if(op.kind==='set'){
         const ref=this.db.collection('sites').doc(id).collection(op.sub).doc(op.id);
@@ -10374,7 +10396,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     if(was&&was!==me){state.projects=[];state.activeId=null;this._shadow={};try{localStorage.removeItem(this._baseKey());}catch(e){}try{persistLocalOnly();}catch(e){}return true;}
     return false;},
   _loadBase(){let b={};try{b=JSON.parse(localStorage.getItem(this._baseKey())||'{}')||{};}catch(e){b={};}
-    this._shadow={};Object.keys(b).forEach(id=>{const x=b[id]||{};this._shadow[id]={meta:x.meta||'',mk:x.mk||{},mem:x.mem||{},colls:x.colls||{}};});},
+    this._shadow={};Object.keys(b).forEach(id=>{const x=b[id]||{};this._shadow[id]={meta:x.meta||'',mk:x.mk||{},mk2:x.mk2||{},mem:x.mem||{},colls:x.colls||{}};});},
   _saveBase(){clearTimeout(this._baseT);this._baseT=setTimeout(()=>{try{
       if((this.mode||'demo')!=='live'||!this.uid)return;
       const out={};(state.projects||[]).forEach(p=>{const id=String(p.id);if(this._shadow[id])out[id]=this._shadow[id];});
@@ -10442,9 +10464,14 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
             Object.keys(meta).forEach(k=>{if(SYNC_COLLS.some(c=>c.f===k))return;
               /* server field unchanged since this phone last synced, but edited here: keep the phone's edit (pushed after the pull) */
               const bk=base[k];if(bk!==undefined&&_syncHash(JSON.stringify(meta[k]))===bk&&_syncHash(JSON.stringify(p[k]))!==bk){kept=true;return;}
+              /* #10: both sides changed one of the entry maps: keep this phone's unsent entries, take the server's for the rest */
+              const b2=(sh.mk2||{})[k];
+              if(b2&&bk!==undefined&&META_SUBKEYS.includes(k)&&_isMap(meta[k])&&_isMap(p[k])&&_mh(p[k])!==bk){
+                const mine={};Object.keys(p[k]).forEach(x=>{if(_mh(p[k][x])!==b2[x]&&_mh(meta[k][x])===b2[x])mine[x]=p[k][x];});
+                p[k]=Object.assign({},meta[k],mine);if(Object.keys(mine).length)kept=true;return;}
               p[k]=meta[k];});try{Notify.scanMeta(_nv,p);}catch(e){}}
           else {const _nv=Notify.snap(p);Object.assign(p,meta);try{Notify.scanMeta(_nv,p);}catch(e){}}  // legacy whole-blob fallback
-          sh.mk={};Object.keys(meta).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(meta[k]));});
+          sh.mk={};Object.keys(meta).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(meta[k]));});sh.mk2=metaSubHashes(meta);
           sh.mem=Object.assign({},(meta&&meta.members)||{},d.members||{});
           sh.meta=kept?'':_syncHash(JSON.stringify(metaOf(p)));changed=true;
         }
@@ -10607,12 +10634,21 @@ const CloudFiles={
     try{return (state.projects||[]).some(p=>String(p.id)===String(e.siteId)&&!p.sample);}catch(err){return false;}
   },
   _drain(){const q=this._q().filter(e=>this._keep(e));this._save(q);return q;},
+  /* #11 (2.513.0): an upload is tried MAX times (offline waits do not count), then it stops and the file shows
+     "didn't upload" with a retry tap. Before, a refused upload retried every 5 seconds forever. */
+  MAX:5,
+  failed(id){return this._q().some(e=>e.id===id&&e.failed);},
+  retry(id){const q=this._q();let hit=false;q.forEach(e=>{if(e.id===id&&e.failed){e.failed=false;e.tries=0;hit=true;}});
+    this._save(q);if(hit){try{toast(UPLOAD_RETRYING);}catch(e){}try{rerenderCurrent();}catch(e){}}this.flush();},
+  _type(e,blob){if(e.kind==='docs'){for(const p of (state.projects||[])){const d=(p.docs||[]).find(x=>x.fileId===e.id);if(d&&d.mime)return d.mime;}
+      return docMimeOf(blob)||(blob&&blob.type)||'application/pdf';}
+    return (blob&&blob.type)||'image/jpeg';},
   ready(){return Sync.ready()&&typeof firebase!=='undefined'&&!!firebase.storage;},
   path(e){return 'live/sites/'+e.siteId+'/'+e.kind+'/'+e.id;},
   queue(kind,siteId,id){
     if(!this._live()||this._sample(siteId)){this._drain();return;}
     const q=this._drain();
-    if(!q.some(x=>x.id===id))q.push({kind,siteId:String(siteId),id,mode:'live'});
+    if(!q.some(x=>x.id===id))q.push({kind,siteId:String(siteId),id,mode:'live',tries:0});
     this._save(q);this.flush();
   },
   _stamp(e){               // write the URL onto the owning record; true once applied
@@ -10639,25 +10675,32 @@ const CloudFiles={
     if(this._flushing)return;
     const q=this._drain();
     if(!this._live()||!q.length)return;
-    this._flushing=true;
+    this._flushing=true;let newlyFailed=false;
     try{
       const keep=[];
       for(const e of q){
+        if(e.failed){keep.push(e);continue;}                      // stopped: waits for a retry tap
         try{
           if(!e.url){
             if(!this.ready())throw new Error('not-connected');
             const blob=e.kind==='photos'?await idbGet(e.id):await idbGetDoc(e.id);
             if(!blob)continue;                                   // blob gone — drop entry
             const ref=firebase.storage().ref(this.path(e));
-            await ref.put(blob);
+            await ref.put(blob,{contentType:this._type(e,blob)});
             e.url=await ref.getDownloadURL();
             logEvent('fileUploaded',e.kind+'/'+e.id);
           }
-          if(!this._stamp(e))keep.push(e);                       // uploaded before record saved — retry stamp
-        }catch(err){keep.push(e);}
+          if(!this._stamp(e)){e.stampTries=(Number(e.stampTries)||0)+1;if(e.stampTries<20)keep.push(e);}   // uploaded before record saved — retry stamp (a record that never comes is let go)
+        }catch(err){
+          if(!(err&&err.message==='not-connected')){e.tries=(Number(e.tries)||0)+1;
+            if(e.tries>=this.MAX){e.failed=true;newlyFailed=true;try{logEvent('fileUploadFailed',e.kind+'/'+e.id+' '+String((err&&(err.code||err.message))||'').slice(0,60));}catch(x){}}}
+          keep.push(e);}
       }
-      this._save(keep.filter(e=>this._keep(e)));
-      if(keep.length&&this.ready())setTimeout(()=>{this.flush();},5000);
+      const kept=keep.filter(e=>this._keep(e));this._save(kept);
+      const live=kept.filter(e=>!e.failed);
+      if(live.length&&this.ready()){const n=Math.max(0,...live.map(e=>Number(e.tries)||0));
+        clearTimeout(this._retryT);this._retryT=setTimeout(()=>{this.flush();},5000*Math.pow(2,Math.min(n,4)));}   // 5 s, 10 s, 20 s, 40 s, 80 s
+      if(newlyFailed){try{rerenderCurrent();}catch(e){}}
     }finally{this._flushing=false;}
   }
 };
@@ -11170,6 +11213,26 @@ function moneyHidden(kind){try{const s=state.session||{};if(s.role!=='builder')r
 function invOrder(p){if(!p||!Array.isArray(p.invoices))return;
   const n=v=>{const m=/INV-(\d+)/.exec((v&&v.no)||'');return m?+m[1]:Infinity;};
   p.invoices=p.invoices.map((v,i)=>[v,i]).sort((a,b)=>(n(a[0])-n(b[0]))||((+(a[0]&&a[0].t)||0)-(+(b[0]&&b[0].t)||0))||(a[1]-b[1])).map(x=>x[0]);}
+/* #10 (2.513.0): a house save sends only the house fields this phone changed, not the whole block, so two phones
+   editing different things never undo each other. sh.mk holds the server's hash per field (from the last snapshot);
+   these maps also keep one hash per entry (sh.mk2), so sign-offs, schedule dates and inspections go up one entry at a
+   time. Same merge write as before (set, merge: true), so nested maps keep merging exactly as they did; money records
+   (inv, selm, pmts, costs, co) are separate documents and are unchanged. A phone with no server base sends the whole block. */
+const META_SUBKEYS=['stageDone','schedule','packetSignoff','inspections','inspMeta'];
+function _isMap(v){return !!v&&typeof v==='object'&&!Array.isArray(v);}
+function _mh(v){return v===undefined?undefined:_syncHash(JSON.stringify(v));}
+function metaSubHashes(m){const out={};META_SUBKEYS.forEach(k=>{if(m&&_isMap(m[k])){const h={};Object.keys(m[k]).forEach(x=>{h[x]=_mh(m[k][x]);});out[k]=h;}});return out;}
+function metaDelta(sh,m){
+  const mk=sh&&sh.mk;if(!mk||!Object.keys(mk).length)return null;
+  const out={};
+  Object.keys(m||{}).forEach(k=>{const v=m[k];if(v===undefined||_mh(v)===mk[k])return;
+    const b2=sh.mk2&&sh.mk2[k];
+    if(b2&&mk[k]!==undefined&&META_SUBKEYS.includes(k)&&_isMap(v)){
+      const d={};Object.keys(v).forEach(x=>{if(_mh(v[x])!==b2[x])d[x]=v[x];});
+      if(Object.keys(d).length)out[k]=d;return;}
+    out[k]=v;});
+  return out;
+}
 function metaOf(p){const m=JSON.parse(JSON.stringify(p));SYNC_COLLS.forEach(c=>{delete m[c.f];});return m;}
 /* Short fingerprint of a record's JSON. The shadow keeps these instead of full
    copies so it can be saved on the phone without doubling the house list. */
@@ -12617,8 +12680,8 @@ async function qbExportNow(){
   try{
     toast('Sending costs to QuickBooks…');
     const r=await fnCall('qbExportCosts',{siteId:String(state.activeId)});
-    if(!r.ok){toast(r.reason==='not-connected'?'Connect QuickBooks first (gear → Dev)':'Export refused: '+r.reason);return;}
-    let msg=r.created+' sent'+(r.skipped?' · '+r.skipped+' already in QuickBooks':'');
+    if(!r.ok){toast(r.reason==='not-connected'?'Connect QuickBooks first (gear → Dev)':r.reason==='no-money-access'?QB_NO_MONEY:'Export refused: '+r.reason);return;}
+    let msg=r.created+' sent'+(r.skipped?' · '+r.skipped+' already in QuickBooks':'')+(r.busy?' · '+r.busy+' '+QB_BUSY:'');
     if(r.failures&&r.failures.length)msg+=' · '+r.failures.length+' failed';
     toast(msg);try{renderBudget();}catch(e){}
   }catch(e){toast('Export failed: '+e.message);}finally{_qbBusy=false;}
@@ -20132,9 +20195,20 @@ function pickChip(el){
    iPhone/Safari has no install API, so we show the manual steps. */
 let deferredPrompt=null;
 function isStandalone(){try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(e){return false;}}
+/* 2.513.0 (batch 4) placeholder words, for Agency: */
+const CO_NOT_CHECKED='Not checked yet';   /* #8 row and form tag */
+const CO_RECHECK_BTN='Re-check';   /* #8 */
+const CO_RECHECK_OK='Checked. The homeowner can approve it now.';   /* #8 */
+const CO_RECHECK_BAD='The numbers did not add up. Fix the amount and send it again.';   /* #8 */
+const CO_RECHECK_FAIL='Could not check right now. Try again in a minute.';   /* #8 */
+const UPLOAD_FAILED='Didn\u2019t upload. Tap to try again.';   /* #11 badge */
+const UPLOAD_RETRYING='Trying the upload again';   /* #11 toast */
+const DOC_TYPE_NO='That file type can\u2019t be added. Use a PDF, photo, Word or Excel file.';   /* #11 */
+const QB_NO_MONEY='Only builders with money access can send costs to QuickBooks.';   /* #13 */
+const QB_BUSY='already sending';   /* #13 toast piece: "· 2 already sending" */
 /* ── SitePlumb server (Cloud Functions): callable-lite protocol ── */
 const FN_BASE=emuOn()?'http://127.0.0.1:5001/'+(((typeof fbConfig==='function'&&fbConfig())||{}).projectId||'plumb-467a0')+'/us-central1/':'https://us-central1-plumb-467a0.cloudfunctions.net/';
-const FN_ASKED={deleteAccount:1,qbConnect:1,qbDisconnect:1,qbExportCosts:1,notifyTest:1};
+const FN_ASKED={deleteAccount:1,qbConnect:1,qbDisconnect:1,qbExportCosts:1,notifyTest:1,coRecheck:1};
 async function fnCall(name,data){
   const u=(typeof firebase!=='undefined'&&firebase.auth&&firebase.auth().currentUser);
   /* Only a call the person just asked for raises the sign-in prompt; background telemetry stays quiet. */
