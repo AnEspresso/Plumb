@@ -319,7 +319,20 @@ exports.onRecordDeleted = onDocumentDeleted('sites/{siteId}/{coll}/{docId}', asy
 const paperTrail = require('./lib/paperTrail');
 const _ptTs = () => admin.firestore.FieldValue.serverTimestamp();
 exports.paperTrailInv = onDocumentWritten('sites/{siteId}/inv/{docId}', (event) => paperTrail.handle(db, _ptTs, 'inv', event));
-exports.paperTrailCo = onDocumentWritten('sites/{siteId}/co/{docId}', (event) => paperTrail.handle(db, _ptTs, 'co', event));
+/* #8 (2.513.0): retry on. The change-order check runs with the switch off too, reads the change order as it is now
+   in a transaction and writes only when the stamp differs, and history lines keep event-id document ids, so a retry is a no-op. */
+exports.paperTrailCo = onDocumentWritten({ document: 'sites/{siteId}/co/{docId}', retry: true }, (event) => paperTrail.handle(db, _ptTs, 'co', event));
+/* #8 (2.513.0): the builder's "Re-check" for a sent change order still waiting on the check. Money builders only. */
+exports.coRecheck = onRequest(async (req, res) => {
+  if (cors(req, res)) return;
+  const user = await requireUser(req, res); if (!user) return;
+  try {
+    const b = body(req);
+    const r = await paperTrail.recheckCo(db, _ptTs, user.uid, String(b.siteId || '').slice(0, 128), String(b.coId || '').slice(0, 128), push.moneyBuilderUids);
+    if (!r.ok && r.reason === 'not-allowed') { res.status(403).json({ error: 'not-allowed' }); return; }
+    res.json({ result: r });
+  } catch (e) { logError('coRecheck', e); res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
+});
 exports.paperTrailPmts = onDocumentWritten('sites/{siteId}/pmts/{docId}', (event) => paperTrail.handle(db, _ptTs, 'pmts', event));
 /* 2.483.0: real pushes for the money notices (G1-G3, G5) and for a new flag. 10/22 decision: pushes to homeowners go out
    regardless of the paper-trail switch; G5 to money builders goes regardless too; flag pushes to builders still wait for it. The app's bell shows the same notices (same keys). */
@@ -351,7 +364,9 @@ exports.paperTrailFlags = onDocumentWritten('sites/{siteId}/flags/{docId}', (eve
 /* Step 3b-1 (M-10 receipts, M-12 archive): for each money-history line the server archives a snapshot,
    emails each party the PDF with its SHA-256 fingerprint, and stamps the fingerprint on the line.
    DORMANT: needs settings/paperTrail { enabled: true, receipts: true }. Provider: Resend (RESEND_API_KEY).
-   retry:true re-runs a failed line; claims on the line make a re-run send each party one email only. */
+   retry:true re-runs a failed line; claims on the line make a re-run send each party one email only.
+   #9 (2.513.0): runs are counted on the line (rcTries) and stop after receipts.MAX_TRIES with rcStatus 'failed'; a refused
+   address is not retried; a change order's line is read against its current revision (an older one is 'superseded'). */
 const receipts = require('./lib/receipts');
 exports.paperTrailReceipt = onDocumentCreated({ document: 'sites/{siteId}/hist/{lineId}', retry: true }, async (event) => {
   const f = await receipts.flags(db);
@@ -379,6 +394,11 @@ exports.paperTrailReceipt = onDocumentCreated({ document: 'sites/{siteId}/hist/{
       tx.update(histRef(s, l), { ['rc.' + uid]: Date.now() }); return true;
     }),
     release: (s, l, uid) => histRef(s, l).update({ ['rc.' + uid]: admin.firestore.FieldValue.delete() }),
+    /* #9 (2.513.0): every run of a line counts; receipts.handle stops past MAX_TRIES. A line that is gone counts as past the cap. */
+    attempt: (s, l) => db.runTransaction(async (tx) => {
+      const snap = await tx.get(histRef(s, l)); if (!snap.exists) return receipts.MAX_TRIES + 1;
+      const n = (Number((snap.data() || {}).rcTries) || 0) + 1; tx.update(histRef(s, l), { rcTries: n }); return n;
+    }),
     notify: async (siteId, line) => {
       const siteSnap = await db.collection('sites').doc(siteId).get();
       const uids = push.builderUids(siteSnap.data() || {}); if (!uids.length) return;

@@ -68,9 +68,10 @@ async function freshTokens(db, uid) {
   return t;
 }
 
-async function qbFetch(t, method, path, body) {
+async function qbFetch(t, method, path, body, requestId) {
+  /* #13 (2.513.0): requestid makes a repeated create return the first result instead of a second record */
   const url = API_BASE() + '/v3/company/' + encodeURIComponent(t.realmId) + path +
-    (path.includes('?') ? '&' : '?') + 'minorversion=' + MINOR;
+    (path.includes('?') ? '&' : '?') + 'minorversion=' + MINOR + (requestId ? '&requestid=' + encodeURIComponent(requestId) : '');
   const r = await fetch(url, {
     method,
     headers: { Authorization: 'Bearer ' + t.accessToken, Accept: 'application/json',
@@ -116,7 +117,7 @@ async function ensureAccount(t, name, accountType) {
 }
 
 /* One logged cost → one QBO Purchase (expense). */
-async function createPurchase(t, { payAccountId, expenseAccountId, vendorId, customerId, amount, dateISO, note }) {
+async function createPurchase(t, { payAccountId, expenseAccountId, vendorId, customerId, amount, dateISO, note, requestId }) {
   const j = await qbFetch(t, 'POST', '/purchase', {
     PaymentType: 'Cash',
     AccountRef: { value: payAccountId },
@@ -132,7 +133,7 @@ async function createPurchase(t, { payAccountId, expenseAccountId, vendorId, cus
         BillableStatus: 'NotBillable',
       },
     }],
-  });
+  }, requestId);
   return j.Purchase.Id;
 }
 
