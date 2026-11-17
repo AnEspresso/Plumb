@@ -1319,8 +1319,8 @@ async function main() {
   await INV('#5 docs: second builder changes a document\'s audience', setDoc(doc(db.builder2, 'sites/liveD/docs/docNew'), rowD({ n: 'Permit.pdf', aud: 'team', fileId: 'docNew' })), true);
   await INV('#5 docs: builder DENIED a document with no audience [gap today]', setDoc(doc(db.builder, 'sites/liveD/docs/docNoAud'), rowD({ n: 'x.pdf' })), false);
   await INV('#5 docs: builder DENIED an unknown audience [gap today]', setDoc(doc(db.builder, 'sites/liveD/docs/docBadAud'), rowD({ n: 'x.pdf', aud: 'public' })), false);
-  await INV('#5 docs: crew DENIED writing a document [gap today]', setDoc(doc(db.sub, 'sites/liveD/docs/docCrew'), rowD({ n: 'x.pdf', aud: 'all' })), false);
-  await INV('#5 docs: homeowner DENIED widening a document to everyone [gap today]', setDoc(doc(db.client, 'sites/liveD/docs/docTeam'), rowD({ n: 'docTeam.pdf', aud: 'all', fileId: 'docTeam' })), false);
+  await INV('#5 docs: crew DENIED writing a document (already refused before)', setDoc(doc(db.sub, 'sites/liveD/docs/docCrew'), rowD({ n: 'x.pdf', aud: 'all' })), false);
+  await INV('#5 docs: homeowner DENIED widening a document to everyone (already refused before)', setDoc(doc(db.client, 'sites/liveD/docs/docTeam'), rowD({ n: 'docTeam.pdf', aud: 'all', fileId: 'docTeam' })), false);
   await INV('#5 docs: builder deletes a document record', deleteDoc(doc(db.builder, 'sites/liveD/docs/docNew')), true);
   await INV('#5 docs: crew DENIED deleting a document', deleteDoc(doc(db.sub, 'sites/liveD/docs/docAll')), false);
   /* #5: invite codes off the house doc */
@@ -1329,7 +1329,7 @@ async function main() {
   await INV('#5 invs: homeowner DENIED the invite codes [gap today]', recD(db.client, 'invs', 'HOMECODE9'), false);
   await INV('#5 invs: builder without Money DENIED the invite codes [gap today]', recD(db.builder2, 'invs', 'HOMECODE9'), false);
   await INV('#5 invs: owner writes an invite code record', setDoc(doc(db.builder, 'sites/liveD/invs/CREWCODE8'), rowD({ code: 'CREWCODE8', role: 'sub', status: 'open' })), true);
-  await INV('#5 invs: crew DENIED writing an invite code [gap today]', setDoc(doc(db.sub, 'sites/liveD/invs/CREWCODE7'), rowD({ code: 'CREWCODE7', role: 'client' })), false);
+  await INV('#5 invs: crew DENIED writing an invite code (already refused before)', setDoc(doc(db.sub, 'sites/liveD/invs/CREWCODE7'), rowD({ code: 'CREWCODE7', role: 'client' })), false);
   /* #5: the old lists on the house doc: unchanged is fine, clearing is fine, adding is not */
   await INV('#5 house: builder edit that leaves the old lists alone still saves', updateDoc(doc(db.builder2, 'sites/liveD'), { 'meta.street': 'Live D 2' }), true);
   await INV('#5 house: older phone adding a document to meta.docs DENIED [gap today]',
