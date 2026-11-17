@@ -1,0 +1,21 @@
+{
+  "displayName": "Plumb functions: ERROR log",
+  "documentation": {
+    "content": "A Cloud Function wrote an ERROR log line (our own 'plumb function error' lines, a crash, or a failed trigger). Open Logs Explorer with the filter in docs/alerts.md.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "ERROR log from a function",
+      "conditionMatchedLog": {
+        "filter": "resource.type=(\"cloud_run_revision\" OR \"cloud_function\") AND severity>=ERROR"
+      }
+    }
+  ],
+  "alertStrategy": {
+    "notificationRateLimit": { "period": "300s" },
+    "autoClose": "86400s"
+  },
+  "enabled": true
+}

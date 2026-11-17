@@ -5960,15 +5960,31 @@ function savePersonGates(){
   toast('Role updated');
   peopleMode='team';_teamInv=null;renderPeople();
 }
+/* #1 (2.509.0): a live house the server confirms this account owns (a builder with
+   no roster entry, or one marked owner): the same test as the rules' isOwner(). */
+const TEAM_INV_OWNER_ONLY='Only the owner can invite teammates.';   /* Agency 11/17 */
+const INV_MONEY_ONLY='Only the owner can send this invite. Ask them to send it.';   /* Agency 11/17 */
+function ownsHouse(p,uid){if(!p||p.sample||!uid)return false;
+  if(!(p.members&&p.members[uid]==='builder'))return false;
+  const mi=p.memberInfo||{};if(!Object.prototype.hasOwnProperty.call(mi,uid))return true;
+  const e=mi[uid]||{};return e.rpRole==='owner'||e.owner===true;}
+function teamInviteAnchor(){try{const uid=Sync.uid||'';
+  const on=(typeof Sync!=='undefined'&&Sync._onServer)||{};
+  const p=(state.projects||[]).find(x=>on[String(x.id)]&&ownsHouse(x,uid));return p?String(p.id):'';}catch(e){return '';}}
 async function mintTeamInvite(){
   const d=_teamInv;if(!d)return;
   if(appMode()!=='real'){toast('Invites work in Live mode');return;}
   if(accountGone('invite'))return;
   if(!Sync.ready()){toast('Connect sync first (workbench)');return;}
+  /* #1 (2.509.0): the rules take a team code only from the owner of the house it
+     names (siteId is the proof of ownership; the claim still reaches every house
+     the owner owns). */
+  const anchor=teamInviteAnchor();
+  if(!anchor){toast(TEAM_INV_OWNER_ONLY);return;}
   const code=genInviteCode();
-  const payload={code,role:'team',siteId:'',name:'',trade:'',setup:!!d.setup,mode:'live',createdBy:Sync.uid||'',t:Date.now(),rpRole:d.rpRole,gates:Object.assign({},d.gates)};
+  const payload={code,role:'team',siteId:anchor,name:'',trade:'',setup:!!d.setup,mode:'live',createdBy:Sync.uid||'',t:Date.now(),rpRole:d.rpRole,gates:Object.assign({},d.gates)};
   try{await Sync.db.collection('invites').doc(code).set(payload);}
-  catch(e){toast('Could not create invite — check connection');return;}
+  catch(e){toast(e&&e.code==='permission-denied'?TEAM_INV_OWNER_ONLY:'Could not create invite — check connection');return;}
   writeInvitePreview(code,null);
   const ti=laTeamInvites();ti.push({code,t:Date.now(),status:'open',setup:!!d.setup,rpRole:d.rpRole,gates:Object.assign({},d.gates)});laSaveTeamInvites(ti);
   try{watchClaims();}catch(e){}
@@ -8143,7 +8159,7 @@ function __renderPeople(){
       return '<div class="subrow" onclick="openPersonGates(\''+uid+'\')"><div class="si"><div class="n">'+esc(info.name||(mine?'You':'Team member'))+(mine?' <span class="c-ink-3 fw-5">(you)</span>':'')+'</div><div class="d">'+esc(RP_ROLES[info.rpRole]||'Team')+'</div></div>'+trash+'</div>';
     }).join('')||'<div class="empty py-2 px-0">Just you so far.</div>')
     +pend.map(i=>`<div class="subrow"><div class="si cur-p" onclick="shareInvite('${i.code}')"><div class="n">Open invite${i.setup?' · with setup':''}${i.rpRole?' · '+esc((RP_ROLES[i.rpRole]||'').split(' / ')[0]):''}</div><div class="d">Code ${esc(i.code)} — tap to copy & share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
-    +(canGate('people')||isOrgOwner()?`<button class="add-sub-btn btn btn-secondary" onclick="openTeamInvite({})">${PPL_INV_SVG}Invite a teammate</button>`:'')
+    +(isOrgOwner()?`<button class="add-sub-btn btn btn-secondary" onclick="openTeamInvite({})">${PPL_INV_SVG}Invite a teammate</button>`:'')
     +'<p class="ppl-quiet"><button type="button" onclick="openPeopleMode(\'roles\')">Review the four roles</button></p>'
     +(isOrgOwner()?'<p class="ppl-quiet">Hand off company setup to someone else. <button type="button" onclick="openTeamInvite({setup:true})">Invite with setup</button></p>':'');}
 async function revokeInvite(code){
@@ -8211,7 +8227,7 @@ async function createInvite(role,subId,opts){opts=opts||{};
     if((p.invites||[]).some(i=>i.role==='sub'&&inviteMatchesSub(i,s)&&i.status!=='revoked')){toast(name+' already has an invite');return;}}
   const code=genInviteCode();
   try{await Sync.db.collection('invites').doc(code).set({code,role,siteId:String(p.id),subId:subId2,name,trade,mode:'live',createdBy:Sync.uid||'',t:Date.now()});}
-  catch(e){toast('Couldn\u2019t create invite — check connection');return;}
+  catch(e){toast(e&&e.code==='permission-denied'?INV_MONEY_ONLY:'Couldn\u2019t create invite — check connection');return;}   /* #1 (2.509.0): the rules take a homeowner or crew code only from the owner or a builder with Money */
   writeInvitePreview(code,p);
   p.invites=p.invites||[];p.invites.push({code,role,siteId:String(p.id),subId:subId2,name,trade,t:Date.now(),status:'open'});persist();
   try{watchClaims();}catch(e){}

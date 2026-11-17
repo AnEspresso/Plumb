@@ -4,6 +4,43 @@
    A client or crew claim never becomes a builder.
    A team claim never turns a homeowner or crew into a builder on that house. */
 
+/* #1 (pre-launch review): the invite is the authority only when the person
+   who made it may hand out that access. Same owner model as the rules'
+   isOwner(): a builder on the house with no roster entry, or one marked owner.
+   A money builder passes the rules' moneyOk() gates. Members may be strings
+   ('builder') or a legacy {role} object. */
+function roleOn(site, uid) {
+  const m = ((site || {}).members || {})[String(uid || '')];
+  if (m == null) return '';
+  return String(typeof m === 'string' ? m : (m.role || '')).toLowerCase();
+}
+function infoOn(site, uid) {
+  const mi = (((site || {}).meta || {}).memberInfo) || {};
+  return Object.prototype.hasOwnProperty.call(mi, String(uid || '')) ? (mi[uid] || {}) : null;
+}
+function isOwnerOn(site, uid) {
+  if (!uid || roleOn(site, uid) !== 'builder') return false;
+  const info = infoOn(site, uid);
+  return !info || info.rpRole === 'owner' || info.owner === true;
+}
+function isMoneyBuilderOn(site, uid) {
+  if (!uid || roleOn(site, uid) !== 'builder') return false;
+  if (isOwnerOn(site, uid)) return true;
+  const g = (infoOn(site, uid) || {}).gates || {};
+  return g.moneyJob === true || g.moneyJob === 1 || g.moneyCo === true || g.moneyCo === 1;
+}
+/* May the invite's creator still hand out this access on this house, right now?
+   Homeowner or crew: the owner or a money builder of the house. Team: only the
+   owner (a team claim reaches every house its creator owns, nothing more). */
+function inviterOk(site, invite) {
+  invite = invite || {};
+  const by = String(invite.createdBy || '');
+  if (!by) return false;
+  if (invite.role === 'team') return isOwnerOn(site, by);
+  if (invite.role === 'client' || invite.role === 'sub') return isMoneyBuilderOn(site, by);
+  return false;
+}
+
 function applyClaimToSite(site, invite, uid, claim) {
   site = site || {};
   invite = invite || {};
@@ -37,8 +74,11 @@ function applyClaimToSite(site, invite, uid, claim) {
     email: String(claim.email || prev.email || '').slice(0, 120),
     trade: String(invite.trade || prev.trade || ''),
   });
-  if (invite.rpRole) info[uid].rpRole = invite.rpRole;
-  if (invite.gates) info[uid].gates = invite.gates;
+  /* An owner may hand out a role and money gates; nobody else may. */
+  if (isOwnerOn(site, invite.createdBy)) {
+    if (invite.rpRole) info[uid].rpRole = invite.rpRole;
+    if (invite.gates) info[uid].gates = invite.gates;
+  }
   const invites = Array.isArray(meta.invites) ? meta.invites.map(function (i) {
     if (!i || i.code !== invite.code) return i;
     return Object.assign({}, i, { status: 'joined', uid: uid });
@@ -64,4 +104,4 @@ function claimWins(uid, claims) {
   return String(list[0].id) === uid;
 }
 
-module.exports = { applyClaimToSite, claimWins };
+module.exports = { applyClaimToSite, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn };

@@ -544,10 +544,51 @@ service cloud.firestore {
           && request.resource.data.claimed == true
           && existsAfter(/databases/$(database)/documents/invites/$(code)/claims/$(uid()));
       }
+      /* #1 (pre-launch review): only someone who may hand out the access makes
+         a code for it. Homeowner or crew: the owner of invite.siteId or a builder
+         with the money gate there (the same owner model as sites isOwner() and
+         moneyOk()). Team: only the owner of the house named in siteId (the
+         anchor that proves ownership; the claim reaches the houses the owner
+         owns). A role (rpRole) or money gates ride along only from the owner. */
+      function inviteSite() {
+        return get(/databases/$(database)/documents/sites/$(request.resource.data.siteId)).data;
+      }
+      function inviterInfo() {
+        return inviteSite().get('meta', {}).get('memberInfo', {}).get(uid(), {});
+      }
+      function inviterBuilder() {
+        return inviteSite().get('mode', '') == 'live'
+          && inviteSite().get('members', {}).get(uid(), '') == 'builder';
+      }
+      function inviterOwner() {
+        return inviterBuilder() && (
+          !inviteSite().get('meta', {}).get('memberInfo', {}).keys().hasAny([uid()])
+          || inviterInfo().get('rpRole', '') == 'owner'
+          || inviterInfo().get('owner', false) == true
+        );
+      }
+      function inviterMoney() {
+        return inviterBuilder() && (
+          inviterInfo().get('gates', {}).get('moneyJob', false) in [true, 1]
+          || inviterInfo().get('gates', {}).get('moneyCo', false) in [true, 1]
+        );
+      }
+      function inviteCreateOk() {
+        let r = request.resource.data;
+        return r.createdBy == uid()
+          && !r.keys().hasAny(['claimed', 'claimedAt'])
+          && r.get('role', '') in ['client', 'sub', 'team']
+          && r.get('siteId', '') is string
+          && r.get('siteId', '').matches('^[A-Za-z0-9_-]{1,80}$')
+          && exists(/databases/$(database)/documents/sites/$(r.siteId))
+          && (
+            inviterOwner()
+            || (r.role != 'team' && inviterMoney() && !r.keys().hasAny(['rpRole', 'gates']))
+          );
+      }
       allow get: if signedIn();
       allow list: if false;
-      allow create: if signedIn() && request.resource.data.createdBy == uid()
-        && !request.resource.data.keys().hasAny(['claimed', 'claimedAt']);
+      allow create: if signedIn() && inviteCreateOk();
       allow update: if signedIn() && (
         (resource.data.createdBy == uid()
           && request.resource.data.createdBy == resource.data.createdBy
