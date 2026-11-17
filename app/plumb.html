@@ -3982,15 +3982,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.510.0 - A refused save stops only itself and says Not saved';
+const PLUMB_VERSION='2.511.0 - A payment adds to the server invoice and keeps the homeowner OK';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795723200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.510.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795809600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.511.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -10190,6 +10190,19 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       else if(this._pushing[String(id)]||this._pushAgain[String(id)]||this._held[String(id)]||diffSiteOps(this._shadow[String(id)]||{meta:'',colls:{}},p).some(o=>o.kind==='meta'))out.pending++;}
     return out;},
   async pushAll(){if(!this.ready())return;for(const p of state.projects){try{await this._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}},
+  /* #4 (2.511.0): read the server's invoice, merge this phone's copy into it (invMergeServer), write the result, all in one
+     transaction. This phone's invoice becomes the merged one, so the payments another phone recorded show here too. */
+  async _invMergeWrite(p,ref,loc){
+    const rec=d=>Object.assign({data:fbClean(d),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp());
+    let out=loc;
+    if(typeof this.db.runTransaction==='function'){
+      out=await this.db.runTransaction(async tx=>{const snap=await tx.get(ref);
+        const srv=(snap&&snap.exists)?((snap.data()||{}).data||null):null;
+        const m=invMergeServer(loc,srv);tx.set(ref,rec(m));return m;});
+    }else await ref.set(rec(loc));
+    if(JSON.stringify(out)!==JSON.stringify(loc)){const i=(p.invoices||[]).findIndex(v=>v&&String(v.id)===String(loc.id));
+      if(i>=0){p.invoices[i]=JSON.parse(JSON.stringify(out));try{persistLocalOnly();}catch(e){}try{renderInvoices();}catch(e){}}}
+    return out;},
   /* #3 (2.510.0): saves the server refused, by house and record. Each one keeps "Not saved" on the pill until it is
      saved, changed back, or its house is gone; it is resent only once it changes (or once after a reconnect). */
   _refused:{},
@@ -10272,11 +10285,16 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           /* F-2: a money record is the builder's whole record: replace it, so a
              key that left the invoice or the selection's money leaves the cloud too. */
           try{
-            await ref.set(Object.assign({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
+            /* #4 (2.511.0): a sent invoice is merged with the server's copy in a transaction before it is written, so a
+               phone holding an old copy adds its payments to the server's instead of replacing them, and keeps the
+               homeowner's OK. A draft is still this phone's whole record. */
+            if(op.sub==='inv'&&invNeedsMerge(op.data))op.data=await this._invMergeWrite(p,ref,op.data);
+            else await ref.set(Object.assign({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
           }catch(e1){
             if(!(op.sub==='inv'&&e1&&e1.code==='permission-denied'&&Array.isArray(op.data&&op.data.items)))throw e1;
             const healed=Object.assign({},op.data,{items:op.data.items.map(it=>(it&&!it.adj&&typeof it==='object')?Object.assign({},it,{amountC:undefined}):it)});
-            await ref.set(Object.assign({data:fbClean(healed),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
+            if(invNeedsMerge(healed))op.data=await this._invMergeWrite(p,ref,JSON.parse(JSON.stringify(healed)));   // #4: the heal merges too
+            else await ref.set(Object.assign({data:fbClean(healed),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
           }
         }else{
           let data=fbClean(op.data);
@@ -15726,6 +15744,35 @@ async function invApprove(projId,invId){
     (sh.colls.inv||(sh.colls.inv={}))[String(invId)]=_syncHash(JSON.stringify(inv));Sync._saveBase();}catch(e){}
   persist();logEvent('invoiceApproved',inv.no);toast(inv.no+' approved');
   try{closeInfo();}catch(e){}try{renderClient();}catch(e){}}
+/* #4 (2.511.0): merge this phone's copy of a sent invoice with the server's. The server's payments stay, in order and
+   unchanged, except a void this phone made; this phone's new payments (by id) go on the end. Number, title and lines are
+   the server's; this phone's credit or charge lines count only when they follow the server's lines. The homeowner's OK
+   (approvedAt) and a void on the server win. Status follows the merged payments. */
+function invNeedsMerge(d){return !!d&&!!d.status&&d.status!=='draft';}
+function invMergeServer(loc,srv){
+  if(!loc||!srv||!invNeedsMerge(srv))return loc;
+  const cl=x=>JSON.parse(JSON.stringify(x));const out=cl(loc);
+  const sp=Array.isArray(srv.payments)?srv.payments:[],lp=Array.isArray(loc.payments)?loc.payments:[];
+  const mine={};lp.forEach(x=>{if(x&&x.id!=null)mine[String(x.id)]=x;});
+  const seen={};
+  const pays=sp.map(x=>{const k=(x&&x.id!=null)?String(x.id):null;if(k)seen[k]=1;const l=k?mine[k]:null;
+    if(l&&x&&!x.voidedAt&&l.voidedAt&&l.voidReason)return Object.assign(cl(x),{voidedAt:l.voidedAt,voidReason:l.voidReason,voidedBy:l.voidedBy||''});
+    return cl(x);});
+  lp.forEach(x=>{if(!x)return;const k=x.id!=null?String(x.id):null;if(k&&seen[k])return;
+    if(!k&&sp.some(y=>JSON.stringify(y)===JSON.stringify(x)))return;pays.push(cl(x));});
+  out.payments=pays;
+  ['no','num','title','lines'].forEach(k=>{if(k in srv)out[k]=cl(srv[k]);else delete out[k];});
+  const si=Array.isArray(srv.items)?srv.items:[],li=Array.isArray(loc.items)?loc.items:[];
+  const bare=a=>JSON.stringify(a.map(it=>(it&&typeof it==='object'&&!it.adj)?Object.assign({},it,{amountC:undefined}):it));   // the cents twin aside (2.495.0 heal)
+  if(!(li.length>=si.length&&bare(li.slice(0,si.length))===bare(si))){out.items=cl(si);out.total=srv.total;if('totalC' in srv)out.totalC=srv.totalC;else delete out.totalC;}
+  if(srv.approvedAt!=null)out.approvedAt=srv.approvedAt;
+  if(srv.status==='void'){out.status='void';out.voidedAt=srv.voidedAt;out.voidReason=srv.voidReason;}
+  else if(out.status!=='void'){
+    if(JSON.stringify(pays)!==JSON.stringify(lp)){   // the payments changed in the merge: paid or not follows them
+      if(invPaidAmt(out)>0&&invBalance(out)<=0.005){if(out.status!=='paid'){out.status='paid';out.paidAt=srv.paidAt||out.paidAt||Date.now();}}
+      else if(out.status==='paid'){out.status='sent';if('paidAt' in out)out.paidAt=null;}}
+    if(out.status==='sent'&&(out.approvedAt!=null||srv.status==='approved'))out.status='approved';}
+  return out;}
 function invAddPayment(projId,invId,full){
   if(moneyUpdateGate())return;
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;

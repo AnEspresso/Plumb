@@ -88,9 +88,15 @@ function linesFor(coll, before, after) {
       const c = centsOf(it, 'amount');
       out.push(base(c < 0 ? 'credit_added' : 'charge_added', { amountC: c, no: a.no || a.num, note: String(it.label || '').slice(0, 200), totalC: tot }));
     });
+    /* #4 (2.511.0): payments are matched by id, not position. A stale whole-record write could put a new payment
+       where an old one was (same position, different id) and the history wrote nothing for it. An entry with no id
+       (older records) falls back to its position. */
     const bp = (b && b.payments) || [], ap = a.payments || [];
+    const payKey = (p, i) => (p && p.id != null ? 'id:' + String(p.id) : 'ix:' + i);
+    const byKey = {};
+    bp.forEach((p, i) => { byKey[payKey(p, i)] = p; });
     ap.forEach((p, i) => {
-      const o = bp[i];
+      const o = byKey[payKey(p, i)];
       if (!o && !(p && p.voidedAt)) out.push(base('payment', { refType: 'inv', payRef: String(p && p.id != null ? p.id : i), amountC: centsOf(p || {}, 'amount') }));
       if (p && p.voidedAt && !(o && o.voidedAt)) out.push(base('payment_voided', { payRef: String(p.id != null ? p.id : i), amountC: centsOf(p, 'amount'), note: p.voidReason || '' }));
     });
