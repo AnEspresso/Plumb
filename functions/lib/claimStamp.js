@@ -41,6 +41,17 @@ function inviterOk(site, invite) {
   return false;
 }
 
+/* 2.515.0: a uid already the homeowner (client) on this house must not be
+   stamped as crew. Members may be a role string or a legacy {role} object,
+   and may live on the house or on meta. */
+function isHomeownerOn(site, uid) {
+  uid = String(uid || '');
+  if (!uid) return false;
+  const members = (site || {}).members || ((site || {}).meta || {}).members || {};
+  const cur = members[uid];
+  return String(typeof cur === 'string' ? cur : ((cur && cur.role) || '')).toLowerCase() === 'client';
+}
+
 function applyClaimToSite(site, invite, uid, claim) {
   site = site || {};
   invite = invite || {};
@@ -58,6 +69,7 @@ function applyClaimToSite(site, invite, uid, claim) {
   const cur = members[uid];
   if (role === 'builder' && (cur === 'client' || cur === 'sub')) return null;
   if (cur === 'builder' && role !== 'builder') return null;
+  if (role === 'sub' && isHomeownerOn(site, uid)) return null;
   members[uid] = role;
   const prev = info[uid] || {};
   /* A crew is booked under the roster name on the invite, and the rule
@@ -104,4 +116,4 @@ function claimWins(uid, claims) {
   return String(list[0].id) === uid;
 }
 
-module.exports = { applyClaimToSite, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn };
+module.exports = { applyClaimToSite, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn, isHomeownerOn };
