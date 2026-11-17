@@ -187,7 +187,7 @@ exports.telemetryClear = onRequest(async (req, res) => {
 /* ── Lock-screen push when a sub replies on a packet ── */
 const { onDocumentWritten, onDocumentCreated, onDocumentUpdated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
 const push = require('./lib/push');
-const { applyClaimToSite, claimWins } = require('./lib/claimStamp');
+const { applyClaimToSite, claimWins, inviterOk } = require('./lib/claimStamp');
 
 /* The join-screen preview (builder name + street) lives only while the code
    is open. Best-effort: a missing doc is fine. */
@@ -231,7 +231,14 @@ exports.onInviteClaim = onDocumentCreated('invites/{code}/claims/{uid}', async (
     if (!one.exists) return;
     docs = [one];
   }
-  for (const doc of docs) {
+  /* #1: re-check at claim time that whoever made the code may still hand out
+     this access on each house (owner, or a money builder for homeowner/crew;
+     owner only for team). A house that fails is skipped and logged. */
+  const allowed = docs.filter((d) => inviterOk(d.data() || {}, invite));
+  if (allowed.length < docs.length) {
+    console.warn(JSON.stringify({ severity: 'WARNING', message: 'onInviteClaim: invite creator may not grant this access', code, role: String(invite.role || ''), refused: docs.length - allowed.length, allowed: allowed.length }));
+  }
+  for (const doc of allowed) {
     const patch = applyClaimToSite(doc.data() || {}, invite, uid, claim);
     if (!patch) continue;
     await doc.ref.set(Object.assign({ updatedAt: Date.now() }, patch), { merge: true });

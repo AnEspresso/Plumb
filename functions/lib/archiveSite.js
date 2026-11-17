@@ -50,6 +50,7 @@ function accountArchiver(db, bucket, FieldValue) {
     if (!r.archived) return false;
     await doc.ref.update({
       memberUids: FieldValue.arrayRemove(uid), ['members.' + uid]: FieldValue.delete(), ['memberInfo.' + uid]: FieldValue.delete(),
+      ['meta.members.' + uid]: FieldValue.delete(), ['meta.memberInfo.' + uid]: FieldValue.delete(),
       'meta.archivedAt': Date.now(), 'meta.archiveFp': r.fp, 'meta.retainUntil': r.retainUntil,
     });
     return true;
