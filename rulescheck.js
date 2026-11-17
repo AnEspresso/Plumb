@@ -656,6 +656,10 @@ async function main() {
     app_y2: sentOf({ id: 'app_y2', no: 72 }),
     cd_ok: sentOf({ id: 'cd_ok', no: 80, days: 3, status: 'approved', approvedVia: 'paper', decidedBy: U.builder, decidedRev: 1 }),
     cd_sent: sentOf({ id: 'cd_sent', no: 81, days: 2 }),
+    cd_neg: sentOf({ id: 'cd_neg', no: 82, days: -3, kind: 'credit', amountC: -100, status: 'approved', approvedVia: 'paper', decidedBy: U.builder, decidedRev: 1 }),
+    cd_neg2: sentOf({ id: 'cd_neg2', no: 83, days: -2, status: 'approved', approvedVia: 'paper', decidedBy: U.builder, decidedRev: 1 }),
+    cd_zero: sentOf({ id: 'cd_zero', no: 84, days: 0, status: 'approved', approvedVia: 'paper', decidedBy: U.builder, decidedRev: 1 }),
+    cd_negs: sentOf({ id: 'cd_negs', no: 85, days: -3 }),
   };
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const sdb = ctx.firestore();
@@ -719,6 +723,14 @@ async function main() {
   await INV_A1('A1 app 4d-2: days added as text is DENIED', putCo(db.builder, 'app_y4', coData({ id: 'app_y4', days: '3' })));
   await INV_A1('A1 app 4d-2: days added on a sent one without rev + 1 is DENIED', mrg(db.builder, 'app_y2', { days: 4 }));
   await INV('A1 app 4d-2: days added on a sent one by merge with rev 2: ALLOWED', mrg(db.builder, 'app_y1', { days: 4, rev: 2 }), true);
+  /* 2.505.0 (Peter 11/17): a later change order may take days off, on a Change or a Credit: whole number -365..365 */
+  await INV('A1 minus days: a Credit draft with -3 days: ALLOWED', putCo(db.builder, 'app_m1', coData({ id: 'app_m1', kind: 'credit', amountC: -100, days: -3 })), true);
+  await INV('A1 minus days: a Change draft with -3 days: ALLOWED', putCo(db.builder, 'app_m2', coData({ id: 'app_m2', days: -3 })), true);
+  await INV('A1 minus days: -365 days: ALLOWED', putCo(db.builder, 'app_m3', coData({ id: 'app_m3', days: -365 })), true);
+  await INV_A1('A1 minus days: -366 days is DENIED', putCo(db.builder, 'app_m4', coData({ id: 'app_m4', days: -366 })));
+  await INV_A1('A1 minus days: -3.5 days is DENIED', putCo(db.builder, 'app_m5', coData({ id: 'app_m5', days: -3.5 })));
+  await INV_A1('A1 minus days: "-3" as text is DENIED', putCo(db.builder, 'app_m6', coData({ id: 'app_m6', days: '-3' })));
+  await INV('A1 minus days: a sent one changed to -3 days by merge with rev 2: ALLOWED', mrg(db.builder, 'app_y1', { days: -3, rev: 3 }), true);
   /* 2.474.0 builder app (4c-2): budget line under More details. Only the id is stored; it is chosen before sending and kept after. */
   await INV('A1 app 4c-2: a new draft with a budget line id: ALLOWED', setDoc(coRef(db.builder, 'app_l1'), Object.assign({ data: { id: 'app_l1', status: 'draft', t: 1, title: 'Bigger window', amountC: 200000, kind: 'change', lineId: 'L2' }, updatedAt: 9, updatedBy: 'devB' }, stampNow(U.builder))), true);
   await INV('A1 app 4c-2: that draft sent by merge with its claim, line kept: ALLOWED', (async () => {
@@ -764,6 +776,14 @@ async function main() {
   await INV_RULE('coDays: homeowner DENIED writing it', setDoc(cdRef(db.client, 'cd_ok'), cdDoc(U.client)));
   await INV_RULE('coDays: a phone time instead of server time is DENIED', setDoc(cdRef(db.builder, 'cd_ok'), cdDoc(U.builder, { at: 1790000000000 })));
   await INV_RULE('coDays: crew DENIED deleting it', deleteDoc(cdRef(db.sub, 'cd_old')));
+  /* 2.505.0: minus days in the days-only record, still matched to the approved change order */
+  await INV('coDays minus: builder writes -3 days for an approved change order with -3 days', setDoc(cdRef(db.builder, 'cd_neg'), cdDoc(U.builder, { no: 82, days: -3 })), true);
+  await INV('coDays minus: crew reads the -3 days record', getDoc(cdRef(db.sub, 'cd_neg')), true);
+  await INV_RULE('coDays minus: -3 days against a change order with -2 days is DENIED', setDoc(cdRef(db.builder, 'cd_neg2'), cdDoc(U.builder, { no: 83, days: -3 })));
+  await INV_RULE('coDays minus: a 0 days record is DENIED even when the change order says 0', setDoc(cdRef(db.builder, 'cd_zero'), cdDoc(U.builder, { no: 84, days: 0 })));
+  await INV_RULE('coDays minus: -3 days for a change order still waiting on the homeowner is DENIED', setDoc(cdRef(db.builder, 'cd_negs'), cdDoc(U.builder, { no: 85, days: -3 })));
+  await INV_RULE('coDays minus: -366 days is DENIED', setDoc(cdRef(db.builder, 'cd_neg'), cdDoc(U.builder, { no: 82, days: -366 })));
+  await INV_RULE('coDays minus: crew DENIED writing -3 days', setDoc(cdRef(db.sub, 'cd_neg'), cdDoc(U.sub, { no: 82, days: -3 })));
   await INV('coDays: builder removes a record that no longer matches', deleteDoc(cdRef(db.builder, 'cd_old')), true);
   await INV_A1('A1 C-2: the homeowner cannot delete a change order', deleteDoc(coRef(db.client, 'a_draft')));
   /* C-5: paper signature */

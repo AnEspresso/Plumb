@@ -289,7 +289,7 @@ service cloud.firestore {
             && n.amountC is int && n.amountC > -1000000000 && n.amountC < 1000000000
             && ((n.kind == 'change' && n.amountC > 0) || (n.kind == 'credit' && n.amountC < 0))
             && (!n.keys().hasAny(['note']) || (n.note is string && n.note.size() <= 2000))
-            && (!n.keys().hasAny(['days']) || (n.days is int && n.days >= 0 && n.days <= 365));
+            && (!n.keys().hasAny(['days']) || (n.days is int && n.days >= -365 && n.days <= 365));   /* 2.505.0: minus days take days off (Peter 11/17) */
         }
         function coDraftKeys(n) {
           return n.keys().hasOnly(['id', 'title', 'note', 'amountC', 'kind', 'photoId', 'days', 'lineId', 'status', 't']);
@@ -357,7 +357,8 @@ service cloud.firestore {
         function coReadOk() {
           return moneyOk() || (sRole() == 'client' && rec().status in ['sent', 'approved', 'declined', 'withdrawn']);
         }
-        /* 2.501.0: coDays/<coId> is a days-only copy of an approved change order ({no, days}, never money) so
+        /* 2.505.0: days may be minus (a later change order takes days off); never 0, -365..365.
+           2.501.0: coDays/<coId> is a days-only copy of an approved change order ({no, days}, never money) so
            crews can see schedule days. Any member reads it; only a builder with money access writes it, and only to
            match the approved change order with the same id. */
         function coDaysWriteOk() {
@@ -365,7 +366,7 @@ service cloud.firestore {
           let c = get(/databases/$(database)/documents/sites/$(siteId)/co/$(recordId)).data.get('data', {});
           return recordColl == 'coDays' && moneyOk() && stampOk()
             && r.keys().hasOnly(['no', 'days', 'byUid', 'at', 'appV', 'tappedAt'])
-            && r.no is int && r.days is int && r.days > 0 && r.days <= 365
+            && r.no is int && r.days is int && r.days != 0 && r.days >= -365 && r.days <= 365
             && c.get('status', '') == 'approved' && c.get('no', 0) == r.no && c.get('days', 0) == r.days;
         }
         function coDeleteOk() {
