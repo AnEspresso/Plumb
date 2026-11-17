@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.502.0 - Find a street looks at every house';
+const PLUMB_VERSION='2.503.0 - Change orders open from Money';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795032000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.502.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795118400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.503.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9659,7 +9659,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
     try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>Object.assign({},(d.data()||{}).data||{},{id:d.id}));this.render();this.money();try{CODAYS.sync(sid);}catch(e){}},
       err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];this.render();});}catch(e){this._err[sid]='error';}},
   money(){clearTimeout(this._mt);this._mt=setTimeout(()=>{try{renderBuild();}catch(e){}try{renderSelections();}catch(e){}try{if(document.getElementById('invScrim').classList.contains('show')&&!document.activeElement.closest('#invScrim input'))renderInvoices();}catch(e){}},60);},
-  open(){if(!this.allowed()){toast('Change orders are not on yet');return;}this._edit=null;this._view=null;this.attach(P());this.render();},
+  open(){if(!this.allowed()){toast('Change orders are not on yet');return;}this._edit=null;this._view=null;this.attach(P());this.draw();},   /* 2.503.0: draw, not render; render only refreshes a list already on screen */
   render(){const sc=document.getElementById('infoScrim');if(this._edit||this._view||!sc||!sc.classList.contains('show')||!document.getElementById('coRoot'))return;this.draw();},
   draw(){const p=P();if(!p)return;const sid=String(p.id);
     if(this._edit){showInfo('Change order',this.formHTML(p),true);return;}
