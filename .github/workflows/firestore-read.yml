@@ -1,11 +1,14 @@
 name: Firestore read (read only)
-# Prints the fields of the Firestore docs or collections you list, so data can be
-# checked before a fix. It only reads: GET requests to the Firestore REST API,
-# nothing else. Emails and phone numbers are masked in the log.
-#   - Manual only (workflow_dispatch), and only runs once this file is on main.
+# Looks up Firestore docs or collections you list, so data can be checked
+# before a fix. It only reads: GET requests to the Firestore REST API,
+# nothing else. The log prints counts, document IDs, field names and value
+# types — never field values (no addresses, names, emails or phone numbers).
+#   - The live read is manual only (workflow_dispatch), and only runs once
+#     this file is on main.
 #   - Uses the GCP_READONLY_KEY_JSON repo secret (the agent-readonly service
 #     account, which needs roles/datastore.viewer). No other secret.
 #   - The guard step fails the run if the script mentions any write call.
+#   - A local test (no secrets, no network) runs on PRs and on the live read.
 on:
   workflow_dispatch:
     inputs:
@@ -13,12 +16,37 @@ on:
         description: 'Doc or collection paths, comma- or newline-separated (collections list up to 50 docs)'
         required: true
         type: string
+  pull_request:
+    paths:
+      - 'scripts/firestore-read.js'
+      - 'scripts/firestore-read.test.js'
+      - '.github/workflows/firestore-read.yml'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/firestore-read.js'
+      - 'scripts/firestore-read.test.js'
+      - '.github/workflows/firestore-read.yml'
+      - 'package.json'
 
 permissions:
   contents: read
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Log output is counts, IDs, field names and types only
+        run: npm run firestore-read
+
   read:
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

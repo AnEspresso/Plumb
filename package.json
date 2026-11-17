@@ -9,6 +9,7 @@
     "filecleanup": "node functions/fileCleanup.test.js",
     "papertrail": "node functions/paperTrail.test.js",
     "liverules": "node scripts/liveRules.test.js",
+    "firestore-read": "node scripts/firestore-read.test.js",
     "receipts": "node functions/receipts.test.js",
     "archive": "node functions/archiveSite.test.js",
     "moneyguard": "node scripts/moneyGuard.test.mjs",
