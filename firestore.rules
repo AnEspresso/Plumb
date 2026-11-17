@@ -259,7 +259,32 @@ service cloud.firestore {
             && (o.get('status', '') != 'void' || n.get('status', '') == 'void')
             && (n.get('status', '') != 'void' || o.get('status', '') == 'void'
                 || (n.get('voidReason', '') is string && n.get('voidReason', '').size() > 0))
-            && n.get('payments', []).size() >= o.get('payments', []).size();
+            && invPaymentsOk(n.get('payments', []), o.get('payments', []))
+            && invApprovalKept(n, o);
+        }
+        /* #4: a stale phone's whole-record write must not drop or change a payment, or undo the homeowner's OK.
+           Payments are add-only by position: every entry already there stays exactly as it is, except voiding it
+           once, with a reason (voidedAt, voidReason, voidedBy). New entries go on the end. Rules have no loops,
+           so the check is written out for the first 20 entries and a sent invoice holds at most 20 payments. */
+        function pmKept(np, op, i) {
+          return op.size() <= i
+            || np[i] == op[i]
+            || (op[i].get('voidedAt', null) == null
+                && np[i].diff(op[i]).affectedKeys().hasOnly(['voidedAt', 'voidReason', 'voidedBy'])
+                && np[i].get('voidedAt', null) != null
+                && np[i].get('voidReason', '') is string && np[i].get('voidReason', '').size() > 0);
+        }
+        function invPaymentsOk(np, op) {
+          return np is list && op is list && np.size() >= op.size() && np.size() <= 20
+            && pmKept(np, op, 0) && pmKept(np, op, 1) && pmKept(np, op, 2) && pmKept(np, op, 3) && pmKept(np, op, 4)
+            && pmKept(np, op, 5) && pmKept(np, op, 6) && pmKept(np, op, 7) && pmKept(np, op, 8) && pmKept(np, op, 9)
+            && pmKept(np, op, 10) && pmKept(np, op, 11) && pmKept(np, op, 12) && pmKept(np, op, 13) && pmKept(np, op, 14)
+            && pmKept(np, op, 15) && pmKept(np, op, 16) && pmKept(np, op, 17) && pmKept(np, op, 18) && pmKept(np, op, 19);
+        }
+        /* #4: once the homeowner approved, the OK stays: approvedAt never changes and the status never goes back to sent. */
+        function invApprovalKept(n, o) {
+          return (o.get('status', '') != 'approved' && o.get('approvedAt', null) == null)
+            || (n.get('approvedAt', null) == o.get('approvedAt', null) && n.get('status', '') != 'sent');
         }
         function invCreateOk() {
           return recordColl != 'inv' || recNew().get('status', 'draft') == 'draft' || invClaimOk(recNew());
