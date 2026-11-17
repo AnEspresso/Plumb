@@ -3980,15 +3980,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.507.0 - Home summary counts waiting change orders and invoices';
+const PLUMB_VERSION='2.508.0 - Fall back from a denied org and stop retrying the push';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795464000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.507.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795550400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.508.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -10939,26 +10939,79 @@ function openNotifyCenter(){
    teammates discover it through the sites they already sync. Prefs are
    last-write-wins; invites merge by code so devices never clobber codes. ── */
 const Org={
-  _unsub:null,_timer:null,_tries:0,
+  _unsub:null,_timer:null,_tries:0,_pushDenied:false,_cache:{},
   id(){try{const v=localStorage.getItem('plumb.orgId');if(v)return v;}catch(e){}
     for(const p of (state.projects||[])){if(p.org)return p.org;}return null;},
   _at(){try{return +(localStorage.getItem('plumb.orgAt')||0);}catch(e){return 0;}},
   _setAt(t){try{localStorage.setItem('plumb.orgAt',String(t));}catch(e){}},
-  touch(){this._setAt(Date.now());this.schedule();},
+  _uid(){try{return (state.session&&state.session.auth&&state.session.auth.uid)||Sync.uid||'';}catch(e){return '';}},
   _isBuilder(){const sx=state.session||{};return appMode()==='real'&&sx.role==='builder'&&Sync.ready();},
+  _isDenied(e){return !!(e&&(e.code==='permission-denied'||/insufficient permissions|permission-denied/i.test(String((e&&e.message)||e))));},
+  _builderOn(d,uid){return !!(uid&&d&&d.members&&d.members[uid]==='builder');},
+  _canWrite(rec,uid){
+    if(!rec||rec.denied||!rec.ok)return false;
+    if(!rec.exists||!rec.data)return true;
+    return this._builderOn(rec.data,uid);
+  },
+  async _get(id){
+    if(!id)return {ok:false,exists:false,data:null,denied:false};
+    if(this._cache[id])return this._cache[id];
+    try{
+      const snap=await Sync.db.collection('orgs').doc(id).get();
+      const exists=!!(snap&&snap.exists);
+      const rec={ok:true,exists,data:(exists&&snap.data&&snap.data())||null,denied:false};
+      this._cache[id]=rec;return rec;
+    }catch(e){
+      const rec={ok:false,exists:false,data:null,denied:this._isDenied(e)};
+      this._cache[id]=rec;return rec;
+    }
+  },
+  _houseOrgs(){
+    const n={},order=[];
+    (state.projects||[]).forEach(function(p){const id=p.org;if(!id)return;if(!n[id]){n[id]=0;order.push(id);}n[id]++;});
+    return order.slice().sort(function(a,b){return (n[b]-n[a])||(a<b?-1:a>b?1:0);});
+  },
+  async _pickId(){
+    const uid=this._uid();
+    let stored='';try{stored=localStorage.getItem('plumb.orgId')||'';}catch(e){}
+    if(stored){
+      const rec=await this._get(stored);
+      if(this._canWrite(rec,uid))return stored;
+      if(rec.ok===false&&!rec.denied)return stored;
+    }
+    const ids=this._houseOrgs();
+    for(let i=0;i<ids.length;i++){
+      const rec=await this._get(ids[i]);
+      if(this._canWrite(rec,uid))return ids[i];
+    }
+    if(this._isBuilder()&&(state.projects||[]).length){
+      if(stored){
+        const rec=await this._get(stored);
+        if(this._canWrite(rec,uid)||(rec.ok===false&&!rec.denied))return stored;
+      }
+      return 'org_'+Math.random().toString(36).slice(2,10);
+    }
+    return stored||null;
+  },
+  _saveId(id){try{if(id)localStorage.setItem('plumb.orgId',id);}catch(e){}},
+  touch(){this._setAt(Date.now());this.schedule();},
   init(){
     if(appMode()!=='real'||!Sync.ready())return;
-    this._tries=0;this._boot();},
-  _boot(){
-    let id=this.id();
+    this._tries=0;this._pushDenied=false;this._cache={};
+    if(this._unsub){try{this._unsub();}catch(e){}this._unsub=null;}
+    if(this._timer){clearTimeout(this._timer);this._timer=null;}
+    return this._boot();
+  },
+  async _boot(){
+    let id=await this._pickId();
     if(!id){
       if(this._isBuilder()&&(state.projects||[]).length){id='org_'+Math.random().toString(36).slice(2,10);}
       else{if(this._tries++<10)setTimeout(()=>this._boot(),4000);return;}   // teammates wait to discover via sites
     }
-    try{localStorage.setItem('plumb.orgId',id);}catch(e){}
+    this._saveId(id);
     let stamped=false;(state.projects||[]).forEach(p=>{if(!p.org){p.org=id;stamped=true;}});
     if(stamped){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}
-    this._adopt(id);
+    await this._adopt(id);
   },
   _absorb(d){
     if(!d)return;
@@ -10978,21 +11031,18 @@ const Org={
     }
     return (localAt>(d.updatedAt||0))?'local':'even';},
   async _adopt(id){
-    // read-before-push: never clobber company truth with an empty newcomer state
-    try{const snap=await Sync.db.collection('orgs').doc(id).get();
-      const d=(snap&&snap.exists&&snap.data())||null;
+    /* A missing org doc is readable (rules allow get when it does not exist).
+       Permission-denied means the doc exists and this user is not a member.
+       Do not create or overwrite that id — fall back, or mint a new one. */
+    try{
+      const rec=await this._get(id);
+      if(rec.denied)return;
+      const d=rec.data;
       const verdict=this._absorb(d);
       this._listen(id);
-      if(!d||verdict==='local'){if(this._isBuilder())this.schedule();}
-    }catch(e){
-      /* A missing org is refused as permission-denied (rules read members on
-         a doc that is not there yet). A builder who already holds the jobs
-         creates the company record. Then listen. */
-      if(this._isBuilder()){
-        try{await this.push();}catch(err){console.warn('[SitePlumb] org create',err);return;}
-        this._listen(id);
-      }
-    }},
+      if((!rec.exists||!d||verdict==='local')&&this._isBuilder())this.schedule();
+    }catch(e){if(this._isDenied(e))return;}
+  },
   _listen(id){
     if(this._unsub)return;
     try{
@@ -11003,14 +11053,24 @@ const Org={
       },err=>{console.warn('[SitePlumb] org',err);this._unsub=null;});
       Sync.unsub.push(this._unsub);
     }catch(e){}},
-  schedule(){if(this._timer)return;this._timer=setTimeout(()=>{this._timer=null;this.push();},700);},
+  schedule(){if(this._pushDenied||this._timer)return;this._timer=setTimeout(()=>{this._timer=null;this.push();},700);},
   async push(){
-    if(!this._isBuilder())return;
+    if(!this._isBuilder()||this._pushDenied)return;
     const id=this.id();if(!id)return;
+    const rec=await this._get(id);
+    if(!this._canWrite(rec,this._uid()))return;
     const members={};(state.projects||[]).forEach(p=>{Object.keys(p.members||{}).forEach(uid=>{if(p.members[uid]==='builder')members[uid]='builder';});});
-    const me=(state.session&&state.session.auth&&state.session.auth.uid)||Sync.uid;if(me)members[me]='builder';
-    try{await Sync.db.collection('orgs').doc(id).set({id,prefs:orgPrefs(),teamInvites:laTeamInvites(),members,updatedAt:this._at()||Date.now(),updatedBy:Sync.deviceId});}
-    catch(e){console.warn('[SitePlumb] org push',e);}}
+    const me=this._uid();if(me)members[me]='builder';
+    try{
+      const payload={id,prefs:orgPrefs(),teamInvites:laTeamInvites(),members,updatedAt:this._at()||Date.now(),updatedBy:Sync.deviceId};
+      await Sync.db.collection('orgs').doc(id).set(payload);
+      this._cache[id]={ok:true,exists:true,data:payload,denied:false};
+    }catch(e){
+      this._pushDenied=true;
+      if(this._timer){clearTimeout(this._timer);this._timer=null;}
+      console.warn('[SitePlumb] org push',e);
+    }
+  }
 };
 function stripForSync(p){try{const c=JSON.parse(JSON.stringify(p));return c;}catch(e){return p;}}
 /* ── Granular sync: split a project into a low-churn meta doc + per-record collections.

@@ -1701,7 +1701,7 @@ t('the packet link sits after the review', $("!!document.getElementById('bkSendL
 t('a sent packet updates live', $("String(persist)").indexOf('pkPublishSoon')>=0&&$("String(pkPublishOne)").indexOf("update(")>=0&&$("String(pkPublishOne)").indexOf('resp')<0&&$("String(_gpListen)").indexOf('onSnapshot')>=0);
 t('packet updates say what changed', $("typeof pkDiffWhat")==='function'&&$("String(_gpRender)").indexOf('gp-updated')>=0&&$("String(pkPublishOne)").indexOf('lastChange')>=0&&$("typeof pkOfferTellThem")==='function');
 t('double-booked names the dates', $("typeof _dblWhere")==='function'&&$("String(_bkBriefHTML)").indexOf('_dblWhere')>=0&&$("String(_bkBriefHTML)").indexOf('See their calendar')>=0&&$("typeof openCalCrew")==='function'&&$("String(calVisibleBookings)").indexOf('calCrewFilter')>=0);
-t('builder creates the company record if the first read is refused', $("String(Org._adopt)").indexOf('org create')>=0&&$("String(Org._adopt)").indexOf('this.push')>=0);
+t('2.508.0: a refused org get does not create that org; a missing doc is readable', $("String(Org._adopt)").indexOf('A missing org is refused')<0&&$("String(Org._adopt)").indexOf('rules allow get when it does not exist')>=0&&$("String(Org.push)").indexOf('_canWrite')>=0&&$("String(Org._pickId)").indexOf('_houseOrgs')>=0);
 t('QA logins can open the workbench', $("typeof devQa")==='function'&&$("String(devAllowed)").indexOf('devQa')>=0&&$("String(devQa)").indexOf('pmgottschalkqa')>=0);
 t('a packet reply notifies the builder', $("String(_pkStamp)").indexOf('Notify.push')>=0&&$("String(_pkStamp)").indexOf('asked')>=0);
 t('Open items is not a second inbox', $("String(renderOvSortRow)").indexOf('openOpenItems')<0);
@@ -5345,6 +5345,69 @@ await (async function(){
   t('2.495.0: Sync._pushOne heals a pre-2.495 sent invoice whose server items lacked amountC on permission-denied',
     A2HEAL&&A2HEAL.tries===2&&A2HEAL.firstHas===true&&A2HEAL.secondHas===false&&A2HEAL.adjHas===-1000,JSON.stringify(A2HEAL));
   $2(COEND);
+
+  /* 2.508.0: a stored org the builder can't write falls back to a house org they can; denied pushes are not retried */
+  $2(`(function(){
+    window.__orgSaved={db:Sync.db,on:Sync.on,mode:Sync.mode,uid:Sync.uid,dev:Sync.deviceId,sess:state.session,proj:state.projects,warn:console.warn,
+      modeLs:localStorage.getItem('plumb.mode'),oid:localStorage.getItem('plumb.orgId'),oat:localStorage.getItem('plumb.orgAt'),
+      unsub:Org._unsub,timer:Org._timer,tries:Org._tries,denied:Org._pushDenied,cache:Org._cache};
+    return true;})()`);
+  const ORGRUN=`(async function(opts){
+    var XB='xB21QZOigOQqfXt5RdtWnxH8x5i1',HT='HTJjJ1CzR6dlMWavDrVqnEE9yax1';
+    var gets=[],sets=[],warns=[],store=opts.store||{},denySet=!!opts.denySet;
+    function denied(){var e=new Error('Missing or insufficient permissions');e.code='permission-denied';return e;}
+    var db={collection:function(c){return {doc:function(id){return {
+      get:function(){gets.push(c+'/'+id);if(c!=='orgs')return Promise.resolve({exists:false,data:function(){return null;}});
+        var v=store[id];if(v==='denied')return Promise.reject(denied());
+        if(!v)return Promise.resolve({exists:false,data:function(){return null;}});
+        return Promise.resolve({exists:true,data:function(){return JSON.parse(JSON.stringify(v));}});},
+      set:function(data){sets.push({id:id,data:data});if(denySet||store[id]==='denied')return Promise.reject(denied());
+        store[id]=JSON.parse(JSON.stringify(data));return Promise.resolve();},
+      onSnapshot:function(ok,err){var v=store[id];if(v==='denied'){if(err)err(denied());return function(){};}
+        if(ok&&v)ok({exists:true,data:function(){return JSON.parse(JSON.stringify(v));}});return function(){};}
+        };
+      }};
+    }};
+    Org._unsub=null;if(Org._timer){clearTimeout(Org._timer);Org._timer=null;}
+    console.warn=function(){warns.push(Array.prototype.slice.call(arguments).map(String).join(' '));};
+    localStorage.setItem('plumb.mode','real');
+    if(opts.oid===null||opts.oid==='')localStorage.removeItem('plumb.orgId');
+    else localStorage.setItem('plumb.orgId',opts.oid);
+    Sync.on=true;Sync.mode='live';Sync.db=db;Sync.uid=XB;Sync.deviceId='devQA';Sync.unsub=Sync.unsub||[];
+    state.session={role:'builder',name:'Builder',auth:{uid:XB}};
+    state.projects=opts.houses;
+    var boot=Org.init();if(boot&&boot.then)await boot;
+    if(opts.after)await opts.after();
+    if(Org._timer){clearTimeout(Org._timer);Org._timer=null;}
+    return {id:localStorage.getItem('plumb.orgId'),gets:gets.slice(),sets:sets.map(function(s){return s.id;}),warns:warns.slice(),denied:!!Org._pushDenied,getsN:gets.length};
+  })`;
+  const HOUSES=`[{id:'h1',org:'org_n2whnbxc',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}},{id:'h2',org:'org_n2whnbxc',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}},{id:'h3',org:'org_oj3y8gcy',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}}]`;
+  const STORE_OK=`{org_z7n4fide:'denied',org_n2whnbxc:{id:'org_n2whnbxc',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder','HTJjJ1CzR6dlMWavDrVqnEE9yax1':'builder'}},org_oj3y8gcy:{id:'org_oj3y8gcy',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder','HTJjJ1CzR6dlMWavDrVqnEE9yax1':'builder'}}}`;
+  const OG1=await $2(`(async function(){return JSON.stringify(await `+ORGRUN+`({oid:'org_z7n4fide',houses:`+HOUSES+`,store:`+STORE_OK+`}));})()`);
+  const O1=JSON.parse(OG1);
+  t('2.508.0: a stored denied org falls back to the majority house org the builder can write, and never pushes the denied id',O1.id==='org_n2whnbxc'&&O1.sets.indexOf('org_z7n4fide')<0&&!O1.warns.some(function(w){return /org push/.test(w);})&&O1.gets.filter(function(g){return g==='orgs/org_z7n4fide';}).length===1,JSON.stringify(O1));
+  const OG2=await $2(`(async function(){
+    var r=await `+ORGRUN+`({oid:'org_n2whnbxc',houses:`+HOUSES+`,store:`+STORE_OK+`,denySet:true,after:async function(){await new Promise(function(ok){setTimeout(ok,850);});await Org.push();await Org.push();Org.schedule();await new Promise(function(ok){setTimeout(ok,50);});}});
+    return JSON.stringify(r);
+  })()`);
+  const O2=JSON.parse(OG2);
+  t('2.508.0: a denied org push is attempted once, then not retried',O2.sets.length===1&&O2.sets[0]==='org_n2whnbxc'&&O2.denied===true&&O2.warns.filter(function(w){return /org push/.test(w);}).length===1,JSON.stringify(O2));
+  const OG3=await $2(`(async function(){
+    var houses=[{id:'h1',org:'org_n2whnbxc',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}},{id:'h2',org:'org_oj3y8gcy',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}},{id:'h3',org:'org_oj3y8gcy',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}},{id:'h4',org:'org_oj3y8gcy',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}}];
+    return JSON.stringify(await `+ORGRUN+`({oid:'org_n2whnbxc',houses:houses,store:`+STORE_OK+`}));
+  })()`);
+  const O3=JSON.parse(OG3);
+  t('2.508.0: a valid stored org is kept even when another house org is the majority',O3.id==='org_n2whnbxc',JSON.stringify(O3));
+  const OG4=await $2(`(async function(){return JSON.stringify(await `+ORGRUN+`({oid:'',houses:`+HOUSES+`,store:`+STORE_OK+`}));})()`);
+  const O4=JSON.parse(OG4);
+  t('2.508.0: an empty stored org takes the first qualifying house org (majority, then id)',O4.id==='org_n2whnbxc',JSON.stringify(O4));
+  $2(`(function(){var o=window.__orgSaved;if(!o)return true;
+    Sync.db=o.db;Sync.on=o.on;Sync.mode=o.mode;Sync.uid=o.uid;Sync.deviceId=o.dev;state.session=o.sess;state.projects=o.proj;console.warn=o.warn;
+    if(o.modeLs==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',o.modeLs);
+    if(o.oid==null)localStorage.removeItem('plumb.orgId');else localStorage.setItem('plumb.orgId',o.oid);
+    if(o.oat==null)localStorage.removeItem('plumb.orgAt');else localStorage.setItem('plumb.orgAt',o.oat);
+    Org._unsub=o.unsub;Org._timer=o.timer;Org._tries=o.tries;Org._pushDenied=o.denied;Org._cache=o.cache||{};
+    delete window.__orgSaved;return true;})()`);
 
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
