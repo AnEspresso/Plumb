@@ -8295,7 +8295,7 @@ function crewSlotClash(site,uid,inv,code,member){
   return null;}
 /* placeholder, Agency to word */
 function crewOtherSlotMsg(mine,theirs){
-  return 'This login is already on this house as '+(mine||'another crew')+'. This code is for '+(theirs||'a different crew')+'. Ask your builder for your own code, or sign in with a different email to join as '+(theirs||'that crew')+'.';}
+  return 'You\'re already on this house as '+(mine||'another crew')+'. This code is for '+(theirs||'a different crew')+'. To join as '+(theirs||'that crew')+', sign in with a different email.';}
 async function redeemInvite(code,prof,err){
   err=err||laErr;
   code=(code||'').trim().toUpperCase();if(!code)return null;
