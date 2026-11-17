@@ -5009,6 +5009,26 @@ await (async function(){
   t('2.504.0: a homeowner who opens Schedule from Home sees "+3 days from change order 001" for an approved change order',HOC.indexOf('+3 days from change order 001')>=0,HOC.slice(0,300));
   t('2.504.0: the homeowner Schedule shows nothing for a sent or withdrawn change order',HOC.indexOf('change order 002')<0&&HOC.indexOf('change order 003')<0&&HOC.indexOf('+5 days')<0&&HOC.indexOf('+7 days')<0,HOC.slice(0,300));
   $2(`(function(){var X=__co;document.getElementById('calview').classList.remove('show');calSiteFilter='all';['h_ap','h_se','h_wd'].forEach(function(i){delete X.store[X.pre+'co/'+i];});Object.keys(X.hoSave).forEach(function(k){X.store[k]=X.hoSave[k];});delete X.hoSave;COH._unsub={};COH._rows={};COH._err={};X.fire();return true;})()`);await sleep(20);
+  /* 2.506.0: a change order waiting on the homeowner shows on Home and on the folded money card, without opening it first */
+  $2(`(function(){var X=__co;X.pwSave={};Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0){X.pwSave[k]=X.store[k];delete X.store[k];}});
+    X.store[X.pre+'co/p_s']={data:{id:'p_s',title:'Wider pantry',amountC:120000,kind:'change',status:'sent',no:7,rev:1,verifiedRev:1,verifiedTotal:120000},byUid:'uB',at:'__TS__',appV:'x'};
+    X.store[X.pre+'co/p_a']={data:{id:'p_a',title:'Porch light',amountC:9000,kind:'change',status:'approved',no:6,rev:1},byUid:'uH',at:'__TS__',appV:'x'};
+    X.store[X.pre+'co/p_w']={data:{id:'p_w',title:'Skylight',amountC:30000,kind:'change',status:'withdrawn',no:8,rev:1},byUid:'uB',at:'__TS__',appV:'x'};
+    X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};COH._err={};COH._open=null;
+    _clientMoneyOpen=false;clientTab='home';renderClient();return true;})()`);
+  await sleep(40);$2("renderClient();true");
+  const PW0=J("document.getElementById('clBody').innerHTML");
+  t('2.506.0: Home lists the waiting change order under Still open with "Needs your OK" (Selections never opened)',PW0.indexOf('CO-007 \u00b7 Wider pantry')>=0&&PW0.indexOf("COH.openDetail('p_s')")>=0&&PW0.indexOf('Needs your OK')>=0,PW0.slice(0,600));
+  t('2.506.0: Home does not list approved or withdrawn change orders',PW0.indexOf('Porch light')<0&&PW0.indexOf('Skylight')<0);
+  $2("clientGo('specs');true");
+  const PW1=J("document.getElementById('clBody').innerHTML");
+  t('2.506.0: Upgrades & payments folded shows the waiting change order (and only that one)',PW1.indexOf('CO-007 \u00b7 Wider pantry')>=0&&PW1.indexOf('Porch light')<0&&PW1.indexOf('Skylight')<0,PW1.slice(-800));
+  $2("openClientMoney();true");
+  const PW2=J("document.getElementById('clBody').innerHTML");
+  t('2.506.0: the open money card is unchanged: waiting once, approved, and closed folded',(PW2.split('CO-007 \u00b7 Wider pantry').length-1)===1&&PW2.indexOf('CO-006 \u00b7 Porch light')>=0&&PW2.indexOf('Closed (1)')>=0,PW2.slice(-900));
+  $2("COH.openDetail('p_s');true");
+  t('2.506.0: tapping it opens the change order with Approve and sign',J("document.getElementById('infoScrim').innerHTML").indexOf("COH.approve('p_s')")>=0&&J("document.getElementById('infoScrim').textContent").indexOf('Approve and sign')>=0);
+  $2(`(function(){var X=__co;COH._open=null;closeInfo();_clientMoneyOpen=false;clientTab='home';Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0)delete X.store[k];});Object.keys(X.pwSave).forEach(function(k){X.store[k]=X.pwSave[k];});delete X.pwSave;COH._unsub={};COH._rows={};COH._err={};X.fire();return true;})()`);await sleep(20);
   $2(`(function(){var X=__co;X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};return true;})()`);
   t('2.497.0: a builder can still print a change order waiting on the homeowner',J("CO.printOpen(P(),CO.row(String(P().id),'d_c'))")===true&&J("document.getElementById('invPrintView').textContent").indexOf('Extra bath')>=0);$2("closePrintPreview();true");
   /* ---------- 3c-2: money history screens (M-9), read-only ---------- */
