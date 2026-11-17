@@ -5960,8 +5960,8 @@ function savePersonGates(){
 }
 /* #1 (2.509.0): a live house the server confirms this account owns (a builder with
    no roster entry, or one marked owner): the same test as the rules' isOwner(). */
-const TEAM_INV_OWNER_ONLY='Only the owner can invite a teammate.';   /* placeholder until Agency words it */
-const INV_MONEY_ONLY='Ask the owner to send this invite.';            /* placeholder until Agency words it */
+const TEAM_INV_OWNER_ONLY='Only the owner can invite teammates.';   /* Agency 11/17 */
+const INV_MONEY_ONLY='Only the owner can send this invite. Ask them to send it.';   /* Agency 11/17 */
 function ownsHouse(p,uid){if(!p||p.sample||!uid)return false;
   if(!(p.members&&p.members[uid]==='builder'))return false;
   const mi=p.memberInfo||{};if(!Object.prototype.hasOwnProperty.call(mi,uid))return true;
