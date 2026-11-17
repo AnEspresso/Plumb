@@ -1521,7 +1521,7 @@ t('the crew bookings listener uses crewBkName', SRC.split('_attachColls(sid){')[
 t('saving one house does not upload the book', SRC.split('function queueSync')[1].slice(0,1200).indexOf('_syncDirty')>=0&&SRC.split('function queueSync')[1].slice(0,1200).indexOf('_pushOne')>=0);
 t('homeowner hat survives sign out', SRC.indexOf('function laSaveHat')>=0&&SRC.indexOf("localStorage.getItem('plumb.hats')")>=0&&SRC.split('function liveSignOut')[1].slice(0,700).indexOf('plumb.hats')<0);
 t('joined invites are stamped back onto the house', SRC.indexOf('function backfillJoinedInvites')>=0&&SRC.split('function backfillMemberships')[1].slice(0,500).indexOf('backfillJoinedInvites')>=0);
-t('a homeowner write does not stamp them builder', SRC.split('async _pushOne')[1].slice(0,2600).indexOf("sessRole==='builder'&&!mem[myUid]")>=0);
+t('a homeowner write does not stamp them builder', SRC.split('async _pushOne')[1].slice(0,4200).indexOf("sessRole==='builder'&&!mem[myUid]")>=0);   /* 2.510.0: window widened for the per-save refusal guard */
 t('homeowner listens stay homeowner', SRC.split('function siteRoleFor')[1].slice(0,400).indexOf("if(r==='client')return 'client'")>=0);
 t('homeowner settings hide company', SRC.split('function renderSettings')[1].slice(0,500).indexOf("hat!=='client'")>=0);
 t('selections keep the house', SRC.indexOf('let _clientHold=null')>=0&&SRC.indexOf('function clientRetryHouse')>=0);
@@ -4182,13 +4182,15 @@ await (async function(){
       where:function(){return {onSnapshot:function(o,h){return listen('sites',null,null,o,h);}};},
       doc:function(sid){return {
         get:function(){return Promise.resolve(ds(sid,F.site(sid).doc));},
-        set:function(d,o){log('set','sites/'+sid,d,o);var s=F.site(sid);var t=s.doc?'modified':'added';var nd=(o&&o.merge&&s.doc)?merge(cl(s.doc),d):strip(d);
+        set:function(d,o){log('set','sites/'+sid,d,o);var rf=F.refuse&&F.refuse('sites/'+sid,d);if(rf){F.writes[F.writes.length-1].refused=true;return Promise.reject({code:rf,message:'refused by the fake'});}var s=F.site(sid);var t=s.doc?'modified':'added';var nd=(o&&o.merge&&s.doc)?merge(cl(s.doc),d):strip(d);
           /* F.r2: R2 (live since 10/7) refuses a house write that leaves a non-empty meta.invoices */
           if(F.r2&&s.doc&&nd.meta&&Array.isArray(nd.meta.invoices)&&nd.meta.invoices.length){F.writes[F.writes.length-1].refused=true;return Promise.reject({code:'permission-denied',message:'R2: meta.invoices'});}
           s.doc=nd;fire('sites',t,sid,s.doc);return Promise.resolve();},
         collection:function(sub){var C={where:function(){return C;},onSnapshot:function(o,h){return listen(sid+'/'+sub,sid,sub,o,h);},
           doc:function(id){return {
-            set:function(d,o){if(F.undefCheck&&hasUndef(d)){F.undefHits=(F.undefHits||0)+1;throw new Error('Unsupported field value: undefined (found in field data in document '+sid+'/'+sub+'/'+id+')');}log('set',sid+'/'+sub+'/'+id,d,o);var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
+            set:function(d,o){if(F.undefCheck&&hasUndef(d)){F.undefHits=(F.undefHits||0)+1;throw new Error('Unsupported field value: undefined (found in field data in document '+sid+'/'+sub+'/'+id+')');}log('set',sid+'/'+sub+'/'+id,d,o);
+              /* F.refuse(path,data) -> an error code: the server refuses this one write (2.510.0, #3) */
+              var rf=F.refuse&&F.refuse(sid+'/'+sub+'/'+id,d);if(rf){F.writes[F.writes.length-1].refused=true;return Promise.reject({code:rf,message:'refused by the fake'});}var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
             delete:function(){log('del',sid+'/'+sub+'/'+id);var c=F.site(sid).colls[sub]||{};var had=!!c[id];delete c[id];if(had)fire(sid+'/'+sub,'removed',id,null);return Promise.resolve();}};}};return C;}};}};}};
     /* a fresh phone: new device, no shadow, no houses */
     F.phone=function(uid,sess,dev){F.L.forEach(function(l){l.dead=true;});F.L=[];F.writes=[];F.uid=uid;
@@ -4399,6 +4401,58 @@ await (async function(){
   t('conversion report on the demo houses: zero amounts changed (every seeded amount was already a whole cent)',J("_moneyConv.length")===0,J("moneyConvText()"));
   const TOAST_ON="window._simToasts=[];window._simOT=window.toast;window.toast=function(m){window._simToasts.push(m);};true";
   const TOAST_OFF="(function(){var r=JSON.stringify(window._simToasts);window.toast=window._simOT;return r;})()";
+  /* ════ 2.510.0 · #3: a refused save stops only itself, says Not saved, and the rest of the house keeps saving ════ */
+  {
+    const RF_SAVE="(function(){window.__rfMode=localStorage.getItem('plumb.mode');localStorage.setItem('plumb.mode','real');return true;})()";
+    const RF_REST="(function(){if(window.__rfMode==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',window.__rfMode);__F.refuse=null;return true;})()";
+    const pill=()=>$2("(function(){setSync('synced');var el=document.querySelector('.syncpill');return el?el.textContent:'(no pill)';})()");
+    const rfItem=(id,text)=>`(function(){var p=state.projects.find(function(x){return x.id==='pdel';});var it=p.items.find(function(x){return String(x.id)==='${id}';});if(it)it.text='${text}';else p.items.push({id:'${id}',text:'${text}',t:1791000000000});return true;})()`;
+    const push=async()=>{await $2("Sync._pushOne(state.projects.find(function(x){return x.id==='pdel';})).then(function(){return 'ok';},function(e){return 'threw '+(e&&e.code);})");await settle();};
+    const wr=path=>J(`__F.writes.filter(function(w){return w.path===${JSON.stringify(path)};}).length`);
+    const onSrv=id=>J(`!!((__F.srv.pdel.colls.items||{})['${id}'])`);
+    $2(RF_SAVE);$2("__F.writes=[];__F.refuse=function(path){return path==='pdel/items/rf_bad'?'permission-denied':null;};true");
+    $2(TOAST_ON);
+    $2(rfItem('rf_bad','refused note'));$2(rfItem('rf_ok1','first note'));await push();
+    let ts=JSON.parse($2(TOAST_OFF));
+    t('2.510.0 #3: a refused save does not stop the next one on the same house',onSrv('rf_ok1')&&!onSrv('rf_bad'),JSON.stringify(J("__F.writes.map(function(w){return w.path+(w.refused?' (refused)':'');})")));
+    t('2.510.0 #3: the refused save is set aside and counted',J("Sync.refusedCount('pdel')")===1&&J("Sync.refusedCount()")===1);
+    t('2.510.0 #3: the refusal says Not saved once (toast) and is logged as a rules refusal',ts.filter(m=>m===J('NOT_SAVED_TOAST')).length===1&&J("(function(){var a=JSON.parse(localStorage.getItem('plumb.errors')||'[]');return a.some(function(x){return x.k==='rules'&&x.w==='Sync._pushOne';});})()"),JSON.stringify(ts));
+    t('2.510.0 #3: the pill says Not saved, not Saved · live, while the refusal is outstanding',pill()===J('NOT_SAVED_PILL'),pill());
+    $2(TOAST_ON);$2(rfItem('rf_ok2','later note'));await push();ts=JSON.parse($2(TOAST_OFF));
+    t('2.510.0 #3: later saves keep going; the refused one is not resent unchanged and no second toast',onSrv('rf_ok2')&&wr('pdel/items/rf_bad')===1&&ts.indexOf(J('NOT_SAVED_TOAST'))<0,wr('pdel/items/rf_bad')+' '+JSON.stringify(ts));
+    t('2.510.0 #3: still Not saved after the later save landed',pill()===J('NOT_SAVED_PILL'),pill());
+    $2(rfItem('rf_bad','refused note, edited'));await push();
+    t('2.510.0 #3: an edit to the refused record is tried again (and refused again, still marked)',wr('pdel/items/rf_bad')===2&&J("Sync.refusedCount('pdel')")===1);
+    $2("__F.refuse=null;true");$2(rfItem('rf_bad','allowed now'));await push();
+    t('2.510.0 #3: once it saves, the mark clears and the pill says Saved · live again',onSrv('rf_bad')&&J("Sync.refusedCount()")===0&&pill()==='Saved \u00b7 live',pill());
+    $2("__F.refuse=function(path){return path==='pdel/items/rf_gone'?'permission-denied':null;};true");$2(rfItem('rf_gone','will be undone'));await push();
+    const was=J("Sync.refusedCount('pdel')");
+    $2("(function(){var p=state.projects.find(function(x){return x.id==='pdel';});p.items=p.items.filter(function(x){return String(x.id)!=='rf_gone';});return true;})()");await push();
+    t('2.510.0 #3: undoing the refused change here clears the mark',was===1&&J("Sync.refusedCount()")===0&&pill()==='Saved \u00b7 live',was+' '+pill());
+    $2("__F.refuse=function(path){return path==='pdel/items/rf_net'?'unavailable':null;};true");$2(rfItem('rf_net','no signal'));$2(rfItem('rf_ok3','still goes'));
+    const thr=await $2("Sync._pushOne(state.projects.find(function(x){return x.id==='pdel';})).then(function(){return 'ok';},function(e){return 'threw '+(e&&e.code);})");await settle();
+    t('2.510.0 #3: a save that fails for no-signal is not marked refused, the others still go, and the push reports it',thr==='threw unavailable'&&onSrv('rf_ok3')&&J("Sync.refusedCount()")===0,thr);
+    $2("__F.refuse=null;true");await push();
+    t('2.510.0 #3: ... and it goes on the next push',onSrv('rf_net'));
+    $2("(function(){Sync._refused['pdel|set|items|rf_x']={sid:'pdel',kind:'set',sub:'items',id:'rf_x',h:'h',code:'permission-denied',at:1};return true;})()");
+    t('2.510.0 #3: a reconnect tries each refused save once more',J("(function(){var u=Sync.unsub;Sync.subscribe();return Sync._refused['pdel|set|items|rf_x'].retry===true;})()"));
+    await settle();$2("Sync._refused={};true");
+    /* the removal toast says what happened */
+    $2("(function(){var p=state.projects.find(function(x){return x.id==='pdel';});p.members=Object.assign({},p.members,{uRm:'builder'});p.memberInfo=Object.assign({},p.memberInfo,{uRm:{name:'Rae'}});return true;})()");await push();
+    t('2.510.0 #3 setup: the teammate is on the house on the server',J("(function(){var d=__F.srv.pdel.doc;return d.members.uRm==='builder'&&d.memberUids.indexOf('uRm')>=0&&!!((d.meta||{}).memberInfo||{}).uRm;})()"));
+    $2("(function(){__F.refuse=function(path){return path==='sites/pdel'?'permission-denied':null;};var p=state.projects.find(function(x){return x.id==='pdel';});delete p.members.uRm;delete p.memberInfo.uRm;return true;})()");
+    const SR=JSON.parse(await $2("Sync.settleHouses(['pdel']).then(function(r){return JSON.stringify(r);})"));
+    t('2.510.0 #3: a refused removal is reported as refused (no "removed from all houses")',SR.refused===1&&SR.pending===0,JSON.stringify(SR));
+    $2("__F.refuse=null;true");
+    const SO=JSON.parse(await $2("Sync.settleHouses(['pdel']).then(function(r){return JSON.stringify(r);})"));await settle();
+    t('2.510.0 #3: an accepted removal is reported as done, and the person is gone from members, memberUids, meta.members and meta.memberInfo on the server',SO.refused===0&&SO.pending===0&&J("(function(){var d=__F.srv.pdel.doc;return !('uRm' in (d.members||{}))&&(d.memberUids||[]).indexOf('uRm')<0&&!('uRm' in ((d.meta||{}).members||{}))&&!('uRm' in ((d.meta||{}).memberInfo||{}));})()")&&J("Sync.refusedCount()")===0,JSON.stringify(SO));
+    t('2.510.0 #3: removeTeamMember is owner-only and only claims "removed from all houses" after every house took it',
+      $2("String(removeTeamMember)").indexOf('if(!isOrgOwner()){toast(TEAM_REMOVE_OWNER_ONLY);return;}')>=0&&$2("String(removeTeamMember)").indexOf('res.refused?TEAM_REMOVE_REFUSED:res.pending?TEAM_REMOVE_PENDING:')>=0&&$2("String(removeTeamMember)").indexOf('Sync.pushAll')<0);
+    t('2.510.0 #3: the remove-teammate button shows only to the owner',$2("String(__renderPeople)").indexOf("(!mine&&!owner&&isOrgOwner())?")>=0);
+    const NS=J("(function(){var ss=state.session;state.session={role:'builder',name:'Pat',member:true,rpRole:'pm',auth:{uid:'uP'}};var c=0;var ot=window.toast;window.toast=function(m){if(m===TEAM_REMOVE_OWNER_ONLY)c++;};try{removeTeamMember('uX');}finally{window.toast=ot;state.session=ss;}return c;})()");
+    t('2.510.0 #3: a non-owner tapping remove is told only the owner can (no confirm, nothing changes)',NS===1&&$2("document.getElementById('cdScrim')?!document.getElementById('cdScrim').classList.contains('show'):true")===true,NS);
+    $2(RF_REST);
+  }
   $2("state.activeId='pdel';true");
   /* parser table, on the real parseMoney */
   const PT=J(`(function(){var o={};['2k','-500','$2,000.50','','$','1,2,3','12.345','2,000','2.000,50','500-600','1849.5','abc','5.','0'].forEach(function(x){var r=parseMoney(x,{});o[x]=r.ok?r.cents:('x:'+r.why);});o['0+']=parseMoney('0',{positive:true}).ok;return o;})()`);
