@@ -10,6 +10,7 @@ const qbo = require('./lib/qbo');
 const { exportCosts } = require('./lib/exportCosts');
 const { deleteAccount } = require('./lib/deleteAccount');
 const archiveSite = require('./lib/archiveSite');
+const { logError } = require('./lib/logError');
 
 setGlobalOptions({ region: 'us-central1', maxInstances: 5 });
 admin.initializeApp();
@@ -78,6 +79,7 @@ exports.qbCallback = onRequest(async (req, res) => {
       '<!doctype html><body style="font-family:sans-serif;background:#15130F;color:#E7DCC6;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><h2>QuickBooks connected ✓</h2><p>You can close this window and return to Plumb.</p></div>' +
       '<script>try{if(window.opener)window.opener.postMessage("qb-connected","*");}catch(e){}setTimeout(function(){try{window.close();}catch(e){}},1500);</script></body>');
   } catch (e) {
+    logError('qbCallback', e);
     res.status(400).set('Content-Type', 'text/html')
       .send('<!doctype html><body style="font-family:sans-serif"><h3>Connection failed</h3><p>' +
         String(e.message || e).replace(/[<>&]/g, '') + '</p><p>Close this window and try again from Plumb.</p></body>');
@@ -106,7 +108,7 @@ exports.qbExportCosts = onRequest(async (req, res) => {
   const siteId = String(body(req).siteId || '');
   if (!siteId) { res.status(400).json({ error: 'siteId required' }); return; }
   try { res.json({ result: await exportCosts(db, user.uid, siteId) }); }
-  catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
+  catch (e) { logError('qbExportCosts', e, { siteId }); res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
 });
 
 /* ── Account deletion: preview without {confirm}, execute with it. The bucket
@@ -119,7 +121,7 @@ exports.deleteAccount = onRequest(async (req, res) => {
     const bucket = admin.storage().bucket(process.env.PLUMB_BUCKET || 'plumb-467a0.firebasestorage.app');
     const r = await deleteAccount(db, admin.auth(), bucket, user.uid, !!body(req).confirm, String(user.email || '').toLowerCase(), undefined, { archive: archiveSite.accountArchiver(db, admin.storage().bucket(process.env.ARCHIVE_BUCKET || 'plumb-467a0-money-archive'), admin.firestore.FieldValue) });
     res.json({ result: r });
-  } catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
+  } catch (e) { logError('deleteAccount', e); res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
 });
 
 /* ── Telemetry through the server: clients lose direct Firestore access ── */
@@ -393,5 +395,5 @@ exports.moneyOpened = onRequest(async (req, res) => {
     const b = body(req);
     const r = await archiveSite.recordOpened(db, () => admin.firestore.FieldValue.serverTimestamp(), { uid: user.uid, siteId: String(b.siteId || ''), coll: String(b.coll || ''), docId: String(b.docId || '') });
     res.json({ result: r });
-  } catch (e) { res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
+  } catch (e) { logError('moneyOpened', e); res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
 });

@@ -3,6 +3,9 @@
   "private": true,
   "engines": { "node": "24" },
   "main": "index.js",
+  "scripts": {
+    "test": "node runtests.js"
+  },
   "dependencies": {
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.1.0"

@@ -3,7 +3,12 @@ on:
   push:
     branches: [main]
     paths: ['functions/**', 'firebase.json', '.github/workflows/deploy-functions.yml']
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Pass --force (only to delete a function removed from the code, or to take a newly retried trigger). Leave off otherwise.'
+        type: boolean
+        default: false
 
 jobs:
   deploy:
@@ -13,8 +18,11 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24 }
 
-      - name: Install function dependencies
-        run: cd functions && npm ci || npm install --no-audit --no-fund
+      - name: Install function dependencies (exactly what package-lock.json pins)
+        run: cd functions && npm ci --no-audit --no-fund
+
+      - name: Functions tests (a failing test stops the deploy)
+        run: cd functions && npm test
 
       - name: Write runtime .env from repo secrets
         run: |
@@ -34,4 +42,8 @@ jobs:
       - name: Deploy functions
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
-        run: npx firebase-tools@latest deploy --only functions --project plumb-467a0 --non-interactive --force
+          FORCE: ${{ inputs.force && '--force' || '' }}
+        # firebase-tools is pinned (same version as the repo's rules tooling; supports the nodejs24 runtime).
+        # No --force by default: removing a function or adding a retry policy stops the deploy with a clear
+        # message instead of happening silently. Re-run from Actions with "force" ticked when that is intended.
+        run: npx --yes firebase-tools@15.31.0 deploy --only functions --project plumb-467a0 --non-interactive $FORCE
