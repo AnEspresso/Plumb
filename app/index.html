@@ -9687,13 +9687,13 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
       +'<button class="lpay btn btn-quiet mt-2" onclick="CO.print(\''+esc(r.id)+'\')">Print</button>'
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO._view=null;CO.draw()">Back</button></div>';},
   /* 4d-2 (2.476.0): days added and a printable record. Read-only: no writes. Reuses the invoice print view (spec: same look, no new pattern). */
-  daysText(n){n=Number(n)||0;return 'Adds '+n+' day'+(n===1?'':'s')+' to the schedule';},
-  daysApproved(sid){let d=0;this.list(sid).forEach(function(r){if(r.status==='approved'&&Number.isInteger(r.days)&&r.days>0)d+=r.days;});return d;},
+  daysText(n){n=Number(n)||0;const a=Math.abs(n);return (n<0?'Takes ':'Adds ')+a+' day'+(a===1?'':'s')+(n<0?' off the schedule':' to the schedule');},   /* 2.505.0: Agency words for minus days */
+  daysApproved(sid){let d=0;this.list(sid).forEach(function(r){if(r.status==='approved'&&Number.isInteger(r.days)&&r.days!==0)d+=r.days;});return Math.max(0,d);},   /* 2.505.0: minus days count; the net never goes below 0 (Peter 11/17) */
   statusText(r){const w=COH.when(r.decidedAt);
     if(r.status==='approved')return 'Approved'+(r.approvedVia==='paper'?' \u00b7 Signed on paper':(r.decidedName?' by '+r.decidedName:''))+(w?' \u00b7 '+w:'');
     if(r.status==='sent')return 'Waiting on the homeowner';if(r.status==='declined')return 'Declined'+(r.decidedName?' by '+r.decidedName:'');if(r.status==='withdrawn')return 'Withdrawn';return 'Draft';},
   printDoc(p,r){const rows='<tr><td>'+esc(r.kind==='credit'||r.amountC<0?'Credit':'Change')+'</td><td class="ta-r">'+esc(this.amountText(r.amountC))+'</td></tr>'
-      +(r.days?'<tr><td>Days added</td><td class="ta-r">'+esc(String(r.days))+'</td></tr>':'');
+      +(r.days?'<tr><td>'+(r.days<0?'Days taken off':'Days added')+'</td><td class="ta-r">'+esc(String(Math.abs(r.days)))+'</td></tr>':'');
     return '<h1>'+esc(this.label(r.no))+' \u2014 '+esc(r.title||'')+'</h1>'
       +'<div class="pv-sub">'+esc(p.street||p.name||'')+(r.rev>1?' \u00b7 revision '+r.rev:'')+(r.sentName?' \u00b7 From '+esc(r.sentName):'')+'</div>'
       +(r.note?'<p>'+esc(r.note)+'</p>':'')
@@ -9727,7 +9727,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
      +'<div class="seg mt-2"><button type="button" class="'+(e.kind==='change'?'on':'')+'" onclick="CO.setKind(\'change\')">Change</button><button type="button" class="'+(e.kind==='credit'?'on':'')+'" onclick="CO.setKind(\'credit\')">Credit</button></div>'
      +'<div class="setup-roster-row"><input id="coAmt" placeholder="Amount" inputmode="decimal" data-money oninput="CO.hint()" value="'+esc(e.amount)+'"></div>'
      +'<textarea id="coNote" placeholder="Note for the homeowner" maxlength="2000" rows="3">'+esc(e.note)+'</textarea>'
-     +'<details class="mt-2"><summary>More details</summary>'+this.lineHTML(p,e)+'<input id="coDays" placeholder="Days added to the schedule" inputmode="numeric" value="'+esc(e.days)+'"></details>'
+     +'<details class="mt-2"><summary>More details</summary>'+this.lineHTML(p,e)+'<input id="coDays" placeholder="Days added to the schedule. Use \u2212 to take days off." value="'+esc(e.days)+'"></details>'
      +'<div class="meta mt-2" id="coSentence">'+(c0?esc(this.sentence(e.kind,c0)):'')+'</div>'
      +'<button class="b1 b-go w-full mt-1 btn btn-primary" onclick="CO.save(true)">'+(sent?'Sign and send update':'Sign and send')+'</button>'
      +(sent?'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.paperForm()">Record a paper signature</button>':'')
@@ -9749,7 +9749,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
     const title=String(e.title||'').trim();if(!title){toast('Add a title');return;}
     const r=moneyRead('coAmt',{positive:true});if(!r)return;
     const dr=String(e.days||'').trim();let days=null;
-    if(dr){if(!/^\d{1,3}$/.test(dr)||+dr>365){toast('Days must be a whole number from 0 to 365');return;}days=+dr;}
+    if(dr){const dm=/^([-\u2212\u2013])?(\d{1,3})$/.exec(dr);if(!dm||+dm[2]>365){toast('Use a whole number from \u2212365 to 365.');return;}days=(dm[1]?-1:1)*(+dm[2]);if(days===0)days=0;}   /* 2.505.0: a minus takes days off */
     const amountC=e.kind==='credit'?-r.cents:r.cents;const note=String(e.note||'').trim().slice(0,2000);
     const lineId=e.status==='sent'?((e.orig&&e.orig.lineId)||''):String(e.lineId||'').slice(0,64);   /* budget line: chosen before sending; a sent one keeps its line (changing it would be a new revision) */
     const fresh=!e.id;const id=e.id||('co_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
@@ -10007,7 +10007,7 @@ const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_s
     const sent=r.status==='sent';const changed=sent&&this._open.seen!==r.rev;
     let h='<div id="cohRoot"><div class="meta">'+esc(CO.label(r.no))+(r.rev>1?' \u00b7 revision '+r.rev:'')+'</div>'
       +'<div class="fs-md fw-6">'+esc(r.title||'')+'</div><div class="fs-lg fw-6 mt-1">'+esc(CO.amountText(r.amountC))+'</div>'
-      +(r.note?'<p class="mt-2">'+esc(r.note)+'</p>':'')+(r.days?'<div class="meta">Adds '+r.days+' day'+(r.days===1?'':'s')+' to the schedule</div>':'');
+      +(r.note?'<p class="mt-2">'+esc(r.note)+'</p>':'')+(r.days?'<div class="meta">'+esc(CO.daysText(r.days))+'</div>':'');
     if(changed)h+='<div class="meta c-clay mt-2">Updated \u2014 needs your OK again</div>';
     if(sent){
       const ok=this.verified(r);
@@ -17917,8 +17917,8 @@ const CODAYS={_rows:{},_unsub:{},_err:{},_busy:{},_wErr:{},
     try{this._unsub[sid]=this.col(sid).onSnapshot(snap=>{this._rows[sid]=snap.docs.map(d=>{const v=d.data()||{};return {id:d.id,no:v.no,days:v.days};});delete this._err[sid];
         try{this.sync(sid);}catch(e){}try{if(document.getElementById('calBody'))renderCal();}catch(e){}},
       err=>{this._err[sid]=String((err&&err.code)||'error');delete this._unsub[sid];});}catch(e){this._err[sid]='error';}},
-  list(sid){return (this._rows[String(sid)]||[]).filter(r=>Number.isInteger(r.no)&&r.no>0&&Number.isInteger(r.days)&&r.days>0).map(r=>({id:r.id,no:r.no,days:r.days,status:'approved'}));},
-  want(sid){const w={};CO.list(sid).forEach(r=>{if(r.status==='approved'&&Number.isInteger(r.no)&&r.no>0&&Number.isInteger(r.days)&&r.days>0&&r.days<=365)w[r.id]={no:r.no,days:r.days};});return w;},
+  list(sid){return (this._rows[String(sid)]||[]).filter(r=>Number.isInteger(r.no)&&r.no>0&&Number.isInteger(r.days)&&r.days!==0&&Math.abs(r.days)<=365).map(r=>({id:r.id,no:r.no,days:r.days,status:'approved'}));},
+  want(sid){const w={};CO.list(sid).forEach(r=>{if(r.status==='approved'&&Number.isInteger(r.no)&&r.no>0&&Number.isInteger(r.days)&&r.days!==0&&Math.abs(r.days)<=365)w[r.id]={no:r.no,days:r.days};});return w;},
   /* builder only: bring the days-only records in line with the approved change orders */
   sync(sid){sid=String(sid);if(!this.live()||!CO.allowed()||String((P()||{}).id)!==sid)return;
     if(!this._unsub[sid]&&!this._err[sid]){this.attach({id:sid});return;}
@@ -17932,8 +17932,10 @@ const CODAYS={_rows:{},_unsub:{},_err:{},_busy:{},_wErr:{},
 function coDaysRows(p){try{if(!p)return [];const sid=String(p.id);let rows=[];
   if(CO.allowed()&&String(P().id)===sid)rows=CO.list(sid);else if(typeof COH!=='undefined'&&COH.allowed(p)){COH.attach(p);rows=COH.list(sid);}   /* 2.504.0: the homeowner's Schedule loads its own change orders */
   else if(CODAYS.crewOk(p)){CODAYS.attach(p);rows=CODAYS.list(sid);}else return [];
-  return rows.filter(function(r){return r.status==='approved'&&Number.isInteger(r.days)&&r.days>0;}).sort(function(a,b){return (a.no||1e9)-(b.no||1e9);});}catch(e){return [];}}
-function coDaysSrc(r){return '+'+r.days+' day'+(r.days===1?'':'s')+' from change order '+String(r.no||'').padStart(3,'0');}   /* 2.499.0: Agency words */
+  return rows.filter(function(r){return r.status==='approved'&&Number.isInteger(r.days)&&r.days!==0;}).sort(function(a,b){return (a.no||1e9)-(b.no||1e9);});}catch(e){return [];}}
+function coDaysSrc(r){const a=Math.abs(r.days);return (r.days<0?'\u2212':'+')+a+' day'+(a===1?'':'s')+' from change order '+String(r.no||'').padStart(3,'0');}   /* 2.499.0 / 2.505.0: Agency words; minus lines use the real minus sign */
+/* 2.505.0: the net line shows only when a minus line exists; the net never goes below 0 (Peter 11/17, Agency words) */
+function coDaysNet(rs){if(!rs.some(function(r){return r.days<0;}))return '';const n=Math.max(0,rs.reduce(function(a,r){return a+r.days;},0));return n>0?'Net: +'+n+' day'+(n===1?'':'s')+' from change orders':'Net: no change to the schedule';}
 /* Agency 11/2: the crew suffix is the street name only, "1418 Calderwood Ct, Ann Arbor, MI 48104" -> "Calderwood".
    Keeps the part before the first comma, drops a leading house number, a unit (Apt/Unit/Suite/#) and a trailing street type. */
 function coDaysStreet(p){let s=String((p&&(p.street||p.name))||'').split(',')[0].trim();
@@ -17941,9 +17943,9 @@ function coDaysStreet(p){let s=String((p&&(p.street||p.name))||'').split(',')[0]
   const t=s.replace(/\s+(?:st|street|ave|avenue|rd|road|ct|court|ln|lane|dr|drive|blvd|boulevard|way|pl|place|cir|circle|ter|terrace|pkwy|parkway|hwy|highway|trl|trail|loop|row|sq|square)\.?$/i,'').trim();
   return t||s||String((p&&p.name)||'');}
 /* a crew's schedule covers every house they are on: one line per change order, with the street when there is more than one house */
-function coDaysCrewHTML(){try{if(!calIsSub())return '';const ps=(typeof subProjects==='function'?subProjects():[])||[];const many=ps.length>1;
-  return ps.map(function(p){return coDaysRows(p).map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r)+(many?' \u00b7 '+coDaysStreet(p):''))+'</span>';}).join('');}).join('');}catch(e){return '';}}
-function coDaysCalHTML(p){const rs=coDaysRows(p);return rs.map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r))+'</span>';}).join('');}
+function coDaysCrewHTML(){try{if(!calIsSub())return '';const ps=(typeof subProjects==='function'?subProjects():[])||[];   /* 2.505.0: Agency: always name the house, even on one */
+  return ps.map(function(p){const rs=coDaysRows(p);const st=' \u00b7 '+coDaysStreet(p);const net=coDaysNet(rs);return rs.map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r)+st)+'</span>';}).join('')+(net?'<span class="li co-days"><span class="sw"></span>'+esc(net+st)+'</span>':'');}).join('');}catch(e){return '';}}
+function coDaysCalHTML(p){const rs=coDaysRows(p);const net=coDaysNet(rs);return rs.map(function(r){return '<span class="li co-days"><span class="sw"></span>'+esc(coDaysSrc(r))+'</span>';}).join('')+(net?'<span class="li co-days"><span class="sw"></span>'+esc(net)+'</span>':'');}
 function coDaysNote(p){try{if(!p||!CO.allowed()||String(P().id)!==String(p.id))return '';const d=CO.daysApproved(String(p.id));return d>0?' \u00b7 change orders add '+d+' day'+(d===1?'':'s'):'';}catch(e){return '';}}
 function openSchedule(){renderSchedule();document.getElementById('schedScrim').classList.add('show');}
 function closeSchedule(){document.getElementById('schedScrim').classList.remove('show');}

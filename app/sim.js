@@ -4611,7 +4611,7 @@ await (async function(){
     function check(path,v,merged,old,batchPaths){
       var seg=path.split('/');var coll=seg[2];
       if(coll==='coDays'){var cs=store[seg[0]+'/'+seg[1]+'/co/'+seg[3]];var cd=cs&&cs.data;   /* 2.501.0: mirrors firestore.rules coDaysWriteOk */
-        if(X.role!=='builder'||!only(v,['no','days','byUid','at','appV','tappedAt'])||v.byUid!==Sync.uid||v.at!==TS||!v.appV||!cd||cd.status!=='approved'||cd.no!==v.no||cd.days!==v.days||!(v.days>0))throw denied('coDays');return;}
+        if(X.role!=='builder'||!only(v,['no','days','byUid','at','appV','tappedAt'])||v.byUid!==Sync.uid||v.at!==TS||!v.appV||!cd||cd.status!=='approved'||cd.no!==v.no||cd.days!==v.days||!(Number.isInteger(v.days)&&v.days!==0&&Math.abs(v.days)<=365))throw denied('coDays');return;}
       if(coll==='consent'){if(old||!only(v,['byUid','at','agreed','textV','appV','tappedAt'])||v.agreed!==true||v.byUid!==Sync.uid||v.at!==TS||seg[3]!==Sync.uid||!v.textV)throw denied('consent');return;}
       if(coll==='co'&&X.role==='client'){var on=merged.data||{},oo=old?old.data:null;
         if(!oo||oo.status!=='sent'||!only(merged,OUT)||merged.byUid!==Sync.uid||merged.at!==TS||!merged.appV)throw denied('client co');
@@ -5009,6 +5009,55 @@ await (async function(){
   t('2.504.0: a homeowner who opens Schedule from Home sees "+3 days from change order 001" for an approved change order',HOC.indexOf('+3 days from change order 001')>=0,HOC.slice(0,300));
   t('2.504.0: the homeowner Schedule shows nothing for a sent or withdrawn change order',HOC.indexOf('change order 002')<0&&HOC.indexOf('change order 003')<0&&HOC.indexOf('+5 days')<0&&HOC.indexOf('+7 days')<0,HOC.slice(0,300));
   $2(`(function(){var X=__co;document.getElementById('calview').classList.remove('show');calSiteFilter='all';['h_ap','h_se','h_wd'].forEach(function(i){delete X.store[X.pre+'co/'+i];});Object.keys(X.hoSave).forEach(function(k){X.store[k]=X.hoSave[k];});delete X.hoSave;COH._unsub={};COH._rows={};COH._err={};X.fire();return true;})()`);await sleep(20);
+
+  /* 2.505.0 (Peter 11/17): a later change order may take days off; the net never goes below 0; Agency words */
+  $2(`(function(){var X=__co;X.mdSave={};Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0||k.indexOf(X.pre+'coDays/')===0){X.mdSave[k]=X.store[k];delete X.store[k];}});
+    X.store[X.pre+'co/m_1']={data:{id:'m_1',title:'Porch posts',amountC:100,kind:'change',status:'approved',no:1,rev:1,days:3},byUid:'uH',at:'__TS__',appV:'x'};
+    X.store[X.pre+'co/m_2']={data:{id:'m_2',title:'Skip the trim',amountC:-100,kind:'credit',status:'approved',no:2,rev:1,days:-3},byUid:'uH',at:'__TS__',appV:'x'};
+    X.store[X.pre+'co/m_3']={data:{id:'m_3',title:'Smaller deck',amountC:500,kind:'change',status:'sent',no:3,rev:1,days:-2},byUid:'uB',at:'__TS__',appV:'x'};
+    X.role='builder';Sync.uid='uB';state.session={role:'builder',name:'Dean Walsh',auth:{uid:'uB'}};
+    CO._unsub={};CO._rows={};CO._err={};CO._edit=null;CO._view=null;CODAYS._rows={};CODAYS._unsub={};CODAYS._err={};CODAYS._wErr={};CODAYS._busy={};CO.attach(P());return true;})()`);
+  await sleep(40);
+  const MD=J("coDaysCalHTML(P())");
+  t('2.505.0: the Schedule shows the +3 line and the \u22123 line with the real minus sign',MD.indexOf('+3 days from change order 001')>=0&&MD.indexOf('\u22123 days from change order 002')>=0,MD);
+  t('2.505.0: with a minus line the net shows, and +3 \u22123 reads "Net: no change to the schedule"',MD.indexOf('Net: no change to the schedule')>=0,MD);
+  t('2.505.0: a minus change order still waiting on the homeowner shows no line',MD.indexOf('change order 003')<0&&MD.indexOf('\u22122')<0,MD);
+  t('2.505.0: the approved days net to 0 and the Schedule door shows no days note',J("CO.daysApproved(P().id)")===0&&J("coDaysNote(P())")==='');
+  $2(`(function(){var X=__co;X.store[X.pre+'co/m_4']={data:{id:'m_4',title:'Faster tile',amountC:-100,kind:'credit',status:'approved',no:4,rev:1,days:-5},byUid:'uH',at:'__TS__',appV:'x'};X.fire();return true;})()`);await sleep(30);
+  const MD2=J("coDaysCalHTML(P())");
+  t('2.505.0: the net never goes below 0 (+3 \u22123 \u22125 reads no change)',J("CO.daysApproved(P().id)")===0&&MD2.indexOf('Net: no change to the schedule')>=0&&MD2.indexOf('\u22125 days from change order 004')>=0,MD2);
+  $2(`(function(){var X=__co;X.store[X.pre+'co/m_4'].data.days=-1;X.store[X.pre+'co/m_5']={data:{id:'m_5',title:'Extra coat',amountC:100,kind:'change',status:'approved',no:5,rev:1,days:2},byUid:'uH',at:'__TS__',appV:'x'};X.fire();return true;})()`);await sleep(30);
+  const MD3=J("coDaysCalHTML(P())");
+  t('2.505.0: one day off reads "\u22121 day", and the net is "+1 day" (3 \u2212 3 \u2212 1 + 2)',MD3.indexOf('\u22121 day from change order 004')>=0&&MD3.indexOf('Net: +1 day from change orders')>=0,MD3);
+  $2(`(function(){var X=__co;X.store[X.pre+'co/m_5'].data.days=4;X.fire();return true;})()`);await sleep(30);
+  t('2.505.0: the net plural reads "Net: +3 days from change orders"',J("coDaysCalHTML(P())").indexOf('Net: +3 days from change orders')>=0);
+  t('2.505.0: no minus line, no net line',J("coDaysCalHTML({id:'none'})").indexOf('Net:')<0&&J("(function(){var h=coDaysCalHTML(P());return h;})()").indexOf('Net:')>=0);
+  $2(`(function(){var X=__co;delete X.store[X.pre+'co/m_4'];delete X.store[X.pre+'co/m_5'];X.fire();return true;})()`);await sleep(30);
+  t('2.505.0: the change order detail says "Takes 3 days off the schedule"',J("CO.daysText(-3)")==='Takes 3 days off the schedule'&&J("CO.daysText(-1)")==='Takes 1 day off the schedule'&&J("CO.daysText(3)")==='Adds 3 days to the schedule'&&($2("CO.openView('m_2');true"),J("document.getElementById('infoScrim').textContent").indexOf('Takes 3 days off the schedule')>=0));
+  $2("CO._view=null;closeInfo();CO.print('m_2');true");
+  t('2.505.0: print labels a minus change order "Days taken off"',J("(function(){var v=document.getElementById('invPrintView');return v?v.textContent:'';})()").indexOf('Days taken off3')>=0);
+  $2("closePrintPreview();true");
+  /* the form: a minus (hyphen or real minus) takes days off; out of range says Agency's words and writes nothing */
+  $2(COFILL('Minus hyphen','credit','1.00','','-3'));await $2("CO.save(false)");await sleep(30);
+  $2(COFILL('Minus sign','change','1.00','','\u22122'));await $2("CO.save(false)");await sleep(30);
+  const MF=J(`(function(){var X=__co,o={};Object.keys(X.store).forEach(function(k){var d=X.store[k].data;if(k.indexOf(X.pre+'co/')===0&&d&&d.status==='draft')o[d.title]=d.days;});return o;})()`);
+  t('2.505.0: the form stores "-3" and "\u22122" as minus days on a Credit and a Change',MF['Minus hyphen']===-3&&MF['Minus sign']===-2,JSON.stringify(MF));
+  t('2.505.0: the days hint reads Agency\u2019s words',($2("CO.newForm();true"),J("document.getElementById('coDays').getAttribute('placeholder')"))==='Days added to the schedule. Use \u2212 to take days off.');
+  $2(TOAST_ON);$2(COFILL('Too many','credit','1.00','','-400'));await $2("CO.save(false)");await sleep(20);let tsM=JSON.parse($2(TOAST_OFF));
+  t('2.505.0: \u2212400 days says "Use a whole number from \u2212365 to 365." and writes nothing',tsM.indexOf('Use a whole number from \u2212365 to 365.')>=0&&J("!Object.keys(__co.store).some(function(k){var d=__co.store[k].data;return d&&d.title==='Too many';})"),JSON.stringify(tsM));
+  $2("CO._edit=null;closeInfo();true");
+  /* the crew's days-only record carries the minus days; crew lines always name the house */
+  $2("CODAYS.sync(String(P().id));true");await sleep(40);
+  t('2.505.0: the builder writes \u22123 days to the days-only record (no record for the sent one)',J("(__co.store[__co.pre+'coDays/m_2']||{}).days")===-3&&J("(__co.store[__co.pre+'coDays/m_1']||{}).days")===3&&J("!__co.store[__co.pre+'coDays/m_3']"));
+  $2(`(function(){var X=__co;X._ss2=state.session;X.role='sub';Sync.uid='uC';var p=P();p.members=Object.assign({},p.members,{uC:'sub'});state.session={role:'subs',name:'Crew Kim',auth:{uid:'uC'}};window.__sp2=subProjects;window.__st2=P().street;subProjects=function(){return [P()];};P().street='1418 Calderwood Ct, Ann Arbor, MI';CODAYS._rows={};CODAYS._unsub={};CODAYS._err={};return true;})()`);
+  J("coDaysCrewHTML()");await sleep(30);const MK=J("coDaysCrewHTML()");
+  t('2.505.0: on one house the crew lines still end with the street name (Agency), plus and minus',MK.indexOf('+3 days from change order 001 \u00b7 Calderwood<')>=0&&MK.indexOf('\u22123 days from change order 002 \u00b7 Calderwood<')>=0,MK);
+  t('2.505.0: the crew sees the net line with the street name, and no money',MK.indexOf('Net: no change to the schedule \u00b7 Calderwood<')>=0&&MK.indexOf('$')<0,MK);
+  $2(`(function(){var X=__co;subProjects=window.__sp2;P().street=window.__st2;X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};COH._unsub={};COH._rows={};COH._err={};clientTab='home';calCrewFilter='';calMonth=null;openClientCal();return true;})()`);
+  await sleep(40);const MH=J("(document.getElementById('calBody')||{}).innerHTML||''");
+  t('2.505.0: the homeowner Schedule shows the +3 and \u22123 lines and the net',MH.indexOf('+3 days from change order 001')>=0&&MH.indexOf('\u22123 days from change order 002')>=0&&MH.indexOf('Net: no change to the schedule')>=0,MH.slice(0,400));
+  $2(`(function(){var X=__co;document.getElementById('calview').classList.remove('show');calSiteFilter='all';Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0||k.indexOf(X.pre+'coDays/')===0)delete X.store[k];});Object.keys(X.mdSave).forEach(function(k){X.store[k]=X.mdSave[k];});delete X.mdSave;
+    X.role='client';Sync.uid='uH';state.session={role:'client',name:'Ana Ruiz',auth:{uid:'uH'}};CO._unsub={};CO._rows={};CO._err={};COH._unsub={};COH._rows={};COH._err={};CODAYS._rows={};CODAYS._unsub={};CODAYS._err={};CODAYS._wErr={};CODAYS._busy={};X.fire();return true;})()`);await sleep(20);
   /* 2.506.0: a change order waiting on the homeowner shows on Home and on the folded money card, without opening it first */
   $2(`(function(){var X=__co;X.pwSave={};Object.keys(X.store).forEach(function(k){if(k.indexOf(X.pre+'co/')===0){X.pwSave[k]=X.store[k];delete X.store[k];}});
     X.store[X.pre+'co/p_s']={data:{id:'p_s',title:'Wider pantry',amountC:120000,kind:'change',status:'sent',no:7,rev:1,verifiedRev:1,verifiedTotal:120000},byUid:'uB',at:'__TS__',appV:'x'};
