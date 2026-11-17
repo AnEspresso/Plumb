@@ -124,10 +124,19 @@ exports.deleteAccount = onRequest(async (req, res) => {
   } catch (e) { logError('deleteAccount', e); res.status(500).json({ error: String(e.message || e).slice(0, 300) }); }
 });
 
-/* ── Telemetry through the server: clients lose direct Firestore access ── */
+/* ── Telemetry through the server: clients lose direct Firestore access ──
+   #17 (batch 3): writes need a real account (never anonymous) and a rate limit;
+   the owner reads are bounded (lib/telemetry.js). */
+const telemetry = require('./lib/telemetry');
+async function telemetryWriter(req, res) {
+  if (cors(req, res)) return null;
+  const user = await requireUser(req, res); if (!user) return null;
+  const g = await telemetry.writeGate(db, user, Date.now());
+  if (!g.ok) { res.status(g.status).json({ error: g.error }); return null; }
+  return user;
+}
 exports.telemetryBeat = onRequest(async (req, res) => {
-  if (cors(req, res)) return;
-  const user = await requireUser(req, res); if (!user) return;
+  const user = await telemetryWriter(req, res); if (!user) return;
   const b = body(req);
   const deviceId = String(b.deviceId || '').slice(0, 60);
   if (!deviceId) { res.status(400).json({ error: 'deviceId required' }); return; }
@@ -141,8 +150,7 @@ exports.telemetryBeat = onRequest(async (req, res) => {
 });
 
 exports.telemetryEvent = onRequest(async (req, res) => {
-  if (cors(req, res)) return;
-  const user = await requireUser(req, res); if (!user) return;
+  const user = await telemetryWriter(req, res); if (!user) return;
   const b = body(req);
   const deviceId = String(b.deviceId || '').slice(0, 60);
   if (!deviceId) { res.status(400).json({ error: 'deviceId required' }); return; }
@@ -157,33 +165,14 @@ exports.telemetryUsage = onRequest(async (req, res) => {
   if (cors(req, res)) return;
   const user = await requireUser(req, res); if (!user) return;
   if (!ownerUids().includes(user.uid)) { res.status(403).json({ error: 'owner-only' }); return; }
-  const out = [];
-  const snap = await db.collection('telemetry').get();
-  for (const doc of snap.docs) {
-    const d = doc.data(); let events = [];
-    try {
-      const es = await db.collection('telemetry').doc(doc.id).collection('events').orderBy('t', 'desc').limit(10).get();
-      events = es.docs.map(e => e.data());
-    } catch (e) {}
-    out.push({ ...d, events });
-  }
-  res.json({ result: { devices: out } });
+  res.json({ result: await telemetry.usage(db) });
 });
 
 exports.telemetryClear = onRequest(async (req, res) => {
   if (cors(req, res)) return;
   const user = await requireUser(req, res); if (!user) return;
   if (!ownerUids().includes(user.uid)) { res.status(403).json({ error: 'owner-only' }); return; }
-  let n = 0;
-  const snap = await db.collection('telemetry').get();
-  for (const doc of snap.docs) {
-    try {
-      const es = await db.collection('telemetry').doc(doc.id).collection('events').get();
-      for (const e of es.docs) { await e.ref.delete(); }
-      await doc.ref.delete(); n++;
-    } catch (e) {}
-  }
-  res.json({ result: { ok: true, n } });
+  res.json({ result: await telemetry.clear(db) });
 });
 
 /* ── Lock-screen push when a sub replies on a packet ── */
@@ -265,6 +254,11 @@ exports.onPacketReply = onDocumentWritten('packets/{token}', async (event) => {
   if (!siteId) return;
   const siteSnap = await db.collection('sites').doc(String(siteId)).get();
   if (!siteSnap.exists) return;
+  /* #14 (batch 3): only a packet made by someone on that house pushes to its builders */
+  if (!push.packetCreatorOk(siteSnap.data() || {}, after)) {
+    try { console.warn(JSON.stringify({ severity: 'WARNING', message: 'onPacketReply: creator not on the house, no push', token: String(event.params.token || '').slice(0, 8) })); } catch (_) {}
+    return;
+  }
   const uids = push.builderUids(siteSnap.data() || {});
   if (!uids.length) return;
   await deliver(uids, notice);
