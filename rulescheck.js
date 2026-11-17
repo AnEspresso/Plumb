@@ -1312,6 +1312,19 @@ async function main() {
   await INV('storage: sub DENIED costs receipt read', getBytes(ref(st.sub, 'live/sites/liveA/costs/receipt1')), false);
   await INV('storage: client DENIED costs receipt read', getBytes(ref(st.client, 'live/sites/liveA/costs/receipt1')), false);
   await INV('storage: sub DENIED costs receipt upload', uploadBytes(ref(st.sub, 'live/sites/liveA/costs/r3'), png, meta), false);
+  /* #11 (2.513.0): Word and Excel documents, in document folders only */
+  const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  await INV('storage: #11 builder uploads a Word document (docx) [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/w1'), png, { contentType: DOCX }), true);
+  await INV('storage: #11 builder uploads an Excel document (xlsx) [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/x1'), png, { contentType: XLSX }), true);
+  await INV('storage: #11 builder uploads an old Word document (doc) [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/w2'), png, { contentType: 'application/msword' }), true);
+  await INV('storage: #11 builder uploads an old Excel document (xls) [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/x2'), png, { contentType: 'application/vnd.ms-excel' }), true);
+  await INV('storage: #11 a Word document in a docs-<audience> folder [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs-team/w3'), png, { contentType: DOCX }), true);
+  await INV('storage: #11 Word DENIED in photos', uploadBytes(ref(st.builder, 'live/sites/liveA/photos/w4'), png, { contentType: DOCX }), false);
+  await INV('storage: #11 Excel DENIED in costs', uploadBytes(ref(st.builder, 'live/sites/liveA/costs/x3'), png, { contentType: XLSX }), false);
+  await INV('storage: #11 a macro workbook (xlsm) DENIED', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/x4'), png, { contentType: 'application/vnd.ms-excel.sheet.macroEnabled.12' }), false);
+  await INV('storage: #11 octet-stream DENIED (the app names the type)', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/x5'), png, { contentType: 'application/octet-stream' }), false);
+  await INV('storage: #11 stranger DENIED a Word upload', uploadBytes(ref(st.stranger, 'live/sites/liveA/docs/w5'), png, { contentType: DOCX }), false);
+  await INV('storage: #11 >25MB Word document denied', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/w6'), Buffer.alloc(26 * 1024 * 1024), { contentType: DOCX }), false);
   const big = Buffer.alloc(26 * 1024 * 1024);
   await INV('storage: >25MB upload denied even for member', uploadBytes(ref(st.builder, 'live/sites/liveA/photos/big1'), big, meta), false);
   }

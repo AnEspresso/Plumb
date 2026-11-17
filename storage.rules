@@ -27,8 +27,15 @@ service firebase.storage {
                && site().members != null && role() != null;
       }
       function kindOk() { return kind != 'costs' || role() == 'builder'; }
+      /* #11 (2.513.0): a document may also be a Word or Excel file (the app's document picker offers them).
+         Only document folders (docs, and docs-<audience> if that layout lands); photos and receipts stay image or PDF. */
+      function officeDocOk() {
+        return kind.matches('docs(-.*)?')
+               && request.resource.size < 25 * 1024 * 1024
+               && request.resource.contentType.matches('application/msword|application/vnd[.]ms-excel|application/vnd[.]openxmlformats-officedocument[.]wordprocessingml[.]document|application/vnd[.]openxmlformats-officedocument[.]spreadsheetml[.]sheet');
+      }
       allow read:  if isMember() && kindOk();
-      allow write: if isMember() && kindOk() && okUpload();
+      allow write: if isMember() && kindOk() && (okUpload() || officeDocOk());
     }
 
     match /{allPaths=**} {
