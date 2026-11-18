@@ -4468,6 +4468,17 @@ await (async function(){
       &&M('a.exe','application/x-msdownload')===''&&M('a.xlsm','application/vnd.ms-excel.sheet.macroEnabled.12')===''&&M('a.zip')===''&&M('notes.txt','text/plain')==='';})()`));
   t('#11 saving a document checks its type before storing it',/if\(file&&!docMimeOf\(file\)\)\{toast\(DOC_TYPE_NO\);return;\}[\s\S]{0,1500}idbPutDoc/.test(SRC));
   $2(`(function(){firebase.storage=__u11.st;idbGetDoc=__u11.get;if(__u11.q==null)localStorage.removeItem(CloudFiles.KEY);else localStorage.setItem(CloudFiles.KEY,__u11.q);clearTimeout(CloudFiles._retryT);P().docs=[];delete window.__u11;return true;})()`);
+  /* #11 + 2.512.0: a typeless Word file in an audience folder goes up as Word with the uploader stamp (the rules refuse octet-stream) */
+  const u11c=JSON.parse(await $2(`(async function(){var o={st:firebase.storage,get:idbGetDoc,q:localStorage.getItem(CloudFiles.KEY),uid:Sync.uid},puts=[];
+    firebase.storage=function(){return {ref:function(path){return {put:function(b,m){puts.push({path:path,m:JSON.parse(JSON.stringify(m||null))});return Promise.resolve();},getDownloadURL:function(){return Promise.resolve('https://files.test/'+path);},delete:function(){return Promise.resolve();}};}};};
+    idbGetDoc=function(){return Promise.resolve(new Blob(['x'],{type:''}));};Sync.uid='uB';
+    state.activeId='t10';var p=P();p.docs=[{n:'Scope.docx',m:'Uploaded',k:'pdf',trade:'',aud:'subs',fileId:'docT11w',mime:docMimeOf({name:'Scope.docx',type:''})}];
+    localStorage.setItem(CloudFiles.KEY,JSON.stringify([{kind:'docs-subs',siteId:'t10',id:'docT11w',mode:'live',tries:0}]));
+    clearTimeout(CloudFiles._retryT);await CloudFiles.flush();
+    firebase.storage=o.st;idbGetDoc=o.get;Sync.uid=o.uid;if(o.q==null)localStorage.removeItem(CloudFiles.KEY);else localStorage.setItem(CloudFiles.KEY,o.q);clearTimeout(CloudFiles._retryT);P().docs=[];
+    return JSON.stringify(puts);})()`));
+  t('#11 + 2.512.0: a typeless Word file in a docs-<audience> folder uploads as Word, stamped with its uploader (never octet-stream)',
+    u11c.length===1&&u11c[0].path==='live/sites/t10/docs-subs/docT11w'&&u11c[0].m&&u11c[0].m.contentType==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'&&u11c[0].m.customMetadata&&u11c[0].m.customMetadata.uploader==='uB',JSON.stringify(u11c));
   /* #8 (2.513.0) · a sent change order the server has not checked yet says so, and the builder can ask for a re-check */
   const co8=J(`(function(){var r={id:'co8',status:'sent',no:4,title:'Window',kind:'change',amountC:50000,rev:2,verifiedRev:1,verifiedTotal:50000};
     var ok=Object.assign({},r,{verifiedRev:2});
