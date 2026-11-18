@@ -231,6 +231,12 @@ async function seed() {
     await setDoc(doc(db, 'sites/liveA/inv/inv_sent2'), INV_DOC({ id: 'inv_sent2', status: 'sent' }));
     // House-doc sign-off houses: 6 and all 29 trades signed by the builder
     for (const [id, n] of [['so6', 6], ['so29', 29], ['so29d', 29]]) await setDoc(doc(db, `sites/${id}`), soHouse(n));
+    // #3 (2.510.0): the owner removes a teammate (builder2, a PM) from a house
+    await setDoc(doc(db, 'sites/liveRm'), { mode: 'live', street: 'Live Rm',
+      members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.sub]: 'sub' },
+      memberUids: [U.builder, U.builder2, U.sub],
+      meta: { members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.sub]: 'sub' }, memberInfo: { [U.builder2]: { name: 'Pat PM', rpRole: 'pm' } } } });
+    await setDoc(doc(db, 'sites/liveRm/items/r1'), { seeded: true });
     // liveB: a different builder's live site — our personas are strangers here
     await setDoc(doc(db, 'sites/liveB'), {
       mode: 'live', street: 'Live B',
@@ -998,6 +1004,45 @@ async function main() {
   await INV('A2 M-7: a 2.480.0 payment write is DENIED', setDoc(doc(db.builder, 'sites/liveA/pmts/pm_old'), { data: { id: 'pm_old', amount: 1 }, updatedAt: 1, updatedBy: 'devB', byUid: U.builder, tappedAt: 1, appV: '2.480.0' }), false);
   await INV('A2 M-7: the 2.480.0 homeowner Approve (unstamped) is DENIED',
     invWrite(db.client, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000009 }), 2, null), false);
+  /* ══════════ #4: a stale whole-record invoice write can't drop or change a payment, or undo the homeowner's OK ══════════
+     Phone A and phone B both hold INV-041. A records a payment; B, still holding the old copy, writes its own. */
+  await INV('#4 setup: send INV-041 (record + inv-41 claim in one batch): ALLOWED', invSendBatch(db.builder, 'inv_p4', 41), true);
+  const p4 = (over) => Object.assign({ data: Object.assign({ id: 'inv_p4', no: 'INV-041', title: 'Selections invoice', due: '', items: [{ label: 'Tile', amount: 250 }],
+    total: 250, status: 'sent', t: 1791000000000, sentBy: 'Dean Walsh', payments: [] }, over || {}), updatedAt: 40, updatedBy: 'devB' }, A2S(U.builder));
+  const p4w = (over) => setDoc(doc(db.builder, 'sites/liveA/inv/inv_p4'), p4(over));
+  const PA = { id: 'pm_A', amount: 100, date: '2026-11-17', note: '' };
+  const PB = { id: 'pm_B', amount: 50, date: '2026-11-17', note: 'from phone B' };
+  const PC = { id: 'pm_C', amount: 150, date: '2026-11-18', note: '' };
+  await INV('#4 phone A records a payment (append): ALLOWED', p4w({ payments: [PA] }), true);
+  await INV('#4 STALE PHONE: phone B writes its old copy with its own payment in place of A\'s (same count) - DENIED', p4w({ payments: [PB] }), false);
+  await INV('#4 STALE PHONE: phone B writes its old copy with no payments - DENIED', p4w({ payments: [] }), false);
+  await INV('#4 STALE PHONE: phone B writes the old copy back unchanged after A\'s payment - DENIED', p4w({ status: 'sent', payments: [] }), false);
+  await INV('#4 phone B, merged with the server first, appends its payment after A\'s: ALLOWED', p4w({ payments: [PA, PB] }), true);
+  await INV('#4 changing a recorded payment\'s amount - DENIED', p4w({ payments: [Object.assign({}, PA, { amount: 1 }), PB] }), false);
+  await INV('#4 swapping the order of recorded payments - DENIED', p4w({ payments: [PB, PA] }), false);
+  await INV('#4 inserting a payment before the recorded ones - DENIED', p4w({ payments: [PC, PA, PB] }), false);
+  await INV('#4 voiding without a reason - DENIED', p4w({ payments: [Object.assign({}, PA, { voidedAt: 41 }), PB] }), false);
+  await INV('#4 voiding and changing the amount in the same write - DENIED', p4w({ payments: [Object.assign({}, PA, { amount: 1, voidedAt: 41, voidReason: 'Bounced', voidedBy: 'Dean Walsh' }), PB] }), false);
+  const PAv = Object.assign({}, PA, { voidedAt: 41, voidReason: 'Bounced', voidedBy: 'Dean Walsh' });
+  await INV('#4 app: void a payment with a reason (the existing void fields): ALLOWED', p4w({ payments: [PAv, PB] }), true);
+  await INV('#4 un-voiding a payment - DENIED', p4w({ payments: [PA, PB] }), false);
+  await INV('#4 rewriting a void reason - DENIED', p4w({ payments: [Object.assign({}, PAv, { voidReason: 'Other' }), PB] }), false);
+  await INV('#4 more than 20 payments on one invoice - DENIED',
+    p4w({ payments: [PAv, PB].concat(Array.from({ length: 19 }, (_, i) => ({ id: 'pm_x' + i, amount: 1, date: '2026-11-18', note: '' }))) }), false);
+  // the homeowner's OK
+  await INV('#4 setup: the homeowner approves INV-041 (status + approvedAt only): ALLOWED',
+    setDoc(doc(db.client, 'sites/liveA/inv/inv_p4'), Object.assign({ data: { status: 'approved', approvedAt: 1791300000000 }, updatedAt: 42, updatedBy: 'dev-client' }, A2S(U.client)), { merge: true }), true);
+  const OK = { status: 'approved', approvedAt: 1791300000000 };
+  await INV('#4 STALE PHONE: phone B writes its old "sent" copy over the homeowner\'s OK - DENIED', p4w({ payments: [PAv, PB] }), false);
+  await INV('#4 STALE PHONE: status kept approved but approvedAt dropped - DENIED', p4w({ status: 'approved', payments: [PAv, PB] }), false);
+  await INV('#4 approvedAt changed - DENIED', p4w(Object.assign({}, OK, { approvedAt: 1, payments: [PAv, PB] })), false);
+  await INV('#4 app: a payment on an approved invoice keeps the OK: ALLOWED', p4w(Object.assign({}, OK, { payments: [PAv, PB, PC] })), true);
+  await INV('#4 app: paid in full keeps approvedAt (status paid): ALLOWED', p4w(Object.assign({}, OK, { status: 'paid', paidAt: 43, payments: [PAv, PB, PC, { id: 'pm_D', amount: 50, date: '2026-11-19', note: '' }] })), true);
+  await INV('#4 a paid, approved invoice going back to sent - DENIED', p4w(Object.assign({}, OK, { status: 'sent', paidAt: null, payments: [PAv, PB, PC, { id: 'pm_D', amount: 50, date: '2026-11-19', note: '' }] })), false);
+  await INV('#4 app: voiding a payment reopens a paid, approved invoice as approved: ALLOWED',
+    p4w(Object.assign({}, OK, { paidAt: null, payments: [PAv, PB, PC, { id: 'pm_D', amount: 50, date: '2026-11-19', note: '', voidedAt: 44, voidReason: 'Wrong invoice', voidedBy: 'Dean Walsh' }] })), true);
+  await INV('#4 app: voiding an approved invoice keeps approvedAt: ALLOWED',
+    p4w(Object.assign({}, OK, { status: 'void', voidedAt: 45, voidReason: 'Re-issued', paidAt: null, payments: [PAv, PB, PC, { id: 'pm_D', amount: 50, date: '2026-11-19', note: '', voidedAt: 44, voidReason: 'Wrong invoice', voidedBy: 'Dean Walsh' }] })), true);
   // M-5: payments are add-only
   const pmA = (over) => Object.assign({ data: { id: 'pm_a5', label: 'Deposit', amount: 2000 }, updatedAt: 1, updatedBy: 'devB' }, A2S(U.builder), over || {});
   await INV('A2 app: record a payment (pmts): ALLOWED', setDoc(doc(db.builder, 'sites/liveA/pmts/pm_a5'), pmA()), true);
@@ -1081,6 +1126,19 @@ async function main() {
   await INV('invites: option B - unauth still DENIED get of an open invite', getDoc(doc(db.unauth, 'invites/OPENCODE2')), false);
   await INV('invites: option B - unauth still DENIED list', getDocs(collection(db.unauth, 'invites')), false);
 
+  /* ══════════ #3 (2.510.0): removing a teammate deletes them on the server ══════════
+     A merge never deletes a map key: before 2.510.0 the removed person stayed in members, so their record access stayed.
+     2.510.0 sends deleteField() for members, meta.members and meta.memberInfo. Only the owner may. */
+  const rmWrite = (d, by, gone, keep) => setDoc(doc(d, 'sites/liveRm'), {
+    meta: { members: { [gone]: deleteField() }, memberInfo: { [gone]: deleteField() } },
+    members: { [gone]: deleteField() }, memberUids: keep, mode: 'live', updatedAt: 9, updatedBy: 'dev-x', updatedByUid: by }, { merge: true });
+  await INV('#3 a non-owner builder (PM) removing the crew from a house - DENIED', rmWrite(db.builder2, U.builder2, U.sub, [U.builder, U.builder2]), false);
+  await INV('#3 the teammate reads the house records before removal', getDoc(doc(db.builder2, 'sites/liveRm/items/r1')), true);
+  await INV('#3 the owner removes the teammate the 2.510.0 way (deleteField on members, meta.members, meta.memberInfo): ALLOWED',
+    rmWrite(db.builder, U.builder, U.builder2, [U.builder, U.sub]), true);
+  await INV('#3 ... the removed teammate can no longer read the house records', getDoc(doc(db.builder2, 'sites/liveRm/items/r1')), false);
+  await INV('#3 ... nor the house', getDoc(doc(db.builder2, 'sites/liveRm')), false);
+  await INV('#3 ... the crew still can', getDoc(doc(db.sub, 'sites/liveRm/items/r1')), true);
   /* ══════════ #1 (pre-launch review): who may make a code ══════════
      Homeowner or crew: the house owner or a builder with the money gate there.
      Team: only the owner of the house the code names. A role or money gates ride
