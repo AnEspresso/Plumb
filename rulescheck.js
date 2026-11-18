@@ -31,7 +31,7 @@ const {
   doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField, collection,
   query, where, onSnapshot, writeBatch, serverTimestamp,
 } = require('firebase/firestore');
-const { ref, uploadBytes, getBytes } = require('firebase/storage');
+const { ref, uploadBytes, getBytes, deleteObject } = require('firebase/storage');
 
 /* Profiles: default = PRODUCTION ruleset (firestore.rules, the published hardened
    set); RULES_PROFILE=next = firestore-next.rules, where a rules change is staged
@@ -231,6 +231,12 @@ async function seed() {
     await setDoc(doc(db, 'sites/liveA/inv/inv_sent2'), INV_DOC({ id: 'inv_sent2', status: 'sent' }));
     // House-doc sign-off houses: 6 and all 29 trades signed by the builder
     for (const [id, n] of [['so6', 6], ['so29', 29], ['so29d', 29]]) await setDoc(doc(db, `sites/${id}`), soHouse(n));
+    // #3 (2.510.0): the owner removes a teammate (builder2, a PM) from a house
+    await setDoc(doc(db, 'sites/liveRm'), { mode: 'live', street: 'Live Rm',
+      members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.sub]: 'sub' },
+      memberUids: [U.builder, U.builder2, U.sub],
+      meta: { members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.sub]: 'sub' }, memberInfo: { [U.builder2]: { name: 'Pat PM', rpRole: 'pm' } } } });
+    await setDoc(doc(db, 'sites/liveRm/items/r1'), { seeded: true });
     // liveB: a different builder's live site — our personas are strangers here
     await setDoc(doc(db, 'sites/liveB'), {
       mode: 'live', street: 'Live B',
@@ -282,6 +288,25 @@ async function seed() {
     await setDoc(doc(db, 'sites/liveJoin'), { mode: 'live', street: 'Live Join',
       members: JOIN.members, memberUids: JOIN.memberUids, meta: JOIN.meta });
     await setDoc(doc(db, 'sites/liveJoin/bk/b1'), { data: { subName: 'Clearwater Plumbing', trade: 'plumb' } });
+    // Batch 3 (#5 #6 #15 #18): liveD carries the old lists on the house doc (documents with
+    // a team-only one, and invite codes), documents in docs/ by audience, invite codes in
+    // invs/, a draft and a sent invoice, and notes by the homeowner, the crew and the builder.
+    await setDoc(doc(db, 'sites/liveD'), { mode: 'live', street: 'Live D',
+      members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.sub]: 'sub', [U.client]: 'client' },
+      memberUids: [U.builder, U.builder2, U.sub, U.client],
+      meta: { memberInfo: { [U.builder2]: { name: 'Pat PM', rpRole: 'pm' }, [U.sub]: { name: 'Clearwater Plumbing', trade: 'plumb' }, [U.client]: { name: 'Ana Ruiz' } },
+        docs: [{ n: 'Contract.pdf', aud: 'team', fileId: 'docOldTeam' }, { n: 'Plans.pdf', aud: 'all', fileId: 'docOldAll' }],
+        invites: [{ code: 'HOMECODE9', role: 'client', status: 'open' }] } });
+    for (const [id, aud] of [['docTeam', 'team'], ['docSubs', 'subs'], ['docHome', 'homeowner'], ['docAll', 'all'], ['docOldTeam', 'team'], ['docOldAll', 'all']])
+      await setDoc(doc(db, `sites/liveD/docs/${id}`), { data: { n: id + '.pdf', aud, fileId: id }, updatedAt: 1, updatedBy: 'seed' });
+    await setDoc(doc(db, 'sites/liveD/invs/HOMECODE9'), { data: { code: 'HOMECODE9', role: 'client', status: 'open' }, updatedAt: 1, updatedBy: 'seed' });
+    await setDoc(doc(db, 'sites/liveD/inv/invDraft'), { data: { id: 'invDraft', status: 'draft', total: 100 }, updatedAt: 1, updatedBy: 'seed' });
+    await setDoc(doc(db, 'sites/liveD/inv/invSent'), { data: { id: 'invSent', no: 'INV-1', status: 'sent', total: 100 }, updatedAt: 1, updatedBy: 'seed' });
+    await setDoc(doc(db, 'sites/liveD/inv/invPaid'), { data: { id: 'invPaid', no: 'INV-2', status: 'paid', total: 100 }, updatedAt: 1, updatedBy: 'seed' });
+    for (const [id, by] of [['iHome', 'Ana Ruiz'], ['iCrew', 'Clearwater Plumbing'], ['iBuilder', 'You']])
+      await setDoc(doc(db, `sites/liveD/items/${id}`), { data: { id, cap: 'note', by }, updatedAt: 1, updatedBy: 'seed' });
+    // #14: a packet a builder of liveD sent, and one whose creator is on no house
+    await setDoc(doc(db, 'packets/pkD1'), { createdBy: U.builder, siteId: 'liveD', expires: 4102444800000, resp: null, q: [] });
   });
 }
 
@@ -376,7 +401,8 @@ async function main() {
   await INV('records: sub DENIED write pmts', setDoc(doc(db.sub, 'sites/liveA/pmts/p3'), { amt: 9 }), false);
   await INV('records: sub DENIED write mail', setDoc(doc(db.sub, 'sites/liveA/mail/m3'), { status: 'x' }), false);
   await INV('records: PR 0 client DENIED creating a sel (homeowners never create selections)', setDoc(doc(db.client, 'sites/liveA/sel/s3'), { signed: true }), false);
-  await INV('records: client writes items', setDoc(doc(db.client, 'sites/liveA/items/i3'), { issue: true }), true);
+  /* #15 (batch 3): a homeowner's note must carry their own name (liveA stamps no name for them) */
+  await INV('records: #15 client DENIED an unsigned note (was allowed before batch 3)', setDoc(doc(db.client, 'sites/liveA/items/i3'), { issue: true }), false);
   await INV('records: client DENIED write logs', setDoc(doc(db.client, 'sites/liveA/logs/l3'), { note: 'x' }), false);
   await INV('records: client DENIED write pmts', setDoc(doc(db.client, 'sites/liveA/pmts/p4'), { amt: 0 }), false);
   await INV('records: stranger DENIED write items', setDoc(doc(db.stranger, 'sites/liveA/items/i4'), { x: 1 }), false);
@@ -503,7 +529,8 @@ async function main() {
     // homeowner: reads; create/delete denied; incomplete update denied
     // (full clientInvOk suite is the R2 block below — only for inv)
     await INV(`${c}: homeowner reads`, getDoc(at(db.client, 'liveA')), true);
-    await INV(`${c}: homeowner lists`, getDocs(collection(db.client, `sites/liveA/${c}`)), true);
+    /* #6 (batch 3): the homeowner's invoice listener names the statuses it may see */
+    await INV(`${c}: homeowner lists`, getDocs(c === 'inv' ? query(collection(db.client, `sites/liveA/${c}`), where('data.status', 'in', ['sent', 'approved', 'paid', 'void'])) : collection(db.client, `sites/liveA/${c}`)), true);
     await INV(`${c}: homeowner DENIED create`, setDoc(at(db.client, 'liveA', 'n4'), mk()), false);
     await INV(`${c}: homeowner DENIED update (incomplete / not clientInvOk)`, updateDoc(at(db.client, 'liveA'), { 'data.status': 'approved', updatedAt: 9 }), false);
     await INV(`${c}: homeowner DENIED delete`, deleteDoc(at(db.client, 'liveA')), false);
@@ -870,7 +897,8 @@ async function main() {
     await setDoc(doc(sdb, 'sites/liveArch/hist/ha1'), { kind: 'approved', ref: 'ca1', refType: 'co', at: 1790000000000 });
   });
   const ARCH = (d, c) => getDocs(collection(d, `sites/liveArch/${c}`));
-  await INV('A1 app 3c-5: homeowner lists invoices of an archived house', ARCH(db.client, 'inv'), true);
+  await INV('A1 app 3c-5: homeowner lists invoices of an archived house (#6: with the status filter)', getDocs(query(collection(db.client, 'sites/liveArch/inv'), where('data.status', 'in', ['sent', 'approved', 'paid', 'void']))), true);
+  await INV('A1 app 3c-5: #6 homeowner unfiltered invoice list of an archived house DENIED [gap today]', ARCH(db.client, 'inv'), false);
   await INV('A1 app 3c-5: homeowner lists payments of an archived house', ARCH(db.client, 'pmts'), true);
   await INV('A1 app 3c-5: homeowner lists history of an archived house', ARCH(db.client, 'hist'), true);
   await INV('A1 app 3c-5: homeowner lists change orders of an archived house with the status filter', getDocs(query(collection(db.client, 'sites/liveArch/co'), where('data.status', 'in', ['sent', 'approved', 'declined', 'withdrawn']))), true);
@@ -998,6 +1026,45 @@ async function main() {
   await INV('A2 M-7: a 2.480.0 payment write is DENIED', setDoc(doc(db.builder, 'sites/liveA/pmts/pm_old'), { data: { id: 'pm_old', amount: 1 }, updatedAt: 1, updatedBy: 'devB', byUid: U.builder, tappedAt: 1, appV: '2.480.0' }), false);
   await INV('A2 M-7: the 2.480.0 homeowner Approve (unstamped) is DENIED',
     invWrite(db.client, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000009 }), 2, null), false);
+  /* ══════════ #4: a stale whole-record invoice write can't drop or change a payment, or undo the homeowner's OK ══════════
+     Phone A and phone B both hold INV-041. A records a payment; B, still holding the old copy, writes its own. */
+  await INV('#4 setup: send INV-041 (record + inv-41 claim in one batch): ALLOWED', invSendBatch(db.builder, 'inv_p4', 41), true);
+  const p4 = (over) => Object.assign({ data: Object.assign({ id: 'inv_p4', no: 'INV-041', title: 'Selections invoice', due: '', items: [{ label: 'Tile', amount: 250 }],
+    total: 250, status: 'sent', t: 1791000000000, sentBy: 'Dean Walsh', payments: [] }, over || {}), updatedAt: 40, updatedBy: 'devB' }, A2S(U.builder));
+  const p4w = (over) => setDoc(doc(db.builder, 'sites/liveA/inv/inv_p4'), p4(over));
+  const PA = { id: 'pm_A', amount: 100, date: '2026-11-17', note: '' };
+  const PB = { id: 'pm_B', amount: 50, date: '2026-11-17', note: 'from phone B' };
+  const PC = { id: 'pm_C', amount: 150, date: '2026-11-18', note: '' };
+  await INV('#4 phone A records a payment (append): ALLOWED', p4w({ payments: [PA] }), true);
+  await INV('#4 STALE PHONE: phone B writes its old copy with its own payment in place of A\'s (same count) - DENIED', p4w({ payments: [PB] }), false);
+  await INV('#4 STALE PHONE: phone B writes its old copy with no payments - DENIED', p4w({ payments: [] }), false);
+  await INV('#4 STALE PHONE: phone B writes the old copy back unchanged after A\'s payment - DENIED', p4w({ status: 'sent', payments: [] }), false);
+  await INV('#4 phone B, merged with the server first, appends its payment after A\'s: ALLOWED', p4w({ payments: [PA, PB] }), true);
+  await INV('#4 changing a recorded payment\'s amount - DENIED', p4w({ payments: [Object.assign({}, PA, { amount: 1 }), PB] }), false);
+  await INV('#4 swapping the order of recorded payments - DENIED', p4w({ payments: [PB, PA] }), false);
+  await INV('#4 inserting a payment before the recorded ones - DENIED', p4w({ payments: [PC, PA, PB] }), false);
+  await INV('#4 voiding without a reason - DENIED', p4w({ payments: [Object.assign({}, PA, { voidedAt: 41 }), PB] }), false);
+  await INV('#4 voiding and changing the amount in the same write - DENIED', p4w({ payments: [Object.assign({}, PA, { amount: 1, voidedAt: 41, voidReason: 'Bounced', voidedBy: 'Dean Walsh' }), PB] }), false);
+  const PAv = Object.assign({}, PA, { voidedAt: 41, voidReason: 'Bounced', voidedBy: 'Dean Walsh' });
+  await INV('#4 app: void a payment with a reason (the existing void fields): ALLOWED', p4w({ payments: [PAv, PB] }), true);
+  await INV('#4 un-voiding a payment - DENIED', p4w({ payments: [PA, PB] }), false);
+  await INV('#4 rewriting a void reason - DENIED', p4w({ payments: [Object.assign({}, PAv, { voidReason: 'Other' }), PB] }), false);
+  await INV('#4 more than 20 payments on one invoice - DENIED',
+    p4w({ payments: [PAv, PB].concat(Array.from({ length: 19 }, (_, i) => ({ id: 'pm_x' + i, amount: 1, date: '2026-11-18', note: '' }))) }), false);
+  // the homeowner's OK
+  await INV('#4 setup: the homeowner approves INV-041 (status + approvedAt only): ALLOWED',
+    setDoc(doc(db.client, 'sites/liveA/inv/inv_p4'), Object.assign({ data: { status: 'approved', approvedAt: 1791300000000 }, updatedAt: 42, updatedBy: 'dev-client' }, A2S(U.client)), { merge: true }), true);
+  const OK = { status: 'approved', approvedAt: 1791300000000 };
+  await INV('#4 STALE PHONE: phone B writes its old "sent" copy over the homeowner\'s OK - DENIED', p4w({ payments: [PAv, PB] }), false);
+  await INV('#4 STALE PHONE: status kept approved but approvedAt dropped - DENIED', p4w({ status: 'approved', payments: [PAv, PB] }), false);
+  await INV('#4 approvedAt changed - DENIED', p4w(Object.assign({}, OK, { approvedAt: 1, payments: [PAv, PB] })), false);
+  await INV('#4 app: a payment on an approved invoice keeps the OK: ALLOWED', p4w(Object.assign({}, OK, { payments: [PAv, PB, PC] })), true);
+  await INV('#4 app: paid in full keeps approvedAt (status paid): ALLOWED', p4w(Object.assign({}, OK, { status: 'paid', paidAt: 43, payments: [PAv, PB, PC, { id: 'pm_D', amount: 50, date: '2026-11-19', note: '' }] })), true);
+  await INV('#4 a paid, approved invoice going back to sent - DENIED', p4w(Object.assign({}, OK, { status: 'sent', paidAt: null, payments: [PAv, PB, PC, { id: 'pm_D', amount: 50, date: '2026-11-19', note: '' }] })), false);
+  await INV('#4 app: voiding a payment reopens a paid, approved invoice as approved: ALLOWED',
+    p4w(Object.assign({}, OK, { paidAt: null, payments: [PAv, PB, PC, { id: 'pm_D', amount: 50, date: '2026-11-19', note: '', voidedAt: 44, voidReason: 'Wrong invoice', voidedBy: 'Dean Walsh' }] })), true);
+  await INV('#4 app: voiding an approved invoice keeps approvedAt: ALLOWED',
+    p4w(Object.assign({}, OK, { status: 'void', voidedAt: 45, voidReason: 'Re-issued', paidAt: null, payments: [PAv, PB, PC, { id: 'pm_D', amount: 50, date: '2026-11-19', note: '', voidedAt: 44, voidReason: 'Wrong invoice', voidedBy: 'Dean Walsh' }] })), true);
   // M-5: payments are add-only
   const pmA = (over) => Object.assign({ data: { id: 'pm_a5', label: 'Deposit', amount: 2000 }, updatedAt: 1, updatedBy: 'devB' }, A2S(U.builder), over || {});
   await INV('A2 app: record a payment (pmts): ALLOWED', setDoc(doc(db.builder, 'sites/liveA/pmts/pm_a5'), pmA()), true);
@@ -1081,6 +1148,19 @@ async function main() {
   await INV('invites: option B - unauth still DENIED get of an open invite', getDoc(doc(db.unauth, 'invites/OPENCODE2')), false);
   await INV('invites: option B - unauth still DENIED list', getDocs(collection(db.unauth, 'invites')), false);
 
+  /* ══════════ #3 (2.510.0): removing a teammate deletes them on the server ══════════
+     A merge never deletes a map key: before 2.510.0 the removed person stayed in members, so their record access stayed.
+     2.510.0 sends deleteField() for members, meta.members and meta.memberInfo. Only the owner may. */
+  const rmWrite = (d, by, gone, keep) => setDoc(doc(d, 'sites/liveRm'), {
+    meta: { members: { [gone]: deleteField() }, memberInfo: { [gone]: deleteField() } },
+    members: { [gone]: deleteField() }, memberUids: keep, mode: 'live', updatedAt: 9, updatedBy: 'dev-x', updatedByUid: by }, { merge: true });
+  await INV('#3 a non-owner builder (PM) removing the crew from a house - DENIED', rmWrite(db.builder2, U.builder2, U.sub, [U.builder, U.builder2]), false);
+  await INV('#3 the teammate reads the house records before removal', getDoc(doc(db.builder2, 'sites/liveRm/items/r1')), true);
+  await INV('#3 the owner removes the teammate the 2.510.0 way (deleteField on members, meta.members, meta.memberInfo): ALLOWED',
+    rmWrite(db.builder, U.builder, U.builder2, [U.builder, U.sub]), true);
+  await INV('#3 ... the removed teammate can no longer read the house records', getDoc(doc(db.builder2, 'sites/liveRm/items/r1')), false);
+  await INV('#3 ... nor the house', getDoc(doc(db.builder2, 'sites/liveRm')), false);
+  await INV('#3 ... the crew still can', getDoc(doc(db.sub, 'sites/liveRm/items/r1')), true);
   /* ══════════ #1 (pre-launch review): who may make a code ══════════
      Homeowner or crew: the house owner or a builder with the money gate there.
      Team: only the owner of the house the code names. A role or money gates ride
@@ -1271,6 +1351,103 @@ async function main() {
   await INV('QB: oauth states unwritable',
     setDoc(doc(db.stranger, 'qbStates/forged'), { uid: U.stranger }), false);
 
+  /* ══════════ BATCH 3: #5 #6 #14 #15 #18 (rules), #7 below with storage ══════════
+     Each case marked [gap today] passed (wrongly) on the rules published before this PR. */
+  const recD = (d, c, id) => getDoc(doc(d, `sites/liveD/${c}/${id}`));
+  const rowD = (data) => ({ data, updatedAt: 2, updatedBy: 'dev' });
+  /* #5: documents by audience, server-side */
+  await INV('#5 docs: builder reads a team-only document', recD(db.builder, 'docs', 'docTeam'), true);
+  await INV('#5 docs: second builder reads a team-only document', recD(db.builder2, 'docs', 'docTeam'), true);
+  await INV('#5 docs: crew DENIED a team-only document [gap today]', recD(db.sub, 'docs', 'docTeam'), false);
+  await INV('#5 docs: crew DENIED a homeowner-only document [gap today]', recD(db.sub, 'docs', 'docHome'), false);
+  await INV('#5 docs: crew reads a crews document', recD(db.sub, 'docs', 'docSubs'), true);
+  await INV('#5 docs: crew reads an everyone document', recD(db.sub, 'docs', 'docAll'), true);
+  await INV('#5 docs: homeowner DENIED a team-only document [gap today]', recD(db.client, 'docs', 'docTeam'), false);
+  await INV('#5 docs: homeowner DENIED a crews document [gap today]', recD(db.client, 'docs', 'docSubs'), false);
+  await INV('#5 docs: homeowner reads a homeowner document', recD(db.client, 'docs', 'docHome'), true);
+  await INV('#5 docs: stranger DENIED an everyone document', recD(db.stranger, 'docs', 'docAll'), false);
+  const docsQ = (d, auds) => getDocs(query(collection(d, 'sites/liveD/docs'), where('data.aud', 'in', auds)));
+  await INV('#5 docs: crew listener (aud in subs, all) allowed and returns only those', docsQ(db.sub, ['subs', 'all'])
+    .then(r => { const ids = r.docs.map(x => x.id).sort().join(); if (ids !== 'docAll,docOldAll,docSubs') throw new Error(ids); }), true);
+  await INV('#5 docs: homeowner listener (aud in homeowner, all) allowed', docsQ(db.client, ['homeowner', 'all'])
+    .then(r => { const ids = r.docs.map(x => x.id).sort().join(); if (ids !== 'docAll,docHome,docOldAll') throw new Error(ids); }), true);
+  await INV('#5 docs: crew unfiltered docs listener DENIED [gap today]', getDocs(collection(db.sub, 'sites/liveD/docs')), false);
+  await INV('#5 docs: homeowner asking for team documents DENIED [gap today]', docsQ(db.client, ['team']), false);
+  await INV('#5 docs: builder adds a document with an audience', setDoc(doc(db.builder, 'sites/liveD/docs/docNew'), rowD({ n: 'Permit.pdf', aud: 'subs', fileId: 'docNew' })), true);
+  await INV('#5 docs: second builder changes a document\'s audience', setDoc(doc(db.builder2, 'sites/liveD/docs/docNew'), rowD({ n: 'Permit.pdf', aud: 'team', fileId: 'docNew' })), true);
+  await INV('#5 docs: builder DENIED a document with no audience [gap today]', setDoc(doc(db.builder, 'sites/liveD/docs/docNoAud'), rowD({ n: 'x.pdf' })), false);
+  await INV('#5 docs: builder DENIED an unknown audience [gap today]', setDoc(doc(db.builder, 'sites/liveD/docs/docBadAud'), rowD({ n: 'x.pdf', aud: 'public' })), false);
+  await INV('#5 docs: crew DENIED writing a document (already refused before)', setDoc(doc(db.sub, 'sites/liveD/docs/docCrew'), rowD({ n: 'x.pdf', aud: 'all' })), false);
+  await INV('#5 docs: homeowner DENIED widening a document to everyone (already refused before)', setDoc(doc(db.client, 'sites/liveD/docs/docTeam'), rowD({ n: 'docTeam.pdf', aud: 'all', fileId: 'docTeam' })), false);
+  await INV('#5 docs: builder deletes a document record', deleteDoc(doc(db.builder, 'sites/liveD/docs/docNew')), true);
+  await INV('#5 docs: crew DENIED deleting a document', deleteDoc(doc(db.sub, 'sites/liveD/docs/docAll')), false);
+  /* #5: invite codes off the house doc */
+  await INV('#5 invs: owner reads the invite codes', recD(db.builder, 'invs', 'HOMECODE9'), true);
+  await INV('#5 invs: crew DENIED the invite codes [gap today]', recD(db.sub, 'invs', 'HOMECODE9'), false);
+  await INV('#5 invs: homeowner DENIED the invite codes [gap today]', recD(db.client, 'invs', 'HOMECODE9'), false);
+  await INV('#5 invs: builder without Money DENIED the invite codes [gap today]', recD(db.builder2, 'invs', 'HOMECODE9'), false);
+  await INV('#5 invs: owner writes an invite code record', setDoc(doc(db.builder, 'sites/liveD/invs/CREWCODE8'), rowD({ code: 'CREWCODE8', role: 'sub', status: 'open' })), true);
+  await INV('#5 invs: crew DENIED writing an invite code (already refused before)', setDoc(doc(db.sub, 'sites/liveD/invs/CREWCODE7'), rowD({ code: 'CREWCODE7', role: 'client' })), false);
+  /* #5: the old lists on the house doc: unchanged is fine, clearing is fine, adding is not */
+  await INV('#5 house: builder edit that leaves the old lists alone still saves', updateDoc(doc(db.builder2, 'sites/liveD'), { 'meta.street': 'Live D 2' }), true);
+  await INV('#5 house: older phone adding a document to meta.docs DENIED [gap today]',
+    updateDoc(doc(db.builder2, 'sites/liveD'), { 'meta.docs': [{ n: 'Contract.pdf', aud: 'team', fileId: 'docOldTeam' }, { n: 'Plans.pdf', aud: 'all', fileId: 'docOldAll' }, { n: 'New.pdf', aud: 'team' }] }), false);
+  await INV('#5 house: owner adding an invite code to meta.invites DENIED [gap today]',
+    updateDoc(doc(db.builder, 'sites/liveD'), { 'meta.invites': [{ code: 'HOMECODE9', role: 'client', status: 'open' }, { code: 'NEWCODE1', role: 'sub' }] }), false);
+  await INV('#5 house: new house carrying documents in meta DENIED [gap today]',
+    setDoc(doc(db.builder, 'sites/newLiveDocs'), { mode: 'live', members: { [U.builder]: 'builder' }, memberUids: [U.builder], meta: { docs: [{ n: 'x.pdf' }] } }), false);
+  await INV('#5 house: new house with an empty documents list allowed',
+    setDoc(doc(db.builder, 'sites/newLiveDocs2'), { mode: 'live', members: { [U.builder]: 'builder' }, memberUids: [U.builder], meta: { docs: [], invites: [] } }), true);
+  await INV('#5 house: builder clears both old lists (the migration write)',
+    setDoc(doc(db.builder2, 'sites/liveD'), { meta: { docs: deleteField(), invites: deleteField() }, updatedAt: 3 }, { merge: true }), true);
+  await INV('#5 house: after the clear, putting a list back is DENIED [gap today]',
+    updateDoc(doc(db.builder, 'sites/liveD'), { 'meta.docs': [{ n: 'x.pdf', aud: 'all' }] }), false);
+  await INV('#5 house: after the clear, an empty list is fine', updateDoc(doc(db.builder, 'sites/liveD'), { 'meta.docs': [] }), true);
+  /* #6: drafts are the builder's */
+  await INV('#6 inv: homeowner DENIED a draft invoice [gap today]', recD(db.client, 'inv', 'invDraft'), false);
+  await INV('#6 inv: homeowner reads a sent invoice', recD(db.client, 'inv', 'invSent'), true);
+  await INV('#6 inv: homeowner reads a paid invoice', recD(db.client, 'inv', 'invPaid'), true);
+  await INV('#6 inv: owner reads the draft', recD(db.builder, 'inv', 'invDraft'), true);
+  const invQ = (d, sts) => getDocs(query(collection(d, 'sites/liveD/inv'), where('data.status', 'in', sts)));
+  await INV('#6 inv: homeowner listener (status in sent, approved, paid, void) allowed, no draft', invQ(db.client, ['sent', 'approved', 'paid', 'void'])
+    .then(r => { const ids = r.docs.map(x => x.id).sort().join(); if (ids !== 'invPaid,invSent') throw new Error(ids); }), true);
+  await INV('#6 inv: homeowner unfiltered invoice listener DENIED [gap today]', getDocs(collection(db.client, 'sites/liveD/inv')), false);
+  await INV('#6 inv: homeowner listener that asks for drafts DENIED [gap today]', invQ(db.client, ['draft', 'sent']), false);
+  /* #15: a homeowner's own notes */
+  await INV('#15 items: homeowner adds a note as themselves', setDoc(doc(db.client, 'sites/liveD/items/iNew'), rowD({ id: 'iNew', cap: 'Scratch on door', by: 'Ana Ruiz' })), true);
+  await INV('#15 items: homeowner edits their own note', setDoc(doc(db.client, 'sites/liveD/items/iHome'), rowD({ id: 'iHome', cap: 'edited', by: 'Ana Ruiz' })), true);
+  await INV('#15 items: homeowner DENIED a note with no name [gap today]', setDoc(doc(db.client, 'sites/liveD/items/iAnon'), rowD({ id: 'iAnon', cap: 'x' })), false);
+  await INV('#15 items: homeowner DENIED a note signed as the crew [gap today]', setDoc(doc(db.client, 'sites/liveD/items/iFake'), rowD({ id: 'iFake', cap: 'x', by: 'Clearwater Plumbing' })), false);
+  await INV('#15 items: homeowner DENIED editing the crew\'s note [gap today]', setDoc(doc(db.client, 'sites/liveD/items/iCrew'), rowD({ id: 'iCrew', cap: 'changed', by: 'Clearwater Plumbing' })), false);
+  await INV('#15 items: homeowner DENIED editing the builder\'s note [gap today]', setDoc(doc(db.client, 'sites/liveD/items/iBuilder'), rowD({ id: 'iBuilder', cap: 'changed', by: 'You' })), false);
+  await INV('#15 items: homeowner DENIED taking over a note by renaming it [gap today]', setDoc(doc(db.client, 'sites/liveD/items/iBuilder'), rowD({ id: 'iBuilder', cap: 'mine', by: 'Ana Ruiz' })), false);
+  await INV('#15 items: homeowner DENIED handing their note to someone else [gap today]', setDoc(doc(db.client, 'sites/liveD/items/iHome'), rowD({ id: 'iHome', cap: 'x', by: 'You' })), false);
+  await INV('#15 items: crew still edits their own note', setDoc(doc(db.sub, 'sites/liveD/items/iCrew'), rowD({ id: 'iCrew', cap: 'crew edit', by: 'Clearwater Plumbing' })), true);
+  await INV('#15 items: builder still edits the homeowner\'s note', setDoc(doc(db.builder, 'sites/liveD/items/iHome'), rowD({ id: 'iHome', cap: 'builder edit', by: 'Ana Ruiz' })), true);
+  /* #18: only the owner deletes a house */
+  await INV('#18 house: builder who is not the owner DENIED setting meta.deleted [gap today]', updateDoc(doc(db.builder2, 'sites/liveD'), { 'meta.deleted': 1791200000000 }), false);
+  await INV('#18 house: crew DENIED setting meta.deleted', updateDoc(doc(db.sub, 'sites/liveD'), { 'meta.deleted': 1791200000000 }), false);
+  await INV('#18 house: homeowner DENIED setting meta.deleted', updateDoc(doc(db.client, 'sites/liveD'), { 'meta.deleted': 1791200000000 }), false);
+  await INV('#18 house: the non-owner builder still edits the house', updateDoc(doc(db.builder2, 'sites/liveD'), { 'meta.street': 'Live D 3' }), true);
+  await INV('#18 house: owner (rpRole owner on the roster) deletes their house', updateDoc(doc(db.builder2, 'sites/liveRpOwner'), { 'meta.deleted': 1791200000000 }), true);
+  await INV('#18 house: owner with no roster entry deletes their house', updateDoc(doc(db.builder, 'sites/liveD'), { 'meta.deleted': 1791200000000 }), true);
+  await INV('#18 house: builder who is not the owner DENIED undeleting it [gap today]', updateDoc(doc(db.builder2, 'sites/liveD'), { 'meta.deleted': deleteField() }), false);
+  await INV('#18 house: owner undeletes it', updateDoc(doc(db.builder, 'sites/liveD'), { 'meta.deleted': deleteField() }), true);
+  /* #14: packets come from a builder of the house they name */
+  const pk = (siteId, by) => Object.assign({ createdBy: by, expires: 4102444800000, resp: null, q: [] }, siteId === undefined ? {} : { siteId });
+  await INV('#14 packets: builder of the house creates a packet', setDoc(doc(db.builder, 'packets/pkNew1'), pk('liveD', U.builder)), true);
+  await INV('#14 packets: second builder of the house creates a packet', setDoc(doc(db.builder2, 'packets/pkNew2'), pk('liveD', U.builder2)), true);
+  await INV('#14 packets: stranger DENIED a packet naming someone else\'s house [gap today]', setDoc(doc(db.stranger, 'packets/pkS1'), pk('liveD', U.stranger)), false);
+  await INV('#14 packets: crew DENIED creating a packet for their house [gap today]', setDoc(doc(db.sub, 'packets/pkS2'), pk('liveD', U.sub)), false);
+  await INV('#14 packets: homeowner DENIED creating a packet [gap today]', setDoc(doc(db.client, 'packets/pkS3'), pk('liveD', U.client)), false);
+  await INV('#14 packets: DENIED with no house named [gap today]', setDoc(doc(db.builder, 'packets/pkS4'), pk(undefined, U.builder)), false);
+  await INV('#14 packets: DENIED naming a house that is not live [gap today]', setDoc(doc(db.demoMember, 'packets/pkS5'), pk('demoStamped', U.demoMember)), false);
+  const anonDb = testEnv.authenticatedContext(U.builder, { firebase: { sign_in_provider: 'anonymous' } }).firestore();
+  await INV('#14 packets: anonymous session DENIED even with the builder\'s uid [gap today]', setDoc(doc(anonDb, 'packets/pkS6'), pk('liveD', U.builder)), false);
+  await INV('#14 packets: publisher DENIED moving a packet to another house [gap today]', updateDoc(doc(db.builder, 'packets/pkD1'), { siteId: 'liveB' }), false);
+  await INV('#14 packets: publisher still updates their packet', updateDoc(doc(db.builder, 'packets/pkD1'), { note: 'Bring the long ladder' }), true);
+  await INV('#14 packets: publisher still revokes their packet', updateDoc(doc(db.builder, 'packets/pkD1'), { revoked: true }), true);
+
   if (HAS_ST) {
   /* ══════════ STORAGE ══════════ */
   const png = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0, 0, 0, 0]);
@@ -1325,6 +1502,63 @@ async function main() {
   await INV('storage: #11 octet-stream DENIED (the app names the type)', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/x5'), png, { contentType: 'application/octet-stream' }), false);
   await INV('storage: #11 stranger DENIED a Word upload', uploadBytes(ref(st.stranger, 'live/sites/liveA/docs/w5'), png, { contentType: DOCX }), false);
   await INV('storage: #11 >25MB Word document denied', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/w6'), Buffer.alloc(26 * 1024 * 1024), { contentType: DOCX }), false);
+  /* #5 + #7 (batch 3): per-audience folders, the record's audience, create-only or the uploader */
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    const s = ctx.storage();
+    for (const [k, id] of [['docs-team', 'docTeam'], ['docs-subs', 'docSubs'], ['docs-homeowner', 'docHome'], ['docs-all', 'docAll'], ['docs', 'docOldTeam'], ['docs', 'docOldAll'], ['docs-all', 'docTeam']])
+      await uploadBytes(ref(s, `live/sites/liveD/${k}/${id}`), png, { contentType: 'application/pdf' });
+    await uploadBytes(ref(s, 'live/sites/liveD/photos/legacy1'), png, meta);
+    await uploadBytes(ref(s, 'live/sites/liveD/photos/mine1'), png, { contentType: 'image/png', customMetadata: { uploader: U.sub } });
+  });
+  const rd = (who, k, id) => getBytes(ref(st[who], `live/sites/liveD/${k}/${id}`));
+  await INV('#5 storage: builder reads a team-only file', rd('builder', 'docs-team', 'docTeam'), true);
+  await INV('#5 storage: crew DENIED a team-only file [gap today]', rd('sub', 'docs-team', 'docTeam'), false);
+  await INV('#5 storage: homeowner DENIED a team-only file [gap today]', rd('client', 'docs-team', 'docTeam'), false);
+  await INV('#5 storage: crew reads a crews file', rd('sub', 'docs-subs', 'docSubs'), true);
+  await INV('#5 storage: homeowner DENIED a crews file [gap today]', rd('client', 'docs-subs', 'docSubs'), false);
+  await INV('#5 storage: homeowner reads a homeowner file', rd('client', 'docs-homeowner', 'docHome'), true);
+  await INV('#5 storage: crew DENIED a homeowner file [gap today]', rd('sub', 'docs-homeowner', 'docHome'), false);
+  await INV('#5 storage: crew reads an everyone file', rd('sub', 'docs-all', 'docAll'), true);
+  await INV('#5 storage: homeowner reads an everyone file', rd('client', 'docs-all', 'docAll'), true);
+  await INV('#5 storage: old copy in docs-all of a document now team-only DENIED to the homeowner [gap today]', rd('client', 'docs-all', 'docTeam'), false);
+  await INV('#5 storage: old shared folder, team-only document, DENIED to the crew [gap today]', rd('sub', 'docs', 'docOldTeam'), false);
+  await INV('#5 storage: old shared folder, team-only document, DENIED to the homeowner [gap today]', rd('client', 'docs', 'docOldTeam'), false);
+  await INV('#5 storage: old shared folder, everyone document, still opens for the homeowner (no file moves)', rd('client', 'docs', 'docOldAll'), true);
+  await INV('#5 storage: old shared folder, team-only document, still opens for the builder', rd('builder2', 'docs', 'docOldTeam'), true);
+  const pdf = { contentType: 'application/pdf', customMetadata: { uploader: U.builder } };
+  await INV('#5 storage: builder uploads to an audience folder', uploadBytes(ref(st.builder, 'live/sites/liveD/docs-subs/docUp1'), png, pdf), true);
+  await INV('#5 storage: crew DENIED uploading a document [gap today]', uploadBytes(ref(st.sub, 'live/sites/liveD/docs/docUp2'), png, { contentType: 'application/pdf' }), false);
+  await INV('#5 storage: homeowner DENIED uploading to an audience folder [gap today]', uploadBytes(ref(st.client, 'live/sites/liveD/docs-all/docUp3'), png, { contentType: 'application/pdf' }), false);
+  await INV('#5 storage: unknown folder DENIED [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveD/other/x1'), png, meta), false);
+  await INV('#7 storage: crew adds a new photo', uploadBytes(ref(st.sub, 'live/sites/liveD/photos/new1'), png, { contentType: 'image/png', customMetadata: { uploader: U.sub } }), true);
+  await INV('#7 storage: homeowner DENIED overwriting someone else\'s photo [gap today]', uploadBytes(ref(st.client, 'live/sites/liveD/photos/mine1'), png, meta), false);
+  await INV('#7 storage: builder DENIED overwriting an unstamped photo [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveD/photos/legacy1'), png, meta), false);
+  await INV('#7 storage: the uploader re-sends their own photo', uploadBytes(ref(st.sub, 'live/sites/liveD/photos/mine1'), png, { contentType: 'image/png', customMetadata: { uploader: U.sub } }), true);
+  await INV('#7 storage: DENIED stamping someone else as the uploader [gap today]', uploadBytes(ref(st.client, 'live/sites/liveD/photos/forge1'), png, { contentType: 'image/png', customMetadata: { uploader: U.builder } }), false);
+  await INV('#7 storage: builder DENIED overwriting a document file [gap today]', uploadBytes(ref(st.builder2, 'live/sites/liveD/docs-subs/docUp1'), png, { contentType: 'application/pdf' }), false);
+  await INV('#7 storage: uploader deletes their own old copy', deleteObject(ref(st.builder, 'live/sites/liveD/docs-subs/docUp1')), true);
+  await INV('#7 storage: DENIED deleting someone else\'s photo', deleteObject(ref(st.builder, 'live/sites/liveD/photos/mine1')), false);
+  await INV('#7 storage: DENIED deleting an unstamped file', deleteObject(ref(st.builder, 'live/sites/liveD/photos/legacy1')), false);
+  /* #11 + #5/#7: a Word or Excel document follows the same audience, create-only and uploader rules as a PDF */
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'sites/liveD/docs/wSubs'), { data: { n: 'wSubs.docx', aud: 'subs', fileId: 'wSubs' }, updatedAt: 1, updatedBy: 'seed' });
+    await setDoc(doc(ctx.firestore(), 'sites/liveD/docs/xTeam'), { data: { n: 'xTeam.xlsx', aud: 'team', fileId: 'xTeam' }, updatedAt: 1, updatedBy: 'seed' });
+  });
+  const docxMe = { contentType: DOCX, customMetadata: { uploader: U.builder } }, xlsxMe = { contentType: XLSX, customMetadata: { uploader: U.builder } };
+  await INV('#11 storage: builder uploads a Word document to a crews folder, stamped as the uploader [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveD/docs-subs/wSubs'), png, docxMe), true);
+  await INV('#11 storage: builder uploads an Excel document to the team folder [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveD/docs-team/xTeam'), png, xlsxMe), true);
+  await INV('#11 storage: crew reads the crews Word document', rd('sub', 'docs-subs', 'wSubs'), true);
+  await INV('#11 storage: homeowner DENIED the crews Word document', rd('client', 'docs-subs', 'wSubs'), false);
+  await INV('#11 storage: crew DENIED the team-only Excel document', rd('sub', 'docs-team', 'xTeam'), false);
+  await INV('#11 storage: crew DENIED uploading a Word document', uploadBytes(ref(st.sub, 'live/sites/liveD/docs-subs/wSub2'), png, { contentType: DOCX, customMetadata: { uploader: U.sub } }), false);
+  await INV('#11 storage: homeowner DENIED uploading an Excel document', uploadBytes(ref(st.client, 'live/sites/liveD/docs-all/xHo'), png, { contentType: XLSX, customMetadata: { uploader: U.client } }), false);
+  await INV('#11 storage: another builder DENIED replacing the Word document', uploadBytes(ref(st.builder2, 'live/sites/liveD/docs-subs/wSubs'), png, { contentType: DOCX, customMetadata: { uploader: U.builder2 } }), false);
+  await INV('#11 storage: DENIED stamping someone else as the uploader of a Word document', uploadBytes(ref(st.builder2, 'live/sites/liveD/docs-team/wForge'), png, docxMe), false);
+  await INV('#11 storage: the uploader replaces their own Word document', uploadBytes(ref(st.builder, 'live/sites/liveD/docs-subs/wSubs'), png, docxMe), true);
+  await INV('#11 storage: Word DENIED in photos even with the uploader stamp', uploadBytes(ref(st.builder, 'live/sites/liveD/photos/wPh'), png, docxMe), false);
+  await INV('#11 storage: >25MB Excel document DENIED in an audience folder', uploadBytes(ref(st.builder, 'live/sites/liveD/docs-team/xBig'), Buffer.alloc(26 * 1024 * 1024), xlsxMe), false);
+  await INV('#11 storage: another builder DENIED deleting the Excel document', deleteObject(ref(st.builder2, 'live/sites/liveD/docs-team/xTeam')), false);
+  await INV('#11 storage: the uploader deletes their own Excel document', deleteObject(ref(st.builder, 'live/sites/liveD/docs-team/xTeam')), true);
   const big = Buffer.alloc(26 * 1024 * 1024);
   await INV('storage: >25MB upload denied even for member', uploadBytes(ref(st.builder, 'live/sites/liveA/photos/big1'), big, meta), false);
   }
