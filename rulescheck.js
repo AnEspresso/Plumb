@@ -1489,6 +1489,19 @@ async function main() {
   await INV('storage: sub DENIED costs receipt read', getBytes(ref(st.sub, 'live/sites/liveA/costs/receipt1')), false);
   await INV('storage: client DENIED costs receipt read', getBytes(ref(st.client, 'live/sites/liveA/costs/receipt1')), false);
   await INV('storage: sub DENIED costs receipt upload', uploadBytes(ref(st.sub, 'live/sites/liveA/costs/r3'), png, meta), false);
+  /* #11 (2.513.0): Word and Excel documents, in document folders only */
+  const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  await INV('storage: #11 builder uploads a Word document (docx) [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/w1'), png, { contentType: DOCX }), true);
+  await INV('storage: #11 builder uploads an Excel document (xlsx) [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/x1'), png, { contentType: XLSX }), true);
+  await INV('storage: #11 builder uploads an old Word document (doc) [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/w2'), png, { contentType: 'application/msword' }), true);
+  await INV('storage: #11 builder uploads an old Excel document (xls) [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/x2'), png, { contentType: 'application/vnd.ms-excel' }), true);
+  await INV('storage: #11 a Word document in a docs-<audience> folder [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveA/docs-team/w3'), png, { contentType: DOCX }), true);
+  await INV('storage: #11 Word DENIED in photos', uploadBytes(ref(st.builder, 'live/sites/liveA/photos/w4'), png, { contentType: DOCX }), false);
+  await INV('storage: #11 Excel DENIED in costs', uploadBytes(ref(st.builder, 'live/sites/liveA/costs/x3'), png, { contentType: XLSX }), false);
+  await INV('storage: #11 a macro workbook (xlsm) DENIED', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/x4'), png, { contentType: 'application/vnd.ms-excel.sheet.macroEnabled.12' }), false);
+  await INV('storage: #11 octet-stream DENIED (the app names the type)', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/x5'), png, { contentType: 'application/octet-stream' }), false);
+  await INV('storage: #11 stranger DENIED a Word upload', uploadBytes(ref(st.stranger, 'live/sites/liveA/docs/w5'), png, { contentType: DOCX }), false);
+  await INV('storage: #11 >25MB Word document denied', uploadBytes(ref(st.builder, 'live/sites/liveA/docs/w6'), Buffer.alloc(26 * 1024 * 1024), { contentType: DOCX }), false);
   /* #5 + #7 (batch 3): per-audience folders, the record's audience, create-only or the uploader */
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const s = ctx.storage();
@@ -1526,6 +1539,26 @@ async function main() {
   await INV('#7 storage: uploader deletes their own old copy', deleteObject(ref(st.builder, 'live/sites/liveD/docs-subs/docUp1')), true);
   await INV('#7 storage: DENIED deleting someone else\'s photo', deleteObject(ref(st.builder, 'live/sites/liveD/photos/mine1')), false);
   await INV('#7 storage: DENIED deleting an unstamped file', deleteObject(ref(st.builder, 'live/sites/liveD/photos/legacy1')), false);
+  /* #11 + #5/#7: a Word or Excel document follows the same audience, create-only and uploader rules as a PDF */
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'sites/liveD/docs/wSubs'), { data: { n: 'wSubs.docx', aud: 'subs', fileId: 'wSubs' }, updatedAt: 1, updatedBy: 'seed' });
+    await setDoc(doc(ctx.firestore(), 'sites/liveD/docs/xTeam'), { data: { n: 'xTeam.xlsx', aud: 'team', fileId: 'xTeam' }, updatedAt: 1, updatedBy: 'seed' });
+  });
+  const docxMe = { contentType: DOCX, customMetadata: { uploader: U.builder } }, xlsxMe = { contentType: XLSX, customMetadata: { uploader: U.builder } };
+  await INV('#11 storage: builder uploads a Word document to a crews folder, stamped as the uploader [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveD/docs-subs/wSubs'), png, docxMe), true);
+  await INV('#11 storage: builder uploads an Excel document to the team folder [gap today]', uploadBytes(ref(st.builder, 'live/sites/liveD/docs-team/xTeam'), png, xlsxMe), true);
+  await INV('#11 storage: crew reads the crews Word document', rd('sub', 'docs-subs', 'wSubs'), true);
+  await INV('#11 storage: homeowner DENIED the crews Word document', rd('client', 'docs-subs', 'wSubs'), false);
+  await INV('#11 storage: crew DENIED the team-only Excel document', rd('sub', 'docs-team', 'xTeam'), false);
+  await INV('#11 storage: crew DENIED uploading a Word document', uploadBytes(ref(st.sub, 'live/sites/liveD/docs-subs/wSub2'), png, { contentType: DOCX, customMetadata: { uploader: U.sub } }), false);
+  await INV('#11 storage: homeowner DENIED uploading an Excel document', uploadBytes(ref(st.client, 'live/sites/liveD/docs-all/xHo'), png, { contentType: XLSX, customMetadata: { uploader: U.client } }), false);
+  await INV('#11 storage: another builder DENIED replacing the Word document', uploadBytes(ref(st.builder2, 'live/sites/liveD/docs-subs/wSubs'), png, { contentType: DOCX, customMetadata: { uploader: U.builder2 } }), false);
+  await INV('#11 storage: DENIED stamping someone else as the uploader of a Word document', uploadBytes(ref(st.builder2, 'live/sites/liveD/docs-team/wForge'), png, docxMe), false);
+  await INV('#11 storage: the uploader replaces their own Word document', uploadBytes(ref(st.builder, 'live/sites/liveD/docs-subs/wSubs'), png, docxMe), true);
+  await INV('#11 storage: Word DENIED in photos even with the uploader stamp', uploadBytes(ref(st.builder, 'live/sites/liveD/photos/wPh'), png, docxMe), false);
+  await INV('#11 storage: >25MB Excel document DENIED in an audience folder', uploadBytes(ref(st.builder, 'live/sites/liveD/docs-team/xBig'), Buffer.alloc(26 * 1024 * 1024), xlsxMe), false);
+  await INV('#11 storage: another builder DENIED deleting the Excel document', deleteObject(ref(st.builder2, 'live/sites/liveD/docs-team/xTeam')), false);
+  await INV('#11 storage: the uploader deletes their own Excel document', deleteObject(ref(st.builder, 'live/sites/liveD/docs-team/xTeam')), true);
   const big = Buffer.alloc(26 * 1024 * 1024);
   await INV('storage: >25MB upload denied even for member', uploadBytes(ref(st.builder, 'live/sites/liveA/photos/big1'), big, meta), false);
   }

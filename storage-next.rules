@@ -66,10 +66,18 @@ service firebase.storage {
         return request.resource.metadata == null
           || request.resource.metadata.get('uploader', request.auth.uid) == request.auth.uid;
       }
+      /* #11 (2.513.0): a document may also be a Word or Excel file (the app's document picker offers them),
+         under 25 MB, in document folders only (docs and docs-<audience>). Photos and receipts stay image or PDF.
+         The audience, create-only and uploader rules above apply to them exactly as to a PDF. */
+      function officeDocOk() {
+        return (kind == 'docs' || docKind())
+               && request.resource.size < 25 * 1024 * 1024
+               && request.resource.contentType.matches('application/msword|application/vnd[.]ms-excel|application/vnd[.]openxmlformats-officedocument[.]wordprocessingml[.]document|application/vnd[.]openxmlformats-officedocument[.]spreadsheetml[.]sheet');
+      }
       allow read:   if isMember() && readOk();
       /* An upload over an existing file is checked as a create too: only a new
          path, or the uploader's own file. */
-      allow create: if isMember() && writeKindOk() && okUpload() && stampIsMe()
+      allow create: if isMember() && writeKindOk() && (okUpload() || officeDocOk()) && stampIsMe()
                     && (resource == null || uploaderIsMe());
       allow update: if isMember() && writeKindOk() && stampIsMe() && uploaderIsMe();
       allow delete: if isMember() && uploaderIsMe();
