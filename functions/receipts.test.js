@@ -48,7 +48,7 @@ function world(opts) {
     emailOf: async (u) => (u === 'uMJ' ? null : u + '@x.test'),
     claim: async (s, l, u) => { const k = s + l + u; if (claims.has(k)) return false; claims.add(k); return true; },
     release: async (s, l, u) => { claims.delete(s + l + u); },
-    sendEmail: async (m) => { if (opts.mailFail) throw new Error('provider down'); emails.push(m); },
+    sendEmail: async (m) => { if (opts.mailFail) throw new Error('provider down'); if (opts.refuse && opts.refuse.includes(m.to)) { const e = new Error('email provider refused: 422'); e.status = 422; throw e; } if (opts.rate) { const e = new Error('email provider refused: 429'); e.status = 429; throw e; } emails.push(m); },
     notify: async () => { emails.push({ pushed: true }); } };
   return { deps, emails, archive, updates, claims };
 }
@@ -66,7 +66,7 @@ const EV = (line, id) => ({ params: { siteId: 's1', lineId: id || 'evA_0' }, tim
   let r = await R.handle(w.deps, EV(LINE()));
   assert.deepStrictEqual([...w.archive.keys()].sort(), ['archive/s1/evA_0.json', 'archive/s1/evA_0.pdf']);
   const pdf = w.archive.get('archive/s1/evA_0.pdf'); assert.strictEqual(r.fp, sha(pdf), 'the fingerprint is the SHA-256 of the archived PDF');
-  assert.deepStrictEqual(w.updates, [['sites/s1/hist/evA_0', { fp: r.fp, archived: 'plumb-money-archive/archive/s1/evA_0.pdf' }]]);
+  assert.deepStrictEqual(w.updates, [['sites/s1/hist/evA_0', { fp: r.fp, archived: 'plumb-money-archive/archive/s1/evA_0.pdf' }], ['sites/s1/hist/evA_0', { rcStatus: 'sent' }]]);
   assert.deepStrictEqual(w.emails.map(m => m.to).sort(), ['uC@x.test', 'uO@x.test'], 'one per party; a party with no email is skipped');
   w.emails.forEach(m => { assert.ok(m.text.includes(r.fp)); assert.strictEqual(sha(Buffer.from(m.attachments[0].content, 'base64')), r.fp, 'the PDF in the email equals the archived copy'); assert.ok(/Dean Walsh sent change order 3 for \$1,850\.00 on 12 Oak\./.test(m.text)); });
   assert.ok(JSON.parse(w.archive.get('archive/s1/evA_0.json').toString()).line.amountC === 185000, 'the JSON snapshot is the line');
@@ -117,5 +117,43 @@ const EV = (line, id) => ({ params: { siteId: 's1', lineId: id || 'evA_0' }, tim
   await R.handle(w.deps, EV(PL, 'evR_0')); assert.ok(w.emails.every(m => m.attachments.length === 1), 'too big: left off');
   R._reset(); w = world({ co: PCO }); asked = []; w.deps.photo = async (s2, id) => { asked.push(id); return { buf: Buffer.from('x') }; };
   await R.handle(w.deps, EV(LINE())); assert.deepStrictEqual(asked, [], 'only a paper approval asks for a photo');
+  /* #9 (2.513.0): the check is read against the change order as it is now */
+  R._reset(); w = world({ co: { data: { id: 'c1', status: 'sent', rev: 2, verifiedRev: 2, verifiedTotal: 210000, amountC: 210000 } } });
+  assert.deepStrictEqual(await R.handle(w.deps, EV(LINE())), { skipped: 'superseded' }, '#9 a rev-1 line on a change order now at rev 2 stops waiting');
+  assert.strictEqual(w.emails.length + w.archive.size, 0);
+  assert.deepStrictEqual(w.updates.map(u => u[1].rcStatus), ['superseded'], '#9 the line says so');
+  R._reset(); w = world({ co: { data: { id: 'c1', status: 'sent', rev: 2, verifiedRev: 2, verifiedTotal: 210000, amountC: 210000 } } });
+  r = await R.handle(w.deps, EV(LINE({ kind: 'changed', rev: 2, amountC: 210000 }), 'evV_0'));
+  assert.ok(r.fp && w.emails.length === 2, '#9 the current revision, verified, gets its receipt');
+  R._reset(); w = world({ co: null });
+  assert.deepStrictEqual(await R.handle(w.deps, EV(LINE())), { failed: 'change order not found' }, '#9 a missing change order fails at once, no retry');
+  assert.strictEqual(w.updates[0][1].rcStatus, 'failed');
+  /* #9: attempts are capped; past the cap the line is marked failed and nothing throws (the trigger stops) */
+  const counter = (w2) => { let n = 0; w2.deps.attempt = async () => ++n; return () => n; };
+  R._reset(); w = world({ co: { data: { id: 'c1', status: 'sent', rev: 1, amountC: 185000 } } }); let n = counter(w);
+  for (let i = 1; i < R.MAX_TRIES; i++) await assert.rejects(R.handle(w.deps, EV(LINE())), /not verified yet/, 'try ' + i + ' retries');
+  r = await R.handle(w.deps, EV(LINE()));
+  assert.ok(r.failed && n() === R.MAX_TRIES, '#9 the last try marks failed instead of throwing: ' + JSON.stringify(r));
+  assert.strictEqual(w.updates[w.updates.length - 1][1].rcStatus, 'failed');
+  r = await R.handle(w.deps, EV(LINE()));
+  assert.deepStrictEqual(r, { failed: 'too many tries', tries: R.MAX_TRIES + 1 }, '#9 a run past the cap does no work');
+  assert.strictEqual(w.emails.length + w.archive.size, 0);
+  R._reset(); w = world({ mailFail: true }); n = counter(w);
+  for (let i = 1; i < R.MAX_TRIES; i++) await assert.rejects(R.handle(w.deps, EV(LINE())), /provider down/);
+  r = await R.handle(w.deps, EV(LINE())); assert.ok(r.failed, '#9 a provider that stays down ends as failed');
+  /* #9: a refused address is permanent: no throw, no retry for that party, the others still get theirs */
+  R._reset(); w = world({ refuse: ['uC@x.test'] });
+  r = await R.handle(w.deps, EV(LINE()));
+  assert.deepStrictEqual(r.refused, ['uC'], '#9 the refused party is named');
+  assert.deepStrictEqual(w.emails.map(m => m.to), ['uO@x.test'], '#9 the other party still gets theirs');
+  assert.ok(w.claims.has('s1evA_0uC'), '#9 the refused party keeps its claim, so a re-run never retries it');
+  assert.ok(w.updates.some(u => u[1]['rcFail.uC'] && u[1]['rcFail.uC'].status === 422), '#9 the refusal is written on the line');
+  assert.deepStrictEqual(w.updates[w.updates.length - 1][1], { rcStatus: 'failed', rcError: '1 address(es) refused' });
+  const again = w.emails.length; await R.handle(w.deps, EV(LINE())); assert.strictEqual(w.emails.length, again, '#9 a re-run sends nothing new');
+  /* #9: a rate limit (429) is not permanent: the claim is released and the trigger retries */
+  R._reset(); w = world({ rate: true });
+  await assert.rejects(R.handle(w.deps, EV(LINE())), /429/); assert.strictEqual(w.claims.size, 0);
+  assert.ok(R.permanent({ status: 422 }) && R.permanent({ status: 400 }) && !R.permanent({ status: 429 }) && !R.permanent({ status: 408 }) && !R.permanent({ status: 500 }) && !R.permanent(new Error('net')));
+  await assert.rejects(R.resendSender('K', async () => ({ ok: false, status: 422 }))({ from: 'a', to: 'b', subject: 's', text: 't', attachments: [] }), (e) => e.status === 422, '#9 the provider error carries its status');
   console.log('receipts: all checks passed (pdf, fingerprint = archived bytes, one email per party, flags off, archive-first, verification hold, provider)');
 })().catch(e => { console.error(e); process.exit(1); });

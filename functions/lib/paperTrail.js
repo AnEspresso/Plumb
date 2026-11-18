@@ -152,14 +152,20 @@ function _resetCache() { _cache.at = 0; _cache.on = false; }
 
 /* ---- the handler (db and a server timestamp factory are passed in so tests can fake them) ---- */
 /* 2.483.0 (G4): invoice and payment history is written with the switch off too, so the record exists from day one.
-   The app still shows it only with the switch on; receipts and the archive keep their own switches; co checks stay behind it. */
+   The app still shows it only with the switch on; receipts and the archive keep their own switches.
+   #8 (2.513.0): the change-order check runs with the switch off too. The switch is a rollout switch for the history
+   and receipts, not a kill switch for the check: the check only writes verifiedRev/verifiedTotal, which nothing reads
+   unless the app's change orders are on (they sit behind the same switch in the app), and without it a sent change
+   order can never be approved (Rules A1 clientCoOk needs the stamp). Change-order history lines still wait for the switch. */
 const ALWAYS = ['inv', 'pmts'];
 async function handle(db, ts, coll, event) {
-  if (!ALWAYS.includes(coll) && !(await enabled(db))) return { skipped: 'off' };
+  const on = ALWAYS.includes(coll) || (await enabled(db));
+  if (!on && coll !== 'co') return { skipped: 'off' };
   const siteId = event.params.siteId;
   const before = event.data && event.data.before && event.data.before.exists ? event.data.before.data() : null;
   const after = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : null;
   if (!after) {
+    if (!on) return { skipped: 'off' };
     /* 2.483.0 (G6): a deleted never-sent draft leaves one line, so another builder on the house can see it went */
     const ln = draftDeletedLine(coll, before, event.params.docId);
     if (!ln) return { skipped: 'delete' };
@@ -167,7 +173,7 @@ async function handle(db, ts, coll, event) {
     return { lines: 1, verified: null };
   }
   const res = { lines: 0, verified: null };
-  const lines = linesFor(coll, before, after);
+  const lines = on ? linesFor(coll, before, after) : [];
   if (lines.length) {
     const site = (await db.collection('sites').doc(siteId).get()).data() || {};
     const info = ((site.meta || {}).memberInfo) || {};
@@ -181,19 +187,47 @@ async function handle(db, ts, coll, event) {
     await batch.commit(); res.lines = lines.length;
   }
   if (coll === 'co' && after.data && after.data.status === 'sent') {
-    const d = after.data, v = verifyCo(d);
-    if (v.ok && (d.verifiedRev !== d.rev || d.verifiedTotal !== d.amountC)) {
-      await db.collection('sites').doc(siteId).collection('co').doc(event.params.docId).update({ 'data.verifiedRev': d.rev, 'data.verifiedTotal': d.amountC });
-      res.verified = true;
-    } else if (!v.ok && d.verifiedRev === d.rev) {
-      await db.collection('sites').doc(siteId).collection('co').doc(event.params.docId).update({ 'data.verifiedRev': null, 'data.verifiedTotal': null });
-      res.verified = false;
-    }
-    if (!v.ok) {
-      await db.collection('sites').doc(siteId).collection('hist').doc(String(event.id) + '_check').set({ kind: 'needs_check', ref: String(d.id || ''), refType: 'co', rev: d.rev == null ? null : d.rev, at: ts(), src: 'co/' + event.params.docId, by: null, byName: '' });
+    const r = await checkCo(db, siteId, event.params.docId);
+    res.verified = r.wrote ? r.ok : null;
+    if (r.status === 'sent' && !r.ok && on) {
+      await db.collection('sites').doc(siteId).collection('hist').doc(String(event.id) + '_check').set({ kind: 'needs_check', ref: String(r.id || ''), refType: 'co', rev: r.rev == null ? null : r.rev, at: ts(), src: 'co/' + event.params.docId, by: null, byName: '' });
     }
   }
   return res;
 }
 
-module.exports = { draftDeletedLine, ALWAYS, flagLine, handleFlag, dollarsToCents, centsOf, fmtCents, sentenceFor, invoiceTotalCents, verifyInvoice, verifyCo, linesFor, enabled, handle, _resetCache };
+/* #8 (2.513.0): the check reads the change order as it is NOW, in a transaction, and stamps only that revision.
+   Idempotent: a retried or late event for an older revision re-checks the current one and writes nothing when the
+   stamp already matches, so it can never put an old revision's stamp over a newer one. */
+async function checkCo(db, siteId, docId) {
+  const ref = db.collection('sites').doc(siteId).collection('co').doc(String(docId));
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const d = snap && snap.exists ? ((snap.data() || {}).data || null) : null;
+    if (!d) return { status: null, ok: false, wrote: false };
+    const out = { status: d.status || null, id: d.id, rev: d.rev, ok: false, wrote: false };
+    if (d.status !== 'sent') return out;
+    const v = verifyCo(d); out.ok = v.ok;
+    if (v.ok && (d.verifiedRev !== d.rev || d.verifiedTotal !== d.amountC)) { tx.update(ref, { 'data.verifiedRev': d.rev, 'data.verifiedTotal': d.amountC }); out.wrote = true; }
+    else if (!v.ok && (d.verifiedRev != null || d.verifiedTotal != null)) { tx.update(ref, { 'data.verifiedRev': null, 'data.verifiedTotal': null }); out.wrote = true; }
+    return out;
+  });
+}
+
+/* #8 (2.513.0): the builder's "re-check" for a change order that is stuck waiting on the check (sent before the
+   trigger ran, or a trigger that gave up). Only a builder who passes the rules' moneyOk on that live house. */
+async function recheckCo(db, ts, uid, siteId, coId, moneyUids) {
+  if (!uid || !siteId || !coId) return { ok: false, reason: 'bad-request' };
+  const ss = await db.collection('sites').doc(String(siteId)).get();
+  const site = ss && ss.exists ? ss.data() : null;
+  if (!site || site.mode !== 'live' || (site.meta && site.meta.deleted)) return { ok: false, reason: 'no-site' };
+  if (!moneyUids(site).includes(uid)) return { ok: false, reason: 'not-allowed' };
+  const r = await checkCo(db, String(siteId), String(coId));
+  if (r.status !== 'sent') return { ok: false, reason: r.status ? 'not-sent' : 'no-co', status: r.status };
+  if (!r.ok && (await enabled(db))) {
+    await db.collection('sites').doc(String(siteId)).collection('hist').doc('recheck_' + String(coId) + '_r' + String(r.rev)).set({ kind: 'needs_check', ref: String(r.id || coId), refType: 'co', rev: r.rev == null ? null : r.rev, at: ts(), src: 'co/' + coId, by: uid, byName: '' });
+  }
+  return { ok: true, verified: r.ok, rev: r.rev == null ? null : r.rev };
+}
+
+module.exports = { checkCo, recheckCo, draftDeletedLine, ALWAYS, flagLine, handleFlag, dollarsToCents, centsOf, fmtCents, sentenceFor, invoiceTotalCents, verifyInvoice, verifyCo, linesFor, enabled, handle, _resetCache };
