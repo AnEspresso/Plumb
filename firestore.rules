@@ -33,9 +33,13 @@ service cloud.firestore {
         return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['meta', 'updatedAt', 'updatedBy', 'updatedByUid', 'data']);
       }
+      /* #18 (batch 3): only the owner deletes a house. meta.deleted is the
+         tombstone every phone drops the house on, so a builder who is not the
+         owner may not set, change or clear it (the owner path has no meta
+         allowlist and keeps it). */
       function builderHouseOk() {
         return isBuilder() && membersHeld() && rootMetaOnly()
-          && !metaChanged().hasAny(['memberInfo','members','memberUids','mode']);
+          && !metaChanged().hasAny(['memberInfo','members','memberUids','mode','deleted']);
       }
       /* A homeowner signs a trade's crew instructions: packetSignoff.<trade>
          .homeowner. The builder's own sign-off on every trade stays exactly
@@ -158,6 +162,26 @@ service cloud.firestore {
         return !m.keys().hasAny(['invoices'])
           || (m.invoices is list && m.invoices.size() == 0);
       }
+      /* #5 (batch 3): documents and invite codes left the house doc (every
+         member reads it). Documents live in sites/{id}/docs, one record per
+         document with its audience; invite codes in sites/{id}/invs, read by
+         builders with Money only. A house that still carries the old lists
+         keeps them until a builder on 2.512.0+ copies them out and clears
+         them, so an unchanged list is fine; any write that changes one may
+         only empty or remove it (an older phone adding a document or a code
+         to the house doc is refused: the clean break). */
+      function legacyListOk(k) {
+        let n = request.resource.data.get('meta', {});
+        let o = resource.data.get('meta', {});
+        return !n.keys().hasAny([k])
+          || (n.get(k, null) is list && n.get(k, []).size() == 0)
+          || n.get(k, null) == o.get(k, null);
+      }
+      function legacyListsOk() { return legacyListOk('docs') && legacyListOk('invites'); }
+      function newListEmpty(k) {
+        let n = request.resource.data.get('meta', {});
+        return !n.keys().hasAny([k]) || (n.get(k, null) is list && n.get(k, []).size() == 0);
+      }
 
       /* P2-4 (Release D): a house that is not live is closed. The example
          build keeps its practice houses on the phone (nothing in demo syncs),
@@ -172,11 +196,13 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.mode == 'live'
         && request.resource.data.members[uid()] == 'builder'
-        && uid() in request.resource.data.memberUids;
+        && uid() in request.resource.data.memberUids
+        && newListEmpty('docs') && newListEmpty('invites');
 
       allow update: if signedIn() && isLive()
         && request.resource.data.mode == 'live'
         && invoicesCleared()
+        && legacyListsOk()
         && (
           isOwner()
           || builderHouseOk()
@@ -216,7 +242,7 @@ service cloud.firestore {
            Every client write to them carries byUid == uid() and at == request.time
            (a server timestamp) and an appV string (M-7; the minimum-version check
            is A2/M-15). co money is whole cents (amountC), never dollars. */
-        function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers', 'coDays']; }
+        function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers', 'coDays', 'docs', 'invs']; }
         function stampOk() {
           let r = request.resource.data;
           return r.byUid == uid() && r.at == request.time && r.appV is string && r.appV.size() > 0 && verOk();
@@ -474,6 +500,14 @@ service cloud.firestore {
             && recNew().get('trade', rec().get('trade', '')) == rec().get('trade', '')
             && recNew().diff(rec()).affectedKeys().hasOnly(['status', 'start', 'end', 'note']);
         }
+        /* #15 (batch 3): a homeowner adds a note as themselves (by = the name
+           the server stamped on this house for them) and edits only their own,
+           the same match a crew's edits already use (crewItemOk). */
+        function clientItemNewOk() {
+          return recordColl == 'items'
+            && recNew().get('by', '') == sInfo().get('name', '')
+            && recNew().get('by', '') != '';
+        }
         function crewItemOk() {
           return recordColl in ['items', 'logs']
             && rec().get('by', '') == sInfo().get('name', '')
@@ -505,6 +539,24 @@ service cloud.firestore {
             && n.approvedAt is int;
         }
 
+        /* #6 (batch 3): a homeowner reads an invoice once it is sent, never a
+           draft. The app's homeowner listener asks for exactly these statuses. */
+        function invSeen() { return rec().get('status', 'draft') in ['sent', 'approved', 'paid', 'void']; }
+        /* #5 (batch 3): docs/{id} is one document and its audience. Builders read
+           all; a crew reads subs and all; the homeowner reads homeowner and all
+           (the app's listeners ask for exactly those). Only a builder writes one,
+           always with a known audience. invs/{code} holds the invite codes the
+           house doc used to carry: only a builder who may send invites (the owner
+           or Money, the same test as invites/{code}) reads or writes them. */
+        function docAudOk(a) {
+          return sRole() == 'builder'
+            || (sRole() == 'sub' && a in ['subs', 'all'])
+            || (sRole() == 'client' && a in ['homeowner', 'all']);
+        }
+        function docWriteOk() {
+          return recordColl == 'docs' && sRole() == 'builder'
+            && recNew().get('aud', '') in ['team', 'subs', 'homeowner', 'all'];
+        }
         /* P2-4: records under a house that is not live are closed too.
            F-2 R (additive): inv and selm are read by a builder who passes
            moneyOk() and by the homeowner; crews and builders without the
@@ -513,7 +565,8 @@ service cloud.firestore {
         allow read: if signedIn() && sScoped() && !newColl()
           && (recordColl == 'pmts' ? moneyOk() || sRole() == 'client'
               : recordColl in ['mail','costs'] ? moneyOk()
-              : recordColl in ['inv','selm'] ? moneyOk() || sRole() == 'client'
+              : recordColl == 'inv' ? moneyOk() || (sRole() == 'client' && invSeen())   /* #6: never a draft */
+              : recordColl == 'selm' ? moneyOk() || sRole() == 'client'
               : recordColl == 'bk' && sRole() == 'sub' ? crewOwnBk()
               : sMember());
 
@@ -521,14 +574,14 @@ service cloud.firestore {
           && selNoMoney()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invCreateOk())
               || (sRole() == 'sub' && recordColl in ['items','logs'])
-              || (sRole() == 'client' && recordColl == 'items'));
+              || (sRole() == 'client' && clientItemNewOk()));
 
         allow update: if signedIn() && sScoped() && !newColl()
           && selNoMoney()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invUpdateOk() && pmtUpdateOk())
               || (sRole() == 'sub' && crewItemOk())
               || (sRole() == 'sub' && crewBkRespOk())
-              || (sRole() == 'client' && recordColl == 'items')
+              || (sRole() == 'client' && recordColl == 'items' && crewItemOk())   /* #15: own notes only */
               || (sRole() == 'client' && clientSelOk())
               || (sRole() == 'client' && clientInvOk()));
 
@@ -543,15 +596,21 @@ service cloud.firestore {
           || (recordColl in ['hist', 'flags'] && (moneyOk() || sRole() == 'client'))
           || (recordColl == 'consent' && (recordId == uid() || moneyOk()))
           || (recordColl == 'numbers' && moneyOk())
-          || (recordColl == 'coDays' && sMember()));
+          || (recordColl == 'coDays' && sMember())
+          || (recordColl == 'docs' && docAudOk(rec().get('aud', 'team')))
+          || (recordColl == 'invs' && moneyOk()));
         allow create: if signedIn() && sScoped() && (
-          coDaysWriteOk()
+          docWriteOk()
+          || (recordColl == 'invs' && moneyOk())
+          || coDaysWriteOk()
           || coCreateOk()
           || (recordColl == 'consent' && consentCreateOk())
           || (recordColl == 'flags' && flagCreateOk())
           || (recordColl == 'numbers' && numberCreateOk()));
-        allow update: if signedIn() && sScoped() && (coDaysWriteOk() || coBuilderUpdOk() || clientCoOk());
-        allow delete: if signedIn() && sScoped() && ((recordColl == 'co' && coDeleteOk()) || (recordColl == 'coDays' && moneyOk()));
+        allow update: if signedIn() && sScoped() && (docWriteOk() || (recordColl == 'invs' && moneyOk())
+          || coDaysWriteOk() || coBuilderUpdOk() || clientCoOk());
+        allow delete: if signedIn() && sScoped() && ((recordColl == 'co' && coDeleteOk()) || (recordColl == 'coDays' && moneyOk())
+          || (recordColl == 'docs' && sRole() == 'builder') || (recordColl == 'invs' && moneyOk()));
       }
     }
 
@@ -771,12 +830,24 @@ service cloud.firestore {
 
       allow get: if packetLive();
       allow list: if false;
+      /* #14 (batch 3): a packet is created only by a signed-in account (never
+         anonymous) that is a builder on the live house the packet names, and it
+         keeps naming that house. The reply push (onPacketReply) checks the same. */
+      function packetSiteOk(sid) {
+        return sid is string && sid.size() > 0 && sid.size() <= 128
+          && exists(/databases/$(database)/documents/sites/$(sid))
+          && get(/databases/$(database)/documents/sites/$(sid)).data.get('mode', '') == 'live'
+          && get(/databases/$(database)/documents/sites/$(sid)).data.get('members', {}).get(uid(), '') == 'builder';
+      }
       allow create: if signedIn()
+                 && request.auth.token.firebase.sign_in_provider != 'anonymous'
                  && request.resource.data.createdBy == uid()
                  && request.resource.data.expires is int
-                 && request.resource.data.resp == null;
+                 && request.resource.data.resp == null
+                 && packetSiteOk(request.resource.data.get('siteId', null));
       allow update: if (packetLive() && guestFieldsOk())
                  || (signedIn() && packetPublisher()
+                     && request.resource.data.get('siteId', null) == resource.data.get('siteId', null)
                      && resource.data.expires is int
                      && resource.data.expires > request.time.toMillis());
       allow delete: if signedIn() && resource.data.createdBy == uid();
