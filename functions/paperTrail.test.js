@@ -86,44 +86,53 @@ assert.deepStrictEqual(pt.linesFor('pmts', pm(), pm({ note: 'edited' })), []);
 
 /* the handler, with a fake db */
 function fakeDb(flag, site) {
-  const store = {}; const writes = [];
+  const docs = {}; const writes = [];
   const ref = (path) => ({ path,
-    get: async () => { if (path === 'settings/paperTrail') { if (flag === 'throw') throw new Error('x'); return { exists: flag !== undefined, data: () => flag }; } if (path === 'sites/s1') return { data: () => site }; return { exists: false, data: () => undefined }; },
+    get: async () => { if (path === 'settings/paperTrail') { if (flag === 'throw') throw new Error('x'); return { exists: flag !== undefined, data: () => flag }; } if (path === 'sites/s1') return { exists: !!site, data: () => site }; return { exists: docs[path] != null, data: () => docs[path] }; },
     set: async (v) => { writes.push(['set', path, v]); },
     update: async (v) => { writes.push(['update', path, v]); },
     collection: (c) => ({ doc: (id) => ref(path + '/' + c + '/' + id) }) });
-  return { writes, collection: (c) => ({ doc: (id) => ref(c + '/' + id) }), batch: () => { const ops = []; return { set: (r, v) => ops.push(['set', r.path, v]), commit: async () => { ops.forEach(o => writes.push(o)); } }; } };
+  return { writes, docs, runTransaction: async (fn) => fn({ get: (r) => r.get(), update: (r, v) => { writes.push(['update', r.path, v]); }, set: (r, v) => { writes.push(['set', r.path, v]); } }),
+    collection: (c) => ({ doc: (id) => ref(c + '/' + id) }), batch: () => { const ops = []; return { set: (r, v) => ops.push(['set', r.path, v]), commit: async () => { ops.forEach(o => writes.push(o)); } }; } };
 }
 const ev = (b, a, id) => ({ id: id || 'ev1', params: { siteId: 's1', docId: 'c1' }, data: { before: { exists: !!b, data: () => b }, after: { exists: !!a, data: () => a } } });
 const ts = () => 'SERVER_TS';
+/* #8: the check reads the change order as stored now; the fake store holds the event's after unless a test says otherwise */
+const H = (db, coll, e) => { const a = e.data.after.exists ? e.data.after.data() : null; if (coll === 'co' && !('sites/s1/co/c1' in db.docs)) db.docs['sites/s1/co/c1'] = a; return pt.handle(db, ts, coll, e); };
 const SITE = { meta: { memberInfo: { uB: { name: 'Dean Walsh' } } } };
 (async () => {
   pt._resetCache();
   let db = fakeDb(undefined, SITE);
-  let r = await pt.handle(db, ts, 'co', ev(null, co()));
-  assert.deepStrictEqual(r, { skipped: 'off' }); assert.strictEqual(db.writes.length, 0, 'flag missing: nothing is written');
+  /* #8 (2.513.0): with the switch missing, off or unreadable, the change order is still checked and stamped; no history line */
+  const onlyStamp = (d) => d.writes.length === 1 && d.writes[0][0] === 'update' && d.writes[0][1] === 'sites/s1/co/c1' && d.writes[0][2]['data.verifiedRev'] === 1 && d.writes[0][2]['data.verifiedTotal'] === 185000;
+  let r = await H(db, 'co', ev(null, co()));
+  assert.deepStrictEqual(r, { lines: 0, verified: true }); assert.ok(onlyStamp(db), '#8 flag missing: verified, no line ' + JSON.stringify(db.writes));
   pt._resetCache(); db = fakeDb({ enabled: false }, SITE);
-  assert.deepStrictEqual(await pt.handle(db, ts, 'co', ev(null, co())), { skipped: 'off' }); assert.strictEqual(db.writes.length, 0, 'flag false: nothing is written');
+  assert.deepStrictEqual(await H(db, 'co', ev(null, co())), { lines: 0, verified: true }); assert.ok(onlyStamp(db), '#8 flag false: verified, no line');
   pt._resetCache(); db = fakeDb('throw', SITE);
-  assert.deepStrictEqual(await pt.handle(db, ts, 'co', ev(null, co())), { skipped: 'off' }, 'a failed flag read is off');
+  assert.deepStrictEqual(await H(db, 'co', ev(null, co())), { lines: 0, verified: true }, '#8 a failed flag read still verifies'); assert.ok(onlyStamp(db));
+  pt._resetCache(); db = fakeDb({ enabled: false }, SITE);
+  await H(db, 'co', ev(null, co({ amountC: -5 }), 'evOff'));
+  assert.ok(!db.writes.some(w => /hist/.test(w[1])), '#8 switch off: a bad amount is not verified and writes no history line');
+  assert.ok(!db.writes.some(w => w[0] === 'update' && w[2]['data.verifiedRev'] != null), '#8 never verified');
   pt._resetCache(); db = fakeDb({ enabled: true }, SITE);
-  r = await pt.handle(db, ts, 'co', ev(null, co(), 'evA'));
+  r = await H(db, 'co', ev(null, co(), 'evA'));
   const setW = db.writes.filter(w => w[0] === 'set'), upW = db.writes.filter(w => w[0] === 'update');
   assert.strictEqual(setW.length, 1); assert.strictEqual(setW[0][1], 'sites/s1/hist/evA_0'); assert.strictEqual(setW[0][2].kind, 'sent'); assert.strictEqual(setW[0][2].byName, 'Dean Walsh'); assert.strictEqual(setW[0][2].at, 'SERVER_TS');
   assert.strictEqual(upW.length, 1); assert.deepStrictEqual(upW[0][2], { 'data.verifiedRev': 1, 'data.verifiedTotal': 185000 }, 'server writes the verification');
   assert.strictEqual(upW[0][1], 'sites/s1/co/c1');
   /* the verification write re-fires the trigger: no line, no second update */
   db = fakeDb({ enabled: true }, SITE); pt._resetCache();
-  r = await pt.handle(db, ts, 'co', ev(co(), co({ verifiedRev: 1, verifiedTotal: 185000 }), 'evB'));
+  r = await H(db, 'co', ev(co(), co({ verifiedRev: 1, verifiedTotal: 185000 }), 'evB'));
   assert.strictEqual(db.writes.length, 0, 'verification echo writes nothing');
   /* a bad amount is flagged, not verified */
   db = fakeDb({ enabled: true }, SITE); pt._resetCache();
-  await pt.handle(db, ts, 'co', ev(null, co({ amountC: -5 }), 'evC'));
+  await H(db, 'co', ev(null, co({ amountC: -5 }), 'evC'));
   assert.ok(db.writes.some(w => w[1] === 'sites/s1/hist/evC_check' && w[2].kind === 'needs_check'));
   assert.ok(!db.writes.some(w => w[0] === 'update' && w[2]['data.verifiedRev'] === 1), 'never verified');
   /* an edit that invalidates a stale verification clears it */
   db = fakeDb({ enabled: true }, SITE); pt._resetCache();
-  await pt.handle(db, ts, 'co', ev(co({ verifiedRev: 1 }), co({ rev: 2, amountC: 5, kind: 'change', verifiedRev: 1, verifiedTotal: 185000 }), 'evD'));
+  await H(db, 'co', ev(co({ verifiedRev: 1 }), co({ rev: 2, amountC: 5, kind: 'change', verifiedRev: 1, verifiedTotal: 185000 }), 'evD'));
   assert.ok(db.writes.some(w => w[0] === 'update' && w[2]['data.verifiedRev'] === 2 && w[2]['data.verifiedTotal'] === 5), 'a revision is re-verified at its own rev');
   /* same event id twice: same document ids (a retry cannot double a line) */
   db = fakeDb({ enabled: true }, SITE); pt._resetCache();
@@ -137,7 +146,40 @@ const SITE = { meta: { memberInfo: { uB: { name: 'Dean Walsh' } } } };
   pt._resetCache(); db = fakeDb(undefined, SITE);
   r = await pt.handle(db, ts, 'pmts', ev(null, pm(), 'evG')); assert.strictEqual(r.lines, 1, 'no settings doc: payments still get their line');
   pt._resetCache(); db = fakeDb({ enabled: false }, SITE);
-  assert.deepStrictEqual(await pt.handle(db, ts, 'co', ev(null, co())), { skipped: 'off' }); assert.strictEqual(db.writes.length, 0, 'co stays behind the switch');
+  r = await H(db, 'co', ev(null, co(), 'evOff2'));
+  assert.ok(!db.writes.some(w => /hist/.test(w[1])), '#8 change-order history lines stay behind the switch'); assert.strictEqual(r.verified, true, '#8 the check does not');
+  /* #8 idempotent: a late or retried event for rev 1 re-checks the change order as it is now (rev 2) and never puts rev 1's stamp back */
+  pt._resetCache(); db = fakeDb({ enabled: true }, SITE);
+  db.docs['sites/s1/co/c1'] = co({ rev: 2, amountC: 210000, verifiedRev: 2, verifiedTotal: 210000 });
+  r = await H(db, 'co', ev(null, co(), 'evOld'));
+  assert.ok(!db.writes.some(w => w[0] === 'update'), '#8 an old event writes no stamp over a newer verified revision');
+  db = fakeDb({ enabled: true }, SITE); db.docs['sites/s1/co/c1'] = co({ rev: 2, amountC: 210000 });
+  await H(db, 'co', ev(null, co(), 'evOld2'));
+  assert.deepStrictEqual(db.writes.filter(w => w[0] === 'update').map(w => w[2]), [{ 'data.verifiedRev': 2, 'data.verifiedTotal': 210000 }], '#8 it stamps the current revision');
+  db = fakeDb({ enabled: true }, SITE); db.docs['sites/s1/co/c1'] = co({ status: 'withdrawn' });
+  await H(db, 'co', ev(null, co(), 'evOld3')); assert.ok(!db.writes.some(w => w[0] === 'update'), '#8 a change order that moved on is left alone');
+  /* same event twice: the second run writes nothing new (the stamp already matches) */
+  db = fakeDb(undefined, SITE); pt._resetCache();
+  const e2 = ev(null, co(), 'evTwice'); await H(db, 'co', e2); db.docs['sites/s1/co/c1'] = co({ verifiedRev: 1, verifiedTotal: 185000 }); await H(db, 'co', e2);
+  assert.strictEqual(db.writes.filter(w => w[0] === 'update').length, 1, '#8 a retry of the same event is a no-op');
+  /* #8 the builder's re-check: money builders on a live house only */
+  const LIVE = { mode: 'live', members: { uB: 'builder', uX: 'builder', uH: 'client' }, meta: { memberInfo: { uX: { name: 'Sam', rpRole: 'super', gates: {} } } } };
+  const money = require('./lib/push').moneyBuilderUids;
+  pt._resetCache(); db = fakeDb(undefined, LIVE); db.docs['sites/s1/co/c1'] = co();
+  assert.deepStrictEqual(await pt.recheckCo(db, ts, 'uX', 's1', 'c1', money), { ok: false, reason: 'not-allowed' }, '#8 a builder without money cannot re-check');
+  assert.deepStrictEqual(await pt.recheckCo(db, ts, 'uH', 's1', 'c1', money), { ok: false, reason: 'not-allowed' }, '#8 the homeowner cannot');
+  assert.strictEqual(db.writes.length, 0);
+  assert.deepStrictEqual(await pt.recheckCo(db, ts, 'uB', 's1', 'c1', money), { ok: true, verified: true, rev: 1 }, '#8 the owner re-checks');
+  assert.deepStrictEqual(db.writes.map(w => w[2]), [{ 'data.verifiedRev': 1, 'data.verifiedTotal': 185000 }]);
+  db.docs['sites/s1/co/c1'] = co({ verifiedRev: 1, verifiedTotal: 185000 });
+  assert.deepStrictEqual(await pt.recheckCo(db, ts, 'uB', 's1', 'c1', money), { ok: true, verified: true, rev: 1 }); assert.strictEqual(db.writes.length, 1, '#8 re-check twice: one write');
+  pt._resetCache(); db = fakeDb({ enabled: true }, LIVE); db.docs['sites/s1/co/c1'] = co({ amountC: -5 });
+  r = await pt.recheckCo(db, ts, 'uB', 's1', 'c1', money);
+  assert.deepStrictEqual(r, { ok: true, verified: false, rev: 1 }); assert.ok(db.writes.some(w => w[1] === 'sites/s1/hist/recheck_c1_r1' && w[2].kind === 'needs_check'), '#8 a bad amount still needs a check');
+  db = fakeDb(undefined, LIVE); db.docs['sites/s1/co/c1'] = co({ status: 'approved' });
+  assert.strictEqual((await pt.recheckCo(db, ts, 'uB', 's1', 'c1', money)).reason, 'not-sent');
+  db = fakeDb(undefined, Object.assign({}, LIVE, { mode: 'demo' })); db.docs['sites/s1/co/c1'] = co();
+  assert.strictEqual((await pt.recheckCo(db, ts, 'uB', 's1', 'c1', money)).reason, 'no-site', '#8 a house that is not live is refused');
   /* 2.483.0 G6: a deleted draft leaves a line; a deleted sent invoice (refused by A2 anyway) does not */
   pt._resetCache(); db = fakeDb({ enabled: false }, SITE);
   r = await pt.handle(db, ts, 'inv', ev(inv({ status: 'draft', title: 'Draw 3' }), null, 'evH'));
@@ -146,6 +188,11 @@ const SITE = { meta: { memberInfo: { uB: { name: 'Dean Walsh' } } } };
   assert.deepStrictEqual(await pt.handle(db, ts, 'inv', ev(inv({ status: 'sent' }), null, 'evI')), { skipped: 'delete' }); assert.strictEqual(db.writes.length, 0);
   db = fakeDb({ enabled: false }, SITE);
   assert.deepStrictEqual(await pt.handle(db, ts, 'pmts', ev(pm(), null, 'evJ')), { skipped: 'delete' });
+  /* #8 wiring (source): retry is on for the change-order trigger, and the re-check endpoint uses the money gate */
+  const src = require('fs').readFileSync(require('path').join(__dirname, 'index.js'), 'utf8');
+  assert.ok(/exports\.paperTrailCo = onDocumentWritten\(\{ document: 'sites\/\{siteId\}\/co\/\{docId\}', retry: true \}/.test(src), '#8 paperTrailCo has retry: true');
+  assert.ok(/exports\.coRecheck = onRequest[\s\S]{0,400}requireUser[\s\S]{0,400}recheckCo\([\s\S]{0,300}push\.moneyBuilderUids\)/.test(src), '#8 coRecheck: signed-in user, money gate');
+  assert.ok(/attempt: \(s, l\) => db\.runTransaction/.test(src), '#9 the receipt trigger counts its runs');
   console.log('paperTrail: all checks passed (cents, sentences, M-14 verify, 10,000-invoice property, history lines, handler gate)');
 })().catch(e => { console.error(e); process.exit(1); });
 

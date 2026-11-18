@@ -123,7 +123,19 @@ async function flags(db, now) {
 function _reset() { _c.at = 0; _c.v = { on: false, receipts: false }; }
 
 const PHOTO_MAX = 8 * 1024 * 1024;   /* Resend allows 40 MB per email; keep the photo well under it */
-/* deps: { db, bucket, bucketName, sendEmail, emailOf, ts, notify, from } */
+/* #9 (2.513.0): a receipt line is tried a bounded number of times, and its outcome is written on the line:
+   rcStatus 'sent' | 'held' | 'superseded' | 'failed', rcTries (counted by deps.attempt), rcError, rcFail.<uid> for a refused address. */
+const MAX_TRIES = 8;
+/* A provider answer that a retry cannot fix: 4xx except timeout and rate limit (a refused or invalid address, a bad request). */
+function permanent(e) {
+  if (e && e.permanent === true) return true;
+  const st = e && Number(e.status);
+  return Number.isInteger(st) && st >= 400 && st < 500 && st !== 408 && st !== 429;
+}
+async function mark(deps, siteId, lineId, fields) {
+  try { await deps.db.collection('sites').doc(siteId).collection('hist').doc(lineId).update(fields); } catch (e) { /* the mark is best effort; the outcome is returned too */ }
+}
+/* deps: { db, bucket, bucketName, sendEmail, emailOf, ts, notify, from, attempt } */
 async function handle(deps, event) {
   const f = await flags(deps.db);
   if (!(f.on && f.receipts)) return { skipped: 'off' };
@@ -137,20 +149,42 @@ async function handle(deps, event) {
   }
   if (!RECEIPT_KINDS.includes(line.kind)) return { skipped: 'no receipt for ' + line.kind };
   if (line.fp) return { skipped: 'already archived' };
-
+  /* every run counts; past the cap the line is marked failed and the trigger stops retrying */
+  const tries = deps.attempt ? await deps.attempt(siteId, lineId) : 1;
+  if (tries > MAX_TRIES) {
+    await mark(deps, siteId, lineId, { rcStatus: 'failed', rcError: 'gave up after ' + MAX_TRIES + ' tries' });
+    return { failed: 'too many tries', tries };
+  }
+  const last = tries >= MAX_TRIES;
+  try {
+    return await run(deps, siteId, lineId, line, event);
+  } catch (e) {
+    if (!last) throw e;   // the trigger retries (retry: true)
+    await mark(deps, siteId, lineId, { rcStatus: 'failed', rcError: String((e && e.message) || e).slice(0, 200) });
+    return { failed: String((e && e.message) || e).slice(0, 200), tries };
+  }
+}
+async function run(deps, siteId, lineId, line, event) {
   const siteSnap = await deps.db.collection('sites').doc(siteId).get();
   const site = (siteSnap && siteSnap.data && siteSnap.data()) || {};
   const house = String((site.street || (site.meta && site.meta.street) || site.name || siteId));
-  /* M-14: a change order's sent/updated receipt waits for the server's own check. A bad total never gets a receipt. */
+  /* M-14: a change order's sent/updated receipt waits for the server's own check. A bad total never gets a receipt.
+     #9: the check is read against the change order as it is now. A line for a revision that has since been replaced
+     is marked superseded (the newer revision has its own line and receipt) instead of waiting forever. */
   let record = null;
   if (line.refType === 'co') {
     const cs = await deps.db.collection('sites').doc(siteId).collection('co').doc(String(line.ref)).get();
     record = cs && cs.exists ? cs.data() : null;
     if ((line.kind === 'sent' || line.kind === 'changed')) {
       const d = record && record.data;
-      if (!d || d.verifiedRev !== line.rev || d.verifiedTotal !== line.amountC) {
+      if (!d) { await mark(deps, siteId, lineId, { rcStatus: 'failed', rcError: 'change order not found' }); return { failed: 'change order not found' }; }
+      if (Number.isInteger(d.rev) && Number.isInteger(line.rev) && d.rev > line.rev) {
+        await mark(deps, siteId, lineId, { rcStatus: 'superseded', rcError: 'revision ' + line.rev + ' was replaced by ' + d.rev });
+        return { skipped: 'superseded' };
+      }
+      if (d.verifiedRev !== line.rev || d.verifiedTotal !== line.amountC) {
         const held = await deps.db.collection('sites').doc(siteId).collection('hist').doc(lineId.replace(/_\d+$/, '') + '_check').get();
-        if (held && held.exists) return { skipped: 'held: needs a check' };
+        if (held && held.exists) { await mark(deps, siteId, lineId, { rcStatus: 'held' }); return { skipped: 'held: needs a check' }; }
         const err = new Error('change order not verified yet'); err.retry = true; throw err;   // retry:true re-runs it in a moment
       }
     }
@@ -179,7 +213,7 @@ async function handle(deps, event) {
     try { const ph = await deps.photo(siteId, String(photoId)); if (ph && ph.buf && ph.buf.length && ph.buf.length <= PHOTO_MAX) atts.push({ filename: 'paper-signature-' + lineId + (ph.ext || '.jpg'), content: ph.buf.toString('base64') }); } catch (e) { /* receipt goes without it */ }
   }
   const parties = partiesOf(site, line.by);
-  const sent = [];
+  const sent = [], refused = [];
   for (const uid of parties) {
     const claimed = await deps.claim(siteId, lineId, uid);
     if (!claimed) continue;
@@ -189,9 +223,14 @@ async function handle(deps, event) {
       await deps.sendEmail({ from: deps.from, to, subject: 'SitePlumb receipt: ' + (KIND_WORDS[line.kind] || line.kind) + ' ' + whatOf(line) + (Number.isInteger(line.amountC) ? ' ' + fmtCents(line.amountC) : ''),
         text: emailBody(line, house, line.byName, fp), attachments: atts });
       sent.push(uid);
-    } catch (e) { await deps.release(siteId, lineId, uid); throw e; }
+    } catch (e) {
+      /* #9: a refused address will be refused again. Keep the claim (no retry for this party), note it, go on to the next party. */
+      if (permanent(e)) { refused.push(uid); await mark(deps, siteId, lineId, { ['rcFail.' + uid]: { status: Number(e.status) || null, error: String(e.message || e).slice(0, 120) } }); continue; }
+      await deps.release(siteId, lineId, uid); throw e;
+    }
   }
-  return { fp, sent };
+  await mark(deps, siteId, lineId, refused.length ? { rcStatus: 'failed', rcError: refused.length + ' address(es) refused' } : { rcStatus: 'sent' });
+  return { fp, sent, refused };
 }
 
 /* the real provider: Resend (one HTTPS call, API key in the Functions environment) */
@@ -200,9 +239,9 @@ function resendSender(apiKey, fetchFn) {
     const r = await (fetchFn || fetch)('https://api.resend.com/emails', { method: 'POST',
       headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: m.from, to: [m.to], subject: m.subject, text: m.text, attachments: m.attachments }) });
-    if (!r.ok) throw new Error('email provider refused: ' + r.status);
+    if (!r.ok) { const e = new Error('email provider refused: ' + r.status); e.status = r.status; throw e; }
     return r.json ? r.json() : {};
   };
 }
 
-module.exports = { PHOTO_MAX, sha256, buildPdf, pdfFor, snapshotOf, canonJson, describe, partiesOf, emailBody, flags, handle, resendSender, _reset, RECEIPT_KINDS };
+module.exports = { MAX_TRIES, permanent, PHOTO_MAX, sha256, buildPdf, pdfFor, snapshotOf, canonJson, describe, partiesOf, emailBody, flags, handle, resendSender, _reset, RECEIPT_KINDS };
