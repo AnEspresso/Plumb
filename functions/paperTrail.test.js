@@ -61,6 +61,15 @@ l = pt.linesFor('inv', inv({ status: 'sent' }), inv({ status: 'sent', payments: 
 assert.deepStrictEqual(l.map(x => x.kind), ['payment']); assert.strictEqual(l[0].amountC, 25000);
 l = pt.linesFor('inv', inv({ status: 'sent', payments: [{ id: 'p1', amountC: 25000 }] }), inv({ status: 'sent', payments: [{ id: 'p1', amountC: 25000, voidedAt: 5, voidReason: 'bounced' }] }));
 assert.deepStrictEqual(l.map(x => x.kind), ['payment_voided']); assert.strictEqual(l[0].note, 'bounced');
+/* #4 (2.511.0): payments are compared by id, not position */
+l = pt.linesFor('inv', inv({ status: 'sent', payments: [{ id: 'p1', amountC: 25000 }] }), inv({ status: 'sent', payments: [{ id: 'p2', amountC: 5000 }] }));
+assert.deepStrictEqual(l.map(x => x.kind + ':' + x.payRef), ['payment:p2'], 'a different payment in the same position is a new payment');
+l = pt.linesFor('inv', inv({ status: 'sent', payments: [{ id: 'p1', amountC: 25000 }] }), inv({ status: 'sent', payments: [{ id: 'p2', amountC: 5000 }, { id: 'p1', amountC: 25000 }] }));
+assert.deepStrictEqual(l.map(x => x.kind + ':' + x.payRef), ['payment:p2'], 'a payment that moved is not new; the new one is');
+l = pt.linesFor('inv', inv({ status: 'sent', payments: [{ id: 'p1', amountC: 25000 }, { id: 'p2', amountC: 5000 }] }), inv({ status: 'sent', payments: [{ id: 'p2', amountC: 5000, voidedAt: 7, voidReason: 'typo' }, { id: 'p1', amountC: 25000 }] }));
+assert.deepStrictEqual(l.map(x => x.kind + ':' + x.payRef), ['payment_voided:p2'], 'a void is matched to its payment by id');
+l = pt.linesFor('inv', inv({ status: 'sent', payments: [{ amountC: 25000 }] }), inv({ status: 'sent', payments: [{ amountC: 25000 }, { amountC: 100 }] }));
+assert.deepStrictEqual(l.map(x => x.kind + ':' + x.payRef), ['payment:1'], 'older entries with no id fall back to position');
 assert.deepStrictEqual(pt.linesFor('inv', inv({ status: 'sent' }), inv({ status: 'sent' })), [], 'no change, no line');
 /* 2.482.0 G1: an appended credit or charge on a sent invoice is its own line */
 const it0 = [{ label: 'Tile', amount: 250, amountC: 25000 }];

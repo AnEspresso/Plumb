@@ -14,8 +14,11 @@ service firebase.storage {
       allow read, write: if false;
     }
 
-    // Live files follow the app's exact layout {kind}/{fileId} (MediaSync.path).
-    // 'costs' receipts are builder-only; everything else stays member-wide.
+    // Live files follow the app's exact layout {kind}/{fileId} (CloudFiles.path).
+    // Kinds: photos (member-wide), costs (builder-only receipts and paper
+    // signatures), docs-team | docs-subs | docs-homeowner | docs-all (#5, batch 3:
+    // one folder per audience, 2.512.0+) and docs (the old shared folder, kept
+    // readable so no file has to move).
     match /live/sites/{siteId}/{kind}/{fileId} {
       function site() {
         return firestore.get(/databases/(default)/documents/sites/$(siteId)).data;
@@ -26,9 +29,58 @@ service firebase.storage {
         return signedIn() && site().get('mode', '') == 'live'
                && site().members != null && role() != null;
       }
-      function kindOk() { return kind != 'costs' || role() == 'builder'; }
-      allow read:  if isMember() && kindOk();
-      allow write: if isMember() && kindOk() && okUpload();
+      /* #5 (batch 3): a document file is read by whoever its audience lets in,
+         and the document's own record (sites/{id}/docs/{fileId}, the same id)
+         must let them in too, so moving a document to a narrower audience
+         closes the copy in the old folder at once. Builders read every file. */
+      function audLets(a) {
+        return role() == 'builder'
+          || (role() == 'sub' && a in ['subs', 'all'])
+          || (role() == 'client' && a in ['homeowner', 'all']);
+      }
+      function recAud() {
+        return firestore.get(/databases/(default)/documents/sites/$(siteId)/docs/$(fileId)).data.get('data', {}).get('aud', 'team');
+      }
+      function docKind() { return kind in ['docs-team', 'docs-subs', 'docs-homeowner', 'docs-all']; }
+      function readOk() {
+        return kind == 'photos'
+          || (kind == 'costs' && role() == 'builder')
+          || ((kind == 'docs' || docKind())
+              && (role() == 'builder'
+                  || ((kind == 'docs' || audLets(kind.split('-')[1])) && audLets(recAud()))));
+      }
+      function writeKindOk() {
+        return kind == 'photos'
+          || (kind in ['costs', 'docs'] && role() == 'builder')
+          || (docKind() && role() == 'builder');
+      }
+      /* #7 (batch 3): a file is created once. Only the person who uploaded it
+         (customMetadata.uploader, stamped by 2.512.0+) may replace or delete it;
+         a file without that stamp is never overwritten or deleted by a phone
+         (the server's own cleanup uses the Admin SDK). */
+      function uploaderIsMe() {
+        return resource.metadata != null
+          && resource.metadata.get('uploader', '') == request.auth.uid;
+      }
+      function stampIsMe() {
+        return request.resource.metadata == null
+          || request.resource.metadata.get('uploader', request.auth.uid) == request.auth.uid;
+      }
+      /* #11 (2.513.0): a document may also be a Word or Excel file (the app's document picker offers them),
+         under 25 MB, in document folders only (docs and docs-<audience>). Photos and receipts stay image or PDF.
+         The audience, create-only and uploader rules above apply to them exactly as to a PDF. */
+      function officeDocOk() {
+        return (kind == 'docs' || docKind())
+               && request.resource.size < 25 * 1024 * 1024
+               && request.resource.contentType.matches('application/msword|application/vnd[.]ms-excel|application/vnd[.]openxmlformats-officedocument[.]wordprocessingml[.]document|application/vnd[.]openxmlformats-officedocument[.]spreadsheetml[.]sheet');
+      }
+      allow read:   if isMember() && readOk();
+      /* An upload over an existing file is checked as a create too: only a new
+         path, or the uploader's own file. */
+      allow create: if isMember() && writeKindOk() && (okUpload() || officeDocOk()) && stampIsMe()
+                    && (resource == null || uploaderIsMe());
+      allow update: if isMember() && writeKindOk() && stampIsMe() && uploaderIsMe();
+      allow delete: if isMember() && uploaderIsMe();
     }
 
     match /{allPaths=**} {

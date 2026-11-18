@@ -1,0 +1,61 @@
+name: Retire old document download links
+# Gives each file in the old shared docs folder (live/sites/*/docs/*) a new
+# Firebase download token, so links saved before 2.512.0 stop working.
+# Phones on 2.512.0+ fetch a fresh link when a file is opened.
+# Does not print tokens or URLs. Manual only. Dry run unless you type WRITE.
+# Run after the batch 3 rules (#112) are published and every phone is on 2.512.0.
+# The live write is allowed only from main, once this workflow is on main.
+# Secret: FIREBASE_SERVICE_ACCOUNT_PLUMB. No environment approval gate.
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: 'Type WRITE to change live data. Anything else is a dry run.'
+        required: false
+        default: 'dry run'
+  pull_request:
+    paths:
+      - 'scripts/retire-old-doc-tokens.js'
+      - 'scripts/retire-old-doc-tokens.test.js'
+      - '.github/workflows/retire-old-doc-tokens.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/retire-old-doc-tokens.js'
+      - 'scripts/retire-old-doc-tokens.test.js'
+      - '.github/workflows/retire-old-doc-tokens.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Log never prints tokens or URLs, dry run writes nothing
+        run: node scripts/retire-old-doc-tokens.test.js
+
+  retire:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Auth with the Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}' > "$RUNNER_TEMP/sa.json"
+
+      - name: Retire old document tokens
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          RETIRE_DOC_TOKENS_CONFIRM: ${{ github.event.inputs.write == 'WRITE' && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          npm i --no-audit --no-fund firebase-admin >/dev/null
+          node scripts/retire-old-doc-tokens.js

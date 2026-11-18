@@ -112,10 +112,10 @@ t('five z tokens are declared', SRC.indexOf('--z-nav:100')>=0&&SRC.indexOf('--z-
 
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
 S('sync-scope');
-t('builder gets all nine colls', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm');
-t('sub skips pmts+mail+costs+inv+selm', $("syncCollsFor('sub').map(c=>c.sub).join()") === 'items,bk,sel,logs');
-t('client skips mail+costs, keeps inv+selm', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,inv,selm');
-t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm');
+t('builder gets all eleven colls (2.512.0: docs and invs)', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm,docs,invs');
+t('sub skips pmts+mail+costs+inv+selm+invs, reads docs', $("syncCollsFor('sub').map(c=>c.sub).join()") === 'items,bk,sel,logs,docs');
+t('client skips mail+costs+invs, keeps inv+selm+docs', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,inv,selm,docs');
+t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm,docs,invs');
 /* v2.211: bookings must merge per record, never ride the whole-site meta blob.
    The old behavior let a second device silently wipe bookings it had not seen. */
 t('bookings are a synced record collection', $("SYNC_COLLS.some(c=>c.f==='bookings'&&c.sub==='bk')")===true);
@@ -187,7 +187,7 @@ $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(2);Sync._subSite('gateA');true");
 t('no listeners attach synchronously', $("__g.attached.length")===0);
 await new Promise(r=>setTimeout(r,250));
 t('gate retried through the ladder', $("__g.gets")===3);
-t('all nine colls attach once doc lands', $("__g.attached.join()")==='items,bk,sel,logs,pmts,mail,costs,inv,selm');
+t('all eleven colls attach once doc lands', $("__g.attached.join()")==='items,bk,sel,logs,pmts,mail,costs,inv,selm,docs,invs');
 t('site marked listening after attach', $("!!Sync._listening['gateA']")===true);
 // (2) doc never lands: give up quietly, _listening cleared so a later docChange re-gates
 $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(99);Sync._subSite('gateB');true");
@@ -198,20 +198,20 @@ t('give-up clears _listening (re-gate possible)', $("!Sync._listening['gateB']")
 // (3) offline: unavailable attaches immediately on cache
 $("__g.gets=0;__g.attached=[];Sync.db={collection:()=>({doc:()=>({get:()=>{__g.gets++;return Promise.reject({code:'unavailable'});},collection:sub=>({onSnapshot:(o,h,e)=>{if(typeof o==='function'){e=h;h=o;}__g.attached.push(sub);__g.errCbs[sub]=e;return ()=>{};}})})})};Sync._subSite('gateC');true");
 await new Promise(r=>setTimeout(r,80));
-t('offline attaches without retry ladder', $("__g.gets")===1&&$("__g.attached.length")===9);
+t('offline attaches without retry ladder', $("__g.gets")===1&&$("__g.attached.length")===11);
 // (4) demo mode: gate is a no-op passthrough
 $("__g.gets=0;__g.attached=[];Sync.mode='demo';Sync.db=__mkdb(99);Sync._subSite('gateD');true");
 await new Promise(r=>setTimeout(r,60));
-t('demo attaches without any server get', $("__g.attached.length")===9&&$("__g.gets")===0);
+t('demo attaches without any server get', $("__g.attached.length")===11&&$("__g.gets")===0);
 $("Sync.mode='live';true");
 // (5) belt: first-generation denial is forgiven silently and re-attaches once
 $("localStorage.removeItem('plumb.errors');__g.gets=99;__g.attached=[];Sync.db=__mkdb(0);Sync._subSite('gateE');true");
 await new Promise(r=>setTimeout(r,80));
-t('gateE attached gen-1', $("__g.attached.length")===9);
+t('gateE attached gen-1', $("__g.attached.length")===11);
 $("__g.attached=[];__g.errCbs['items']({code:'permission-denied'});true");
 t('gen-1 denial logs no rules alarm', $("devErrors().length")===0);
 await new Promise(r=>setTimeout(r,200));
-t('belt re-attached a second generation', $("__g.attached.length")===9);
+t('belt re-attached a second generation', $("__g.attached.length")===11);
 t('re-arm consumed', $("Sync._reArmed['gateE']")===true);
 // (6) second-generation denial raises the real alarm
 $("__g.errCbs['items']({code:'permission-denied'});true");
@@ -219,7 +219,7 @@ t('gen-2 denial trips trapError', $("devErrors().length")>0&&$("devErrors()[0].m
 // (7) role scoping preserved through the gate path
 $("localStorage.removeItem('plumb.errors');Sync._permToasted=false;__g.attached=[];state.session={role:'client',auth:{uid:'uC'}};state.projects.push({id:'gateF',members:{uC:'client'},items:[],selections:[],logs:[],payments:[]});Sync.db=__mkdb(0);Sync._subSite('gateF');true");
 await new Promise(r=>setTimeout(r,60));
-t('client attaches only its seven colls', $("__g.attached.join()")==='items,bk,sel,logs,pmts,inv,selm');
+t('client attaches only its eight colls', $("__g.attached.join()")==='items,bk,sel,logs,pmts,inv,selm,docs');
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
@@ -1522,7 +1522,7 @@ t('the crew bookings listener uses crewBkName', SRC.split('_attachColls(sid){')[
 t('saving one house does not upload the book', SRC.split('function queueSync')[1].slice(0,1200).indexOf('_syncDirty')>=0&&SRC.split('function queueSync')[1].slice(0,1200).indexOf('_pushOne')>=0);
 t('homeowner hat survives sign out', SRC.indexOf('function laSaveHat')>=0&&SRC.indexOf("localStorage.getItem('plumb.hats')")>=0&&SRC.split('function liveSignOut')[1].slice(0,700).indexOf('plumb.hats')<0);
 t('joined invites are stamped back onto the house', SRC.indexOf('function backfillJoinedInvites')>=0&&SRC.split('function backfillMemberships')[1].slice(0,500).indexOf('backfillJoinedInvites')>=0);
-t('a homeowner write does not stamp them builder', SRC.split('async _pushOne')[1].slice(0,2600).indexOf("sessRole==='builder'&&!mem[myUid]")>=0);
+t('a homeowner write does not stamp them builder', SRC.split('async _pushOne')[1].slice(0,4200).indexOf("sessRole==='builder'&&!mem[myUid]")>=0);   /* 2.510.0: window widened for the per-save refusal guard */
 t('homeowner listens stay homeowner', SRC.split('function siteRoleFor')[1].slice(0,400).indexOf("if(r==='client')return 'client'")>=0);
 t('homeowner settings hide company', SRC.split('function renderSettings')[1].slice(0,500).indexOf("hat!=='client'")>=0);
 t('selections keep the house', SRC.indexOf('let _clientHold=null')>=0&&SRC.indexOf('function clientRetryHouse')>=0);
@@ -2178,7 +2178,7 @@ t('exit example closes the overview', $("String(exitDemoToApp)").indexOf("getEle
 t('rules require ack before guest install', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('hasAll([\'ack\'])')>=0&&R.indexOf('packetPublisher')>=0&&R.indexOf('createdBy == uid()')>=0;}catch(e){return false;}})());
 t('rules bind invite revoke to creator', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf("resource.data.createdBy == uid()")>=0&&R.indexOf('clientSelOk')>=0&&R.indexOf('moneyOk')>=0;}catch(e){return false;}})());
 t('rules hold memberUids for non-owners', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf("request.resource.data.get('memberUids', []) == resource.data.get('memberUids', [])")>=0&&R.indexOf('rootMetaOnly')>=0;}catch(e){return false;}})());
-t('rules hold loc and custom spec fields', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');/* PR 0 (#32): loc is one of the install-detail keys specTechHeld holds; homeowners no longer create selections at all. */const th=(R.match(/function specTechHeld[\s\S]*?\]\);/)||[''])[0];return th.indexOf("'loc'")>=0&&R.indexOf('function specCustomOk')>=0&&R.indexOf("(sRole() == 'client' && recordColl == 'items'));")>=0&&R.indexOf('clientSelCreateOk')<0;}catch(e){return false;}})());
+t('rules hold loc and custom spec fields', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');/* PR 0 (#32): loc is one of the install-detail keys specTechHeld holds; homeowners no longer create selections at all. */const th=(R.match(/function specTechHeld[\s\S]*?\]\);/)||[''])[0];return th.indexOf("'loc'")>=0&&R.indexOf('function specCustomOk')>=0&&/* 2.512.0 rules (#15): a homeowner still creates items, now only their own notes */R.indexOf("(sRole() == 'client' && recordColl == 'items' && crewItemOk())")>=0&&R.indexOf('clientSelCreateOk')<0;}catch(e){return false;}})());
 t('rules apply money gate to cost writes', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('moneyColl')>=0&&R.indexOf('(!moneyColl() || moneyOk())')>=0;}catch(e){return false;}})());
 t('rules reject fp-only guest relabel', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('function workFresh')>=0&&R.indexOf('function crewWorkOk')>=0&&R.indexOf('crewBkRespOk')>=0&&R.indexOf('crewItemOk')>=0;}catch(e){return false;}})());
 t('rules retire revoked packets', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('function packetLive')>=0&&R.indexOf("get('revoked', false)")>=0&&R.indexOf("get('siteDeleted', false)")>=0;}catch(e){return false;}})());
@@ -4153,9 +4153,9 @@ await (async function(){
         metaInv:ops.some(function(o){return o.kind==='meta'&&'invoices' in o.data;}),selMoney:ops.some(function(o){return o.sub==='sel'&&SEL_MONEY_KEYS.some(function(k){return k in o.data;});}),colls:syncCollsFor(siteRoleFor(p)).map(function(c){return c.sub;}).join()};});
     state.session={role:'builder',name:'You'};return out;})()`);
   t('homeowner phone: never an inv or selm write, no invoices in meta, no money on sel',who.client.inv===0&&who.client.selm===0&&!who.client.metaInv&&!who.client.selMoney,JSON.stringify(who.client));
-  t('crew phone: does not listen to inv or selm and writes neither',who.crew.colls==='items,bk,sel,logs'&&who.crew.inv+who.crew.selm===0&&!who.crew.metaInv&&!who.crew.selMoney,JSON.stringify(who.crew));
-  t('builder without Money (super): no costs, inv, selm or mail (2.484.0); writes none',who.super.colls==='items,bk,sel,logs'&&who.super.inv+who.super.selm===0&&!who.super.selMoney,JSON.stringify(who.super));
-  t('Money-only builder (PM): selm yes, inv no (Claude lock Q3)',who.pm.colls==='items,bk,sel,logs,pmts,mail,costs,selm'&&who.pm.inv===0&&who.pm.selm>0,JSON.stringify(who.pm));
+  t('crew phone: does not listen to inv or selm and writes neither',who.crew.colls==='items,bk,sel,logs,docs'&&who.crew.inv+who.crew.selm===0&&!who.crew.metaInv&&!who.crew.selMoney,JSON.stringify(who.crew));
+  t('builder without Money (super): no costs, inv, selm or mail (2.484.0); writes none',who.super.colls==='items,bk,sel,logs,docs'&&who.super.inv+who.super.selm===0&&!who.super.selMoney,JSON.stringify(who.super));
+  t('Money-only builder (PM): selm yes, inv no (Claude lock Q3)',who.pm.colls==='items,bk,sel,logs,pmts,mail,costs,selm,docs,invs'&&who.pm.inv===0&&who.pm.selm>0,JSON.stringify(who.pm));
 
   /* 5 · a fake Firestore that applies set/merge/deleteField like the server */
   $2(`(function(){
@@ -4173,23 +4173,36 @@ await (async function(){
     var mine=function(d){return !!d&&(d.memberUids||[]).indexOf(F.uid)>=0;};
     var siteDocs=function(){return Object.keys(F.srv).filter(function(s){return mine(F.srv[s].doc);}).map(function(s){return ds(s,F.srv[s].doc);});};
     var collDocs=function(sid,sub){var c=F.site(sid).colls[sub]||{};return Object.keys(c).map(function(id){return ds(id,c[id]);});};
+    /* 2.512.0: F.applyWhere makes a filtered listener see only matching records (the server's query), F.wheres records every filter asked for */
+    var fval=function(d,f){var v=d;String(f).split('.').forEach(function(k){v=(v&&typeof v==='object')?v[k]:undefined;});return v;};
+    var fok=function(flt,d){if(!flt)return true;if(!d)return false;var v=fval(d,flt[0]);return flt[1]==='in'?flt[2].indexOf(v)>=0:v===flt[2];};
+    var fdocs=function(l,dd){return l.flt?dd.filter(function(x){return fok(l.flt,x.data());}):dd;};
     var fire=function(path,type,id,d){F.L.forEach(function(l){if(l.dead||l.path!==path)return;if(path==='sites'&&!mine(d)&&type!=='removed')return;
-      setTimeout(function(){if(!l.dead)l.h(snap([{type:type,doc:ds(id,d)}],path==='sites'?siteDocs():collDocs(l.sid,l.sub)));},0);});};
-    var listen=function(path,sid,sub,o,h){if(typeof o==='function')h=o;var l={path:path,sid:sid,sub:sub,h:h};F.L.push(l);
-      setTimeout(function(){if(l.dead)return;var dd=path==='sites'?siteDocs():collDocs(sid,sub);l.h(snap(dd.map(function(d){return {type:'added',doc:d};}),dd));},0);return function(){l.dead=true;};};
+      var ty=(type!=='removed'&&!fok(l.flt,d))?'removed':type;
+      setTimeout(function(){if(!l.dead)l.h(snap([{type:ty,doc:ds(id,ty==='removed'?null:d)}],path==='sites'?siteDocs():fdocs(l,collDocs(l.sid,l.sub))));},0);});};
+    var listen=function(path,sid,sub,o,h,flt){if(typeof o==='function')h=o;var l={path:path,sid:sid,sub:sub,h:h,flt:flt||null};F.L.push(l);
+      setTimeout(function(){if(l.dead)return;var dd=path==='sites'?siteDocs():fdocs(l,collDocs(sid,sub));l.h(snap(dd.map(function(d){return {type:'added',doc:d};}),dd));},0);return function(){l.dead=true;};};
     var log=function(kind,path,d,o){var dels=[];if(d&&isObj(d.data))Object.keys(d.data).forEach(function(k){if(d.data[k]===DEL)dels.push(k);});
       F.writes.push({kind:kind,path:path,data:d?strip(d):null,dels:dels,merge:!!(o&&o.merge),uid:F.uid});};
-    F.db={collection:function(){return {
+    F.db={runTransaction:function(fn){F.tx=(F.tx||0)+1;var ps=[];var tx={get:function(r){return r.get();},set:function(r,d,o){ps.push(function(){return r.set(d,o);});return tx;}};
+        return Promise.resolve(fn(tx)).then(function(v){return ps.reduce(function(a,f){return a.then(f);},Promise.resolve()).then(function(){return v;});});},
+      collection:function(){return {
       where:function(){return {onSnapshot:function(o,h){return listen('sites',null,null,o,h);}};},
       doc:function(sid){return {
         get:function(){return Promise.resolve(ds(sid,F.site(sid).doc));},
-        set:function(d,o){log('set','sites/'+sid,d,o);var s=F.site(sid);var t=s.doc?'modified':'added';var nd=(o&&o.merge&&s.doc)?merge(cl(s.doc),d):strip(d);
+        set:function(d,o){log('set','sites/'+sid,d,o);var rf=F.refuse&&F.refuse('sites/'+sid,d);if(rf){F.writes[F.writes.length-1].refused=true;return Promise.reject({code:rf,message:'refused by the fake'});}var s=F.site(sid);var t=s.doc?'modified':'added';var nd=(o&&o.merge&&s.doc)?merge(cl(s.doc),d):strip(d);
           /* F.r2: R2 (live since 10/7) refuses a house write that leaves a non-empty meta.invoices */
           if(F.r2&&s.doc&&nd.meta&&Array.isArray(nd.meta.invoices)&&nd.meta.invoices.length){F.writes[F.writes.length-1].refused=true;return Promise.reject({code:'permission-denied',message:'R2: meta.invoices'});}
           s.doc=nd;fire('sites',t,sid,s.doc);return Promise.resolve();},
-        collection:function(sub){var C={where:function(){return C;},onSnapshot:function(o,h){return listen(sid+'/'+sub,sid,sub,o,h);},
+        collection:function(sub){var C={where:function(f,op,v){(F.wheres||(F.wheres=[])).push({sid:sid,sub:sub,f:f,op:op,v:v});if(!F.applyWhere)return C;
+            var C2=Object.assign({},C);C2.where=function(){return C2;};C2.onSnapshot=function(o,h){return listen(sid+'/'+sub,sid,sub,o,h,[f,op,v]);};return C2;},
+          onSnapshot:function(o,h){return listen(sid+'/'+sub,sid,sub,o,h);},
           doc:function(id){return {
-            set:function(d,o){if(F.undefCheck&&hasUndef(d)){F.undefHits=(F.undefHits||0)+1;throw new Error('Unsupported field value: undefined (found in field data in document '+sid+'/'+sub+'/'+id+')');}log('set',sid+'/'+sub+'/'+id,d,o);var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
+            /* 2.511.0 (#4): a record read, for the invoice merge's transaction */
+            get:function(){var c=F.site(sid).colls[sub]||{};return Promise.resolve(ds(id,c[id]));},
+            set:function(d,o){if(F.undefCheck&&hasUndef(d)){F.undefHits=(F.undefHits||0)+1;throw new Error('Unsupported field value: undefined (found in field data in document '+sid+'/'+sub+'/'+id+')');}log('set',sid+'/'+sub+'/'+id,d,o);
+              /* F.refuse(path,data) -> an error code: the server refuses this one write (2.510.0, #3) */
+              var rf=F.refuse&&F.refuse(sid+'/'+sub+'/'+id,d);if(rf){F.writes[F.writes.length-1].refused=true;return Promise.reject({code:rf,message:'refused by the fake'});}var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
             delete:function(){log('del',sid+'/'+sub+'/'+id);var c=F.site(sid).colls[sub]||{};var had=!!c[id];delete c[id];if(had)fire(sid+'/'+sub,'removed',id,null);return Promise.resolve();}};}};return C;}};}};}};
     /* a fresh phone: new device, no shadow, no houses */
     F.phone=function(uid,sess,dev){F.L.forEach(function(l){l.dead=true;});F.L=[];F.writes=[];F.uid=uid;
@@ -4226,9 +4239,21 @@ await (async function(){
   await phone('uS',{role:'subs',name:'Timberline Framing',auth:{uid:'uS'}},'devS1');
   t('crew first on unmigrated houses: zero writes, no invoices and no selection money on the phone',W().length===0&&noMoneyHeld().length===0&&J("state.projects.length")===11,JSON.stringify(W().slice(0,1))+noMoneyHeld()[0]);
   await phone('uX',SUP,'devX1');
-  t('builder without Money (super) first: zero writes, no money on the phone',W().length===0&&noMoneyHeld().length===0,noMoneyHeld()[0]);
+  /* 2.512.0: a builder without Money still copies the house doc's old documents into docs/ (any builder writes those) and clears the old list; nothing else */
+  const docClear=x=>/^sites\/[^/]+$/.test(x.path)&&x.data&&x.data.meta&&Object.keys(x.data.meta).length===0&&!('members' in x.data);
+  t('builder without Money (super) first: no writes but the document copy, no money on the phone',W().every(x=>/^[^/]+\/docs\//.test(x.path)||docClear(x))&&noMoneyHeld().length===0,noMoneyHeld()[0]+JSON.stringify(W().filter(x=>!/\/docs\//.test(x.path)).slice(0,1)));
+  const txM0=J("__F.tx||0");
   await phone('uB',B,'devB1');
   const mw=W();const sm=srvMoney();
+  /* merge of 2.510.0-2.512.0: the same push that moves documents and invite codes off the house doc saves sent invoices through
+     2.511.0's read-then-write transaction, and nothing is refused (2.510.0) */
+  const legM=J(`(function(){var o=[];__demo.forEach(function(p){var s=__F.srv[p.id],m=(s.doc&&s.doc.meta)||{};
+    if(Array.isArray(m.docs)&&m.docs.length)o.push(p.id+' meta.docs');if(Array.isArray(m.invites)&&m.invites.length)o.push(p.id+' meta.invites');
+    if((p.docs||[]).length&&Object.keys((s.colls.docs)||{}).length!==(p.docs||[]).length)o.push(p.id+' docs '+Object.keys((s.colls.docs)||{}).length+'/'+p.docs.length);
+    if((p.invites||[]).filter(function(i){return i&&i.code;}).length&&!Object.keys((s.colls.invs)||{}).length)o.push(p.id+' invs');});return o;})()`);
+  const sentN=J("__demo.reduce(function(n,p){return n+(p.invoices||[]).filter(invNeedsMerge).length;},0)");
+  t('2.512.0 + 2.511.0: migration saves sent invoices by transaction, moves documents and invite codes off the house doc, and nothing is refused',
+    (sentN===0||J("__F.tx||0")>txM0)&&legM.length===0&&$2("Sync.refusedCount()")===0,sentN+' sent; '+(J("__F.tx||0")-txM0)+' tx; '+legM.slice(0,3).join(' ; ')+' refused '+$2("Sync.refusedCount()"));
   t('money-gated builder migrates: writes went up',mw.length>0&&mw.every(x=>x.uid==='uB'),mw.length);
   t('after migration: no sel doc on the server has a money key',sm.selMoney.length===0,sm.selMoney.slice(0,3).join());
   t('after migration: meta.invoices cleared on every house',sm.metaInv.length===0,sm.metaInv.join());
@@ -4309,7 +4334,7 @@ await (async function(){
   $2("window.__pmH=__demo.filter(function(p){return (p.invoices||[]).length&&p.selections.some(selHasMoney);})[1];__F.srv={};__F.seedOld(Object.assign(JSON.parse(JSON.stringify(__pmH)),{id:'f2p'}),"+JSON.stringify(MEM)+",{});true");
   await phone('uP',PM,'devP3');
   const pW=W();const pS=srvMoney();
-  t('PM first: moves selection money only (selm, then sel with explicit deletes); no inv, no house doc write',pW.length>0&&pW.every(x=>/^f2p\/(selm|sel)\//.test(x.path))&&pW.filter(x=>/\/sel\//.test(x.path)).every(x=>MONEY.every(k=>x.dels.indexOf(k)>=0))&&pS.selMoney.length===0&&pS.metaInv.length===1,JSON.stringify(pW.filter(x=>!/\/(selm|sel)\//.test(x.path)).slice(0,1))+JSON.stringify(pS));
+  t('PM first: moves selection money only (selm, then sel with explicit deletes); no inv, no house doc write',pW.length>0&&pW.every(x=>/^f2p\/(selm|sel|docs|invs)\//.test(x.path)||docClear(x))&&pW.filter(x=>/\/sel\//.test(x.path)).every(x=>MONEY.every(k=>x.dels.indexOf(k)>=0))&&pS.selMoney.length===0&&pS.metaInv.length===1,JSON.stringify(pW.filter(x=>!/\/(selm|sel)\//.test(x.path)).slice(0,1))+JSON.stringify(pS));
   await phone('uB',B,'devB5');
   const pS2=srvMoney();const pInv=J("Object.keys(__F.srv.f2p.colls.inv||{}).length===__pmH.invoices.length");
   t('PM first, then the owner: invoices absorbed, meta.invoices cleared, nothing left on sel',pS2.metaInv.length===0&&pS2.selMoney.length===0&&pS2.orphan.length===0&&pInv===true&&W().every(x=>!/\/sel\//.test(x.path)),JSON.stringify(pS2));
@@ -4500,6 +4525,108 @@ await (async function(){
   t('conversion report on the demo houses: zero amounts changed (every seeded amount was already a whole cent)',J("_moneyConv.length")===0,J("moneyConvText()"));
   const TOAST_ON="window._simToasts=[];window._simOT=window.toast;window.toast=function(m){window._simToasts.push(m);};true";
   const TOAST_OFF="(function(){var r=JSON.stringify(window._simToasts);window.toast=window._simOT;return r;})()";
+  /* ════ 2.510.0 · #3: a refused save stops only itself, says Not saved, and the rest of the house keeps saving ════ */
+  {
+    const RF_SAVE="(function(){window.__rfMode=localStorage.getItem('plumb.mode');localStorage.setItem('plumb.mode','real');return true;})()";
+    const RF_REST="(function(){if(window.__rfMode==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',window.__rfMode);__F.refuse=null;return true;})()";
+    const pill=()=>$2("(function(){setSync('synced');var el=document.querySelector('.syncpill');return el?el.textContent:'(no pill)';})()");
+    const rfItem=(id,text)=>`(function(){var p=state.projects.find(function(x){return x.id==='pdel';});var it=p.items.find(function(x){return String(x.id)==='${id}';});if(it)it.text='${text}';else p.items.push({id:'${id}',text:'${text}',t:1791000000000});return true;})()`;
+    const push=async()=>{await $2("Sync._pushOne(state.projects.find(function(x){return x.id==='pdel';})).then(function(){return 'ok';},function(e){return 'threw '+(e&&e.code);})");await settle();};
+    const wr=path=>J(`__F.writes.filter(function(w){return w.path===${JSON.stringify(path)};}).length`);
+    const onSrv=id=>J(`!!((__F.srv.pdel.colls.items||{})['${id}'])`);
+    $2(RF_SAVE);$2("__F.writes=[];__F.refuse=function(path){return path==='pdel/items/rf_bad'?'permission-denied':null;};true");
+    $2(TOAST_ON);
+    $2(rfItem('rf_bad','refused note'));$2(rfItem('rf_ok1','first note'));await push();
+    let ts=JSON.parse($2(TOAST_OFF));
+    t('2.510.0 #3: a refused save does not stop the next one on the same house',onSrv('rf_ok1')&&!onSrv('rf_bad'),JSON.stringify(J("__F.writes.map(function(w){return w.path+(w.refused?' (refused)':'');})")));
+    t('2.510.0 #3: the refused save is set aside and counted',J("Sync.refusedCount('pdel')")===1&&J("Sync.refusedCount()")===1);
+    t('2.510.0 #3: the refusal says Not saved once (toast) and is logged as a rules refusal',ts.filter(m=>m===J('NOT_SAVED_TOAST')).length===1&&J("(function(){var a=JSON.parse(localStorage.getItem('plumb.errors')||'[]');return a.some(function(x){return x.k==='rules'&&x.w==='Sync._pushOne';});})()"),JSON.stringify(ts));
+    t('2.510.0 #3: the pill says Not saved, not Saved · live, while the refusal is outstanding',pill()===J('NOT_SAVED_PILL'),pill());
+    $2(TOAST_ON);$2(rfItem('rf_ok2','later note'));await push();ts=JSON.parse($2(TOAST_OFF));
+    t('2.510.0 #3: later saves keep going; the refused one is not resent unchanged and no second toast',onSrv('rf_ok2')&&wr('pdel/items/rf_bad')===1&&ts.indexOf(J('NOT_SAVED_TOAST'))<0,wr('pdel/items/rf_bad')+' '+JSON.stringify(ts));
+    t('2.510.0 #3: still Not saved after the later save landed',pill()===J('NOT_SAVED_PILL'),pill());
+    $2(rfItem('rf_bad','refused note, edited'));await push();
+    t('2.510.0 #3: an edit to the refused record is tried again (and refused again, still marked)',wr('pdel/items/rf_bad')===2&&J("Sync.refusedCount('pdel')")===1);
+    $2("__F.refuse=null;true");$2(rfItem('rf_bad','allowed now'));await push();
+    t('2.510.0 #3: once it saves, the mark clears and the pill says Saved · live again',onSrv('rf_bad')&&J("Sync.refusedCount()")===0&&pill()==='Saved \u00b7 live',pill());
+    $2("__F.refuse=function(path){return path==='pdel/items/rf_gone'?'permission-denied':null;};true");$2(rfItem('rf_gone','will be undone'));await push();
+    const was=J("Sync.refusedCount('pdel')");
+    $2("(function(){var p=state.projects.find(function(x){return x.id==='pdel';});p.items=p.items.filter(function(x){return String(x.id)!=='rf_gone';});return true;})()");await push();
+    t('2.510.0 #3: undoing the refused change here clears the mark',was===1&&J("Sync.refusedCount()")===0&&pill()==='Saved \u00b7 live',was+' '+pill());
+    $2("__F.refuse=function(path){return path==='pdel/items/rf_net'?'unavailable':null;};true");$2(rfItem('rf_net','no signal'));$2(rfItem('rf_ok3','still goes'));
+    const thr=await $2("Sync._pushOne(state.projects.find(function(x){return x.id==='pdel';})).then(function(){return 'ok';},function(e){return 'threw '+(e&&e.code);})");await settle();
+    t('2.510.0 #3: a save that fails for no-signal is not marked refused, the others still go, and the push reports it',thr==='threw unavailable'&&onSrv('rf_ok3')&&J("Sync.refusedCount()")===0,thr);
+    $2("__F.refuse=null;true");await push();
+    t('2.510.0 #3: ... and it goes on the next push',onSrv('rf_net'));
+    $2("(function(){Sync._refused['pdel|set|items|rf_x']={sid:'pdel',kind:'set',sub:'items',id:'rf_x',h:'h',code:'permission-denied',at:1};return true;})()");
+    t('2.510.0 #3: a reconnect tries each refused save once more',J("(function(){var u=Sync.unsub;Sync.subscribe();return Sync._refused['pdel|set|items|rf_x'].retry===true;})()"));
+    await settle();$2("Sync._refused={};true");
+    /* the removal toast says what happened */
+    $2("(function(){var p=state.projects.find(function(x){return x.id==='pdel';});p.members=Object.assign({},p.members,{uRm:'builder'});p.memberInfo=Object.assign({},p.memberInfo,{uRm:{name:'Rae'}});return true;})()");await push();
+    t('2.510.0 #3 setup: the teammate is on the house on the server',J("(function(){var d=__F.srv.pdel.doc;return d.members.uRm==='builder'&&d.memberUids.indexOf('uRm')>=0&&!!((d.meta||{}).memberInfo||{}).uRm;})()"));
+    $2("(function(){__F.refuse=function(path){return path==='sites/pdel'?'permission-denied':null;};var p=state.projects.find(function(x){return x.id==='pdel';});delete p.members.uRm;delete p.memberInfo.uRm;return true;})()");
+    const SR=JSON.parse(await $2("Sync.settleHouses(['pdel']).then(function(r){return JSON.stringify(r);})"));
+    t('2.510.0 #3: a refused removal is reported as refused (no "removed from all houses")',SR.refused===1&&SR.pending===0,JSON.stringify(SR));
+    $2("__F.refuse=null;true");
+    const SO=JSON.parse(await $2("Sync.settleHouses(['pdel']).then(function(r){return JSON.stringify(r);})"));await settle();
+    t('2.510.0 #3: an accepted removal is reported as done, and the person is gone from members, memberUids, meta.members and meta.memberInfo on the server',SO.refused===0&&SO.pending===0&&J("(function(){var d=__F.srv.pdel.doc;return !('uRm' in (d.members||{}))&&(d.memberUids||[]).indexOf('uRm')<0&&!('uRm' in ((d.meta||{}).members||{}))&&!('uRm' in ((d.meta||{}).memberInfo||{}));})()")&&J("Sync.refusedCount()")===0,JSON.stringify(SO));
+    t('2.510.0 #3: removeTeamMember is owner-only and only claims "removed from all houses" after every house took it',
+      $2("String(removeTeamMember)").indexOf('if(!isOrgOwner()){toast(TEAM_REMOVE_OWNER_ONLY);return;}')>=0&&$2("String(removeTeamMember)").indexOf('res.refused?TEAM_REMOVE_REFUSED:res.pending?TEAM_REMOVE_PENDING:')>=0&&$2("String(removeTeamMember)").indexOf('Sync.pushAll')<0);
+    t('2.510.0 #3: the remove-teammate button shows only to the owner',$2("String(__renderPeople)").indexOf("(!mine&&!owner&&isOrgOwner())?")>=0);
+    const NS=J("(function(){var ss=state.session;state.session={role:'builder',name:'Pat',member:true,rpRole:'pm',auth:{uid:'uP'}};var c=0;var ot=window.toast;window.toast=function(m){if(m===TEAM_REMOVE_OWNER_ONLY)c++;};try{removeTeamMember('uX');}finally{window.toast=ot;state.session=ss;}return c;})()");
+    t('2.510.0 #3: a non-owner tapping remove is told only the owner can (no confirm, nothing changes)',NS===1&&$2("document.getElementById('cdScrim')?!document.getElementById('cdScrim').classList.contains('show'):true")===true,NS);
+    $2(RF_REST);
+  }
+  /* ════ 2.511.0 · #4: a stale phone adds its payment to the server's invoice and keeps the homeowner's OK ════ */
+  {
+    const push=async()=>{await $2("Sync._pushOne(state.projects.find(function(x){return x.id==='pdel';})).then(function(){return 'ok';},function(e){return 'threw '+(e&&e.code);})");await settle();};
+    const loc=()=>J("state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';})");
+    const srv=()=>J("(__F.srv.pdel.colls.inv||{}).inv_s1.data");
+    const ids=a=>(a||[]).map(x=>x.id+(x.voidedAt?'(void)':'')).join(',');
+    /* phone B (this phone) and the server both hold INV-031, sent, $300, no payments */
+    $2("(function(){var p=state.projects.find(function(x){return x.id==='pdel';});p.invoices=(p.invoices||[]).filter(function(v){return v.id!=='inv_s1';});p.invoices.push({id:'inv_s1',no:'INV-031',title:'Selections',due:'',items:[{label:'Tile',amount:300,amountC:30000}],total:300,totalC:30000,status:'sent',t:1791000000000,sentBy:'You',payments:[]});return true;})()");
+    await push();
+    t('2.511.0 #4 setup: INV-031 is on the server, sent, no payments',!!srv()&&srv().status==='sent'&&ids(srv().payments)==='');
+    /* phone A records a payment; this phone has not heard yet */
+    $2("(function(){__F.srv.pdel.colls.inv.inv_s1.data.payments.push({id:'pm_A',amount:100,date:'2026-11-17',note:''});return true;})()");
+    const tx0=J("__F.tx||0");
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});v.payments.push({id:'pm_B',amount:50,date:'2026-11-17',note:'phone B'});return true;})()");
+    await push();
+    t('2.511.0 #4 STALE PHONE: phone B\'s payment is added after phone A\'s; A\'s is not lost',ids(srv().payments)==='pm_A,pm_B',ids(srv().payments));
+    t('2.511.0 #4: the write is a read-then-write transaction',J("__F.tx||0")>tx0);
+    t('2.511.0 #4: phone B now shows phone A\'s payment too, and nothing is queued again',ids(loc().payments)==='pm_A,pm_B'&&J("diffSiteOps(Sync._shadow.pdel,state.projects.find(function(x){return x.id==='pdel';})).filter(function(o){return o.sub==='inv';}).length")===0,ids(loc().payments));
+    /* the homeowner approves on the server; phone B still holds "sent" and pays the rest */
+    $2("(function(){var d=__F.srv.pdel.colls.inv.inv_s1.data;d.status='approved';d.approvedAt=1791300000000;return true;})()");
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});v.payments.push({id:'pm_C',amount:150,date:'2026-11-18',note:''});v.status='paid';v.paidAt=1791400000000;return true;})()");
+    await push();
+    t('2.511.0 #4 STALE PHONE: paying in full on an old copy keeps the homeowner\'s OK (approvedAt) and marks it paid',srv().approvedAt===1791300000000&&srv().status==='paid'&&ids(srv().payments)==='pm_A,pm_B,pm_C',JSON.stringify({s:srv().status,a:srv().approvedAt,p:ids(srv().payments)}));
+    t('2.511.0 #4: phone B now holds the OK too',loc().approvedAt===1791300000000);
+    /* phone B voids phone A's payment: the invoice reopens as approved, never back to sent */
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});var pm=v.payments.find(function(x){return x.id==='pm_A';});pm.voidedAt=1791500000000;pm.voidReason='Bounced';pm.voidedBy='You';v.status='approved';v.paidAt=null;return true;})()");
+    await push();
+    t('2.511.0 #4: a void keeps every payment, in place, and reopens the invoice as approved',ids(srv().payments)==='pm_A(void),pm_B,pm_C'&&srv().status==='approved'&&srv().approvedAt===1791300000000,JSON.stringify({s:srv().status,p:ids(srv().payments)}));
+    /* a stale phone that never had A's payment or the OK writes an old copy with a new due date */
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});v.payments=[{id:'pm_B',amount:50,date:'2026-11-17',note:'phone B'}];v.status='sent';delete v.approvedAt;v.due='2026-12-01';return true;})()");
+    await push();
+    t('2.511.0 #4 STALE PHONE: an old copy written over the server drops no payment and keeps the OK',ids(srv().payments)==='pm_A(void),pm_B,pm_C'&&srv().status==='approved'&&srv().approvedAt===1791300000000&&srv().due==='2026-12-01',JSON.stringify({s:srv().status,a:srv().approvedAt,p:ids(srv().payments)}));
+    /* a void on the server wins */
+    $2("(function(){var d=__F.srv.pdel.colls.inv.inv_s1.data;d.status='void';d.voidedAt=1791600000000;d.voidReason='Re-issued';return true;})()");
+    $2("(function(){var v=state.projects.find(function(x){return x.id==='pdel';}).invoices.find(function(v){return v.id==='inv_s1';});v.due='2026-12-15';return true;})()");
+    await push();
+    t('2.511.0 #4: a void made on another phone stays void',srv().status==='void'&&srv().voidReason==='Re-issued'&&loc().status==='void');
+    /* the merge on its own */
+    const MG=J(`(function(){var o={};
+      o.same=JSON.stringify(invMergeServer({id:'i',status:'paid',paidAt:5,total:10,items:[{label:'a',amount:10}],payments:[]},{id:'i',status:'paid',paidAt:5,total:10,items:[{label:'a',amount:10}],payments:[]}));
+      o.legacyPaid=invMergeServer({id:'i',status:'paid',paidAt:5,total:10,items:[{label:'a',amount:10}],payments:[]},{id:'i',status:'paid',paidAt:5,total:10,items:[{label:'a',amount:10}],payments:[]}).status;
+      o.draft=invMergeServer({id:'i',status:'draft',title:'mine'},{id:'i',status:'draft',title:'theirs'}).title;
+      o.adj=invMergeServer({id:'i',status:'sent',no:'INV-1',total:8,items:[{label:'a',amount:10},{label:'Credit',amount:-2,adj:true}],payments:[]},{id:'i',status:'sent',no:'INV-1',total:10,items:[{label:'a',amount:10}],payments:[]});
+      o.title=invMergeServer({id:'i',status:'sent',no:'INV-9',title:'x',total:10,items:[{label:'a',amount:10}],payments:[]},{id:'i',status:'sent',no:'INV-1',title:'y',total:10,items:[{label:'a',amount:10}],payments:[]});
+      return o;})()`);
+    t('2.511.0 #4: merging an unchanged invoice changes nothing (a paid invoice with no payment entries stays paid)',MG.legacyPaid==='paid'&&MG.same.indexOf('"status":"paid"')>=0);
+    t('2.511.0 #4: a draft is never merged (this phone\'s draft is the record)',MG.draft==='mine');
+    t('2.511.0 #4: a credit appended here after the server\'s lines is kept, with its total',MG.adj.items.length===2&&MG.adj.total===8);
+    t('2.511.0 #4: number and title are the server\'s',MG.title.no==='INV-1'&&MG.title.title==='y');
+  }
   $2("state.activeId='pdel';true");
   /* parser table, on the real parseMoney */
   const PT=J(`(function(){var o={};['2k','-500','$2,000.50','','$','1,2,3','12.345','2,000','2.000,50','500-600','1849.5','abc','5.','0'].forEach(function(x){var r=parseMoney(x,{});o[x]=r.ok?r.cents:('x:'+r.why);});o['0+']=parseMoney('0',{positive:true}).ok;return o;})()`);
@@ -5421,7 +5548,7 @@ await (async function(){
   t('G3: a payment voided on an invoice tells the homeowner, with the reason',g3.length===1&&g3[0].title.indexOf('Payment no longer counted')===0&&g3[0].body.indexOf('Check bounced')>=0&&g3[0].body.indexOf('INV-007')>=0,JSON.stringify(g3));
   const g3b=JSON.parse(NDIFF({payments:[{id:'pz',amount:2000,label:'Deposit'}]},{payments:[{id:'pz',amount:2000,label:'Deposit',voidedAt:6,voidReason:'Entered twice'}]}));
   t('G3: a payment voided on the payments list tells the homeowner',g3b.length===1&&g3b[0].aud==='client'&&g3b[0].body.indexOf('Entered twice')>=0&&g3b[0].body.indexOf('Deposit')>=0,JSON.stringify(g3b));
-  t('G3: the notice snapshot carries payments and the pmts listener scans it',J("Array.isArray(Notify.snap({payments:[{id:'a',amount:1}]}).payments)")===true&&SRC.indexOf("if(c.sub==='pmts'&&changed&&_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}")>=0);
+  t('G3: the notice snapshot carries payments and the pmts listener scans it',J("Array.isArray(Notify.snap({payments:[{id:'a',amount:1}]}).payments)")===true&&SRC.indexOf("if((c.sub==='pmts'||c.sub==='docs')&&changed&&_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}")>=0);
   /* ---------- step 5: ready for Rules A2 (2.481.0); app side only, rules cases live in rulescheck.js ---------- */
   t('A2: the sync stamp carries the server time (M-7)',J("(function(){try{var s=Sync._stamp();return ('at' in s)&&typeof s.appV==='string'&&s.appV.split('.').length===3;}catch(e){return 'err '+e.message;}})()")===true);
   t('A2: every live money builder claims an invoice number, switch or not',SRC.indexOf("allowed(p){try{return !!(p&&typeof Sync")>=0&&SRC.indexOf("allowed(p){try{return !!(PaperTrail.on&&p")<0);
@@ -5540,6 +5667,96 @@ await (async function(){
   t('2.509.0: Invite a teammate shows for the owner only (the rules take team codes from the owner only)',
     $2("String(__renderPeople)").indexOf("canGate('people')||isOrgOwner()")<0&&$2("String(__renderPeople)").indexOf("isOrgOwner()?`<button class=\"add-sub-btn btn btn-secondary\" onclick=\"openTeamInvite({})\">")>=0);
   t('2.509.0: a refused homeowner or crew code says to ask the owner',$2("String(createInvite)").indexOf("permission-denied'?INV_MONEY_ONLY")>=0);
+
+  /* ════ 2.512.0 (batch 3): #5 documents by audience + invite codes off the house doc, #6 no drafts for the homeowner,
+     #15 own notes, #18 owner-only delete, files fetched on demand. Same fake Firestore; filtered listeners see only what they ask for. ════ */
+  const INFO3={uS:{name:'Timberline Framing'},uH:{name:'Ana Ruiz'},uP:{name:'Pat',rpRole:'pm',gates:{moneyJob:true}},uX:{name:'Sam',rpRole:'super'}};
+  $2(`(function(){__F.srv={};__F.wheres=[];__F.applyWhere=true;var p=JSON.parse(JSON.stringify(__demo[1]));p.id='b3';p.invoices=[];p.street='9 Batch Three Rd';
+    p.docs=[{n:'Contract.pdf',m:'Signed',k:'pdf',trade:'',aud:'team',fileId:'docT1',fileUrl:'https://firebasestorage.googleapis.com/v0/b/x/o/live%2Fsites%2Fb3%2Fdocs%2FdocT1?alt=media&token=t1'},
+      {n:'Plans.pdf',m:'Rev C',k:'pdf',trade:'',aud:'all',fileId:'docA1'},
+      {n:'Crew sheet.pdf',m:'',k:'pdf',trade:'plumb',fileId:'docS1'},
+      {n:'Listed only.pdf',m:'',k:'pdf',trade:'',aud:'homeowner'}];
+    p.invites=[{code:'HOME1',role:'client',siteId:'b3',status:'open',t:1},{code:'CREW1',role:'sub',siteId:'b3',subId:'1',name:'Timberline Framing',status:'open',t:2}];
+    __F.seedOld(p,${JSON.stringify(MEM)},${JSON.stringify(INFO3)});
+    var c=__F.site('b3').colls;c.inv={invD:{data:{id:'invD',title:'Draft',status:'draft',total:5,items:[]},updatedAt:1,updatedBy:'devOld'},invS:{data:{id:'invS',no:'INV-009',title:'Sent',status:'sent',total:7,items:[]},updatedAt:1,updatedBy:'devOld'}};
+    c.items=c.items||{};c.items['901']={data:{id:901,cap:'Builder note',by:'You',area:'Whole House',t:1},updatedAt:1,updatedBy:'devOld'};
+    return true;})()`);
+  const HO3={role:'client',site:'b3',name:'Ana',auth:{uid:'uH'}},CR3={role:'subs',name:'Timberline Framing',auth:{uid:'uS'}};
+  const b3=`(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};return {w:__F.writes.length,docsAll:(p.docs||[]).map(function(d){return d.n;}).sort(),
+    hoDocs:(p.docs||[]).filter(docAudClient).map(function(d){return d.n;}).sort(),crewDocs:(p.docs||[]).filter(docAudSub).map(function(d){return d.n;}).sort(),
+    inv:(p.invoices||[]).map(function(v){return v.id;}).sort(),invites:(p.invites||[]).map(function(i){return i.code;}).sort(),
+    wh:(__F.wheres||[]).filter(function(x){return x.sid==='b3';}).map(function(x){return x.sub+' '+x.f+' '+x.op+' '+[].concat(x.v).join('|');}).sort()};})()`;
+  await phone('uH',HO3,'devH9');
+  const ho1=J(b3);
+  t('#5/#6 homeowner first on an old house: no writes, never a draft invoice, no invite code on the phone',ho1.w===0&&ho1.inv.join()==='invS'&&ho1.invites.length===0,JSON.stringify(ho1));
+  t('#5 homeowner first: only homeowner and everyone documents show (the old list, filtered on the phone as before)',ho1.hoDocs.join()==='Listed only.pdf,Plans.pdf',JSON.stringify(ho1.hoDocs));
+  t('#5/#6 the homeowner\'s listeners ask for exactly what the rules let them read',ho1.wh.indexOf('docs data.aud in homeowner|all')>=0&&ho1.wh.indexOf('inv data.status in sent|approved|paid|void')>=0&&!ho1.wh.some(function(x){return /^invs /.test(x);}),JSON.stringify(ho1.wh));
+  $2("__F.wheres=[];true");
+  await phone('uS',CR3,'devS9');
+  const cr1=J(b3);
+  t('#5 crew first on an old house: no writes, no invite code, crews and everyone documents only',cr1.w===0&&cr1.invites.length===0&&cr1.crewDocs.join()==='Crew sheet.pdf,Plans.pdf'&&cr1.wh.indexOf('docs data.aud in subs|all')>=0,JSON.stringify(cr1));
+  await phone('uB',B,'devB9');
+  const own=J(`(function(){var x=__F.srv.b3;var d=x.colls.docs||{},v=x.colls.invs||{};return {meta:Object.keys(x.doc.meta||{}),docs:Object.keys(d).map(function(k){return k+':'+d[k].data.aud;}).sort(),
+    urls:Object.keys(d).filter(function(k){return 'fileUrl' in d[k].data;}),invs:Object.keys(v).sort(),
+    listy:__F.writes.filter(function(w){var m=w.data&&w.data.meta;return m&&((Array.isArray(m.docs)&&m.docs.length)||(Array.isArray(m.invites)&&m.invites.length));}).length,
+    phone:J2()};function J2(){var p=state.projects.find(function(y){return y.id==='b3';});return {docs:(p.docs||[]).length,invites:(p.invites||[]).length};}})()`);
+  t('#5 the owner\'s phone copies every old document into docs/, each with its audience (no audience = crews, as before)',own.docs.length===4&&own.docs.indexOf('docT1:team')>=0&&own.docs.indexOf('docA1:all')>=0&&own.docs.indexOf('docS1:subs')>=0&&own.docs.some(function(k){return /^dn_.*:homeowner$/.test(k);}),JSON.stringify(own.docs));
+  t('#5 no document record carries a saved download link',own.urls.length===0,JSON.stringify(own.urls));
+  t('#5 invite codes copied into invs/',own.invs.join()==='CREW1,HOME1',JSON.stringify(own.invs));
+  t('#5 then the house doc\'s old lists are removed (every member reads it)',own.meta.indexOf('docs')<0&&own.meta.indexOf('invites')<0,JSON.stringify(own.meta));
+  t('#5 no house write from 2.512.0 carries a document or invite list',own.listy===0);
+  t('#5 the owner keeps all four documents and both codes',own.phone.docs===4&&own.phone.invites===2,JSON.stringify(own.phone));
+  $2("state.activeId='b3';true");
+  const plansAt=J("P().docs.findIndex(function(d){return d.n==='Plans.pdf';})");
+  $2("cycleDocAud("+plansAt+");Sync._pushOne(P());true");   // all -> team
+  await settle();
+  t('#5 changing a document\'s audience changes its record',J("__F.srv.b3.colls.docs.docA1.data.aud")==='team');
+  await phone('uH',HO3,'devH10');
+  const ho2=J(b3);
+  t('#5 homeowner after the move: only their documents reach the phone at all (team-only never does)',ho2.docsAll.join()==='Listed only.pdf'&&ho2.invites.length===0&&ho2.w===0,JSON.stringify(ho2));
+  /* #15: notes */
+  const n15=J(`(function(){var was=localStorage.getItem('plumb.mode');localStorage.setItem('plumb.mode','real');state.activeId='b3';var msgs=[],tw=window.toast;window.toast=function(m){msgs.push(String(m));};
+    try{var it=Data.addItem({id:99301,cap:'Door scratch',area:'Whole House',t:Date.now()});var by=it.by;
+      var b=Data.updateItem('b3',901,{cap:'changed by homeowner'});var bcap=P().items.find(function(i){return i.id===901;}).cap;
+      Data.updateItem('b3',99301,{cap:'Door scratch, left side'});var own=P().items.find(function(i){return i.id===99301;}).cap;
+      return {by:by,bcap:bcap,own:own,msgs:msgs};}
+    finally{window.toast=tw;if(was==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',was);}})()`);
+  t('#15 a homeowner\'s note is signed with the name the server stamped for them (the rule compares it)',n15.by==='Ana Ruiz',JSON.stringify(n15));
+  t('#15 a homeowner cannot change the builder\'s note (placeholder words shown, nothing changes)',n15.bcap==='Builder note'&&n15.msgs.indexOf($('NOTE_EDIT_OWN_ONLY'))>=0,JSON.stringify(n15));
+  t('#15 a homeowner changes their own note',n15.own==='Door scratch, left side');
+  $2("Sync._pushOne(state.projects.find(function(x){return x.id==='b3';}));true");
+  await settle();
+  const n15s=J("(function(){var c=(__F.srv.b3.colls.items||{});var r=c['99301'];return {by:r&&r.data&&r.data.by,w:__F.writes.map(function(x){return x.path;}).slice(0,12)};})()");
+  t('#15 the homeowner\'s note reached the server signed as them; the builder\'s note was never written',n15s.by==='Ana Ruiz'&&!W().some(function(x){return /b3\/items\/901$/.test(x.path);}),JSON.stringify(n15s));
+  /* #18 */
+  const d18=J(`(function(){var was=localStorage.getItem('plumb.mode');localStorage.setItem('plumb.mode','real');var su=Sync.uid;var msgs=[],tw=window.toast;window.toast=function(m){msgs.push(String(m));};
+    try{var h={id:'h18',members:{uB:'builder',uP:'builder',uH:'client'},memberInfo:{uP:{rpRole:'pm',name:'Pat'}}};state.projects.push(h);
+      Sync.uid='uP';var pm=canDeleteHouse(h);deleteSite('h18');var kept=state.projects.some(function(x){return x.id==='h18';})&&!h.deleted;
+      Sync.uid='uB';var ow=canDeleteHouse(h);
+      var h2={id:'h18b',members:{uB:'builder',uP:'builder'},memberInfo:{uP:{rpRole:'owner'}}};Sync.uid='uP';var ro=canDeleteHouse(h2);
+      return {pm:pm,kept:kept,ow:ow,ro:ro,msgs:msgs};}
+    finally{state.projects=state.projects.filter(function(x){return x.id!=='h18';});Sync.uid=su;window.toast=tw;if(was==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',was);}})()`);
+  t('#18 a builder who is not the owner cannot delete the house (placeholder words, nothing marked deleted)',d18.pm===false&&d18.kept&&d18.msgs.indexOf($('HOUSE_DELETE_OWNER_ONLY'))>=0,JSON.stringify(d18));
+  t('#18 the owner (no roster entry, or rpRole owner) can',d18.ow===true&&d18.ro===true);
+  t('#18 Delete shows only for the owner in Edit houses',SRC.indexOf("(canDeleteHouse(p)?'<button class=\"btn btn-danger\" onclick=\"deleteSite(")>=0);
+  /* #5 / #7: files */
+  await phone('uB',B,'devB10');
+  const f5=J(`(function(){var keep=CloudFiles._q();CloudFiles._save([]);var p=state.projects.find(function(x){return x.id==='b3';});
+    var r={};CloudFiles.move('b3','docA1','all','team');r.q=CloudFiles._q();CloudFiles._save([]);
+    var d=p.docs.find(function(x){return x.fileId==='docS1';});r.stamp=CloudFiles._stamp({kind:'docs-homeowner',id:'docS1',done:1});r.aud=d.fileAud;r.url=('fileUrl' in d);
+    var it=p.items.find(function(i){return i.photoId;})||{};r.photo=it.photoId?CloudFiles._stamp({kind:'photos',id:it.photoId,done:1}):true;r.photoUrl=('photoUrl' in it)&&!!it.photoUrl&&!/token=/.test(it.photoUrl)?false:('photoUrl' in it);
+    r.meta=CloudFiles._meta({type:'application/pdf'});r.path=CloudFiles.path({kind:'docs-subs',siteId:'b3',id:'doc_x'});
+    r.dp=docPath('b3',{fileId:'docT1'})+' '+docPath('b3',{fileId:'docA1',fileAud:'all'});
+    r.row=[docRow({n:'a',fileId:'f',fileUrl:'https://firebasestorage.googleapis.com/v0/b/x/o/a?token=1'}),docRow({n:'b',fileUrl:'https://example.com/b.pdf',aud:'team'})];
+    CloudFiles._save(keep);return r;})()`);
+  t('#5 an audience change queues a copy into the new folder and names the old copy to remove',f5.q.length===1&&f5.q[0].kind==='docs-team'&&f5.q[0].from==='live/sites/b3/docs-all/docA1',JSON.stringify(f5.q));
+  t('#5 an uploaded document remembers its folder, never a download link',f5.stamp===true&&f5.aud==='homeowner'&&f5.url===false,JSON.stringify(f5));
+  t('#5 files go to live/sites/<house>/docs-<audience>/<id>; old files keep the shared docs folder',f5.path==='live/sites/b3/docs-subs/doc_x'&&f5.dp==='live/sites/b3/docs/docT1 live/sites/b3/docs-all/docA1',f5.path+' '+f5.dp);
+  t('#7 every upload names its uploader (the rules let only them replace or delete it)',f5.meta.customMetadata.uploader==='uB'&&f5.meta.contentType==='application/pdf',JSON.stringify(f5.meta));
+  t('#5 a record never carries a storage download link; an outside link stays',!('fileUrl' in f5.row[0])&&f5.row[0].aud==='subs'&&f5.row[1].fileUrl==='https://example.com/b.pdf',JSON.stringify(f5.row));
+  t('#5 no download link is written onto a record any more (photos and documents fetch one when shown)',SRC.indexOf('e.url=await ref.getDownloadURL()')<0&&SRC.indexOf('it.photoUrl=e.url')<0&&SRC.indexOf('d.fileUrl=e.url')<0&&$2("String(backfillPhotos)").indexOf("FileURL.get('live/sites/'")>=0&&$2("String(docFileUrl)").indexOf('FileURL.get(docPath(')>=0);
+  t('#6 Past houses: the homeowner asks for sent invoices only',$2("String(PAST.load)").indexOf("where('data.status','in',INV_SEEN)")>=0);
+  $2("__F.applyWhere=false;__F.wheres=[];true");
 
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
