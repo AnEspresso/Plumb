@@ -4241,8 +4241,18 @@ await (async function(){
   /* 2.512.0: a builder without Money still copies the house doc's old documents into docs/ (any builder writes those) and clears the old list; nothing else */
   const docClear=x=>/^sites\/[^/]+$/.test(x.path)&&x.data&&x.data.meta&&Object.keys(x.data.meta).length===0&&!('members' in x.data);
   t('builder without Money (super) first: no writes but the document copy, no money on the phone',W().every(x=>/^[^/]+\/docs\//.test(x.path)||docClear(x))&&noMoneyHeld().length===0,noMoneyHeld()[0]+JSON.stringify(W().filter(x=>!/\/docs\//.test(x.path)).slice(0,1)));
+  const txM0=J("__F.tx||0");
   await phone('uB',B,'devB1');
   const mw=W();const sm=srvMoney();
+  /* merge of 2.510.0-2.512.0: the same push that moves documents and invite codes off the house doc saves sent invoices through
+     2.511.0's read-then-write transaction, and nothing is refused (2.510.0) */
+  const legM=J(`(function(){var o=[];__demo.forEach(function(p){var s=__F.srv[p.id],m=(s.doc&&s.doc.meta)||{};
+    if(Array.isArray(m.docs)&&m.docs.length)o.push(p.id+' meta.docs');if(Array.isArray(m.invites)&&m.invites.length)o.push(p.id+' meta.invites');
+    if((p.docs||[]).length&&Object.keys((s.colls.docs)||{}).length!==(p.docs||[]).length)o.push(p.id+' docs '+Object.keys((s.colls.docs)||{}).length+'/'+p.docs.length);
+    if((p.invites||[]).filter(function(i){return i&&i.code;}).length&&!Object.keys((s.colls.invs)||{}).length)o.push(p.id+' invs');});return o;})()`);
+  const sentN=J("__demo.reduce(function(n,p){return n+(p.invoices||[]).filter(invNeedsMerge).length;},0)");
+  t('2.512.0 + 2.511.0: migration saves sent invoices by transaction, moves documents and invite codes off the house doc, and nothing is refused',
+    (sentN===0||J("__F.tx||0")>txM0)&&legM.length===0&&$2("Sync.refusedCount()")===0,sentN+' sent; '+(J("__F.tx||0")-txM0)+' tx; '+legM.slice(0,3).join(' ; ')+' refused '+$2("Sync.refusedCount()"));
   t('money-gated builder migrates: writes went up',mw.length>0&&mw.every(x=>x.uid==='uB'),mw.length);
   t('after migration: no sel doc on the server has a money key',sm.selMoney.length===0,sm.selMoney.slice(0,3).join());
   t('after migration: meta.invoices cleared on every house',sm.metaInv.length===0,sm.metaInv.join());
