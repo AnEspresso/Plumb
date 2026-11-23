@@ -4293,8 +4293,13 @@ await (async function(){
               /* F.refuse(path,data) -> an error code: the server refuses this one write (2.510.0, #3) */
               var rf=F.refuse&&F.refuse(sid+'/'+sub+'/'+id,d);if(rf){F.writes[F.writes.length-1].refused=true;return Promise.reject({code:rf,message:'refused by the fake'});}var c=F.site(sid).colls[sub]||(F.site(sid).colls[sub]={});var t=c[id]?'modified':'added';c[id]=(o&&o.merge&&c[id])?merge(c[id],d):strip(d);fire(sid+'/'+sub,t,id,c[id]);return Promise.resolve();},
             delete:function(){log('del',sid+'/'+sub+'/'+id);var c=F.site(sid).colls[sub]||{};var had=!!c[id];delete c[id];if(had)fire(sid+'/'+sub,'removed',id,null);return Promise.resolve();}};}};return C;}};}};}};
-    /* a fresh phone: new device, no shadow, no houses */
-    F.phone=function(uid,sess,dev){F.L.forEach(function(l){l.dead=true;});F.L=[];F.writes=[];F.uid=uid;
+    /* a fresh phone: new device, no shadow, no houses. A device id that already wrote to this server is refused:
+       a real phone that keeps its device id keeps its houses too (one store per account), so wiping them under
+       the same id fakes a phone that cannot exist (it made a builder's own invoices look lost after a switch). */
+    F.devWrote=function(dev){return Object.keys(F.srv).some(function(s){var x=F.srv[s];if(x.doc&&x.doc.updatedBy===dev)return true;
+      return Object.keys(x.colls||{}).some(function(sub){var c=x.colls[sub]||{};return Object.keys(c).some(function(k){return !!c[k]&&c[k].updatedBy===dev;});});});};
+    F.phone=function(uid,sess,dev){if(F.devWrote(dev))throw new Error('F.phone: device '+dev+' already wrote to this server; a fresh phone needs a new device id');
+      F.L.forEach(function(l){l.dead=true;});F.L=[];F.writes=[];F.uid=uid;
       try{(Sync.unsub||[]).forEach(function(u){try{u&&u();}catch(e){}});}catch(e){}
       state.projects=[];state.session=sess;
       Object.assign(Sync,{db:F.db,mode:'live',uid:uid,authKind:'account',deviceId:dev,on:true,_listening:{},_collGen:{},_reArmed:{},_notifReady:{},unsub:[],_held:{},_gateDelays:[0],_shadow:{},_selNoteMs:0});
@@ -4609,6 +4614,50 @@ await (async function(){
   t('#13 a refused export says only money builders can send costs',J('__t13a')===J('QB_NO_MONEY'),J('__t13a'));
   t('#13 the export counts costs already being sent',J('__t13b')==='1 sent · 2 already in QuickBooks · 1 '+J('QB_BUSY'),J('__t13b'));
   $2("delete window.__fn8;delete window.__fnKeep;delete window.__fnRes;true");
+  /* Record echo guard: a record this phone wrote is skipped as its own echo only while the phone still knows it
+     (holds it, the shadow lists it, or its save is in flight). 2.488.0 does the same for houses. */
+  $2(`(function(){__F.srv={};var p=JSON.parse(JSON.stringify(__demo.filter(function(x){return (x.invoices||[]).length>=2&&x.selections.some(selHasMoney);})[0]));p.id='peg';p.street='12 Echo Ln';__F.seedOld(p,${JSON.stringify(MEM)},{});return true;})()`);
+  await phone('uB',B,'devEG');                              // migrates: devEG + uB write the records
+  let refused='';try{$2("__F.phone('uB',"+JSON.stringify(B)+",'devEG')");}catch(e){refused=String(e&&e.message||e);}
+  t('harness: F.phone refuses a device id that already wrote to the server (it would fake a phone that lost its houses)',/already wrote/.test(refused),refused||'not refused');
+  /* reopen the same phone: same device, same account, its own store and shadow (what a real sign-in or reload does) */
+  const reopen=async prep=>{$2(`(function(){${prep};__F.L.forEach(function(l){l.dead=true;});__F.L=[];__F.writes=[];
+    try{(Sync.unsub||[]).forEach(function(u){try{u&&u();}catch(e){}});}catch(e){}
+    Object.assign(Sync,{_listening:{},_collGen:{},_reArmed:{},_notifReady:{},unsub:[],_held:{}});Sync.subscribe();return true;})()`);await settle();};
+  const EG=`state.projects.find(function(x){return x.id==='peg';})`;
+  const eg=J(`(function(){var p=${EG};var s=p.selections.find(selHasMoney);return {inv:p.invoices.map(function(v){return String(v.id);}),sel:s?String(s.id):null,n:p.invoices.length};})()`);
+  const srvInvIds=()=>J("Object.keys(__F.srv.peg.colls.inv||{})");
+  t('echo guard setup: the house has 2+ invoices on the phone and the server, written by this phone',eg.n>=2&&srvInvIds().length===eg.n&&J("Sync._mine(__F.srv.peg.colls.inv['"+eg.inv[0]+"'])")===true,JSON.stringify(eg));
+  /* (a) the phone's store lost a record it wrote, and the shadow never listed it: it comes back from the server */
+  const ia=eg.inv[0],sa=eg.sel;
+  await reopen(`var p=${EG};p.invoices=p.invoices.filter(function(v){return String(v.id)!=='${ia}';});delete Sync._shadow.peg.colls.inv['${ia}'];
+    ${sa?`p.selections=p.selections.filter(function(s){return String(s.id)!=='${sa}';});delete Sync._shadow.peg.colls.sel['${sa}'];if(Sync._shadow.peg.colls.selm)delete Sync._shadow.peg.colls.selm['${sa}'];`:''}`);
+  const ra=J(`(function(){var p=${EG};var v=p.invoices.filter(function(x){return String(x.id)==='${ia}';});var s=p.selections.filter(function(x){return String(x.id)==='${sa}';});
+    return {n:v.length,same:v.length===1&&JSON.stringify(v[0])===JSON.stringify(__F.srv.peg.colls.inv['${ia}'].data),sel:s.length,money:s.length===1&&selHasMoney(s[0]),
+      selmSame:s.length===1&&JSON.stringify(selmRow(s[0]))===JSON.stringify((__F.srv.peg.colls.selm['${sa}']||{}).data),writes:__F.writes.length,srv:Object.keys(__F.srv.peg.colls.inv).length};})()`);
+  t('(a) an invoice this phone wrote, missing from its store and not in its shadow, comes back from the server once, byte for byte',ra.n===1&&ra.same&&ra.srv===eg.n,JSON.stringify(ra));
+  t('(a) a selection with money it wrote comes back with its money (sel + selm)',!sa||(ra.sel===1&&ra.money&&ra.selmSame),JSON.stringify(ra));
+  t('(a) getting them back writes nothing',ra.writes===0,ra.writes);
+  /* (b) the shadow still lists it: that is a local delete (synced before, gone here), and it still goes up as one */
+  const ib=eg.inv[1];
+  await reopen(`var p=${EG};p.invoices=p.invoices.filter(function(v){return String(v.id)!=='${ib}';});`);
+  const rb0=J(`${EG}.invoices.some(function(x){return String(x.id)==='${ib}';})`);
+  await $2(`(async function(){await Sync._pushOne(${EG});return true;})()`);await settle();   // the phone's next save
+  const rb=J(`(function(){var p=${EG};return {back:${rb0},local:p.invoices.some(function(x){return String(x.id)==='${ib}';}),srv:!!__F.srv.peg.colls.inv['${ib}'],
+    del:__F.writes.filter(function(w){return w.kind==='del'&&w.path==='peg/inv/${ib}';}).length,shadow:'${ib}' in (Sync._shadow.peg.colls.inv||{})};})()`);
+  t('(b) a record the shadow lists but the phone no longer holds is still a local delete: not brought back, deleted on the server by the next save',!rb.back&&!rb.local&&!rb.srv&&rb.del===1&&!rb.shadow,JSON.stringify(rb));
+  /* (c) real echoes are still skipped: a quiet reopen writes nothing and changes nothing; an edit's own echo leaves the phone's copy alone */
+  const c0=J(`JSON.stringify(${EG}.invoices)`);
+  await reopen('');
+  t('(c) a quiet reopen: no writes, same invoices, no duplicates',J("__F.writes.length")===0&&J(`JSON.stringify(${EG}.invoices)`)===c0&&J(`(function(){var a=${EG}.invoices.map(function(v){return String(v.id);});return a.length===new Set(a).size;})()`));
+  await $2(`(async function(){var p=${EG};var v=p.invoices[0];window.__egRef=v||null;if(!v)return false;v.note='echo check';await Sync._pushOne(p);return true;})()`);await settle();
+  const rc=J(`(function(){var p=${EG};if(!__egRef)return {none:true};var v=p.invoices.find(function(x){return x===__egRef;});var srv=__F.srv.peg.colls.inv[String(__egRef.id)];
+    return {same:!!v,n:p.invoices.filter(function(x){return String(x.id)===String(__egRef.id);}).length,up:!!srv&&srv.data.note==='echo check'};})()`);
+  t('(c) an edit goes up and its own echo is skipped (the phone keeps its own object: no re-render, no duplicate)',rc.same&&rc.n===1&&rc.up,JSON.stringify(rc));
+  t('(c) _ownEcho: another device or account is never an echo; a save in flight or a pending write is',J(`(function(){if(typeof Sync._ownEcho!=='function')return 'no _ownEcho';var me={updatedBy:Sync.deviceId,updatedByUid:'uB'};
+    var r=[Sync._ownEcho({updatedBy:'devZ',updatedByUid:'uB'},'peg',true,null),Sync._ownEcho({updatedBy:Sync.deviceId,updatedByUid:'uT'},'peg',true,null),
+      Sync._ownEcho(me,'peg',false,null),Sync._ownEcho(me,'peg',true,null),Sync._ownEcho(me,'peg',false,{metadata:{hasPendingWrites:true}})];
+    Sync._pushing.peg=true;r.push(Sync._ownEcho(me,'peg',false,null));delete Sync._pushing.peg;return r.join();})()`)==='false,false,false,true,true,true');
   /* 2.467.0 · a Decision with a photo: it must reach the server, its delete must too (so onRecordDeleted fires), and it must leave the book list */
   $2(`(function(){__F.srv={};var p=JSON.parse(JSON.stringify(__demo[1]));p.id='pdel';p.items=[];p.street='3863 Robina Ave';__F.seedOld(p,${JSON.stringify(MEM)},{});__F.undefCheck=true;__F.undefHits=0;return true;})()`);
   await phone('uB',B,'devPD');

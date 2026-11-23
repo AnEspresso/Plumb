@@ -10572,8 +10572,9 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       const row=selmRow(Object.assign({},rec,{id:rec.id!=null?rec.id:key}));
       if(!row){delete cache[key];return;}
       cache[key]=Object.assign({},row,{_at:Number(d.updatedAt)||0});
-      if(this._mine(d))return;
-      const i=at(key);if(i<0)return;
+      const i=at(key);
+      if(this._ownEcho(d,sid,prev[key]!==undefined||(i>=0&&selHasMoney(p.selections[i])),ch.doc))return;
+      if(i<0)return;
       const rh=_syncHash(JSON.stringify(row));
       /* unchanged on the server since this phone last synced, but edited here: the phone's money goes up after the pull */
       if(prev[key]!==undefined&&rh===prev[key]&&_syncHash(JSON.stringify(selmRow(p.selections[i])))!==prev[key])return;
@@ -10610,6 +10611,12 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
      (older docs) = not ours, so it is applied, never skipped. */
   _me(){return String((state.session&&state.session.auth&&state.session.auth.uid)||this.uid||'');},
   _mine(d){if(!d||!this.deviceId||d.updatedBy!==this.deviceId)return false;const u=d.updatedByUid;const me=this._me();return !!(u&&me&&String(u)===me);},
+  /* A record this phone wrote is skipped as its own echo only while the phone still knows it: it holds the record, the
+     shadow lists it, or this phone's save is still on its way. One it wrote but no longer holds, that the shadow never
+     listed, comes back from the server (2.488.0 does the same for houses). A shadow-listed record the phone lacks is
+     still a local delete and goes up as one. */
+  _ownEcho(d,sid,known,doc){if(!this._mine(d))return false;if(known||this._pushing[sid])return true;
+    try{if(doc&&doc.metadata&&doc.metadata.hasPendingWrites)return true;}catch(e){}return false;},
   /* 2.488.0: the local houses belong to one account. A different signed-in uid
      drops the old copy (houses, sync base) before the pull. */
   _storeOwnerCheck(){const me=this._me();if(!me||(this.mode||'demo')!=='live')return false;
@@ -10775,7 +10782,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         snap.docChanges().forEach(ch=>{const d=ch.doc.data()||{};const key=ch.doc.id;
           if(ch.type==='removed'){const idx=p[c.f].findIndex(r=>c.key(r)===key);if(idx>=0){p[c.f].splice(idx,1);changed=true;}delete prev[key];}
           else{const rec=d.data;
-            if(this._mine(d)){
+            if(this._ownEcho(d,sid,prev[key]!==undefined||p[c.f].some(r=>c.key(r)===key),ch.doc)){
               /* F-2: a builder's own phone wrote most sel records before 2.463.0;
                  money still on one of them moves too (this phone's copy wins). */
               if(isSel&&rec&&selMoneyKeyed(rec)&&syncWrites(p,'selm')){const i0=p[c.f].findIndex(r=>c.key(r)===key);
