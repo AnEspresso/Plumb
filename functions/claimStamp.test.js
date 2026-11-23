@@ -2,7 +2,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const { applyClaimToSite, crewSlotClash, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn } = require('./lib/claimStamp');
+const { applyClaimToSite, crewSlotClash, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn, isHomeownerOn } = require('./lib/claimStamp');
 
 const client = applyClaimToSite(
   { members: { b1: 'builder' }, memberUids: ['b1'], meta: { invites: [{ code: 'AB', role: 'client', status: 'open' }] } },
@@ -133,6 +133,24 @@ assert.ok(!mbGrant.meta.memberInfo.ho2.rpRole && !mbGrant.meta.memberInfo.ho2.ga
   assert.ok(/for \(const doc of allowed\)/.test(src), 'only allowed houses are stamped');
 }
 
+/* 2.515.0: a homeowner on the house cannot be stamped as crew. */
+const hoSite = { members: { own: 'builder', ho: 'client' }, meta: { memberInfo: { ho: { name: 'Pat' } } } };
+assert.strictEqual(isHomeownerOn(hoSite, 'ho'), true, 'a client on the house is the homeowner');
+assert.strictEqual(isHomeownerOn(hoSite, 'own'), false, 'the owner is not the homeowner');
+assert.strictEqual(isHomeownerOn({ members: { ho: { role: 'client' } } }, 'ho'), true, 'legacy {role} object');
+assert.strictEqual(isHomeownerOn({ meta: { members: { ho: 'client' } } }, 'ho'), true, 'members may live on meta');
+assert.strictEqual(isHomeownerOn(hoSite, 'stranger'), false, 'a stranger is not the homeowner');
+assert.strictEqual(applyClaimToSite(hoSite, { code: 'CR', role: 'sub', siteId: 'h', name: 'Crew M', trade: 'plumb' }, 'ho', { name: 'Pat' }), null, 'a homeowner is not stamped as crew');
+assert.strictEqual(hoSite.members.ho, 'client', 'the house is left as homeowner');
+const stillHo = applyClaimToSite(hoSite, { code: 'HO2', role: 'client', siteId: 'h' }, 'ho', { name: 'Pat' });
+assert.strictEqual(stillHo && stillHo.members.ho, 'client', 'a homeowner code still works');
+const newCrew = applyClaimToSite(hoSite, { code: 'CR', role: 'sub', siteId: 'h', name: 'Crew M' }, 'cNew', {});
+assert.strictEqual(newCrew.members.cNew, 'sub', 'a new crew still joins');
+{
+  const src = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8').split('exports.onInviteClaim')[1].split('exports.')[0];
+  assert.ok(/isHomeownerOn\(/.test(src) && src.indexOf('isHomeownerOn(') < src.indexOf('applyClaimToSite('),
+    'onInviteClaim refuses a homeowner before stamping as crew');
+}
 /* One login is one crew on a house (Beaumont, 2.509.0). Crew A is on the house
    under its own roster row; A redeems crew M's code. M's slot and name stay as
    they were, and A keeps its own name and trade. */

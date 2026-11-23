@@ -5679,6 +5679,25 @@ await (async function(){
     $2("String(__renderPeople)").indexOf("canGate('people')||isOrgOwner()")<0&&$2("String(__renderPeople)").indexOf("isOrgOwner()?`<button class=\"add-sub-btn btn btn-secondary\" onclick=\"openTeamInvite({})\">")>=0);
   t('2.509.0: a refused homeowner or crew code says to ask the owner',$2("String(createInvite)").indexOf("permission-denied'?INV_MONEY_ONLY")>=0);
 
+  /* 2.515.0: a homeowner on a house can't redeem a crew code for that house */
+  const HORUN=`(async function(siteDoc,inv,code,member,uid){
+    var saved={fb:window.firebase,fc:window.fbConfig,ew:window.emuWire,tr:window.trapError};
+    var writes=[],errs=[];
+    var mkDoc=function(path){return {get:function(){
+        if(path==='invites/'+code)return Promise.resolve({exists:true,data:function(){return inv;}});
+        if(path==='sites/'+inv.siteId){if(siteDoc==='denied')return Promise.reject({code:'permission-denied'});return Promise.resolve({exists:!!siteDoc,data:function(){return siteDoc;}});}
+        return Promise.resolve({exists:false,data:function(){return null;}});},
+      set:function(d){writes.push(['set',path]);return Promise.resolve();},
+      collection:function(c){return {doc:function(id){return mkDoc(path+'/'+c+'/'+id);}};}};};
+    var db={collection:function(c){return {doc:function(id){return mkDoc(c+'/'+id);}};},
+      batch:function(){var w=[];return {update:function(r){w.push('update');},set:function(r){w.push('set');},commit:function(){writes.push(['batch'].concat(w));return Promise.resolve();}};}};
+    window.firebase={apps:[1],firestore:function(){return db;},initializeApp:function(){}};
+    window.fbConfig=function(){return {projectId:'x'};};window.emuWire=function(){};window.trapError=function(){};
+    var prof={uid:uid||'h1',name:'Pat',email:'p@example.com',member:member};
+    var m=null;try{m=await redeemInvite(code,prof,function(e){errs.push(String(e));});}catch(e){errs.push('THROW '+e.message);}
+    window.firebase=saved.fb;window.fbConfig=saved.fc;window.emuWire=saved.ew;window.trapError=saved.tr;
+    return JSON.stringify({m:m,writes:writes,errs:errs});
+  })`;
   /* 2.514.0 (Beaumont): a crew already on a house can't redeem another crew's code */
   const CSRUN=`(async function(siteDoc,inv,code,member){
     var saved={fb:window.firebase,fc:window.fbConfig,ew:window.emuWire,tr:window.trapError};
@@ -5698,6 +5717,20 @@ await (async function(){
     window.firebase=saved.fb;window.fbConfig=saved.fc;window.emuWire=saved.ew;window.trapError=saved.tr;
     return JSON.stringify({m:m,writes:writes,errs:errs});
   })`;
+  const HOHOUSE=JSON.stringify({members:{own:'builder',h1:'client'},meta:{memberInfo:{own:{rpRole:'owner'},h1:{name:'Pat'}}}});
+  const HOCREW=JSON.stringify({code:'PB-M',role:'sub',siteId:'h1',name:'Crew M',trade:'appl',createdBy:'own'});
+  const HOC1=JSON.parse(await $2(`(async function(){return await `+HORUN+`(${HOHOUSE},${HOCREW},'PB-M',{code:'PB-HO',siteId:'h1',role:'client',name:'Pat'},'h1');})()`));
+  t('2.515.0: a homeowner redeeming a crew code for their house is refused before anything is claimed',
+    HOC1.m===false&&HOC1.writes.length===0&&HOC1.errs.length===1&&HOC1.errs[0]===$2('homeownerCrewMsg()'),JSON.stringify(HOC1));
+  const HOC2=JSON.parse(await $2(`(async function(){return await `+HORUN+`(${HOHOUSE},${HOCREW},'PB-M',null,'cNew');})()`));
+  t('2.515.0: a login that is not the homeowner still joins as crew',HOC2.m&&HOC2.m.name==='Crew M'&&HOC2.writes.length===1&&HOC2.errs.length===0,JSON.stringify(HOC2));
+  const HOC3=JSON.parse(await $2(`(async function(){return await `+HORUN+`('denied',${HOCREW},'PB-M',{code:'PB-HO',siteId:'h1',role:'client',name:'Pat'},'h1');})()`));
+  t('2.515.0: with no house read, the phone\'s own homeowner membership still refuses a crew code for that house',HOC3.m===false&&HOC3.writes.length===0&&HOC3.errs[0]===$2('homeownerCrewMsg()'),JSON.stringify(HOC3));
+  const HOC4=JSON.parse(await $2(`(async function(){return await `+HORUN+`('denied',${HOCREW},'PB-M',{code:'PB-HO',siteId:'other',role:'client',name:'Pat'},'h1');})()`));
+  t('2.515.0: a homeowner on a different house may still redeem a crew code when this house cannot be read',HOC4.m&&HOC4.m.name==='Crew M'&&HOC4.errs.length===0,JSON.stringify(HOC4));
+  t('2.515.0: isHomeownerOn matches a client on the house and ignores a crew',
+    $2("isHomeownerOn({members:{h:'client'}},'h')")===true
+    &&$2("isHomeownerOn({members:{c:'sub'}},'c')")===false);
   const CSHOUSE=JSON.stringify({members:{own:'builder',cA:'sub'},meta:{memberInfo:{own:{rpRole:'owner'},cA:{name:'Crew A',trade:'appl'}},
     invites:[{code:'PB-A',role:'sub',subId:'s1',name:'Crew A',status:'joined',uid:'cA'},{code:'PB-M',role:'sub',subId:'s2',name:'Crew M',status:'open'}]}});
   const CSM=JSON.stringify({code:'PB-M',role:'sub',siteId:'h1',subId:'s2',name:'Crew M',trade:'appl',createdBy:'own'});

@@ -41,6 +41,17 @@ function inviterOk(site, invite) {
   return false;
 }
 
+/* 2.515.0: a uid already the homeowner (client) on this house must not be
+   stamped as crew. Members may be a role string or a legacy {role} object,
+   and may live on the house or on meta. */
+function isHomeownerOn(site, uid) {
+  uid = String(uid || '');
+  if (!uid) return false;
+  const members = (site || {}).members || ((site || {}).meta || {}).members || {};
+  const cur = members[uid];
+  return String(typeof cur === 'string' ? cur : ((cur && cur.role) || '')).toLowerCase() === 'client';
+}
+
 /* One login is one crew on a house (Beaumont, 2.509.0): a crew already on the
    house who redeems another crew's code must not take over that crew's slot
    and name. A crew slot is the roster row (invite.subId); old stamps carry no
@@ -89,6 +100,7 @@ function applyClaimToSite(site, invite, uid, claim) {
   const cur = members[uid];
   if (role === 'builder' && (cur === 'client' || cur === 'sub')) return null;
   if (cur === 'builder' && role !== 'builder') return null;
+  if (role === 'sub' && isHomeownerOn(site, uid)) return null;
   if (role === 'sub' && crewSlotClash(site, uid, invite)) return null;
   members[uid] = role;
   const prev = info[uid] || {};
@@ -137,4 +149,4 @@ function claimWins(uid, claims) {
   return String(list[0].id) === uid;
 }
 
-module.exports = { applyClaimToSite, crewSlotClash, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn };
+module.exports = { applyClaimToSite, crewSlotClash, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn, isHomeownerOn };
