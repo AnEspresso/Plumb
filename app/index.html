@@ -415,11 +415,11 @@
   /* Invite handoff bar (v2.182.0). Deliberately NOT an "open in app" button:
      iOS gives a web page no way to launch an installed PWA and no way to learn
      one exists. So this instructs, and carries the code so nothing is retyped. */
-  .invbar{position:fixed;top:0;left:0;right:0;z-index:var(--z-toast);transform:translateY(-102%);
-    transition:transform .28s cubic-bezier(.22,.9,.3,1);
+  .invbar{position:fixed;top:0;left:0;right:0;z-index:var(--z-toast);transform:translateY(-102%);visibility:hidden;   /* 2.517.0: off-screen is out of page text too */
+    transition:transform .28s cubic-bezier(.22,.9,.3,1),visibility 0s linear .28s;
     padding:max(var(--s-2),env(safe-area-inset-top)) var(--s-3) var(--s-3);background:var(--surface);
     border-bottom:1px solid var(--line);box-shadow:var(--shadow-lift);}
-  .invbar.show{transform:translateY(0);}
+  .invbar.show{transform:translateY(0);visibility:visible;transition:transform .28s cubic-bezier(.22,.9,.3,1),visibility 0s;}
   .invbar .ib-t{font-size:var(--t-sm);font-weight:600;color:var(--ink);margin:0 var(--s-7) var(--s-1) var(--s-1);}
   .invbar .ib-s{font-size:var(--t-xs);line-height:1.45;color:var(--ink-2);margin:0 var(--s-7) var(--s-2) var(--s-1);}
   .invbar .ib-row{display:flex;gap:8px;}
@@ -1805,6 +1805,7 @@ body.on-excursion header{padding-top:var(--s-3);}
 @media(max-width:420px){.exc-k{display:none;}
   .exc-banner{flex-wrap:wrap;row-gap:var(--s-1);}.exc-link{flex-basis:100%;text-align:center;}
   body.on-excursion .device{margin-top:76px;height:calc(100dvh - 76px);}}
+body:has(#subview.show) header,body:has(#clientview.show) header{visibility:hidden;}   /* 2.517.0: the header the crew and homeowner panels cover is out of page text too */
 /* Role views own the full window whenever shown — demo AND production, identical. */
 @media(min-width:900px){
   #clientview,#subview{left:0;}
@@ -3984,15 +3985,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.516.0 - Crew see All-trades documents, audience menu, Ink\'s four fixes, documents download by name';
+const PLUMB_VERSION='2.518.0 - Builders can delete a document, with a confirm first';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1796241600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.516.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796414400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.518.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5458,20 +5459,16 @@ async function openDoc(i){
 }
 async function openDocFileAt(i){
   const d=P().docs[i];if(!d)return;
-  if(d.fileId){
-    try{const blob=await idbGetDoc(d.fileId);if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
-    const u=await docFileUrl(P(),d);if(u){window.open(u,'_blank');return;}
-    toast('File not on this device');return;
-  }
+  if(d.fileId){return openDocFile(P().id,d.fileId,d.fileUrl||'','File not on this device');}   // 2.517.0: the builder list takes the same path as crew, homeowner and binder, so Word and Excel save by name
   showInfo(d.n,`No file is attached to this entry yet. Tap <b>Add document</b>, choose this type, and pick a file to attach one.`);
 }
 /* Doc delete: Delete on a document (Peter 11/23: "yes to Delete as the next update"). Builders only (the rules let only
    a builder delete docs/{id}); crews and the homeowner never see it. The confirm comes first; Cancel changes nothing. */
-/* placeholder, Agency to word */
+/* Agency 11/23, word for word. */
 const DOC_DEL_WORDS={
   button:'Delete document',
   title:function(name){return 'Delete '+name+'?';},
-  body:'It comes off this house for everyone on the team, crews and the homeowner. This can\u2019t be undone.',
+  body:'It comes off this house for your team, the crews, and the homeowner. You can\u2019t undo this.',
   ok:'Delete',
   cancel:'Keep it',
   toast:'Document deleted'
@@ -5568,15 +5565,18 @@ function docSavesNotShows(d,blob){const t=String((d&&d.mime)||(blob&&blob.type)|
   return /\.(docx?|xlsx?)$/i.test(String((d&&d.n)||''));}
 function saveBlobAs(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=String(name||'document');
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
-async function openDocFile(projId,fileId,remoteUrl){
+/* 2.517.0 (Ink 11/23): a PDF or picture opens from storage first when online and uploaded, so the tab carries the file,
+   not a blob: id (this phone's own copy is used only offline or before it uploads). Word and Excel still save by name. */
+async function openDocFile(projId,fileId,remoteUrl,missMsg){
   if(fileId){const p=(state.projects||[]).find(x=>String(x.id)===String(projId));const d=p&&(p.docs||[]).find(x=>String(x.fileId)===String(fileId));
-    try{const blob=await idbGetDoc(fileId);if(blob){if(d&&docSavesNotShows(d,blob)){saveBlobAs(blob,d.n);return;}
-      const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
-    try{const u=d?await docFileUrl(p,d):null;
-      if(u&&docSavesNotShows(d)){try{const r=await fetch(u);if(r&&r.ok){saveBlobAs(await r.blob(),d.n);return;}}catch(e){}}   // no CORS: the link below still works
-      if(u){window.open(u,'_blank');return;}}catch(e){}
+    let blob=null;try{blob=await idbGetDoc(fileId)||null;}catch(e){}
+    if(blob&&d&&docSavesNotShows(d,blob)){saveBlobAs(blob,d.n);return;}
+    let u=null;if(d&&!(typeof navigator!=='undefined'&&navigator.onLine===false)){try{u=await docFileUrl(p,d);}catch(e){}}
+    if(u&&!blob&&docSavesNotShows(d)){try{const r=await fetch(u);if(r&&r.ok){saveBlobAs(await r.blob(),d.n);return;}}catch(e){}}   // no CORS: the link below still works
+    if(u){window.open(u,'_blank');return;}
+    if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}
     if(remoteUrl){window.open(remoteUrl,'_blank');return;}
-    toast('File not on this device yet — it uploads when the builder\u2019s device is online');return;}
+    toast(missMsg||'File not on this device yet — it uploads when the builder\u2019s device is online');return;}
   if(remoteUrl){window.open(remoteUrl,'_blank');return;}
   toast('No file attached to this document');
 }
@@ -8788,6 +8788,9 @@ function openItemsGo(pid){closeOpenItems();Data.setActive(pid);openSiteFromOverv
 function openIdleSites(){renderIdleSites();document.getElementById('idleSitesScrim').classList.add('show');}
 function closeIdleSites(){document.getElementById('idleSitesScrim').classList.remove('show');}
 function idleDaysOf(p){const last=lastActivityTs(p);if(!last)return null;return Math.floor((Date.now()-last)/864e5);}
+/* 2.517.0: a house with nothing logged has no date to count from (it read "Quiet 20780 days", counted from 1970) */
+const QUIET_NONE='Nothing logged yet';   /* Agency 11/23, word for word. */
+function quietLabel(p){const n=idleDaysOf(p);if(n===null)return QUIET_NONE;const days=Math.max(1,n);return 'Quiet '+days+' day'+(days===1?'':'s');}
 function renderIdleSites(){
   const el=document.getElementById('idleSitesBody');if(!el)return;
   const rows=idleWorksites(visibleProjects()).map(p=>({p,d:idleDaysOf(p)}))
@@ -8903,8 +8906,7 @@ function _siteWhisper(p){
     }
   });
   if(!best&&isIdleSite(p)){
-    const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
-    best={kind:'idle',text:'Quiet '+days+' day'+(days===1?'':'s')};
+    best={kind:'idle',text:quietLabel(p)};
   }
   return best;
 }
@@ -9346,8 +9348,7 @@ function houseHTML(p){
     h+='</div>';
   }else _houseFacts=[];
   if(isIdleSite(p)&&isBuilder){
-    const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
-    h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
+    h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">'+esc(quietLabel(p))+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
   h+='<div class="hs-band" data-band="job">On this house</div><div class="hs-doors">';
   if(!isClient&&canGate('field'))h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">A note, or a photo</div></button>';

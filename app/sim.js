@@ -661,6 +661,55 @@ t('2.516.0 a document upload names the file (Content-Disposition, inline so a PD
 t('2.516.0 a non-ASCII name gets RFC 5987 filename*',$("docDisposition('Plän \\u2013 1.pdf')")==="inline; filename=\"Pl_n _ 1.pdf\"; filename*=UTF-8''Pl%C3%A4n%20%E2%80%93%201.pdf",$("docDisposition('Plän \\u2013 1.pdf')"));
 t('2.516.0 the upload queue sets it for documents only',$("(function(){var p=state.projects.find(function(p){return p.id==='p3';});p.docs.push({n:'Up name.pdf',fileId:'doc_upn',aud:'subs'});var a=CloudFiles._disp({kind:'docs-subs',id:'doc_upn'}),b=CloudFiles._disp({kind:'photos',id:'doc_upn'});p.docs.pop();return a==='inline; filename=\"Up name.pdf\"'&&b==='';})()")===true);
 t('2.516.0 Word and Excel files save with their name, PDFs still open',$("docSavesNotShows({n:'a.docx'})&&docSavesNotShows({n:'b',mime:'application/vnd.ms-excel'})&&!docSavesNotShows({n:'c.pdf',mime:'application/pdf'})")===true);
+/* 2.517.0 (Ink 11/23): the builder list goes through openDocFile; a PDF opens from storage first when online */
+{
+  $(`(function(){window.__od={keep:{i:idbGetDoc,u:docFileUrl,s:saveBlobAs,o:window.open,f:window.fetch,c:URL.createObjectURL,r:URL.revokeObjectURL,t:toast},log:[]};
+    var L=window.__od.log;window.__odBlob={};window.__odUrl={};
+    idbGetDoc=function(k){return Promise.resolve(window.__odBlob[k]);};
+    docFileUrl=function(p,d){return Promise.resolve(window.__odUrl[d.fileId]||null);};
+    saveBlobAs=function(b,n){L.push('save:'+n);};
+    window.open=function(u){L.push('open:'+u);return {};};
+    window.fetch=function(u){L.push('fetch:'+u);return Promise.resolve({ok:true,blob:function(){return Promise.resolve({type:'x'});}});};
+    URL.createObjectURL=function(){return 'blob:sim-guid';};URL.revokeObjectURL=function(){};
+    toast=function(m){L.push('toast:'+m);};
+    state.session={role:'builder',name:'You'};
+    var p=P();p.docs=p.docs||[];
+    p.docs.push({n:'TEST doc word.docx',fileId:'doc_odw',aud:'team',mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    p.docs.push({n:'TEST doc everyone.pdf',fileId:'doc_odp',aud:'all',mime:'application/pdf'});
+    return true;})()`);
+  const OD=async(setup,call)=>{$("window.__od.log.length=0;"+setup+";true");await $(call);await new Promise(r=>setTimeout(r,20));return $("window.__od.log.join('|')");};
+  const ix=n=>$("P().docs.findIndex(function(d){return d.n==='"+n+"';})");
+  const W=ix('TEST doc word.docx'),PD=ix('TEST doc everyone.pdf');
+  let r=await OD("window.__odBlob={doc_odw:{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDocFileAt("+W+")");
+  t('2.517.0 builder Documents: a Word file on this phone saves under its own name',r==='save:TEST doc word.docx',r);
+  r=await OD("window.__odBlob={};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDocFileAt("+W+")");
+  t('2.517.0 builder Documents: a Word file from storage is fetched and saved under its own name',r==='fetch:https://store/doc_odw|save:TEST doc word.docx',r);
+  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={doc_odp:'https://store/doc_odp'}","openDocFileAt("+PD+")");
+  t('2.517.0 a PDF on this phone that is uploaded opens from storage, not a blob: tab',r==='open:https://store/doc_odp',r);
+  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={doc_odp:'https://store/doc_odp'};Object.defineProperty(navigator,'onLine',{configurable:true,get:function(){return false;}})","openDocFileAt("+PD+")");
+  $("delete navigator.onLine;true");
+  t('2.517.0 offline, a PDF on this phone still opens from the phone',r==='open:blob:sim-guid',r);
+  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={}","openDocFileAt("+PD+")");
+  t('2.517.0 a PDF not uploaded yet opens from the phone',r==='open:blob:sim-guid',r);
+  r=await OD("window.__odBlob={};window.__odUrl={}","openDocFileAt("+PD+")");
+  t('2.517.0 builder Documents: a file on no device keeps the builder message',r==='toast:File not on this device',r);
+  r=await OD("window.__odBlob={};window.__odUrl={}","openDocFile(P().id,'doc_odp','')");
+  t('2.517.0 crew/homeowner/binder keep their message',r.indexOf('toast:File not on this device yet')===0,r);
+  r=await OD("window.__odBlob={};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDocFile(P().id,'doc_odw','')");
+  t('2.517.0 crew/homeowner/binder: a Word file still saves under its own name',r==='fetch:https://store/doc_odw|save:TEST doc word.docx',r);
+  r=$("String(openDocFileAt).indexOf('openDocFile(')>=0&&String(openDoc).indexOf('openDocFileAt(')>=0");
+  t('2.517.0 openDoc routes a file through openDocFile (2.518.0: via the builder sheet\'s Open)',r===true);
+  /* 2.518.0: a builder's tap opens the document sheet; its Open button takes the same save-by-name path */
+  r=await OD("window.__odBlob={};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDoc("+W+")");
+  const shOpen=$("(function(){var b=[].slice.call(document.querySelectorAll('#infoBody button')).find(function(x){return x.textContent==='Open';});return {sheet:document.getElementById('infoScrim').classList.contains('show'),open:!!b,del:!!document.getElementById('docDelBtn')};})()");
+  t('2.518.0 a builder\'s tap opens the document sheet (Open and Delete), nothing opens yet',r===''&&shOpen.sheet&&shOpen.open&&shOpen.del,r+' '+JSON.stringify(shOpen));
+  r=await OD("","[].slice.call(document.querySelectorAll('#infoBody button')).find(function(x){return x.textContent==='Open';}).click()");
+  t('2.518.0 the sheet\'s Open saves a Word file under its own name (fetched from storage)',r==='fetch:https://store/doc_odw|save:TEST doc word.docx'&&!$("document.getElementById('infoScrim').classList.contains('show')"),r);
+  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={doc_odp:'https://store/doc_odp'};openDoc("+PD+")","[].slice.call(document.querySelectorAll('#infoBody button')).find(function(x){return x.textContent==='Open';}).click()");
+  t('2.518.0 the sheet\'s Open opens an uploaded PDF from storage, not a blob: tab',r==='open:https://store/doc_odp',r);
+  $(`(function(){var k=window.__od.keep;idbGetDoc=k.i;docFileUrl=k.u;saveBlobAs=k.s;window.open=k.o;window.fetch=k.f;if(k.c)URL.createObjectURL=k.c;else delete URL.createObjectURL;URL.revokeObjectURL=k.r||function(){};toast=k.t;   /* the blob tab's 60s revoke timer still fires later */
+    var p=P();p.docs=p.docs.filter(function(d){return d.fileId!=='doc_odw'&&d.fileId!=='doc_odp';});delete window.__od;return true;})()`);
+}
 $(`(function(){var p=state.projects.find(function(p){return p.id==='p3';});p.docs=p.docs.filter(function(d){return !/^CD /.test(d.n);});p.docHidden['${CD_TR}']=(p.docHidden['${CD_TR}']||[]).filter(function(n){return n!=='CD hidden.pdf';});return true;})()`);
 
 /* ════ 6 · NOTIFICATION AUDIENCE MATRIX (real _audMatch under every identity) ════ */
@@ -1464,7 +1513,28 @@ t('the packet is a briefing with still-open first', $("String(packetHTML)").inde
 t('answering a spec from the packet does not tear the packet down', $("String(pktFillSpec)").indexOf('closeInfo')<0&&$("String(pktFillSpec)").indexOf('openSpec')>=0);
 t('Needs You opens a packet without leaving home', $("String(openPacketFor)").indexOf('openSiteFromOverview')<0);
 t('Back returns through the sheet stack', $("String(backToOverview)").indexOf('navPop')>=0&&$("String(navPush)").indexOf('restore')>=0);
-t('Gone quiet whispers on the house, not Needs You', $("String(_nyIssues)").indexOf('Gone quiet')<0&&$("String(_siteWhisper)").indexOf('Quiet')>=0&&$("String(nyCardBits)").indexOf('_siteWhisper')>=0);
+t('Gone quiet whispers on the house, not Needs You', $("String(_nyIssues)").indexOf('Gone quiet')<0&&$("String(_siteWhisper)").indexOf('quietLabel(p)')>=0&&$("String(nyCardBits)").indexOf('_siteWhisper')>=0);
+/* 2.517.0: a house with nothing logged has no date to count from (Beaumont read "Quiet 20780 days") */
+{
+  const Q=JSON.parse($(`(function(){var r={},D=864e5,now=Date.now(),keepS=state.session,keepA=state.activeId;state.session={role:'builder',name:'You'};
+    var src=state.projects.find(function(x){return x.id==='p2';});var p=JSON.parse(JSON.stringify(src));p.id='quiet_sim';p.sample=false;delete p.doneAt;
+    p.logs=[];p.items=[];p.bookings=[];p.permits=[];var SS=stagesFor(p);p.stageDone={};p.stageDone[SS[0].id]=true;
+    state.projects.push(p);state.activeId=p.id;
+    r.idle=isIdleSite(p);r.none=quietLabel(p);var w=_siteWhisper(p);r.whisper=w&&w.text;var h=houseHTML(p);
+    r.houseNone=h.indexOf('Nothing logged yet')>=0;r.houseNum=/Quiet \d+ day/.test(h);
+    p.logs=[{t:now-12*D-3600e3,note:'x'}];r.twelve=quietLabel(p);w=_siteWhisper(p);r.w12=w&&w.text;r.h12=houseHTML(p).indexOf('Quiet 12 days')>=0;
+    p.logs=[{t:now-1*D-3600e3,note:'x'}];r.one=quietLabel(p);
+    p.logs=[{t:now-3600e3,note:'x'}];r.hour=quietLabel(p);
+    state.projects=state.projects.filter(function(x){return x.id!=='quiet_sim';});state.session=keepS;state.activeId=keepA;
+    return JSON.stringify(r);})()`));
+  t('2.517.0 a started house with nothing logged is still quiet, and says Nothing logged yet (no day count)',Q.idle===true&&Q.none==='Nothing logged yet'&&Q.whisper==='Nothing logged yet'&&Q.houseNone&&!Q.houseNum,JSON.stringify(Q));
+  t('2.517.0 a note from 12 days ago still reads Quiet 12 days (card and house)',Q.twelve==='Quiet 12 days'&&Q.w12==='Quiet 12 days'&&Q.h12,JSON.stringify(Q));
+  t('2.517.0 one day reads Quiet 1 day (singular), and under a day rounds up to it',Q.one==='Quiet 1 day'&&Q.hour==='Quiet 1 day',JSON.stringify(Q));
+  t('2.517.0 Nothing logged yet is Agency 11/23, word for word',SRC.indexOf("const QUIET_NONE='Nothing logged yet';   /* Agency 11/23, word for word. */")>=0);
+}
+/* 2.517.0: the header the crew/homeowner panels cover and the off-screen invite bar are out of page text */
+t('2.517.0 the covered header is hidden while a role panel is shown',SRC.indexOf('body:has(#subview.show) header,body:has(#clientview.show) header{visibility:hidden;}')>=0);
+t('2.517.0 the invite bar is hidden off-screen and visible when shown (still slides)',/\.invbar\{[^}]*visibility:hidden;[^}]*visibility 0s linear \.28s;/.test(SRC)&&/\.invbar\.show\{transform:translateY\(0\);visibility:visible;/.test(SRC));
 t('Gone quiet keeps home under the sheet', (function(){
   asBuilder();
   $('enterDemo()');
