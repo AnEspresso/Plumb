@@ -178,7 +178,7 @@ exports.telemetryClear = onRequest(async (req, res) => {
 /* ── Lock-screen push when a sub replies on a packet ── */
 const { onDocumentWritten, onDocumentCreated, onDocumentUpdated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
 const push = require('./lib/push');
-const { applyClaimToSite, claimWins, inviterOk } = require('./lib/claimStamp');
+const { applyClaimToSite, claimWins, crewSlotClash, inviterOk } = require('./lib/claimStamp');
 
 /* The join-screen preview (builder name + street) lives only while the code
    is open. Best-effort: a missing doc is fine. */
@@ -230,6 +230,10 @@ exports.onInviteClaim = onDocumentCreated('invites/{code}/claims/{uid}', async (
     console.warn(JSON.stringify({ severity: 'WARNING', message: 'onInviteClaim: invite creator may not grant this access', code, role: String(invite.role || ''), refused: docs.length - allowed.length, allowed: allowed.length }));
   }
   for (const doc of allowed) {
+    if (crewSlotClash(doc.data() || {}, uid, invite)) {
+      console.warn(JSON.stringify({ severity: 'WARNING', message: 'onInviteClaim: crew already on this house under another crew slot, not stamped', code, siteId: doc.id }));
+      continue;
+    }
     const patch = applyClaimToSite(doc.data() || {}, invite, uid, claim);
     if (!patch) continue;
     await doc.ref.set(Object.assign({ updatedAt: Date.now() }, patch), { merge: true });

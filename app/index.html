@@ -3984,15 +3984,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.513.0 - Change orders re-check, house saves send only what changed, uploads that stop and say so, Word and Excel documents';
+const PLUMB_VERSION='2.514.0 - A crew on a house can\'t take another crew\'s code';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795982400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.513.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796068800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.514.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -8302,6 +8302,7 @@ function approveClaim(code,uid,c){
          or this phone wins the last-writer race and undoes it. */
       const jn=role==='sub'?(inv.name||c.name||''):(c.name||inv.name||'');
       p.memberInfo[uid]={name:jn,trade:inv.trade||'',email:c.email||''};
+      if(role==='sub'&&inv.subId)p.memberInfo[uid].subId=String(inv.subId);   // 2.514.0: the roster slot, same as the server stamp
       inv.status='joined';inv.uid=uid;
       try{_syncDirty.add(String(p.id));}catch(e){}
       persist();
@@ -8309,6 +8310,34 @@ function approveClaim(code,uid,c){
       toast((jn||'Invitee')+' joined '+(p.street||p.name));
       logEvent('memberJoined',role+' · '+(c.name||''));}
     return;}}
+/* 2.514.0 One login is one crew on a house (Beaumont, 2.509.0): a crew already on
+   this house under its own roster row may not redeem another crew's code. Same
+   test as the server's crewSlotClash (functions/lib/claimStamp.js): the roster
+   slot (subId) first, then the roster name on an old code. A code for the same
+   slot still works (new phone, re-sent code). The house doc says it when this
+   phone can read it; a phone that can't falls back on the code it joined with.
+   Returns null, or {mine} = the crew name this login is on the house as. */
+function crewSlotClash(site,uid,inv,code,member){
+  inv=inv||{};uid=String(uid||'');code=String(code||'').toUpperCase();
+  if(!uid||inv.role!=='sub')return null;
+  const sid=String(inv.siteId||''),want=String(inv.subId||''),nm=String(inv.name||'');
+  const same=(subId,name)=>(want&&subId)?String(subId)===want:((nm&&name)?String(name)===nm:null);
+  if(site){
+    const meta=site.meta||{};const mem=(site.members||meta.members||{})[uid];
+    if(String(typeof mem==='string'?mem:((mem&&mem.role)||'')).toLowerCase()!=='sub')return null;
+    const info=((meta.memberInfo||{})[uid])||{};
+    if(info.subId&&want)return String(info.subId)!==want?{mine:String(info.name||'')}:null;
+    let clash=null;
+    for(const i of (Array.isArray(meta.invites)?meta.invites:[])){
+      if(!i||i.uid!==uid||String(i.code||'').toUpperCase()===code)continue;
+      const s=same(i.subId,i.name);if(s===true)return null;if(s===false)clash={mine:String(info.name||i.name||'')};}
+    return clash;}
+  const m=member||{};
+  if(m.role==='sub'&&sid&&String(m.siteId||'')===sid&&m.code&&String(m.code).toUpperCase()!==code&&same(m.subId,m.name)===false)return {mine:String(m.name||'')};
+  return null;}
+/* placeholder, Agency to word */
+function crewOtherSlotMsg(mine,theirs){
+  return 'You\'re already on this house as '+(mine||'another crew')+'. This code is for '+(theirs||'a different crew')+'. To join as '+(theirs||'that crew')+', sign in with a different email.';}
 async function redeemInvite(code,prof,err){
   err=err||laErr;
   code=(code||'').trim().toUpperCase();if(!code)return null;
@@ -8321,6 +8350,11 @@ async function redeemInvite(code,prof,err){
     if(!doc.exists){err('That invite code wasn\u2019t found — double-check it with your builder.');return false;}
     const inv=doc.data()||{};
     if(inv.revoked){err('Your builder canceled that code. Ask them for a new one.');return false;}
+    if(inv.role==='sub'&&inv.siteId){
+      let site=null;
+      try{const sd=await db.collection('sites').doc(String(inv.siteId)).get();site=sd&&sd.exists?(sd.data()||{}):null;}catch(e){}   // not on the house yet: no read, nothing to clash with
+      const clash=crewSlotClash(site,prof.uid,Object.assign({code},inv),code,prof.member);
+      if(clash){err(crewOtherSlotMsg(clash.mine,inv.name||''));return false;}}
     /* N-2 (Release D): one code, one person. Your own earlier claim (another
        phone, a reinstall) still lets you back in; anyone else's does not. */
     const iref=db.collection('invites').doc(code);
@@ -8336,7 +8370,7 @@ async function redeemInvite(code,prof,err){
       }
     }
     const role=inv.role==='client'?'client':(inv.role==='team'?'team':'sub');
-    return {code,siteId:String(inv.siteId||''),role,trade:inv.trade||'',name:inv.name||'',setup:!!inv.setup,rpRole:inv.rpRole||'',gates:inv.gates||null};
+    return {code,siteId:String(inv.siteId||''),role,trade:inv.trade||'',name:inv.name||'',subId:String(inv.subId||''),setup:!!inv.setup,rpRole:inv.rpRole||'',gates:inv.gates||null};
   }catch(e){trapError('caught',e&&(e.code||e.message),'redeemInvite');err(authPlain(e,'Couldn\u2019t check that code right now. Try again in a minute.'));return false;}
 }
 /* Invite code for someone already signed in (the sign-in page's "I have an
