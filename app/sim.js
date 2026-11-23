@@ -680,25 +680,33 @@ t('2.516.0 Word and Excel files save with their name, PDFs still open',$("docSav
   const OD=async(setup,call)=>{$("window.__od.log.length=0;"+setup+";true");await $(call);await new Promise(r=>setTimeout(r,20));return $("window.__od.log.join('|')");};
   const ix=n=>$("P().docs.findIndex(function(d){return d.n==='"+n+"';})");
   const W=ix('TEST doc word.docx'),PD=ix('TEST doc everyone.pdf');
-  let r=await OD("window.__odBlob={doc_odw:{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDoc("+W+")");
+  let r=await OD("window.__odBlob={doc_odw:{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDocFileAt("+W+")");
   t('2.517.0 builder Documents: a Word file on this phone saves under its own name',r==='save:TEST doc word.docx',r);
-  r=await OD("window.__odBlob={};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDoc("+W+")");
+  r=await OD("window.__odBlob={};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDocFileAt("+W+")");
   t('2.517.0 builder Documents: a Word file from storage is fetched and saved under its own name',r==='fetch:https://store/doc_odw|save:TEST doc word.docx',r);
-  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={doc_odp:'https://store/doc_odp'}","openDoc("+PD+")");
+  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={doc_odp:'https://store/doc_odp'}","openDocFileAt("+PD+")");
   t('2.517.0 a PDF on this phone that is uploaded opens from storage, not a blob: tab',r==='open:https://store/doc_odp',r);
-  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={doc_odp:'https://store/doc_odp'};Object.defineProperty(navigator,'onLine',{configurable:true,get:function(){return false;}})","openDoc("+PD+")");
+  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={doc_odp:'https://store/doc_odp'};Object.defineProperty(navigator,'onLine',{configurable:true,get:function(){return false;}})","openDocFileAt("+PD+")");
   $("delete navigator.onLine;true");
   t('2.517.0 offline, a PDF on this phone still opens from the phone',r==='open:blob:sim-guid',r);
-  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={}","openDoc("+PD+")");
+  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={}","openDocFileAt("+PD+")");
   t('2.517.0 a PDF not uploaded yet opens from the phone',r==='open:blob:sim-guid',r);
-  r=await OD("window.__odBlob={};window.__odUrl={}","openDoc("+PD+")");
+  r=await OD("window.__odBlob={};window.__odUrl={}","openDocFileAt("+PD+")");
   t('2.517.0 builder Documents: a file on no device keeps the builder message',r==='toast:File not on this device',r);
   r=await OD("window.__odBlob={};window.__odUrl={}","openDocFile(P().id,'doc_odp','')");
   t('2.517.0 crew/homeowner/binder keep their message',r.indexOf('toast:File not on this device yet')===0,r);
   r=await OD("window.__odBlob={};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDocFile(P().id,'doc_odw','')");
   t('2.517.0 crew/homeowner/binder: a Word file still saves under its own name',r==='fetch:https://store/doc_odw|save:TEST doc word.docx',r);
-  r=$("String(openDoc).indexOf('openDocFile(')>=0");
-  t('2.517.0 openDoc routes a file through openDocFile',r===true);
+  r=$("String(openDocFileAt).indexOf('openDocFile(')>=0&&String(openDoc).indexOf('openDocFileAt(')>=0");
+  t('2.517.0 openDoc routes a file through openDocFile (2.518.0: via the builder sheet\'s Open)',r===true);
+  /* 2.518.0: a builder's tap opens the document sheet; its Open button takes the same save-by-name path */
+  r=await OD("window.__odBlob={};window.__odUrl={doc_odw:'https://store/doc_odw'}","openDoc("+W+")");
+  const shOpen=$("(function(){var b=[].slice.call(document.querySelectorAll('#infoBody button')).find(function(x){return x.textContent==='Open';});return {sheet:document.getElementById('infoScrim').classList.contains('show'),open:!!b,del:!!document.getElementById('docDelBtn')};})()");
+  t('2.518.0 a builder\'s tap opens the document sheet (Open and Delete), nothing opens yet',r===''&&shOpen.sheet&&shOpen.open&&shOpen.del,r+' '+JSON.stringify(shOpen));
+  r=await OD("","[].slice.call(document.querySelectorAll('#infoBody button')).find(function(x){return x.textContent==='Open';}).click()");
+  t('2.518.0 the sheet\'s Open saves a Word file under its own name (fetched from storage)',r==='fetch:https://store/doc_odw|save:TEST doc word.docx'&&!$("document.getElementById('infoScrim').classList.contains('show')"),r);
+  r=await OD("window.__odBlob={doc_odp:{type:'application/pdf'}};window.__odUrl={doc_odp:'https://store/doc_odp'};openDoc("+PD+")","[].slice.call(document.querySelectorAll('#infoBody button')).find(function(x){return x.textContent==='Open';}).click()");
+  t('2.518.0 the sheet\'s Open opens an uploaded PDF from storage, not a blob: tab',r==='open:https://store/doc_odp',r);
   $(`(function(){var k=window.__od.keep;idbGetDoc=k.i;docFileUrl=k.u;saveBlobAs=k.s;window.open=k.o;window.fetch=k.f;if(k.c)URL.createObjectURL=k.c;else delete URL.createObjectURL;URL.revokeObjectURL=k.r||function(){};toast=k.t;   /* the blob tab's 60s revoke timer still fires later */
     var p=P();p.docs=p.docs.filter(function(d){return d.fileId!=='doc_odw'&&d.fileId!=='doc_odp';});delete window.__od;return true;})()`);
 }
@@ -5962,6 +5970,55 @@ await (async function(){
   await phone('uH',HO3,'devH10');
   const ho2=J(b3);
   t('#5 homeowner after the move: only their documents reach the phone at all (team-only never does)',ho2.docsAll.join()==='Listed only.pdf'&&ho2.invites.length===0&&ho2.w===0,JSON.stringify(ho2));
+  /* Doc delete: Delete on a document. Builders only, confirm first, the record goes for the team and stays gone. */
+  const dd_ctIdx="P().docs.findIndex(function(d){return d.n==='Contract.pdf';})";
+  await phone('uH',HO3,'devH12');
+  const dd_dHo=J(`(function(){state.activeId='b3';var p=P();var n=(p.docs||[]).length;var r={can:canDeleteDoc(p)};
+    var k=(p.docs||[])[0]?docKey(p.docs[0]):'x';deleteDoc('b3',k);r.same=(P().docs||[]).length===n;
+    renderClient();r.btn=!!document.getElementById('docDelBtn');return r;})()`);
+  await settle();
+  t('doc delete: the homeowner can\'t delete a document (no Delete, deleteDoc refuses, nothing written)',dd_dHo.can===false&&dd_dHo.same&&!dd_dHo.btn&&W().length===0,JSON.stringify(dd_dHo));
+  await phone('uS',CR3,'devS12');
+  const dd_dCr=J(`(function(){state.activeId='b3';var p=P();var n=(p.docs||[]).length;var r={can:canDeleteDoc(p)};
+    var k=(p.docs||[])[0]?docKey(p.docs[0]):'x';deleteDoc('b3',k);r.same=(P().docs||[]).length===n;return r;})()`);
+  await settle();
+  t('doc delete: a crew can\'t delete a document (deleteDoc refuses, nothing written)',dd_dCr.can===false&&dd_dCr.same&&W().length===0,JSON.stringify(dd_dCr));
+  await phone('uB',B,'devB12');
+  $2("state.activeId='b3';true");
+  const dd_ds1=J(`(function(){var i=${dd_ctIdx};openDocSheet(i);var r={sheet:document.getElementById('infoScrim').classList.contains('show'),btn:!!document.getElementById('docDelBtn'),
+    label:(document.getElementById('docDelBtn')||{}).textContent};askDeleteDoc(i);r.conf=document.getElementById('confirmScrim').classList.contains('show');
+    r.title=document.getElementById('ocTitle').textContent;ocCancel();r.kept=${dd_ctIdx}>=0;return r;})()`);
+  await settle();
+  t('doc delete: a builder\'s document sheet has Delete; it asks first (title names the document); Cancel keeps it and writes nothing',
+    dd_ds1.sheet&&dd_ds1.btn&&dd_ds1.label===J("DOC_DEL_WORDS.button")&&dd_ds1.conf&&dd_ds1.title==='Delete Contract.pdf?'&&dd_ds1.kept&&!W().some(function(x){return /\/docs\//.test(x.path);}),JSON.stringify(dd_ds1));
+  /* the file: deleted when this person uploaded it, left otherwise (storage.rules: uploader only) */
+  const dd_dsF=JSON.parse(await $2(`(async function(){var keep={lf:window.liveFiles,fs:window.firebase&&window.firebase.storage};var dels=[],up='uB';
+    window.liveFiles=function(){return true;};window.firebase=window.firebase||{};window.firebase.storage=function(){return {ref:function(path){return {
+      getMetadata:function(){return Promise.resolve({customMetadata:{uploader:up}});},delete:function(){dels.push(path);return Promise.resolve();}};}};};
+    var r={};try{
+      r.mine=await docFileGone(P(),{fileId:'docZ1',fileAud:'team'});
+      up='uP';r.other=await docFileGone(P(),{fileId:'docZ2',fileAud:'subs'});
+      up='';r.old=await docFileGone(P(),{fileId:'docZ3'});
+      r.dels=dels.slice();
+    }finally{window.liveFiles=keep.lf;if(keep.fs)window.firebase.storage=keep.fs;else delete window.firebase.storage;}
+    return JSON.stringify(r);})()`));
+  t('doc delete: the file goes only when this person uploaded it; another builder\'s or an unstamped file stays',dd_dsF.mine==='deleted'&&dd_dsF.other==='left'&&dd_dsF.old==='left'&&dd_dsF.dels.join()==='live/sites/b3/docs-team/docZ1',JSON.stringify(dd_dsF));
+  const dd_dsQ=J(`(function(){var q=CloudFiles._q();q.push({kind:'docs-team',siteId:'b3',id:'docQ1',mode:'live',tries:0});CloudFiles._save(q);
+    var a=CloudFiles.forget('docQ1');return {a:a,left:CloudFiles._q().some(function(e){return e.id==='docQ1';})};})()`);
+  t('doc delete: a file still waiting to upload never goes up after its document is deleted',dd_dsQ.a===true&&dd_dsQ.left===false,JSON.stringify(dd_dsQ));
+  await $2(`(async function(){askDeleteDoc(${dd_ctIdx});ocConfirm();await new Promise(function(r){setTimeout(r,30);});await Sync._pushOne(P());return true;})()`);await settle();
+  const dd_ds2=J(`(function(){var d=__F.srv.b3.colls.docs||{};return {srv:!!d.docT1,phone:(P().docs||[]).some(function(x){return x.n==='Contract.pdf';}),
+    others:Object.keys(d).length};})()`);
+  t('doc delete: OK deletes it: off this phone, and the record is deleted on the server (the other documents stay)',!dd_ds2.srv&&!dd_ds2.phone&&dd_ds2.others===3,JSON.stringify(dd_ds2));
+  await $2(`(async function(){await Sync._pushOne(P());return true;})()`);await settle();
+  const dd_ds3=J(`(function(){var p=P();var re=Sync._legacyLists(p,'b3',{docs:[{n:'Contract.pdf',m:'Signed',k:'pdf',trade:'',aud:'team',fileId:'docT1'}]});
+    var r={srv:!!(__F.srv.b3.colls.docs||{}).docT1,phone:(p.docs||[]).some(function(x){return x.n==='Contract.pdf';}),re:re,gone:Sync._isGone('b3','docs','docT1')};
+    Sync._legacyLists(p,'b3',{});return r;})()`);
+  t('doc delete: it does not come back: the next sync writes nothing back, and an old house-doc list cannot re-add it',!dd_ds3.srv&&!dd_ds3.phone&&dd_ds3.gone===true,JSON.stringify(dd_ds3));
+  await phone('uP',PM,'devP12');
+  const dd_ds4=J("(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};return (p.docs||[]).map(function(d){return d.n;}).sort();})()");
+  t('doc delete: a teammate builder\'s phone no longer has it',dd_ds4.length===3&&dd_ds4.indexOf('Contract.pdf')<0,JSON.stringify(dd_ds4));
+  await phone('uH',HO3,'devH10');
   /* #15: notes */
   const n15=J(`(function(){var was=localStorage.getItem('plumb.mode');localStorage.setItem('plumb.mode','real');state.activeId='b3';var msgs=[],tw=window.toast;window.toast=function(m){msgs.push(String(m));};
     try{var it=Data.addItem({id:99301,cap:'Door scratch',area:'Whole House',t:Date.now()});var by=it.by;

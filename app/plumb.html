@@ -3985,15 +3985,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.517.0 - Ink\'s 2.516.0 follow-ups: builder documents save by name, covered header and invite bar out of page text, Nothing logged yet';
+const PLUMB_VERSION='2.518.0 - Builders can delete a document, with a confirm first';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1796328000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.517.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796414400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.518.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5453,9 +5453,69 @@ function renderDocs(){
 }
 async function openDoc(i){
   const d=P().docs[i];if(!d)return;
+  /* Doc delete: a builder's tap opens the document sheet (Open, and Delete with a confirm); the file opens from there */
+  if(canDeleteDoc(P())){openDocSheet(i);return;}
+  return openDocFileAt(i);
+}
+async function openDocFileAt(i){
+  const d=P().docs[i];if(!d)return;
   if(d.fileId){return openDocFile(P().id,d.fileId,d.fileUrl||'','File not on this device');}   // 2.517.0: the builder list takes the same path as crew, homeowner and binder, so Word and Excel save by name
   showInfo(d.n,`No file is attached to this entry yet. Tap <b>Add document</b>, choose this type, and pick a file to attach one.`);
 }
+/* Doc delete: Delete on a document (Peter 11/23: "yes to Delete as the next update"). Builders only (the rules let only
+   a builder delete docs/{id}); crews and the homeowner never see it. The confirm comes first; Cancel changes nothing. */
+/* Agency 11/23, word for word. */
+const DOC_DEL_WORDS={
+  button:'Delete document',
+  title:function(name){return 'Delete '+name+'?';},
+  body:'It comes off this house for your team, the crews, and the homeowner. You can\u2019t undo this.',
+  ok:'Delete',
+  cancel:'Keep it',
+  toast:'Document deleted'
+};
+function canDeleteDoc(p){try{return !!p&&siteRoleFor(p)==='builder';}catch(e){return false;}}
+function openDocSheet(i){const p=P();const d=p&&(p.docs||[])[i];if(!d)return;
+  const trade=d.trade?specLabel(d.trade):'Shared';
+  const meta=[trade,DOC_AUD_LABEL[docAud(d)]||'',d.m||''].filter(Boolean).join(' \u00b7 ');
+  let h='<p class="fs-sm c-ink-2">'+esc(meta)+'</p>';
+  if(d.fileId)h+='<button class="btn btn-primary b-go w-full mt-2" onclick="closeInfo();openDocFileAt('+i+')">Open</button>';
+  else h+='<p>No file is attached to this entry yet. Tap <b>Add document</b>, choose this type, and pick a file to attach one.</p>';
+  if(canDeleteDoc(p))h+='<button class="btn btn-danger w-full mt-4" id="docDelBtn" onclick="askDeleteDoc('+i+')">'+esc(DOC_DEL_WORDS.button)+'</button>';
+  showInfo(d.n,h);}
+function askDeleteDoc(i){const p=P();const d=p&&(p.docs||[])[i];if(!d||!canDeleteDoc(p))return;
+  const pid=p.id,key=docKey(d);
+  openConfirm({title:DOC_DEL_WORDS.title(d.n),body:esc(DOC_DEL_WORDS.body),okLabel:DOC_DEL_WORDS.ok,cancelLabel:DOC_DEL_WORDS.cancel,danger:true,
+    onConfirm:function(){deleteDoc(pid,key);}});}
+/* The record goes (docs/{id} is deleted on the next push, and stays deleted: see Sync.docGone). The file goes too when this
+   person uploaded it (storage.rules: only the uploader deletes, files stamped 2.512.0+); anyone else's file stays in Storage,
+   closed to crews and the homeowner because its record is gone. Returns what happened to the file. */
+async function deleteDoc(pid,key){
+  const p=(state.projects||[]).find(x=>String(x.id)===String(pid));if(!p||!canDeleteDoc(p))return null;
+  const i=(p.docs||[]).findIndex(d=>docKey(d)===key);if(i<0)return null;
+  const d=p.docs[i];const name=d.n;
+  const trades=Object.keys(Object.assign({},p.docHidden||{},p.docShown||{})).concat(d.trade?[d.trade]:[]);
+  const inPkt=[...new Set(trades)].filter(t=>{try{return docInPacket(p,t,d);}catch(e){return false;}});
+  p.docs.splice(i,1);
+  if(!(p.docs||[]).some(x=>x.n===name)){['docHidden','docShown'].forEach(f=>{const m=p[f];if(!m)return;Object.keys(m).forEach(t=>{if(Array.isArray(m[t])&&m[t].includes(name))m[t]=m[t].filter(n=>n!==name);});});}
+  try{Sync.docGone(p.id,key);}catch(e){}
+  inPkt.forEach(t=>{try{invalidatePacketSignaturesForTrade(p,t);}catch(e){}});
+  Data.commit();logEvent('docDeleted',name);
+  try{closeInfo();}catch(e){}
+  try{renderDocs();}catch(e){}
+  try{if(navPacketStillOpen())refreshPacket();}catch(e){}
+  toast(DOC_DEL_WORDS.toast);
+  return await docFileGone(p,d);}
+async function docFileGone(p,d){
+  const id=d&&d.fileId;if(!id)return 'none';
+  let queued=false;try{queued=CloudFiles.forget(String(id));}catch(e){}
+  try{await idbDelDoc(String(id));}catch(e){}
+  if(queued)return 'never-uploaded';
+  if(!liveFiles(p))return 'none';
+  try{const ref=firebase.storage().ref(docPath(p.id,d));
+    const m=await ref.getMetadata();const up=String(((m&&m.customMetadata)||{}).uploader||'');
+    if(!up||up!==String(Sync.uid||''))return 'left';
+    await ref.delete();return 'deleted';}
+  catch(e){return (e&&e.code==='storage/object-not-found')?'none':'left';}}
 /* ── Forwarded-mail review tray ──
    The ingestion Cloud Function writes incoming mail it can't auto-trust into
    p.mailReview[] with status 'review'. The builder files each item (PDF →
@@ -10475,7 +10535,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     for(const L of LEGACY_LISTS){if(!syncWrites(p,L.sub))continue;
       const leg=((this._legL[id]||{})[L.f])||[];if(!leg.length)continue;
       const c=SYNC_COLLS.find(x=>x.sub===L.sub);const on=sh.colls[L.sub]||{};
-      if(!leg.every(r=>on[c.key(r)]!==undefined))continue;
+      if(!leg.every(r=>on[c.key(r)]!==undefined||this._isGone(id,L.sub,c.key(r))))continue;   // Doc delete: a deleted one counts as done
       const del=fbDelete();if(del===undefined)continue;
       await this.db.collection('sites').doc(id).set({meta:{[L.f]:del},updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:myUid},{merge:true});
       this._legL[id][L.f]=[];const raw=this._legRaw[id];if(raw)delete raw[L.f];sh.mk=sh.mk||{};delete sh.mk[L.f];this._saveBase();}
@@ -10499,6 +10559,11 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
      them up, and _f2Tidy then removes the old list from the house doc. A phone
      that cannot read invite codes keeps none. meta=null re-runs with the last
      house doc seen (after a records listener's first server answer). */
+  /* Doc delete: a document deleted on this phone. Its record goes on the next push (the shadow diff); this tombstone keeps
+     the house doc's pre-2.512.0 list from adding it back, and lets _f2Tidy clear that list without it. */
+  docGone(id,key){const sid=String(id);const sh=this._shadow[sid]||(this._shadow[sid]={meta:'',colls:{}});
+    const g=sh.gone||(sh.gone={});(g.docs||(g.docs={}))[String(key)]=Date.now();this._saveBase();},
+  _isGone(sid,sub,key){const sh=this._shadow[String(sid)];return !!(sh&&sh.gone&&sh.gone[sub]&&sh.gone[sub][key]);},
   _legacyLists(p,id,meta){const sid=String(id);let ch=false;
     if(meta)this._legRaw[sid]={docs:meta.docs,invites:meta.invites};
     const raw=this._legRaw[sid]||{};
@@ -10513,7 +10578,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       const byKey={};leg.forEach(r=>{byKey[c.key(r)]=r;});
       Object.keys(added).forEach(k=>{if(byKey[k]||on[k]!==undefined)return;
         const i=p[L.f].findIndex(r=>c.key(r)===k);if(i>=0){p[L.f].splice(i,1);ch=true;}delete added[k];});
-      leg.forEach(r=>{const k=c.key(r);if(on[k]!==undefined)return;
+      leg.forEach(r=>{const k=c.key(r);if(on[k]!==undefined||this._isGone(sid,L.sub,k))return;   // Doc delete: deleted here stays deleted
         const i=p[L.f].findIndex(x=>c.key(x)===k);
         if(i<0){p[L.f].push(JSON.parse(JSON.stringify(r)));added[k]=1;ch=true;}});
       /* a phone that only reads: once the server has answered, keep exactly what the records and the old list hold */
@@ -10886,6 +10951,8 @@ const CloudFiles={
     else if(q[i].kind!==kind){q[i]=Object.assign({kind,siteId:String(siteId),id,mode:'live',tries:0},from?{from:from}:{});}
     this._save(q);this.flush();
   },
+  /* Doc delete: a deleted document's file that has not gone up yet never does. True when one was waiting. */
+  forget(id){const q=this._q();const n=q.filter(e=>e.id===id&&!e.done&&!e.url).length;const k=q.filter(e=>e.id!==id);if(k.length!==q.length)this._save(k);return n>0;},
   /* #5 (2.512.0): a document that changes audience moves folder: a new copy, then the old one goes */
   move(siteId,id,fromAud,toAud){this.queue('docs-'+toAud,siteId,id,'live/sites/'+String(siteId)+'/docs-'+fromAud+'/'+id);},
   /* #7 (2.512.0): every upload names its uploader; the rules let only that person replace or delete it */
