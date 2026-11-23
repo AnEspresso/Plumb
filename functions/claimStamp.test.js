@@ -2,7 +2,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const { applyClaimToSite, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn, isHomeownerOn } = require('./lib/claimStamp');
+const { applyClaimToSite, crewSlotClash, claimWins, inviterOk, isOwnerOn, isMoneyBuilderOn, isHomeownerOn } = require('./lib/claimStamp');
 
 const client = applyClaimToSite(
   { members: { b1: 'builder' }, memberUids: ['b1'], meta: { invites: [{ code: 'AB', role: 'client', status: 'open' }] } },
@@ -150,6 +150,56 @@ assert.strictEqual(newCrew.members.cNew, 'sub', 'a new crew still joins');
   const src = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8').split('exports.onInviteClaim')[1].split('exports.')[0];
   assert.ok(/isHomeownerOn\(/.test(src) && src.indexOf('isHomeownerOn(') < src.indexOf('applyClaimToSite('),
     'onInviteClaim refuses a homeowner before stamping as crew');
+}
+/* One login is one crew on a house (Beaumont, 2.509.0). Crew A is on the house
+   under its own roster row; A redeems crew M's code. M's slot and name stay as
+   they were, and A keeps its own name and trade. */
+{
+  const BEAU = () => ({
+    members: { own: 'builder', cA: 'sub', ho: 'client' },
+    meta: {
+      memberInfo: { own: { rpRole: 'owner' }, cA: { name: 'Crew A', trade: 'appl', email: 'a@example.com' }, ho: { name: 'Home' } },
+      subs: [{ id: 's1', name: 'Crew A' }, { id: 's2', name: 'Crew M' }],
+      invites: [
+        { code: 'PB-A', role: 'sub', subId: 's1', name: 'Crew A', trade: 'appl', status: 'joined', uid: 'cA' },
+        { code: 'PB-M', role: 'sub', subId: 's2', name: 'Crew M', trade: 'appl', status: 'open' },
+      ],
+    },
+  });
+  const codeM = { code: 'PB-M', role: 'sub', siteId: 'h', subId: 's2', name: 'Crew M', trade: 'appl', createdBy: 'own' };
+  const site = BEAU();
+  const before = JSON.stringify(site);
+  assert.strictEqual(crewSlotClash(site, 'cA', codeM), true, 'a crew on the house under another slot clashes');
+  assert.strictEqual(applyClaimToSite(site, codeM, 'cA', { name: 'Crew A' }), null, 'another crew\'s code does not re-stamp a crew already on the house');
+  assert.strictEqual(JSON.stringify(site), before, 'the house is left exactly as it was');
+  /* The same crew's own slot still goes through (new phone, re-sent code). */
+  const codeA2 = { code: 'PB-A2', role: 'sub', siteId: 'h', subId: 's1', name: 'Crew A', trade: 'appl', createdBy: 'own' };
+  assert.strictEqual(crewSlotClash(BEAU(), 'cA', codeA2), false);
+  const again = applyClaimToSite(BEAU(), codeA2, 'cA', {});
+  assert.strictEqual(again.meta.memberInfo.cA.name, 'Crew A');
+  assert.strictEqual(again.meta.memberInfo.cA.subId, 's1', 'a crew stamp records its roster slot');
+  /* The real crew M (a new account) still joins M's slot. */
+  const realM = applyClaimToSite(BEAU(), codeM, 'cM', { name: 'Mo' });
+  assert.strictEqual(realM.members.cM, 'sub');
+  assert.strictEqual(realM.meta.memberInfo.cM.name, 'Crew M');
+  assert.strictEqual(realM.meta.memberInfo.cA.name, 'Crew A', 'the other crew is untouched');
+  assert.strictEqual(realM.meta.invites[1].uid, 'cM');
+  /* A stamped slot is the authority once there is one. */
+  const stamped = BEAU(); stamped.meta.memberInfo.cA.subId = 's1'; stamped.meta.invites = [];
+  assert.strictEqual(applyClaimToSite(stamped, codeM, 'cA', {}), null, 'stamped slot s1 refuses slot s2');
+  /* Old codes with no subId fall back to the roster name on the invite list. */
+  const old = BEAU(); old.meta.invites.forEach(function (i) { delete i.subId; });
+  const oldM = Object.assign({}, codeM); delete oldM.subId;
+  assert.strictEqual(applyClaimToSite(old, oldM, 'cA', {}), null, 'old codes: another roster name refuses');
+  /* No slot on record: the roster-name heal still works (see the re-stamp test above). */
+  const bare = { members: { cA: 'sub' }, meta: { memberInfo: { cA: { name: 'typed name' } } } };
+  assert.strictEqual(crewSlotClash(bare, 'cA', codeM), false, 'a crew with no slot on record is not refused');
+  /* Only crew codes on a crew are checked. */
+  assert.strictEqual(crewSlotClash(BEAU(), 'ho', codeM), false);
+  assert.strictEqual(crewSlotClash(BEAU(), 'cA', Object.assign({}, codeM, { role: 'client' })), false);
+  /* The server skips (and logs) a clashing claim before it stamps. */
+  const src = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8').split('exports.onInviteClaim')[1].split('exports.')[0];
+  assert.ok(src.indexOf('crewSlotClash(') >= 0 && src.indexOf('crewSlotClash(') < src.indexOf('applyClaimToSite('), 'onInviteClaim checks the crew slot before stamping');
 }
 
 console.log('claimStamp ok');
