@@ -3984,15 +3984,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.515.0 - A homeowner can\'t redeem a crew code on their own house';
+const PLUMB_VERSION='2.516.0 - Crew see All-trades documents, audience menu, Ink\'s four fixes, documents download by name';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1796155200000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.515.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796241600000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.516.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5350,14 +5350,15 @@ function showInfo(title,bodyHTML,own){
   try{
     const foot=document.getElementById('infoFoot');
     if(foot&&!own){
-      const fromH=typeof fromTheHouse==='function'&&fromTheHouse();
+      const fromH=typeof fromTheHouse==='function'&&fromTheHouse()&&!onHouseDesk();   // 2.516.0: on a desk page (Documents...) the sheet closes back to that page
       const hasGo=!!document.querySelector('#infoBody .b-go');
       const label=fromH?'House':(hasGo?'Done':'Got it');
       foot.innerHTML='<button class="btn btn-secondary" onclick="closeInfo()"><span>'+label+'</span></button>';
     }
   }catch(e){}
 }
-function closeInfo(){const sc=document.getElementById('infoScrim');sc.classList.remove('show','info-own');try{houseMaybeResume();}catch(e){}}
+function closeInfo(){const sc=document.getElementById('infoScrim');sc.classList.remove('show','info-own');if(onHouseDesk())return;try{houseMaybeResume();}catch(e){}}   // 2.516.0: a desk page keeps its House button for the way back
+function onHouseDesk(){try{return document.body.classList.contains('on-house-desk');}catch(e){return false;}}
 
 /* Sheets stack. Opening a child never tears the parent down. Closing one hides only itself.
    Page changes (a site, permits) remember how to come back via Back. */
@@ -5430,7 +5431,7 @@ function renderDocs(){
     const upFail=d.fileId&&CloudFiles.failed(d.fileId)?' \u00b7 <span class="up-fail-link" onclick="event.stopPropagation();CloudFiles.retry(\''+esc(d.fileId)+'\')">'+esc(UPLOAD_FAILED)+'</span>':'';
     const mixed=rows.some(function(x){return docAudClient(x.d);})&&rows.some(function(x){return !docAudClient(x.d);});
     const warn=mixed&&docAudClient(d);
-    return '<div class="row row-tap" onclick="openDoc('+i+')"><div class="row-main"><div class="row-title">'+esc(d.n)+'</div><div class="row-sub">'+esc(sub)+upFail+'</div></div><span class="row-aside'+(warn?' warn':'')+'" onclick="event.stopPropagation();cycleDocAud('+i+')" title="Tap to change who can see this">'+esc(DOC_AUD_LABEL[docAud(d)]||'')+'</span><span class="row-chev">\u203a</span></div>';
+    return '<div class="row row-tap" onclick="openDoc('+i+')"><div class="row-main"><div class="row-title">'+esc(d.n)+'</div><div class="row-sub">'+esc(sub)+upFail+'</div></div><span class="row-aside'+(warn?' warn':'')+'" onclick="event.stopPropagation();openDocAudMenu('+i+')" title="Tap to change who can see this">'+esc(DOC_AUD_LABEL[docAud(d)]||'')+'</span><span class="row-chev">\u203a</span></div>';
   }
   let list='';
   if(!rows.length){
@@ -5492,10 +5493,28 @@ function mailReviewDiscard(id){
     p.mailReview=(p.mailReview||[]).filter(x=>String(x.id)!==String(id));
     persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}renderMailReview();renderDocs();toast('Discarded');}});
 }
+/* 2.516.0: a storage link from another origin ignores a.download, so a saved document took its random file id as its
+   name. New uploads carry Content-Disposition with the document's name: inline, so a PDF still opens in the viewer
+   (attachment would force a download on phones), and saving it keeps the name. RFC 5987 filename* for non-ASCII. */
+function docDisposition(name){const n=String(name||'').replace(/[\r\n]/g,' ').trim().slice(0,200);if(!n)return '';
+  const ascii=n.replace(/[^\x20-\x7e]/g,'_').replace(/["\\]/g,'_');
+  let v='inline; filename="'+ascii+'"';
+  if(ascii!==n)v+="; filename*=UTF-8''"+encodeURIComponent(n).replace(/['()*]/g,c=>'%'+c.charCodeAt(0).toString(16).toUpperCase());
+  return v;}
+/* Word and Excel files cannot show in the browser, so they download: as a blob with the document's own name, which
+   also fixes files uploaded before 2.516.0. A PDF or picture still opens in a new tab. */
+function docSavesNotShows(d,blob){const t=String((d&&d.mime)||(blob&&blob.type)||'').toLowerCase();
+  if(/msword|ms-excel|officedocument/.test(t))return true;
+  return /\.(docx?|xlsx?)$/i.test(String((d&&d.n)||''));}
+function saveBlobAs(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=String(name||'document');
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 async function openDocFile(projId,fileId,remoteUrl){
-  if(fileId){try{const blob=await idbGetDoc(fileId);if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
-    try{const p=(state.projects||[]).find(x=>String(x.id)===String(projId));const d=p&&(p.docs||[]).find(x=>String(x.fileId)===String(fileId));
-      const u=d?await docFileUrl(p,d):null;if(u){window.open(u,'_blank');return;}}catch(e){}
+  if(fileId){const p=(state.projects||[]).find(x=>String(x.id)===String(projId));const d=p&&(p.docs||[]).find(x=>String(x.fileId)===String(fileId));
+    try{const blob=await idbGetDoc(fileId);if(blob){if(d&&docSavesNotShows(d,blob)){saveBlobAs(blob,d.n);return;}
+      const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
+    try{const u=d?await docFileUrl(p,d):null;
+      if(u&&docSavesNotShows(d)){try{const r=await fetch(u);if(r&&r.ok){saveBlobAs(await r.blob(),d.n);return;}}catch(e){}}   // no CORS: the link below still works
+      if(u){window.open(u,'_blank');return;}}catch(e){}
     if(remoteUrl){window.open(remoteUrl,'_blank');return;}
     toast('File not on this device yet — it uploads when the builder\u2019s device is online');return;}
   if(remoteUrl){window.open(remoteUrl,'_blank');return;}
@@ -6159,6 +6178,7 @@ async function laEnter(p){
     }
   }catch(e){}}
   routeAfterLogin();
+  try{updateHeader();}catch(e){}   // 2.516.0: the banner names this account's house, never the last one's
   try{setTimeout(function(){try{applyLiveRole();}catch(e){}},1800);}catch(e){}
   try{
     if(appMode()==='real'){
@@ -6502,6 +6522,9 @@ async function liveSignOut(){
   Data.setSession(null);
   logEvent('logout','liveAccount');
   try{localStorage.removeItem('plumb.liveAuth');}catch(e){}
+  /* 2.516.0 (Ink 11/17): the signed-out phone holds this device's own store, not the last account's houses, so the
+     banner (and the next account) never shows the old account's house. Nothing is written: the account's houses were saved above. */
+  try{if(appMode()==='real')load();}catch(e){}
   showSplash();
   toast('Signed out');}
 function showSplash(){
@@ -7160,8 +7183,8 @@ function renderEditSites(){
     const title=esc(p.street||p.name);
     const sub=[p.street?esc(p.name):'',esc([p.city,p.state].filter(Boolean).join(', '))].filter(Boolean).join(' \u00b7 ')+(p.doneAt?' \u00b7 Finished':'');
     const done=p.doneAt
-      ?'<button class="btn btn-secondary" onclick="markHouseDone(\''+p.id+'\',false)">Put back on the book</button>'
-      :'<button class="btn btn-secondary" onclick="askHouseDone(\''+p.id+'\')">Off book</button>';
+      ?'<button class="btn btn-secondary" onclick="markHouseDone(\''+p.id+'\',false)">'+esc(HOUSE_DONE_WORDS.putBack)+'</button>'
+      :'<button class="btn btn-secondary" onclick="askHouseDone(\''+p.id+'\')">'+esc(HOUSE_DONE_WORDS.offBook)+'</button>';
     return '<div class="es-card"><div class="n">'+title+'</div>'+(sub?('<div class="d">'+sub+'</div>'):'')
       +'<div class="es-acts">'+done+'<button class="btn btn-secondary" onclick="openImportFor(\''+p.id+'\')">Edit</button>'+(canDeleteHouse(p)?'<button class="btn btn-danger" onclick="deleteSite(\''+p.id+'\')">Delete</button>':'')+'</div>'
       +(HouseGeo.canWrite()&&navigator.geolocation?'<button type="button" class="btn btn-quiet es-pin" onclick="pinHouseHere(\''+p.id+'\')">Pin this house here</button>':'')+'</div>';
@@ -8620,20 +8643,35 @@ function houseCall(p){
 function streetAzKey(p){return String((p&&(p.street||p.name))||'').replace(/^\d+\s+/,'').toLowerCase();}
 function markHouseDone(pid,on){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
-  if(on===false){delete p.doneAt;p.doneAskUntil=0;persist();logEvent('houseOnBook',p.street||p.name);toast(houseCall(p)+' is on the book again');}
-  else {p.doneAt=Date.now();persist();logEvent('houseOffBook',p.street||p.name);toast(houseCall(p)+' is off Needs you. Still on All houses.');}
+  if(on===false){p.doneAt=null;p.doneAskUntil=0;   /* 2.516.0: null, not delete: the house push merges, and a merge never drops a key, so a deleted doneAt stayed finished for the team */
+    persist();logEvent('houseOnBook',p.street||p.name);toast(HOUSE_DONE_WORDS.toastOn(houseCall(p)));}
+  else {p.doneAt=Date.now();persist();logEvent('houseOffBook',p.street||p.name);toast(HOUSE_DONE_WORDS.toastOff(houseCall(p)));}
   try{renderHouse();}catch(e){}
   try{renderOverview();}catch(e){}
   try{renderEditSites();}catch(e){}
 }
+/* 2.516.0 (Ink 11/17): every word of "this house is finished", in one place. Agency 11/17, word for word.
+   doneAt is on the house record, so marking a house finished (or putting it back) is the whole team's. The button stays where it is. */
+const HOUSE_DONE_WORDS={
+  button:'Mark house finished',
+  title:function(street){return 'Mark '+street+' finished?';},
+  body:'This takes it off Needs you and Coming up for your whole team. It stays in All houses, and you can put it back anytime.',
+  quietBody:'Nothing new in two weeks, so this house looks finished. Marking it takes it off Needs you and Coming up for your whole team. It stays in All houses, and you can put it back anytime.',
+  ok:'Mark finished',
+  cancel:'Keep it on the book',
+  putBack:'Put back on the book',
+  offBook:'Off book',
+  toastOff:function(call){return call+' is marked finished. Still in All houses.';},
+  toastOn:function(call){return call+' is on the book again';}
+};
 function askHouseDone(pid){
   const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
   const street=p.street||p.name||'this house';
   openConfirm({
-    title:'Done with '+street+'?',
-    body:'Take it off Needs you and Coming up? You can still open it from All houses.',
-    okLabel:'Done with this house',
-    cancelLabel:'Keep it on the book',
+    title:HOUSE_DONE_WORDS.title(street),
+    body:HOUSE_DONE_WORDS.body,
+    okLabel:HOUSE_DONE_WORDS.ok,
+    cancelLabel:HOUSE_DONE_WORDS.cancel,
     onConfirm:function(){markHouseDone(p.id,true);}
   });
 }
@@ -8663,10 +8701,10 @@ function maybeAskDoneHouse(){
   const p=liveProjects().find(houseAskDone);if(!p)return;
   const street=p.street||p.name||'this house';
   openConfirm({
-    title:'Done with '+street+'?',
-    body:'Nothing new in two weeks, and this house looks finished. Take it off Needs you and Coming up? You can still open it from All houses.',
-    okLabel:'Done with this house',
-    cancelLabel:'Keep it on the book',
+    title:HOUSE_DONE_WORDS.title(street),
+    body:HOUSE_DONE_WORDS.quietBody,
+    okLabel:HOUSE_DONE_WORDS.ok,
+    cancelLabel:HOUSE_DONE_WORDS.cancel,
     onConfirm:function(){markHouseDone(p.id,true);},
     onCancel:function(){p.doneAskUntil=Date.now()+30*864e5;persist();}
   });
@@ -9269,8 +9307,8 @@ function houseHTML(p){
     h+='</div>';
   }
   if(isBuilder){
-    if(p.doneAt)h+='<button class="add-sub-btn mt-4 btn btn-secondary" onclick="markHouseDone(\''+String(p.id)+'\',false)">Put back on the book</button>';
-    else h+='<button class="add-sub-btn mt-4 btn btn-secondary" onclick="askHouseDone(\''+String(p.id)+'\')">Done with this house</button>';
+    if(p.doneAt)h+='<button class="add-sub-btn mt-4 btn btn-secondary" onclick="markHouseDone(\''+String(p.id)+'\',false)">'+esc(HOUSE_DONE_WORDS.putBack)+'</button>';
+    else h+='<button class="add-sub-btn mt-4 btn btn-secondary" onclick="askHouseDone(\''+String(p.id)+'\')">'+esc(HOUSE_DONE_WORDS.button)+'</button>';
   }
   return h;
 }
@@ -10833,6 +10871,9 @@ const CloudFiles={
   _type(e,blob){if(e.kind==='docs'||/^docs-/.test(e.kind)){for(const p of (state.projects||[])){const d=(p.docs||[]).find(x=>x.fileId===e.id);if(d&&d.mime)return d.mime;}
       return docMimeOf(blob)||(blob&&blob.type)||'application/pdf';}
     return (blob&&blob.type)||'image/jpeg';},
+  _disp(e){if(!(e.kind==='docs'||/^docs-/.test(e.kind)))return '';
+    for(const p of (state.projects||[])){const d=(p.docs||[]).find(x=>x.fileId===e.id);if(d&&d.n)return docDisposition(d.n);}
+    return '';},
   ready(){return Sync.ready()&&typeof firebase!=='undefined'&&!!firebase.storage;},
   path(e){return 'live/sites/'+e.siteId+'/'+e.kind+'/'+e.id;},
   queue(kind,siteId,id,from){
@@ -10885,6 +10926,7 @@ const CloudFiles={
             const ref=firebase.storage().ref(this.path(e));
             /* #11: the document's own type (worked out from the file name when the phone gave none), with 2.512.0's uploader stamp */
             const fm=this._meta(blob);fm.contentType=this._type(e,blob);
+            const cd=this._disp(e);if(cd)fm.contentDisposition=cd;   /* 2.516.0: a document saves under its own name */
             await ref.put(blob,fm);
             e.done=1;
             if(e.from&&e.from!==this.path(e)){try{await firebase.storage().ref(e.from).delete();}catch(x){}delete e.from;}
@@ -11480,6 +11522,7 @@ function fbClean(x){
 function persistLocalOnly(){try{localStorage.setItem(storeKey(),JSON.stringify(state));}catch(e){}}
 function rerenderCurrent(){try{
   try{if(appMode()==='real')applyLiveRole();}catch(e){}
+  try{updateHeader();}catch(e){}   // 2.516.0: after a sync the banner follows the houses this phone now holds
   if(document.getElementById('clientview').classList.contains('show'))renderClient();
   else if(document.getElementById('subview').classList.contains('show'))renderSubView();
   else if(document.getElementById('overview').classList.contains('show'))renderOverview();
@@ -11709,7 +11752,7 @@ if(typeof document!=='undefined'){document.addEventListener('visibilitychange',f
 
 /* ════════ crew restricted view ════════ */
 let subSel=null;let subTab='todo';
-function showSubView(){subSel=null;subTab='todo';document.getElementById('subview').classList.add('show');renderSubView();}
+function showSubView(){subSel=null;subTab='todo';document.getElementById('subview').classList.add('show');try{updateHeader();}catch(e){}renderSubView();}
 function subProjects(){const n=state.session?state.session.name:'';return state.projects.filter(p=>p.subs.some(s=>s.name===n));}
 function subTradeFor(p){const n=state.session.name;const s=p.subs.find(x=>x.name===n);return s?{id:s.specialty,label:specLabel(s.specialty),cleared:s.cleared}:{id:'general',label:'General',cleared:null};}
 function renderSubView(){
@@ -11745,7 +11788,7 @@ function renderSubView(){
   }
   const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open');
   const recent=p.items.filter(it=>it.crew===tr.label&&!open.some(o=>o.id===it.id)).sort((a,b)=>b.t-a.t).slice(0,6);
-  const myDocs=(p.docs||[]).filter(d=>(d.trade===tr.id||!d.trade)&&docAudSub(d)&&docInPacket(p,tr.id,d));
+  const myDocs=crewDocList(p,tr.id);
   const _svMyName=(state.session||{}).name||'';
   const _svToday=dayStart(Date.now());
   const _svBookings=(p.bookings||[]).filter(b=>b.subName===_svMyName&&(b.status||'confirmed')!=='declined'&&b.end>=_svToday).sort((a,b)=>a.start-b.start);
@@ -18483,6 +18526,15 @@ function docInPacket(p,tradeId,d){
   if(d.trade===tradeId)return true;
   return docShownSet(p,tradeId).includes(d.n);
 }
+/* 2.516.0: the crew's Documents tab. Docs for All trades (saved with no trade) unless the builder hid them from
+   this trade, plus docs tagged with this trade, only for audiences crews may see. Not the packet: the install
+   packet keeps docInPacket (default-deny), and the homeowner's list is unchanged. */
+function crewDocList(p,tradeId){
+  const hid=docHiddenSet(p,tradeId);
+  return ((p&&p.docs)||[]).filter(function(d){
+    if(!d||!d.n||!docAudSub(d))return false;
+    if(hid.includes(d.n))return false;
+    return !d.trade||d.trade===tradeId;});}
 function docAud(d){return d&&d.aud?d.aud:'subs';}
 function docAudSub(d){const a=docAud(d);return a==='subs'||a==='all';}
 function docAudClient(d){const a=docAud(d);return a==='homeowner'||a==='all';}
@@ -18526,14 +18578,39 @@ function noteByName(p){const s=state.session||{};
 function noteMine(p,it){const s=state.session||{};
   if(s.role!=='client'||appMode()!=='real')return true;
   return !!it&&!!it.by&&it.by===noteByName(p);}
-function cycleDocAud(i){const p=P();const d=(p.docs||[])[i];if(!d)return;
-  const nx=DOC_AUD_ORDER[(DOC_AUD_ORDER.indexOf(docAud(d))+1)%DOC_AUD_ORDER.length];
+/* 2.516.0 (Option B, Peter 11/23): the audience chip opens a menu of the four audiences. Nothing changes until one
+   is picked, and widening to the homeowner or Everyone asks first: Cancel leaves the record and the file where they are. */
+/* Agency 11/23, word for word. */
+const DOC_AUD_WORDS={
+  menuTitle:'Who can see this',
+  now:'Now',
+  homeTitle:'Let the homeowner see this?',
+  allTitle:'Let everyone see this?',
+  body:'The homeowner will see this document. Don\u2019t share crew pricing, crew agreements, or your cost sheets.',
+  allBody:'The homeowner and every crew on this house will see this document. Don\u2019t share crew pricing, crew agreements, or your cost sheets.',
+  ok:'Share it',
+  cancel:'Keep it as is'
+};
+function docAudWidens(from,to){return to!==from&&(to==='all'||(to==='homeowner'&&!docAudClient({aud:from})));}
+function openDocAudMenu(i){const p=P();const d=p&&(p.docs||[])[i];if(!d)return;
+  const cur=docAud(d);
+  openChoice({title:DOC_AUD_WORDS.menuTitle,items:DOC_AUD_ORDER.map(function(a){
+    return {label:DOC_AUD_LABEL[a],sub:a===cur?DOC_AUD_WORDS.now:'',fn:function(){pickDocAud(i,a);}};})});}
+function pickDocAud(i,nx){const p=P();const d=p&&(p.docs||[])[i];if(!d)return;
+  const cur=docAud(d);if(nx===cur||DOC_AUD_ORDER.indexOf(nx)<0)return;
+  if(!docAudWidens(cur,nx)){setDocAud(i,nx);return;}
+  const name=d.n;
+  openConfirm({title:nx==='all'?DOC_AUD_WORDS.allTitle:DOC_AUD_WORDS.homeTitle,
+    body:esc(nx==='all'?DOC_AUD_WORDS.allBody:DOC_AUD_WORDS.body),
+    okLabel:DOC_AUD_WORDS.ok,cancelLabel:DOC_AUD_WORDS.cancel,
+    onConfirm:function(){const q=P();const k=q&&(q.docs||[])[i];if(k&&k.n===name)setDocAud(i,nx);}});}
+/* the change itself: the record says the new audience, and the file follows into that audience's folder */
+function setDocAud(i,nx){const p=P();const d=p&&(p.docs||[])[i];if(!d||DOC_AUD_ORDER.indexOf(nx)<0)return;
   const was=d.fileAud;
   d.aud=nx;persist();renderDocs();
   /* the file follows: a copy goes into the new audience's folder, the old one is removed (the rules already close it) */
   if(d.fileId&&was&&was!==nx){try{CloudFiles.move(String(p.id),String(d.fileId),was,nx);}catch(e){}}
-  if(nx==='homeowner'||nx==='all')toast('\u26a0 The homeowner can now see this \u2014 avoid crew pricing or agreements');
-  else toast(DOC_AUD_LABEL[nx]);}
+  toast(DOC_AUD_LABEL[nx]);}
 
 function toggleDocInPacket(tradeId,name){
   const p=P();if(!p)return;
@@ -20327,6 +20404,13 @@ function toggleIssue(id){const it=P().items.find(x=>x.id===id);if(!it)return;con
 /* ── universal modal dismissal: tap grip, or swipe the modal down ── */
 const MODAL_CLOSERS={houseScrim:'closeHouse',logPickScrim:'closeLogPick',selScrim:'closeAddSel',payScrim:'closePayments',selNotesScrim:'closeSelNotes',infoScrim:'closeInfo',recScrim:'closeRecord',fileToScrim:'closeFileTo',jurisScrim:'closeJuris',concernScrim:'closeConcern',subScrim:'closeAddSub',subDetailScrim:'closeSubDetail',readyScrim:'closeReady',newSiteScrim:'closeNewSite',fbScrim:'closeFeedback',installScrim:'closeInstall',inspScrim:'closeInspInfo',docScrim:'closeAddDoc',signScrim:'closeSignoff',ideaScrim:'closeIdea',ledgerScrim:'closeLedgerDetail',promptScrim:'closePrompt',choiceScrim:'closeChoice',stageReviewScrim:'closeStageReview',specScrim:'closeSpec',peopleScrim:'closePeople',setupScrim:'closeSetup',startScrim:'closeStart',mailReviewScrim:'closeMailReview',settingsScrim:'closeSettings',companyScrim:'closeCompany',studioScrim:'closeTourStudio',nextScrim:'closeNextSite',schedScrim:'closeSchedule',invScrim:'closeInvoices',budgetScrim:'closeBudget',dayScrim:'closeDay',bkScrim:'closeBk',esScrim:'closeEditSites',rosterScrim:'closeSubsRoster',idleScrim:'closeIdle',hoScrim:'closeHoAccess',confirmDelScrim:'cdCancel',confirmScrim:'ocCancel',openItemsScrim:'closeOpenItems',idleSitesScrim:'closeIdleSites',pktLogScrim:'closePktLog',pkLogScrim:'closePkLog',nyAskScrim:'nyAskClose'};
 function dismissScrim(scrim){if(!scrim)return;const fn=MODAL_CLOSERS[scrim.id];if(fn&&typeof window[fn]==='function'){try{window[fn]();return;}catch(e){}}scrim.classList.remove('show');}
+/* 2.516.0 (Ink 11/17): the sheet Escape closes. A confirm on screen always wins (Escape = its cancel); otherwise the
+   open sheet with the highest z-index, the later one in the page on a tie. */
+function topOpenScrim(){
+  const open=[...document.querySelectorAll('.pmodal-scrim.show')];if(!open.length)return null;
+  const conf=open.filter(x=>x.id==='confirmScrim'||x.id==='confirmDelScrim');if(conf.length)return conf[conf.length-1];
+  const z=x=>{const v=parseInt((getComputedStyle(x).zIndex||''),10);return isNaN(v)?0:v;};
+  let best=open[0];open.forEach(x=>{if(z(x)>=z(best))best=x;});return best;}
 function dismissParent(elm){let n=elm;while(n&&!(n.classList&&n.classList.contains('pmodal-scrim')))n=n.parentElement;dismissScrim(n);}
 if(typeof window!=='undefined'){window.addEventListener('load',function(){
   document.addEventListener('keydown',function(ev){
@@ -20337,6 +20421,7 @@ if(typeof window!=='undefined'){window.addEventListener('load',function(){
       if(lb&&lb.classList.contains('show')){ev.preventDefault();closeLightbox();return;}
       const sh=document.getElementById('sheet');
       if(sh&&sh.classList.contains('show')){ev.preventDefault();closeSheet();return;}
+      const top=topOpenScrim();if(top){ev.preventDefault();dismissScrim(top);return;}   // 2.516.0: every sheet; a confirm is a cancel
     }catch(e){}
   });
   /* iOS caret-drag guard: when a finger drags inside the focused text field

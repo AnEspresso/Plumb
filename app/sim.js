@@ -599,12 +599,69 @@ sv=subSiteHTML('Brightpath Electric','p3');
 t('sub cannot see team doc',!sv.includes('Sim Internal Bid'));
 asBuilder();$("state.activeId='p3'");
 const di=$("state.projects.find(p=>p.id==='p3').docs.findIndex(d=>d.n==='Sim Internal Bid.pdf')");
-$("cycleDocAud("+di+")");$("cycleDocAud("+di+")"); // team→subs→homeowner
-t('cycle reaches homeowner aud',$("state.projects.find(p=>p.id==='p3').docs["+di+"].aud")==='homeowner');
+$("setDocAud("+di+",'homeowner')"); // team→homeowner
+t('audience set to homeowner',$("state.projects.find(p=>p.id==='p3').docs["+di+"].aud")==='homeowner');
 cl=clientHTML('p3','docs');
 t('homeowner sees it once granted',cl.includes('Sim Internal Bid'));
 sv=subSiteHTML('Brightpath Electric','p3');
 t('sub still cannot (homeowner-only)',!sv.includes('Sim Internal Bid'));
+
+/* 2.516.0: the crew's Documents tab shows All-trades docs (no trade) unless hidden from that trade, plus their own trade's */
+S('crew documents tab (2.516.0)');
+asBuilder();$("state.activeId='p3'");
+const CD_TR=$("(function(){var p=state.projects.find(function(p){return p.id==='p3';});var s=p.subs.find(function(x){return x.name==='Brightpath Electric';});return s?s.specialty:'';})()");
+$(`(function(){var p=state.projects.find(function(p){return p.id==='p3';});p.docs=p.docs||[];
+  var other=(SPECIALTIES.find(function(s){return s.id!=='${CD_TR}';})||{}).id;
+  [{n:'CD all-trades everyone.pdf',aud:'all',trade:''},{n:'CD all-trades crews.pdf',aud:'subs',trade:''},{n:'CD own trade.pdf',aud:'subs',trade:'${CD_TR}'},
+   {n:'CD other trade.pdf',aud:'all',trade:other},{n:'CD hidden.pdf',aud:'subs',trade:''},{n:'CD team only.pdf',aud:'team',trade:''},{n:'CD homeowner only.pdf',aud:'homeowner',trade:''}]
+   .forEach(function(d){p.docs.push({n:d.n,m:'Added',k:'pdf',trade:d.trade,aud:d.aud});});
+  p.docHidden=p.docHidden||{};p.docHidden['${CD_TR}']=(p.docHidden['${CD_TR}']||[]).concat(['CD hidden.pdf']);return true;})()`);
+const pktBefore=$(`JSON.stringify(state.projects.find(function(p){return p.id==='p3';}).docs.filter(function(d){return docAudSub(d)&&docInPacket(state.projects.find(function(p){return p.id==='p3';}),'${CD_TR}',d);}).map(function(d){return d.n;}))`);
+subSiteHTML('Brightpath Electric','p3');$("subGo('docs')");
+const cdv=el('svBody').innerHTML;
+t('2.516.0 crew Documents: an All-trades Everyone doc shows',cdv.includes('CD all-trades everyone.pdf'));
+t('2.516.0 crew Documents: an All-trades Team + crews doc shows',cdv.includes('CD all-trades crews.pdf'));
+t('2.516.0 crew Documents: a doc tagged with their own trade shows',cdv.includes('CD own trade.pdf'));
+t('2.516.0 crew Documents: a doc tagged with a different trade is hidden',!cdv.includes('CD other trade.pdf'));
+t('2.516.0 crew Documents: a doc the builder hid from this trade is hidden',!cdv.includes('CD hidden.pdf'));
+t('2.516.0 crew Documents: Team-only and homeowner-only docs are hidden',!cdv.includes('CD team only.pdf')&&!cdv.includes('CD homeowner only.pdf'));
+asBuilder();
+const pktAfter=$(`JSON.stringify(state.projects.find(function(p){return p.id==='p3';}).docs.filter(function(d){return docAudSub(d)&&docInPacket(state.projects.find(function(p){return p.id==='p3';}),'${CD_TR}',d);}).map(function(d){return d.n;}))`);
+t('2.516.0 the install packet still leaves All-trades docs out (default-deny unchanged)',pktAfter===pktBefore&&pktAfter.indexOf('CD all-trades')<0&&pktAfter.indexOf('CD own trade.pdf')>=0,pktAfter);
+cl=clientHTML('p3','docs');
+t('2.516.0 homeowner list unchanged: Everyone and homeowner docs only',cl.includes('CD all-trades everyone.pdf')&&cl.includes('CD homeowner only.pdf')&&!cl.includes('CD all-trades crews.pdf')&&!cl.includes('CD team only.pdf')&&!cl.includes('CD own trade.pdf'));
+
+/* 2.516.0 Option B: the audience chip opens a four-choice menu; widening to the homeowner or Everyone asks first */
+S('audience menu (2.516.0)');
+asBuilder();$("state.activeId='p3'");$('renderDocs()');
+const amI=$("P().docs.findIndex(function(d){return d.n==='CD team only.pdf';})");
+$(`(function(){window.__amMoves=[];window.__amMv=CloudFiles.move;CloudFiles.move=function(){window.__amMoves.push([].slice.call(arguments));};var d=P().docs[${amI}];d.fileId='doc_am1';d.fileAud='team';return true;})()`);
+$("openDocAudMenu("+amI+")");
+const amMenu=$("JSON.stringify({open:document.getElementById('choiceScrim').classList.contains('show'),rows:[].slice.call(document.querySelectorAll('#choiceBody [data-choice] .row-title')).map(function(x){return x.textContent;})})");
+const amM=JSON.parse(amMenu);
+t('2.516.0 the chip opens a menu of the four audiences, and nothing changes yet',amM.open&&amM.rows.join('|')==='Team only|Team + crews|Team + homeowner|Everyone'&&$("P().docs["+amI+"].aud")==='team',amMenu);
+$("document.querySelectorAll('#choiceBody [data-choice]')[2].click()");
+t('2.516.0 picking Team + homeowner asks first: confirm open, audience and file not moved',$("document.getElementById('confirmScrim').classList.contains('show')")===true&&$("P().docs["+amI+"].aud")==='team'&&$("window.__amMoves.length")===0);
+$('ocCancel()');
+t('2.516.0 Cancel leaves the audience and the file where they were',$("P().docs["+amI+"].aud")==='team'&&$("window.__amMoves.length")===0&&$("document.getElementById('confirmScrim').classList.contains('show')")===false);
+$("pickDocAud("+amI+",'all')");
+t('2.516.0 widening to Everyone asks first too',$("document.getElementById('confirmScrim').classList.contains('show')")===true&&$("P().docs["+amI+"].aud")==='team');
+$('ocConfirm()');
+t('2.516.0 confirming moves it: audience Everyone and the file follows to docs-all',$("P().docs["+amI+"].aud")==='all'&&$("JSON.stringify(window.__amMoves)")===JSON.stringify([[ 'p3','doc_am1','team','all']]),$("JSON.stringify(window.__amMoves)"));
+$("P().docs["+amI+"].fileAud='all'");
+$("pickDocAud("+amI+",'subs')");
+t('2.516.0 narrowing (Everyone to Team + crews) does not ask and changes at once',$("document.getElementById('confirmScrim').classList.contains('show')")===false&&$("P().docs["+amI+"].aud")==='subs');
+$("pickDocAud("+amI+",'team')");
+t('2.516.0 Team + crews to Team only does not ask',$("document.getElementById('confirmScrim').classList.contains('show')")===false&&$("P().docs["+amI+"].aud")==='team');
+$("pickDocAud("+amI+",'subs')");
+t('2.516.0 Team only to Team + crews does not ask (homeowner still out)',$("document.getElementById('confirmScrim').classList.contains('show')")===false&&$("P().docs["+amI+"].aud")==='subs');
+$("CloudFiles.move=window.__amMv;true");
+/* 2.516.0: documents download by name */
+t('2.516.0 a document upload names the file (Content-Disposition, inline so a PDF still opens)',$("docDisposition('TEST doc word.docx')")==='inline; filename="TEST doc word.docx"');
+t('2.516.0 a non-ASCII name gets RFC 5987 filename*',$("docDisposition('Plän \\u2013 1.pdf')")==="inline; filename=\"Pl_n _ 1.pdf\"; filename*=UTF-8''Pl%C3%A4n%20%E2%80%93%201.pdf",$("docDisposition('Plän \\u2013 1.pdf')"));
+t('2.516.0 the upload queue sets it for documents only',$("(function(){var p=state.projects.find(function(p){return p.id==='p3';});p.docs.push({n:'Up name.pdf',fileId:'doc_upn',aud:'subs'});var a=CloudFiles._disp({kind:'docs-subs',id:'doc_upn'}),b=CloudFiles._disp({kind:'photos',id:'doc_upn'});p.docs.pop();return a==='inline; filename=\"Up name.pdf\"'&&b==='';})()")===true);
+t('2.516.0 Word and Excel files save with their name, PDFs still open',$("docSavesNotShows({n:'a.docx'})&&docSavesNotShows({n:'b',mime:'application/vnd.ms-excel'})&&!docSavesNotShows({n:'c.pdf',mime:'application/pdf'})")===true);
+$(`(function(){var p=state.projects.find(function(p){return p.id==='p3';});p.docs=p.docs.filter(function(d){return !/^CD /.test(d.n);});p.docHidden['${CD_TR}']=(p.docHidden['${CD_TR}']||[]).filter(function(n){return n!=='CD hidden.pdf';});return true;})()`);
 
 /* ════ 6 · NOTIFICATION AUDIENCE MATRIX (real _audMatch under every identity) ════ */
 S('notify audience');
@@ -1299,7 +1356,7 @@ t('briefcase opens Decisions', $("String(renderCompany)").indexOf('openPkLog')>=
 t('field notes sit on the home bar', SRC.indexOf('id="ovCapture"')>=0&&$("String(renderToday)").indexOf('ovCapture')>=0);
 t('gear sits above the capture bar', SRC.indexOf('body:has(.overview.show) #devDot')>=0&&SRC.split('body:has(.overview.show) #devDot')[1].slice(0,80).indexOf('116px')>=0);
 t('edit houses has three equal actions', SRC.indexOf('.es-acts{')>=0&&SRC.split('.es-acts{')[1].slice(0,80).indexOf('1fr 1fr 1fr')>=0);
-t('edit houses says Off book', $("String(renderEditSites)").indexOf('Off book')>=0&&$("String(renderEditSites)").indexOf('Off the book')<0);
+t('edit houses says Off book', $("HOUSE_DONE_WORDS.offBook")==='Off book'&&$("String(renderEditSites)").indexOf('HOUSE_DONE_WORDS.offBook')>=0&&$("String(renderEditSites)").indexOf('Off the book')<0);
 t('punch lines start with a capital', $("String(_nyIssues)").indexOf('upFirst(it.cap')>=0&&$("typeof upFirst")==='function');
 t('filter chips wrap instead of clip', SRC.indexOf('.ov-inbtabs{')>=0&&SRC.split('.ov-inbtabs{')[1].slice(0,120).indexOf('flex-wrap:wrap')>=0&&SRC.split('.ov-inbtabs .ov-sortpill{')[1].slice(0,80).indexOf('nowrap')>=0);
 t('edit sheet talks Progress not Build tab', $("String(renderImport)").indexOf('Progress on this house')>=0&&$("String(renderImport)").indexOf('Build tab')<0);
@@ -1647,9 +1704,41 @@ t('Orchard Row is off the book in the example', $("!!state.projects.find(x=>x.id
 t('Needs You walks live houses only', $("String(allNyPreview)").indexOf('liveProjects')>=0&&$("String(inbRaw)").indexOf('liveProjects')>=0);
 t('Coming up walks live houses only', $("String(renderToday)").indexOf('liveProjects')>=0);
 t('Find a street is on the book', $("document.getElementById('ovSearch').placeholder")==='Find a street'&&$("String(renderOvCards)").indexOf('Finished')>=0&&$("String(renderOvCards)").indexOf('No house matches')>=0);
-t('Done with this house is on the house', $("String(houseHTML)").indexOf('Done with this house')>=0&&$("String(askHouseDone)").indexOf('Keep it on the book')>=0);
+t('Mark house finished is on the house (2.516.0 words, one place)', $("String(houseHTML)").indexOf('HOUSE_DONE_WORDS.button')>=0&&$("HOUSE_DONE_WORDS.button")==='Mark house finished'&&$("String(askHouseDone)").indexOf('HOUSE_DONE_WORDS.cancel')>=0&&$("HOUSE_DONE_WORDS.cancel")==='Keep it on the book');
 t('finished houses skip photo boot', $("String(hydratePhotos)").indexOf('doneAt')>=0&&$("typeof hydrateHousePhotos")==='function');
-t('quiet finished house can ask', $("String(maybeAskDoneHouse)").indexOf('Nothing new in two weeks')>=0&&$("String(houseAskDone)").indexOf('houseLooksFinished')>=0);
+t('quiet finished house can ask', $("String(maybeAskDoneHouse)").indexOf('HOUSE_DONE_WORDS.quietBody')>=0&&$("HOUSE_DONE_WORDS.quietBody").indexOf('Nothing new in two weeks')===0&&$("String(houseAskDone)").indexOf('houseLooksFinished')>=0);
+{ /* 2.516.0 (Ink 11/17) items 1-4 */
+  const ink=JSON.parse($(`(function(){var r={},keep=state.activeId,P0=P(),wasDone=P0.doneAt;
+    var esc=function(){document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));};
+    var on=function(id){return document.getElementById(id).classList.contains('show');};
+    /* 1: the banner follows the house this phone holds now */
+    var nm=document.getElementById('siteName');var want=P0.street||P0.name;
+    nm.textContent='STALE';showSubView();r.subBanner=nm.textContent===want;document.getElementById('subview').classList.remove('show');
+    nm.textContent='STALE';rerenderCurrent();r.syncBanner=nm.textContent===want;
+    r.signOutReloads=String(liveSignOut).indexOf("load()")>=0;r.enterHeads=String(laEnter).indexOf('updateHeader()')>=0;
+    /* 2: on a desk page the document sheet says Got it and closes back to the page; the house stays shut */
+    document.body.classList.add('on-house-desk');_houseResume=P0.id;
+    showInfo('Scope.pdf','<p>x</p>');var b=document.querySelector('#infoFoot button');r.deskLabel=b?b.textContent:'';
+    closeInfo();r.deskInfoShut=!on('infoScrim');r.deskHouseShut=!on('houseScrim');r.deskKeepsResume=_houseResume===P0.id;
+    document.body.classList.remove('on-house-desk');
+    showInfo('Scope.pdf','<p>x</p>');b=document.querySelector('#infoFoot button');r.houseLabel=b?b.textContent:'';
+    _houseResume=null;closeInfo();try{closeHouse();}catch(e){}
+    /* 3: Escape closes the top sheet; a confirm is a cancel; the tour keeps Escape */
+    document.getElementById('fbScrim').classList.add('show');esc();r.escSheet=!on('fbScrim');
+    delete P0.doneAt;document.getElementById('fbScrim').classList.add('show');askHouseDone(P0.id);r.confOpen=on('confirmScrim');
+    r.confTitle=document.getElementById('ocTitle')?document.getElementById('ocTitle').textContent:'';
+    esc();r.confCancel=!on('confirmScrim')&&!P0.doneAt&&on('fbScrim');esc();r.thenSheet=!on('fbScrim');
+    var tc=document.createElement('div');tc.id='tourCatch';document.body.appendChild(tc);document.getElementById('fbScrim').classList.add('show');esc();
+    r.tourKeeps=on('fbScrim');tc.remove();document.getElementById('fbScrim').classList.remove('show');
+    /* 4: the toast */
+    markHouseDone(P0.id,true);r.toast=(document.getElementById('toast')||{}).textContent||'';markHouseDone(P0.id,false);
+    if(wasDone)P0.doneAt=wasDone;else delete P0.doneAt;state.activeId=keep;updateHeader();
+    return JSON.stringify(r);})()`));
+  t('2.516.0 #1: the crew banner names the house this phone holds (crew page, after a sync, sign-out, crew entry)',ink.subBanner&&ink.syncBanner&&ink.signOutReloads&&ink.enterHeads,JSON.stringify(ink));
+  t('2.516.0 #2: on a desk page the document sheet closes back to the page, not into the house',ink.deskLabel!=='House'&&ink.deskInfoShut&&ink.deskHouseShut&&ink.deskKeepsResume&&ink.houseLabel==='House',JSON.stringify(ink));
+  t('2.516.0 #3: Escape closes the top sheet, a confirm first (as Cancel), and leaves the tour alone',ink.escSheet&&ink.confOpen&&ink.confCancel&&ink.thenSheet&&ink.tourKeeps,JSON.stringify(ink));
+  t('2.516.0 #4: Agency words on the ask and the toast',ink.toast.indexOf(' is marked finished. Still in All houses.')>0,JSON.stringify(ink));
+}
 t('house card kind sits above the fact', $("String(nyCardBits)").indexOf('ov-k')>=0&&$("String(nyCardBits)").indexOf('ov-l')>=0&&$("String(nyCardBits)").indexOf('still need you')<0);
 t('decision card kind sits above the fact', $("String(pkCardBits)").indexOf('ov-k')>=0&&$("String(pkCardBits)").indexOf('pkKind')>=0);
 t('house doors and Coming up are 16px dark', $("document.documentElement.innerHTML.indexOf('.hs-door .k{font-size:var(--t-md)')>=0&&document.documentElement.innerHTML.indexOf('.td-soontx{flex:1;font-size:var(--t-md);color:var(--ink)')>=0&&document.documentElement.innerHTML.indexOf('.pkt-or .k{font-weight:650;font-size:var(--t-md)')>=0")===true);
@@ -3045,7 +3134,7 @@ const ACTIONS=[
   r=>{const n=subNames[Math.floor(r()*subNames.length)];asSub(n);$('renderSubView()');},
   r=>{const n=subNames[Math.floor(r()*subNames.length)];const p=PIDS[Math.floor(r()*4)];try{subSiteHTML(n,p);}catch(e){throw new Error('subSite '+n+'/'+p+': '+e.message);}},
   r=>{asBuilder();const p=PIDS[Math.floor(r()*4)];$("state.activeId='"+p+"'");const st=['site','foundation','framing','final'][Math.floor(r()*4)];$("setStageWindow('"+p+"','"+st+"')");if(el('promptScrim').classList.contains('show')){if(r()<0.5)promptOK(new Date(Date.now()+864e5*Math.floor(r()*30)).toISOString().slice(0,10));else $('closePrompt()');if(el('promptScrim').classList.contains('show'))promptOK('');}},
-  r=>{asBuilder();$("state.activeId='p3'");const i=Math.floor(r()*$("(state.projects.find(p=>p.id==='p3').docs||[]).length"));$('cycleDocAud('+i+')');},
+  r=>{asBuilder();$("state.activeId='p3'");const i=Math.floor(r()*$("(state.projects.find(p=>p.id==='p3').docs||[]).length"));$('setDocAud('+i+',DOC_AUD_ORDER['+Math.floor(r()*4)+'])');},
   r=>{const b=$("JSON.stringify((state.projects[0].bookings||[]).map(x=>x.id))");const ids=JSON.parse(b);if(!ids.length)return;const id=ids[Math.floor(r()*ids.length)];asSub('Timberline Framing');$("bkSetStatus&&(state.projects[0].bookings.find(x=>x.id==='"+id+"')||0)&&svBkConfirm('p1','"+id+"')");},
   r=>{asClient('p1');const s=$("JSON.stringify((state.projects[0].selections||[]).map(x=>x.id))");const ids=JSON.parse(s);if(ids.length)$('clientSignoff('+ids[Math.floor(r()*ids.length)]+')');},
   /* ── broadened catalogue (backlog): permits, inspections, concerns/ideas, modal bookings, invoice composer, wizard ── */
@@ -4273,6 +4362,21 @@ await (async function(){
   t('migrating phone: every figure (builder, homeowner, crew) = 2.462.0',dB.length===0,dB[0]);
   await phone('uB',B,'devB2');
   t('idempotent: a second builder phone on migrated houses writes nothing',W().length===0,JSON.stringify(W().slice(0,2)));
+  /* 2.516.0 (Ink 11/17): "Mark house finished" is the team's, not one phone's: doneAt rides the house record to a teammate */
+  const fhId=J("(state.projects.find(function(p){return !p.doneAt;})||{}).id");
+  await $2(`(async function(){markHouseDone('${fhId}',true);await Sync._pushOne(state.projects.find(function(p){return p.id==='${fhId}';}));return true;})()`);await settle();
+  const fhSrv=J(`!!((__F.srv['${fhId}'].doc.meta||{}).doneAt)`);
+  await phone('uP',PM,'devP9');
+  const fhPm=J(`(function(){var p=state.projects.find(function(x){return x.id==='${fhId}';});return {has:!!p,done:!!(p&&p.doneAt),live:liveProjects().some(function(x){return x.id==='${fhId}';})};})()`);
+  t('2.516.0: a house marked finished on one builder\'s phone is finished on a teammate\'s too (doneAt is on the house record, off Needs you there)',
+    fhSrv===true&&fhPm.has&&fhPm.done&&!fhPm.live,fhId+' srv '+fhSrv+' '+JSON.stringify(fhPm));
+  await phone('uB',B,'devB16');
+  await $2(`(async function(){markHouseDone('${fhId}',false);await Sync._pushOne(state.projects.find(function(x){return x.id==='${fhId}';}));return true;})()`);await settle();
+  const fhBack=J(`!!((__F.srv['${fhId}'].doc.meta||{}).doneAt)`);
+  await phone('uP',PM,'devP9');
+  const fhPm2=J(`(function(){var p=state.projects.find(function(x){return x.id==='${fhId}';});return {done:!!(p&&p.doneAt),live:liveProjects().some(function(x){return x.id==='${fhId}';})};})()`);
+  t('2.516.0: putting it back on the book reaches the teammate too (the house record no longer says finished)',fhBack===false&&!fhPm2.done&&fhPm2.live,'srv '+fhBack+' '+JSON.stringify(fhPm2));
+  await phone('uB',B,'devB17');
   const b2=JSON.parse($2('__f2Money()'));const dB2=cmp(b2,FX.houses,B_F);
   t('money guard after the round trip, builder: every figure = 2.462.0',dB2.length===0,dB2[0]);
   await phone('uH',H,'devH2');
@@ -5790,7 +5894,7 @@ await (async function(){
   t('#5 the owner keeps all four documents and both codes',own.phone.docs===4&&own.phone.invites===2,JSON.stringify(own.phone));
   $2("state.activeId='b3';true");
   const plansAt=J("P().docs.findIndex(function(d){return d.n==='Plans.pdf';})");
-  $2("cycleDocAud("+plansAt+");Sync._pushOne(P());true");   // all -> team
+  $2("setDocAud("+plansAt+",'team');Sync._pushOne(P());true");   // all -> team
   await settle();
   t('#5 changing a document\'s audience changes its record',J("__F.srv.b3.colls.docs.docA1.data.aud")==='team');
   await phone('uH',HO3,'devH10');
