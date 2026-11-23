@@ -1179,6 +1179,8 @@
   .syncpill.live{color:var(--sage);}
   .syncpill.lost .sd{background:var(--clay);}
   .syncpill.lost{color:var(--clay);cursor:pointer;}
+  .syncpill.refused .sd{background:var(--clay);}
+  .syncpill.refused{color:var(--clay);cursor:pointer;}
   .dev-ta{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:var(--r-sm);color:var(--mist);font-family:ui-monospace,Menlo,monospace;font-size:var(--t-xs);padding:var(--s-2);outline:none;margin-bottom:var(--s-2);resize:vertical;}
   .sync-status{font-size:var(--t-xs);color:var(--ink-9);margin-bottom:var(--s-2);line-height:1.55;}
   .sync-status code{background:rgba(255,255,255,.09);padding:var(--s-1) var(--s-1);border-radius:var(--r-sm);font-size:var(--t-xs);}
@@ -2054,6 +2056,8 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
    must become a block. Apply to .bgt-tot and its equivalents. ────────── */
 .hero-host{display:block;}
 .row-aside.warn{color:var(--clay);}
+.up-fail{position:absolute;top:var(--s-2);left:var(--s-2);right:var(--s-2);padding:2px 6px;border:0;border-radius:6px;background:var(--clay);color:#fff;font-size:var(--t-xs);font-weight:600;line-height:1.3;text-align:left;cursor:pointer;}
+.row-sub .up-fail-link{color:var(--clay);font-weight:600;cursor:pointer;}
 .row-aside.ok{color:var(--sage);}
 .row-thumb{flex:none;width:48px;height:48px;border-radius:var(--r-sm);overflow:hidden;background:var(--surface-2);}
 .row-thumb img,.row-thumb svg{width:100%;height:100%;object-fit:cover;display:block;}
@@ -3512,7 +3516,7 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
       <div class="fld-label mt-2">Status / note (optional)</div>
       <input id="docStatus" placeholder="e.g. Signed, Complete, Collecting…">
       <div class="fld-label mt-2">File (optional)</div>
-      <input id="docFile" type="file" class="fld-file" accept="application/pdf,image/*,.pdf,.doc,.docx,.xls,.xlsx,.heic">
+      <input id="docFile" type="file" class="fld-file" accept="application/pdf,image/*,.pdf,.doc,.docx,.xls,.xlsx,.heic,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
       <div class="fld-hint">Pick a standard name so the file stays organized — or choose “Other” to name it yourself. Attach a PDF, photo, or scan; it’s stored on this device for now.</div>
 </div>
 <div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAddDoc()">Cancel</button><button class="b1 b-go btn btn-primary" onclick="saveDoc()">Add document</button></div></div>
@@ -5129,8 +5133,8 @@ const Data = {
   setActive(id){ state.activeId=id; this.commit(); },
   addProject(p){ state.projects.push(p); this.commit(); return p; },
   /* items (records + flagged issues) */
-  addItem(it){ if(it&&!it.by)it.by=(state.session&&state.session.name)||''; const p=P(); p.items.unshift(it); this.commit(); return it; },
-  updateItem(projId,id,patch){ const p=this.project(projId)||P(); const it=p.items.find(i=>i.id===id); if(it){Object.assign(it,patch);} this.commit(); return it; },
+  addItem(it){ if(it&&!it.by)it.by=noteByName(P()); const p=P(); p.items.unshift(it); this.commit(); return it; },
+  updateItem(projId,id,patch){ const p=this.project(projId)||P(); const it=p.items.find(i=>i.id===id); if(it&&!noteMine(p,it)){toast(NOTE_EDIT_OWN_ONLY);return it;} if(it){Object.assign(it,patch);} this.commit(); return it; },
   removeItem(projId,id){ const p=this.project(projId)||P(); try{dropLocalPhotos(p.items.find(i=>i.id===id));}catch(e){} p.items=p.items.filter(i=>i.id!==id); this.commit(); },
   nextItemId(){ const p=P(); return p.nextId++; },
   /* daily log (one entry per date) */
@@ -5283,20 +5287,36 @@ async function backfillPhotos(){            /* pull cloud photos into local IDB 
   const todo=[];
   (state.projects||[]).forEach(p=>(p.items||[]).forEach(it=>{
     if(p.doneAt)return;
-    if(it.photoId&&it.photoUrl&&!photoURLs[it.photoId]&&!_bf.inflight[it.photoId])todo.push(it);}));
-  for(const it of todo.slice(0,40)){       // bounded per pass; leftovers picked up next schedule
+    /* #5 (2.512.0): the link is fetched here, from the file's path, never read off the record (old records may still carry one) */
+    if(it.photoId&&(it.photoUrl||liveFiles(p))&&!photoURLs[it.photoId]&&!_bf.inflight[it.photoId])todo.push([p,it]);}));
+  let got=0;
+  for(const [p,it] of todo.slice(0,40)){       // bounded per pass; leftovers picked up next schedule
     _bf.inflight[it.photoId]=1;
     try{
-      const r=await fetch(it.photoUrl);if(!r||!r.ok)throw 0;
+      let u=null;if(liveFiles(p)&&/^[A-Za-z0-9_-]{1,100}$/.test(String(it.photoId))){try{u=await FileURL.get('live/sites/'+String(p.id)+'/photos/'+String(it.photoId));}catch(e){}}
+      if(!u)u=it.photoUrl;if(!u)throw 0;
+      const r=await fetch(u);if(!r||!r.ok)throw 0;
       const blob=await r.blob();
       try{await idbPut(it.photoId,blob);}catch(e){}
-      try{photoURLs[it.photoId]=URL.createObjectURL(blob);}catch(e){}
+      try{photoURLs[it.photoId]=URL.createObjectURL(blob);got++;}catch(e){}
     }catch(e){}
     delete _bf.inflight[it.photoId];
   }
+  if(got){try{rerenderCurrent();}catch(e){}}
 }
+/* #11 (2.513.0): a document is a PDF, a photo, or a Word or Excel file: exactly what storage.rules accepts for docs.
+   The type comes from the file, or from its name when the phone gives none (some phones send docx as blank or octet-stream). */
+const DOC_MIME={pdf:'application/pdf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',heic:'image/heic',heif:'image/heif',webp:'image/webp',gif:'image/gif'};
+function docMimeOf(f){if(!f)return '';const t=String(f.type||'').toLowerCase();
+  if(/^image\//.test(t)||Object.keys(DOC_MIME).some(k=>DOC_MIME[k]===t))return t;
+  const m=String(f.name||'').toLowerCase().match(/\.([a-z0-9]{2,5})$/);return (m&&DOC_MIME[m[1]])||'';}
+function upFailHTML(id){try{return id&&CloudFiles.failed(id)?'<button type="button" class="up-fail" onclick="event.stopPropagation();CloudFiles.retry(\''+esc(id)+'\')">'+esc(UPLOAD_FAILED)+'</button>':'';}catch(e){return '';}}
 function photoSrc(it){if(!it)return null;const local=it.photoId&&photoURLs[it.photoId];if(local)return local;
-  if(it.photoUrl){try{scheduleBackfill();}catch(e){}return it.photoUrl;}return null;}
+  if(it.photoUrl){try{scheduleBackfill();}catch(e){}return it.photoUrl;}
+  if(it.photoId&&appMode()==='real'){try{scheduleBackfill();}catch(e){}}
+  return null;}
 function thumbHTML(it){const u=photoSrc(it);if(u)return`<img src="${u}" alt="">`;return swatch(SW[it.sw]||SW.dove,noteGlyph(it));}
 function esc(s){return(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function toastOverDev(t){try{const d=document.getElementById('devpanel');if(d&&d.parentNode===t.parentNode&&!(d.compareDocumentPosition(t)&Node.DOCUMENT_POSITION_FOLLOWING))d.after(t);}catch(e){}}
@@ -5372,7 +5392,7 @@ function renderPhotos(){
   items.forEach(it=>{const d=Number.isFinite(+it.day)?+it.day:0;(byDay[d]=byDay[d]||[]).push(it);});
   const days=Object.keys(byDay).map(Number).sort((a,b)=>a-b);
   wrap.innerHTML=days.map(day=>{const cells=byDay[day]||[];return `<div class="day-group"><div class="sec"><h2>${dayLabel(day)}</h2></div>
-    <div class="grid">${cells.map(it=>`<div class="cell" onclick='openLightbox(${it.id})'>${thumbHTML(it)}<div class="area">${esc(areaText(it.area))}</div></div>`).join('')}</div></div>`;}).join('')||`<div class="empty">${q?'No photos match “'+esc(q)+'”.':'No photos yet — snap one from the daily log and it files here by date & area.'}</div>`;
+    <div class="grid">${cells.map(it=>`<div class="cell" onclick='openLightbox(${it.id})'>${thumbHTML(it)}${upFailHTML(it.photoId)}<div class="area">${esc(areaText(it.area))}</div></div>`).join('')}</div></div>`;}).join('')||`<div class="empty">${q?'No photos match “'+esc(q)+'”.':'No photos yet — snap one from the daily log and it files here by date & area.'}</div>`;
 }
 function renderIssues(){
   const fil=visibleItems().filter(it=>it.issue&&it.status===issueFilter).sort((a,b)=>b.t-a.t);
@@ -5407,9 +5427,10 @@ function renderDocs(){
     const d=o.d,i=o.i;
     const trade=d.trade?specLabel(d.trade):'Shared';
     const sub=[trade,d.m||'',d.fileId?'file attached':''].filter(Boolean).join(' \u00b7 ');
+    const upFail=d.fileId&&CloudFiles.failed(d.fileId)?' \u00b7 <span class="up-fail-link" onclick="event.stopPropagation();CloudFiles.retry(\''+esc(d.fileId)+'\')">'+esc(UPLOAD_FAILED)+'</span>':'';
     const mixed=rows.some(function(x){return docAudClient(x.d);})&&rows.some(function(x){return !docAudClient(x.d);});
     const warn=mixed&&docAudClient(d);
-    return '<div class="row row-tap" onclick="openDoc('+i+')"><div class="row-main"><div class="row-title">'+esc(d.n)+'</div><div class="row-sub">'+esc(sub)+'</div></div><span class="row-aside'+(warn?' warn':'')+'" onclick="event.stopPropagation();cycleDocAud('+i+')" title="Tap to change who can see this">'+esc(DOC_AUD_LABEL[docAud(d)]||'')+'</span><span class="row-chev">\u203a</span></div>';
+    return '<div class="row row-tap" onclick="openDoc('+i+')"><div class="row-main"><div class="row-title">'+esc(d.n)+'</div><div class="row-sub">'+esc(sub)+upFail+'</div></div><span class="row-aside'+(warn?' warn':'')+'" onclick="event.stopPropagation();cycleDocAud('+i+')" title="Tap to change who can see this">'+esc(DOC_AUD_LABEL[docAud(d)]||'')+'</span><span class="row-chev">\u203a</span></div>';
   }
   let list='';
   if(!rows.length){
@@ -5432,7 +5453,7 @@ async function openDoc(i){
   const d=P().docs[i];if(!d)return;
   if(d.fileId){
     try{const blob=await idbGetDoc(d.fileId);if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
-    if(d.fileUrl){window.open(d.fileUrl,'_blank');return;}
+    const u=await docFileUrl(P(),d);if(u){window.open(u,'_blank');return;}
     toast('File not on this device');return;
   }
   showInfo(d.n,`No file is attached to this entry yet. Tap <b>Add document</b>, choose this type, and pick a file to attach one.`);
@@ -5473,6 +5494,8 @@ function mailReviewDiscard(id){
 }
 async function openDocFile(projId,fileId,remoteUrl){
   if(fileId){try{const blob=await idbGetDoc(fileId);if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
+    try{const p=(state.projects||[]).find(x=>String(x.id)===String(projId));const d=p&&(p.docs||[]).find(x=>String(x.fileId)===String(fileId));
+      const u=d?await docFileUrl(p,d):null;if(u){window.open(u,'_blank');return;}}catch(e){}
     if(remoteUrl){window.open(remoteUrl,'_blank');return;}
     toast('File not on this device yet — it uploads when the builder\u2019s device is online');return;}
   if(remoteUrl){window.open(remoteUrl,'_blank');return;}
@@ -5502,6 +5525,7 @@ async function saveDoc(){
   const sel=document.getElementById('docType');let name=sel.value==='__other'?document.getElementById('docName').value.trim():sel.value;
   if(!name){toast('Pick or name a document');return;}
   const fileEl=document.getElementById('docFile');const file=fileEl&&fileEl.files&&fileEl.files[0];
+  if(file&&!docMimeOf(file)){toast(DOC_TYPE_NO);return;}   /* #11: only what storage.rules lets a document be */
   const extM=file&&file.name&&file.name.match(/\.[a-z0-9]{2,5}$/i);
   if(extM&&!/\.[a-z0-9]{2,5}$/i.test(name))name+=extM[0];
   else if(!/\.[a-z0-9]{2,4}$/i.test(name))name+='.pdf';
@@ -5510,7 +5534,7 @@ async function saveDoc(){
   const aud=(document.getElementById('docAud')||{}).value||'subs';
   const rec={n:name,m:status,k:'pdf',trade,aud};
   if(file){
-    try{const id='doc_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await idbPutDoc(id,file);rec.fileId=id;rec.mime=file.type||'';try{CloudFiles.queue('docs',String(P().id),id);}catch(e){}}
+    try{const id='doc_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await idbPutDoc(id,file);rec.fileId=id;rec.id=id;rec.mime=docMimeOf(file);try{CloudFiles.queue('docs-'+(DOC_AUD_ORDER.indexOf(aud)>=0?aud:'subs'),String(P().id),id);}catch(e){}}
     catch(e){toast('Couldn’t store the file');return;}
   }
   if(!P().docs)P().docs=[];P().docs.unshift(rec);Data.commit();
@@ -5961,6 +5985,9 @@ function savePersonGates(){
 /* #1 (2.509.0): a live house the server confirms this account owns (a builder with
    no roster entry, or one marked owner): the same test as the rules' isOwner(). */
 const TEAM_INV_OWNER_ONLY='Only the owner can invite teammates.';   /* Agency 11/17 */
+/* 2.512.0 (batch 3) placeholder words, for Agency: */
+const HOUSE_DELETE_OWNER_ONLY='Only the owner can delete houses.';   /* #18 */
+const NOTE_EDIT_OWN_ONLY='You can only change notes you added.';   /* #15 */
 const INV_MONEY_ONLY='Only the owner can send this invite. Ask them to send it.';   /* Agency 11/17 */
 function ownsHouse(p,uid){if(!p||p.sample||!uid)return false;
   if(!(p.members&&p.members[uid]==='builder'))return false;
@@ -6686,14 +6713,23 @@ function teamRoster(){const r={};(state.projects||[]).forEach(p=>{Object.keys(p.
   if(p.members[uid]==='builder')r[uid]=(p.memberInfo&&p.memberInfo[uid])||r[uid]||{};});});return r;}
 function ensureTeam(p){const r=teamRoster();let ch=false;p.members=p.members||{};p.memberInfo=p.memberInfo||{};
   Object.keys(r).forEach(uid=>{if(p.members[uid]!=='builder'){p.members[uid]='builder';p.memberInfo[uid]=r[uid]||{};ch=true;}});return ch;}
+/* #3 (2.510.0) placeholder words, for Agency: removing a teammate. */
+const TEAM_REMOVE_OWNER_ONLY='Only the owner can remove teammates.';
+const TEAM_REMOVE_REFUSED='Not removed. Only the owner can remove teammates.';
+const TEAM_REMOVE_PENDING='Removal saved on this phone. It finishes when you\u2019re back online.';
+/* #3 (2.510.0): only the owner removes a teammate, and "removed from all houses" shows only once every house took it. */
 function removeTeamMember(uid){
+  if(!isOrgOwner()){toast(TEAM_REMOVE_OWNER_ONLY);return;}
   const r=teamRoster();const info=r[uid]||{};
-  confirmDelete({title:'Remove team member?',body:'<b>'+esc(info.name||'This team member')+'</b> loses access to every house the next time their device syncs. This can\u2019t be undone from their side.',onConfirm:()=>{
-  let ch=false;
+  confirmDelete({title:'Remove team member?',body:'<b>'+esc(info.name||'This team member')+'</b> loses access to every house the next time their device syncs. This can\u2019t be undone from their side.',onConfirm:async()=>{
+  let ch=false;const ids=[];
   (state.projects||[]).forEach(p=>{
-    if(p.members&&p.members[uid]){delete p.members[uid];if(p.memberInfo)delete p.memberInfo[uid];ch=true;}});
+    if(p.members&&p.members[uid]){delete p.members[uid];if(p.memberInfo)delete p.memberInfo[uid];ch=true;ids.push(String(p.id));}});
   const ti=laTeamInvites();ti.forEach(i=>{if(i.uid===uid)i.status='revoked';});laSaveTeamInvites(ti);
-  if(ch){persist();try{Sync.pushAll();}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}try{Org.touch();}catch(e){}logEvent('memberRemoved','team');toast((info.name||'Team member')+' removed from all houses');}
+  if(ch){persist();try{Org.touch();}catch(e){}logEvent('memberRemoved','team');
+    let res={refused:0,pending:0};
+    if(Sync.ready()&&(Sync.mode||'demo')==='live'){try{res=await Sync.settleHouses(ids);}catch(e){trapError('caught',e&&e.message,'Sync.settleHouses');res.pending++;}}
+    toast(res.refused?TEAM_REMOVE_REFUSED:res.pending?TEAM_REMOVE_PENDING:(info.name||'Team member')+' removed from all houses');}
   try{renderPeople();}catch(e){}}});}
 function removeHomeownerMember(){
   const p=P();const inv=(p.invites||[]).find(i=>i.role==='client'&&i.status!=='revoked');
@@ -7127,7 +7163,7 @@ function renderEditSites(){
       ?'<button class="btn btn-secondary" onclick="markHouseDone(\''+p.id+'\',false)">Put back on the book</button>'
       :'<button class="btn btn-secondary" onclick="askHouseDone(\''+p.id+'\')">Off book</button>';
     return '<div class="es-card"><div class="n">'+title+'</div>'+(sub?('<div class="d">'+sub+'</div>'):'')
-      +'<div class="es-acts">'+done+'<button class="btn btn-secondary" onclick="openImportFor(\''+p.id+'\')">Edit</button><button class="btn btn-danger" onclick="deleteSite(\''+p.id+'\')">Delete</button></div>'
+      +'<div class="es-acts">'+done+'<button class="btn btn-secondary" onclick="openImportFor(\''+p.id+'\')">Edit</button>'+(canDeleteHouse(p)?'<button class="btn btn-danger" onclick="deleteSite(\''+p.id+'\')">Delete</button>':'')+'</div>'
       +(HouseGeo.canWrite()&&navigator.geolocation?'<button type="button" class="btn btn-quiet es-pin" onclick="pinHouseHere(\''+p.id+'\')">Pin this house here</button>':'')+'</div>';
   }).join('')
     +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeEditSites();openStart()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add a new or existing house\u2026</button>';
@@ -7155,8 +7191,14 @@ function hoSetAll(on){
   (state.projects||[]).forEach(p=>{if(!!p.hoCal!==on){p.hoCal=on;}});persist();
   logEvent('hoCal',(on?'on':'off')+' · all houses');renderHoAccess();
   toast(on?'Every homeowner can now see their own calendar':'Homeowner calendars off everywhere');}
+/* #18 (2.512.0): only the owner deletes a live house (the rules refuse anyone else). */
+function canDeleteHouse(p){try{if(!p||appMode()!=='real')return true;
+  const uid=(typeof Sync!=='undefined'&&Sync.uid)||((state.session||{}).auth||{}).uid||'';
+  if(!uid||!p.members||!Object.keys(p.members).length)return true;
+  return ownsHouse(p,uid);}catch(e){return true;}}
 function deleteSite(id){
   const p=id?state.projects.find(x=>String(x.id)===String(id)):P();if(!p)return;
+  if(!canDeleteHouse(p)){toast(HOUSE_DELETE_OWNER_ONLY);return;}
   const label=p.street||p.name||'this house';
   confirmDelete({title:'Delete '+label+'?',body:'Every record, photo, selection and invoice for <b>'+esc(label)+'</b> goes with it, on every device. This cannot be undone.',onConfirm:()=>{
     const pid=p.id;
@@ -8144,7 +8186,7 @@ function __renderPeople(){
       const info=r[uid]||{};
       const mine=!!(me&&uid===me);
       const owner=(info.rpRole||'')==='owner';
-      const trash=(!mine&&!owner)?'<button class="rm" onclick="event.stopPropagation();removeTeamMember(\''+uid+'\')" title="Remove from team">'+ICON.trash+'</button>':'';
+      const trash=(!mine&&!owner&&isOrgOwner())?'<button class="rm" onclick="event.stopPropagation();removeTeamMember(\''+uid+'\')" title="Remove from team">'+ICON.trash+'</button>':'';
       return '<div class="subrow" onclick="openPersonGates(\''+uid+'\')"><div class="si"><div class="n">'+esc(info.name||(mine?'You':'Team member'))+(mine?' <span class="c-ink-3 fw-5">(you)</span>':'')+'</div><div class="d">'+esc(RP_ROLES[info.rpRole]||'Team')+'</div></div>'+trash+'</div>';
     }).join('')||'<div class="empty py-2 px-0">Just you so far.</div>')
     +pend.map(i=>`<div class="subrow"><div class="si cur-p" onclick="shareInvite('${i.code}')"><div class="n">Open invite${i.setup?' · with setup':''}${i.rpRole?' · '+esc((RP_ROLES[i.rpRole]||'').split(' / ')[0]):''}</div><div class="d">Code ${esc(i.code)} — tap to copy & share</div></div><button class="rm" onclick="revokeInvite('${i.code}')" title="Revoke invite">${ICON.trash}</button></div>`).join('')
@@ -9721,7 +9763,12 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
     if(!rows.length&&!this._err[sid])h+='<div class="empty">No change orders yet.</div>';
     h+='<button class="b1 b-go w-full mt-2 btn btn-primary" onclick="CO.newForm()">New change order</button><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button></div>';
     showInfo('Change orders',h,true);},
-  rowHTML(r){const upd=r.status==='sent'&&r.rev>1?' \u00b7 Updated':'';
+  /* #8 (2.513.0): a sent change order the server has not checked yet (its stamp is not this revision and amount) */
+  unchecked(r){return !!r&&r.status==='sent'&&!(r.verifiedRev===r.rev&&r.verifiedTotal===r.amountC);},
+  async recheck(id){if(this._rck)return;const p=P();if(!p)return;this._rck=true;
+    try{const r=await fnCall('coRecheck',{siteId:String(p.id),coId:String(id)});toast(r&&r.verified?CO_RECHECK_OK:(r&&r.ok?CO_RECHECK_BAD:CO_RECHECK_FAIL));}
+    catch(e){toast(CO_RECHECK_FAIL);}finally{this._rck=false;}},
+  rowHTML(r){const upd=(r.status==='sent'&&r.rev>1?' \u00b7 Updated':'')+(this.unchecked(r)?' \u00b7 '+CO_NOT_CHECKED:'');
     const click=(r.status==='draft'||r.status==='sent')?' onclick="CO.openEdit(\''+esc(r.id)+'\')"':' onclick="CO.openView(\''+esc(r.id)+'\')"';
     return '<div class="subrow'+(click?' cur-p':'')+'"'+click+'><div class="si"><div class="n">'+esc(this.label(r.no))+' \u00b7 '+esc(r.title||'')+'</div><div class="d">'+esc(this.amountText(r.amountC))+upd+(r.status==='withdrawn'?' \u00b7 Withdrawn':r.status==='declined'?' \u00b7 Declined':'')+'</div></div></div>';},
   openView(id){const r=this.row(String(P().id),id);if(!r)return;this._view=id;this.draw();},
@@ -9780,6 +9827,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
      +'<details class="mt-2"><summary>More details</summary>'+this.lineHTML(p,e)+'<input id="coDays" placeholder="Days added to the schedule. Use \u2212 to take days off." value="'+esc(e.days)+'"></details>'
      +'<div class="meta mt-2" id="coSentence">'+(c0?esc(this.sentence(e.kind,c0)):'')+'</div>'
      +'<button class="b1 b-go w-full mt-1 btn btn-primary" onclick="CO.save(true)">'+(sent?'Sign and send update':'Sign and send')+'</button>'
+     +(sent&&this.unchecked(e.orig)?'<div class="meta mt-2">'+esc(CO_NOT_CHECKED)+'</div><button class="add-sub-btn mt-1 btn btn-secondary" onclick="CO.recheck(\''+esc(e.id)+'\')">'+esc(CO_RECHECK_BTN)+'</button>':'')
      +(sent?'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.paperForm()">Record a paper signature</button>':'')
      +(sent?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="CO.withdraw()">Withdraw</button>':'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="CO.save(false)">Save draft</button>')
      +(e.id&&!sent?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="CO.delDraft()">Delete draft</button>':'')
@@ -9986,7 +10034,8 @@ const PAST={_sites:{},_data:{},_err:{},_open:null,
       +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button></div>',true);},
   async load(id){const sid=String(id);const S=Sync.db.collection('sites').doc(sid);const one=async(q)=>{const sn=await q.get();return sn.docs.map(d=>Object.assign({},d.data()||{},{id:d.id}));};
     const out={inv:[],pmts:[],co:[],hist:[]};
-    try{out.inv=(await one(S.collection('inv'))).map(r=>Object.assign({},r.data||{},{id:r.id}));
+    const ho=(state.session||{}).role==='client';   /* #6 (2.512.0): a homeowner never reads a draft */
+    try{out.inv=(await one(ho?S.collection('inv').where('data.status','in',INV_SEEN):S.collection('inv'))).map(r=>Object.assign({},r.data||{},{id:r.id}));
       out.pmts=(await one(S.collection('pmts'))).map(r=>Object.assign({},r.data||{},{id:r.id}));
       out.co=(await one(S.collection('co').where('data.status','in',['sent','approved','declined','withdrawn']))).map(r=>Object.assign({},r.data||{},{id:r.id}));
       out.hist=(await one(S.collection('hist')));
@@ -10115,7 +10164,7 @@ const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_s
     try{await this.col(sid).doc(id).set(Object.assign({data:data},CO.outer()),{merge:true});toast(CO.label(r.no)+' declined');}
     catch(e){this.fail(sid,id,r.rev,e);}}
 };
-const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_pulled:{},_held:{},_selm:{},_legInv:{},_legAdded:{},_selNp:{},_pushing:{},_pushAgain:{},
+const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_pulled:{},_held:{},_selm:{},_legInv:{},_legAdded:{},_legL:{},_legLAdded:{},_legRaw:{},_selNp:{},_pushing:{},_pushAgain:{},
   _devId(){let d=null;try{d=localStorage.getItem('plumb.deviceId');}catch(e){}if(!d){d='dev_'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('plumb.deviceId',d);}catch(e){}}return d;},
   ready(){return this.on&&!!this.db;},
   async init(){
@@ -10204,7 +10253,41 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       if(this.on)this.disconnect();
       if(fbConfig())this.init();
     }catch(e){}});}catch(e){}},
+  /* #3: push these houses now and say how the house records (who is on the house) fared: refused, still waiting, or saved */
+  async settleHouses(ids){const out={refused:0,pending:0};
+    for(const id of ids){const p=(state.projects||[]).find(x=>String(x.id)===String(id));if(!p||p.sample)continue;
+      const mk=this._refKey(id,{kind:'meta'});if(this._refused[mk])this._refused[mk].retry=true;   // a fresh tap is a fresh try
+      try{await this._pushOne(p);}catch(e){}
+      if(this._refused[mk])out.refused++;
+      else if(this._pushing[String(id)]||this._pushAgain[String(id)]||this._held[String(id)]||diffSiteOps(this._shadow[String(id)]||{meta:'',colls:{}},p).some(o=>o.kind==='meta'))out.pending++;}
+    return out;},
   async pushAll(){if(!this.ready())return;for(const p of state.projects){try{await this._pushOne(p);}catch(e){trapError('caught',e&&e.message,'Sync.pushAll');}}},
+  /* #4 (2.511.0): read the server's invoice, merge this phone's copy into it (invMergeServer), write the result, all in one
+     transaction. This phone's invoice becomes the merged one, so the payments another phone recorded show here too. */
+  async _invMergeWrite(p,ref,loc){
+    const rec=d=>Object.assign({data:fbClean(d),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp());
+    let out=loc;
+    if(typeof this.db.runTransaction==='function'){
+      out=await this.db.runTransaction(async tx=>{const snap=await tx.get(ref);
+        const srv=(snap&&snap.exists)?((snap.data()||{}).data||null):null;
+        const m=invMergeServer(loc,srv);tx.set(ref,rec(m));return m;});
+    }else await ref.set(rec(loc));
+    if(JSON.stringify(out)!==JSON.stringify(loc)){const i=(p.invoices||[]).findIndex(v=>v&&String(v.id)===String(loc.id));
+      if(i>=0){p.invoices[i]=JSON.parse(JSON.stringify(out));try{persistLocalOnly();}catch(e){}try{renderInvoices();}catch(e){}}}
+    return out;},
+  /* #3 (2.510.0): saves the server refused, by house and record. Each one keeps "Not saved" on the pill until it is
+     saved, changed back, or its house is gone; it is resent only once it changes (or once after a reconnect). */
+  _refused:{},
+  _refKey(id,op){return String(id)+'|'+op.kind+'|'+(op.sub||'')+'|'+(op.id!=null?String(op.id):'');},
+  _refHash(op){return op.kind==='del'?'del':_syncHash(JSON.stringify(op.data===undefined?null:op.data));},
+  _isRefusal(e){const c=String((e&&e.code)||'');
+    return c==='permission-denied'||c==='invalid-argument'||c==='failed-precondition'||c==='out-of-range'||/Unsupported field value|Missing or insufficient permissions/i.test(String((e&&e.message)||''));},
+  /* a refused save that is no longer waiting (the phone's copy matches the server again, or it was undone) is cleared */
+  _refusedKeep(id,ops){const want={};ops.forEach(op=>{want[this._refKey(id,op)]=1;});let ch=false;
+    Object.keys(this._refused).forEach(k=>{if(this._refused[k].sid===String(id)&&!want[k]){delete this._refused[k];ch=true;}});if(ch)this._refusedShow();},
+  refusedCount(sid){const live={};(state.projects||[]).forEach(p=>{live[String(p.id)]=1;});
+    return Object.keys(this._refused).filter(k=>{const r=this._refused[k];return live[r.sid]&&(sid==null||r.sid===String(sid));}).length;},
+  _refusedShow(){try{setSync(syncStatus);}catch(e){}},
   /* M-7: every money write says who wrote it, when the tap happened, and which app version. updatedAt keeps its type. */
   _stamp(){const o={tappedAt:Date.now(),appV:String(PLUMB_VERSION).split(' ')[0]};try{o.at=CO.ts();}catch(e){}   /* 2.481.0 (A2 M-7): the server's clock on every money record */const u=this.uid||(state.session&&state.session.auth&&state.session.auth.uid);if(u)o.byUid=String(u);return o;},
   async _pushOne(p){if(!this.ready()||!p)return;
@@ -10216,7 +10299,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     if(this._pushing[id]){this._pushAgain[id]=p;return;}
     this._pushing[id]=true;try{
     const sh=this._shadow[id]||(this._shadow[id]={meta:'',colls:{}});
-    const ops=diffSiteOps(sh,p);if(!ops.length){await this._f2Tidy(p,id,sh);return;}
+    const ops=diffSiteOps(sh,p);if(!ops.length){this._refusedKeep(id,[]);await this._f2Tidy(p,id,sh);return;}
     /* F-1 (R2 is live): the rules refuse a house write that leaves a non-empty
        meta.invoices. On a house still holding legacy invoices, a builder who
        writes inv sends them to inv first, and the house write after them
@@ -10225,7 +10308,15 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     const legPend=syncWrites(p,'inv')&&(this._legInv[id]||[]).length>0;
     if(legPend){const mi=ops.findIndex(o=>o.kind==='meta');
       if(mi>=0){const mo=ops.splice(mi,1)[0];let at=0;ops.forEach((o,i)=>{if(o.sub==='inv')at=i+1;});ops.splice(at,0,mo);}}
+    /* #3 (2.510.0): each save stands on its own. A save the server refuses is set aside (marked, not resent until it
+       changes), and the house's other saves still go. Before, the first refusal threw out of this loop, so every later
+       save on the house stopped, silently, for good. A save that fails for any other reason is tried again next push. */
+    this._refusedKeep(id,ops);
+    let soft=null,fresh=0;
     for(const op of ops){
+      const rk=this._refKey(id,op),rh=this._refHash(op);
+      if(this._refused[rk]&&this._refused[rk].h===rh&&!this._refused[rk].retry)continue;   // set aside: refused as it is now
+      try{
       if(op.kind==='meta'){
         const local=Object.assign({},(op.data&&op.data.members)||{});
         const prevMem=Object.assign({},sh.mem||{});
@@ -10247,13 +10338,21 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         let metaOut=op.data,legClear=false;
         if(legPend){const leg=this._legInv[id]||[];const onInv=sh.colls.inv||{};
           if(leg.every(v=>onInv[String(v.id)]!==undefined)){metaOut=Object.assign({},op.data,{invoices:[]});legClear=true;}}
+        /* #3 (2.510.0): a merge never deletes a map key, so a person removed here stayed in members (and meta.members,
+           meta.memberInfo) on the server, keeping their record access. Removed people are deleted explicitly. */
+        let memOut=mem;const gone=Object.keys(prevMem).filter(u=>!Object.prototype.hasOwnProperty.call(local,u)&&!mem[u]);const mdel=fbDelete();
+        if(gone.length&&mdel!==undefined){memOut=Object.assign({},mem);const mm=Object.assign({},(metaOut&&metaOut.members)||{}),mi=Object.assign({},(metaOut&&metaOut.memberInfo)||{});
+          gone.forEach(u=>{memOut[u]=mdel;mm[u]=mdel;mi[u]=mdel;});metaOut=Object.assign({},metaOut,{members:mm,memberInfo:mi});}
+        /* #10: only the fields (and map entries) that changed here; members ride along (with 2.510.0's explicit deletes) */
+        const delta=metaDelta(sh,metaOut);
+        if(delta){delta.members=(metaOut&&metaOut.members)||mem;if(legClear)delta.invoices=[];metaOut=delta;}
         const payload={meta:metaOut,id:p.id,mode:this.mode||'demo',updatedAt:Date.now(),updatedBy:this.deviceId,
           updatedByUid:myUid,
-          members:mem,memberUids:Object.keys(mem)};                          // top-level copies: rules + scoped queries read these
+          members:memOut,memberUids:Object.keys(mem)};                       // top-level copies: rules + scoped queries read these
         const del=fbDelete();if(del!==undefined)payload.data=del;            // retire legacy whole-blob field
         await this.db.collection('sites').doc(id).set(payload,{merge:true});
         sh.meta=_syncHash(JSON.stringify(op.data));sh.mem=Object.assign({},mem);
-        sh.mk={};Object.keys(op.data||{}).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(op.data[k]));});
+        sh.mk={};Object.keys(op.data||{}).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(op.data[k]));});sh.mk2=metaSubHashes(op.data);
         if(legClear){this._legInv[id]=[];sh.mk.invoices=_syncHash('[]');}
       } else if(op.kind==='set'){
         const ref=this.db.collection('sites').doc(id).collection(op.sub).doc(op.id);
@@ -10261,11 +10360,16 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           /* F-2: a money record is the builder's whole record: replace it, so a
              key that left the invoice or the selection's money leaves the cloud too. */
           try{
-            await ref.set(Object.assign({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
+            /* #4 (2.511.0): a sent invoice is merged with the server's copy in a transaction before it is written, so a
+               phone holding an old copy adds its payments to the server's instead of replacing them, and keeps the
+               homeowner's OK. A draft is still this phone's whole record. */
+            if(op.sub==='inv'&&invNeedsMerge(op.data))op.data=await this._invMergeWrite(p,ref,op.data);
+            else await ref.set(Object.assign({data:fbClean(op.data),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
           }catch(e1){
             if(!(op.sub==='inv'&&e1&&e1.code==='permission-denied'&&Array.isArray(op.data&&op.data.items)))throw e1;
             const healed=Object.assign({},op.data,{items:op.data.items.map(it=>(it&&!it.adj&&typeof it==='object')?Object.assign({},it,{amountC:undefined}):it)});
-            await ref.set(Object.assign({data:fbClean(healed),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
+            if(invNeedsMerge(healed))op.data=await this._invMergeWrite(p,ref,JSON.parse(JSON.stringify(healed)));   // #4: the heal merges too
+            else await ref.set(Object.assign({data:fbClean(healed),updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},this._stamp()));
           }
         }else{
           let data=fbClean(op.data);
@@ -10281,9 +10385,19 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(sh.colls[op.sub])delete sh.colls[op.sub][op.id];
         if(op.sub==='selm'&&this._selm[id])delete this._selm[id][op.id];
       }
+      if(this._refused[rk]){delete this._refused[rk];this._refusedShow();}
+      }catch(e){
+        if(!this._isRefusal(e)){soft=soft||e;continue;}
+        const was=this._refused[rk];
+        this._refused[rk]={sid:id,kind:op.kind,sub:op.sub||'',id:op.id!=null?String(op.id):'',h:rh,code:String((e&&e.code)||'refused'),at:Date.now()};
+        if(!was||was.h!==rh)fresh++;
+        try{trapError('rules','Save refused ('+op.kind+(op.sub?' '+op.sub:'')+'): '+String((e&&(e.code||e.message))||'').slice(0,100),'Sync._pushOne');}catch(_){}
+      }
     }
+    if(fresh){this._refusedShow();try{toast(NOT_SAVED_TOAST);}catch(e){}}
     await this._f2Tidy(p,id,sh);
     this._saveBase();
+    if(soft)throw soft;
     }finally{   /* one push per house at a time (F-2: a held house is flushed from every listener); a second one runs after */
       delete this._pushing[id];const again=this._pushAgain[id];
       if(again){delete this._pushAgain[id];Promise.resolve(this._pushOne(again)).catch(e=>{trapError('caught',e&&e.message,'Sync._pushOne again');});}}},
@@ -10300,6 +10414,14 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       if(leg.length&&leg.every(v=>onInv[String(v.id)]!==undefined)){
         await this.db.collection('sites').doc(id).set({meta:{invoices:[]},updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:myUid},{merge:true});
         this._legInv[id]=[];sh.mk=sh.mk||{};sh.mk.invoices=_syncHash('[]');this._saveBase();}}
+    /* #5 (2.512.0): once every old document / invite code is in its records, the house doc's copy goes */
+    for(const L of LEGACY_LISTS){if(!syncWrites(p,L.sub))continue;
+      const leg=((this._legL[id]||{})[L.f])||[];if(!leg.length)continue;
+      const c=SYNC_COLLS.find(x=>x.sub===L.sub);const on=sh.colls[L.sub]||{};
+      if(!leg.every(r=>on[c.key(r)]!==undefined))continue;
+      const del=fbDelete();if(del===undefined)continue;
+      await this.db.collection('sites').doc(id).set({meta:{[L.f]:del},updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:myUid},{merge:true});
+      this._legL[id][L.f]=[];const raw=this._legRaw[id];if(raw)delete raw[L.f];sh.mk=sh.mk||{};delete sh.mk[L.f];this._saveBase();}
     if(syncWrites(p,'selm')&&(this._pulled[id]||{}).sel){const cache=this._selm[id]||{};const onSel=sh.colls.sel||{};const now=Date.now();
       for(const k of Object.keys(cache)){
         if(onSel[k]!==undefined||(p.selections||[]).some(x=>String(x.id)===k))continue;
@@ -10312,6 +10434,37 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
      inv does not have yet (inv wins on the same id); a builder who writes inv
      is held so its next push copies them into inv (_f2Tidy then clears meta).
      A phone that does not read inv keeps no invoices at all. */
+  /* #5 (2.512.0) dual-read + absorb by key, the way invoices moved in F-2.
+     meta.docs and meta.invites are where documents and invite codes lived
+     before 2.512.0. Every phone shows an old entry its records do not have yet
+     (a crew or homeowner still filters documents by audience on the phone, as
+     before); a builder who writes the records is held so the next push copies
+     them up, and _f2Tidy then removes the old list from the house doc. A phone
+     that cannot read invite codes keeps none. meta=null re-runs with the last
+     house doc seen (after a records listener's first server answer). */
+  _legacyLists(p,id,meta){const sid=String(id);let ch=false;
+    if(meta)this._legRaw[sid]={docs:meta.docs,invites:meta.invites};
+    const raw=this._legRaw[sid]||{};
+    LEGACY_LISTS.forEach(L=>{
+      const c=SYNC_COLLS.find(x=>x.sub===L.sub);
+      const leg=(Array.isArray(raw[L.f])?raw[L.f]:[]).filter(L.ok).map(L.norm);
+      (this._legL[sid]||(this._legL[sid]={}))[L.f]=leg;
+      if(!syncHas(p,L.sub)){if(Array.isArray(p[L.f])&&p[L.f].length){p[L.f]=[];ch=true;}return;}
+      if(!Array.isArray(p[L.f]))p[L.f]=[];
+      const sh=this._shadow[sid]||{};const on=(sh.colls&&sh.colls[L.sub])||{};
+      const ad=this._legLAdded[sid]||(this._legLAdded[sid]={});const added=ad[L.f]||(ad[L.f]={});
+      const byKey={};leg.forEach(r=>{byKey[c.key(r)]=r;});
+      Object.keys(added).forEach(k=>{if(byKey[k]||on[k]!==undefined)return;
+        const i=p[L.f].findIndex(r=>c.key(r)===k);if(i>=0){p[L.f].splice(i,1);ch=true;}delete added[k];});
+      leg.forEach(r=>{const k=c.key(r);if(on[k]!==undefined)return;
+        const i=p[L.f].findIndex(x=>c.key(x)===k);
+        if(i<0){p[L.f].push(JSON.parse(JSON.stringify(r)));added[k]=1;ch=true;}});
+      /* a phone that only reads: once the server has answered, keep exactly what the records and the old list hold */
+      if(!syncWrites(p,L.sub)&&(this._pulled[sid]||{})[L.sub]){const n0=p[L.f].length;
+        p[L.f]=p[L.f].filter(r=>{const k=c.key(r);return on[k]!==undefined||!!byKey[k];});if(p[L.f].length!==n0)ch=true;}
+      if(leg.length&&syncWrites(p,L.sub))this._held[sid]=p;
+    });
+    return ch;},
   _legacyInv(p,id,meta){const sid=String(id);
     const leg=Array.isArray(meta&&meta.invoices)?meta.invoices.filter(v=>v&&v.id!=null):[];
     this._legInv[sid]=leg;
@@ -10408,7 +10561,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     if(was&&was!==me){state.projects=[];state.activeId=null;this._shadow={};try{localStorage.removeItem(this._baseKey());}catch(e){}try{persistLocalOnly();}catch(e){}return true;}
     return false;},
   _loadBase(){let b={};try{b=JSON.parse(localStorage.getItem(this._baseKey())||'{}')||{};}catch(e){b={};}
-    this._shadow={};Object.keys(b).forEach(id=>{const x=b[id]||{};this._shadow[id]={meta:x.meta||'',mk:x.mk||{},mem:x.mem||{},colls:x.colls||{}};});},
+    this._shadow={};Object.keys(b).forEach(id=>{const x=b[id]||{};this._shadow[id]={meta:x.meta||'',mk:x.mk||{},mk2:x.mk2||{},mem:x.mem||{},colls:x.colls||{}};});},
   _saveBase(){clearTimeout(this._baseT);this._baseT=setTimeout(()=>{try{
       if((this.mode||'demo')!=='live'||!this.uid)return;
       const out={};(state.projects||[]).forEach(p=>{const id=String(p.id);if(this._shadow[id])out[id]=this._shadow[id];});
@@ -10433,7 +10586,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       let who='no-auth';try{const cu=firebase.auth().currentUser;if(cu)who=(cu.isAnonymous?'anon ':'account ')+cu.uid.slice(0,8);}catch(_){}let ses='none';try{const su=state.session&&state.session.auth&&state.session.auth.uid;if(su)ses=su.slice(0,8);}catch(_){}trapError('rules','Cloud read blocked ('+where+') · token ['+who+'] · bound ['+((this.uid)?this.uid.slice(0,8):'none')+'] · session ['+ses+']','Sync');
       if(!this._permToasted){this._permToasted=true;try{toast('Cloud sync is blocked by security rules');}catch(e){}}
     }}catch(e){}},
-  subscribe(){if(!this.ready())return;this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._selm={};this._legInv={};this._legAdded={};this._pushing={};this._pushAgain={};
+  subscribe(){if(!this.ready())return;Object.keys(this._refused||{}).forEach(k=>{this._refused[k].retry=true;});this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._selm={};this._legInv={};this._legAdded={};this._legL={};this._legLAdded={};this._legRaw={};this._pushing={};this._pushAgain={};
     this._sitesPulled=false;this._onServer={};this._pulled={};this._held=this._held||{};
     try{this._storeOwnerCheck();}catch(e){}
     const handler=snap=>{let changed=false;
@@ -10468,7 +10621,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(meta&&(!this._mine(d)||!state.projects.some(x=>String(x.id)===String(id)))){   // 2.488.0: a house this phone lacks is always added
           const sh=this._shadow[id]||(this._shadow[id]={meta:'',colls:{}});let kept=false;
           let p=state.projects.find(x=>String(x.id)===String(id));
-          if(!p){p=Object.assign({},meta);delete p.invoices;SYNC_COLLS.forEach(c=>{if(!c.joined&&!Array.isArray(p[c.f]))p[c.f]=[];});   // F-2: legacy meta.invoices goes through _legacyInv below
+          if(!p){p=Object.assign({},meta);delete p.invoices;delete p.docs;delete p.invites;SYNC_COLLS.forEach(c=>{if(!c.joined&&!Array.isArray(p[c.f]))p[c.f]=[];});   // F-2: legacy meta.invoices goes through _legacyInv below
             /* a brand-new site doc may still carry legacy meta.bookings - keep them */
             if(Array.isArray(meta.bookings)&&!p.bookings.length)p.bookings=meta.bookings.slice();
             state.projects.push(p);}
@@ -10476,15 +10629,21 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
             Object.keys(meta).forEach(k=>{if(SYNC_COLLS.some(c=>c.f===k))return;
               /* server field unchanged since this phone last synced, but edited here: keep the phone's edit (pushed after the pull) */
               const bk=base[k];if(bk!==undefined&&_syncHash(JSON.stringify(meta[k]))===bk&&_syncHash(JSON.stringify(p[k]))!==bk){kept=true;return;}
+              /* #10: both sides changed one of the entry maps: keep this phone's unsent entries, take the server's for the rest */
+              const b2=(sh.mk2||{})[k];
+              if(b2&&bk!==undefined&&META_SUBKEYS.includes(k)&&_isMap(meta[k])&&_isMap(p[k])&&_mh(p[k])!==bk){
+                const mine={};Object.keys(p[k]).forEach(x=>{if(_mh(p[k][x])!==b2[x]&&_mh(meta[k][x])===b2[x])mine[x]=p[k][x];});
+                p[k]=Object.assign({},meta[k],mine);if(Object.keys(mine).length)kept=true;return;}
               p[k]=meta[k];});try{Notify.scanMeta(_nv,p);}catch(e){}}
           else {const _nv=Notify.snap(p);Object.assign(p,meta);try{Notify.scanMeta(_nv,p);}catch(e){}}  // legacy whole-blob fallback
-          sh.mk={};Object.keys(meta).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(meta[k]));});
+          sh.mk={};Object.keys(meta).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(meta[k]));});sh.mk2=metaSubHashes(meta);
           sh.mem=Object.assign({},(meta&&meta.members)||{},d.members||{});
           sh.meta=kept?'':_syncHash(JSON.stringify(metaOf(p)));changed=true;
         }
         /* F-2: every snapshot, this phone's own included (a builder's own phone
            wrote the legacy list last): dual-read, absorb or drop legacy invoices. */
-        if(meta){const lp=state.projects.find(x=>String(x.id)===String(id));if(lp&&this._legacyInv(lp,id,meta))changed=true;}
+        if(meta){const lp=state.projects.find(x=>String(x.id)===String(id));if(lp&&this._legacyInv(lp,id,meta))changed=true;
+          if(lp&&d.meta&&this._legacyLists(lp,id,d.meta))changed=true;}   /* 2.512.0: documents and invite codes, the same way */
         this._subSite(id);                                                    // attach record listeners (after project exists)
       });
       if(changed){persistLocalOnly();rerenderCurrent();this._saveBase();try{firstRunHousesArrived();}catch(e){}try{HouseGeo.soon();}catch(e){}}
@@ -10542,6 +10701,10 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           const nm=crewBkName(p0);
           if(nm)q=q.where('data.subName','==',nm);
         }
+        /* #5 / #6 (2.512.0): ask for exactly what the rules let this role read */
+        if(c.sub==='docs'&&siteRoleFor(p0)==='sub')q=q.where('data.aud','in',['subs','all']);
+        if(c.sub==='docs'&&siteRoleFor(p0)==='client')q=q.where('data.aud','in',['homeowner','all']);
+        if(c.sub==='inv'&&siteRoleFor(p0)==='client')q=q.where('data.status','in',INV_SEEN);
       }catch(e){}
       const u=q.onSnapshot({includeMetadataChanges:true},snap=>{
         const p=state.projects.find(x=>String(x.id)===sid);if(!p)return;
@@ -10549,7 +10712,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(!Array.isArray(p[c.f]))p[c.f]=[];
         const sh=this._shadow[sid]||(this._shadow[sid]={meta:'',colls:{}});sh.colls=sh.colls||{};const prev=sh.colls[c.sub]||(sh.colls[c.sub]={});
         const isSel=c.sub==='sel';const view=r=>isSel?selNoMoney(r):r;   // F-2: a selection syncs (and compares) without its money
-        const _nv=((c.sub==='inv'||c.sub==='pmts')&&this._notifReady[sid+c.sub])?Notify.snap(p):null;   /* 2.482.0 G3: pmts too */
+        const _nv=((c.sub==='inv'||c.sub==='pmts'||c.sub==='docs')&&this._notifReady[sid+c.sub])?Notify.snap(p):null;   /* 2.482.0 G3: pmts too; 2.512.0: documents (the crew's new-document notice) */
         let changed=false;
         /* F-2: a phone that does not read selm keeps no selection money, even a copy saved before 2.463.0 */
         if(isSel&&!syncHas(p,'selm')){p[c.f]=p[c.f].map(r=>{if(!selHasMoney(r))return r;changed=true;return selNoMoney(r);});}
@@ -10580,7 +10743,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
                selm and is deleted from sel on this builder's next push. */
             if(isSel&&selMoneyKeyed(rec)&&syncWrites(p,'selm')){prev[key]='f2-move';this._held[sid]=p;}}});
         if(c.sub==='inv'&&changed){invOrder(p);if(_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}}
-        if(c.sub==='pmts'&&changed&&_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}
+        if((c.sub==='pmts'||c.sub==='docs')&&changed&&_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}
         this._notifReady[sid+c.sub]=true;                               // first snapshot is history, not news
         const got=this._pulled[sid]||(this._pulled[sid]={});
         if(!(snap.metadata&&snap.metadata.fromCache)&&!got[c.sub]){
@@ -10592,6 +10755,8 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
             const idx=p[c.f].findIndex(r=>c.key(r)===k);if(idx>=0){p[c.f].splice(idx,1);changed=true;}
             delete prev[k];});
           got[c.sub]=true;
+          /* 2.512.0: now that the server has answered, line the list up with the house doc's old copy */
+          if(c.sub==='docs'||c.sub==='invs'){try{if(this._legacyLists(p,sid,null))changed=true;}catch(e){}}
         }
         if(changed){persistLocalOnly();rerenderCurrent();try{scheduleBackfill();}catch(e){}}
         this._saveBase();this._flushHeld();
@@ -10618,7 +10783,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
   _notifReady:{},
   _collGen:{},
   _reArmed:{},
-  disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._shadow={};this._selm={};this._legInv={};this._legAdded={};this._pushing={};this._pushAgain={};this._notifReady={};this._sitesPulled=false;this._onServer={};this._pulled={};this._held={};clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
+  disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._shadow={};this._selm={};this._legInv={};this._legAdded={};this._legL={};this._legLAdded={};this._legRaw={};this._pushing={};this._pushAgain={};this._notifReady={};this._sitesPulled=false;this._onServer={};this._pulled={};this._held={};clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
 };
 /* ── Step 6: cloud files. A live house uploads the already-downscaled photo
    (and doc files) once sync is connected, and stores the download URL on the
@@ -10641,23 +10806,38 @@ const CloudFiles={
     try{return (state.projects||[]).some(p=>String(p.id)===String(e.siteId)&&!p.sample);}catch(err){return false;}
   },
   _drain(){const q=this._q().filter(e=>this._keep(e));this._save(q);return q;},
+  /* #11 (2.513.0): an upload is tried MAX times (offline waits do not count), then it stops and the file shows
+     "didn't upload" with a retry tap. Before, a refused upload retried every 5 seconds forever. */
+  MAX:5,
+  failed(id){return this._q().some(e=>e.id===id&&e.failed);},
+  retry(id){const q=this._q();let hit=false;q.forEach(e=>{if(e.id===id&&e.failed){e.failed=false;e.tries=0;hit=true;}});
+    this._save(q);if(hit){try{toast(UPLOAD_RETRYING);}catch(e){}try{rerenderCurrent();}catch(e){}}this.flush();},
+  _type(e,blob){if(e.kind==='docs'||/^docs-/.test(e.kind)){for(const p of (state.projects||[])){const d=(p.docs||[]).find(x=>x.fileId===e.id);if(d&&d.mime)return d.mime;}
+      return docMimeOf(blob)||(blob&&blob.type)||'application/pdf';}
+    return (blob&&blob.type)||'image/jpeg';},
   ready(){return Sync.ready()&&typeof firebase!=='undefined'&&!!firebase.storage;},
   path(e){return 'live/sites/'+e.siteId+'/'+e.kind+'/'+e.id;},
-  queue(kind,siteId,id){
+  queue(kind,siteId,id,from){
     if(!this._live()||this._sample(siteId)){this._drain();return;}
     const q=this._drain();
-    if(!q.some(x=>x.id===id))q.push({kind,siteId:String(siteId),id,mode:'live'});
+    const i=q.findIndex(x=>x.id===id);
+    if(i<0)q.push(Object.assign({kind,siteId:String(siteId),id,mode:'live',tries:0},from?{from:from}:{}));
+    else if(q[i].kind!==kind&&!q[i].done&&!q[i].url){q[i].kind=kind;}                 // not up yet: it goes straight to the new folder
+    else if(q[i].kind!==kind){q[i]=Object.assign({kind,siteId:String(siteId),id,mode:'live',tries:0},from?{from:from}:{});}
     this._save(q);this.flush();
   },
-  _stamp(e){               // write the URL onto the owning record; true once applied
-    if(!e.url)return false;
-    if(e.kind==='photos'){
-      for(const p of state.projects){const it=(p.items||[]).find(i=>i.photoId===e.id);
-        if(it){if(it.photoUrl!==e.url){it.photoUrl=e.url;persist();}return true;}}
-      return false;
-    }
+  /* #5 (2.512.0): a document that changes audience moves folder: a new copy, then the old one goes */
+  move(siteId,id,fromAud,toAud){this.queue('docs-'+toAud,siteId,id,'live/sites/'+String(siteId)+'/docs-'+fromAud+'/'+id);},
+  /* #7 (2.512.0): every upload names its uploader; the rules let only that person replace or delete it */
+  _meta(blob){const m={customMetadata:{uploader:String((typeof Sync!=='undefined'&&Sync.uid)||'')}};if(blob&&blob.type)m.contentType=blob.type;return m;},
+  /* #5 (2.512.0): no download link is saved on a record any more. A document
+     remembers which audience folder its file is in; a photo needs nothing. */
+  _stamp(e){               // true once the owning record knows where the file is
+    if(!e.done&&!e.url)return false;
+    if(e.kind==='photos')return true;
+    const aud=/^docs-/.test(e.kind)?e.kind.slice(5):'';
     for(const p of state.projects){const d=(p.docs||[]).find(x=>x.fileId===e.id);
-      if(d){if(d.fileUrl!==e.url){d.fileUrl=e.url;persist();}return true;}}
+      if(d){if(aud&&d.fileAud!==aud){d.fileAud=aud;persist();}return true;}}
     return false;
   },
   /* Move a not-yet-stamped file to another house (Field Notes can change
@@ -10673,25 +10853,36 @@ const CloudFiles={
     if(this._flushing)return;
     const q=this._drain();
     if(!this._live()||!q.length)return;
-    this._flushing=true;
+    this._flushing=true;let newlyFailed=false;
     try{
       const keep=[];
       for(const e of q){
+        if(e.failed){keep.push(e);continue;}                      // stopped: waits for a retry tap
         try{
-          if(!e.url){
+          if(!e.done&&!e.url){
             if(!this.ready())throw new Error('not-connected');
-            const blob=e.kind==='photos'?await idbGet(e.id):await idbGetDoc(e.id);
+            let blob=e.kind==='photos'?await idbGet(e.id):await idbGetDoc(e.id);
+            if(!blob&&e.from){try{const r=await fetch(await FileURL.get(e.from));if(r&&r.ok){blob=await r.blob();try{await idbPutDoc(e.id,blob);}catch(x){}}}catch(x){}}
             if(!blob)continue;                                   // blob gone — drop entry
             const ref=firebase.storage().ref(this.path(e));
-            await ref.put(blob);
-            e.url=await ref.getDownloadURL();
+            /* #11: the document's own type (worked out from the file name when the phone gave none), with 2.512.0's uploader stamp */
+            const fm=this._meta(blob);fm.contentType=this._type(e,blob);
+            await ref.put(blob,fm);
+            e.done=1;
+            if(e.from&&e.from!==this.path(e)){try{await firebase.storage().ref(e.from).delete();}catch(x){}delete e.from;}
             logEvent('fileUploaded',e.kind+'/'+e.id);
           }
-          if(!this._stamp(e))keep.push(e);                       // uploaded before record saved — retry stamp
-        }catch(err){keep.push(e);}
+          if(!this._stamp(e)){e.stampTries=(Number(e.stampTries)||0)+1;if(e.stampTries<20)keep.push(e);}   // uploaded before record saved — retry stamp (a record that never comes is let go)
+        }catch(err){
+          if(!(err&&err.message==='not-connected')){e.tries=(Number(e.tries)||0)+1;
+            if(e.tries>=this.MAX){e.failed=true;newlyFailed=true;try{logEvent('fileUploadFailed',e.kind+'/'+e.id+' '+String((err&&(err.code||err.message))||'').slice(0,60));}catch(x){}}}
+          keep.push(e);}
       }
-      this._save(keep.filter(e=>this._keep(e)));
-      if(keep.length&&this.ready())setTimeout(()=>{this.flush();},5000);
+      const kept=keep.filter(e=>this._keep(e));this._save(kept);
+      const live=kept.filter(e=>!e.failed);
+      if(live.length&&this.ready()){const n=Math.max(0,...live.map(e=>Number(e.tries)||0));
+        clearTimeout(this._retryT);this._retryT=setTimeout(()=>{this.flush();},5000*Math.pow(2,Math.min(n,4)));}   // 5 s, 10 s, 20 s, 40 s, 80 s
+      if(newlyFailed){try{rerenderCurrent();}catch(e){}}
     }finally{this._flushing=false;}
   }
 };
@@ -11140,8 +11331,21 @@ const SYNC_COLLS=[
      screen reads the same paths; only sync splits it: sel goes up without the
      five keys, selm/{selection id} carries only them. No money, no selm doc. */
   {f:'invoices',sub:'inv',key:r=>String(r.id)},
-  {f:'selMoney',sub:'selm',key:r=>String(r.id),rows:p=>selmRows(p),joined:true}
+  {f:'selMoney',sub:'selm',key:r=>String(r.id),rows:p=>selmRows(p),joined:true},
+  /* #5 (2.512.0): documents (by audience) and invite codes left the house doc,
+     which every member reads. A builder writes both; crews and the homeowner
+     read only their documents; invite codes only a builder who may invite. */
+  {f:'docs',sub:'docs',key:r=>docKey(r),rows:p=>((p&&p.docs)||[]).filter(d=>d&&!d.tour).map(docRow)},
+  {f:'invites',sub:'invs',key:r=>String(r.code),rows:p=>((p&&p.invites)||[]).filter(i=>i&&i.code)}
 ];
+/* The house doc's old copies of the two lists. Read until a builder on 2.512.0+
+   has copied them into their records, then cleared (Sync._legacyLists). */
+const LEGACY_LISTS=[
+  {f:'docs',sub:'docs',norm:d=>Object.assign({},d,{aud:docAud(d)}),ok:d=>!!d&&!d.tour},   // an old link still opens until the copy is made; the record never gets it
+  {f:'invites',sub:'invs',norm:i=>Object.assign({},i),ok:i=>!!i&&!!i.code}
+];
+/* #6 (2.512.0): what a homeowner may see of invoices: never a draft (the rules ask the same) */
+const INV_SEEN=['sent','approved','paid','void'];
 const SEL_MONEY_KEYS=['price','allowance','cost','costLineId','invoicedIn','priceC','allowanceC','costC'];   // M-1: the cents twins are money too
 function selHasMoney(s){return !!s&&SEL_MONEY_KEYS.some(k=>s[k]!=null&&s[k]!=='');}
 /* Any money key at all, even an empty one (an unpriced selection has price:null): the sel record still has to lose it. */
@@ -11180,8 +11384,8 @@ function crewBkName(p){
   return (state.session&&state.session.name)||'';
 }
 function syncCollsFor(role){
-  if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='inv'&&c.sub!=='selm');
-  if(role==='client')return SYNC_COLLS.filter(c=>c.sub!=='mail'&&c.sub!=='costs');
+  if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='inv'&&c.sub!=='selm'&&c.sub!=='invs');
+  if(role==='client')return SYNC_COLLS.filter(c=>c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='invs');
   let cols=SYNC_COLLS.slice();
   /* F-2: a builder without Money does not read costs or selection money; one
      without Invoices does not read invoices (Claude lock Q3). */
@@ -11189,7 +11393,7 @@ function syncCollsFor(role){
     const job=canGate('moneyJob'),co=canGate('moneyCo');
     if(!job)cols=cols.filter(c=>c.sub!=='costs');
     if(!co)cols=cols.filter(c=>c.sub!=='inv');
-    if(!job&&!co)cols=cols.filter(c=>c.sub!=='selm'&&c.sub!=='pmts'&&c.sub!=='mail');}}catch(e){}   /* M-5/M-7: a builder with no money access does not read payments either; 2.484.0: nor mail (rules: mail needs moneyOk) */
+    if(!job&&!co)cols=cols.filter(c=>c.sub!=='selm'&&c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='invs');}}catch(e){}   /* 2.512.0: invite codes need the same access as sending an invite */   /* M-5/M-7: a builder with no money access does not read payments either; 2.484.0: nor mail (rules: mail needs moneyOk) */
   return cols;
 }
 function syncHas(p,sub){return syncCollsFor(siteRoleFor(p)).some(c=>c.sub===sub);}
@@ -11204,6 +11408,26 @@ function moneyHidden(kind){try{const s=state.session||{};if(s.role!=='builder')r
 function invOrder(p){if(!p||!Array.isArray(p.invoices))return;
   const n=v=>{const m=/INV-(\d+)/.exec((v&&v.no)||'');return m?+m[1]:Infinity;};
   p.invoices=p.invoices.map((v,i)=>[v,i]).sort((a,b)=>(n(a[0])-n(b[0]))||((+(a[0]&&a[0].t)||0)-(+(b[0]&&b[0].t)||0))||(a[1]-b[1])).map(x=>x[0]);}
+/* #10 (2.513.0): a house save sends only the house fields this phone changed, not the whole block, so two phones
+   editing different things never undo each other. sh.mk holds the server's hash per field (from the last snapshot);
+   these maps also keep one hash per entry (sh.mk2), so sign-offs, schedule dates and inspections go up one entry at a
+   time. Same merge write as before (set, merge: true), so nested maps keep merging exactly as they did; money records
+   (inv, selm, pmts, costs, co) are separate documents and are unchanged. A phone with no server base sends the whole block. */
+const META_SUBKEYS=['stageDone','schedule','packetSignoff','inspections','inspMeta'];
+function _isMap(v){return !!v&&typeof v==='object'&&!Array.isArray(v);}
+function _mh(v){return v===undefined?undefined:_syncHash(JSON.stringify(v));}
+function metaSubHashes(m){const out={};META_SUBKEYS.forEach(k=>{if(m&&_isMap(m[k])){const h={};Object.keys(m[k]).forEach(x=>{h[x]=_mh(m[k][x]);});out[k]=h;}});return out;}
+function metaDelta(sh,m){
+  const mk=sh&&sh.mk;if(!mk||!Object.keys(mk).length)return null;
+  const out={};
+  Object.keys(m||{}).forEach(k=>{const v=m[k];if(v===undefined||_mh(v)===mk[k])return;
+    const b2=sh.mk2&&sh.mk2[k];
+    if(b2&&mk[k]!==undefined&&META_SUBKEYS.includes(k)&&_isMap(v)){
+      const d={};Object.keys(v).forEach(x=>{if(_mh(v[x])!==b2[x])d[x]=v[x];});
+      if(Object.keys(d).length)out[k]=d;return;}
+    out[k]=v;});
+  return out;
+}
 function metaOf(p){const m=JSON.parse(JSON.stringify(p));SYNC_COLLS.forEach(c=>{delete m[c.f];});return m;}
 /* Short fingerprint of a record's JSON. The shadow keeps these instead of full
    copies so it can be saved on the phone without doubling the house list. */
@@ -11213,7 +11437,7 @@ function _syncHash(str){str=String(str==null?'':str);let a=0x811c9dc5,b=5381;
 function diffSiteOps(sh,p){const ops=[];
   const m=metaOf(p);const ms=_syncHash(JSON.stringify(m));if(ms!==sh.meta)ops.push({kind:'meta',data:m});
   for(const c of SYNC_COLLS){
-    if((c.sub==='inv'||c.sub==='selm'||c.sub==='pmts')&&!syncWrites(p,c.sub))continue;   // F-2: only a money-gated builder writes money records
+    if((c.sub==='inv'||c.sub==='selm'||c.sub==='pmts'||c.sub==='docs'||c.sub==='invs')&&!syncWrites(p,c.sub))continue;   // F-2: only a money-gated builder writes money records; 2.512.0: only a builder writes documents and invite codes
     const arr=c.rows?c.rows(p):(Array.isArray(p[c.f])?p[c.f]:[]);const cur={};arr.forEach(r=>{cur[c.key(r)]=r;});
     const prev=(sh.colls&&sh.colls[c.sub])||{};
     for(const k in cur){const rs=_syncHash(JSON.stringify(cur[k]));if(prev[k]!==rs)ops.push({kind:'set',sub:c.sub,id:k,data:cur[k]});}
@@ -11412,14 +11636,21 @@ function renderDevErrors(){
   el.innerHTML=a.length?a.slice(0,window._errAll?a.length:8).map(errRowHTML).join('')+((!window._errAll&&a.length>8)?'<button type="button" class="err-more lpay w-full btn btn-quiet" onclick="devErrorsAll()">+'+(a.length-8)+' more in the report</button>':'')
     :'<div class="empty py-1 px-0">No errors recorded. When a button misbehaves, it lands here automatically.</div>';}
 function devErrorsAll(){window._errAll=true;renderDevErrors();}
+/* #3 (2.510.0) placeholder words, for Agency: a save the server refused. */
+const NOT_SAVED_PILL='Not saved';
+const NOT_SAVED_TOAST='Not saved. You don\'t have access to change this.';
+const NOT_SAVED_HELP='Some of your changes didn\'t save. Ask the owner to check your access.';
 function setSync(s){syncStatus=s;
   const live=(typeof Sync!=='undefined'&&Sync.on&&appMode()==='real');   // demo is local-only: a telemetry connection is not cross-device site sync
   const lost=typeof Sync!=='undefined'&&!!Sync.lost&&!live;              // the account is gone: say so until sync connects again
-  const label=lost?'Sign in again':s==='syncing'?'Saving…':s==='offline'?'Offline · saved here':(s==='synced'&&live)?'Saved · live':'On this device';
-  document.querySelectorAll('.syncpill').forEach(el=>{el.className='syncpill'+(lost?' lost':s==='syncing'?' syncing':s==='offline'?' offline':(s==='synced'&&live?' live':''));el.innerHTML='<span class="sd"></span>'+label;
-    if(lost){el.setAttribute('role','button');el.onclick=function(){accountLostPrompt();};}else{el.removeAttribute('role');el.onclick=null;}});
-  const ov=document.getElementById('ovSync');if(ov){ov.textContent=label;ov.classList.toggle('c-clay',lost);
-    if(lost){ov.setAttribute('role','button');ov.onclick=function(){accountLostPrompt();};}else{ov.removeAttribute('role');ov.onclick=null;}}}
+  /* #3: while any save the server refused is outstanding, the pill never says Saved · live */
+  let refused=false;try{refused=!lost&&live&&s==='synced'&&Sync.refusedCount()>0;}catch(e){}
+  const label=lost?'Sign in again':refused?NOT_SAVED_PILL:s==='syncing'?'Saving…':s==='offline'?'Offline · saved here':(s==='synced'&&live)?'Saved · live':'On this device';
+  const tap=lost?function(){accountLostPrompt();}:refused?function(){toast(NOT_SAVED_HELP);}:null;
+  document.querySelectorAll('.syncpill').forEach(el=>{el.className='syncpill'+(lost?' lost':refused?' refused':s==='syncing'?' syncing':s==='offline'?' offline':(s==='synced'&&live?' live':''));el.innerHTML='<span class="sd"></span>'+label;
+    if(tap){el.setAttribute('role','button');el.onclick=tap;}else{el.removeAttribute('role');el.onclick=null;}});
+  const ov=document.getElementById('ovSync');if(ov){ov.textContent=label;ov.classList.toggle('c-clay',lost||refused);
+    if(tap){ov.setAttribute('role','button');ov.onclick=tap;}else{ov.removeAttribute('role');ov.onclick=null;}}}
 function queueSync(){if(typeof Sync==='undefined'||!Sync.ready())return;const online=(typeof navigator!=='undefined')?navigator.onLine!==false:true;
   if(!online){setSync('offline');return;}
   try{if(state.activeId)_syncDirty.add(String(state.activeId));}catch(e){}
@@ -12651,8 +12882,8 @@ async function qbExportNow(){
   try{
     toast('Sending costs to QuickBooks…');
     const r=await fnCall('qbExportCosts',{siteId:String(state.activeId)});
-    if(!r.ok){toast(r.reason==='not-connected'?'Connect QuickBooks first (gear → Dev)':'Export refused: '+r.reason);return;}
-    let msg=r.created+' sent'+(r.skipped?' · '+r.skipped+' already in QuickBooks':'');
+    if(!r.ok){toast(r.reason==='not-connected'?'Connect QuickBooks first (gear → Dev)':r.reason==='no-money-access'?QB_NO_MONEY:'Export refused: '+r.reason);return;}
+    let msg=r.created+' sent'+(r.skipped?' · '+r.skipped+' already in QuickBooks':'')+(r.busy?' · '+r.busy+' '+QB_BUSY:'');
     if(r.failures&&r.failures.length)msg+=' · '+r.failures.length+' failed';
     toast(msg);try{renderBudget();}catch(e){}
   }catch(e){toast('Export failed: '+e.message);}finally{_qbBusy=false;}
@@ -15698,6 +15929,35 @@ async function invApprove(projId,invId){
     (sh.colls.inv||(sh.colls.inv={}))[String(invId)]=_syncHash(JSON.stringify(inv));Sync._saveBase();}catch(e){}
   persist();logEvent('invoiceApproved',inv.no);toast(inv.no+' approved');
   try{closeInfo();}catch(e){}try{renderClient();}catch(e){}}
+/* #4 (2.511.0): merge this phone's copy of a sent invoice with the server's. The server's payments stay, in order and
+   unchanged, except a void this phone made; this phone's new payments (by id) go on the end. Number, title and lines are
+   the server's; this phone's credit or charge lines count only when they follow the server's lines. The homeowner's OK
+   (approvedAt) and a void on the server win. Status follows the merged payments. */
+function invNeedsMerge(d){return !!d&&!!d.status&&d.status!=='draft';}
+function invMergeServer(loc,srv){
+  if(!loc||!srv||!invNeedsMerge(srv))return loc;
+  const cl=x=>JSON.parse(JSON.stringify(x));const out=cl(loc);
+  const sp=Array.isArray(srv.payments)?srv.payments:[],lp=Array.isArray(loc.payments)?loc.payments:[];
+  const mine={};lp.forEach(x=>{if(x&&x.id!=null)mine[String(x.id)]=x;});
+  const seen={};
+  const pays=sp.map(x=>{const k=(x&&x.id!=null)?String(x.id):null;if(k)seen[k]=1;const l=k?mine[k]:null;
+    if(l&&x&&!x.voidedAt&&l.voidedAt&&l.voidReason)return Object.assign(cl(x),{voidedAt:l.voidedAt,voidReason:l.voidReason,voidedBy:l.voidedBy||''});
+    return cl(x);});
+  lp.forEach(x=>{if(!x)return;const k=x.id!=null?String(x.id):null;if(k&&seen[k])return;
+    if(!k&&sp.some(y=>JSON.stringify(y)===JSON.stringify(x)))return;pays.push(cl(x));});
+  out.payments=pays;
+  ['no','num','title','lines'].forEach(k=>{if(k in srv)out[k]=cl(srv[k]);else delete out[k];});
+  const si=Array.isArray(srv.items)?srv.items:[],li=Array.isArray(loc.items)?loc.items:[];
+  const bare=a=>JSON.stringify(a.map(it=>(it&&typeof it==='object'&&!it.adj)?Object.assign({},it,{amountC:undefined}):it));   // the cents twin aside (2.495.0 heal)
+  if(!(li.length>=si.length&&bare(li.slice(0,si.length))===bare(si))){out.items=cl(si);out.total=srv.total;if('totalC' in srv)out.totalC=srv.totalC;else delete out.totalC;}
+  if(srv.approvedAt!=null)out.approvedAt=srv.approvedAt;
+  if(srv.status==='void'){out.status='void';out.voidedAt=srv.voidedAt;out.voidReason=srv.voidReason;}
+  else if(out.status!=='void'){
+    if(JSON.stringify(pays)!==JSON.stringify(lp)){   // the payments changed in the merge: paid or not follows them
+      if(invPaidAmt(out)>0&&invBalance(out)<=0.005){if(out.status!=='paid'){out.status='paid';out.paidAt=srv.paidAt||out.paidAt||Date.now();}}
+      else if(out.status==='paid'){out.status='sent';if('paidAt' in out)out.paidAt=null;}}
+    if(out.status==='sent'&&(out.approvedAt!=null||srv.status==='approved'))out.status='approved';}
+  return out;}
 function invAddPayment(projId,invId,full){
   if(moneyUpdateGate())return;
   const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
@@ -18210,9 +18470,50 @@ function docAudSub(d){const a=docAud(d);return a==='subs'||a==='all';}
 function docAudClient(d){const a=docAud(d);return a==='homeowner'||a==='all';}
 const DOC_AUD_LABEL={team:'Team only',subs:'Team + crews',homeowner:'Team + homeowner',all:'Everyone'};
 const DOC_AUD_ORDER=['team','subs','homeowner','all'];
+/* #5 (2.512.0): documents left the house doc, which every member reads. Each
+   document is a record in sites/{id}/docs (doc id = its file id) that always
+   says its audience; crews and the homeowner listen only for the audiences
+   they may see, and the rules refuse the rest. A file goes up into the folder
+   for its audience (docs-team, docs-subs, docs-homeowner, docs-all) and is
+   opened through a download link fetched when it is needed, never saved on a
+   record. Files from before 2.512.0 stay in the shared docs folder; the rules
+   open them by the document's audience, so nothing has to move. */
+const DOC_KEY_OK=/^[A-Za-z0-9_-]{1,100}$/;
+function docKey(d){d=d||{};
+  if(d.fileId&&DOC_KEY_OK.test(String(d.fileId)))return String(d.fileId);
+  if(d.id&&DOC_KEY_OK.test(String(d.id)))return String(d.id);
+  return 'dn_'+_syncHash(String(d.n||'')+'|'+String(d.trade||'')).replace(/[^A-Za-z0-9]/g,'_');}
+function isStorageUrl(u){return /firebasestorage\.(googleapis\.com|app)/.test(String(u||''));}
+function docRow(d){const o=Object.assign({},d);o.aud=docAud(d);if(o.fileUrl==null||isStorageUrl(o.fileUrl))delete o.fileUrl;return o;}
+function docFolder(d){return d&&d.fileAud&&DOC_AUD_ORDER.indexOf(d.fileAud)>=0?('docs-'+d.fileAud):'docs';}
+function docPath(sid,d){return 'live/sites/'+String(sid)+'/'+docFolder(d)+'/'+String(d.fileId);}
+/* A download link, fetched when a file is opened or a photo shown; cached in
+   memory only. A file that is not there yet is not asked for again for a minute. */
+const FileURL={_c:{},_miss:{},
+  get(path){const c=this._c[path];if(c&&Date.now()-c.t<30*60000)return Promise.resolve(c.u);
+    const m=this._miss[path];if(m&&Date.now()-m<60000)return Promise.reject(new Error('not-yet'));
+    try{if(typeof firebase==='undefined'||!firebase.storage)return Promise.reject(new Error('no-storage'));
+      return Promise.resolve(firebase.storage().ref(path).getDownloadURL()).then(u=>{this._c[path]={u:u,t:Date.now()};delete this._miss[path];return u;},e=>{this._miss[path]=Date.now();throw e;});}
+    catch(e){return Promise.reject(e);}}};
+function liveFiles(p){try{return !!p&&!p.sample&&appMode()==='real'&&typeof Sync!=='undefined'&&Sync.mode==='live'&&CloudFiles.ready();}catch(e){return false;}}
+async function docFileUrl(p,d){
+  if(d&&d.fileId&&liveFiles(p)){try{return await FileURL.get(docPath(p.id,d));}catch(e){}}
+  return (d&&d.fileUrl)||null;}
+/* #15 (2.512.0): a crew's or homeowner's note is signed with the name the
+   server stamped on this house for them (the rules compare against it); they
+   change only their own notes. Builders sign with their own name and edit any. */
+function noteByName(p){const s=state.session||{};
+  if(s.role==='client'||s.role==='subs'){try{return crewBkName(p);}catch(e){}}
+  return s.name||'';}
+function noteMine(p,it){const s=state.session||{};
+  if(s.role!=='client'||appMode()!=='real')return true;
+  return !!it&&!!it.by&&it.by===noteByName(p);}
 function cycleDocAud(i){const p=P();const d=(p.docs||[])[i];if(!d)return;
   const nx=DOC_AUD_ORDER[(DOC_AUD_ORDER.indexOf(docAud(d))+1)%DOC_AUD_ORDER.length];
+  const was=d.fileAud;
   d.aud=nx;persist();renderDocs();
+  /* the file follows: a copy goes into the new audience's folder, the old one is removed (the rules already close it) */
+  if(d.fileId&&was&&was!==nx){try{CloudFiles.move(String(p.id),String(d.fileId),was,nx);}catch(e){}}
   if(nx==='homeowner'||nx==='all')toast('\u26a0 The homeowner can now see this \u2014 avoid crew pricing or agreements');
   else toast(DOC_AUD_LABEL[nx]);}
 
@@ -20166,9 +20467,20 @@ function pickChip(el){
    iPhone/Safari has no install API, so we show the manual steps. */
 let deferredPrompt=null;
 function isStandalone(){try{return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}catch(e){return false;}}
+/* 2.513.0 (batch 4) placeholder words, for Agency: */
+const CO_NOT_CHECKED='Not checked yet';   /* #8 row and form tag */
+const CO_RECHECK_BTN='Check again';   /* #8 */
+const CO_RECHECK_OK='Checked. The homeowner can approve it now.';   /* #8 */
+const CO_RECHECK_BAD='The totals don\'t add up. Fix the amount and send it again.';   /* #8 */
+const CO_RECHECK_FAIL='Couldn\'t check right now. Try again in a minute.';   /* #8 */
+const UPLOAD_FAILED='Didn\u2019t upload. Tap to try again.';   /* #11 badge */
+const UPLOAD_RETRYING='Trying the upload again';   /* #11 toast */
+const DOC_TYPE_NO='We can\'t add that kind of file. Use a PDF, photo, Word, or Excel file.';   /* #11 */
+const QB_NO_MONEY='Only builders with money access can send costs to QuickBooks.';   /* #13 */
+const QB_BUSY='already sending';   /* #13 toast piece: "· 2 already sending" */
 /* ── SitePlumb server (Cloud Functions): callable-lite protocol ── */
 const FN_BASE=emuOn()?'http://127.0.0.1:5001/'+(((typeof fbConfig==='function'&&fbConfig())||{}).projectId||'plumb-467a0')+'/us-central1/':'https://us-central1-plumb-467a0.cloudfunctions.net/';
-const FN_ASKED={deleteAccount:1,qbConnect:1,qbDisconnect:1,qbExportCosts:1,notifyTest:1};
+const FN_ASKED={deleteAccount:1,qbConnect:1,qbDisconnect:1,qbExportCosts:1,notifyTest:1,coRecheck:1};
 async function fnCall(name,data){
   const u=(typeof firebase!=='undefined'&&firebase.auth&&firebase.auth().currentUser);
   /* Only a call the person just asked for raises the sign-in prompt; background telemetry stays quiet. */

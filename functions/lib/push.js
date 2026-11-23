@@ -10,6 +10,17 @@ function builderUids(site) {
   return out;
 }
 
+/* #14 (batch 3): a packet's reply reaches the house's builders only when the
+   packet came from someone on that house (a builder or any member). A packet
+   written by anyone else naming a house is never pushed. */
+function packetCreatorOk(site, packet) {
+  const by = String((packet && packet.createdBy) || '');
+  if (!by || !site) return false;
+  const m = site.members || {};
+  if (Object.prototype.hasOwnProperty.call(m, by) && m[by]) return true;
+  return Array.isArray(site.memberUids) && site.memberUids.includes(by);
+}
+
 function packetNotice(before, after) {
   if (!after) return null;
   const prevQ = ((before && before.q) || []).length;
@@ -139,4 +150,4 @@ function flagRecipients(site, byUid, on) {
   return (on ? moneyBuilderUids(site) : []).concat(roleUids(site, 'client')).filter(u => u !== byUid);
 }
 
-module.exports = { moneyRecipients, flagRecipients, builderUids, packetNotice, tokensFor, sendPush, pushMessage, roleUids, moneyBuilderUids, audUids, moneyNotices, flagNotice, streetOf };
+module.exports = { moneyRecipients, flagRecipients, builderUids, packetCreatorOk, packetNotice, tokensFor, sendPush, pushMessage, roleUids, moneyBuilderUids, audUids, moneyNotices, flagNotice, streetOf };
