@@ -84,6 +84,8 @@ jobs:
         run: npm run moneyguard
       - name: Money and flag pushes (pure checks)
         run: npm run pushtest
+      - name: One-off roster-row fix (pure checks)
+        run: npm run fixmemberrow
 
       - name: Functions tests (every functions/*.test.js, as the deploy runs them)
         run: node functions/runtests.js

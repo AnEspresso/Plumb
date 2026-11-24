@@ -14,7 +14,8 @@
     "archive": "node functions/archiveSite.test.js",
     "deleteaccount": "node functions/deleteAccount.test.js",
     "moneyguard": "node scripts/moneyGuard.test.mjs",
-    "pushtest": "node functions/push.test.js"
+    "pushtest": "node functions/push.test.js",
+    "fixmemberrow": "node scripts/fixMemberRow.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "5.0.2",
