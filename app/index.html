@@ -3985,15 +3985,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.521.0 - A crew sees the houses the server has them on as crew';
+const PLUMB_VERSION='2.522.0 - [placeholder] Crew home uses the server house list';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1796673600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.521.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796760000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.522.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6802,7 +6802,7 @@ function liveRoleFromSites(){
     const r=memberRoleOf(p,uid)||((p.memberUids||[]).indexOf(uid)>=0&&(state.session&&state.session.member&&state.session.member.role))||'';
     const info=(p.memberInfo&&p.memberInfo[uid])||{};
     /* 2.520 crew home: the crew name is the house's roster row (memberInfo subId, then name), never what this phone saved */
-    if(r==='sub'&&!sub&&crewCloudOk(p)){const row=crewRowOn(p,uid,'');
+    if(r==='sub'&&!sub&&crewServerOk(p)){const row=crewRowOn(p,uid,'');
       sub={role:'sub',siteId:String(p.id),name:(row&&row.name)||info.name||'',trade:info.trade||(row&&row.specialty)||'',email:info.email||''};
       if(row&&row.id!=null)sub.subId=String(row.id);}
     if(r==='client'&&!client)client={role:'client',siteId:String(p.id),name:info.name||'',email:info.email||''};
@@ -6823,7 +6823,9 @@ function crewUidLive(){
   const s=state.session||{};if(s.role!=='subs')return '';
   return String((s.auth&&s.auth.uid)||(typeof Sync!=='undefined'&&Sync.uid)||'');}
 /* once the server's house list has arrived, a house it did not send is not a crew house (a stale local copy) */
-function crewCloudOk(p){try{if(typeof Sync==='undefined'||!Sync._sitesPulled)return true;return !!(Sync._onServer&&Sync._onServer[String(p.id)]);}catch(e){return true;}}
+function crewCloudOk(p){try{if(typeof Sync==='undefined'||!Sync._sitesPulled)return true;return !!((Sync._serverList||Sync._onServer||{})[String(p.id)]);}catch(e){return true;}}
+/* 2.522.0: the crew name and role come only from a house the server has sent, never from a local copy */
+function crewServerOk(p){try{if(typeof Sync==='undefined')return true;return !!(Sync._sitesPulled&&(Sync._serverList||{})[String(p.id)]);}catch(e){return false;}}
 /* the roster row: memberInfo subId, then memberInfo name, then the saved crew name */
 function crewRowOn(p,uid,fallbackName){
   const subs=(p&&p.subs)||[];const info=(p&&p.memberInfo&&p.memberInfo[String(uid||'')])||{};let r=null;
@@ -10389,7 +10391,7 @@ const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_s
     try{await this.col(sid).doc(id).set(Object.assign({data:data},CO.outer()),{merge:true});toast(CO.label(r.no)+' declined');}
     catch(e){this.fail(sid,id,r.rev,e);}}
 };
-const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_pulled:{},_held:{},_selm:{},_legInv:{},_legAdded:{},_legL:{},_legLAdded:{},_legRaw:{},_selNp:{},_pushing:{},_pushAgain:{},
+const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_shadow:{},_listening:{},_cloudMembers:{},_sitesPulled:false,_onServer:{},_serverList:{},_pulled:{},_held:{},_selm:{},_legInv:{},_legAdded:{},_legL:{},_legLAdded:{},_legRaw:{},_selNp:{},_pushing:{},_pushAgain:{},
   _devId(){let d=null;try{d=localStorage.getItem('plumb.deviceId');}catch(e){}if(!d){d='dev_'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('plumb.deviceId',d);}catch(e){}}return d;},
   ready(){return this.on&&!!this.db;},
   async init(){
@@ -10803,6 +10805,34 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       if((this.mode||'demo')!=='live'||!this.uid)return;
       const out={};(state.projects||[]).forEach(p=>{const id=String(p.id);if(this._shadow[id])out[id]=this._shadow[id];});
       localStorage.setItem(this._baseKey(),JSON.stringify(out));}catch(e){}},400);},
+  /* 2.522.0: a live crew holds only the houses the server sends it. A local copy the server did not send (an old
+     membership, a house from another login on this phone) is dropped with its held and refused saves, so it is never
+     shown, never names the crew, and is never offered to the server again. */
+  _crewPrune(){if((this.mode||'demo')!=='live')return false;
+    let u='';try{u=crewUidLive();}catch(e){}if(!u)return false;
+    const list=this._serverList||{};const gone=[];
+    state.projects=(state.projects||[]).filter(p=>{const id=String(p&&p.id);if(list[id])return true;gone.push(id);return false;});
+    if(!gone.length)return false;
+    gone.forEach(id=>{delete this._held[id];if(this._pushAgain)delete this._pushAgain[id];if(this._shadow)delete this._shadow[id];
+      try{_syncDirty.delete(id);}catch(e){}
+      Object.keys(this._refused||{}).forEach(k=>{if(k.indexOf(id+'|')===0)delete this._refused[k];});});
+    if(state.activeId!=null&&!state.projects.some(p=>String(p.id)===String(state.activeId)))state.activeId=state.projects.length?state.projects[0].id:null;
+    try{logEvent('crewLocalDropped',gone.length+' local house(s) the server did not send');}catch(e){}
+    return true;},
+  /* 2.522.0: a refused house list is not left dead. Refresh the account token and listen again, waiting 2 s, 4 s, 8 s ...
+     (at most 60 s, six tries). The first answer from the server resets the count. No account yet: the auth watcher
+     reconnects on sign-in. */
+  _liveRetry(err){try{if(!err||err.code!=='permission-denied')return;
+    const n=this._liveRetryN=(this._liveRetryN||0)+1;if(n>6)return;
+    const wait=Math.min((this._liveRetryBase||2000)*Math.pow(2,n-1),60000);clearTimeout(this._liveRetryT);
+    this._liveRetryT=setTimeout(async()=>{try{
+      if(!this.ready())return;
+      const cu=(typeof firebase!=='undefined'&&firebase.auth)?firebase.auth().currentUser:null;
+      if(!cu||cu.isAnonymous)return;
+      try{await cu.getIdToken(true);}catch(e){}
+      if(!this.ready())return;
+      try{logEvent('liveHousesRetry','try '+n);}catch(e){}
+      this.subscribe();}catch(e){}},wait);}catch(e){}},
   _canPush(id){
     if((this.mode||'demo')!=='live')return true;
     if(!this._sitesPulled)return false;                      // house list not read from the server yet
@@ -10824,7 +10854,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       if(!this._permToasted){this._permToasted=true;try{toast('Cloud sync is blocked by security rules');}catch(e){}}
     }}catch(e){}},
   subscribe(){if(!this.ready())return;Object.keys(this._refused||{}).forEach(k=>{this._refused[k].retry=true;});this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._selm={};this._legInv={};this._legAdded={};this._legL={};this._legLAdded={};this._legRaw={};this._pushing={};this._pushAgain={};
-    this._sitesPulled=false;this._onServer={};this._pulled={};this._held=this._held||{};
+    this._sitesPulled=false;this._onServer={};this._serverList={};this._pulled={};this._held=this._held||{};
     try{this._storeOwnerCheck();}catch(e){}
     const handler=snap=>{let changed=false;
       try{if(typeof syncStatus!=='undefined'&&syncStatus==='offline')setSync('synced');}catch(e){}
@@ -10883,15 +10913,22 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           if(lp&&d.meta&&this._legacyLists(lp,id,d.meta))changed=true;}   /* 2.512.0: documents and invite codes, the same way */
         this._subSite(id);                                                    // attach record listeners (after project exists)
       });
-      if(changed){persistLocalOnly();rerenderCurrent();this._saveBase();try{firstRunHousesArrived();}catch(e){}try{HouseGeo.soon();}catch(e){}}
-      if(!(snap.metadata&&snap.metadata.fromCache)){                  // the server's answer, not the phone's cache
-        (snap.docs||[]).forEach(x=>{this._onServer[x.id]=true;});
-        this._sitesPulled=true;this._flushHeld();}
+      /* 2.522.0: the server's answer is marked BEFORE the redraw, so the redraw already knows which houses the server
+         sent (crew list, crew name). The first answer always redraws, even when nothing in it changed. _serverList is
+         exactly what this answer holds; a live crew drops every local house outside it (_crewPrune). */
+      const fromServer=!(snap.metadata&&snap.metadata.fromCache);let first=false;
+      if(fromServer){first=!this._sitesPulled;const list={};
+        (snap.docs||[]).forEach(x=>{this._onServer[x.id]=true;list[x.id]=true;});
+        this._serverList=list;this._sitesPulled=true;this._liveRetryN=0;
+        if(this._crewPrune())changed=true;}
+      if(changed||first){persistLocalOnly();rerenderCurrent();
+        if(changed){this._saveBase();try{firstRunHousesArrived();}catch(e){}try{HouseGeo.soon();}catch(e){}}}
+      if(fromServer)this._flushHeld();
     };
     if((this.mode||'demo')==='live'){
       const myUid=(state.session&&state.session.auth&&state.session.auth.uid)||this.uid;
       if(myUid){const u=this.db.collection('sites').where('memberUids','array-contains',myUid)
-        .onSnapshot({includeMetadataChanges:true},handler,err=>this._permFail('live houses',err));this.unsub.push(u);}
+        .onSnapshot({includeMetadataChanges:true},handler,err=>{this._permFail('live houses',err);this._liveRetry(err);});this.unsub.push(u);}
     }else{
       /* Demo is a local-only sandbox. The seed never leaves the device and
          invites are Live-only, so there is nothing legitimate to pull. The old
@@ -11020,7 +11057,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
   _notifReady:{},
   _collGen:{},
   _reArmed:{},
-  disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._shadow={};this._selm={};this._legInv={};this._legAdded={};this._legL={};this._legLAdded={};this._legRaw={};this._pushing={};this._pushAgain={};this._notifReady={};this._sitesPulled=false;this._onServer={};this._pulled={};this._held={};clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
+  disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._shadow={};this._selm={};this._legInv={};this._legAdded={};this._legL={};this._legLAdded={};this._legRaw={};this._pushing={};this._pushAgain={};this._notifReady={};this._sitesPulled=false;this._onServer={};this._serverList={};this._pulled={};this._held={};clearTimeout(this._liveRetryT);this._liveRetryN=0;clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
 };
 /* ── Step 6: cloud files. A live house uploads the already-downscaled photo
    (and doc files) once sync is connected, and stores the download URL on the
