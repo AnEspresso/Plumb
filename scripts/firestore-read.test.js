@@ -4,7 +4,7 @@
 'use strict';
 
 const assert = require('assert');
-const { parseCheck, valueAt, compareValues, formatCheck, parsePaths, shape, formatDoc, formatCollection, formatError, docPath } = require('./firestore-read.js');
+const { memberHit, formatHit, eventLine, versionOf, parseCheck, valueAt, compareValues, formatCheck, parsePaths, shape, formatDoc, formatCollection, formatError, docPath } = require('./firestore-read.js');
 
 /* fake push tokens, built at run time so the secret scan never sees a literal */
 const FAKE_FCM = 'fake' + ':APA91b' + 'x'.repeat(60);
@@ -175,6 +175,31 @@ t('push-token maps print only a key count, never a token (users/{uid}.fcm, Peter
   assert.equal(out.indexOf('fcm: {<2 keys>}') >= 0, true, out);
   assert.equal(/APA91/.test(out), false, out);
   checkClean('token map', out);
+});
+
+
+t('members scan prints only the site id, where the uid is named, an allowlisted role and live', () => {
+  const U = 'uSUBtest1234';
+  const d = fakeDoc('pmX1', { mode: { stringValue: 'live' }, memberUids: { arrayValue: { values: [{ stringValue: U }, { stringValue: 'uOther12345' }] } },
+    members: { mapValue: { fields: { [U]: { stringValue: 'sub' }, uOther12345: { stringValue: 'builder' } } } },
+    meta: { mapValue: { fields: { street: { stringValue: '7 Cottage Ln' }, memberInfo: { mapValue: { fields: { [U]: { mapValue: { fields: { name: { stringValue: 'Jane Builder' }, email: { stringValue: 'pmgottschalkqa+sub@gmail.com' } } } } } } } } } } });
+  const h = memberHit(d, U);
+  const out = formatHit(h, 'pmX1');
+  assert.equal(out, 'MEMBER pmX1: memberUids+members+memberInfo · role sub · live · hatSite');
+  assert.equal(memberHit(d, 'uNobody12345'), null);
+  checkClean('members scan', out);
+  const odd = fakeDoc('pmX2', { members: { mapValue: { fields: { [U]: { stringValue: 'Ann Arbor' } } } } });
+  assert.equal(formatHit(memberHit(odd, U), ''), 'MEMBER pmX2: members · role (other) · not live');
+});
+t('events scan prints only allowlisted event names, time, refused listener and role', () => {
+  const ev = (name, detail) => ({ name: 'x/events/e', fields: { name: { stringValue: name }, detail: { stringValue: detail }, role: { stringValue: 'subs' }, t: { integerValue: '1795000000000' } } });
+  const a = eventLine(ev('clientError', 'rules | Cloud read blocked (live houses) · token [account pmgottsc] · 734-555-0100'));
+  const b = eventLine(ev('Jane Builder', 'paid by Jane'));
+  assert.ok(/ clientError · live houses refused · role subs$/.test(a), a);
+  assert.ok(/ \(other\) · role subs$/.test(b), b);
+  checkClean('events scan', a + b);
+  assert.equal(versionOf({ fields: { v: { stringValue: '2.522.0' } } }), '2.522.0');
+  assert.equal(versionOf({ fields: { v: { stringValue: '7 Cottage Ln' } } }), '(other)');
 });
 
 console.log('firestore-read test: ' + n + ' checks passed');

@@ -79,7 +79,7 @@ function compareValues(a, b) {
 function formatCheck(label, result) { return 'EQ ' + label + ': ' + result; }
 
 function parsePaths(raw) {
-  const list = String(raw || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).filter(s => !/^eq:/.test(s));
+  const list = String(raw || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).filter(s => !/^(eq|members|events):/.test(s));
   if (!list.length) throw new Error('No paths given.');
   if (list.length > MAX_PATHS) throw new Error('Too many paths (max ' + MAX_PATHS + ').');
   return list.map(p => {
@@ -186,6 +186,74 @@ function formatError(path) {
   return '=== ' + path + '\nREAD FAILED';
 }
 
+/* SCANS (2026-11-24, +sub crew home, issue #129). Two entries, GET only, paged with nextPageToken:
+   "members:<uid>"  lists EVERY site doc (only the fields memberUids, members, mode, meta.memberInfo are
+                    fetched) and prints only the IDs of sites that name <uid>, with where it is named
+                    (memberUids / members / memberInfo), its role from an allowlist and whether the site is live.
+                    It also flags the site that users/<uid>.hatSite points at, without printing hatSite.
+   "events:<device>" prints, newest first, only event names from a fixed allowlist (anything else is
+                    "(other)"), the event time in America/Detroit, and for clientError only which listener
+                    was refused (live houses / site records / other). The device's app version prints only
+                    when it is a plain x.y.z. No detail text, uid, name or token is ever printed. */
+const EVENT_NAMES = ['clientError', 'liveHousesRetry', 'crewLocalDropped', 'crewNameHealed', 'syncConnected', 'authChange', 'uidHeal', 'syncRebind', 'authRepair', 'login', 'cacheCleared'];
+const ROLES = ['sub', 'builder', 'client', 'team'];
+const UID = /^[A-Za-z0-9]{10,40}$/;
+const DEV = /^dev_[a-z0-9]{4,20}$/;
+function strOf(v) { return v && typeof v.stringValue === 'string' ? v.stringValue : null; }
+function intOf(v) { if (!v) return null; if (v.integerValue != null) return Number(v.integerValue); if (v.doubleValue != null) return Number(v.doubleValue); return null; }
+function memberHit(doc, uid) {
+  const f = (doc && doc.fields) || {};
+  const where = [];
+  const arr = (f.memberUids && f.memberUids.arrayValue && f.memberUids.arrayValue.values) || [];
+  if (arr.some(v => strOf(v) === uid)) where.push('memberUids');
+  const mem = (f.members && f.members.mapValue && f.members.mapValue.fields) || {};
+  let role = '';
+  if (Object.prototype.hasOwnProperty.call(mem, uid)) {
+    where.push('members');
+    const r = strOf(mem[uid]) || strOf(((mem[uid].mapValue || {}).fields || {}).role);
+    role = ROLES.includes(r) ? r : '(other)';
+  }
+  const meta = (f.meta && f.meta.mapValue && f.meta.mapValue.fields) || {};
+  const mi = (meta.memberInfo && meta.memberInfo.mapValue && meta.memberInfo.mapValue.fields) || {};
+  if (Object.prototype.hasOwnProperty.call(mi, uid)) where.push('memberInfo');
+  if (!where.length) return null;
+  const mode = strOf(f.mode);
+  return { id: docPath(doc.name).split('/').pop(), where, role, live: mode === 'live' };
+}
+function formatHit(h, hatSite) {
+  return 'MEMBER ' + h.id + ': ' + h.where.join('+') + (h.role ? ' · role ' + h.role : '') + (h.live ? ' · live' : ' · not live') + (hatSite && hatSite === h.id ? ' · hatSite' : '');
+}
+function etTime(ms) {
+  if (!(ms > 0)) return '(no time)';
+  return new Date(ms).toLocaleString('en-US', { timeZone: 'America/Detroit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' ET';
+}
+function eventLine(doc) {
+  const f = (doc && doc.fields) || {};
+  const n = strOf(f.name);
+  const name = EVENT_NAMES.includes(n) ? n : '(other)';
+  let extra = '';
+  if (name === 'clientError') {
+    const d = strOf(f.detail) || '';
+    extra = /Cloud read blocked \(live houses\)/.test(d) ? ' · live houses refused' : /Cloud read blocked \(site records\)/.test(d) ? ' · site records refused' : ' · other';
+  }
+  const r = strOf(f.role);
+  const role = ['subs', 'builder', 'client', '\u2014'].includes(r) ? r : '(other)';
+  return 'EVENT ' + etTime(intOf(f.t)) + ' ' + name + extra + ' · role ' + role;
+}
+function versionOf(doc) {
+  const v = strOf(((doc && doc.fields) || {}).v);
+  return v && /^\d+\.\d+\.\d+$/.test(v) ? v : '(other)';
+}
+async function listAll(path, params) {
+  const out = []; let tok = '';
+  for (let i = 0; i < 200; i++) {
+    const d = await get(BASE + path + '?pageSize=300' + (params || '') + (tok ? '&pageToken=' + encodeURIComponent(tok) : ''));
+    ((d && d.documents) || []).forEach(x => out.push(x));
+    tok = d && d.nextPageToken; if (!tok) break;
+  }
+  return out;
+}
+
 async function get(url) {
   const r = await fetch(url, { method: 'GET', headers: { Authorization: 'Bearer ' + process.env.TOKEN } });
   if (r.status === 404) return null;
@@ -198,10 +266,34 @@ if (require.main === module) (async () => {
   try {
     checks = String(process.env.PATHS || '').split(/[\n,]+/).map(s => s.trim()).filter(s => /^eq:/.test(s)).map(parseCheck);
     if (checks.length > MAX_PATHS) throw new Error('Too many checks (max ' + MAX_PATHS + ').');
-    items = String(process.env.PATHS || '').split(/[\n,]+/).some(s => s.trim() && !/^eq:/.test(s.trim())) ? parsePaths(process.env.PATHS) : [];
+    items = String(process.env.PATHS || '').split(/[\n,]+/).some(s => s.trim() && !/^(eq|members|events):/.test(s.trim())) ? parsePaths(process.env.PATHS) : [];
   } catch (e) { console.error(e.message); process.exit(1); }
   if (!process.env.TOKEN) { console.error('No TOKEN in the environment.'); process.exit(2); }
   let broke = 0;
+  const scans = String(process.env.PATHS || '').split(/[\n,]+/).map(x => x.trim()).filter(x => /^(members|events):/.test(x));
+  for (const sc of scans) {
+    const [kind, arg] = [sc.slice(0, sc.indexOf(':')), sc.slice(sc.indexOf(':') + 1)];
+    try {
+      if (kind === 'members') {
+        if (!UID.test(arg)) throw new Error('bad uid');
+        const u = await get(BASE + 'users/' + arg + '?mask.fieldPaths=hatSite');
+        const hatSite = strOf(((u && u.fields) || {}).hatSite);
+        const docs = await listAll('sites', '&mask.fieldPaths=memberUids&mask.fieldPaths=members&mask.fieldPaths=mode&mask.fieldPaths=meta.memberInfo');
+        const hits = docs.map(d => memberHit(d, arg)).filter(Boolean);
+        console.log('### members scan: ' + docs.length + ' site doc(s) read, ' + hits.length + ' name this uid' + (hatSite ? '' : ' (no hatSite)'));
+        hits.forEach(h => console.log(formatHit(h, hatSite)));
+        if (hatSite && !docs.some(d => docPath(d.name).split('/').pop() === hatSite)) console.log('hatSite: no site doc with that id');
+      } else {
+        if (!DEV.test(arg)) throw new Error('bad device');
+        const dv = await get(BASE + 'telemetry/' + arg + '?mask.fieldPaths=v&mask.fieldPaths=t');
+        console.log('### events ' + arg + ': device app version ' + versionOf(dv) + ' · last beat ' + etTime(intOf(((dv && dv.fields) || {}).t)));
+        const evs = await listAll('telemetry/' + arg + '/events', '&mask.fieldPaths=name&mask.fieldPaths=t&mask.fieldPaths=role&mask.fieldPaths=detail');
+        evs.sort((a, b) => (intOf((b.fields || {}).t) || 0) - (intOf((a.fields || {}).t) || 0));
+        console.log(evs.length + ' event(s)');
+        evs.slice(0, 120).forEach(e => console.log(eventLine(e)));
+      }
+    } catch (e) { broke++; console.log('### ' + kind + ' scan: READ FAILED'); }
+  }
   for (const it of items) {
     const enc = it.path.split('/').map(encodeURIComponent).join('/');
     try {
@@ -227,4 +319,4 @@ if (require.main === module) (async () => {
   process.exit(broke ? 2 : 0);
 })();
 
-module.exports = { parseCheck, valueAt, compareValues, formatCheck, parsePaths, typeOf, shape, formatDoc, formatCollection, formatError, docPath, MAX_DOCS };
+module.exports = { memberHit, formatHit, eventLine, versionOf, etTime, parseCheck, valueAt, compareValues, formatCheck, parsePaths, typeOf, shape, formatDoc, formatCollection, formatError, docPath, MAX_DOCS };
