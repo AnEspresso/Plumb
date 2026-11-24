@@ -758,7 +758,11 @@ t('2.516.0 Word and Excel files save with their name, PDFs still open',$("docSav
   prime("");$("openDocFile(P().id,'doc_odp','');true");await settle();
   r=LOG();
   t('2.519.0 [local miss, not uploaded] crew/homeowner/binder keep their not-uploaded-yet message',r.indexOf('toast:File not on this device yet')>0&&r.indexOf('open:')<0,r);
-  t('2.519.0 the new words are marked for Agency',SRC.indexOf("const DOC_OPEN_WORDS={   /* placeholder, Agency to word */")>=0);
+  t('2.519.0 the document open words are Agency\'s final wording (11/23), word for word, with no placeholder marker',
+    SRC.indexOf("/* Agency 11/23, word for word. */\nconst DOC_OPEN_WORDS={\n  getting:'Getting the file\\u2026',\n  ready:function(name){return name+' is ready';},\n  open:'Open',\n  failed:'Couldn\\u2019t get this file. Check your connection and try again.'\n};")>=0
+    &&$("DOC_OPEN_WORDS.getting")==='Getting the file\u2026'&&$("DOC_OPEN_WORDS.ready('TEST2 doc crew.docx')")==='TEST2 doc crew.docx is ready'&&$("DOC_OPEN_WORDS.open")==='Open'
+    &&$("DOC_OPEN_WORDS.failed")==='Couldn\u2019t get this file. Check your connection and try again.'
+    &&!/DOC_OPEN_WORDS=\{[^}]*placeholder/.test(SRC)&&SRC.indexOf("const DOC_OPEN_WORDS={   /* placeholder")<0);
   $(`(function(){var k=window.__od.keep;idbGetDoc=k.i;docFileUrl=k.u;saveBlobAs=k.s;window.open=k.o;window.fetch=k.f;if(k.c)URL.createObjectURL=k.c;else delete URL.createObjectURL;URL.revokeObjectURL=k.r||function(){};toast=k.t;toastAction=k.ta;isStandalonePWA=k.sa;   /* the blob tab's 60s revoke timer still fires later */
     delete navigator.share;delete navigator.canShare;DocFetch._c={};
     var p=P();p.docs=p.docs.filter(function(d){return d.fileId!=='doc_odw'&&d.fileId!=='doc_odp';});delete window.__od;return true;})()`);
