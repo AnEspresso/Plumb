@@ -227,7 +227,17 @@ function etTime(ms) {
   if (!(ms > 0)) return '(no time)';
   return new Date(ms).toLocaleString('en-US', { timeZone: 'America/Detroit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' ET';
 }
-function eventLine(doc) {
+/* clientError "Cloud read blocked" names three short uids: the Firebase token, the uid Sync is bound to, and the
+   session's. Print only how each relates to the given uid (self / other / none / anon), never the uids. */
+function uidRelations(d, self) {
+  const pre = String(self).slice(0, 8);
+  const rel = (m, anon) => !m ? 'unread' : m === 'none' || m === 'no-auth' ? 'none' : (anon ? 'anon ' : '') + (m === pre ? 'self' : 'other');
+  const t = /token \[(?:(anon|account) ([A-Za-z0-9]{1,8})|(no-auth))\]/.exec(d);
+  const b = /bound \[([A-Za-z0-9]{1,8}|none)\]/.exec(d);
+  const se = /session \[([A-Za-z0-9]{1,8}|none)\]/.exec(d);
+  return ' · token ' + (t ? (t[3] ? 'none' : rel(t[2], t[1] === 'anon')) : 'unread') + ' · bound ' + rel(b && b[1]) + ' · session ' + rel(se && se[1]);
+}
+function eventLine(doc, self) {
   const f = (doc && doc.fields) || {};
   const n = strOf(f.name);
   const name = EVENT_NAMES.includes(n) ? n : '(other)';
@@ -235,6 +245,7 @@ function eventLine(doc) {
   if (name === 'clientError') {
     const d = strOf(f.detail) || '';
     extra = /Cloud read blocked \(live houses\)/.test(d) ? ' · live houses refused' : /Cloud read blocked \(site records\)/.test(d) ? ' · site records refused' : ' · other';
+    if (self && /Cloud read blocked/.test(d)) extra += uidRelations(d, self);
   }
   const r = strOf(f.role);
   const role = ['subs', 'builder', 'client', '\u2014'].includes(r) ? r : '(other)';
@@ -284,13 +295,14 @@ if (require.main === module) (async () => {
         hits.forEach(h => console.log(formatHit(h, hatSite)));
         if (hatSite && !docs.some(d => docPath(d.name).split('/').pop() === hatSite)) console.log('hatSite: no site doc with that id');
       } else {
-        if (!DEV.test(arg)) throw new Error('bad device');
-        const dv = await get(BASE + 'telemetry/' + arg + '?mask.fieldPaths=v&mask.fieldPaths=t');
-        console.log('### events ' + arg + ': device app version ' + versionOf(dv) + ' · last beat ' + etTime(intOf(((dv && dv.fields) || {}).t)));
-        const evs = await listAll('telemetry/' + arg + '/events', '&mask.fieldPaths=name&mask.fieldPaths=t&mask.fieldPaths=role&mask.fieldPaths=detail');
+        const [dev, self] = arg.split(':');
+        if (!DEV.test(dev) || (self && !UID.test(self))) throw new Error('bad device');
+        const dv = await get(BASE + 'telemetry/' + dev + '?mask.fieldPaths=v&mask.fieldPaths=t');
+        console.log('### events ' + dev + ': device app version ' + versionOf(dv) + ' · last beat ' + etTime(intOf(((dv && dv.fields) || {}).t)));
+        const evs = await listAll('telemetry/' + dev + '/events', '&mask.fieldPaths=name&mask.fieldPaths=t&mask.fieldPaths=role&mask.fieldPaths=detail');
         evs.sort((a, b) => (intOf((b.fields || {}).t) || 0) - (intOf((a.fields || {}).t) || 0));
         console.log(evs.length + ' event(s)');
-        evs.slice(0, 120).forEach(e => console.log(eventLine(e)));
+        evs.slice(0, 120).forEach(e => console.log(eventLine(e, self)));
       }
     } catch (e) { broke++; console.log('### ' + kind + ' scan: READ FAILED'); }
   }
@@ -319,4 +331,4 @@ if (require.main === module) (async () => {
   process.exit(broke ? 2 : 0);
 })();
 
-module.exports = { memberHit, formatHit, eventLine, versionOf, etTime, parseCheck, valueAt, compareValues, formatCheck, parsePaths, typeOf, shape, formatDoc, formatCollection, formatError, docPath, MAX_DOCS };
+module.exports = { uidRelations, memberHit, formatHit, eventLine, versionOf, etTime, parseCheck, valueAt, compareValues, formatCheck, parsePaths, typeOf, shape, formatDoc, formatCollection, formatError, docPath, MAX_DOCS };

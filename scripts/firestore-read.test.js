@@ -4,7 +4,7 @@
 'use strict';
 
 const assert = require('assert');
-const { memberHit, formatHit, eventLine, versionOf, parseCheck, valueAt, compareValues, formatCheck, parsePaths, shape, formatDoc, formatCollection, formatError, docPath } = require('./firestore-read.js');
+const { uidRelations, memberHit, formatHit, eventLine, versionOf, parseCheck, valueAt, compareValues, formatCheck, parsePaths, shape, formatDoc, formatCollection, formatError, docPath } = require('./firestore-read.js');
 
 /* fake push tokens, built at run time so the secret scan never sees a literal */
 const FAKE_FCM = 'fake' + ':APA91b' + 'x'.repeat(60);
@@ -200,6 +200,18 @@ t('events scan prints only allowlisted event names, time, refused listener and r
   checkClean('events scan', a + b);
   assert.equal(versionOf({ fields: { v: { stringValue: '2.522.0' } } }), '2.522.0');
   assert.equal(versionOf({ fields: { v: { stringValue: '7 Cottage Ln' } } }), '(other)');
+});
+
+
+t('a refused read prints only how token, bound and session uids relate to the given uid', () => {
+  const self = 'Axtg4ndiXYZabc1234';
+  const d = 'rules | Cloud read blocked (live houses) · token [account Axtg4ndi] · bound [kkqHHHyt] · session [none] | Sync._permFail';
+  const out = uidRelations(d, self);
+  assert.equal(out, ' · token self · bound other · session none');
+  assert.equal(out.indexOf('Axtg'), -1); assert.equal(out.indexOf('kkqH'), -1);
+  assert.equal(uidRelations('Cloud read blocked (x) · token [no-auth] · bound [none] · session [none]', self), ' · token none · bound none · session none');
+  const ev = { name: 'e', fields: { name: { stringValue: 'clientError' }, detail: { stringValue: d }, role: { stringValue: '\u2014' }, t: { integerValue: '1795000000000' } } };
+  assert.ok(/live houses refused · token self · bound other · session none · role —$/.test(eventLine(ev, self)), eventLine(ev, self));
 });
 
 console.log('firestore-read test: ' + n + ' checks passed');
