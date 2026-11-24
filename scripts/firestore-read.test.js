@@ -17,7 +17,9 @@ const FORBIDDEN = [
   'paid by Jane',
   '125000',
   'Ann Arbor',
-  'PERMISSION_DENIED: street is secret'
+  'PERMISSION_DENIED: street is secret',
+  'fuNAPn3vFAKE0000:APA91bFAKEtokenFAKEtokenFAKEtokenFAKEtokenFAKEtoken',
+  'dGhpcyBpcyBhIGZha2Ugd2ViIHB1c2ggdG9rZW4gZm9yIHRlc3Rpbmc'
 ];
 
 function fakeDoc(id, fields) {
@@ -124,6 +126,29 @@ t('formatError never echoes a response body', function () {
   const out = formatError('sites/abc123', new Error('PERMISSION_DENIED: street is secret'));
   assert.equal(out, '=== sites/abc123\nREAD FAILED');
   checkClean('formatError', out);
+});
+
+t('push-token maps print only a key count, never a token (users/{uid}.fcm, Peter 11/23)', function () {
+  const u = fakeDoc('uid1', {
+    name: { stringValue: 'Jane Builder' },
+    fcm: { mapValue: { fields: {
+      'fuNAPn3vFAKE0000:APA91bFAKEtokenFAKEtokenFAKEtokenFAKEtokenFAKEtoken': { integerValue: '1' },
+      'dGhpcyBpcyBhIGZha2Ugd2ViIHB1c2ggdG9rZW4gZm9yIHRlc3Rpbmc': { integerValue: '2' }
+    } } },
+    other: { mapValue: { fields: {
+      'fuNAPn3vFAKE0000:APA91bFAKEtokenFAKEtokenFAKEtokenFAKEtokenFAKEtoken': { integerValue: '1' },
+      u2: { stringValue: 'sub' }
+    } } }
+  });
+  const s = shape(u.fields);
+  assert.equal(s.fcm.type, 'redacted');
+  assert.equal(s.fcm.count, 2);
+  assert.equal(s.other.fields.u2, 'string');
+  assert.equal(s.other.fields['(token keys)'].count, 1);
+  const out = formatDoc(docPath(u.name), u);
+  assert.equal(out.indexOf('fcm: {<2 keys>}') >= 0, true, out);
+  assert.equal(/APA91/.test(out), false, out);
+  checkClean('token map', out);
 });
 
 console.log('firestore-read test: ' + n + ' checks passed');

@@ -82,6 +82,8 @@ const body = [
   extractFn('sampleState'), extractConst('SUB_SEL_CATS'),
   extractFn('specTemplate'), extractFn('specFields'), extractFn('specStatus'),
   extractFn('specComplete'), extractFn('tradeSelections'),
+  extractFn('appMode'), extractFn('memberRoleOf'), extractFn('crewUidLive'), extractFn('crewCloudOk'),
+  extractFn('crewRowOn'), extractFn('crewLiveProjects'),
   extractFn('subProjects'), extractFn('subTradeFor'),
 ].join('\n');
 

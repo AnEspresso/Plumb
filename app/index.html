@@ -5612,10 +5612,11 @@ const DocFetch={_c:{},FRESH:25*60000,WAIT:20000,
 };
 function docFileOf(d,blob){const type=String((d&&d.mime)||(blob&&blob.type)||'');
   try{return new File([blob],String((d&&d.n)||'document'),type?{type:type}:{});}catch(x){return null;}}
-/* share the file itself; true when the share sheet was asked for (nothing awaited before it) */
+/* share the file itself; true when the share sheet was asked for (nothing awaited before it).
+   ENG-10 (Peter 11/23): files only. A title or text rides along as its own item, so Save to Files saved a 19-byte "text 3.txt" beside the .docx. */
 function docShare(d,blob){const f=docFileOf(d,blob);
   try{if(f&&typeof navigator!=='undefined'&&navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
-    navigator.share({files:[f],title:String(d.n||'')}).catch(function(x){if(x&&x.name==='AbortError')return;toast(DOC_OPEN_WORDS.failed);});
+    navigator.share({files:[f]}).catch(function(x){if(x&&x.name==='AbortError')return;toast(DOC_OPEN_WORDS.failed);});
     return true;}}catch(x){}
   return false;}
 /* runs inside the tap: the share, download or open happens before anything is awaited */
@@ -6291,7 +6292,7 @@ async function laEnter(p){
   }else if(m&&m.role==='client'){
     Data.setSession({role:'client',site:m.siteId,name:p.name||p.email,since:Date.now(),mode:'real',auth,member:m});
   }else if(m&&m.role==='sub'){
-    Data.setSession({role:'subs',name:m.name||p.name||p.email,since:Date.now(),mode:'real',auth,member:m});
+    Data.setSession({role:'subs',name:m.name||(p.provider==='firebase'?'':(p.name||p.email)),since:Date.now(),mode:'real',auth,member:m});   /* 2.520: a crew is its roster name (applyLiveRole fills it from the house), never the account's display name */
   }else{
     Data.setSession({role:'builder',name:p.name||p.email,since:Date.now(),mode:'real',owner:p.rpRole==='owner',auth,rpRole:p.rpRole,gates:p.gates||null});
   }
@@ -6798,25 +6799,60 @@ function liveRoleFromSites(){
   if(!uid)return null;
   let sub=null,client=null;
   (state.projects||[]).forEach(function(p){
-    const r=(p.members&&p.members[uid])||((p.memberUids||[]).indexOf(uid)>=0&&(state.session&&state.session.member&&state.session.member.role))||'';
+    const r=memberRoleOf(p,uid)||((p.memberUids||[]).indexOf(uid)>=0&&(state.session&&state.session.member&&state.session.member.role))||'';
     const info=(p.memberInfo&&p.memberInfo[uid])||{};
-    if(r==='sub'&&!sub)sub={role:'sub',siteId:String(p.id),name:info.name||'',trade:info.trade||'',email:info.email||''};
+    /* 2.520 crew home: the crew name is the house's roster row (memberInfo subId, then name), never what this phone saved */
+    if(r==='sub'&&!sub&&crewCloudOk(p)){const row=crewRowOn(p,uid,'');
+      sub={role:'sub',siteId:String(p.id),name:(row&&row.name)||info.name||'',trade:info.trade||(row&&row.specialty)||'',email:info.email||''};
+      if(row&&row.id!=null)sub.subId=String(row.id);}
     if(r==='client'&&!client)client={role:'client',siteId:String(p.id),name:info.name||'',email:info.email||''};
   });
   if(sub)return sub;
   if(client)return client;
   return null;
 }
+/* ── 2.520 crew home: a live crew sees the houses the server has them on as crew ──
+   Membership (members[uid]==='sub') is the authority, not the crew name this phone saved.
+   Demo, and accounts without a uid, keep matching by name. */
+function memberRoleOf(p,uid){uid=String(uid||'');if(!p||!uid)return '';
+  let m=p.members&&p.members[uid];
+  if(m==null){try{const cm=(typeof Sync!=='undefined'&&Sync._cloudMembers)||{};m=(cm[String(p.id)]||{})[uid];}catch(e){}}
+  return String(typeof m==='string'?m:((m&&m.role)||'')).toLowerCase();}
+function crewUidLive(){
+  try{if(appMode()!=='real')return '';}catch(e){return '';}
+  const s=state.session||{};if(s.role!=='subs')return '';
+  return String((s.auth&&s.auth.uid)||(typeof Sync!=='undefined'&&Sync.uid)||'');}
+/* once the server's house list has arrived, a house it did not send is not a crew house (a stale local copy) */
+function crewCloudOk(p){try{if(typeof Sync==='undefined'||!Sync._sitesPulled)return true;return !!(Sync._onServer&&Sync._onServer[String(p.id)]);}catch(e){return true;}}
+/* the roster row: memberInfo subId, then memberInfo name, then the saved crew name */
+function crewRowOn(p,uid,fallbackName){
+  const subs=(p&&p.subs)||[];const info=(p&&p.memberInfo&&p.memberInfo[String(uid||'')])||{};let r=null;
+  if(info.subId!=null&&info.subId!=='')r=subs.find(function(x){return String(x.id)===String(info.subId);})||null;
+  if(!r&&info.name)r=subs.find(function(x){return x.name===info.name;})||null;
+  if(!r&&fallbackName)r=subs.find(function(x){return x.name===fallbackName;})||null;
+  return r;}
+function crewLiveProjects(uid){return (state.projects||[]).filter(function(p){return memberRoleOf(p,uid)==='sub'&&crewCloudOk(p);});}
 function applyLiveRole(){
   if(appMode()!=='real')return false;
   const m=liveRoleFromSites();if(!m)return false;
   const s=state.session||{};
   if(m.role==='sub'&&s.role!=='subs'){
-    Data.setSession({role:'subs',name:m.name||s.name||'',since:Date.now(),mode:'real',auth:s.auth,member:m});
-    try{const p=laProfile();if(p){p.member=m;laSaveProfile(p);}}catch(e){}
+    Data.setSession({role:'subs',name:m.name||'',since:Date.now(),mode:'real',auth:s.auth,member:m});   /* never the account's display name */
+    try{const p=laProfile();if(p){p.member=m;laSaveProfile(p);laSaveHat(p);}}catch(e){}
     try{document.getElementById('overview')?.classList.remove('show');}catch(e){}
     try{document.getElementById('clientview')?.classList.remove('show');}catch(e){}
     try{showSubView();}catch(e){}
+    return true;
+  }
+  /* Already crew under a wrong saved name (Peter's +sub iPhone 11/23: "Northwind Mechanical", the account's
+     sign-up name, while Beaumont has him as Metro Appliance): take the house's roster name, and keep it. */
+  if(m.role==='sub'&&s.role==='subs'&&m.name&&m.name!==s.name){
+    const was=s.name||'';
+    Data.setSession(Object.assign({},s,{name:m.name,member:Object.assign({},s.member||{},m)}));
+    try{const p=laProfile();if(p){p.member=Object.assign({},p.member||{},m);laSaveProfile(p);laSaveHat(p);}}catch(e){}
+    try{logEvent('crewNameHealed',(was?'saved name replaced':'no saved name')+' \u2192 roster row');}catch(e){}
+    try{updateHeader();}catch(e){}
+    try{if(document.getElementById('subview').classList.contains('show'))renderSubView();}catch(e){}
     return true;
   }
   if(m.role==='client'&&s.role!=='client'){
@@ -8751,7 +8787,7 @@ function isIdleSite(p){
   return quiet;}
 function idleWorksites(projs){return (projs||[]).filter(isIdleSite);}
 function visibleProjects(){
-  if(state.session&&state.session.role==='subs'){return state.projects.filter(p=>p.subs.some(s=>s.name===state.session.name));}
+  if(state.session&&state.session.role==='subs'){const u=crewUidLive();if(u)return crewLiveProjects(u);return state.projects.filter(p=>p.subs.some(s=>s.name===state.session.name));}
   return state.projects;
 }
 function isOffBook(p){return !!(p&&p.doneAt);}
@@ -11893,8 +11929,9 @@ if(typeof document!=='undefined'){document.addEventListener('visibilitychange',f
 /* ════════ crew restricted view ════════ */
 let subSel=null;let subTab='todo';
 function showSubView(){subSel=null;subTab='todo';document.getElementById('subview').classList.add('show');try{updateHeader();}catch(e){}renderSubView();}
-function subProjects(){const n=state.session?state.session.name:'';return state.projects.filter(p=>p.subs.some(s=>s.name===n));}
-function subTradeFor(p){const n=state.session.name;const s=p.subs.find(x=>x.name===n);return s?{id:s.specialty,label:specLabel(s.specialty),cleared:s.cleared}:{id:'general',label:'General',cleared:null};}
+function subProjects(){const u=crewUidLive();if(u)return crewLiveProjects(u);
+  const n=state.session?state.session.name:'';return state.projects.filter(p=>p.subs.some(s=>s.name===n));}
+function subTradeFor(p){const n=state.session.name;const u=crewUidLive();const s=u?crewRowOn(p,u,n):p.subs.find(x=>x.name===n);return s?{id:s.specialty,label:specLabel(s.specialty),cleared:s.cleared}:{id:'general',label:'General',cleared:null};}
 function renderSubView(){
   const who=state.session;document.getElementById('svWho').textContent=who?who.name+' · Crew':'Crew';
   const body=document.getElementById('svBody');const projs=subProjects();const nav=document.getElementById('subNav');
@@ -12279,7 +12316,7 @@ async function _csvShare(fname,txt,doneMsg){
       try{
         const file=new File([txt],fname,{type:'text/csv'});
         if(!navigator.canShare||navigator.canShare({files:[file]})){
-          await navigator.share({files:[file],title:fname});toast(doneMsg);return true;}
+          await navigator.share({files:[file]});toast(doneMsg);return true;}
       }catch(e){if(e&&e.name==='AbortError'){return true;}}
     }
     const blob=new Blob([txt],{type:'text/csv'});const a=document.createElement('a');
