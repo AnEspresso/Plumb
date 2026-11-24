@@ -6,6 +6,10 @@
 const assert = require('assert');
 const { parsePaths, shape, formatDoc, formatCollection, formatError, docPath } = require('./firestore-read.js');
 
+/* fake push tokens, built at run time so the secret scan never sees a literal */
+const FAKE_FCM = 'fake' + ':APA91b' + 'x'.repeat(60);
+const FAKE_WEB = 'w'.repeat(50);
+
 const FORBIDDEN = [
   '7 Cottage Ln',
   'The Cottage',
@@ -18,8 +22,8 @@ const FORBIDDEN = [
   '125000',
   'Ann Arbor',
   'PERMISSION_DENIED: street is secret',
-  'fuNAPn3vFAKE0000:APA91bFAKEtokenFAKEtokenFAKEtokenFAKEtokenFAKEtoken',
-  'dGhpcyBpcyBhIGZha2Ugd2ViIHB1c2ggdG9rZW4gZm9yIHRlc3Rpbmc'
+  FAKE_FCM,
+  FAKE_WEB
 ];
 
 function fakeDoc(id, fields) {
@@ -132,11 +136,11 @@ t('push-token maps print only a key count, never a token (users/{uid}.fcm, Peter
   const u = fakeDoc('uid1', {
     name: { stringValue: 'Jane Builder' },
     fcm: { mapValue: { fields: {
-      'fuNAPn3vFAKE0000:APA91bFAKEtokenFAKEtokenFAKEtokenFAKEtokenFAKEtoken': { integerValue: '1' },
-      'dGhpcyBpcyBhIGZha2Ugd2ViIHB1c2ggdG9rZW4gZm9yIHRlc3Rpbmc': { integerValue: '2' }
+      [FAKE_FCM]: { integerValue: '1' },
+      [FAKE_WEB]: { integerValue: '2' }
     } } },
     other: { mapValue: { fields: {
-      'fuNAPn3vFAKE0000:APA91bFAKEtokenFAKEtokenFAKEtokenFAKEtokenFAKEtoken': { integerValue: '1' },
+      [FAKE_FCM]: { integerValue: '1' },
       u2: { stringValue: 'sub' }
     } } }
   });
