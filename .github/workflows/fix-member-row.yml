@@ -1,0 +1,61 @@
+name: Fix a crew's roster row (one-off)
+# Points one crew's memberInfo on one house at one roster row: exactly
+# meta.memberInfo.<uid>.name and .subId, with one field-path update. Nothing else.
+# Refuses unless the row id equals the code's subId, the code is a crew code for
+# this house, the uid holds the code's claim, and the uid is crew on the house.
+# DRY RUN unless apply is "yes". The log prints only equal/different, never values.
+on:
+  workflow_dispatch:
+    inputs:
+      site:
+        description: 'House doc id (sites/<id>)'
+        required: true
+      uid:
+        description: 'Crew account uid'
+        required: true
+      row:
+        description: 'Roster row index in meta.subs (0-based)'
+        required: true
+      code:
+        description: 'The crew code this row belongs to (PB-...)'
+        required: true
+      apply:
+        description: 'Type yes to write. Anything else is a dry run.'
+        required: false
+        default: 'dry run'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Test the checks (no secrets, no network)
+        run: node scripts/fixMemberRow.test.mjs
+
+      - name: Auth with the Firebase service account
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PLUMB }}
+        run: printf '%s' "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+
+      - name: Fix
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          FIX_SITE: ${{ inputs.site }}
+          FIX_UID: ${{ inputs.uid }}
+          FIX_ROW: ${{ inputs.row }}
+          FIX_CODE: ${{ inputs.code }}
+          FIX_APPLY: ${{ inputs.apply }}
+        run: |
+          set -euo pipefail
+          npm i --no-save --no-audit --no-fund firebase-admin@12 >/dev/null
+          node scripts/fix-member-row.mjs
+
+      - name: Remove the key file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

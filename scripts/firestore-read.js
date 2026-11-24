@@ -7,7 +7,8 @@
    The log is allowlist-only: counts, document paths/IDs, field names, and
    value types. Field values are never printed — not strings, numbers,
    emails, phones, addresses, names, or anything nested in a map or array.
-   Error lines never echo a response body or other data.
+   Error lines never echo a response body or other data. Push-token maps
+   (fcm and the like) print only a key count: their keys are the tokens.
 
    Exit 0 = all read, 1 = a bad path, 2 = a read failed. */
 'use strict';
@@ -42,10 +43,18 @@ function parsePaths(raw) {
   });
 }
 
+/* Push tokens (Peter 11/23): users/{uid}.fcm is a map keyed BY the device's FCM
+   token, so its keys are secrets. A map whose field name says token/fcm prints
+   only its key count, and any key shaped like a token prints as (token). */
+const TOKEN_MAP = /^(fcm|apns|webpush|push)$|token/i;
+function tokenLike(k) {
+  return /:APA91/.test(k) || /^[A-Za-z0-9_:.-]{40,}$/.test(k);
+}
 function safeKey(k) {
   k = String(k);
   if (/@/.test(k) || /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/.test(k) || /\+\d{10,14}/.test(k))
     return '(key)';
+  if (tokenLike(k)) return '(token)';
   return k;
 }
 
@@ -63,7 +72,18 @@ function typeOf(v) {
 
 function shape(fields) {
   const o = {};
-  Object.keys(fields || {}).sort().forEach(function (k) { o[safeKey(k)] = typeOf(fields[k]); });
+  let hidden = 0;
+  Object.keys(fields || {}).sort().forEach(function (k) {
+    const v = fields[k];
+    if (TOKEN_MAP.test(k) && v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, 'mapValue')) {
+      o[safeKey(k)] = { type: 'redacted', count: Object.keys((v.mapValue && v.mapValue.fields) || {}).length };
+      return;
+    }
+    const sk = safeKey(k);
+    if (sk === '(token)') { hidden++; return; }
+    o[sk] = typeOf(v);
+  });
+  if (hidden) o['(token keys)'] = { type: 'redacted', count: hidden };
   return o;
 }
 
@@ -80,6 +100,7 @@ function renderShape(s, indent) {
     }).join('\n');
   }
   if (s.type === 'map') return 'map' + renderFields(s.fields, indent);
+  if (s.type === 'redacted') return '{<' + (s.count || 0) + ' keys>}';
   return 'unknown';
 }
 

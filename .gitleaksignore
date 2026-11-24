@@ -1,0 +1,2 @@
+# Fake push token in a test fixture (commit 9996873, replaced in the next commit by a run-time string). Not a secret.
+99968733407ea478fc982881ee577e4a425be79f:scripts/firestore-read.test.js:generic-api-key:21

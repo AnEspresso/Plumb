@@ -6,6 +6,10 @@
 const assert = require('assert');
 const { parsePaths, shape, formatDoc, formatCollection, formatError, docPath } = require('./firestore-read.js');
 
+/* fake push tokens, built at run time so the secret scan never sees a literal */
+const FAKE_FCM = 'fake' + ':APA91b' + 'x'.repeat(60);
+const FAKE_WEB = 'w'.repeat(50);
+
 const FORBIDDEN = [
   '7 Cottage Ln',
   'The Cottage',
@@ -17,7 +21,9 @@ const FORBIDDEN = [
   'paid by Jane',
   '125000',
   'Ann Arbor',
-  'PERMISSION_DENIED: street is secret'
+  'PERMISSION_DENIED: street is secret',
+  FAKE_FCM,
+  FAKE_WEB
 ];
 
 function fakeDoc(id, fields) {
@@ -124,6 +130,29 @@ t('formatError never echoes a response body', function () {
   const out = formatError('sites/abc123', new Error('PERMISSION_DENIED: street is secret'));
   assert.equal(out, '=== sites/abc123\nREAD FAILED');
   checkClean('formatError', out);
+});
+
+t('push-token maps print only a key count, never a token (users/{uid}.fcm, Peter 11/23)', function () {
+  const u = fakeDoc('uid1', {
+    name: { stringValue: 'Jane Builder' },
+    fcm: { mapValue: { fields: {
+      [FAKE_FCM]: { integerValue: '1' },
+      [FAKE_WEB]: { integerValue: '2' }
+    } } },
+    other: { mapValue: { fields: {
+      [FAKE_FCM]: { integerValue: '1' },
+      u2: { stringValue: 'sub' }
+    } } }
+  });
+  const s = shape(u.fields);
+  assert.equal(s.fcm.type, 'redacted');
+  assert.equal(s.fcm.count, 2);
+  assert.equal(s.other.fields.u2, 'string');
+  assert.equal(s.other.fields['(token keys)'].count, 1);
+  const out = formatDoc(docPath(u.name), u);
+  assert.equal(out.indexOf('fcm: {<2 keys>}') >= 0, true, out);
+  assert.equal(/APA91/.test(out), false, out);
+  checkClean('token map', out);
 });
 
 console.log('firestore-read test: ' + n + ' checks passed');

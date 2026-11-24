@@ -680,7 +680,7 @@ t('2.516.0 Word and Excel files save with their name, PDFs still open',$("docSav
     toastAction=function(m,label,fn){L.push('ready:'+m+'/'+label);window.__od.ta=fn;};
     isStandalonePWA=function(){return window.__odStand;};
     Object.defineProperty(navigator,'canShare',{configurable:true,value:function(d){return !!window.__odCan&&!!(d&&d.files&&d.files[0]);}});
-    Object.defineProperty(navigator,'share',{configurable:true,value:function(d){L.push('share:'+d.files[0].name+'|'+d.files[0].type);return Promise.resolve();}});
+    Object.defineProperty(navigator,'share',{configurable:true,value:function(d){L.push('share:'+d.files[0].name+'|'+d.files[0].type);window.__od.shareKeys=Object.keys(d||{}).sort().join(',');return Promise.resolve();}});
     state.session={role:'builder',name:'You'};
     var p=P();p.docs=p.docs||[];
     p.docs.push({n:'TEST2 doc crew.docx',fileId:'doc_odw',aud:'subs',mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
@@ -701,6 +701,8 @@ t('2.516.0 Word and Excel files save with their name, PDFs still open',$("docSav
   t('2.519.0 when the file is in hand, Open is ready',!!b1&&!b1.dis&&b1.t==='Open'&&LOG()==='fetch:https://store/doc_odw',JSON.stringify(b1)+' '+LOG());
   let r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
   t('2.519.0 [local miss] Open on a Word file shares it inside the tap, under its own name and type (iPhone share sheet), no window.open',r==='share:TEST2 doc crew.docx|'+WT&&!$("document.getElementById('infoScrim').classList.contains('show')"),r);
+  t('ENG-10 the file share carries only the file: no title, text or url (each made its own item in Save to Files, a 19-byte "text 3.txt")',$("window.__od.shareKeys")==='files',$("window.__od.shareKeys"));
+  t('ENG-10 every file share in the app passes files only (document share and CSV export)',$("[docShare,_csvShare].every(function(f){var x=String(f);return /share\\(\\{files:\\[(f|file)\\]\\}\\)/.test(x)&&!/files:\\[(f|file)\\],(title|text|url)/.test(x);})"));
   prime("window.__odUrl={doc_odw:'https://store/doc_odw'};window.__odCan=false");$("openDoc("+W+")");await settle();
   r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
   t('2.519.0 [local miss] where the phone can\'t share it (Android, computers), Open saves it by name inside the tap, no window.open',r==='save:TEST2 doc crew.docx',r);
@@ -4098,6 +4100,51 @@ S('price-switch');
 /* ════ MONEY WORDS (2.460.0) ════
    Agency's builder-language swaps (swaps.md 10/4), the On/Under budget rule on
    the house Money line, and the homeowner's credit balance reading as a credit. */
+/* ════ crew home: live crew see the houses the server has them on (Peter's +sub iPhone, 11/23) ════ */
+S('crew-home-live');
+{const R=JSON.parse($(`(function(){
+  const save={projects:state.projects,session:state.session,active:state.activeId,pulled:Sync._sitesPulled,on:Sync._onServer,cm:Sync._cloudMembers,sel:subSel};
+  const _am=appMode,_pe=persist,_lsp=laSaveProfile,_lsh=laSaveHat,_lp=laProfile,_le=logEvent;
+  const R={};
+  try{
+    appMode=function(){return 'real';};persist=function(){};laSaveProfile=function(){};laSaveHat=function(){};laProfile=function(){return null;};logEvent=function(){};
+    const U='uSUBX';
+    const bmt={id:'bmtX',street:'509 Beaumont Park',city:'Bloomfield',items:[],docs:[],bookings:[],subs:[{id:'s7',name:'Metro Appliance',specialty:'general',cleared:null},{id:'s8',name:'Lakeside Crew',specialty:'appliance',cleared:null}],members:{bX:'builder'},memberInfo:{}};
+    bmt.members[U]='sub';bmt.memberInfo[U]={name:'Lakeside Crew',subId:'s7',trade:'general'};
+    const cal={id:'calX',street:'288 Calderwood Ln',city:'Ferndale',items:[],docs:[],bookings:[],subs:[{id:'p2e',name:'Northwind Mechanical',specialty:'hvac',cleared:Date.now()}]};
+    const other={id:'othX',street:'12 Other St',items:[],docs:[],bookings:[],subs:[{id:'o1',name:'Northwind Mechanical',specialty:'hvac',cleared:null}],members:{zz:'sub'},memberInfo:{zz:{name:'Northwind Mechanical'}}};
+    state.projects=[cal,bmt,other];Sync._sitesPulled=false;Sync._onServer={};Sync._cloudMembers={};
+    const ids=function(){return subProjects().map(function(p){return p.id;}).join(',');};
+    state.session={role:'subs',name:'Northwind Mechanical',mode:'real',auth:{uid:U}};
+    R.wrongIds=ids();R.wrongVis=visibleProjects().map(function(p){return p.id;}).join(',');
+    R.subIdTrade=subTradeFor(bmt).id;
+    applyLiveRole();R.healed=state.session.name;R.healedSub=String((state.session.member||{}).subId||'');R.healedRole=state.session.role;
+    state.session={role:'subs',name:'',mode:'real',auth:{uid:U}};
+    R.noMemIds=ids();applyLiveRole();R.noMemName=state.session.name;
+    bmt.memberInfo[U]={name:'Lakeside Crew'};R.byName=subTradeFor(bmt).id;
+    bmt.memberInfo[U]={};state.session={role:'subs',name:'Metro Appliance',mode:'real',auth:{uid:U}};R.bySession=subTradeFor(bmt).id;
+    bmt.memberInfo[U]={name:'Metro Appliance',subId:'s7'};
+    const ghost={id:'ghX',street:'1 Ghost Rd',items:[],docs:[],bookings:[],subs:[{id:'g',name:'Metro Appliance',specialty:'general'}],members:{},memberInfo:{}};
+    ghost.members[U]='sub';ghost.memberInfo[U]={subId:'g'};
+    state.projects=[cal,bmt,other,ghost];
+    R.prePull=ids();Sync._sitesPulled=true;Sync._onServer={bmtX:true,othX:true};R.postPull=ids();
+    state.session={role:'subs',name:'Metro Appliance',mode:'real',auth:{uid:U}};subSel=null;renderSubView();
+    const h=document.getElementById('svBody').innerHTML;R.render=h.indexOf('509 Beaumont Park')>=0&&h.indexOf('Calderwood')<0&&h.indexOf('Ghost')<0;R.who=document.getElementById('svWho').textContent;
+    appMode=_am;Sync._sitesPulled=false;Sync._onServer={};
+    state.session={role:'subs',name:'Northwind Mechanical'};R.demoIds=ids();R.demoTrade=subTradeFor(cal).id;
+  }finally{appMode=_am;persist=_pe;laSaveProfile=_lsp;laSaveHat=_lsh;laProfile=_lp;logEvent=_le;
+    state.projects=save.projects;state.session=save.session;state.activeId=save.active;Sync._sitesPulled=save.pulled;Sync._onServer=save.on;Sync._cloudMembers=save.cm;subSel=save.sel;}
+  return JSON.stringify(R);})()`));
+  t('a wrong saved crew name (Northwind) still lists the house the server has this login on as crew (Beaumont), and not the stale local Calderwood copy',R.wrongIds==='bmtX'&&R.wrongVis==='bmtX',JSON.stringify(R));
+  t('the crew row comes from memberInfo subId first (Metro Appliance row), over memberInfo name',R.subIdTrade==='general',R.subIdTrade);
+  t('applyLiveRole corrects a wrong saved crew name while already crew: the session becomes the roster row (Metro Appliance, s7)',R.healed==='Metro Appliance'&&R.healedSub==='s7'&&R.healedRole==='subs',R.healed+' '+R.healedSub);
+  t('no saved member or name: the houses still list, and the crew name is filled from the house, not the account name',R.noMemIds==='bmtX'&&R.noMemName==='Metro Appliance',R.noMemIds+' '+R.noMemName);
+  t('row fallback: memberInfo name when there is no subId, then the saved crew name',R.byName==='appliance'&&R.bySession==='general',R.byName+' '+R.bySession);
+  t('once the server list has arrived, a local member copy it did not send drops out of the crew list',R.prePull==='bmtX,ghX'&&R.postPull==='bmtX',R.prePull+' / '+R.postPull);
+  t('Your houses renders 509 Beaumont Park as Metro Appliance, no Calderwood, no stale copy',R.render&&R.who==='Metro Appliance · Crew',R.who);
+  t('demo mode is unchanged: crew houses still match by name',R.demoIds==='calX,othX'&&R.demoTrade==='hvac',R.demoIds);
+  t('sign-in never uses the account display name as a crew name',$("String(laEnter).indexOf(\"name:m.name||p.name||p.email\")<0&&String(laEnter).indexOf(\"p.provider==='firebase'?''\")>=0"));
+}
 S('money-words');
 (function(){
   const txt=h=>String(h).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
