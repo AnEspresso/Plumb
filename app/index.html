@@ -3985,15 +3985,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.522.0 - Crew home shows only the houses you’re on now, with the right crew name';   /* Agency 11/24, word for word. */
+const PLUMB_VERSION='2.523.0 - No more ‘cloud sync blocked’ message when you switch accounts';   /* Agency 11/24, word for word. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1796760000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.522.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796846400000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.523.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6351,8 +6351,11 @@ async function liveAuthSubmit(){
      its own: its account-change cache clear reloads the page, which raced the
      users-doc reads below and lost the new profile (the old session came back). */
   try{Sync._signingIn=true;}catch(e){}
+  let paused=false;
   try{
     if(laFirebaseReady()){
+      /* 2.523.0 (#129): close the last account's listens before the token changes; laEnter connects again under this account. */
+      try{if(typeof Sync!=='undefined'&&Sync.on){Sync.disconnect();paused=true;}}catch(e){}
       if(!firebase.apps.length)firebase.initializeApp(fbConfig());emuWire();
       let cred;
       if(laMode==='signup'){
@@ -6392,6 +6395,7 @@ async function liveAuthSubmit(){
       :code==='auth/user-not-found'?'No account with that email — create one.'
       :code==='auth/weak-password'?'Password is too weak.'
       :authPlain(e,'Sign-in didn\u2019t work. Try again in a minute.'));
+    try{if(paused&&!Sync.on&&fbConfig())Sync.init();}catch(e){}
   }finally{btn.disabled=false;btn.textContent=old;try{Sync._signingIn=false;}catch(e){}}
 }
 function laOk(msg){const e=document.getElementById('laErr');if(!e)return;
@@ -10928,7 +10932,13 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     if((this.mode||'demo')==='live'){
       const myUid=(state.session&&state.session.auth&&state.session.auth.uid)||this.uid;
       if(myUid){const u=this.db.collection('sites').where('memberUids','array-contains',myUid)
-        .onSnapshot({includeMetadataChanges:true},handler,err=>{this._permFail('live houses',err);this._liveRetry(err);});this.unsub.push(u);}
+        .onSnapshot({includeMetadataChanges:true},handler,err=>{
+          /* 2.523.0 (#129): a listen opened for the last account is re-run by Firestore under the new account's token when the sign-in
+             form swaps accounts; the rules refuse it (the query names the other uid). That is not a rules problem: the sign-in
+             rebinds under the new account, so say nothing and let it go. */
+          let tok=null;try{const cu=firebase.auth().currentUser;tok=cu&&cu.uid;}catch(_){}
+          if(err&&err.code==='permission-denied'&&tok&&tok!==myUid){try{u();}catch(_){}try{logEvent('staleListenRefused','live houses');}catch(_){}return;}
+          this._permFail('live houses',err);this._liveRetry(err);});this.unsub.push(u);}
     }else{
       /* Demo is a local-only sandbox. The seed never leaves the device and
          invites are Live-only, so there is nothing legitimate to pull. The old
