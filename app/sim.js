@@ -4103,7 +4103,7 @@ S('price-switch');
 /* ════ crew home: live crew see the houses the server has them on (Peter's +sub iPhone, 11/23) ════ */
 S('crew-home-live');
 {const R=JSON.parse($(`(function(){
-  const save={projects:state.projects,session:state.session,active:state.activeId,pulled:Sync._sitesPulled,on:Sync._onServer,cm:Sync._cloudMembers,sel:subSel};
+  const save={projects:state.projects,session:state.session,active:state.activeId,pulled:Sync._sitesPulled,on:Sync._onServer,sl:Sync._serverList,cm:Sync._cloudMembers,sel:subSel};
   const _am=appMode,_pe=persist,_lsp=laSaveProfile,_lsh=laSaveHat,_lp=laProfile,_le=logEvent;
   const R={};
   try{
@@ -4118,6 +4118,8 @@ S('crew-home-live');
     state.session={role:'subs',name:'Northwind Mechanical',mode:'real',auth:{uid:U}};
     R.wrongIds=ids();R.wrongVis=visibleProjects().map(function(p){return p.id;}).join(',');
     R.subIdTrade=subTradeFor(bmt).id;
+    applyLiveRole();R.prePullName=state.session.name;
+    Sync._sitesPulled=true;Sync._serverList={bmtX:true,othX:true};Sync._onServer={bmtX:true,othX:true};   /* 2.522.0: names come only from server-sent houses */
     applyLiveRole();R.healed=state.session.name;R.healedSub=String((state.session.member||{}).subId||'');R.healedRole=state.session.role;
     state.session={role:'subs',name:'',mode:'real',auth:{uid:U}};
     R.noMemIds=ids();applyLiveRole();R.noMemName=state.session.name;
@@ -4127,14 +4129,15 @@ S('crew-home-live');
     const ghost={id:'ghX',street:'1 Ghost Rd',items:[],docs:[],bookings:[],subs:[{id:'g',name:'Metro Appliance',specialty:'general'}],members:{},memberInfo:{}};
     ghost.members[U]='sub';ghost.memberInfo[U]={subId:'g'};
     state.projects=[cal,bmt,other,ghost];
-    R.prePull=ids();Sync._sitesPulled=true;Sync._onServer={bmtX:true,othX:true};R.postPull=ids();
+    Sync._sitesPulled=false;Sync._serverList={};R.prePull=ids();Sync._sitesPulled=true;Sync._onServer={bmtX:true,othX:true};Sync._serverList={bmtX:true,othX:true};R.postPull=ids();
     state.session={role:'subs',name:'Metro Appliance',mode:'real',auth:{uid:U}};subSel=null;renderSubView();
     const h=document.getElementById('svBody').innerHTML;R.render=h.indexOf('509 Beaumont Park')>=0&&h.indexOf('Calderwood')<0&&h.indexOf('Ghost')<0;R.who=document.getElementById('svWho').textContent;
-    appMode=_am;Sync._sitesPulled=false;Sync._onServer={};
+    appMode=_am;Sync._sitesPulled=false;Sync._onServer={};Sync._serverList={};
     state.session={role:'subs',name:'Northwind Mechanical'};R.demoIds=ids();R.demoTrade=subTradeFor(cal).id;
   }finally{appMode=_am;persist=_pe;laSaveProfile=_lsp;laSaveHat=_lsh;laProfile=_lp;logEvent=_le;
-    state.projects=save.projects;state.session=save.session;state.activeId=save.active;Sync._sitesPulled=save.pulled;Sync._onServer=save.on;Sync._cloudMembers=save.cm;subSel=save.sel;}
+    state.projects=save.projects;state.session=save.session;state.activeId=save.active;Sync._sitesPulled=save.pulled;Sync._onServer=save.on;Sync._serverList=save.sl;Sync._cloudMembers=save.cm;subSel=save.sel;}
   return JSON.stringify(R);})()`));
+  t('2.522.0: before the server list arrives, a wrong saved crew name is left alone (no naming from local copies)',R.prePullName==='Northwind Mechanical',R.prePullName);
   t('a wrong saved crew name (Northwind) still lists the house the server has this login on as crew (Beaumont), and not the stale local Calderwood copy',R.wrongIds==='bmtX'&&R.wrongVis==='bmtX',JSON.stringify(R));
   t('the crew row comes from memberInfo subId first (Metro Appliance row), over memberInfo name',R.subIdTrade==='general',R.subIdTrade);
   t('applyLiveRole corrects a wrong saved crew name while already crew: the session becomes the roster row (Metro Appliance, s7)',R.healed==='Metro Appliance'&&R.healedSub==='s7'&&R.healedRole==='subs',R.healed+' '+R.healedSub);
@@ -4144,6 +4147,73 @@ S('crew-home-live');
   t('Your houses renders 509 Beaumont Park as Metro Appliance, no Calderwood, no stale copy',R.render&&R.who==='Metro Appliance · Crew',R.who);
   t('demo mode is unchanged: crew houses still match by name',R.demoIds==='calX,othX'&&R.demoTrade==='hvac',R.demoIds);
   t('sign-in never uses the account display name as a crew name',$("String(laEnter).indexOf(\"name:m.name||p.name||p.email\")<0&&String(laEnter).indexOf(\"p.provider==='firebase'?''\")>=0"));
+}
+S('crew-home-server-list');
+/* 2.522.0 (Peter's +sub iPhone, 11/24): a live crew phone held a stale local Calderwood copy (members[uid]='sub',
+   Northwind row). The sites handler redrew before it marked the server's answer, so the copy stayed listed and named
+   the crew. Now: the answer is marked first, the first answer always redraws, local houses the server did not send are
+   dropped with their held saves, the crew name comes only from server-sent houses, and a refused house list retries. */
+{
+$(`(function(){
+  window.__c={writes:[],sitesH:null,sitesErr:null,attaches:0,renders:[],hats:[],tok:[],subs:0};
+  window.__cSave={projects:state.projects,session:state.session,active:state.activeId,am:appMode,rr:rerenderCurrent,lsp:laSaveProfile,lsh:laSaveHat,lp:laProfile,le:logEvent,pe:persist,plo:persistLocalOnly,toast:window.toast,fb:window.firebase,sub:Sync.subscribe};
+  appMode=function(){return 'real';};persist=function(){};persistLocalOnly=function(){};logEvent=function(){};window.toast=function(){};
+  laProfile=function(){return {uid:'uSUBC',name:'Northwind Mechanical',member:{role:'sub',name:'Northwind Mechanical'}};};
+  laSaveProfile=function(){};laSaveHat=function(p){__c.hats.push(JSON.parse(JSON.stringify(p.member||{})));};
+  rerenderCurrent=function(){__c.renders.push({pulled:Sync._sitesPulled,calOk:crewCloudOk({id:'calC'}),ids:subProjects().map(function(p){return p.id;}).join(',')});try{applyLiveRole();}catch(e){}};
+  const coll=sub=>({doc:id=>({set:()=>{__c.writes.push(sub+'/'+id);return Promise.resolve();},delete:()=>Promise.resolve()}),where:()=>coll(sub),onSnapshot:(o,h)=>()=>{}});
+  Sync.db={collection:()=>({where:()=>({onSnapshot:(o,h,e)=>{__c.attaches++;__c.sitesH=h;__c.sitesErr=e;return ()=>{};}}),
+    doc:id=>({set:()=>{__c.writes.push('site/'+id);return Promise.resolve();},get:()=>Promise.reject({code:'permission-denied'}),collection:sub=>coll(sub)})})};
+  Object.assign(Sync,{mode:'live',uid:'uSUBC',authKind:'account',deviceId:'devC',on:true,_listening:{},_collGen:{},_reArmed:{},_notifReady:{},unsub:[],_held:{},_shadow:{},_refused:{},_pushing:{},_pushAgain:{},_gateDelays:[0],_liveRetryN:0,_liveRetryBase:1,_permToasted:true});
+  state.session={role:'subs',name:'Northwind Mechanical',mode:'real',auth:{uid:'uSUBC'},member:{role:'sub',name:'Northwind Mechanical'}};
+  const cal={id:'calC',street:'288 Calderwood Ln',city:'Ferndale',items:[],docs:[],bookings:[],selections:[],logs:[],subs:[{id:'p2e',name:'Northwind Mechanical',specialty:'hvac',cleared:Date.now()}],members:{uSUBC:'sub'},memberInfo:{uSUBC:{name:'Northwind Mechanical'}}};
+  const bmt={id:'bmtC',street:'509 Beaumont Park',city:'Grosse Pointe',items:[],docs:[],bookings:[],selections:[],logs:[],subs:[{id:'s7',name:'Metro Appliance',specialty:'general',cleared:null},{id:'s8',name:'Lakeside Crew',specialty:'appliance',cleared:null}],members:{bC:'builder',uSUBC:'sub'},memberInfo:{uSUBC:{name:'Metro Appliance',subId:'s7'}}};
+  state.projects=[cal,bmt];state.activeId='calC';
+  Sync.subscribe();
+  Sync._held.calC=cal;Sync._refused['calC|meta||']={h:'x'};
+  return true;})()`);
+/* cache answer first: nothing marked yet; the stale copy is still on screen and names nobody */
+$(`__c.sitesH({metadata:{fromCache:true},docs:[{id:'bmtC'}],docChanges:()=>[]});true`);
+const cA=JSON.parse($(`JSON.stringify({pulled:Sync._sitesPulled,name:state.session.name,role:(liveRoleFromSites()||{}).name||''})`));
+t('2.522.0: before the server answers, local copies never name the crew (no role from a house the server has not sent)',cA.pulled===false&&cA.role===''&&cA.name==='Northwind Mechanical',JSON.stringify(cA));
+/* server answer with NO changes: still redraws once, already marked */
+$(`__c.sitesH({metadata:{fromCache:false},docs:[{id:'bmtC'}],docChanges:()=>[]});true`);
+await new Promise(r=>setTimeout(r,60));
+const cB=JSON.parse($(`JSON.stringify({renders:__c.renders,ids:state.projects.map(function(p){return p.id;}).join(','),held:Object.keys(Sync._held),refused:Object.keys(Sync._refused),active:state.activeId,sl:Object.keys(Sync._serverList)})`));
+t('2.522.0: the first server answer redraws even when nothing in it changed, and it is marked before the redraw',cB.renders.length===1&&cB.renders[0].pulled===true&&cB.renders[0].calOk===false,JSON.stringify(cB.renders));
+t('2.522.0: the redraw lists only the house the server sent (Beaumont), not the stale local Calderwood',cB.renders.length&&cB.renders[0].ids==='bmtC',JSON.stringify(cB.renders));
+t('2.522.0: a live crew drops the local house the server did not send, with its held and refused saves',cB.ids==='bmtC'&&cB.held.indexOf('calC')<0&&cB.refused.length===0&&cB.active==='bmtC'&&cB.sl.join()==='bmtC',JSON.stringify(cB));
+const cC=JSON.parse($(`JSON.stringify({name:state.session.name,sub:String((state.session.member||{}).subId||''),role:state.session.role,hat:__c.hats[__c.hats.length-1]||null})`));
+t('2.522.0: the crew name becomes the server house roster row (Metro Appliance, s7), and the saved hat is corrected too',cC.name==='Metro Appliance'&&cC.sub==='s7'&&cC.role==='subs'&&cC.hat&&cC.hat.name==='Metro Appliance'&&cC.hat.subId==='s7',JSON.stringify(cC));
+await $("Sync.pushAll()");await $("Promise.resolve(Sync._flushHeld())");
+await new Promise(r=>setTimeout(r,60));
+t('2.522.0: the dropped Calderwood copy is never offered to the server (no create or update retries)',!$("__c.writes.join()").includes('calC'),$("__c.writes.join()"));
+const cD=$(`(function(){var n=__c.renders.length;__c.sitesH({metadata:{fromCache:false},docs:[{id:'bmtC'}],docChanges:()=>[]});return __c.renders.length-n;})()`);
+t('2.522.0: a later unchanged server answer does not redraw again',cD===0,String(cD));
+/* a builder phone keeps houses the server has not sent yet (new on this phone) */
+const cE=$(`(function(){var s=state.session,pr=state.projects;state.session={role:'builder',name:'B',mode:'real',auth:{uid:'uSUBC'}};state.projects=[{id:'newB',members:{uSUBC:'builder'}}];Sync._serverList={};var r=Sync._crewPrune();var ids=state.projects.map(function(p){return p.id;}).join(',');state.session=s;state.projects=pr;Sync._serverList={bmtC:true};return r+':'+ids;})()`);
+t('2.522.0: only a live crew drops unsent houses; a builder keeps a house new on this phone',cE==='false:newB',cE);
+/* refused house list: refresh the token and listen again, with a cap */
+$(`window.firebase={auth:function(){return {currentUser:{uid:'uSUBC',isAnonymous:false,getIdToken:function(f){__c.tok.push(f);return Promise.resolve('x');}}};}};__c.attaches=0;Sync._liveRetryN=0;true`);
+$(`__c.sitesErr({code:'permission-denied'});true`);
+await new Promise(r=>setTimeout(r,60));
+const cF=JSON.parse($(`JSON.stringify({tok:__c.tok,att:__c.attaches,n:Sync._liveRetryN})`));
+t('2.522.0: a refused house list refreshes the account token and listens again',cF.tok.length===1&&cF.tok[0]===true&&cF.att===1,JSON.stringify(cF));
+$(`__c.attaches=0;__c.tok=[];__c.sitesErr({code:'unavailable'});true`);
+await new Promise(r=>setTimeout(r,40));
+t('2.522.0: only a rules refusal retries (other errors are left to the Firestore client)',$("__c.attaches")===0);
+$(`Sync._liveRetryN=6;__c.attaches=0;__c.sitesErr({code:'permission-denied'});true`);
+await new Promise(r=>setTimeout(r,200));
+t('2.522.0: the retry stops after six tries',$("__c.attaches")===0&&$("Sync._liveRetryN")===7,String($("Sync._liveRetryN")));
+$(`__c.sitesH({metadata:{fromCache:false},docs:[{id:'bmtC'}],docChanges:()=>[]});true`);
+t('2.522.0: the next server answer resets the retry count',$("Sync._liveRetryN")===0);
+t('2.522.0: the wait doubles from 2 s and is capped at 60 s',$("String(Sync._liveRetry)").indexOf("(this._liveRetryBase||2000)*Math.pow(2,n-1),60000")>=0);
+$(`(function(){const S=__cSave;clearTimeout(Sync._liveRetryT);clearTimeout(Sync._baseT);
+  appMode=S.am;rerenderCurrent=S.rr;laSaveProfile=S.lsp;laSaveHat=S.lsh;laProfile=S.lp;logEvent=S.le;persist=S.pe;persistLocalOnly=S.plo;window.toast=S.toast;
+  if(S.fb===undefined)delete window.firebase;else window.firebase=S.fb;
+  state.projects=S.projects;state.session=S.session;state.activeId=S.active;
+  Object.assign(Sync,{mode:null,db:null,on:false,uid:null,unsub:[],_listening:{},_collGen:{},_reArmed:{},_shadow:{},_held:{},_pulled:{},_onServer:{},_serverList:{},_sitesPulled:false,_refused:{},_pushing:{},_pushAgain:{},_gateDelays:null,_liveRetryN:0,_liveRetryBase:null,_permToasted:false});
+  delete window.__c;delete window.__cSave;return true;})()`);
 }
 S('money-words');
 (function(){
