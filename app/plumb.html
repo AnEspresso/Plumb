@@ -3985,15 +3985,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.518.0 - Builders can delete a document, with a confirm first';
+const PLUMB_VERSION='2.519.0 - Documents open inside the tap: share sheet for Word and Excel on iPhone, no pop-up prompt, storage files no longer cached';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1796414400000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.518.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796500800000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.519.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5457,7 +5457,7 @@ async function openDoc(i){
   if(canDeleteDoc(P())){openDocSheet(i);return;}
   return openDocFileAt(i);
 }
-async function openDocFileAt(i){
+function openDocFileAt(i){
   const d=P().docs[i];if(!d)return;
   if(d.fileId){return openDocFile(P().id,d.fileId,d.fileUrl||'','File not on this device');}   // 2.517.0: the builder list takes the same path as crew, homeowner and binder, so Word and Excel save by name
   showInfo(d.n,`No file is attached to this entry yet. Tap <b>Add document</b>, choose this type, and pick a file to attach one.`);
@@ -5478,10 +5478,11 @@ function openDocSheet(i){const p=P();const d=p&&(p.docs||[])[i];if(!d)return;
   const trade=d.trade?specLabel(d.trade):'Shared';
   const meta=[trade,DOC_AUD_LABEL[docAud(d)]||'',d.m||''].filter(Boolean).join(' \u00b7 ');
   let h='<p class="fs-sm c-ink-2">'+esc(meta)+'</p>';
-  if(d.fileId)h+='<button class="btn btn-primary b-go w-full mt-2" onclick="closeInfo();openDocFileAt('+i+')">Open</button>';
+  if(d.fileId)h+='<button class="btn btn-primary b-go w-full mt-2" id="docOpenBtn" data-fid="'+esc(String(d.fileId))+'" onclick="docSheetOpen('+i+')">Open</button>';
   else h+='<p>No file is attached to this entry yet. Tap <b>Add document</b>, choose this type, and pick a file to attach one.</p>';
   if(canDeleteDoc(p))h+='<button class="btn btn-danger w-full mt-4" id="docDelBtn" onclick="askDeleteDoc('+i+')">'+esc(DOC_DEL_WORDS.button)+'</button>';
-  showInfo(d.n,h);}
+  showInfo(d.n,h);
+  if(d.fileId){const e=DocFetch.start(p,d);docSheetBtn(e);DocFetch.on(e,docSheetBtn);}}   // 2.519.0: the file is fetched while the sheet is up, so Open acts inside the tap
 function askDeleteDoc(i){const p=P();const d=p&&(p.docs||[])[i];if(!d||!canDeleteDoc(p))return;
   const pid=p.id,key=docKey(d);
   openConfirm({title:DOC_DEL_WORDS.title(d.n),body:esc(DOC_DEL_WORDS.body),okLabel:DOC_DEL_WORDS.ok,cancelLabel:DOC_DEL_WORDS.cancel,danger:true,
@@ -5565,18 +5566,89 @@ function docSavesNotShows(d,blob){const t=String((d&&d.mime)||(blob&&blob.type)|
   return /\.(docx?|xlsx?)$/i.test(String((d&&d.n)||''));}
 function saveBlobAs(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=String(name||'document');
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
-/* 2.517.0 (Ink 11/23): a PDF or picture opens from storage first when online and uploaded, so the tab carries the file,
-   not a blob: id (this phone's own copy is used only offline or before it uploads). Word and Excel still save by name. */
-async function openDocFile(projId,fileId,remoteUrl,missMsg){
+/* 2.519.0 (Peter 11/23, iPhone home-screen app): opening a document awaits nothing between the tap and the open.
+   iOS counts a window.open or a share as the person's own only when it runs inside the tap. After a network wait it
+   asks about a pop-up, and an Office file opened that way in the home-screen app hangs on a blank page. So the link
+   and the file are fetched first (DocFetch) and the tap acts on what is ready (docAct):
+   - Word and Excel: the share sheet with the file's own name where the phone can share it (iPhone), otherwise a
+     download by name (Android, computers). Never window.open.
+   - PDF and picture: the storage link opens inside the tap. In the home-screen app iOS shows another site's link in
+     its in-app browser, which has Done, so the person is not stranded (the print view's rule, 16154, is about
+     replacing the app itself). Offline, this phone's own copy: the share sheet in the home-screen app, else a tab.
+   The builder's document sheet starts the fetch when it opens; a crew, homeowner or binder tap starts it and offers
+   Open in a toast when it is ready, so that second tap is the person's own. */
+/* Agency 11/23, word for word. */
+const DOC_OPEN_WORDS={
+  getting:'Getting the file\u2026',
+  ready:function(name){return name+' is ready';},
+  open:'Open',
+  failed:'Couldn\u2019t get this file. Check your connection and try again.'
+};
+const DOC_MISS_LIST='File not on this device yet — it uploads when the builder\u2019s device is online';
+/* a network step that never answers counts as failed, so Open never stays on its loading state */
+function docWithin(pr,ms){return new Promise(function(res,rej){const t=setTimeout(function(){rej(new Error('timeout'));},ms);
+  Promise.resolve(pr).then(function(v){clearTimeout(t);res(v);},function(x){clearTimeout(t);rej(x);});});}
+const DocFetch={_c:{},FRESH:25*60000,WAIT:20000,
+  key(pid,fid){return String(pid)+'|'+String(fid);},
+  get(pid,fid){return this._c[this.key(pid,fid)]||null;},
+  ready(pid,fid){const e=this.get(pid,fid);return e&&e.st==='ready'&&Date.now()-e.t<this.FRESH?e:null;},
+  start(p,d){const k=this.key(p.id,d.fileId);const c=this._c[k];
+    if(c&&(c.st==='loading'||(c.st==='ready'&&Date.now()-c.t<this.FRESH)))return c;
+    const e={st:'loading',t:Date.now(),pid:String(p.id),fid:String(d.fileId),blob:null,url:null,office:false,why:'',cbs:[]};this._c[k]=e;
+    e.p=(async()=>{
+      /* the same ready slot either way: this phone's own copy (the uploader's device) or the file from storage */
+      try{e.blob=await docWithin(idbGetDoc(d.fileId),this.WAIT)||null;}catch(x){}
+      e.office=docSavesNotShows(d,e.blob);
+      const online=!(typeof navigator!=='undefined'&&navigator.onLine===false);
+      if(!(e.office&&e.blob)&&online){try{e.url=await docWithin(docFileUrl(p,d),this.WAIT);}catch(x){}}
+      if(e.office&&!e.blob&&e.url){let ac=null;try{ac=typeof AbortController!=='undefined'?new AbortController():null;}catch(x){}
+        try{const r=await docWithin(fetch(e.url,ac?{cache:'no-store',signal:ac.signal}:{cache:'no-store'}),this.WAIT);if(r&&r.ok)e.blob=await docWithin(r.blob(),this.WAIT);}
+        catch(x){try{if(ac)ac.abort();}catch(y){}}}   // CORS (the bucket setting, Peter 11/23), network or a timeout: the message, never a hang
+      const ok=e.office?!!e.blob:!!(e.url||e.blob);
+      e.why=ok?'':(e.url?'fetch':'nofile');e.st=ok?'ready':'failed';e.t=Date.now();
+      e.cbs.splice(0).forEach(f=>{try{f(e);}catch(x){}});return e;})();
+    return e;},
+  on(e,f){if(e.st==='loading')e.cbs.push(f);else f(e);}
+};
+function docFileOf(d,blob){const type=String((d&&d.mime)||(blob&&blob.type)||'');
+  try{return new File([blob],String((d&&d.n)||'document'),type?{type:type}:{});}catch(x){return null;}}
+/* share the file itself; true when the share sheet was asked for (nothing awaited before it) */
+function docShare(d,blob){const f=docFileOf(d,blob);
+  try{if(f&&typeof navigator!=='undefined'&&navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
+    navigator.share({files:[f],title:String(d.n||'')}).catch(function(x){if(x&&x.name==='AbortError')return;toast(DOC_OPEN_WORDS.failed);});
+    return true;}}catch(x){}
+  return false;}
+/* runs inside the tap: the share, download or open happens before anything is awaited */
+function docAct(d,e,missMsg){
+  if(!e||e.st!=='ready'){docFailed(e,missMsg);return 'failed';}
+  if(e.office){if(docShare(d,e.blob))return 'share';saveBlobAs(e.blob,d.n);return 'save';}
+  if(e.url){window.open(e.url,'_blank');return 'open';}
+  if(isStandalonePWA()&&docShare(d,e.blob))return 'share';
+  const u=URL.createObjectURL(e.blob);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000);return 'open';}
+function docFailed(e,missMsg){toast(e&&e.why==='fetch'?DOC_OPEN_WORDS.failed:(missMsg||DOC_MISS_LIST));}
+/* the builder sheet's Open: loading until the file is in hand, then it acts inside the tap */
+function docSheetBtn(e){const b=document.getElementById('docOpenBtn');if(!b||!e)return;
+  const p=P();if(b.getAttribute('data-fid')!==e.fid||!p||String(p.id)!==e.pid)return;   // the sheet moved on to another document
+  const busy=e.st==='loading';b.disabled=busy;if(busy)b.setAttribute('aria-busy','true');else b.removeAttribute('aria-busy');
+  b.textContent=busy?DOC_OPEN_WORDS.getting:'Open';}
+function docSheetOpen(i){const p=P();const d=p&&(p.docs||[])[i];if(!d||!d.fileId)return;
+  let e=DocFetch.ready(p.id,d.fileId);
+  if(e){closeInfo();docAct(d,e,'File not on this device');return;}
+  e=DocFetch.get(p.id,d.fileId);
+  if(e&&e.st==='failed')docFailed(e,'File not on this device');
+  e=DocFetch.start(p,d);docSheetBtn(e);DocFetch.on(e,docSheetBtn);}   // no window.open while it loads
+/* crew, homeowner, binder (and a builder list tap): a ready file acts inside the tap; otherwise the tap starts the
+   fetch and a toast offers Open when it is ready */
+function openDocFile(projId,fileId,remoteUrl,missMsg){
   if(fileId){const p=(state.projects||[]).find(x=>String(x.id)===String(projId));const d=p&&(p.docs||[]).find(x=>String(x.fileId)===String(fileId));
-    let blob=null;try{blob=await idbGetDoc(fileId)||null;}catch(e){}
-    if(blob&&d&&docSavesNotShows(d,blob)){saveBlobAs(blob,d.n);return;}
-    let u=null;if(d&&!(typeof navigator!=='undefined'&&navigator.onLine===false)){try{u=await docFileUrl(p,d);}catch(e){}}
-    if(u&&!blob&&docSavesNotShows(d)){try{const r=await fetch(u);if(r&&r.ok){saveBlobAs(await r.blob(),d.n);return;}}catch(e){}}   // no CORS: the link below still works
-    if(u){window.open(u,'_blank');return;}
-    if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}
-    if(remoteUrl){window.open(remoteUrl,'_blank');return;}
-    toast(missMsg||'File not on this device yet — it uploads when the builder\u2019s device is online');return;}
+    if(!d){if(remoteUrl){window.open(remoteUrl,'_blank');return;}toast(missMsg||DOC_MISS_LIST);return;}
+    const r=DocFetch.ready(p.id,fileId);if(r){docAct(d,r,missMsg);return;}
+    const e=DocFetch.start(p,d);if(e.listWait)return;e.listWait=true;
+    toast(DOC_OPEN_WORDS.getting);
+    DocFetch.on(e,function(x){x.listWait=false;
+      if(x.st==='ready')toastAction(DOC_OPEN_WORDS.ready(d.n),DOC_OPEN_WORDS.open,function(){docAct(d,x,missMsg);},10000);
+      else docFailed(x,missMsg);});
+    return;}
   if(remoteUrl){window.open(remoteUrl,'_blank');return;}
   toast('No file attached to this document');
 }
