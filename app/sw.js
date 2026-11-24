@@ -1,6 +1,6 @@
 /* Plumb service worker — caches the app shell for offline use.
    Bump CACHE when you ship a new build so clients update. */
-const CACHE = 'plumb-v2.516.0';
+const CACHE = 'plumb-v2.520.0';
 const SHELL = [
   './',
   'index.html',
@@ -31,10 +31,21 @@ self.addEventListener('message', e => {
   if (e.data === 'VERSION' && e.ports && e.ports[0]) e.ports[0].postMessage(CACHE);
 });
 
+const SW_NO_CACHE_HOSTS = ['firebasestorage.googleapis.com', 'securetoken.googleapis.com', 'identitytoolkit.googleapis.com',
+  'firestore.googleapis.com', 'firebaseinstallations.googleapis.com', 'fcmregistrations.googleapis.com'];
+function swNoCache(url) {
+  return SW_NO_CACHE_HOSTS.indexOf(url.hostname) >= 0 || /\.firebasestorage\.app$/.test(url.hostname)
+    || (url.origin !== self.location.origin && (url.searchParams.has('token') || url.searchParams.get('alt') === 'media'));
+}
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+
+  // 2.519.0: storage files, download links and Firebase token or data calls go straight to the network and are
+  // never kept: a document's bytes or a download token must not sit on the phone for the next account.
+  if (swNoCache(url)) return;
 
   // Guest packet page is not the builder app shell. Never fall back to index.html.
   if (url.origin === location.origin && url.pathname.endsWith('/p.html')) {

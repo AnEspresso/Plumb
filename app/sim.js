@@ -661,6 +661,128 @@ t('2.516.0 a document upload names the file (Content-Disposition, inline so a PD
 t('2.516.0 a non-ASCII name gets RFC 5987 filename*',$("docDisposition('Plän \\u2013 1.pdf')")==="inline; filename=\"Pl_n _ 1.pdf\"; filename*=UTF-8''Pl%C3%A4n%20%E2%80%93%201.pdf",$("docDisposition('Plän \\u2013 1.pdf')"));
 t('2.516.0 the upload queue sets it for documents only',$("(function(){var p=state.projects.find(function(p){return p.id==='p3';});p.docs.push({n:'Up name.pdf',fileId:'doc_upn',aud:'subs'});var a=CloudFiles._disp({kind:'docs-subs',id:'doc_upn'}),b=CloudFiles._disp({kind:'photos',id:'doc_upn'});p.docs.pop();return a==='inline; filename=\"Up name.pdf\"'&&b==='';})()")===true);
 t('2.516.0 Word and Excel files save with their name, PDFs still open',$("docSavesNotShows({n:'a.docx'})&&docSavesNotShows({n:'b',mime:'application/vnd.ms-excel'})&&!docSavesNotShows({n:'c.pdf',mime:'application/pdf'})")===true);
+/* 2.519.0 (Peter's iPhone, 11/23): a document opens inside the tap. The file is fetched first (the builder sheet
+   when it opens; a list tap, then a ready toast), and Open shares or saves Word/Excel, or opens a PDF, with nothing
+   awaited before it. Never window.open for an Office file. (Replaces the 2.517.0/2.518.0 open checks.) */
+{
+  $(`(function(){window.__od={keep:{i:idbGetDoc,u:docFileUrl,s:saveBlobAs,o:window.open,f:window.fetch,c:URL.createObjectURL,r:URL.revokeObjectURL,t:toast,ta:toastAction,sa:isStandalonePWA},log:[],ta:null};
+    var L=window.__od.log;window.__odBlob={};window.__odUrl={};window.__odFetch='ok';window.__odCan=true;window.__odStand=false;
+    idbGetDoc=function(k){return Promise.resolve(window.__odBlob[k]);};
+    docFileUrl=function(p,d){return Promise.resolve(window.__odUrl[d.fileId]||null);};
+    saveBlobAs=function(b,n){L.push('save:'+n);};
+    window.open=function(u){L.push('open:'+u);return {};};
+    window.fetch=function(u){L.push('fetch:'+u);if(window.__odFetch==='cors')return Promise.reject(new TypeError('Failed to fetch'));
+      if(window.__odFetch==='403')return Promise.resolve({ok:false,status:403});
+      if(window.__odFetch==='hang')return new Promise(function(){});
+      return Promise.resolve({ok:true,blob:function(){return Promise.resolve(new Blob(['x'],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));}});};
+    URL.createObjectURL=function(){return 'blob:sim-guid';};URL.revokeObjectURL=function(){};
+    toast=function(m){L.push('toast:'+m);};
+    toastAction=function(m,label,fn){L.push('ready:'+m+'/'+label);window.__od.ta=fn;};
+    isStandalonePWA=function(){return window.__odStand;};
+    Object.defineProperty(navigator,'canShare',{configurable:true,value:function(d){return !!window.__odCan&&!!(d&&d.files&&d.files[0]);}});
+    Object.defineProperty(navigator,'share',{configurable:true,value:function(d){L.push('share:'+d.files[0].name+'|'+d.files[0].type);return Promise.resolve();}});
+    state.session={role:'builder',name:'You'};
+    var p=P();p.docs=p.docs||[];
+    p.docs.push({n:'TEST2 doc crew.docx',fileId:'doc_odw',aud:'subs',mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    p.docs.push({n:'TEST doc everyone.pdf',fileId:'doc_odp',aud:'all',mime:'application/pdf'});
+    return true;})()`);
+  const prime=setup=>$("window.__od.log.length=0;window.__od.ta=null;DocFetch._c={};DocFetch.WAIT=20000;window.__odBlob={};window.__odUrl={};window.__odFetch='ok';window.__odCan=true;window.__odStand=false;"+setup+";true");
+  const settle=()=>new Promise(r=>setTimeout(r,40));
+  const LOG=()=>$("window.__od.log.join('|')");
+  const ix=n=>$("P().docs.findIndex(function(d){return d.n==='"+n+"';})");
+  const W=ix('TEST2 doc crew.docx'),PD=ix('TEST doc everyone.pdf');
+  const btn=()=>$("(function(){var b=document.getElementById('docOpenBtn');return b?{t:b.textContent,dis:!!b.disabled,busy:b.getAttribute('aria-busy')}:null;})()");
+  const WT="application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  /* builder sheet: fetch starts when it opens; Open shares the file under its own name */
+  prime("window.__odUrl={doc_odw:'https://store/doc_odw'}");
+  $("openDoc("+W+")");const b0=btn();
+  t('2.519.0 the builder sheet starts getting the file when it opens: Open waits (disabled, busy), nothing opens',!!b0&&b0.dis&&b0.busy==='true'&&b0.t===$("DOC_OPEN_WORDS.getting")&&LOG().indexOf('open:')<0,JSON.stringify(b0)+' '+LOG());
+  await settle();const b1=btn();
+  t('2.519.0 when the file is in hand, Open is ready',!!b1&&!b1.dis&&b1.t==='Open'&&LOG()==='fetch:https://store/doc_odw',JSON.stringify(b1)+' '+LOG());
+  let r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  t('2.519.0 [local miss] Open on a Word file shares it inside the tap, under its own name and type (iPhone share sheet), no window.open',r==='share:TEST2 doc crew.docx|'+WT&&!$("document.getElementById('infoScrim').classList.contains('show')"),r);
+  prime("window.__odUrl={doc_odw:'https://store/doc_odw'};window.__odCan=false");$("openDoc("+W+")");await settle();
+  r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  t('2.519.0 [local miss] where the phone can\'t share it (Android, computers), Open saves it by name inside the tap, no window.open',r==='save:TEST2 doc crew.docx',r);
+  prime("window.__odBlob={doc_odw:new Blob(['x'],{type:'"+WT+"'})}");$("openDoc("+W+")");await settle();
+  r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  t('2.519.0 [local hit] a Word file on this phone goes to the same ready slot and shares without a fetch, no window.open',r==='share:TEST2 doc crew.docx|'+WT,r);
+  prime("window.__odCan=false;window.__odBlob={doc_odw:new Blob(['x'],{type:'"+WT+"'})};window.__odUrl={doc_odw:'https://store/doc_odw'}");$("openDoc("+W+")");await settle();
+  r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  t('2.519.0 [local hit] where the phone can\'t share it, the local copy saves by name, no fetch, no window.open',r==='save:TEST2 doc crew.docx'&&LOG().indexOf('fetch:')<0,r);
+  prime("window.__odBlob={doc_odw:new Blob(['x'],{type:'"+WT+"'})}");$("openDocFile(P().id,'doc_odw','');true");await settle();
+  r=$("window.__od.log.join('|')");const lh=$("window.__od.log.length=0;window.__od.ta();window.__od.log.join('|')");
+  t('2.519.0 [local hit] a list tap on the uploader\'s device offers the ready toast, and that tap shares by name, no fetch, no window.open',r==='toast:'+$("DOC_OPEN_WORDS.getting")+'|ready:TEST2 doc crew.docx is ready/Open'&&lh==='share:TEST2 doc crew.docx|'+WT,r+' '+lh);
+  /* a fetch that fails (bucket CORS not set yet): the message, never window.open */
+  prime("window.__odUrl={doc_odw:'https://store/doc_odw'};window.__odFetch='cors'");$("openDoc("+W+")");await settle();
+  r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  await settle();const rf=LOG();
+  t('2.519.0 [local miss, fetch fails] a Word file that can\'t be fetched shows the message, not window.open, and tries again',r==='toast:'+$("DOC_OPEN_WORDS.failed")&&rf.indexOf('fetch:https://store/doc_odw')>0&&rf.indexOf('open:')<0&&!btn().dis,r+' / '+rf);
+  prime("window.__odUrl={doc_odw:'https://store/doc_odw'};window.__odFetch='403'");$("openDocFile(P().id,'doc_odw','')");await settle();
+  r=LOG();
+  t('2.519.0 [local miss, fetch refused] a refused fetch from a list shows the message, not window.open',r.indexOf('toast:'+$("DOC_OPEN_WORDS.failed"))>0&&r.indexOf('open:')<0&&r.indexOf('ready:')<0,r);
+  prime("window.__odUrl={doc_odw:'https://store/doc_odw'};window.__odFetch='hang';DocFetch.WAIT=30");$("openDoc("+W+")");await new Promise(r=>setTimeout(r,120));
+  const bh=btn();r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  t('2.519.0 [local miss, fetch never answers] Open does not hang on loading: it times out to the message, no window.open',!!bh&&!bh.dis&&bh.t==='Open'&&r.indexOf('toast:'+$("DOC_OPEN_WORDS.failed"))===0&&r.indexOf('open:')<0,JSON.stringify(bh)+' '+r);
+  $("DocFetch.WAIT=20000;true");
+  /* PDF: the link is in hand, so Open calls window.open synchronously inside the tap */
+  prime("window.__odBlob={doc_odp:new Blob(['%PDF'],{type:'application/pdf'})};window.__odUrl={doc_odp:'https://store/doc_odp'}");$("openDoc("+PD+")");await settle();
+  r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  t('2.519.0 [local hit, online] Open on a PDF calls window.open with the storage link inside the tap (no await before it)',r==='open:https://store/doc_odp',r);
+  t('2.519.0 docAct has no await (the open, share or save is the tap\'s own)',$("String(docAct).indexOf('await')<0&&String(docShare).indexOf('await')<0&&String(docSheetOpen).indexOf('await')<0&&String(openDocFile).indexOf('await')<0&&String(docAct).indexOf('async')<0")===true);
+  prime("window.__odBlob={doc_odp:new Blob(['%PDF'],{type:'application/pdf'})};Object.defineProperty(navigator,'onLine',{configurable:true,get:function(){return false;}})");$("openDoc("+PD+")");await settle();
+  r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  t('2.519.0 [local hit, offline] in a browser tab, a PDF on this phone opens from the phone',r==='open:blob:sim-guid',r);
+  prime("window.__odStand=true;window.__odBlob={doc_odp:new Blob(['%PDF'],{type:'application/pdf'})}");$("openDoc("+PD+")");await settle();
+  r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  $("delete navigator.onLine;true");
+  t('2.519.0 [local hit, offline] in the home-screen app, a PDF on this phone goes to the share sheet (a blob tab can\'t load there)',r==='share:TEST doc everyone.pdf|application/pdf',r);
+  prime("");$("openDoc("+PD+")");await settle();
+  r=$("window.__od.log.length=0;document.getElementById('docOpenBtn').click();window.__od.log.join('|')");
+  t('2.519.0 [local miss, not uploaded] builder sheet: a file on no device keeps the builder message',r==='toast:File not on this device',r);
+  $("closeInfo();true");
+  /* crew, homeowner, binder: the tap starts the fetch, a toast offers Open, and that second tap acts */
+  prime("window.__odUrl={doc_odw:'https://store/doc_odw'}");
+  r=$("window.__od.log.length=0;openDocFile(P().id,'doc_odw','');window.__od.log.join('|')");
+  t('2.519.0 a list tap starts getting the file and says so; nothing opens yet',r==='toast:'+$("DOC_OPEN_WORDS.getting"),r);
+  $("openDocFile(P().id,'doc_odw','');true");await settle();
+  r=LOG();
+  t('2.519.0 when it is ready a toast offers Open with the file name (once, however many taps)',r==='toast:'+$("DOC_OPEN_WORDS.getting")+'|fetch:https://store/doc_odw|ready:TEST2 doc crew.docx is ready/Open',r);
+  r=$("window.__od.log.length=0;window.__od.ta();window.__od.log.join('|')");
+  t('2.519.0 [local miss] the list\'s ready tap shares the Word file under its own name, no window.open',r==='share:TEST2 doc crew.docx|'+WT,r);
+  r=$("window.__od.log.length=0;openDocFile(P().id,'doc_odw','');window.__od.log.join('|')");
+  t('2.519.0 a file already in hand acts on the first list tap',r==='share:TEST2 doc crew.docx|'+WT,r);
+  prime("window.__odUrl={doc_odp:'https://store/doc_odp'}");$("openDocFile(P().id,'doc_odp','');true");await settle();
+  r=$("window.__od.log.length=0;window.__od.ta();window.__od.log.join('|')");
+  t('2.519.0 [local miss] the list\'s ready tap opens a PDF from storage inside the tap',r==='open:https://store/doc_odp',r);
+  prime("");$("openDocFile(P().id,'doc_odp','');true");await settle();
+  r=LOG();
+  t('2.519.0 [local miss, not uploaded] crew/homeowner/binder keep their not-uploaded-yet message',r.indexOf('toast:File not on this device yet')>0&&r.indexOf('open:')<0,r);
+  t('2.519.0 the document open words are Agency\'s final wording (11/23), word for word, with no placeholder marker',
+    SRC.indexOf("/* Agency 11/23, word for word. */\nconst DOC_OPEN_WORDS={\n  getting:'Getting the file\\u2026',\n  ready:function(name){return name+' is ready';},\n  open:'Open',\n  failed:'Couldn\\u2019t get this file. Check your connection and try again.'\n};")>=0
+    &&$("DOC_OPEN_WORDS.getting")==='Getting the file\u2026'&&$("DOC_OPEN_WORDS.ready('TEST2 doc crew.docx')")==='TEST2 doc crew.docx is ready'&&$("DOC_OPEN_WORDS.open")==='Open'
+    &&$("DOC_OPEN_WORDS.failed")==='Couldn\u2019t get this file. Check your connection and try again.'
+    &&!/DOC_OPEN_WORDS=\{[^}]*placeholder/.test(SRC)&&SRC.indexOf("const DOC_OPEN_WORDS={   /* placeholder")<0);
+  $(`(function(){var k=window.__od.keep;idbGetDoc=k.i;docFileUrl=k.u;saveBlobAs=k.s;window.open=k.o;window.fetch=k.f;if(k.c)URL.createObjectURL=k.c;else delete URL.createObjectURL;URL.revokeObjectURL=k.r||function(){};toast=k.t;toastAction=k.ta;isStandalonePWA=k.sa;   /* the blob tab's 60s revoke timer still fires later */
+    delete navigator.share;delete navigator.canShare;DocFetch._c={};
+    var p=P();p.docs=p.docs.filter(function(d){return d.fileId!=='doc_odw'&&d.fileId!=='doc_odp';});delete window.__od;return true;})()`);
+}
+/* 2.519.0: the service worker passes storage files, download links and Firebase token/data calls to the network */
+{
+  const vm=require('vm');const swSrc=fs.readFileSync(path.join(__dirname,'sw.js'),'utf8');
+  const L={};const sw={location:{origin:'https://siteplumb.com'},addEventListener:(k,f)=>{L[k]=f;},skipWaiting(){},clients:{claim(){}},registration:{showNotification(){}}};
+  const ctx={self:sw,URL,Response:function(){},caches:{match:()=>Promise.resolve(undefined),open:()=>Promise.resolve({put(){},addAll(){}}),keys:()=>Promise.resolve([])},
+    fetch:()=>Promise.resolve({clone(){return this;}}),importScripts(){},setTimeout,console:{log(){},warn(){},error(){}},firebase:undefined,location:sw.location};
+  ctx.self=Object.assign(sw,{});vm.createContext(ctx);
+  try{vm.runInContext(swSrc,ctx);}catch(e){}
+  const hit=u=>{let used=false;L.fetch({request:{method:'GET',url:u,mode:'cors'},respondWith(){used=true;}});return used;};
+  const store=['https://firebasestorage.googleapis.com/v0/b/plumb-467a0.firebasestorage.app/o/live%2Fsites%2Fx%2Fdocs-subs%2Fdoc_a?alt=media&token=t',
+    'https://firebasestorage.googleapis.com/v0/b/plumb-467a0.firebasestorage.app/o/live%2Fsites%2Fx%2Fdocs-subs%2Fdoc_a',
+    'https://plumb-467a0.firebasestorage.app/x','https://securetoken.googleapis.com/v1/token?key=k','https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?x=1'];
+  t('2.519.0 sw.js: storage files, download links and Firebase token/data calls are never cached (no respondWith)',!!L.fetch&&store.every(u=>!hit(u)),store.map(hit).join());
+  t('2.519.0 sw.js: everything else is unchanged (fonts, the app shell, same-origin assets still go through the cache)',!!L.fetch&&hit('https://fonts.googleapis.com/css2?family=X')&&hit('https://siteplumb.com/app/index.html')&&hit('https://siteplumb.com/app/manifest.json')&&hit('https://siteplumb.com/app/p.html?token=abc'));
+  t('2.519.0 sw.js: a new CACHE drops the old one (and the storage entries it held) on activate',/const CACHE = 'plumb-v\d+\.\d+\.\d+';/.test(swSrc)&&swSrc.indexOf("keys.filter(k => k !== CACHE).map(k => caches.delete(k))")>=0);
+}
 $(`(function(){var p=state.projects.find(function(p){return p.id==='p3';});p.docs=p.docs.filter(function(d){return !/^CD /.test(d.n);});p.docHidden['${CD_TR}']=(p.docHidden['${CD_TR}']||[]).filter(function(n){return n!=='CD hidden.pdf';});return true;})()`);
 
 /* ════ 6 · NOTIFICATION AUDIENCE MATRIX (real _audMatch under every identity) ════ */
@@ -1464,7 +1586,28 @@ t('the packet is a briefing with still-open first', $("String(packetHTML)").inde
 t('answering a spec from the packet does not tear the packet down', $("String(pktFillSpec)").indexOf('closeInfo')<0&&$("String(pktFillSpec)").indexOf('openSpec')>=0);
 t('Needs You opens a packet without leaving home', $("String(openPacketFor)").indexOf('openSiteFromOverview')<0);
 t('Back returns through the sheet stack', $("String(backToOverview)").indexOf('navPop')>=0&&$("String(navPush)").indexOf('restore')>=0);
-t('Gone quiet whispers on the house, not Needs You', $("String(_nyIssues)").indexOf('Gone quiet')<0&&$("String(_siteWhisper)").indexOf('Quiet')>=0&&$("String(nyCardBits)").indexOf('_siteWhisper')>=0);
+t('Gone quiet whispers on the house, not Needs You', $("String(_nyIssues)").indexOf('Gone quiet')<0&&$("String(_siteWhisper)").indexOf('quietLabel(p)')>=0&&$("String(nyCardBits)").indexOf('_siteWhisper')>=0);
+/* 2.517.0: a house with nothing logged has no date to count from (Beaumont read "Quiet 20780 days") */
+{
+  const Q=JSON.parse($(`(function(){var r={},D=864e5,now=Date.now(),keepS=state.session,keepA=state.activeId;state.session={role:'builder',name:'You'};
+    var src=state.projects.find(function(x){return x.id==='p2';});var p=JSON.parse(JSON.stringify(src));p.id='quiet_sim';p.sample=false;delete p.doneAt;
+    p.logs=[];p.items=[];p.bookings=[];p.permits=[];var SS=stagesFor(p);p.stageDone={};p.stageDone[SS[0].id]=true;
+    state.projects.push(p);state.activeId=p.id;
+    r.idle=isIdleSite(p);r.none=quietLabel(p);var w=_siteWhisper(p);r.whisper=w&&w.text;var h=houseHTML(p);
+    r.houseNone=h.indexOf('Nothing logged yet')>=0;r.houseNum=/Quiet \d+ day/.test(h);
+    p.logs=[{t:now-12*D-3600e3,note:'x'}];r.twelve=quietLabel(p);w=_siteWhisper(p);r.w12=w&&w.text;r.h12=houseHTML(p).indexOf('Quiet 12 days')>=0;
+    p.logs=[{t:now-1*D-3600e3,note:'x'}];r.one=quietLabel(p);
+    p.logs=[{t:now-3600e3,note:'x'}];r.hour=quietLabel(p);
+    state.projects=state.projects.filter(function(x){return x.id!=='quiet_sim';});state.session=keepS;state.activeId=keepA;
+    return JSON.stringify(r);})()`));
+  t('2.517.0 a started house with nothing logged is still quiet, and says Nothing logged yet (no day count)',Q.idle===true&&Q.none==='Nothing logged yet'&&Q.whisper==='Nothing logged yet'&&Q.houseNone&&!Q.houseNum,JSON.stringify(Q));
+  t('2.517.0 a note from 12 days ago still reads Quiet 12 days (card and house)',Q.twelve==='Quiet 12 days'&&Q.w12==='Quiet 12 days'&&Q.h12,JSON.stringify(Q));
+  t('2.517.0 one day reads Quiet 1 day (singular), and under a day rounds up to it',Q.one==='Quiet 1 day'&&Q.hour==='Quiet 1 day',JSON.stringify(Q));
+  t('2.517.0 Nothing logged yet is Agency 11/23, word for word',SRC.indexOf("const QUIET_NONE='Nothing logged yet';   /* Agency 11/23, word for word. */")>=0);
+}
+/* 2.517.0: the header the crew/homeowner panels cover and the off-screen invite bar are out of page text */
+t('2.517.0 the covered header is hidden while a role panel is shown',SRC.indexOf('body:has(#subview.show) header,body:has(#clientview.show) header{visibility:hidden;}')>=0);
+t('2.517.0 the invite bar is hidden off-screen and visible when shown (still slides)',/\.invbar\{[^}]*visibility:hidden;[^}]*visibility 0s linear \.28s;/.test(SRC)&&/\.invbar\.show\{transform:translateY\(0\);visibility:visible;/.test(SRC));
 t('Gone quiet keeps home under the sheet', (function(){
   asBuilder();
   $('enterDemo()');
@@ -5949,6 +6092,55 @@ await (async function(){
   await phone('uH',HO3,'devH10');
   const ho2=J(b3);
   t('#5 homeowner after the move: only their documents reach the phone at all (team-only never does)',ho2.docsAll.join()==='Listed only.pdf'&&ho2.invites.length===0&&ho2.w===0,JSON.stringify(ho2));
+  /* Doc delete: Delete on a document. Builders only, confirm first, the record goes for the team and stays gone. */
+  const dd_ctIdx="P().docs.findIndex(function(d){return d.n==='Contract.pdf';})";
+  await phone('uH',HO3,'devH12');
+  const dd_dHo=J(`(function(){state.activeId='b3';var p=P();var n=(p.docs||[]).length;var r={can:canDeleteDoc(p)};
+    var k=(p.docs||[])[0]?docKey(p.docs[0]):'x';deleteDoc('b3',k);r.same=(P().docs||[]).length===n;
+    renderClient();r.btn=!!document.getElementById('docDelBtn');return r;})()`);
+  await settle();
+  t('doc delete: the homeowner can\'t delete a document (no Delete, deleteDoc refuses, nothing written)',dd_dHo.can===false&&dd_dHo.same&&!dd_dHo.btn&&W().length===0,JSON.stringify(dd_dHo));
+  await phone('uS',CR3,'devS12');
+  const dd_dCr=J(`(function(){state.activeId='b3';var p=P();var n=(p.docs||[]).length;var r={can:canDeleteDoc(p)};
+    var k=(p.docs||[])[0]?docKey(p.docs[0]):'x';deleteDoc('b3',k);r.same=(P().docs||[]).length===n;return r;})()`);
+  await settle();
+  t('doc delete: a crew can\'t delete a document (deleteDoc refuses, nothing written)',dd_dCr.can===false&&dd_dCr.same&&W().length===0,JSON.stringify(dd_dCr));
+  await phone('uB',B,'devB12');
+  $2("state.activeId='b3';true");
+  const dd_ds1=J(`(function(){var i=${dd_ctIdx};openDocSheet(i);var r={sheet:document.getElementById('infoScrim').classList.contains('show'),btn:!!document.getElementById('docDelBtn'),
+    label:(document.getElementById('docDelBtn')||{}).textContent};askDeleteDoc(i);r.conf=document.getElementById('confirmScrim').classList.contains('show');
+    r.title=document.getElementById('ocTitle').textContent;ocCancel();r.kept=${dd_ctIdx}>=0;return r;})()`);
+  await settle();
+  t('doc delete: a builder\'s document sheet has Delete; it asks first (title names the document); Cancel keeps it and writes nothing',
+    dd_ds1.sheet&&dd_ds1.btn&&dd_ds1.label===J("DOC_DEL_WORDS.button")&&dd_ds1.conf&&dd_ds1.title==='Delete Contract.pdf?'&&dd_ds1.kept&&!W().some(function(x){return /\/docs\//.test(x.path);}),JSON.stringify(dd_ds1));
+  /* the file: deleted when this person uploaded it, left otherwise (storage.rules: uploader only) */
+  const dd_dsF=JSON.parse(await $2(`(async function(){var keep={lf:window.liveFiles,fs:window.firebase&&window.firebase.storage};var dels=[],up='uB';
+    window.liveFiles=function(){return true;};window.firebase=window.firebase||{};window.firebase.storage=function(){return {ref:function(path){return {
+      getMetadata:function(){return Promise.resolve({customMetadata:{uploader:up}});},delete:function(){dels.push(path);return Promise.resolve();}};}};};
+    var r={};try{
+      r.mine=await docFileGone(P(),{fileId:'docZ1',fileAud:'team'});
+      up='uP';r.other=await docFileGone(P(),{fileId:'docZ2',fileAud:'subs'});
+      up='';r.old=await docFileGone(P(),{fileId:'docZ3'});
+      r.dels=dels.slice();
+    }finally{window.liveFiles=keep.lf;if(keep.fs)window.firebase.storage=keep.fs;else delete window.firebase.storage;}
+    return JSON.stringify(r);})()`));
+  t('doc delete: the file goes only when this person uploaded it; another builder\'s or an unstamped file stays',dd_dsF.mine==='deleted'&&dd_dsF.other==='left'&&dd_dsF.old==='left'&&dd_dsF.dels.join()==='live/sites/b3/docs-team/docZ1',JSON.stringify(dd_dsF));
+  const dd_dsQ=J(`(function(){var q=CloudFiles._q();q.push({kind:'docs-team',siteId:'b3',id:'docQ1',mode:'live',tries:0});CloudFiles._save(q);
+    var a=CloudFiles.forget('docQ1');return {a:a,left:CloudFiles._q().some(function(e){return e.id==='docQ1';})};})()`);
+  t('doc delete: a file still waiting to upload never goes up after its document is deleted',dd_dsQ.a===true&&dd_dsQ.left===false,JSON.stringify(dd_dsQ));
+  await $2(`(async function(){askDeleteDoc(${dd_ctIdx});ocConfirm();await new Promise(function(r){setTimeout(r,30);});await Sync._pushOne(P());return true;})()`);await settle();
+  const dd_ds2=J(`(function(){var d=__F.srv.b3.colls.docs||{};return {srv:!!d.docT1,phone:(P().docs||[]).some(function(x){return x.n==='Contract.pdf';}),
+    others:Object.keys(d).length};})()`);
+  t('doc delete: OK deletes it: off this phone, and the record is deleted on the server (the other documents stay)',!dd_ds2.srv&&!dd_ds2.phone&&dd_ds2.others===3,JSON.stringify(dd_ds2));
+  await $2(`(async function(){await Sync._pushOne(P());return true;})()`);await settle();
+  const dd_ds3=J(`(function(){var p=P();var re=Sync._legacyLists(p,'b3',{docs:[{n:'Contract.pdf',m:'Signed',k:'pdf',trade:'',aud:'team',fileId:'docT1'}]});
+    var r={srv:!!(__F.srv.b3.colls.docs||{}).docT1,phone:(p.docs||[]).some(function(x){return x.n==='Contract.pdf';}),re:re,gone:Sync._isGone('b3','docs','docT1')};
+    Sync._legacyLists(p,'b3',{});return r;})()`);
+  t('doc delete: it does not come back: the next sync writes nothing back, and an old house-doc list cannot re-add it',!dd_ds3.srv&&!dd_ds3.phone&&dd_ds3.gone===true,JSON.stringify(dd_ds3));
+  await phone('uP',PM,'devP12');
+  const dd_ds4=J("(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};return (p.docs||[]).map(function(d){return d.n;}).sort();})()");
+  t('doc delete: a teammate builder\'s phone no longer has it',dd_ds4.length===3&&dd_ds4.indexOf('Contract.pdf')<0,JSON.stringify(dd_ds4));
+  await phone('uH',HO3,'devH10');
   /* #15: notes */
   const n15=J(`(function(){var was=localStorage.getItem('plumb.mode');localStorage.setItem('plumb.mode','real');state.activeId='b3';var msgs=[],tw=window.toast;window.toast=function(m){msgs.push(String(m));};
     try{var it=Data.addItem({id:99301,cap:'Door scratch',area:'Whole House',t:Date.now()});var by=it.by;

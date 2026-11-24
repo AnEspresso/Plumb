@@ -415,11 +415,11 @@
   /* Invite handoff bar (v2.182.0). Deliberately NOT an "open in app" button:
      iOS gives a web page no way to launch an installed PWA and no way to learn
      one exists. So this instructs, and carries the code so nothing is retyped. */
-  .invbar{position:fixed;top:0;left:0;right:0;z-index:var(--z-toast);transform:translateY(-102%);
-    transition:transform .28s cubic-bezier(.22,.9,.3,1);
+  .invbar{position:fixed;top:0;left:0;right:0;z-index:var(--z-toast);transform:translateY(-102%);visibility:hidden;   /* 2.517.0: off-screen is out of page text too */
+    transition:transform .28s cubic-bezier(.22,.9,.3,1),visibility 0s linear .28s;
     padding:max(var(--s-2),env(safe-area-inset-top)) var(--s-3) var(--s-3);background:var(--surface);
     border-bottom:1px solid var(--line);box-shadow:var(--shadow-lift);}
-  .invbar.show{transform:translateY(0);}
+  .invbar.show{transform:translateY(0);visibility:visible;transition:transform .28s cubic-bezier(.22,.9,.3,1),visibility 0s;}
   .invbar .ib-t{font-size:var(--t-sm);font-weight:600;color:var(--ink);margin:0 var(--s-7) var(--s-1) var(--s-1);}
   .invbar .ib-s{font-size:var(--t-xs);line-height:1.45;color:var(--ink-2);margin:0 var(--s-7) var(--s-2) var(--s-1);}
   .invbar .ib-row{display:flex;gap:8px;}
@@ -1805,6 +1805,7 @@ body.on-excursion header{padding-top:var(--s-3);}
 @media(max-width:420px){.exc-k{display:none;}
   .exc-banner{flex-wrap:wrap;row-gap:var(--s-1);}.exc-link{flex-basis:100%;text-align:center;}
   body.on-excursion .device{margin-top:76px;height:calc(100dvh - 76px);}}
+body:has(#subview.show) header,body:has(#clientview.show) header{visibility:hidden;}   /* 2.517.0: the header the crew and homeowner panels cover is out of page text too */
 /* Role views own the full window whenever shown — demo AND production, identical. */
 @media(min-width:900px){
   #clientview,#subview{left:0;}
@@ -3984,15 +3985,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.516.0 - Crew see All-trades documents, audience menu, Ink\'s four fixes, documents download by name';
+const PLUMB_VERSION='2.520.0 - A phone gets back a record it wrote but no longer holds';
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1796241600000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.516.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796587200000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.520.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5452,13 +5453,70 @@ function renderDocs(){
 }
 async function openDoc(i){
   const d=P().docs[i];if(!d)return;
-  if(d.fileId){
-    try{const blob=await idbGetDoc(d.fileId);if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
-    const u=await docFileUrl(P(),d);if(u){window.open(u,'_blank');return;}
-    toast('File not on this device');return;
-  }
+  /* Doc delete: a builder's tap opens the document sheet (Open, and Delete with a confirm); the file opens from there */
+  if(canDeleteDoc(P())){openDocSheet(i);return;}
+  return openDocFileAt(i);
+}
+function openDocFileAt(i){
+  const d=P().docs[i];if(!d)return;
+  if(d.fileId){return openDocFile(P().id,d.fileId,d.fileUrl||'','File not on this device');}   // 2.517.0: the builder list takes the same path as crew, homeowner and binder, so Word and Excel save by name
   showInfo(d.n,`No file is attached to this entry yet. Tap <b>Add document</b>, choose this type, and pick a file to attach one.`);
 }
+/* Doc delete: Delete on a document (Peter 11/23: "yes to Delete as the next update"). Builders only (the rules let only
+   a builder delete docs/{id}); crews and the homeowner never see it. The confirm comes first; Cancel changes nothing. */
+/* Agency 11/23, word for word. */
+const DOC_DEL_WORDS={
+  button:'Delete document',
+  title:function(name){return 'Delete '+name+'?';},
+  body:'It comes off this house for your team, the crews, and the homeowner. You can\u2019t undo this.',
+  ok:'Delete',
+  cancel:'Keep it',
+  toast:'Document deleted'
+};
+function canDeleteDoc(p){try{return !!p&&siteRoleFor(p)==='builder';}catch(e){return false;}}
+function openDocSheet(i){const p=P();const d=p&&(p.docs||[])[i];if(!d)return;
+  const trade=d.trade?specLabel(d.trade):'Shared';
+  const meta=[trade,DOC_AUD_LABEL[docAud(d)]||'',d.m||''].filter(Boolean).join(' \u00b7 ');
+  let h='<p class="fs-sm c-ink-2">'+esc(meta)+'</p>';
+  if(d.fileId)h+='<button class="btn btn-primary b-go w-full mt-2" id="docOpenBtn" data-fid="'+esc(String(d.fileId))+'" onclick="docSheetOpen('+i+')">Open</button>';
+  else h+='<p>No file is attached to this entry yet. Tap <b>Add document</b>, choose this type, and pick a file to attach one.</p>';
+  if(canDeleteDoc(p))h+='<button class="btn btn-danger w-full mt-4" id="docDelBtn" onclick="askDeleteDoc('+i+')">'+esc(DOC_DEL_WORDS.button)+'</button>';
+  showInfo(d.n,h);
+  if(d.fileId){const e=DocFetch.start(p,d);docSheetBtn(e);DocFetch.on(e,docSheetBtn);}}   // 2.519.0: the file is fetched while the sheet is up, so Open acts inside the tap
+function askDeleteDoc(i){const p=P();const d=p&&(p.docs||[])[i];if(!d||!canDeleteDoc(p))return;
+  const pid=p.id,key=docKey(d);
+  openConfirm({title:DOC_DEL_WORDS.title(d.n),body:esc(DOC_DEL_WORDS.body),okLabel:DOC_DEL_WORDS.ok,cancelLabel:DOC_DEL_WORDS.cancel,danger:true,
+    onConfirm:function(){deleteDoc(pid,key);}});}
+/* The record goes (docs/{id} is deleted on the next push, and stays deleted: see Sync.docGone). The file goes too when this
+   person uploaded it (storage.rules: only the uploader deletes, files stamped 2.512.0+); anyone else's file stays in Storage,
+   closed to crews and the homeowner because its record is gone. Returns what happened to the file. */
+async function deleteDoc(pid,key){
+  const p=(state.projects||[]).find(x=>String(x.id)===String(pid));if(!p||!canDeleteDoc(p))return null;
+  const i=(p.docs||[]).findIndex(d=>docKey(d)===key);if(i<0)return null;
+  const d=p.docs[i];const name=d.n;
+  const trades=Object.keys(Object.assign({},p.docHidden||{},p.docShown||{})).concat(d.trade?[d.trade]:[]);
+  const inPkt=[...new Set(trades)].filter(t=>{try{return docInPacket(p,t,d);}catch(e){return false;}});
+  p.docs.splice(i,1);
+  if(!(p.docs||[]).some(x=>x.n===name)){['docHidden','docShown'].forEach(f=>{const m=p[f];if(!m)return;Object.keys(m).forEach(t=>{if(Array.isArray(m[t])&&m[t].includes(name))m[t]=m[t].filter(n=>n!==name);});});}
+  try{Sync.docGone(p.id,key);}catch(e){}
+  inPkt.forEach(t=>{try{invalidatePacketSignaturesForTrade(p,t);}catch(e){}});
+  Data.commit();logEvent('docDeleted',name);
+  try{closeInfo();}catch(e){}
+  try{renderDocs();}catch(e){}
+  try{if(navPacketStillOpen())refreshPacket();}catch(e){}
+  toast(DOC_DEL_WORDS.toast);
+  return await docFileGone(p,d);}
+async function docFileGone(p,d){
+  const id=d&&d.fileId;if(!id)return 'none';
+  let queued=false;try{queued=CloudFiles.forget(String(id));}catch(e){}
+  try{await idbDelDoc(String(id));}catch(e){}
+  if(queued)return 'never-uploaded';
+  if(!liveFiles(p))return 'none';
+  try{const ref=firebase.storage().ref(docPath(p.id,d));
+    const m=await ref.getMetadata();const up=String(((m&&m.customMetadata)||{}).uploader||'');
+    if(!up||up!==String(Sync.uid||''))return 'left';
+    await ref.delete();return 'deleted';}
+  catch(e){return (e&&e.code==='storage/object-not-found')?'none':'left';}}
 /* ── Forwarded-mail review tray ──
    The ingestion Cloud Function writes incoming mail it can't auto-trust into
    p.mailReview[] with status 'review'. The builder files each item (PDF →
@@ -5508,15 +5566,89 @@ function docSavesNotShows(d,blob){const t=String((d&&d.mime)||(blob&&blob.type)|
   return /\.(docx?|xlsx?)$/i.test(String((d&&d.n)||''));}
 function saveBlobAs(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=String(name||'document');
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
-async function openDocFile(projId,fileId,remoteUrl){
+/* 2.519.0 (Peter 11/23, iPhone home-screen app): opening a document awaits nothing between the tap and the open.
+   iOS counts a window.open or a share as the person's own only when it runs inside the tap. After a network wait it
+   asks about a pop-up, and an Office file opened that way in the home-screen app hangs on a blank page. So the link
+   and the file are fetched first (DocFetch) and the tap acts on what is ready (docAct):
+   - Word and Excel: the share sheet with the file's own name where the phone can share it (iPhone), otherwise a
+     download by name (Android, computers). Never window.open.
+   - PDF and picture: the storage link opens inside the tap. In the home-screen app iOS shows another site's link in
+     its in-app browser, which has Done, so the person is not stranded (the print view's rule, 16154, is about
+     replacing the app itself). Offline, this phone's own copy: the share sheet in the home-screen app, else a tab.
+   The builder's document sheet starts the fetch when it opens; a crew, homeowner or binder tap starts it and offers
+   Open in a toast when it is ready, so that second tap is the person's own. */
+/* Agency 11/23, word for word. */
+const DOC_OPEN_WORDS={
+  getting:'Getting the file\u2026',
+  ready:function(name){return name+' is ready';},
+  open:'Open',
+  failed:'Couldn\u2019t get this file. Check your connection and try again.'
+};
+const DOC_MISS_LIST='File not on this device yet — it uploads when the builder\u2019s device is online';
+/* a network step that never answers counts as failed, so Open never stays on its loading state */
+function docWithin(pr,ms){return new Promise(function(res,rej){const t=setTimeout(function(){rej(new Error('timeout'));},ms);
+  Promise.resolve(pr).then(function(v){clearTimeout(t);res(v);},function(x){clearTimeout(t);rej(x);});});}
+const DocFetch={_c:{},FRESH:25*60000,WAIT:20000,
+  key(pid,fid){return String(pid)+'|'+String(fid);},
+  get(pid,fid){return this._c[this.key(pid,fid)]||null;},
+  ready(pid,fid){const e=this.get(pid,fid);return e&&e.st==='ready'&&Date.now()-e.t<this.FRESH?e:null;},
+  start(p,d){const k=this.key(p.id,d.fileId);const c=this._c[k];
+    if(c&&(c.st==='loading'||(c.st==='ready'&&Date.now()-c.t<this.FRESH)))return c;
+    const e={st:'loading',t:Date.now(),pid:String(p.id),fid:String(d.fileId),blob:null,url:null,office:false,why:'',cbs:[]};this._c[k]=e;
+    e.p=(async()=>{
+      /* the same ready slot either way: this phone's own copy (the uploader's device) or the file from storage */
+      try{e.blob=await docWithin(idbGetDoc(d.fileId),this.WAIT)||null;}catch(x){}
+      e.office=docSavesNotShows(d,e.blob);
+      const online=!(typeof navigator!=='undefined'&&navigator.onLine===false);
+      if(!(e.office&&e.blob)&&online){try{e.url=await docWithin(docFileUrl(p,d),this.WAIT);}catch(x){}}
+      if(e.office&&!e.blob&&e.url){let ac=null;try{ac=typeof AbortController!=='undefined'?new AbortController():null;}catch(x){}
+        try{const r=await docWithin(fetch(e.url,ac?{cache:'no-store',signal:ac.signal}:{cache:'no-store'}),this.WAIT);if(r&&r.ok)e.blob=await docWithin(r.blob(),this.WAIT);}
+        catch(x){try{if(ac)ac.abort();}catch(y){}}}   // CORS (the bucket setting, Peter 11/23), network or a timeout: the message, never a hang
+      const ok=e.office?!!e.blob:!!(e.url||e.blob);
+      e.why=ok?'':(e.url?'fetch':'nofile');e.st=ok?'ready':'failed';e.t=Date.now();
+      e.cbs.splice(0).forEach(f=>{try{f(e);}catch(x){}});return e;})();
+    return e;},
+  on(e,f){if(e.st==='loading')e.cbs.push(f);else f(e);}
+};
+function docFileOf(d,blob){const type=String((d&&d.mime)||(blob&&blob.type)||'');
+  try{return new File([blob],String((d&&d.n)||'document'),type?{type:type}:{});}catch(x){return null;}}
+/* share the file itself; true when the share sheet was asked for (nothing awaited before it) */
+function docShare(d,blob){const f=docFileOf(d,blob);
+  try{if(f&&typeof navigator!=='undefined'&&navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
+    navigator.share({files:[f],title:String(d.n||'')}).catch(function(x){if(x&&x.name==='AbortError')return;toast(DOC_OPEN_WORDS.failed);});
+    return true;}}catch(x){}
+  return false;}
+/* runs inside the tap: the share, download or open happens before anything is awaited */
+function docAct(d,e,missMsg){
+  if(!e||e.st!=='ready'){docFailed(e,missMsg);return 'failed';}
+  if(e.office){if(docShare(d,e.blob))return 'share';saveBlobAs(e.blob,d.n);return 'save';}
+  if(e.url){window.open(e.url,'_blank');return 'open';}
+  if(isStandalonePWA()&&docShare(d,e.blob))return 'share';
+  const u=URL.createObjectURL(e.blob);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000);return 'open';}
+function docFailed(e,missMsg){toast(e&&e.why==='fetch'?DOC_OPEN_WORDS.failed:(missMsg||DOC_MISS_LIST));}
+/* the builder sheet's Open: loading until the file is in hand, then it acts inside the tap */
+function docSheetBtn(e){const b=document.getElementById('docOpenBtn');if(!b||!e)return;
+  const p=P();if(b.getAttribute('data-fid')!==e.fid||!p||String(p.id)!==e.pid)return;   // the sheet moved on to another document
+  const busy=e.st==='loading';b.disabled=busy;if(busy)b.setAttribute('aria-busy','true');else b.removeAttribute('aria-busy');
+  b.textContent=busy?DOC_OPEN_WORDS.getting:'Open';}
+function docSheetOpen(i){const p=P();const d=p&&(p.docs||[])[i];if(!d||!d.fileId)return;
+  let e=DocFetch.ready(p.id,d.fileId);
+  if(e){closeInfo();docAct(d,e,'File not on this device');return;}
+  e=DocFetch.get(p.id,d.fileId);
+  if(e&&e.st==='failed')docFailed(e,'File not on this device');
+  e=DocFetch.start(p,d);docSheetBtn(e);DocFetch.on(e,docSheetBtn);}   // no window.open while it loads
+/* crew, homeowner, binder (and a builder list tap): a ready file acts inside the tap; otherwise the tap starts the
+   fetch and a toast offers Open when it is ready */
+function openDocFile(projId,fileId,remoteUrl,missMsg){
   if(fileId){const p=(state.projects||[]).find(x=>String(x.id)===String(projId));const d=p&&(p.docs||[]).find(x=>String(x.fileId)===String(fileId));
-    try{const blob=await idbGetDoc(fileId);if(blob){if(d&&docSavesNotShows(d,blob)){saveBlobAs(blob,d.n);return;}
-      const url=URL.createObjectURL(blob);window.open(url,'_blank');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch(e){}
-    try{const u=d?await docFileUrl(p,d):null;
-      if(u&&docSavesNotShows(d)){try{const r=await fetch(u);if(r&&r.ok){saveBlobAs(await r.blob(),d.n);return;}}catch(e){}}   // no CORS: the link below still works
-      if(u){window.open(u,'_blank');return;}}catch(e){}
-    if(remoteUrl){window.open(remoteUrl,'_blank');return;}
-    toast('File not on this device yet — it uploads when the builder\u2019s device is online');return;}
+    if(!d){if(remoteUrl){window.open(remoteUrl,'_blank');return;}toast(missMsg||DOC_MISS_LIST);return;}
+    const r=DocFetch.ready(p.id,fileId);if(r){docAct(d,r,missMsg);return;}
+    const e=DocFetch.start(p,d);if(e.listWait)return;e.listWait=true;
+    toast(DOC_OPEN_WORDS.getting);
+    DocFetch.on(e,function(x){x.listWait=false;
+      if(x.st==='ready')toastAction(DOC_OPEN_WORDS.ready(d.n),DOC_OPEN_WORDS.open,function(){docAct(d,x,missMsg);},10000);
+      else docFailed(x,missMsg);});
+    return;}
   if(remoteUrl){window.open(remoteUrl,'_blank');return;}
   toast('No file attached to this document');
 }
@@ -8728,6 +8860,9 @@ function openItemsGo(pid){closeOpenItems();Data.setActive(pid);openSiteFromOverv
 function openIdleSites(){renderIdleSites();document.getElementById('idleSitesScrim').classList.add('show');}
 function closeIdleSites(){document.getElementById('idleSitesScrim').classList.remove('show');}
 function idleDaysOf(p){const last=lastActivityTs(p);if(!last)return null;return Math.floor((Date.now()-last)/864e5);}
+/* 2.517.0: a house with nothing logged has no date to count from (it read "Quiet 20780 days", counted from 1970) */
+const QUIET_NONE='Nothing logged yet';   /* Agency 11/23, word for word. */
+function quietLabel(p){const n=idleDaysOf(p);if(n===null)return QUIET_NONE;const days=Math.max(1,n);return 'Quiet '+days+' day'+(days===1?'':'s');}
 function renderIdleSites(){
   const el=document.getElementById('idleSitesBody');if(!el)return;
   const rows=idleWorksites(visibleProjects()).map(p=>({p,d:idleDaysOf(p)}))
@@ -8843,8 +8978,7 @@ function _siteWhisper(p){
     }
   });
   if(!best&&isIdleSite(p)){
-    const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
-    best={kind:'idle',text:'Quiet '+days+' day'+(days===1?'':'s')};
+    best={kind:'idle',text:quietLabel(p)};
   }
   return best;
 }
@@ -9286,8 +9420,7 @@ function houseHTML(p){
     h+='</div>';
   }else _houseFacts=[];
   if(isIdleSite(p)&&isBuilder){
-    const days=Math.max(1,Math.floor((Date.now()-lastActivityTs(p))/864e5));
-    h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">Quiet '+days+' day'+(days===1?'':'s')+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
+    h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">'+esc(quietLabel(p))+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
   h+='<div class="hs-band" data-band="job">On this house</div><div class="hs-doors">';
   if(!isClient&&canGate('field'))h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">A note, or a photo</div></button>';
@@ -10474,7 +10607,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     for(const L of LEGACY_LISTS){if(!syncWrites(p,L.sub))continue;
       const leg=((this._legL[id]||{})[L.f])||[];if(!leg.length)continue;
       const c=SYNC_COLLS.find(x=>x.sub===L.sub);const on=sh.colls[L.sub]||{};
-      if(!leg.every(r=>on[c.key(r)]!==undefined))continue;
+      if(!leg.every(r=>on[c.key(r)]!==undefined||this._isGone(id,L.sub,c.key(r))))continue;   // Doc delete: a deleted one counts as done
       const del=fbDelete();if(del===undefined)continue;
       await this.db.collection('sites').doc(id).set({meta:{[L.f]:del},updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:myUid},{merge:true});
       this._legL[id][L.f]=[];const raw=this._legRaw[id];if(raw)delete raw[L.f];sh.mk=sh.mk||{};delete sh.mk[L.f];this._saveBase();}
@@ -10498,6 +10631,11 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
      them up, and _f2Tidy then removes the old list from the house doc. A phone
      that cannot read invite codes keeps none. meta=null re-runs with the last
      house doc seen (after a records listener's first server answer). */
+  /* Doc delete: a document deleted on this phone. Its record goes on the next push (the shadow diff); this tombstone keeps
+     the house doc's pre-2.512.0 list from adding it back, and lets _f2Tidy clear that list without it. */
+  docGone(id,key){const sid=String(id);const sh=this._shadow[sid]||(this._shadow[sid]={meta:'',colls:{}});
+    const g=sh.gone||(sh.gone={});(g.docs||(g.docs={}))[String(key)]=Date.now();this._saveBase();},
+  _isGone(sid,sub,key){const sh=this._shadow[String(sid)];return !!(sh&&sh.gone&&sh.gone[sub]&&sh.gone[sub][key]);},
   _legacyLists(p,id,meta){const sid=String(id);let ch=false;
     if(meta)this._legRaw[sid]={docs:meta.docs,invites:meta.invites};
     const raw=this._legRaw[sid]||{};
@@ -10512,7 +10650,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       const byKey={};leg.forEach(r=>{byKey[c.key(r)]=r;});
       Object.keys(added).forEach(k=>{if(byKey[k]||on[k]!==undefined)return;
         const i=p[L.f].findIndex(r=>c.key(r)===k);if(i>=0){p[L.f].splice(i,1);ch=true;}delete added[k];});
-      leg.forEach(r=>{const k=c.key(r);if(on[k]!==undefined)return;
+      leg.forEach(r=>{const k=c.key(r);if(on[k]!==undefined||this._isGone(sid,L.sub,k))return;   // Doc delete: deleted here stays deleted
         const i=p[L.f].findIndex(x=>c.key(x)===k);
         if(i<0){p[L.f].push(JSON.parse(JSON.stringify(r)));added[k]=1;ch=true;}});
       /* a phone that only reads: once the server has answered, keep exactly what the records and the old list hold */
@@ -10892,6 +11030,8 @@ const CloudFiles={
     else if(q[i].kind!==kind){q[i]=Object.assign({kind,siteId:String(siteId),id,mode:'live',tries:0},from?{from:from}:{});}
     this._save(q);this.flush();
   },
+  /* Doc delete: a deleted document's file that has not gone up yet never does. True when one was waiting. */
+  forget(id){const q=this._q();const n=q.filter(e=>e.id===id&&!e.done&&!e.url).length;const k=q.filter(e=>e.id!==id);if(k.length!==q.length)this._save(k);return n>0;},
   /* #5 (2.512.0): a document that changes audience moves folder: a new copy, then the old one goes */
   move(siteId,id,fromAud,toAud){this.queue('docs-'+toAud,siteId,id,'live/sites/'+String(siteId)+'/docs-'+fromAud+'/'+id);},
   /* #7 (2.512.0): every upload names its uploader; the rules let only that person replace or delete it */
