@@ -10,6 +10,30 @@ A house is **one page**. No Full site. No bottom tabs. Doors open existing rooms
 
 Do **not** rewrite photos, stages, packets, invoices, or selections. Only how you get there.
 
+## The balance rule (product law, Peter 11/25)
+
+SitePlumb grows by word of mouth. To get there, it has to be the most helpful thing in the day of the builder, the homeowner and the crew, without making any of them the loser.
+
+**Now, while SitePlumb earns the market:**
+
+1. **Every feature makes the builder look good to the people around them.** Crews and homeowners get clarity; the builder gets the credit and keeps control.
+2. **Anything that could make a builder look bad is the builder's choice.** If it could embarrass a builder in front of a homeowner or crew, it is off by default and never a public score. Examples: a crew seeing its own payment status, or a "running behind" line on the homeowner's screen.
+3. **Doing the right thing is the easiest path.** The app's defaults are the good habits, one tap each: approval before ordering, lien waiver before paying, and date changes sent to the crew.
+4. **Free pages earn their keep quietly.** The crew packet, homeowner portal and closeout PDF are honest and useful. Each carries one quiet line, such as "Builders: see how SitePlumb works". Never an ad.
+
+**Long term, as SitePlumb gains market:**
+
+5. **SitePlumb rewards builders who do the right thing:** good work, on time, paying people what they agreed, and telling homeowners and crews the truth. It does this with credit, never punishment.
+6. **The credit is a track record the builder earns** from what actually happened in the app: approvals on record, dates kept, crews paid, answers sent on time. The builder chooses whether to share it with homeowners and crews.
+7. **The pull comes from the other side.** Homeowners and crews learn to ask for a builder who shares their record. SitePlumb never has ratings, reviews, or lists of bad builders, and no feature exists to shame anyone.
+
+**Before shipping anything that touches homeowners, crews or money, ask three questions:**
+- Does it help the homeowner and the crew?
+- Does the builder get the credit, or the choice?
+- Would a good builder be proud to turn it on?
+
+**In a walk, flag any screen that shows a builder in a bad light without their choice.** For example, "Running about 75 days behind" on the homeowner's home screen (2.524.0 live walk).
+
 ## Doors that must exist on a house
 
 **On the job:** Field Notes · Schedule · Selections · Money
