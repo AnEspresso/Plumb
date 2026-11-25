@@ -10,9 +10,10 @@
 <style>
 :root{
   --paper:#F2EEE6; --surface:#FBF9F4; --surface-2:#F7F3EB;
-  --ink:#1B1916; --ink-2:#5C564C; --ink-3:#928B7E;
+  --ink:#1B1916; --ink-2:#5C564C; --ink-3:#6F685C;
   --line:#E4DDD0; --line-2:#EDE7DB;
   --oak:#B0895A; --oak-soft:#CDB48C; --clay:#B0604A; --sage:#6F7B58;
+  --oak-ink:#86663D; --clay-ink:#A0533F; --sage-ink:#5F6A4A;
   --f-serif:'Source Serif 4',Georgia,serif;
   --f-sans:'Hanken Grotesk',-apple-system,system-ui,sans-serif;
   --f-mark:'Fraunces',Georgia,serif;
@@ -50,7 +51,7 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:600;line-height:var(--lh-tight);
 .btn:active{transform:scale(.98);}
 .btn-primary{background:var(--ink);color:var(--surface);}
 .btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--line);}
-.btn-quiet{background:transparent;color:var(--oak);padding:0 var(--s-3);}
+.btn-quiet{background:transparent;color:var(--oak-ink);padding:0 var(--s-3);}
 .btn-block{display:flex;width:100%;}
 .btn + .btn{margin-top:var(--s-2);}
 .row{display:flex;align-items:center;gap:var(--s-4);min-height:var(--tap);
@@ -60,8 +61,8 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:600;line-height:var(--lh-tight);
 .row-title{font-size:var(--t-lg);font-weight:600;color:var(--ink);}
 .row-sub{font-size:var(--t-sm);color:var(--ink-2);margin-top:2px;}
 .row-aside{flex:none;text-align:right;font-size:var(--t-md);font-weight:600;}
-.row-aside.warn{color:var(--clay);}
-.row-aside.ok{color:var(--sage);}
+.row-aside.warn{color:var(--clay-ink);}
+.row-aside.ok{color:var(--sage-ink);}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s-4);margin:var(--s-4) 0;}
 .hero-n{font-family:var(--f-serif);font-size:var(--t-hero);font-weight:600;line-height:1;letter-spacing:-.02em;}
 .hero-l{font-size:var(--t-md);color:var(--ink-2);margin-top:var(--s-2);}
@@ -82,8 +83,8 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:600;line-height:var(--lh-tight);
 .chg{display:none;margin-top:var(--s-3)}
 .chg.show{display:block}
 .ok{padding:var(--s-4) 0;font-size:var(--t-md)}
-.ok b{color:var(--sage)}
-.ok.warn b{color:var(--oak)}
+.ok b{color:var(--sage-ink)}
+.ok.warn b{color:var(--oak-ink)}
 .foot{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-7);text-align:center;line-height:1.6}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;padding:var(--s-1) 0 var(--s-3)}
 .cal-nav .m{font-size:var(--t-lg);font-weight:600;font-family:var(--f-serif)}
@@ -104,7 +105,7 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:600;line-height:var(--lh-tight);
 .spec-kv{display:flex;justify-content:space-between;gap:var(--s-3);font-size:var(--t-sm);padding:var(--s-1) 0}
 .spec-kv .k{color:var(--ink-3)}
 .spec-kv .v{font-weight:600;text-align:right}
-.spec-kv .gap{color:var(--clay);font-style:italic}
+.spec-kv .gap{color:var(--clay-ink);font-style:italic}
 .rem{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);font-size:var(--t-sm);color:var(--ink-2)}
 .rem input{width:auto;min-height:auto}
 .btn[disabled]{opacity:.45;pointer-events:none}
@@ -447,10 +448,12 @@ window.gpSendQuestion=function(){
   if(d&&TOKEN){try{d.collection("packets").doc(String(TOKEN)).update({q:_snap.q}).catch(function(){_snap.q=prev;paint();toast("Could not send \u2014 try again with a bar of signal");});}catch(e){_snap.q=prev;paint();toast("Could not send");}}
   paint();
 };
+/* step by calendar day, not 24 hours (the fall-back night is 25 hours long) */
+function addDays(ts,n){var x=new Date(ts);x.setDate(x.getDate()+n);return x.getTime();}
 function ics(g){
   var d=function(ts){var x=new Date(ts),p=function(v){return String(v).padStart(2,"0");};return x.getFullYear()+p(x.getMonth()+1)+p(x.getDate());};
   return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//SitePlumb//Packet//EN","BEGIN:VEVENT",
-    "UID:"+(g.bookingId||"pk")+"@siteplumb.com","DTSTART;VALUE=DATE:"+d(g.start),"DTEND;VALUE=DATE:"+d((g.end||g.start)+864e5),
+    "UID:"+(g.bookingId||"pk")+"@siteplumb.com","DTSTART;VALUE=DATE:"+d(g.start),"DTEND;VALUE=DATE:"+d(addDays(g.end||g.start,1)),
     "SUMMARY:"+String(g.tradeLabel||"")+" \u2014 "+String(g.site||"").split(" \u00b7 ")[0],
     "DESCRIPTION:"+String(g.note||"").replace(/\n/g," "),"END:VEVENT","END:VCALENDAR"].join("\r\n");
 }
@@ -469,7 +472,7 @@ window.gpCalGoogle=function(remember){
   var g=_snap;var d=function(ts){var x=new Date(ts),p=function(v){return String(v).padStart(2,"0");};return x.getFullYear()+p(x.getMonth()+1)+p(x.getDate());};
   var u="https://calendar.google.com/calendar/render?action=TEMPLATE"
     +"&text="+encodeURIComponent((g.tradeLabel||"")+" \u2014 "+String(g.site||"").split(" \u00b7 ")[0])
-    +"&dates="+d(g.start)+"/"+d((g.end||g.start)+864e5)
+    +"&dates="+d(g.start)+"/"+d(addDays(g.end||g.start,1))
     +"&details="+encodeURIComponent(String(g.note||""));
   try{window.open(u,"_blank");}catch(e){}
 };
