@@ -2047,7 +2047,7 @@ h3,.title-row{font-size:var(--t-lg);font-family:var(--f-sans);font-weight:600;le
 /* ── Hero number — used once per money screen, never twice ────────── */
 .hero{padding:var(--s-5) 0 var(--s-4);}
 .hero-n{font-family:var(--f-serif);font-size:var(--t-hero);font-weight:600;line-height:1;letter-spacing:-.02em;}
-.hero-n.ok{color:var(--sage-ink);} .hero-n.warn{color:var(--clay-ink);}
+.hero-n.ok{color:var(--sage-ink);} .hero-n.warn{color:var(--clay-ink);} .hero-n.none{color:var(--ink-2);font-size:var(--t-2xl);}
 .hero-l{font-size:var(--t-md);color:var(--ink-2);margin-top:var(--s-2);}
 .hero-s{font-size:var(--t-sm);color:var(--ink-3);margin-top:var(--s-3);line-height:1.5;}
 
@@ -2071,6 +2071,14 @@ html[data-ts="xl"]{--t-xs:15px;--t-sm:16.5px;--t-md:19px;--t-lg:20.5px;--t-xl:24
 .hdr-actions .ov-logout{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:60px;min-height:48px;}
 .hb-word{font-size:var(--t-xs);font-weight:600;line-height:1;color:var(--ink-2);}
 .exc-banner{--t-xs:12px;--t-sm:13.5px;--t-md:15.5px;}   /* the example-build bar keeps its size */
+/* 2.525.0: the calendar's house chip ends in … instead of clipping both ends ("09 Beaumont Par"), and gets the most room */
+.cal-ctrl .chip{display:block;text-align:center;line-height:calc(var(--tap) - 2px);flex:0 0 auto;padding:0 var(--s-3);}
+.cal-ctrl .chip:nth-child(2){flex:1 1 0;}
+/* 2.525.0: a budget line's amount left sits beside its name, not in the middle of the row, so the "used of" line under the
+   name never runs beneath it (live walk: "$26,900.00 used of $27,500.00" under "$600.00 left" at 390 px). */
+.row.mn-line{align-items:flex-start;}
+.row.mn-line>.row-aside{padding-top:2px;}
+.row.mn-line>.row-chev{align-self:center;}
 .set-ts{padding:var(--s-3) 0 var(--s-4);border-bottom:1px solid var(--line-2);}
 .set-ts .row-title{margin-bottom:var(--s-2);}
 .set-ts .seg{display:flex;width:100%;}
@@ -3089,7 +3097,9 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
       <div class="fld-label">Status</div>
       <select id="selStatus" class="fld-select"></select>
       <div class="fld-label">Note (optional)</div>
-      <input id="selNote" placeholder="e.g. confirm finish before ordering">
+      <input id="selNote" placeholder="e.g. confirm finish before ordering" oninput="selNoteHint()">
+      <div class="fld-hint">The homeowner sees this note.</div>
+      <div id="selNoteWarn" class="fld-hint hide c-clay">⚠ This reads like a cost note, and the homeowner will see it. Keep costs in Money.</div>
 </div>
 <div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAddSel()">Cancel</button><button class="b1 b-go btn btn-primary" id="selSaveBtn" onclick="saveSel()">Add</button></div></div>
   </div>
@@ -4004,15 +4014,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.524.0 - November calendar shows the right days, new documents start Team only, easier-to-read text with a Text size setting, and approvals that say what was agreed';   /* 11/25: calendar, documents, readability, approvals. */
+const PLUMB_VERSION='2.525.0 - Fixes from the live walk - one count for what needs you, No budget yet, invoices stay with Invoices, budget lines no longer crowd, readable due dates';   /* 11/25: fixes from the 2.524.0 live walk. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795619627889;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.524.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795629482297;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.525.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -5766,7 +5776,7 @@ function renderSiteSummary(){
       <div class="ss-bar"><span style="width:${pct}%"></span></div></div>
     <div class="ss-cards">
       <button class="ss-card${waiting?' hot':''}" onclick="go('decisions')">
-        <div class="ss-num">${waiting}</div><div class="ss-k">${waiting?'waiting on you':'all clear'}</div></button>
+        <div class="ss-num">${waiting}</div><div class="ss-k">${waiting?(waiting===1?'decision open':'decisions open'):'all clear'}</div></button>
       <button class="ss-card" onclick="openNextSite()">
         <div class="ss-next">${nextLine}</div><div class="ss-k">next on site</div></button>
     </div>`;}
@@ -7323,14 +7333,15 @@ function TEXT_SIZE_ROW(){const v=textSize();
   return '<div class="set-ts"><div class="row-title">Text size</div><div class="seg" role="group" aria-label="Text size">'
     +[['n','Normal'],['l','Large'],['xl','Extra large']].map(function(o){return '<button type="button" class="'+(v===o[0]?'on':'')+'" aria-pressed="'+(v===o[0])+'" onclick="setTextSize(\''+o[0]+'\')">'+o[1]+'</button>';}).join('')
     +'</div></div>';}
-function openSettings(){try{tourPrefetch();tourUnlockAudio();}catch(e){}saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
+function openSettings(){try{tourUnlockAudio();}catch(e){}   /* 2.525.0: no tour audio download just for opening Settings (37 files); the tour fetches its own when it starts */
+saveScroll('home');renderSettings();document.getElementById('settingsScrim').classList.add('show');}
 function closeSettings(){document.getElementById('settingsScrim').classList.remove('show');}
 function openCompany(){const r=state.session&&state.session.role;if(r==='client'||r==='subs')return;saveScroll('home');renderCompany();document.getElementById('companyScrim').classList.add('show');}
 function closeCompany(){document.getElementById('companyScrim').classList.remove('show');}
 function renderCompany(){
   const el=document.getElementById('companyBody');if(!el)return;
   let rows='';
-  if(canGate('schedule'))rows+=SET_GEAR_ROW('Trades Calendar','Crew schedule across every job','closeCompany();openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
+  if(canGate('schedule'))rows+=SET_GEAR_ROW('Trades Calendar','Crew schedule across every job','closeCompany();calSiteFilter=\'all\';openCal()','<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>');
   if(canGate('people'))rows+=SET_GEAR_ROW('People','Team, homeowners, and crews','closeCompany();openPeopleMode(\'team\')','<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 1 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>');
   rows+=SET_GEAR_ROW('Decisions',((state.pkLog||[]).length?(state.pkLog.length+' recent'):'Dates confirmed and answers sent'),'closeCompany();openPkLog()','<path d="M9 11l2.5 2.5L16 9"/><rect x="3.5" y="4" width="17" height="16" rx="3"/>');
   if(canGate('moneyCo'))rows+=SET_GEAR_ROW('Invoices','Bill homeowners & track payments','closeCompany();invoicesFromSettings()','<path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2V5a2 2 0 0 1 2-2zM9 8h6M9 12h6"/>');
@@ -7344,7 +7355,7 @@ function renderSettings(){
   let rows='';
   if(role==='builder'&&hat!=='client'&&hat!=='sub'&&!onClient){
     rows+='<div class="sec"><h2>Company</h2></div>';
-    rows+=SET_LIST_ROW('People, calendar, and invoices','Also where you start a new job','closeSettings();openCompany()');
+    rows+=SET_LIST_ROW(canGate('moneyCo')?'People, calendar, and invoices':'People and calendar','Also where you start a new job','closeSettings();openCompany()');
     if(appMode()==='real'){
       if(isOrgOwner()){
         rows+=SET_LIST_ROW('Selection templates','Build style & install spec sheets','closeSettings();openPeopleMode(\'templates\')');
@@ -8984,11 +8995,15 @@ function renderOverview(){
 function tdDayLabel(ts){const d=dayStart(Date.now());if(ts<=d)return 'today';if((ts-d)/864e5<=1)return 'tomorrow';
   return new Date(ts).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
 function tdTradeOf(p,b){return b.trade||((p.subs||[]).find(s=>s.name===b.subName)||{}).specialty||'';}
+/* 2.525.0: each house is counted from its own list (nyForHouse), the same list its card rows and its briefing use.
+   The book-wide list keeps only the first three "On deck, not booked" rows, so a house past those three read
+   "all clear" while its card listed on-deck rows and its briefing said "3 still need you". */
 function _nyByHouse(projs){
-  const issues=_nyIssues(projs||liveProjects());
+  const ps=projs||liveProjects();
   const map={};const cross=[];
+  _nyIssues(ps).forEach(function(it){if(it.cross||it.pid==null||it.pid==='')cross.push(it);});
+  const issues=[];ps.forEach(function(p){nyForHouse(p).forEach(function(it){issues.push(it);});});
   issues.forEach(function(it){
-    if(it.cross||it.pid==null||it.pid===''){cross.push(it);return;}
     const k=String(it.pid);
     if(!map[k])map[k]={pid:it.pid,site:it.site,lvl:it.lvl,pri:it.pri,ts:it.ts,line:it.line,n:0};
     const c=map[k];c.n++;
@@ -9222,7 +9237,9 @@ function houseGoNext(){
    Projected {x} over budget, never plain "over budget" before money has gone over.
    Non-breaking spaces inside each phrase ({x} over budget, Under budget, {x} left).
    Otherwise On budget only when exactly on, else Under budget · {x} left (Agency 10/4). */
+function moneyNoBudget(cs){return !!cs&&(Number(cs.budget)||0)<=0.005&&(Number(cs.committed)||0)<=0.005&&(Number(cs.spent)||0)<=0.005&&(Number(cs.projected)||0)<=0.005;}
 function houseBudgetLine(cs){
+  if(moneyNoBudget(cs))return 'No budget yet';
   const lf=budgetLeft(cs);const po=(Number(cs&&cs.projected)||0)-(Number(cs&&cs.budget)||0);
   if(lf<-0.005)return fmtMoney(-lf)+'\u00a0over\u00a0budget';
   if(po>0.005)return 'Projected '+fmtMoney(po)+'\u00a0over\u00a0budget';   // the one break: after Projected (the Money tile is half the width)
@@ -9780,6 +9797,7 @@ function pkCardBits(p){
 }
 function nyWhoSince(it){
   const k=String((it&&it.kind)||'');
+  if(k==='On deck, not booked')return '';   /* 2.525.0: the app raised it; "You · 12h ago" read as if you had done something */
   let who='You';
   if(k==='Homeowner wrote you')who='Homeowner';
   else if(/Waiting|declined|blocked|Question|Date change|Double-booked/i.test(k))who='Crew';
@@ -10034,7 +10052,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
     if(this._err[sid])h+='<div class="empty">Change orders are not available yet. Try again later.</div>';
     h+=grp('Drafts',r=>r.status==='draft')+grp('Waiting on the homeowner',r=>r.status==='sent')+grp('Approved',r=>r.status==='approved')+grp('Closed',r=>r.status==='declined'||r.status==='withdrawn');
     if(!rows.length&&!this._err[sid])h+='<div class="empty">No change orders yet.</div>';
-    h+='<button class="b1 b-go w-full mt-2 btn btn-primary" onclick="CO.newForm()">New change order</button><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button></div>';
+    h+='<button class="b1 b-go w-full mt-2 btn btn-primary" onclick="CO.newForm()">New change order</button></div>';   /* 2.525.0: the sheet's own Got it closes it; a second Done sat above it */
     showInfo('Change orders',h,true);},
   /* #8 (2.513.0): a sent change order the server has not checked yet (its stamp is not this revision and amount) */
   unchecked(r){return !!r&&r.status==='sent'&&!(r.verifiedRev===r.rev&&r.verifiedTotal===r.amountC);},
@@ -10048,7 +10066,7 @@ const CO={_rows:{},_unsub:{},_err:{},_edit:null,_view:null,
   viewHTML(r){const w=(t)=>COH.when(t);
     return '<div id="coRoot"><div class="meta">'+esc(this.label(r.no))+(r.rev>1?' \u00b7 revision '+r.rev:'')+'</div><div class="fs-md fw-6">'+esc(r.title||'')+'</div><div class="fs-lg fw-6 mt-1">'+esc(this.amountText(r.amountC))+'</div>'+(r.note?'<p class="mt-2">'+esc(r.note)+'</p>':'')
       +(r.status==='approved'&&r.approvedVia==='paper'?'<div class="meta mt-2">Approved'+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div><div class="meta">Signed on paper \u00b7 <a href="#" onclick="event.preventDefault();CO.paperPhoto(\''+esc(r.id)+'\')">photo</a></div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':'')
-      :r.status==='approved'?'<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':''):r.status==='declined'?'<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':''):'<div class="meta mt-2">Withdrawn</div>')
+      :r.status==='approved'?'<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(w(r.decidedAt)?' \u00b7 '+esc(w(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">Agreed to: \u201c'+esc(r.sentence)+'\u201d</div>':''):r.status==='declined'?'<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':''):'<div class="meta mt-2">Withdrawn</div>')
       +(r.days?'<div class="meta mt-1">'+esc(this.daysText(r.days))+'</div>':'')
       +(r.lineId&&canGate('moneyJob')&&this.lineName(P(),r.lineId)?'<div class="meta mt-1">Budget line: '+esc(this.lineName(P(),r.lineId))+'</div>':'')
       +(r.status==='approved'&&canGate('moneyJob')?'<button class="lpay btn btn-quiet mt-2" onclick="CO.updateBudget()">Update budget</button>':'')   /* the builder's cost lives in the budget, never on the co (the homeowner reads it) */
@@ -10218,7 +10236,9 @@ const HIST={_rows:{},_unsub:{},_err:{},
   ms(t){try{return t&&t.toMillis?t.toMillis():(typeof t==='number'?t:0);}catch(e){return 0;}},
   list(sid){return (this._rows[String(sid)]||[]).slice().sort((a,b)=>(this.ms(a.at)-this.ms(b.at))||((a.seq||0)-(b.seq||0)));},
   forItem(sid,ref,type){return this.list(sid).filter(r=>String(r.ref)===String(ref)&&(r.refType||'co')===type);},
-  label(r){if(r.refType==='co')return CO.label(r.no);if(r.refType==='pmt')return 'Payment';return r.no?String(r.no):'Invoice';},
+  label(r){if(r.refType==='co')return CO.label(r.no);if(r.refType==='pmt')return 'Payment';if(r.no)return String(r.no);
+    /* 2.525.0: a payment line on an invoice names the invoice (was "Invoice · Payment recorded") */
+    try{const v=(P().invoices||[]).find(x=>String(x.id)===String(r.ref));if(v&&v.no)return String(v.no);}catch(e){}return 'Invoice';},
   amt(r){return Number.isInteger(r.amountC)?(r.refType==='co'?CO.amountText(r.amountC):fmtMoney(fromC(Math.abs(r.amountC)))):'';},
   what(r){const rv=r.rev>1?' (revision '+r.rev+')':'';
     switch(r.kind){
@@ -10230,7 +10250,7 @@ const HIST={_rows:{},_unsub:{},_err:{},
   lineHTML(r,withLabel){const a=this.amt(r),w=COH.when(r.at);
     return '<div class="subrow hist-line"><div class="si"><div class="n">'+(withLabel?esc(this.label(r))+' \u00b7 ':'')+esc(this.what(r))+(a&&r.kind!=='opened'?' \u00b7 '+esc(a):'')+'</div>'
       +'<div class="d">'+esc([r.byName,w].filter(Boolean).join(' \u00b7 '))+'</div>'
-      +(r.kind==='approved'&&r.sentence?'<div class="d">'+esc(r.sentence)+'</div>':'')+(r.note?'<div class="d">'+esc(r.note)+'</div>':'')+'</div></div>';},
+      +(r.kind==='approved'&&r.sentence?'<div class="d">Agreed to: \u201c'+esc(r.sentence)+'\u201d</div>':'')+(r.note?'<div class="d">'+esc(r.note)+'</div>':'')+'</div></div>';},
   itemHTML(sid,ref,type){if(!PaperTrail.on)return '';const L=this.forItem(sid,ref,type);if(!L.length)return '';
     return '<div class="meta mt-2">History</div>'+L.map(r=>this.lineHTML(r,false)).join('');},
   screenHTML(sid){const L=this.list(sid).reverse();
@@ -10391,7 +10411,7 @@ const COH={_rows:{},_unsub:{},_err:{},_cons:{},_open:null,_busy:{},_opened:{},_s
     }else if(r.status==='approved'&&r.approvedVia==='paper'){
       h+='<div class="meta mt-2">Approved'+(this.when(r.decidedAt)?' \u00b7 '+esc(this.when(r.decidedAt)):'')+'</div><div class="meta">Signed on paper \u00b7 photo</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':'')+'<div class="meta">Not you? Tell your builder.</div>';
     }else if(r.status==='approved'){
-      h+='<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(this.when(r.decidedAt)?' \u00b7 '+esc(this.when(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">'+esc(r.sentence)+'</div>':'');
+      h+='<div class="meta mt-2">Approved'+(r.decidedName?' by '+esc(r.decidedName):'')+(this.when(r.decidedAt)?' \u00b7 '+esc(this.when(r.decidedAt)):'')+'</div>'+(r.sentence?'<div class="meta">Agreed to: \u201c'+esc(r.sentence)+'\u201d</div>':'');
     }else if(r.status==='declined'){
       h+='<div class="meta mt-2">Declined'+(r.decidedName?' by '+esc(r.decidedName):'')+'</div>'+(r.declineNote?'<div class="meta">'+esc(r.declineNote)+'</div>':'');
     }else h+='<div class="meta mt-2">Withdrawn by your builder</div>';
@@ -11330,7 +11350,7 @@ const Notify={
         const body=gaps.length+' answer'+(gaps.length===1?'':'s')+' still missing · '+d.label.toLowerCase();
         if(sx.role==='builder')this.push('swB:'+p.id+':'+sb.id+':'+day,'Specs '+(d.overdue?'overdue':'due soon')+' — '+site,sb.name+' · '+body,{pid:p.id,view:'schedule'});
         if(sx.role==='subs'&&sx.name===sb.name)this.push('swS:'+p.id+':'+sb.id+':'+day,'Your specs '+(d.overdue?'are overdue':'are due soon')+' — '+site,body,{pid:p.id,view:'schedule'});});
-      (p.invoices||[]).forEach(i=>{if(invOverdue(i)&&this._audMatch('biller',p))this.push('inv:'+i.id+':overdue','Invoice past due · '+site,i.no+' · '+fmtMoney(i.total)+' — past due '+i.due,{pid:p.id,view:'invoices',id:i.id});});
+      (p.invoices||[]).forEach(i=>{if(invOverdue(i)&&this._audMatch('biller',p))this.push('inv:'+i.id+':overdue','Invoice past due · '+site,i.no+' · '+fmtMoney(i.total)+' — past due '+invDueText(i.due),{pid:p.id,view:'invoices',id:i.id});});
       if(sx.role==='client'&&String(sx.site||'')===String(p.id)){
         (p.selections||[]).forEach(sl=>{
           if(sl.status==='installed')return;const hp=specStatus(sl).homeownerPending;if(!hp.length)return;
@@ -11503,7 +11523,7 @@ function openNotifyCenter(){
   else if(perm==='denied')permRow=notifBlockedHTML(stand);
   else permRow='<button class="b1 b-go w-full btn btn-primary" onclick="Notify.enable().then(()=>openNotifyCenter())">Turn on notifications</button>';
   showInfo('Notifications',permRow
-    +(((state.session||{}).role==='builder')?`<div class="subrow cur-p mt-3" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span class="c-ink-3 fs-lg pl-1 u-m19">›</span></div>`:'')
+    +(((state.session||{}).role==='builder'&&canGate('moneyCo'))?`<div class="subrow cur-p mt-3" onclick="closeInfo();openBillingPicker()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(billersSummaryLine())}</div></div><span class="c-ink-3 fs-lg pl-1 u-m19">›</span></div>`:'')
     +'<div class="sec"><h2>Recent</h2></div>'
     +(noticeRecentHTML())
     +'<p class="mt-2 ml-0 mr-0 mb-0 c-ink-3 fs-xs">On iPhone this has to be the Home Screen app, not Safari. A test dings this phone.</p>');}
@@ -12069,7 +12089,7 @@ function renderSubView(){
   const stripSt=open.length?(open.length+' still '+(open.length===1?'needs':'need')+' you'):(tr.cleared?'Cleared to start':'Waiting for the go-ahead');
   const meta=[];
   if(tr.cleared)meta.push('Your builder marked '+tr.label+' ready '+timeAgo(tr.cleared));
-  else meta.push('You will see a notice here when this house is ready for '+tr.label);
+  else meta.push('You will see a notice here when your builder marks this house ready for you.');   /* 2.525.0: was "ready for General" */
   let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
   h+=buildBriefRowHTML(p);
   h+='<div class="hs-band">On this house</div><div class="hs-doors">';
@@ -12160,7 +12180,7 @@ function clientCostsHTML(p){
   let invoices='';
   if(invs.length){
     invoices='<div class="sec"><h2>Invoices</h2></div>';
-    invoices+=invs.map(function(inv){const st=invState(inv);return '<div class="subrow cur-p" onclick="openInvoiceDetail(\''+p.id+'\',\''+inv.id+'\',\'client\')"><div class="si"><div class="n">'+esc(inv.no)+' \u00b7 '+esc(inv.title)+'</div><div class="d">'+fmtMoney(inv.total)+((st==='partial'||st==='overdue')?' \u00b7 '+fmtMoney(invBalance(inv))+' left':'')+(inv.due&&st!=='paid'?(st==='overdue'?' \u00b7 <b style="color:var(--clay-ink)">past due '+esc(inv.due)+'</b>':' \u00b7 due '+esc(inv.due)):'')+(st==='sent'?' \u00b7 <b style="color:var(--clay-ink)">needs your OK</b>':'')+'</div></div>'+invStatusChip(st)+'</div>';}).join('');
+    invoices+=invs.map(function(inv){const st=invState(inv);return '<div class="subrow cur-p" onclick="openInvoiceDetail(\''+p.id+'\',\''+inv.id+'\',\'client\')"><div class="si"><div class="n">'+esc(inv.no)+' \u00b7 '+esc(inv.title)+'</div><div class="d">'+fmtMoney(inv.total)+((st==='partial'||st==='overdue')?' \u00b7 '+fmtMoney(invBalance(inv))+' left':'')+(inv.due&&st!=='paid'?(st==='overdue'?' \u00b7 <b style="color:var(--clay-ink)">past due '+esc(invDueText(inv.due))+'</b>':' \u00b7 due '+esc(inv.due)):'')+(st==='sent'?' \u00b7 <b style="color:var(--clay-ink)">needs your OK</b>':'')+'</div></div>'+invStatusChip(st)+'</div>';}).join('');
   }
   try{invoices+=COH.cardHTML(p);}catch(e){}
   try{invoices+=PAST.rowHTML();}catch(e){}
@@ -12577,13 +12597,16 @@ function moneyTotHTML(p){
   const cs=costSummary(p);const bill=billingSummary(p);
   const left=cs.budget-cs.projected;
   const over=left<-0.005, even=Math.abs(left)<=0.005;
-  const heroN=even?'On budget':fmtMoney(Math.abs(left));
-  const heroL=even?'Projected to land exactly on budget'
+  /* 2.525.0: a house with no budget lines and no costs is not "On budget" — there is nothing to be on. */
+  const none=moneyNoBudget(cs);
+  const heroN=none?'No budget yet':even?'On budget':fmtMoney(Math.abs(left));
+  const heroL=none?'Add a budget line from More to see where this house will land.'
+             :even?'Projected to land exactly on budget'
              :over?'Over budget, projected':'Under budget, projected';
   let h='<div class="hero">'
-    +'<div class="hero-n '+(over?'warn':'ok')+'">'+heroN+'</div>'
+    +'<div class="hero-n '+(none?'none':over?'warn':'ok')+'">'+heroN+'</div>'
     +'<div class="hero-l">'+heroL+'</div>'
-    +'<div class="hero-s">'+fmtMoney(cs.budget)+' budget &middot; '+fmtMoney(cs.committed)+' contracted &middot; '+fmtMoney(cs.spent)+' paid out</div>'
+    +(none?'':'<div class="hero-s">'+fmtMoney(cs.budget)+' budget &middot; '+fmtMoney(cs.committed)+' contracted &middot; '+fmtMoney(cs.spent)+' paid out</div>')
     +'</div>';
   if(moneyHidden('inv'))return h;   // F-2: the homeowner rows are invoice numbers this phone does not hold
   /* An allowance overage the homeowner has not approved is not in any total
@@ -12660,7 +12683,7 @@ function moneyLineRowHTML(l,r){
   const aside=over
     ?'<div class="row-aside warn">'+fmtMoney(-left)+' over</div>'
     :(left>0.005?'<div class="row-aside">'+fmtMoney(left)+' left</div>':'');
-  return '<div class="row row-tap" onclick="openCostLine(\''+String(l.id).replace(/'/g,'')+'\')">'
+  return '<div class="row row-tap mn-line" onclick="openCostLine(\''+String(l.id).replace(/'/g,'')+'\')">'
     +'<div class="row-main"><div class="row-title">'+esc(l.label||'')+'</div>'
     +'<div class="row-sub">'+used+(projOver?' <span class="ws-nw c-clay mn-proj">projected '+fmtMoney(r.projected-r.budget)+' over</span>':'')+'</div>'
     +(al.n?'<div class="row-sub mn-allow">Allowances: '+fmtMoney(al.used)+' of '+fmtMoney(al.allowance)+' used</div>':'')+'</div>'
@@ -15846,7 +15869,7 @@ function selAllowRefresh(){
 }
 function selMoneyBoxShow(){const b=document.getElementById('selMoneyBox');if(b)b.style.display=moneyHidden('selm')?'none':'';}
 function openAddSel(presetCat){editingSelId=null;selMoneyBoxShow();document.getElementById('selModalTitle').textContent='Add selection';document.getElementById('selSaveBtn').textContent='Add';
-  document.getElementById('selItem').value='';document.getElementById('selNote').value='';document.getElementById('selPrice').value='';setSelPriceKind(false);fillSelAllow(null);
+  document.getElementById('selItem').value='';document.getElementById('selNote').value='';try{selNoteHint();}catch(e){}document.getElementById('selPrice').value='';setSelPriceKind(false);fillSelAllow(null);
   document.getElementById('selCat').innerHTML=SEL_CATS.map(c=>`<option ${c===presetCat?'selected':''}>${c}</option>`).join('');fillSelStatus('selected');fillSelRoom('');
   document.getElementById('selScrim').classList.add('show');}
 function openEditSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;editingSelId=id;selMoneyBoxShow();
@@ -15855,10 +15878,13 @@ function openEditSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;
   fillSelRoom(s.room||'');
   document.getElementById('selItem').value=s.item||'';
   document.getElementById('selPrice').value=(s.price==null?'':fmtPlain(Math.abs(s.price)));setSelPriceKind(Number(s.price)<0);fillSelAllow(s);
-  document.getElementById('selNote').value=s.note||'';
+  document.getElementById('selNote').value=s.note||'';try{selNoteHint();}catch(e){}
   fillSelStatus(s.status||'selected');
   document.getElementById('selScrim').classList.add('show');}
 function closeAddSel(){document.getElementById('selScrim').classList.remove('show');editingSelId=null;}
+/* 2.525.0: the selection note rides to the homeowner and crew phones (live walk: "overage logged in job costs" on the homeowner's Selections). */
+function selNoteHint(){const v=((document.getElementById('selNote')||{}).value)||'';const w=document.getElementById('selNoteWarn');
+  if(w)w.classList.toggle('hide',!/job cost|overage|over estimate|over budget|margin|markup|our cost|\bcost\b|invoice|\$\s?\d/i.test(v));}
 function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat').value,item=document.getElementById('selItem').value.trim(),note=document.getElementById('selNote').value.trim(),status=document.getElementById('selStatus').value;
   let price=null;
   if(!_selModeAllow&&!moneyHidden('selm')){const pr=moneyRead('selPrice',{optional:true});if(!pr)return;if(!pr.blank)price=fromC(pr.cents)*(_selPriceCredit?-1:1);}
@@ -16163,7 +16189,9 @@ function billingAssignees(){
 function billersOf(p){if(p&&Array.isArray(p.billers))return p.billers;if(p&&p.billingOwner)return [p.billingOwner];return [];}
 function toggleBiller(i){const p=P();const name=_billAssignees[i];if(!name)return;const set=billersOf(p).slice();const k=set.indexOf(name);if(k>=0)set.splice(k,1);else set.push(name);p.billers=set;delete p.billingOwner;persist();renderInvoices();}
 function clearBillers(){const p=P();p.billers=[];delete p.billingOwner;persist();renderInvoices();toast('Invoice alerts go to the whole team');}
-function openBillingPicker(){invMode='owner';renderInvoices();const sc=document.getElementById('invScrim');if(sc)sc.classList.add('show');}
+/* 2.525.0: invoice alerts are part of Invoices. Without Invoices this sheet showed "No invoices yet" (the phone
+   holds none) and offered New invoice. Same gate as openInvoices. */
+function openBillingPicker(){if(!canGate('moneyCo')){toast('Invoices are off for this role');return;}invMode='owner';renderInvoices();const sc=document.getElementById('invScrim');if(sc)sc.classList.add('show');}
 function billersSummaryLine(){try{const p=P();if(!p)return 'Choose who gets invoice & past-due alerts';const set=billersOf(p);const site=p.street||p.name||'this house';return (set.length?(set.length<=2?set.join(', '):set.length+' people'):'Whole team')+' · '+site;}catch(e){return 'Choose who gets invoice & past-due alerts';}}
 function invStatusChip(st){const lbl={draft:'Draft',sent:'Sent',approved:'Approved',partial:'Partial',overdue:'Past due',paid:'Paid',void:'Void'}[st]||st;return `<span class="inv-chip ${st}">${lbl}</span>`;}
 function invDetailHTML(p,inv,viewer){
@@ -16177,7 +16205,7 @@ function invDetailHTML(p,inv,viewer){
     +`<div class="sro fw-7"><span class="k">Total</span><span class="v">${fmtMoney(inv.total)}</span></div>`
     +(paid>0?`<div class="sro"><span class="k">Paid</span><span class="v">−${fmtMoney(paid)}</span></div><div class="sro fw-7"><span class="k">Balance due</span><span class="v">${fmtMoney(bal)}</span></div>`:'')
     +`</div>`;
-  h+=`<div class="mt-2">${invStatusChip(st)}${st==='overdue'?` <span class="fs-xs c-clay">past due ${esc(inv.due)}</span>`:''}${inv.approvedAt?` <span class="fs-xs c-ink-3">approved ${timeAgo(inv.approvedAt)}</span>`:''}${st==='paid'&&inv.paidAt?` <span class="fs-xs c-ink-3">paid ${timeAgo(inv.paidAt)}</span>`:''}${st==='void'&&inv.voidedAt?` <span class="fs-xs c-ink-3">voided ${timeAgo(inv.voidedAt)}</span>`:''}</div>`;
+  h+=`<div class="mt-2">${invStatusChip(st)}${st==='overdue'?` <span class="fs-xs c-clay">past due ${esc(invDueText(inv.due))}</span>`:''}${inv.approvedAt?` <span class="fs-xs c-ink-3">approved ${timeAgo(inv.approvedAt)}</span>`:''}${st==='paid'&&inv.paidAt?` <span class="fs-xs c-ink-3">paid ${timeAgo(inv.paidAt)}</span>`:''}${st==='void'&&inv.voidedAt?` <span class="fs-xs c-ink-3">voided ${timeAgo(inv.voidedAt)}</span>`:''}</div>`;
   h+=HIST.slotHTML(p,inv.id,'inv');
   if(inv.status!=='draft')h+=FLAGS.slotHTML(p,'inv',inv.id);
   // payment history
@@ -16522,7 +16550,7 @@ function renderInvoices(){
   const _bset=billersOf(p);const _bsub=_bset.length?(_bset.length<=2?_bset.join(', '):_bset.length+' teammates')+' get alerts':'Whole team gets alerts';
   const ownerRow=`<div class="subrow cur-p mb-2" onclick="invMode='owner';renderInvoices()"><div class="si"><div class="n">Invoice alerts</div><div class="d">${esc(_bsub)}</div></div><span class="ed">Change</span></div>`;
   el.innerHTML=(_invAnyHouse?houseSwitchHTML(p,'invChangeHouse'):'')+seg+summary+ownerRow+(list.length?list.map(inv=>{const st=invState(inv);const bal=invBalance(inv);
-    return `<div class="subrow" style="cursor:pointer${st==='void'?';opacity:.6':''}" onclick="${st==='draft'?`invCompose('${inv.id}')`:`openInvoiceDetail('${p.id}','${inv.id}','builder')`}"><div class="si"><div class="n">${invNoText(inv)?esc(invNoText(inv))+' · ':''}${esc(inv.title)}</div><div class="d">${inv.items.length} line${inv.items.length===1?'':'s'} · ${fmtMoney(inv.total)}${st==='partial'?' · '+fmtMoney(bal)+' left':''}${st==='draft'?' · not sent yet':st==='overdue'?' · <b class="c-clay">past due '+esc(inv.due)+'</b>':(inv.due&&st!=='paid'&&st!=='void'?' · due '+esc(inv.due):'')}</div></div>${invStatusChip(st)}</div>`;}).join('')
+    return `<div class="subrow" style="cursor:pointer${st==='void'?';opacity:.6':''}" onclick="${st==='draft'?`invCompose('${inv.id}')`:`openInvoiceDetail('${p.id}','${inv.id}','builder')`}"><div class="si"><div class="n">${invNoText(inv)?esc(invNoText(inv))+' · ':''}${esc(inv.title)}</div><div class="d">${inv.items.length} line${inv.items.length===1?'':'s'} · ${fmtMoney(inv.total)}${st==='partial'?' · '+fmtMoney(bal)+' left':''}${st==='draft'?' · not sent yet':st==='overdue'?' · <b class="c-clay">past due '+esc(invDueText(inv.due))+'</b>':(inv.due&&st!=='paid'&&st!=='void'?' · due '+esc(inv.due):'')}</div></div>${invStatusChip(st)}</div>`;}).join('')
     :'<div class="empty py-2 px-0">No invoices yet. Bill the homeowner for upgrades and changes here.</div>')
     +`<button class="add-sub-btn mt-2 btn btn-secondary" onclick="invCompose()">New invoice…</button>`;}
 function openPayments(){renderPaymentsList();document.getElementById('payLabel').value='';document.getElementById('payAmount').value='';document.getElementById('payDate').value=todayStr();document.getElementById('payScrim').classList.add('show');}
@@ -18189,7 +18217,7 @@ function renderCal(){
     const fHome=calSiteFilter!=='all'&&fp;
     chips='<div class="cal-ctrl">'
       +'<button class="chip'+(calSiteFilter==='all'?' on':'')+'" onclick="calPick(\'all\')">All houses</button>'
-      +'<button class="chip'+(fHome?' on':'')+'" onclick="openHomes()">'+(fHome?esc(fp.street||fp.name):'One house')+'</button>'
+      +'<button class="chip'+(fHome?' on':'')+'" onclick="openHomes()"'+(fHome?' title="'+esc(fp.street||fp.name)+'"':'')+'>'+(fHome?esc(String(fp.street||fp.name||'').replace(/^\d+[A-Za-z]?\s+/,'')):'One house')+'</button>'   /* 2.525.0: the street without its number fits the chip */
       +'<button class="chip" onclick="openIdle()">Free crews</button>'
       +'</div>';
   }
@@ -18715,6 +18743,10 @@ function schedPlanList(){
 /* Packet deadlines: each trade on a site can carry a "specs due" date set by a
    builder (recorded with who set it). The packet, the sub's view and homeowner
    prompts all count down to it. */
+/* 2.525.0: an invoice due date is stored as 2026-08-24; people read Aug 24 (and the year when it is not this year). */
+function invDueText(due){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(due||''));if(!m)return String(due||'');
+  const d=new Date(+m[1],+m[2]-1,+m[3]);const o={month:'short',day:'numeric'};if(d.getFullYear()!==new Date().getFullYear())o.year='numeric';
+  return d.toLocaleDateString('en-US',o);}
 function fmtDue(ts){const d=new Date(ts);return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
 function dueState(ts){if(!ts)return null;const days=Math.ceil((ts-Date.now())/86400000);
   return {ts,days,overdue:days<0,label:days<0?((-days)+' day'+(days===-1?'':'s')+' late'):days===0?'Due today':('Due in '+days+' day'+(days===1?'':'s'))};}
@@ -19127,7 +19159,7 @@ function packetHTML(p,tradeId,subId){
   const meta=[];
   if(bkWin)meta.push((isClient?tl+' scheduled':'Scheduled')+' '+fmtWin(bkWin)+(bkWin.note?(' \u2014 '+bkWin.note):''));
   else meta.push('No dates on the calendar');
-  if(due)meta.push(due.label+' \u00b7 answers due '+fmtDue(due.ts));
+  if(due)meta.push((isBuilder||isClient)?(due.label+' \u00b7 answers due '+fmtDue(due.ts)):((/late/i.test(String(due.label||''))?'Your builder\u2019s answers were due ':'Your builder\u2019s answers are due ')+fmtDue(due.ts)));   /* 2.525.0: a crew read "97 days late" as their own */
   if(perm)meta.push(permName+': '+perm.status);
   else if(permName&&isBuilder)meta.push(permName+' not on the board');
   if(iv)meta.push((isClient&&ik==='roughin'?'In-wall inspection':(PK_INSP_LBL[ik]||ik))+': '+iv);
@@ -20429,7 +20461,7 @@ function inbDraw(){
   const rows=inbFiltered();
   if(!rows.length){
     if(window._inbSmartCapped){el.innerHTML='<div class="empty">Nothing urgent.</div><button type="button" class="add-sub-btn w-full mt-3 btn btn-secondary" onclick="inbSetTab(\'all\')">Show all '+window._inbAllN+'</button>';return;}
-    el.innerHTML='<div class="empty">Nothing matches.</div>';return;}
+    el.innerHTML='<div class="empty">'+(_inbTab==='all'?'Nothing here yet.':'Nothing matches.')+'</div>';return;}
   el.innerHTML=rows.map(function(r){
     if(_inbMode==='pk'){
       const when=r.t?pkWhen(r.t):'';
