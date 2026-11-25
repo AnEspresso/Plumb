@@ -2868,7 +2868,7 @@ t('Log a cost is the on-screen primary', /Log a cost/.test((el('budgetBody').que
 $('closeBudget()');
 $("state.activeId='p4'");
 $('openBudget()');
-t('even house money hero is sage', !!el('budgetBody').querySelector('.hero-n.ok')&&el('budgetBody').innerHTML.indexOf('On budget')>=0);
+t('a house with no budget says No budget yet (2.525.0; it said On budget)', !!el('budgetBody').querySelector('.hero-n.none')&&el('budgetBody').innerHTML.indexOf('No budget yet')>=0&&el('budgetBody').innerHTML.indexOf('On budget')<0);
 t('empty-budget Money body still one primary', $("document.querySelectorAll('#budgetBody .btn-primary').length")===1);
 $('closeBudget()');
 $("state.activeId='p2'");
@@ -6372,6 +6372,53 @@ S('approvals say what was agreed');
   $("openEditSel(9);document.getElementById('selPrice').value='800';saveSel();true");
   t('a credit keeps its OK when the builder changes it',sel(9).approved===true,JSON.stringify(sel(9)));
   $("openEditSel(9);document.getElementById('selPrice').value='700';saveSel();true");
+})();
+
+/* ════ 2.525.0: FIXES FROM THE 2.524.0 LIVE WALK ════ */
+S('2.525.0 live-walk fixes');
+(function(){
+  asBuilder();
+  const cnt=JSON.parse($("JSON.stringify(liveProjects().map(function(p){var m=_nyByHouse().map[String(p.id)];return [(m?m.n:0),nyForHouse(p).length];}))"));
+  t('every house card counts the same list its rows and briefing use',cnt.every(function(x){return x[0]===x[1];}),JSON.stringify(cnt));
+  t('the book-wide list still keeps only three On deck rows',$("_nyIssues(liveProjects()).filter(function(x){return x.kind==='On deck, not booked';}).length")<=3);
+  t('an On deck row is not signed You',$("nyWhoSince({kind:'On deck, not booked',ts:Date.now()-3600000})")===''&&$("nyWhoSince({kind:'Question',ts:Date.now()})").indexOf('Crew')===0);
+  const nb=$("(function(){var p=JSON.parse(JSON.stringify(P()));p.costs=[];p.selections=[];p.invoices=[];p.payments=[];return moneyTotHTML(p);})()");
+  t('a house with no budget says No budget yet, not On budget',nb.indexOf('No budget yet')>=0&&nb.indexOf('On budget')<0&&nb.indexOf('hero-n none')>=0,nb.slice(0,200));
+  t('the house budget line says No budget yet too',$("houseBudgetLine({budget:0,committed:0,spent:0,projected:0})")==='No budget yet');
+  t('due dates read like Aug 24, with the year only when it is not this year',$("invDueText(new Date().getFullYear()+'-08-24')")==='Aug 24'&&$("invDueText('2019-08-24')")==='Aug 24, 2019'&&$("invDueText('')")==='');
+  t('no raw due date is printed after past due',!/past due '\+esc\(inv\.due\)|past due \$\{esc\(inv\.due\)\}|past due '\+i\.due/.test(SRC));
+  t('a budget line keeps its amount left beside its name (the used line ran under it)',SRC.indexOf('row row-tap mn-line')>=0&&SRC.indexOf('.row.mn-line{align-items:flex-start;}')>=0);
+  /* a teammate with Invoices off */
+  $("state.session={role:'builder',name:'Alex',member:true,rpRole:'pm',gates:{field:1,schedule:1,selections:1,site:1,jobs:1,moneyJob:0,moneyCo:0,people:1},auth:{uid:'uA'}}");
+  $("document.getElementById('invScrim').classList.remove('show');var __tt=[];window.__oT2=toast;toast=function(m){__tt.push(m);};openBillingPicker();toast=window.__oT2;window.__bp=__tt;true");
+  t('invoice alerts do not open for a teammate without Invoices',!$("document.getElementById('invScrim').classList.contains('show')")&&$("(window.__bp||[]).join('|')").indexOf('Invoices are off')>=0);
+  $("openNotifyCenter()");
+  t('Notifications has no Invoice alerts row for them',$("document.getElementById('infoScrim').textContent.indexOf('Invoice alerts')")<0);
+  $("try{closeInfo()}catch(e){}");
+  $("renderSettings()");
+  t('Settings says People and calendar for them, not invoices',$("document.getElementById('settingsBody').textContent.indexOf('People and calendar')")>=0&&$("document.getElementById('settingsBody').textContent.indexOf('People, calendar, and invoices')")<0);
+  asBuilder();$("renderSettings()");
+  t('the owner still reads People, calendar, and invoices',$("document.getElementById('settingsBody').textContent.indexOf('People, calendar, and invoices')")>=0);
+  /* selection note */
+  $("state.activeId='p2';openAddSel()");
+  t('a new selection note starts with no warning, and says the homeowner sees it',$("document.getElementById('selNoteWarn').classList.contains('hide')")&&$("document.getElementById('selScrim').textContent.indexOf('The homeowner sees this note.')")>=0);
+  $("document.getElementById('selNote').value='Labor over estimate - overage logged in job costs';selNoteHint()");
+  t('a cost note warns before it reaches the homeowner',!$("document.getElementById('selNoteWarn').classList.contains('hide')"));
+  $("document.getElementById('selNote').value='Confirm finish before ordering';selNoteHint()");
+  t('an ordinary note does not warn',$("document.getElementById('selNoteWarn').classList.contains('hide')"));
+  $("closeAddSel()");
+  /* calendar from Company */
+  t('Company Trades Calendar opens on All houses',SRC.indexOf("'closeCompany();calSiteFilter=\\'all\\';openCal()'")>=0);
+  $("calSiteFilter='p2';openCompany()");
+  $("[...document.querySelectorAll('#companyScrim .set-row')].find(function(x){return x.textContent.trim().indexOf('Trades Calendar')===0;}).click()");
+  t('and it really does (filter was a house before)',$("calSiteFilter")==='all');
+  $("try{closeCal()}catch(e){}");
+  /* change orders, history, settings */
+  t('the change-order list has one way to close (Got it)',SRC.indexOf('onclick="CO.newForm()">New change order</button><button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button>')<0);
+  t('approved sentences read Agreed to: “…”',(SRC.match(/Agreed to: \\u201c'\+esc\(r\.sentence\)/g)||[]).length===3);
+  t('a payment line in History names its invoice',$("(function(){var p=P();var v=(p.invoices||[]).find(function(x){return x.no;});if(!v)return 'skip';return HIST.label({refType:'inv',ref:v.id,kind:'payment'})===String(v.no)?'ok':HIST.label({refType:'inv',ref:v.id});})()")!=='Invoice');
+  t('opening Settings no longer downloads the tour audio',$("String(openSettings)").indexOf('tourPrefetch')<0);
+  t('a waiting crew is told the builder will mark the house ready (not "ready for General")',SRC.indexOf("when your builder marks this house ready for you.")>=0&&SRC.indexOf("'You will see a notice here when this house is ready for '+tr.label")<0);
 })();
 
 /* ════ CALENDAR DAYS ACROSS THE CLOCK CHANGE (2.524.0) ════
