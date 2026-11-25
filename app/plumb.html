@@ -559,6 +559,8 @@
   .la-err{font-size:var(--t-xs);color:var(--clay-2);background:rgba(176,96,74,.14);border-radius:var(--r-sm);padding:var(--s-2) var(--s-3);margin-bottom:var(--s-2);}
   .la-err.ok{color:var(--sage-2);border-color:rgba(159,191,142,.35);background:rgba(106,127,94,.12);}
   .la-links{display:flex;justify-content:center;gap:18px;margin-top:var(--s-2);}
+  .la-terms{font-size:var(--t-sm);color:var(--mist);margin:var(--s-3) 0 var(--s-2);line-height:1.45;}
+  .la-terms a{text-decoration:underline;text-underline-offset:2px;}
   .la-link{border:none;background:transparent;color:var(--oak-ink);font-family:inherit;font-size:var(--t-sm);font-weight:600;cursor:pointer;padding:var(--s-2) var(--s-1);}
   .la-skip{display:block;margin:var(--s-2) auto 0;color:var(--ink-4);font-weight:500;font-size:var(--t-xs);}
   .la-signed{font-size:var(--t-sm);color:var(--paper);text-align:center;margin-bottom:var(--s-2);}
@@ -973,7 +975,8 @@
   .ov-capture[hidden]{display:none !important;}
   .ov-capture .ov-field{margin:0;width:100%;}
   .ov-fhdr[hidden]{display:none !important;}
-  body:has(.overview.show) #devDot{bottom:calc(116px + env(safe-area-inset-bottom));}
+  body:has(.overview.show) #devDot{bottom:calc(var(--s-2) + 15px + env(safe-area-inset-bottom));}   /* 2.526.0: in the capture bar, left of the button */
+  body:has(#devDot.show) .ov-capture{padding-left:calc(var(--s-5) + 40px);}
   .es-card{border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s-3);margin-bottom:var(--s-2);}
   .es-card .n{font-weight:650;font-size:var(--t-md);line-height:1.3;}
   .es-card .d{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1);line-height:1.4;}
@@ -1883,6 +1886,36 @@ body.on-tour .tour-card{display:block;}
 .jc-nums span{display:block;color:var(--ink-3);font-size:var(--t-xs);}
 .jc-ov{color:var(--clay-ink)}
 .jc-un{color:var(--sage-ink)}
+/* 2.526.0: Getting in, Call, act from Needs you */
+.call-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 var(--s-3);border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-family:inherit;font-weight:650;font-size:var(--t-sm);line-height:1.1;text-decoration:none;cursor:pointer;flex:0 0 auto;white-space:nowrap;}
+.call-btn svg{width:16px;height:16px;flex:none;}
+.call-btn.go{background:var(--ink);border-color:var(--ink);color:var(--paper);}
+.call-btn:active{transform:scale(.98);}
+.ny-acts{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-2);}
+.row .row-call{align-self:center;margin-left:var(--s-2);}
+.subrow .row-call{flex:none;margin:0 var(--s-2);}
+#guestScrim .gp-acc-acts{display:flex;gap:var(--s-2);margin-top:var(--s-3);}
+#guestScrim .gp-acc-acts .btn{flex:1;margin-top:0;text-decoration:none;}
+#guestScrim .gp-foot a{color:inherit;}
+.pkt-ask .call-btn{margin-left:auto;}
+.pkt-ask .call-btn+.td-chev{margin-left:0;}
+.acc-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s-3) var(--s-4);margin:0 0 var(--s-4);}
+.acc-card .h{font-family:var(--f-serif);font-weight:600;font-size:var(--t-lg);color:var(--ink);letter-spacing:-.01em;margin-bottom:var(--s-1);}
+.acc-kv{padding:var(--s-2) 0;border-top:1px solid var(--line);}
+.acc-card .h+.acc-kv{border-top:none;}
+.acc-kv .k{font-size:var(--t-xs);font-weight:700;color:var(--ink-3);letter-spacing:.02em;}
+.acc-kv .v{font-size:var(--t-md);color:var(--ink);font-weight:550;line-height:1.35;margin-top:2px;overflow-wrap:break-word;}
+.acc-kv .v.code{font-variant-numeric:tabular-nums;letter-spacing:.06em;font-weight:700;}
+.acc-kv .s{font-size:var(--t-xs);color:var(--ink-3);margin-top:var(--s-1);line-height:1.4;}
+.acc-acts{display:flex;flex-wrap:wrap;gap:var(--s-2);margin:var(--s-2) 0 var(--s-2);}
+.acc-card .acc-acts+.acc-kv{border-top:none;}
+.acc-warn{font-size:var(--t-xs);color:var(--ink-2);line-height:1.45;margin:0 0 var(--s-4);}
+.terms-note{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s-3) var(--s-4);margin:0 0 var(--s-3);font-size:var(--t-sm);color:var(--ink);line-height:1.4;}
+.terms-note .tn-acts{display:flex;gap:var(--s-2);margin-top:var(--s-2);}
+.heard{margin-top:var(--s-4);padding-top:var(--s-3);border-top:1px solid var(--line);}
+.heard .q{font-size:var(--t-sm);font-weight:650;color:var(--ink);margin-bottom:var(--s-2);}
+.heard .chips{display:flex;flex-wrap:wrap;gap:var(--s-2);}
+.permit-row .permit-tl .tstep.cur .tlbl{display:none;}
 </style>
   <!-- Backend sync. Packet links load the SDK immediately so the first read is attested. Everyone else keeps defer. -->
   <script>
@@ -2681,13 +2714,13 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
               <div class="la-hint">From your builder — joins you to their job site as the crew or homeowner.</div>
             </div>
             <div class="la-err" id="laErr" style="display:none"></div>
+            <div class="la-hint ta-c la-terms" id="laTerms">By signing in or creating an account you agree to the <a href="https://siteplumb.com/app/terms.html" onclick="legalOpenTerms();return false" class="c-oak">Terms of Service</a> and <a href="https://siteplumb.com/app/privacy.html" onclick="legalOpenPrivacy();return false" class="c-oak">Privacy Policy</a>.</div>
             <button class="login-enter btn btn-primary" id="laGo" onclick="liveAuthSubmit()">Sign in</button>
             <div class="la-links">
               <button class="la-link btn btn-quiet" id="laToggle" onclick="liveAuthToggle()">Create account</button>
               <button class="la-link btn btn-quiet" onclick="liveForgot()">Forgot password</button>
               <button class="la-link btn btn-quiet" onclick="document.getElementById('laInviteRow').style.display='';this.style.display='none'">I have an invite code</button>
             </div>
-            <div class="la-hint ta-c mt-2">By signing in or creating an account you agree to the <a href="https://siteplumb.com/app/terms.html" onclick="legalOpenTerms();return false" class="c-oak">Terms of Service</a> and <a href="https://siteplumb.com/app/privacy.html" onclick="legalOpenPrivacy();return false" class="c-oak">Privacy Policy</a>.</div>
             <button class="la-link la-skip btn btn-quiet" onclick="realEnter()">Continue without an account (this device only)</button>
           </div>
         </div>
@@ -3143,6 +3176,40 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 <p class="fs-xs c-ink-3 mt-0 ml-0 mr-0 mb-0" id="briefBy"></p>
 </div>
 <div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" id="briefDoneBtn" onclick="closeBuildBrief()"><span>Done</span></button><button class="b1 b-go btn btn-primary" id="briefSave" onclick="saveBuildBrief()">Save</button></div></div>
+  </div>
+
+  <!-- 2.526.0: Getting in (builder fills it once; crews see it; the homeowner never gets it) -->
+  <div class="pmodal-scrim sheet-scrim sheet-2" id="accessScrim">
+    <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
+      <div class="sheet-head"><h4>Getting in</h4></div>
+<div class="sheet-body">
+<p class="fs-sm c-ink-3 mt-0 ml-0 mr-0 mb-3">Crews on this house see this. The homeowner does not.</p>
+<div class="acc-acts mt-0 mb-3" id="accDir"></div>
+<div class="field"><label for="accGate">Gate or lockbox code</label><input id="accGate" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. 4417"></div>
+<div class="flagrow mt-0 ml-0 mr-0 mb-2"><div class="l"><div class="t">Include the code in texted crew links</div><div class="s" id="accLinksSub">Off: in the app only</div></div><div class="toggle" id="accGateLinks" role="switch" aria-checked="false" aria-label="Include the code in texted crew links" tabindex="0" onclick="accToggleLinks()" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();accToggleLinks();}"></div></div>
+<p class="acc-warn" id="accWarn"></p>
+<div class="field"><label for="accParking">Where to park</label><textarea id="accParking" rows="2" placeholder="e.g. Street only. Keep the drive clear."></textarea></div>
+<div class="field"><label for="accPower">Power and water</label><textarea id="accPower" rows="2" placeholder="e.g. Temp pole at the drive. Hose bib on the north side."></textarea></div>
+<div class="field"><label for="accDumpster">Dumpster and porta-john</label><textarea id="accDumpster" rows="2" placeholder="e.g. Dumpster at the curb. Porta-john by the garage."></textarea></div>
+<div class="field"><label for="accContact">Who to call on site</label><input id="accContact" autocomplete="off" placeholder="e.g. Mike Torres, super"></div>
+<div class="field"><label for="accPhone">Their phone</label><input id="accPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="(248) 555-0100"></div>
+<div class="field"><label for="accNote">Anything else</label><textarea id="accNote" rows="2" placeholder="e.g. Knock before you go in. Dog next door."></textarea></div>
+</div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeAccess()"><span>Cancel</span></button><button class="b1 b-go btn btn-primary" id="accSave" onclick="saveAccess()">Save</button></div></div>
+  </div>
+
+  <!-- 2.526.0: the homeowner card (team only): phone, and what the homeowner reads about the schedule -->
+  <div class="pmodal-scrim sheet-scrim sheet-2" id="hoCardScrim">
+    <div class="pmodal sheet"><div class="mgrip sheet-handle" onclick="dismissParent(this)"></div>
+      <div class="sheet-head"><h4>Homeowner</h4></div>
+<div class="sheet-body">
+<div class="field"><label for="hoPhoneIn">Homeowner phone</label><input id="hoPhoneIn" type="tel" inputmode="tel" autocomplete="off" placeholder="(248) 555-0100"></div>
+<p class="acc-warn">Your team sees this number. Crews and the homeowner do not.</p>
+<div class="flagrow mt-0 ml-0 mr-0 mb-2"><div class="l"><div class="t">Show schedule status to the homeowner</div><div class="s">On track, or how far behind</div></div><div class="toggle" id="hoSchedTg" role="switch" aria-checked="false" aria-label="Show schedule status to the homeowner" tabindex="0" onclick="hoToggleSched()" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();hoToggleSched();}"></div></div>
+<div class="field" id="hoWhyRow"><label for="hoWhyIn">A reason they see (optional)</label><input id="hoWhyIn" maxlength="120" placeholder="e.g. Waiting on the window delivery" oninput="hoSeesPaint()"></div>
+<p class="acc-warn" id="hoSees"></p>
+</div>
+<div class="action-bar sheet-foot"><button class="b1 b-cancel btn btn-secondary" onclick="closeHoCard()"><span>Cancel</span></button><button class="b1 b-go btn btn-primary" id="hoSave" onclick="saveHoCard()">Save</button></div></div>
   </div>
 
   <!-- generic info / demo prompt modal -->
@@ -4014,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.525.0 - Fixes from the live walk - one count for what needs you, No budget yet, invoices stay with Invoices, budget lines no longer crowd, readable due dates';   /* 11/25: fixes from the 2.524.0 live walk. */
+const PLUMB_VERSION='2.526.0 - Getting in for each house with Directions and Call, Call on crew rows, OK and Answer from Needs you, homeowner schedule status is up to the builder, updated Terms';   /* 11/25: crews get in, call, and act from Needs you. Balance rule: the builder decides what the homeowner reads about the schedule. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795629482297;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.525.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795637529822;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.526.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4155,7 +4222,7 @@ function permitStatusFor(i,n,r){const phase=n>1?i/(n-1):0;if(r>=phase+0.15)retur
 function normalizePermits(p){if(p.permits)p.permits=p.permits.filter(pm=>!LEGACY_INSP_PERMITS.has(pm.name));if(p._permitsSeeded)return;const SS=stagesFor(p);const done=SS.filter(s=>p.stageDone&&p.stageDone[s.id]).length;const r=done/SS.length;const ex={};(p.permits||[]).forEach(pm=>{ex[pm.name]=pm.status;});p.permits=DEFAULT_PERMITS.map((name,i)=>({name,status:ex[name]||(done===0?'Not started':permitStatusFor(i,DEFAULT_PERMITS.length,r))}));p._permitsSeeded=true;}
 const SW={oak:'#C7A878,#9A7544',slate:'#8C9AA6,#5E6B78',dove:'#E4DFD5,#C9C2B4',clay:'#C08068,#9A5A44',sage:'#9AA47E,#717C55',dark:'#54504A,#33302B'};
 
-const SEED_VERSION=22; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
+const SEED_VERSION=23; // bump whenever bundled demo data changes -> demo devices auto-refresh on next load
 function sampleState(){
   const D=864e5; // one day in ms
   const ds=n=>{const x=new Date(Date.now()-n*D);const p=v=>String(v).padStart(2,'0');return x.getFullYear()+'-'+p(x.getMonth()+1)+'-'+p(x.getDate());};
@@ -4250,15 +4317,15 @@ function sampleState(){
           {aud:'all',n:'Selections — Kitchen & Baths.pdf',m:'In progress',k:'pdf'}
         ],
         subs:[
-          {id:'p2a',name:'Ironhill Excavating',specialty:'excav',phone:'',cleared:Date.now()-40*D},
-          {id:'p2b',name:'Cornerstone Concrete',specialty:'concrete',phone:'',cleared:Date.now()-30*D},
-          {id:'p2c',name:'Timberline Framing',specialty:'framing',phone:'',cleared:Date.now()-22*D},
-          {id:'p2d',name:'Summit Roofing',specialty:'roofing',phone:'',cleared:Date.now()-10*D},
-          {id:'p2e',name:'Northwind Mechanical',specialty:'hvac',phone:'',cleared:Date.now()-3*D,specsDue:day(5)},
-          {id:'p2f',name:'Clearwater Plumbing',specialty:'plumb',phone:'',cleared:Date.now()-3*D},
-          {id:'p2g',name:'Brightpath Electric',specialty:'elec',phone:'',cleared:null,specsDue:day(2)},
-          {id:'p2h',name:'Lighthouse Electric',specialty:'elec',phone:'',cleared:Date.now()-2*D},
-          {id:'p2h',name:'ThermaSeal Insulation',specialty:'insul',phone:'',cleared:null}
+          {id:'p2a',name:'Ironhill Excavating',specialty:'excav',phone:'(248) 555-0121',cleared:Date.now()-40*D},
+          {id:'p2b',name:'Cornerstone Concrete',specialty:'concrete',phone:'(248) 555-0122',cleared:Date.now()-30*D},
+          {id:'p2c',name:'Timberline Framing',specialty:'framing',phone:'(248) 555-0123',cleared:Date.now()-22*D},
+          {id:'p2d',name:'Summit Roofing',specialty:'roofing',phone:'(248) 555-0124',cleared:Date.now()-10*D},
+          {id:'p2e',name:'Northwind Mechanical',specialty:'hvac',phone:'(248) 555-0125',cleared:Date.now()-3*D,specsDue:day(5)},
+          {id:'p2f',name:'Clearwater Plumbing',specialty:'plumb',phone:'(248) 555-0126',cleared:Date.now()-3*D},
+          {id:'p2g',name:'Brightpath Electric',specialty:'elec',phone:'(248) 555-0127',cleared:null,specsDue:day(2)},
+          {id:'p2h',name:'Lighthouse Electric',specialty:'elec',phone:'(248) 555-0128',cleared:Date.now()-2*D},
+          {id:'p2h',name:'ThermaSeal Insulation',specialty:'insul',phone:'(248) 555-0129',cleared:null}
         ],
         stageDone:{site:true,foundation:true,framing:true},
         permits:[{name:'Building Permit',status:'Issued'},{name:'Electrical Permit',status:'Issued'},{name:'Plumbing Permit',status:'Issued'},{name:'Mechanical / HVAC Permit',status:'Issued'}],
@@ -4280,6 +4347,8 @@ function sampleState(){
         invoices:[{id:'inv_p2_1',no:'INV-001',title:'Selections — kitchen & baths',due:ds(-6),items:[{label:'Quartz countertops upgrade',amount:1850,selId:3},{label:'Marble hex tile — primary bath',amount:600,selId:5},{label:'Plumbing fixtures — brass/black',amount:850,selId:6},{label:'Crown moulding — main floor',amount:1500,selId:8}],total:4800,status:'sent',t:Date.now()-9*D,sentBy:'You',payments:[{id:'ip1',amount:1000,date:ds(45),note:'Upgrade deposit'},{id:'ip2',amount:2000,date:ds(8),note:'Partial payment'}]}],
         payments:[],
         selNotes:'All-electric mechanicals. Crown at main floor only. Lighting allowance standard — homeowner sign-off pending on dining pendant.',
+        siteAccess:{gate:'4417',parking:'Street only. Keep the drive clear for the oak.',power:'Temp pole at the drive. Hose bib on the north side.',dumpster:'Dumpster at the curb. Porta-john by the garage.',contact:'Mike Torres, super',phone:'(248) 555-0142',note:'Lockbox on the side door.'},
+        siteTeam:{hoPhone:'(248) 555-0187'},
         buildBrief:{priorities:'A quiet retreat that is easy to keep. The oak at the drive stays.',look:'Black-clad windows, dove-white kitchen, oak floors. Brass and black in the baths.',tradeoffs:'Spend on windows and the kitchen. Lighting stays on the allowance until they sign the dining pendant.',by:'You',at:Date.now()-20*D},
         jurisdiction:{city:'Ferndale, MI',system:'AccessMyGov',portalUrl:'https://www.accessmygov.com',inbox:'288-calderwood-ln@inbox.plumb.app',feed:[
           {id:'f1',t:Date.now()-20*D,kind:'inspection',ref:'foundation',status:'passed',text:'Foundation inspection passed',applied:true},
@@ -5247,7 +5316,7 @@ function load(){
      sync, so nothing else would ever remove them from this phone. */
   if(appMode()==='real')stripSampleHouses();
   if(state.projects.length && !state.projects.find(p=>p.id===state.activeId)) state.activeId=state.projects[0].id;
-  state.projects.forEach(p=>{p.items=p.items||[];p.docs=p.docs||[];p.subs=p.subs||[];p.stageDone=p.stageDone||{};p.permits=p.permits||[];p.inspections=p.inspections||{};p.selections=p.selections||[];p.selNotes=p.selNotes||'';p.payments=p.payments||[];if(!p.inboxToken)p.inboxToken=genInboxToken();p.jurisdiction=p.jurisdiction||{city:'',system:'',portalUrl:'',inbox:slug(p.street||p.id)+'@inbox.plumb.app',feed:[]};if(!p.jurisdiction.feed)p.jurisdiction.feed=[];
+  state.projects.forEach(p=>{p.items=p.items||[];p.docs=(p.docs||[]).filter(d=>!(d&&siteRecOf(d.id)));p.subs=p.subs||[];p.stageDone=p.stageDone||{};p.permits=p.permits||[];p.inspections=p.inspections||{};p.selections=p.selections||[];p.selNotes=p.selNotes||'';p.payments=p.payments||[];if(!p.inboxToken)p.inboxToken=genInboxToken();p.jurisdiction=p.jurisdiction||{city:'',system:'',portalUrl:'',inbox:slug(p.street||p.id)+'@inbox.plumb.app',feed:[]};if(!p.jurisdiction.feed)p.jurisdiction.feed=[];
     p.logs=(p.logs||[]).map(l=>l.date?l:{date:dateStrFrom(l.t||(Date.now()-(l.day||0)*864e5)),t:l.t||(Date.now()-(l.day||0)*864e5),text:l.text||''});
     if(!p.nextId)p.nextId=100;normalizePermits(p);normalizeInspections(p);
     if(!p.buyers)p.buyers=buyersFor(p);
@@ -6241,7 +6310,7 @@ function liveAuthToggle(){laMode=laMode==='signin'?'signup':'signin';laErr('');
   document.getElementById('laNameRow').style.display=laMode==='signup'?'':'none';
   document.getElementById('laPass2Row').style.display=laMode==='signup'?'':'none';
   try{document.getElementById('laPass2').value='';}catch(e){}
-  document.getElementById('laGo').textContent=laMode==='signup'?'Create account':'Sign in';
+  document.getElementById('laGo').textContent=laMode==='signup'?'Agree and create account':'Sign in';   /* 2.526.0: the button says what it does */
   document.getElementById('laToggle').textContent=laMode==='signup'?'I have an account — sign in':'Create account';
   const pw=document.getElementById('laPass');pw.autocomplete=laMode==='signup'?'new-password':'current-password';
   syncInviteSignupChrome();}
@@ -7077,12 +7146,12 @@ function finishSetup(skipped){
   closeSetup();
   if(skipped){toast('Setup skipped \u2014 run it any time from People & invites');return;}
   const hasJobs=(state.projects||[]).length>0;
-  showInfo(hasJobs?'You\u2019re set up':'Company is ready',hasJobs
+  showInfo(hasJobs?'You\u2019re set up':'Company is ready',(hasJobs
     ?`<p class="mt-0 ml-0 mr-0 mb-2"><b>${esc(setupDraft.company||'Your company')}</b> is ready. Your roster and selections style apply to every new house automatically.</p>
     <p class="c-ink-3 fs-xs m-0">Change any of this later: People & invites \u2192 Run first-time setup again.</p>`
     :`<p class="mt-0 ml-0 mr-0 mb-2"><b>${esc(setupDraft.company||'Your company')}</b> is on the book. Roster and selections style apply to every house you add.</p>
     <button class="b1 b-go w-full mt-2 btn btn-primary" onclick="closeInfo();openNewSite()">Add the first house</button>
-    <p class="c-ink-3 fs-xs mt-3 ml-0 mr-0 mb-0">You can add the rest from home. This is a company, not a single job.</p>`);
+    <p class="c-ink-3 fs-xs mt-3 ml-0 mr-0 mb-0">You can add the rest from home. This is a company, not a single job.</p>`)+heardAskHTML());   /* 2.526.0 */
   logEvent('setupDone',setupDraft.customLevel+' · '+setupDraft.subRoster.length+' subs');}
 
 /* ════════ First-run fork ════════
@@ -7128,6 +7197,7 @@ function afterHouseAdded(id,nBefore){
     b+='<button class="b1 b-cancel w-full mt-2 btn btn-secondary" onclick="closeInfo();openSiteFromOverview(\''+id+'\');setTimeout(function(){try{openAddSub();}catch(e){}},80)">Add a crew</button>';
     b+='<button class="b1 b-cancel w-full mt-2 btn btn-secondary" onclick="closeInfo();openNewSite()">Add another house</button>';
     b+='<button class="la-link d-block mt-3 mb-0 mx-auto c-ink-3 btn btn-quiet" onclick="closeInfo();openSiteFromOverview(\''+id+'\')">Open this house</button>';
+    b+=heardAskHTML();   /* 2.526.0 */
   }else{
     b+='<button class="b1 b-go w-full btn btn-primary" onclick="closeInfo();openSiteFromOverview(\''+id+'\')">Open this house</button>';
     b+='<button class="b1 b-cancel w-full mt-2 btn btn-secondary" onclick="closeInfo();openNewSite()">Add another house</button>';
@@ -7393,7 +7463,8 @@ function renderSettings(){
     rows+=SET_LINK_ROW('Free Zoom setup','Your first house, set up with you on a call. Free while early.','mailto:hello@siteplumb.com?subject=Zoom%20onboarding');
     rows+=SET_LINK_ROW('Email SitePlumb','hello@siteplumb.com','mailto:hello@siteplumb.com');
     rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works','https://siteplumb.com',1);
-  }else if(role==='client'||hat==='client'||onClient)rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works for homeowners','https://siteplumb.com/homeowners.html',1);
+  }else if(role==='client'||hat==='client'||onClient)rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works for homeowners','https://siteplumb.com/homeowners.html',1)
+    +'<p class="ppl-quiet ta-c mb-3" id="hoRefLine">Builders: <a href="https://siteplumb.com/?ref=homeowner" target="_blank" rel="noopener" class="c-oak">see how SitePlumb works</a></p>';   /* 2.526.0 */
   else rows+=SET_LINK_ROW('siteplumb.com','How SitePlumb works','https://siteplumb.com',1);
   rows+=SET_LIST_ROW('Privacy & legal','Policies, your data & account deletion','closeSettings();openLegal()');
   rows+='<div class="list-danger">';
@@ -8418,7 +8489,7 @@ function __renderPeople(){
     const hits=all.map(function(r,i){return {r:r,i:i};}).filter(function(x){return !q||((x.r.name+' '+(((SPECIALTIES.find(function(tr){return tr.id===x.r.trade;})||{}).label)||'')).toLowerCase().indexOf(q)>=0);});
     const list=hits.map(function(x){
       const tr=SPECIALTIES.find(function(s){return s.id===x.r.trade;});const col=(TRADE_COLORS[x.r.trade]||{}).bg||'var(--oak)';
-      return '<div class="subrow"><div class="si"><div class="n">'+esc(x.r.name)+'</div><div class="d"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+col+';margin-right:5px;vertical-align:-1px"></span>'+esc((tr||{}).label||'General')+'</div></div><button class="rm" onclick="rosterDrop('+x.i+')" title="Remove from roster">'+ICON.trash+'</button></div>';
+      return '<div class="subrow"><div class="si"><div class="n">'+esc(x.r.name)+'</div><div class="d"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+col+';margin-right:5px;vertical-align:-1px"></span>'+esc((tr||{}).label||'General')+'</div></div>'+callBtnHTML(x.r.phone,x.r.name,'Call','row-call')+'<button class="rm" onclick="rosterDrop('+x.i+')" title="Remove from roster">'+ICON.trash+'</button></div>';
     }).join('')||('<div class="empty py-2 px-0">'+(q?'No one matches.':'No crews yet — add the trades you work with.')+'</div>');
     el.innerHTML=peoplePills()
       +'<p class="mt-0 ml-0 mr-0 mb-3 c-ink-3 fs-sm">Your company roster. Every new house starts with these crews.</p>'
@@ -9095,7 +9166,7 @@ function _nyIssues(projs){
       }
       if((b.pkQOpen||0)>0){
         const qs=b.pkQs||[];const qi=qs.findIndex(function(x){return !x.a;});
-        issues.push({kind:'Question',pid:p.id,site:site,trade:trade,bid:b.id,pri:0,lvl:'msg',ts:b.start,
+        issues.push({kind:'Question',pid:p.id,site:site,trade:trade,bid:b.id,qi:qi<0?0:qi,pri:0,lvl:'msg',ts:b.start,
           line:(b.subName||'The crew')+' asked a question',go:`nyOpenAsk('${p.id}','${b.id}',${qi<0?0:qi})`});
       }
       if(_nyDeclined(b,today)){
@@ -9515,7 +9586,7 @@ function houseHTML(p){
     h+='<div class="pkt-open"><div class="h">Still open</div>';
     shown.forEach(function(it,i){
       const who=it.trade?specLabel(it.trade):'';
-      h+='<div class="pkt-or" onclick="houseGoFact('+i+')"><div><div class="k">'+esc(it.line)+'</div>'+(who?('<div class="m">'+esc(who)+'</div>'):'')+'</div><span class="td-chev">\u203a</span></div>';
+      h+='<div class="pkt-or" onclick="houseGoFact('+i+')"><div><div class="k">'+esc(it.line)+'</div>'+(who?('<div class="m">'+esc(who)+'</div>'):'')+nyActs(it,'house')+'</div><span class="td-chev">\u203a</span></div>';
     });
     if(issues.length>cap)h+='<button class="td-morebtn" onclick="event.stopPropagation();toggleHouseOpen()">'+(_houseOpenAll?'Show less':('Show all '+issues.length))+'</button>';
     h+='</div>';
@@ -9523,6 +9594,7 @@ function houseHTML(p){
   if(isIdleSite(p)&&isBuilder){
     h+='<div class="pkt-ask" onclick="houseGoNext()"><div><div class="k">'+esc(quietLabel(p))+'</div><div class="m">What is up next</div></div><span class="td-chev">\u203a</span></div>';
   }
+  if(isBuilder){h+=accessRowHTML(p);h+=hoRowHTML(p);}   /* 2.526.0: after what still needs you */
   h+='<div class="hs-band" data-band="job">On this house</div><div class="hs-doors">';
   if(!isClient&&canGate('field'))h+='<button class="hs-door" data-door="field" onclick="logFromHouse()"><div class="k">Field Notes</div><div class="m">A note, or a photo</div></button>';
   if(canGate('schedule')||isClient)h+='<button class="hs-door" data-door="cal" onclick="houseGoCal()"><div class="k">Schedule</div><div class="m">'+(isClient?'Crews on this house':'This house on the calendar'+coDaysNote(p))+'</div></button>';
@@ -9546,6 +9618,193 @@ function houseHTML(p){
   }
   return h;
 }
+/* \u2500\u2500 2.526.0 Getting in, Call, and the homeowner card \u2500\u2500
+   Getting in: one card per house the builder fills once (gate or lockbox code, parking, power and water, dumpster,
+   who to call, a note). Crews see it on the house in the app and on their texted packet; the gate code rides a
+   texted packet only when the builder turns that on (off to start). The homeowner never gets the record (it lives
+   in the docs collection with audience subs, see siteRecList). The homeowner card is team only (audience team). */
+const ICON_CALL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
+const ICON_PIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+function telHref(ph){const d=String(ph||'').replace(/[^0-9+]/g,'');return d.replace(/\D/g,'').length>=7?('tel:'+d):'';}
+function firstNameOf(n){return String(n||'').trim().split(/[\s,]+/)[0]||'';}
+/* A Call button, or nothing when there is no number to call. */
+function callBtnHTML(ph,who,label,cls){const h=telHref(ph);if(!h)return '';
+  return '<a class="call-btn'+(cls?(' '+cls):'')+'" href="'+esc(h)+'" onclick="event.stopPropagation()" aria-label="Call '+esc(String(who||''))+'">'+ICON_CALL+'<span>'+esc(label||'Call')+'</span></a>';}
+function isAppleOS(){try{return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}catch(e){return false;}}
+function houseAddr(p){return [p&&p.street,p&&p.city,p&&p.state].filter(Boolean).join(', ');}
+/* A pin dropped on site beats the address (new streets often do not look up yet). */
+function houseDest(p){if(p&&p.geo&&p.geo.src==='pin'&&isFinite(p.geo.lat)&&isFinite(p.geo.lng))return Number(p.geo.lat).toFixed(6)+','+Number(p.geo.lng).toFixed(6);return houseAddr(p);}
+function directionsHref(dest){if(!dest)return '';return isAppleOS()?('https://maps.apple.com/?daddr='+encodeURIComponent(dest)):('https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest));}
+function dirBtnHTML(href){return href?('<a class="call-btn" href="'+esc(href)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+ICON_PIN+'<span>Directions</span></a>'):'';}
+function siteAccess(p){return (p&&p.siteAccess)||{};}
+function accessFilled(p){const a=siteAccess(p);return ['gate','parking','power','dumpster','contact','phone','note'].some(function(k){return !!String(a[k]||'').trim();});}
+function accessLine(p){const a=siteAccess(p);const bits=[];
+  if(a.gate)bits.push(a.gateInLinks?'Gate code, also in texted links':'Gate code, in the app only');
+  if(a.parking)bits.push('Parking');if(a.power)bits.push('Power and water');if(a.dumpster)bits.push('Dumpster');
+  if(a.contact||a.phone)bits.push('Call '+(firstNameOf(a.contact)||'the site'));if(a.note)bits.push('Note');
+  return bits.join(' \u00b7 ');}
+function accessRowHTML(p){if(!p)return '';
+  const sub=accessFilled(p)?accessLine(p):(canGate('site')?'Gate code, parking, and who to call':'Not filled in yet');
+  return '<div class="pkt-ask" id="hsAccess" onclick="openAccess(\''+String(p.id)+'\')"><div><div class="k">Getting in</div><div class="m">'+esc(sub)+'</div></div><span class="td-chev">\u203a</span></div>';}
+/* What a crew (or a teammate without This house) reads: the card, Directions, and Call. */
+function accessCardHTML(p,who){if(!p)return '';
+  const a=siteAccess(p);const href=directionsHref(houseDest(p));
+  const kv=function(k,v,cls,sub){return v?('<div class="acc-kv"><div class="k">'+esc(k)+'</div><div class="v'+(cls?(' '+cls):'')+'">'+esc(String(v))+'</div>'+(sub?('<div class="s">'+esc(sub)+'</div>'):'')+'</div>'):'';};
+  let rows='';
+  rows+=kv('Gate or lockbox code',a.gate,'code',who==='crew'?'Keep this code to yourself.':'');
+  rows+=kv('Where to park',a.parking);rows+=kv('Power and water',a.power);rows+=kv('Dumpster and porta-john',a.dumpster);
+  rows+=kv('Who to call on site',[a.contact,a.phone?fmtPhone(a.phone):''].filter(Boolean).join(' \u00b7 '));
+  rows+=kv('Anything else',a.note);
+  const nm=firstNameOf(a.contact);
+  const acts=dirBtnHTML(href)+callBtnHTML(a.phone,a.contact||'the site',nm?('Call '+nm):'Call');
+  if(!rows&&!acts)return '';
+  return '<div class="acc-card" id="accCard"><div class="h">Getting in</div>'+(acts?('<div class="acc-acts">'+acts+'</div>'):'')+rows+'</div>';}
+let _accPid=null;
+function openAccess(pid){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  if((state.session||{}).role!=='builder')return;
+  if(!canGate('site')){showInfo('Getting in',accessCardHTML(p,'team')||'<p class="m-0 c-ink-3">Not filled in yet.</p>');return;}
+  _accPid=String(p.id);const a=siteAccess(p);
+  const set=function(id,v){const el=document.getElementById(id);if(el)el.value=v||'';};
+  set('accGate',a.gate);set('accParking',a.parking);set('accPower',a.power);set('accDumpster',a.dumpster);set('accContact',a.contact);set('accPhone',a.phone);set('accNote',a.note);
+  accSetLinks(!!a.gateInLinks);
+  const dir=document.getElementById('accDir');if(dir){const h=dirBtnHTML(directionsHref(houseDest(p)));dir.innerHTML=h;dir.style.display=h?'':'none';}
+  document.getElementById('accessScrim').classList.add('show');}
+function closeAccess(){document.getElementById('accessScrim').classList.remove('show');_accPid=null;}
+function accSetLinks(on){const t=document.getElementById('accGateLinks');if(t){t.classList.toggle('on',!!on);t.setAttribute('aria-checked',on?'true':'false');}
+  const sb=document.getElementById('accLinksSub');if(sb)sb.textContent=on?'On: in texted links too':'Off: in the app only';
+  const w=document.getElementById('accWarn');
+  if(w)w.textContent=on?'Anyone with a crew link can open it until the link stops working. Change the code when the job is done.':'Crews on this house see it in the app. Texted links leave it out. Change the code when the job is done.';}
+function accToggleLinks(){const t=document.getElementById('accGateLinks');accSetLinks(!(t&&t.classList.contains('on')));}
+/* Save, then send now, the way the build brief does. */
+function housePushNow(p,okMsg){
+  persist();
+  const live=appMode()==='real'&&typeof Sync!=='undefined'&&Sync.ready&&Sync.ready();
+  if(!live){toast('Saved on this phone');return;}
+  Promise.resolve(Sync._pushOne(p)).then(function(){toast(okMsg||'Saved');}).catch(function(){toast('Saved here. It sends when you are back online.');});}
+function saveAccess(){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(_accPid);});if(!p){closeAccess();return false;}
+  if((state.session||{}).role!=='builder'||!canGate('site')){toast('Ask the owner to turn on This house for you');return false;}
+  const val=function(id){const el=document.getElementById(id);return el?String(el.value||'').trim().slice(0,400):'';};
+  const t=document.getElementById('accGateLinks');
+  const a={gate:val('accGate'),gateInLinks:!!(t&&t.classList.contains('on')),parking:val('accParking'),power:val('accPower'),dumpster:val('accDumpster'),contact:val('accContact'),phone:val('accPhone'),note:val('accNote')};
+  if(a.phone)a.phone=fmtPhone(a.phone);
+  const o={};Object.keys(a).forEach(function(k){if(a[k])o[k]=a[k];});
+  if(!o.gate)delete o.gateInLinks;   // the switch means nothing without a code
+  if(Object.keys(o).length)p.siteAccess=o;else delete p.siteAccess;
+  closeAccess();
+  housePushNow(p,'Saved. Crews see it on this house.');
+  try{pkPublishSoon();}catch(e){}
+  try{logEvent('siteAccess',(p.street||p.name||'house')+(o.gate?(o.gateInLinks?' \u00b7 code in links':' \u00b7 code in app'):''));}catch(e){}
+  try{if(houseStillOpen())renderHouse();}catch(e){}
+  return true;}
+/* The homeowner card. The phone is team only. Schedule status is the builder's call (balance rule): off to start. */
+function hoSched(p){const s=(p&&p.hoSched)||{};return {show:!!s.show,why:String(s.why||'').trim().slice(0,120)};}
+function hoTrackRaw(p,SS,cur){
+  SS=SS||stagesFor(p);
+  if(cur==null){cur=SS.findIndex(function(st){return !((p&&p.stageDone)||{})[st.id];});if(cur<0)cur=SS.length;}
+  if(cur>=SS.length)return {cls:'ok',txt:'Finished \u2014 congratulations',done:true};
+  const today=dayStart(Date.now());const win=stageWindow(p,SS[cur].id);
+  if(win&&win.end){
+    if(today>win.end+864e5){const dd=Math.ceil((today-win.end)/864e5);return {cls:'warn',txt:'Running about '+dd+' day'+(dd===1?'':'s')+' behind'};}
+    return {cls:'ok',txt:'On track'};}
+  return {cls:'',txt:'Build underway'};}
+function hoTrack(p,SS,cur){const raw=hoTrackRaw(p,SS,cur);if(raw.done)return raw;const s=hoSched(p);
+  if(!s.show)return {cls:'',txt:'Build underway'};
+  return s.why?{cls:raw.cls,txt:raw.txt+' \u00b7 '+s.why}:raw;}
+function hoRowHTML(p){if(!p)return '';
+  const ph=(p.siteTeam||{}).hoPhone||'';
+  const sub=[ph?fmtPhone(ph):'No phone yet',hoSched(p).show?'Sees schedule status':'Schedule status hidden'].join(' \u00b7 ');
+  return '<div class="pkt-ask" id="hsHomeowner" onclick="openHoCard(\''+String(p.id)+'\')"><div><div class="k">Homeowner</div><div class="m">'+esc(sub)+'</div></div>'+callBtnHTML(ph,'the homeowner','Call')+'<span class="td-chev">\u203a</span></div>';}
+let _hoPid=null;
+function openHoCard(pid){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});if(!p)return;
+  if((state.session||{}).role!=='builder')return;
+  const can=canGate('site');_hoPid=String(p.id);
+  const ph=document.getElementById('hoPhoneIn');if(ph){ph.value=(p.siteTeam||{}).hoPhone||'';ph.readOnly=!can;}
+  const s=hoSched(p);hoSetSched(s.show);
+  const w=document.getElementById('hoWhyIn');if(w){w.value=s.why;w.readOnly=!can;}
+  const sv=document.getElementById('hoSave');if(sv)sv.style.display=can?'':'none';
+  hoSeesPaint();
+  document.getElementById('hoCardScrim').classList.add('show');}
+function closeHoCard(){document.getElementById('hoCardScrim').classList.remove('show');_hoPid=null;}
+function hoSetSched(on){const t=document.getElementById('hoSchedTg');if(t){t.classList.toggle('on',!!on);t.setAttribute('aria-checked',on?'true':'false');}
+  const r=document.getElementById('hoWhyRow');if(r)r.style.display=on?'':'none';}
+function hoToggleSched(){if(!canGate('site'))return;const t=document.getElementById('hoSchedTg');hoSetSched(!(t&&t.classList.contains('on')));hoSeesPaint();}
+function hoSeesPaint(){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(_hoPid);});const el=document.getElementById('hoSees');if(!p||!el)return;
+  const t=document.getElementById('hoSchedTg');const w=document.getElementById('hoWhyIn');
+  const tr=hoTrack(Object.assign({},p,{hoSched:{show:!!(t&&t.classList.contains('on')),why:w?String(w.value||''):''}}));
+  el.textContent='The homeowner sees: '+tr.txt;}
+function saveHoCard(){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(_hoPid);});if(!p){closeHoCard();return false;}
+  if((state.session||{}).role!=='builder'||!canGate('site')){toast('Ask the owner to turn on This house for you');return false;}
+  const ph=String((document.getElementById('hoPhoneIn')||{}).value||'').trim().slice(0,40);
+  const t=document.getElementById('hoSchedTg');const on=!!(t&&t.classList.contains('on'));
+  const why=String((document.getElementById('hoWhyIn')||{}).value||'').trim().slice(0,120);
+  if(ph)p.siteTeam={hoPhone:fmtPhone(ph)};else delete p.siteTeam;
+  p.hoSched={show:on,why:why};   /* never deleted: a house save sends only the fields it has (metaDelta) */
+  closeHoCard();
+  housePushNow(p,'Saved');
+  try{logEvent('homeownerCard',(p.street||p.name||'house')+' \u00b7 schedule status '+(on?'shown':'hidden'));}catch(e){}
+  try{if(houseStillOpen())renderHouse();}catch(e){}
+  return true;}
+/* 2.526.0: act right from the row. A date change gets OK (one confirm) and Call; a crew question gets Answer and Call. */
+function nyActs(it,where){
+  try{
+    if(!it||!it.pid||!it.bid||(it.kind!=='Date change'&&it.kind!=='Question'))return '';
+    if((state.session||{}).role!=='builder')return '';
+    const p=(state.projects||[]).find(function(x){return String(x.id)===String(it.pid);});
+    const b=p&&(p.bookings||[]).find(function(x){return String(x.id)===String(it.bid);});if(!b)return '';
+    const ids='\''+String(p.id)+'\',\''+String(b.id)+'\'';
+    let h='';
+    if(it.kind==='Date change'&&b.pkResp&&b.pkResp.start)h+='<button type="button" class="call-btn go" onclick="event.stopPropagation();nyOkDates('+ids+')">OK the new dates</button>';
+    if(it.kind==='Question'){const qi=Number(it.qi||0)||0;
+      const js=where==='inbox'?('inbHold();nyOpenAsk('+ids+','+qi+')'):(where==='house'?('nyAnswerFromHouse('+ids+','+qi+')'):('nyOpenAsk('+ids+','+qi+')'));
+      h+='<button type="button" class="call-btn go" onclick="event.stopPropagation();'+js+'">Answer</button>';}
+    h+=callBtnHTML(_subPhoneOf(b.subName,p),b.subName||'the crew','Call');
+    return h?('<div class="ny-acts">'+h+'</div>'):'';
+  }catch(e){return '';}}
+function nyOkDates(pid,bid){
+  const p=(state.projects||[]).find(function(x){return String(x.id)===String(pid);});
+  const b=p&&(p.bookings||[]).find(function(x){return String(x.id)===String(bid);});
+  if(!b||!b.pkResp||!b.pkResp.start){toast('Open it to see what they asked for');return;}
+  nyReviewDates(pid,bid,b.pkResp.start,b.pkResp.end||b.pkResp.start);}
+function nyAnswerFromHouse(pid,bid,qi){houseLeave(function(){try{nyOpenAsk(pid,bid,qi);}catch(e){}});}
+/* 2.526.0: the one-time notice that the Terms changed (Terms section 14). Accounts made under these terms skip it. */
+function termsAt(){return '2026-11-25';}   /* the Effective date on app/terms.html */
+function _termsKey(){return 'plumb.termsSeen.'+errUid();}
+function termsNoteDue(){
+  try{
+    if(appMode()!=='real'||!_isLiveAccount())return false;
+    if((localStorage.getItem(_termsKey())||'')>=termsAt())return false;
+    const u=(typeof firebase!=='undefined'&&firebase.auth&&firebase.apps&&firebase.apps.length)?firebase.auth().currentUser:null;
+    const made=u&&u.metadata&&u.metadata.creationTime?new Date(u.metadata.creationTime).getTime():0;
+    if(made&&made>=new Date(termsAt()+'T00:00:00').getTime())return false;
+    return true;
+  }catch(e){return false;}}
+function termsNoteHTML(){if(!termsNoteDue())return '';
+  const when=new Date(termsAt()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+  return '<div class="terms-note" id="termsNote" role="status"><b>We updated our Terms.</b> New: how shared links and gate codes work. In effect '+esc(when)+'.'
+    +'<div class="tn-acts"><button type="button" class="call-btn" onclick="termsNoteRead()">Read them</button><button type="button" class="call-btn go" onclick="termsNoteOK()">OK</button></div></div>';}
+function termsNoteOK(){try{localStorage.setItem(_termsKey(),termsAt());}catch(e){}try{const n=document.getElementById('termsNote');if(n)n.remove();}catch(e){}try{logEvent('termsSeen',termsAt());}catch(e){}}
+function termsNoteRead(){termsNoteOK();try{legalOpenTerms();}catch(e){}}
+/* 2.526.0: How did you hear about SitePlumb? One tap, owner only, once; saved with the company record (orgPrefs). */
+const HEARD_OPTS=[['crew','A crew'],['homeowner','A homeowner'],['builder','Another builder'],['search','Search'],['other','Other']];
+function heardRef(){try{const r=JSON.parse(localStorage.getItem('plumb.ref')||'null');return (r&&typeof r.r==='string'&&/^[a-z-]{2,20}$/.test(r.r))?r.r:'';}catch(e){return '';}}
+function heardAskHTML(force){
+  try{
+    if(!force){if(appMode()!=='real')return '';if((state.session||{}).role!=='builder'||!isOrgOwner())return '';}
+    if((orgPrefs()||{}).heard)return '';
+    return '<div class="heard" id="heardAsk"><div class="q">How did you hear about SitePlumb?</div><div class="chips">'
+      +HEARD_OPTS.map(function(o){return '<button type="button" class="call-btn" onclick="heardPick(\''+o[0]+'\')">'+esc(o[1])+'</button>';}).join('')+'</div></div>';
+  }catch(e){return '';}}
+function heardPick(id){
+  const o=HEARD_OPTS.find(function(x){return x[0]===id;});if(!o)return;
+  const op=orgPrefs()||{};op.heard={how:id,at:Date.now()};const ref=heardRef();if(ref)op.heard.ref=ref;
+  saveOrgPrefs(op);
+  try{logEvent('heardAbout',id+(ref?(' \u00b7 '+ref):''));}catch(e){}
+  const el=document.getElementById('heardAsk');if(el)el.innerHTML='<div class="q">Thanks. That helps.</div>';}
 function comingUpItems(projs,n){
   const today=dayStart(Date.now());
   const soon=[];
@@ -9561,7 +9820,7 @@ function comingUpItems(projs,n){
 }
 function needsYouItems(projs){
   return nySorted(_nyIssues(projs||[])).map(function(it){
-    return {title:it.kind,sub:[it.site,it.line].filter(Boolean).join(' \u00b7 '),go:it.go||'',pri:it.pri,ts:it.ts,pid:it.pid};
+    return {title:it.kind,sub:[it.site,it.line].filter(Boolean).join(' \u00b7 '),go:it.go||'',pri:it.pri,ts:it.ts,pid:it.pid,acts:nyActs(it,'home')};
   });
 }
 function openAllNeeds(){openNyInbox();}
@@ -9635,7 +9894,7 @@ function renderToday(){
   const needs=needsYouItems(projs);
   const soon=comingUpItems(projs,3);
   const nxt=nextPacketDecision(projs);
-  let h='';
+  let h=termsNoteHTML();   /* 2.526.0 */
   if(nxt){
     h+='<div class="sec"><h2>Next packet</h2></div>';
     h+='<div class="row row-tap ny-next-row" onclick="'+nxt.go+'"><div class="row-main"><div class="row-title">'+esc(nxt.tradeLabel)+' \u00b7 '+esc(nxt.site)+'</div><div class="row-sub">'+esc(nxt.detail)+'</div></div><span class="row-aside">'+esc(nxt.label)+'</span><span class="row-chev">\u203a</span></div>';
@@ -9643,7 +9902,7 @@ function renderToday(){
   h+='<div class="sec"><h2>Needs you</h2>'+(needs.length>3?'<button type="button" class="sec-act" onclick="openAllNeeds()">All '+needs.length+'</button>':'')+'</div>';
   if(needs.length){
     h+=needs.slice(0,3).map(function(n){
-      return '<div class="row row-tap ny-home-row" onclick="'+n.go+'"><div class="row-main"><div class="row-title">'+esc(n.title)+'</div><div class="row-sub">'+esc(n.sub)+'</div></div><span class="row-chev">\u203a</span></div>';
+      return '<div class="row row-tap ny-home-row" onclick="'+n.go+'"><div class="row-main"><div class="row-title">'+esc(n.title)+'</div><div class="row-sub">'+esc(n.sub)+'</div>'+(n.acts||'')+'</div><span class="row-chev">\u203a</span></div>';
     }).join('');
   }else{
     h+='<div class="empty"><b>Nothing needs you</b>Crews are booked, decisions are in.</div>';
@@ -10670,6 +10929,8 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
              money on sel, every sel write from a builder who writes selm deletes
              the five money keys; selm already holds them (diffSiteOps order). */
           if(op.sub==='sel'&&syncWrites(p,'selm')){const del=fbDelete();if(del!==undefined){data=Object.assign({},data);SEL_MONEY_KEYS.forEach(k=>{data[k]=del;});}}
+          /* 2.526.0: a cleared gate code (or any cleared line) leaves the server too; a merge alone would keep it */
+          if(op.sub==='docs'){const R=siteRecOf(op.id);const del=R?fbDelete():undefined;if(R&&del!==undefined){data=Object.assign({},data);R.keys.forEach(k=>{if(!(k in data))data[k]=del;});}}
           await ref.set(Object.assign({data:data,updatedAt:Date.now(),updatedBy:this.deviceId,updatedByUid:this._me()},(op.sub==='pmts'||op.sub==='costs'||op.sub==='co')?this._stamp():{}),{merge:true});
         }
         (sh.colls[op.sub]||(sh.colls[op.sub]={}))[op.id]=_syncHash(JSON.stringify(op.data));
@@ -10737,6 +10998,18 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
      house doc seen (after a records listener's first server answer). */
   /* Doc delete: a document deleted on this phone. Its record goes on the next push (the shadow diff); this tombstone keeps
      the house doc's pre-2.512.0 list from adding it back, and lets _f2Tidy clear that list without it. */
+  /* 2.526.0: one Getting in / homeowner-card record from the docs listener. Compared in one key order on both sides
+     (siteRecRow), so a pull of this phone's own write is never news; an edit made here and not sent yet wins. */
+  _siteRecSnap(p,sid,prev,ch,d,R){
+    if(ch.type==='removed'){delete prev[R.id];if(p[R.f]){delete p[R.f];return true;}return false;}
+    const rec=d.data;if(rec==null)return false;
+    const sv=siteRecRow({[R.f]:rec},R);const rh=_syncHash(JSON.stringify(sv));
+    const mine=siteRecRow(p,R);const mh=mine?_syncHash(JSON.stringify(mine)):'';
+    if(prev[R.id]!==undefined&&rh===prev[R.id]&&mh!==prev[R.id])return false;
+    prev[R.id]=rh;
+    if(mh===rh)return false;
+    if(sv)p[R.f]=siteRecTake(rec,R);else delete p[R.f];
+    return true;},
   docGone(id,key){const sid=String(id);const sh=this._shadow[sid]||(this._shadow[sid]={meta:'',colls:{}});
     const g=sh.gone||(sh.gone={});(g.docs||(g.docs={}))[String(key)]=Date.now();this._saveBase();},
   _isGone(sid,sub,key){const sh=this._shadow[String(sid)];return !!(sh&&sh.gone&&sh.gone[sub]&&sh.gone[sub][key]);},
@@ -11063,6 +11336,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         /* F-2: a phone that does not read selm keeps no selection money, even a copy saved before 2.463.0 */
         if(isSel&&!syncHas(p,'selm')){p[c.f]=p[c.f].map(r=>{if(!selHasMoney(r))return r;changed=true;return selNoMoney(r);});}
         snap.docChanges().forEach(ch=>{const d=ch.doc.data()||{};const key=ch.doc.id;
+          if(c.sub==='docs'){const R=siteRecOf(key);if(R){if(this._siteRecSnap(p,sid,prev,ch,d,R))changed=true;return;}}   /* 2.526.0: Getting in and the homeowner card are not documents */
           if(ch.type==='removed'){const idx=p[c.f].findIndex(r=>c.key(r)===key);if(idx>=0){p[c.f].splice(idx,1);changed=true;}delete prev[key];}
           else{const rec=d.data;
             if(this._ownEcho(d,sid,prev[key]!==undefined||p[c.f].some(r=>c.key(r)===key),ch.doc)){
@@ -11098,6 +11372,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
              instead of uploading it again. */
           const seen={};(snap.docs||[]).forEach(x=>{seen[x.id]=true;});
           Object.keys(prev).forEach(k=>{if(seen[k])return;
+            if(c.sub==='docs'){const R=siteRecOf(k);if(R){if(p[R.f]){delete p[R.f];changed=true;}delete prev[k];return;}}   /* 2.526.0: removed on another phone */
             const idx=p[c.f].findIndex(r=>c.key(r)===k);if(idx>=0){p[c.f].splice(idx,1);changed=true;}
             delete prev[k];});
           got[c.sub]=true;
@@ -11687,7 +11962,7 @@ const SYNC_COLLS=[
   /* #5 (2.512.0): documents (by audience) and invite codes left the house doc,
      which every member reads. A builder writes both; crews and the homeowner
      read only their documents; invite codes only a builder who may invite. */
-  {f:'docs',sub:'docs',key:r=>docKey(r),rows:p=>((p&&p.docs)||[]).filter(d=>d&&!d.tour).map(docRow)},
+  {f:'docs',sub:'docs',key:r=>docKey(r),rows:p=>((p&&p.docs)||[]).filter(d=>d&&!d.tour&&!siteRecOf(d.id)).map(docRow).concat(siteRecRows(p))},   /* 2.526.0: plus Getting in and the homeowner card */
   {f:'invites',sub:'invs',key:r=>String(r.code),rows:p=>((p&&p.invites)||[]).filter(i=>i&&i.code)}
 ];
 /* The house doc's old copies of the two lists. Read until a builder on 2.512.0+
@@ -11696,6 +11971,18 @@ const LEGACY_LISTS=[
   {f:'docs',sub:'docs',norm:d=>Object.assign({},d,{aud:docAud(d)}),ok:d=>!!d&&!d.tour},   // an old link still opens until the copy is made; the record never gets it
   {f:'invites',sub:'invs',norm:i=>Object.assign({},i),ok:i=>!!i&&!!i.code}
 ];
+/* 2.526.0: two records per house ride the docs collection, because documents are the one record the rules filter by
+   audience (docAudOk): Getting in (aud subs: builders and crews read it, the homeowner never gets it) and the team's
+   homeowner card (aud team: builders only). They are never documents on the phone: the docs listener hands them to
+   p.siteAccess and p.siteTeam (Sync._siteRecSnap), the docs rows add them back on push, and the house doc, which every
+   member reads, never carries them (metaOf). Declared as functions so load() can use them before this line runs. */
+function siteRecList(){return siteRecList._l||(siteRecList._l=[
+  {id:'site-access',f:'siteAccess',aud:'subs',n:'Site access',keys:['gate','gateInLinks','parking','power','dumpster','contact','phone','note']},
+  {id:'site-team',f:'siteTeam',aud:'team',n:'Homeowner contact',keys:['hoPhone']}]);}
+function siteRecOf(id){const k=String(id==null?'':id);return siteRecList().find(function(R){return R.id===k;})||null;}
+function siteRecTake(rec,R){const o={};R.keys.forEach(function(k){const x=rec&&rec[k];if(x===true)o[k]=true;else if(typeof x==='string'&&x.trim())o[k]=x.trim().slice(0,400);});return o;}
+function siteRecRow(p,R){const v=siteRecTake((p&&p[R.f])||null,R);if(!Object.keys(v).length)return null;return Object.assign({id:R.id,kind:'house',aud:R.aud,n:R.n},v);}
+function siteRecRows(p){return siteRecList().map(function(R){return siteRecRow(p,R);}).filter(Boolean);}
 /* #6 (2.512.0): what a homeowner may see of invoices: never a draft (the rules ask the same) */
 const INV_SEEN=['sent','approved','paid','void'];
 const SEL_MONEY_KEYS=['price','allowance','cost','costLineId','invoicedIn','priceC','allowanceC','costC'];   // M-1: the cents twins are money too
@@ -11780,7 +12067,7 @@ function metaDelta(sh,m){
     out[k]=v;});
   return out;
 }
-function metaOf(p){const m=JSON.parse(JSON.stringify(p));SYNC_COLLS.forEach(c=>{delete m[c.f];});return m;}
+function metaOf(p){const m=JSON.parse(JSON.stringify(p));SYNC_COLLS.forEach(c=>{delete m[c.f];});siteRecList().forEach(R=>{delete m[R.f];});return m;}   /* 2.526.0: the gate code and the homeowner phone never ride the house doc */
 /* Short fingerprint of a record's JSON. The shadow keeps these instead of full
    copies so it can be saved on the phone without doubling the house list. */
 function _syncHash(str){str=String(str==null?'':str);let a=0x811c9dc5,b=5381;
@@ -12053,7 +12340,7 @@ function renderSubView(){
   const body=document.getElementById('svBody');const projs=subProjects();const nav=document.getElementById('subNav');
   if(!subSel){
     if(nav)nav.style.display='none';
-    body.innerHTML='<div class="mt-0 ml-0 mr-0 mb-3"><span class="syncpill"><span class="sd"></span>On this device</span></div><div class="sec"><h2>Your houses</h2></div><div id="subCards">'+
+    body.innerHTML='<div class="mt-0 ml-0 mr-0 mb-3"><span class="syncpill"><span class="sd"></span>On this device</span></div>'+termsNoteHTML()+'<div class="sec"><h2>Your houses</h2></div><div id="subCards">'+
       (projs.map((p,i)=>{const tr=subTradeFor(p);const open=p.items.filter(it=>it.crew===tr.label&&it.issue&&it.status==='open').length;
         return `<div class="ov-card ${open?'attn':''}" style="animation-delay:${i*60}ms" onclick="openSubSite('${p.id}')">
           <div class="ct"><div><div class="st">${esc(p.street||p.name)}</div><div class="nm">${esc(tr.label)}${p.city?' · '+esc(p.city):''}</div></div>
@@ -12091,6 +12378,7 @@ function renderSubView(){
   if(tr.cleared)meta.push('Your builder marked '+tr.label+' ready '+timeAgo(tr.cleared));
   else meta.push('You will see a notice here when your builder marks this house ready for you.');   /* 2.525.0: was "ready for General" */
   let h=head+'<div class="pkt-strip '+(open.length||needConfirm.length?'warn':(tr.cleared?'ok':''))+'"><div class="st">'+esc(stripSt)+'</div>'+(meta.length?('<div class="meta">'+meta.map(esc).join('<br>')+'</div>'):'')+'</div>';
+  h+=accessCardHTML(p,'crew');   /* 2.526.0 */
   h+=buildBriefRowHTML(p);
   h+='<div class="hs-band">On this house</div><div class="hs-doors">';
   h+='<button class="hs-door" id="svPacket" onclick="openSubPacket(\''+p.id+'\',\''+tr.id+'\')"><div class="k">Your packet</div><div class="m">Install specs and drawings</div></button>';
@@ -14970,11 +15258,8 @@ function renderClient(){
   const _today=dayStart(Date.now());
   const _fmtD=ts=>new Date(ts).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
   const curWin=cur<SS.length?stageWindow(p,SS[cur].id):null;
-  let track={cls:'',txt:'Build underway'};
-  if(cur>=SS.length)track={cls:'ok',txt:'Finished \u2014 congratulations'};
-  else if(curWin&&curWin.end){
-    if(_today>curWin.end+864e5){const dd=Math.ceil((_today-curWin.end)/864e5);track={cls:'warn',txt:'Running about '+dd+' day'+(dd===1?'':'s')+' behind'};}
-    else track={cls:'ok',txt:'On track'};}
+  /* 2.526.0: what the homeowner reads about the schedule is the builder's call (Homeowner card on the house). Off: Build underway. */
+  const track=hoTrack(p,SS,cur);
   let next='';const insp=p.inspections||{};
   const sched=Object.keys(INSP_LABEL).find(k=>insp[k]==='scheduled');
   const nb=(p.bookings||[]).filter(b=>(b.status||'confirmed')!=='declined'&&b.end>=_today).sort((a,b)=>a.start-b.start)[0];
@@ -14996,6 +15281,7 @@ function renderClient(){
   h+=`<div class="mt-0 ml-0 mr-0 mb-3"><span class="syncpill"><span class="sd"></span>On this device</span></div>`;
   try{const bar=document.getElementById('clHouseBar');if(bar){if(T==='home')bar.setAttribute('hidden','');else bar.removeAttribute('hidden');}}catch(e){}
   if(T==='home'){
+    h+=termsNoteHTML();   /* 2.526.0 */
     const stripSt=needCount?(needCount===1?'One thing still needs you':(needCount+' still need you')):'All clear on this house';
     const meta=[];
     meta.push(p.street||p.name||'Your house');
@@ -16738,7 +17024,7 @@ function renderSubs(){
         if(inv&&inv.status==='joined')bits.push('In SitePlumb');
         else if(inv)bits.push('Invited');
       }
-      return '<div class="row row-tap" onclick="openSubDetail(\''+s.id+'\')"><div class="row-main"><div class="row-title">'+esc(s.name)+'</div><div class="row-sub">'+esc(bits.filter(Boolean).join(' \u00b7 '))+'</div></div><span class="row-aside'+(s.cleared?' ok':' warn')+'">'+(s.cleared?'Cleared':'Not cleared')+'</span><span class="row-chev">\u203a</span></div>';
+      return '<div class="row row-tap" onclick="openSubDetail(\''+s.id+'\')"><div class="row-main"><div class="row-title">'+esc(s.name)+'</div><div class="row-sub">'+esc(bits.filter(Boolean).join(' \u00b7 '))+'</div>'+(telHref(s.phone)?('<div class="ny-acts">'+callBtnHTML(s.phone,s.name,'Call')+'</div>'):'')+'</div><span class="row-aside'+(s.cleared?' ok':' warn')+'">'+(s.cleared?'Cleared':'Not cleared')+'</span><span class="row-chev">\u203a</span></div>';
     }).join('');
     return head+rows;
   }).join(''):(q?'<div class="empty">No crews match \u201c'+esc(subQuery.trim())+'\u201d.</div>':'<div class="empty">No crews yet. Add your crews so they are ready when a stage comes up.</div>'));
@@ -16859,7 +17145,7 @@ function permitTimeline(pm,idx){
     const completed=cur>=0&&(i<cur||(i===cur&&cur===lastI));
     const cls=cur<0?'':(completed?'done':'')+(i===cur?' cur':'');
     const chk=completed?'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>':'';
-    return `<div class="tstep ${cls}" onclick="setPermit(${idx},'${st}')"><div class="dot">${chk}</div><div class="tlbl">${st}</div></div>`;
+    return `<div class="tstep ${cls}" onclick="setPermit(${idx},'${st}')" title="${st}" role="button" aria-label="${st}"><div class="dot">${chk}</div><div class="tlbl">${st}</div></div>`;
   }).join('')+`</div>`;
 }
 function renderPermitList(){setTimeout(()=>{try{[...document.querySelectorAll('select.permit-sel[id]')].forEach(el=>enhanceSelect(el.id));}catch(e){}},0);
@@ -19414,6 +19700,12 @@ function packetSnapshot(p,b){
       (p.logs||[]).slice(0,2).forEach(lg=>hist.push({t:lg.t||0,text:String(lg.text||'')}));
       hist.sort((a,b2)=>(b2.t||0)-(a.t||0));
       if(hist.length)c.history=hist.slice(0,5).map(x=>({d:new Date(x.t).toLocaleDateString(undefined,{month:'short',day:'numeric'}),text:x.text.slice(0,180)}));
+      /* 2.526.0: Getting in. The gate code only when the builder turned it on; dest is for Directions. */
+      const ac=siteAccess(p);const acc={};
+      if(ac.gate&&ac.gateInLinks)acc.gate=String(ac.gate);
+      ['parking','power','dumpster','contact','phone','note'].forEach(k=>{if(ac[k])acc[k]=String(ac[k]);});
+      const dest=houseDest(p);if(dest)acc.dest=dest;
+      if(Object.keys(acc).length)c.access=acc;
       return c;})()};
 }
 function _pkToken(){const a=new Uint8Array(16);crypto.getRandomValues(a);
@@ -19719,6 +20011,7 @@ function _gpRender(){
     }
     h+=_gpChgHTML(g);
   }
+  h+=_gpAccessHTML(g,preview);   /* 2.526.0 */
   const cx=g.ctx||{};
   if(cx.ready||cx.permit||cx.insp){
     if(cx.ready)h+=_gpRow('House ready',esc(cx.ready),cx.readyOk?'Ready':'Not ready',cx.readyOk?'ok':'warn');
@@ -19783,11 +20076,28 @@ function _gpRender(){
     +'<option value="device"'+(cp==='device'?' selected':'')+'>This device\u2019s calendar</option>'
     +'<option value="google"'+(cp==='google'?' selected':'')+'>Google Calendar</option></select></div>'
     +'<div class="sub">Saved on this phone.</div></div>';
-  h+='<div class="gp-foot">Sent with SitePlumb \u00b7 this link expires '+new Date(g.expires||Date.now()).toLocaleDateString()+'</div>';
+  h+='<div class="gp-foot">Sent with SitePlumb \u00b7 this link expires '+new Date(g.expires||Date.now()).toLocaleDateString()
+    +'<br><a href="https://siteplumb.com/?ref=packet" target="_blank" rel="noopener">Builders: see how SitePlumb works</a> \u00b7 <a href="https://siteplumb.com/app/terms.html" target="_blank" rel="noopener">Terms</a></div>';
   if(preview&&_gpPendingSend)h+='<div class="action-bar"><button class="btn btn-secondary" onclick="closeGuestPreview()">Done</button><button class="btn btn-primary" onclick="gpApproveSend()">Text this link</button></div>';
   else if(preview)h+='<div class="leave-bar"><button class="btn btn-secondary" onclick="closeGuestPreview()">Done</button></div>';
   body.innerHTML=h;
 }
+/* 2.526.0: Getting in on the crew's page (the same rows as app/p.html) */
+function _gpAccessHTML(g,preview){
+  const a=(g&&g.ctx&&g.ctx.access)||null;if(!a)return '';
+  let h='<div class="sec"><h2>Getting in</h2></div>';
+  if(preview&&!a.gate){try{const p=(state.projects||[]).find(function(x){return String(x.id)===String(g.siteId);});
+    if(siteAccess(p).gate)h+='<div class="gp-preview">The gate code is left out of texted links. Crews on the house see it in the app.</div>';}catch(e){}}
+  const stop=new Date(g.expires||Date.now()).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  if(a.gate)h+=_gpRow(a.gate,'Gate or lockbox code \u00b7 keep it to yourself \u00b7 this link stops working '+esc(stop),'','');
+  if(a.parking)h+=_gpRow(a.parking,'Where to park','','');
+  if(a.power)h+=_gpRow(a.power,'Power and water','','');
+  if(a.dumpster)h+=_gpRow(a.dumpster,'Dumpster and porta-john','','');
+  if(a.contact||a.phone)h+=_gpRow([a.contact,a.phone].filter(Boolean).join(' \u00b7 '),'Who to call on site','','');
+  if(a.note)h+=_gpRow(a.note,'Anything else','','');
+  const dh=directionsHref(a.dest||''),th=telHref(a.phone),nm=firstNameOf(a.contact);
+  if(dh||th)h+='<div class="gp-acc-acts">'+(dh?('<a class="btn btn-secondary" href="'+esc(dh)+'" target="_blank" rel="noopener">Directions</a>'):'')+(th?('<a class="btn btn-secondary" href="'+esc(th)+'">'+esc(nm?('Call '+nm):'Call')+'</a>'):'')+'</div>';
+  return h;}
 function gpPreviewTap(){toast('They tap this \u2014 send is at the bottom');}
 function closeGuestPreview(){try{delete window.__packetFixture;}catch(e){}
   try{_gpUnlisten();}catch(e){}
@@ -20202,6 +20512,9 @@ function pkDiffWhat(prev,fresh){
     if(!!pr!==!!fr)bits.push(fr?'House marked ready':'House readiness changed');
     if(JSON.stringify((prev.ctx&&prev.ctx.openItems)||[])!==JSON.stringify((fresh.ctx&&fresh.ctx.openItems)||[]))bits.push('Open items updated');
     if(JSON.stringify(prev.brief||null)!==JSON.stringify(fresh.brief||null))bits.push('Build brief updated');
+    /* 2.526.0: a Getting in change is news; Directions arriving on an older link is not */
+    const accK=function(x){const o=Object.assign({},(x&&x.ctx&&x.ctx.access)||{});delete o.dest;return JSON.stringify(o);};
+    if(accK(prev)!==accK(fresh))bits.push('Getting in updated');
   }catch(e){}
   if(!bits.length)return '';
   if(bits.length===1)return bits[0];
@@ -20475,7 +20788,7 @@ function inbDraw(){
     const when=r.ts?pkWhen(r.ts):'';
     const go=r.go?String(r.go).replace(/"/g,'"'):'';
     return '<div class="pkt-or mt-2" onclick="inbHold();'+go+'"><div><div class="k">'+esc(r.kind||'Needs you')+'</div>'
-      +'<div class="m">'+esc(r.line||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div></div>'
+      +'<div class="m">'+esc(r.line||'')+(r.site?(' \u00b7 '+esc(r.site)):'')+'</div>'+nyActs(r,'inbox')+'</div>'
       +'<div><div class="ps-c">'+esc(when)+'</div><span class="td-chev">\u203a</span></div></div>';
   }).join('')+(window._inbSmartCapped?('<button type="button" class="add-sub-btn w-full mt-3 btn btn-secondary" onclick="inbSetTab(\'all\')">Show all '+window._inbAllN+'</button>'):'');
 }
@@ -20665,6 +20978,9 @@ function bkAcceptChange(pid,bid,start,end){
   try{renderToday();}catch(e){}
   try{renderOvCards();}catch(e){}
   try{bkRenderGuestRow(p,b);}catch(e){}
+  /* 2.526.0: OK from a Needs you row: the list it came from shows the change */
+  try{const sc=document.getElementById('pkLogScrim');if(sc&&sc.classList.contains('show')&&_inbMode==='ny')inbDraw();}catch(e){}
+  try{if(houseStillOpen())renderHouse();}catch(e){}
 }
 function openSubPacket(projId,tradeId){const p=state.projects.find(x=>String(x.id)===String(projId));if(!p)return;
   logEvent('packetViewed','sub · '+specLabel(tradeId));

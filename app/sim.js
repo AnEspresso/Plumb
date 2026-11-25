@@ -448,7 +448,7 @@ t('2.491.0: two different houses on the same street are told apart by a short id
 $("(function(){var o=__o4;state.session=o.s;state.projects=o.p;_ovSort=o.srt;document.execCommand=o.ex;try{Object.defineProperty(navigator,'clipboard',{value:o.cb,configurable:true});}catch(e){}window._errAll=o.all;if(o.e===null)localStorage.removeItem('plumb.errors');else localStorage.setItem('plumb.errors',o.e);var b=document.getElementById('errReportBox');if(b)b.remove();delete window.__o4;return true;})()");
 }
 
-t('SEED_VERSION 22',$('SEED_VERSION')===22);
+t('SEED_VERSION 23',$('SEED_VERSION')===23);
 t('10 seed sites',$('state.projects.length')===10);
 /* 2.493.0: a signed-in account never keeps demo houses; the demo still seeds */
 t('2.493.0: the app starts with an empty list in memory',/let state=emptyState\(\);/.test(SRC));
@@ -1506,7 +1506,7 @@ t('edit a house Done returns home', $("String(impDoneEdit)").indexOf('showOvervi
 t('edit houses cards stack', $("String(renderEditSites)").indexOf('es-card')>=0&&$("String(renderEditSites)").indexOf('es-acts')>=0);
 t('briefcase opens Decisions', $("String(renderCompany)").indexOf('openPkLog')>=0);
 t('field notes sit on the home bar', SRC.indexOf('id="ovCapture"')>=0&&$("String(renderToday)").indexOf('ovCapture')>=0);
-t('gear sits above the capture bar', SRC.indexOf('body:has(.overview.show) #devDot')>=0&&SRC.split('body:has(.overview.show) #devDot')[1].slice(0,80).indexOf('116px')>=0);
+t('gear sits in the capture bar, left of the field-note button (2.526.0: it covered Your houses)', SRC.indexOf('body:has(.overview.show) #devDot{bottom:calc(var(--s-2) + 15px')>=0&&SRC.indexOf('body:has(#devDot.show) .ov-capture{padding-left:calc(var(--s-5) + 40px);}')>=0);
 t('edit houses has three equal actions', SRC.indexOf('.es-acts{')>=0&&SRC.split('.es-acts{')[1].slice(0,80).indexOf('1fr 1fr 1fr')>=0);
 t('edit houses says Off book', $("HOUSE_DONE_WORDS.offBook")==='Off book'&&$("String(renderEditSites)").indexOf('HOUSE_DONE_WORDS.offBook')>=0&&$("String(renderEditSites)").indexOf('Off the book')<0);
 t('punch lines start with a capital', $("String(_nyIssues)").indexOf('upFirst(it.cap')>=0&&$("typeof upFirst")==='function');
@@ -3069,7 +3069,7 @@ t('scrim census is pinned', (function(){
   const ids=[];
   SRC.replace(/id="([^"]*Scrim)"/g,function(_,id){if(ids.indexOf(id)<0)ids.push(id);});
   const leave=['legalDocScrim','guestScrim','siteMenuScrim'];
-  return ids.length===65&&leave.every(function(id){return ids.indexOf(id)>=0;});
+  return ids.length===67&&leave.every(function(id){return ids.indexOf(id)>=0;});
 })());
 t('chips center their label', SRC.indexOf('justify-content:center')>=0&&SRC.indexOf('#fieldKindChips .chip')>=0);
 t('pickers say house not site', SRC.indexOf("title:'Which house?'")>=0&&SRC.indexOf("title:'Which site?'")<0);
@@ -4631,7 +4631,8 @@ await (async function(){
      2.511.0's read-then-write transaction, and nothing is refused (2.510.0) */
   const legM=J(`(function(){var o=[];__demo.forEach(function(p){var s=__F.srv[p.id],m=(s.doc&&s.doc.meta)||{};
     if(Array.isArray(m.docs)&&m.docs.length)o.push(p.id+' meta.docs');if(Array.isArray(m.invites)&&m.invites.length)o.push(p.id+' meta.invites');
-    if((p.docs||[]).length&&Object.keys((s.colls.docs)||{}).length!==(p.docs||[]).length)o.push(p.id+' docs '+Object.keys((s.colls.docs)||{}).length+'/'+p.docs.length);
+    var dk=Object.keys((s.colls.docs)||{}).filter(function(k){return !siteRecOf(k);});   /* 2.526.0: Getting in and the homeowner card ride docs too */
+    if((p.docs||[]).length&&dk.length!==(p.docs||[]).length)o.push(p.id+' docs '+dk.length+'/'+p.docs.length);
     if((p.invites||[]).filter(function(i){return i&&i.code;}).length&&!Object.keys((s.colls.invs)||{}).length)o.push(p.id+' invs');});return o;})()`);
   const sentN=J("__demo.reduce(function(n,p){return n+(p.invoices||[]).filter(invNeedsMerge).length;},0)");
   t('2.512.0 + 2.511.0: migration saves sent invoices by transaction, moves documents and invite codes off the house doc, and nothing is refused',
@@ -6194,7 +6195,7 @@ await (async function(){
   /* ════ 2.512.0 (batch 3): #5 documents by audience + invite codes off the house doc, #6 no drafts for the homeowner,
      #15 own notes, #18 owner-only delete, files fetched on demand. Same fake Firestore; filtered listeners see only what they ask for. ════ */
   const INFO3={uS:{name:'Timberline Framing'},uH:{name:'Ana Ruiz'},uP:{name:'Pat',rpRole:'pm',gates:{moneyJob:true}},uX:{name:'Sam',rpRole:'super'}};
-  $2(`(function(){__F.srv={};__F.wheres=[];__F.applyWhere=true;var p=JSON.parse(JSON.stringify(__demo[1]));p.id='b3';p.invoices=[];p.street='9 Batch Three Rd';
+  $2(`(function(){__F.srv={};__F.wheres=[];__F.applyWhere=true;var p=JSON.parse(JSON.stringify(__demo[1]));p.id='b3';p.invoices=[];p.street='9 Batch Three Rd';delete p.siteAccess;delete p.siteTeam;
     p.docs=[{n:'Contract.pdf',m:'Signed',k:'pdf',trade:'',aud:'team',fileId:'docT1',fileUrl:'https://firebasestorage.googleapis.com/v0/b/x/o/live%2Fsites%2Fb3%2Fdocs%2FdocT1?alt=media&token=t1'},
       {n:'Plans.pdf',m:'Rev C',k:'pdf',trade:'',aud:'all',fileId:'docA1'},
       {n:'Crew sheet.pdf',m:'',k:'pdf',trade:'plumb',fileId:'docS1'},
@@ -6328,6 +6329,33 @@ await (async function(){
   t('#5 a record never carries a storage download link; an outside link stays',!('fileUrl' in f5.row[0])&&f5.row[0].aud==='subs'&&f5.row[1].fileUrl==='https://example.com/b.pdf',JSON.stringify(f5.row));
   t('#5 no download link is written onto a record any more (photos and documents fetch one when shown)',SRC.indexOf('e.url=await ref.getDownloadURL()')<0&&SRC.indexOf('it.photoUrl=e.url')<0&&SRC.indexOf('d.fileUrl=e.url')<0&&$2("String(backfillPhotos)").indexOf("FileURL.get('live/sites/'")>=0&&$2("String(docFileUrl)").indexOf('FileURL.get(docPath(')>=0);
   t('#6 Past houses: the homeowner asks for sent invoices only',$2("String(PAST.load)").indexOf("where('data.status','in',INV_SEEN)")>=0);
+  /* ════ 2.526.0: Getting in (aud subs) and the homeowner card (aud team) ride the docs collection ════ */
+  await phone('uB',B,'devB11');
+  $2(`(async function(){var p=state.projects.find(function(x){return x.id==='b3';});p.siteAccess={gate:'4417',gateInLinks:true,parking:'Street only'};p.siteTeam={hoPhone:'(248) 555-0187'};persistLocalOnly();await Sync._pushOne(p);return true;})()`);
+  await settle();
+  const sr1=J(`(function(){var x=__F.srv.b3,d=x.colls.docs||{},m=(x.doc&&x.doc.meta)||{};var a=d['site-access'],h=d['site-team'];var p=state.projects.find(function(y){return y.id==='b3';});
+    return {a:a&&a.data,h:h&&h.data,meta:('siteAccess' in m)||('siteTeam' in m),houseWrites:__F.writes.filter(function(w){var mm=w.data&&w.data.meta;return mm&&(('siteAccess' in mm)||('siteTeam' in mm));}).length,
+      asDoc:(p.docs||[]).some(function(z){return siteRecOf(z.id);})};})()`);
+  t('2.526.0: Getting in is a docs record only builders and crews read (aud subs), with the code',sr1.a&&sr1.a.aud==='subs'&&sr1.a.gate==='4417'&&sr1.a.parking==='Street only'&&sr1.a.gateInLinks===true,JSON.stringify(sr1.a));
+  t('2.526.0: the homeowner phone number is a docs record only builders read (aud team)',sr1.h&&sr1.h.aud==='team'&&sr1.h.hoPhone==='(248) 555-0187',JSON.stringify(sr1.h));
+  t('2.526.0: neither ever rides the house doc every member reads, and neither shows as a document',!sr1.meta&&sr1.houseWrites===0&&!sr1.asDoc,JSON.stringify(sr1));
+  await phone('uS',CR3,'devS11');
+  const sr2=J("(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};return {a:p.siteAccess||null,h:p.siteTeam||null,doc:(p.docs||[]).some(function(z){return siteRecOf(z.id);})};})()");
+  t('2.526.0: the crew phone gets Getting in, never the homeowner phone',sr2.a&&sr2.a.gate==='4417'&&!sr2.h&&!sr2.doc,JSON.stringify(sr2));
+  await phone('uH',HO3,'devH11');
+  const sr3=J("(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};return {a:p.siteAccess||null,h:p.siteTeam||null};})()");
+  t('2.526.0: the homeowner phone gets neither (the gate code never reaches it)',!sr3.a&&!sr3.h,JSON.stringify(sr3));
+  await phone('uB',B,'devB12');
+  const sr4a=J("(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};return p.siteAccess||null;})()");
+  t('2.526.0: another builder phone pulls Getting in from the server',sr4a&&sr4a.gate==='4417'&&sr4a.gateInLinks===true,JSON.stringify(sr4a));
+  $2(`(async function(){var p=state.projects.find(function(x){return x.id==='b3';});p.siteAccess={parking:'Street only'};persistLocalOnly();await Sync._pushOne(p);return true;})()`);
+  await settle();
+  const sr4=J("(function(){var d=(__F.srv.b3.colls.docs||{})['site-access'];return d&&d.data;})()");
+  t('2.526.0: a cleared gate code is gone from the server too (the write merges, so it is deleted by name)',sr4&&!('gate' in sr4)&&!('gateInLinks' in sr4)&&sr4.parking==='Street only',JSON.stringify(sr4));
+  $2(`(async function(){var p=state.projects.find(function(x){return x.id==='b3';});delete p.siteAccess;delete p.siteTeam;persistLocalOnly();await Sync._pushOne(p);return true;})()`);
+  await settle();
+  const sr5=J("(function(){var d=__F.srv.b3.colls.docs||{};return [!!d['site-access'],!!d['site-team']];})()");
+  t('2.526.0: emptying both cards deletes both records',sr5[0]===false&&sr5[1]===false,JSON.stringify(sr5));
   $2("__F.applyWhere=false;__F.wheres=[];true");
 
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
@@ -6419,6 +6447,128 @@ S('2.525.0 live-walk fixes');
   t('a payment line in History names its invoice',$("(function(){var p=P();var v=(p.invoices||[]).find(function(x){return x.no;});if(!v)return 'skip';return HIST.label({refType:'inv',ref:v.id,kind:'payment'})===String(v.no)?'ok':HIST.label({refType:'inv',ref:v.id});})()")!=='Invoice');
   t('opening Settings no longer downloads the tour audio',$("String(openSettings)").indexOf('tourPrefetch')<0);
   t('a waiting crew is told the builder will mark the house ready (not "ready for General")',SRC.indexOf("when your builder marks this house ready for you.")>=0&&SRC.indexOf("'You will see a notice here when this house is ready for '+tr.label")<0);
+})();
+
+/* ════ 2.526.0: GETTING IN, CALL, ACT FROM NEEDS YOU, THE BUILDER'S CALL ON SCHEDULE STATUS, TERMS ════ */
+S('2.526.0 getting in and call');
+(function(){
+  asBuilder();
+  $("(function(){state.projects=state.projects.filter(function(x){return x.id!=='acc1';});var q=JSON.parse(JSON.stringify(sampleState().projects.find(function(x){return x.id==='p2';})));q.id='acc1';q.sample=false;q.street='77 Access Ct';q.city='Ferndale';q.state='MI';state.projects.push(q);Data.setActive('acc1');return true;})()");
+  const P2="state.projects.find(function(x){return x.id==='acc1';})";
+  /* records */
+  t('two house records, with their audiences',$("JSON.stringify(siteRecList().map(function(R){return R.id+':'+R.aud+':'+R.f;}))")==='["site-access:subs:siteAccess","site-team:team:siteTeam"]');
+  t('the house doc never carries them (metaOf)',$("(function(){var m=metaOf("+P2+");return !('siteAccess' in m)&&!('siteTeam' in m)&&!!m.street;})()")===true);
+  const rows=JSON.parse($("JSON.stringify(SYNC_COLLS.find(function(c){return c.sub==='docs';}).rows("+P2+").filter(function(r){return siteRecOf(r.id);}))"));
+  t('they go up with the documents, in one key order',rows.length===2&&rows[0].id==='site-access'&&rows[0].aud==='subs'&&Object.keys(rows[0]).slice(0,4).join()==='id,kind,aud,n'&&rows[1].aud==='team',JSON.stringify(rows));
+  const snap=JSON.parse($(`(function(){var p={id:'z'};var prev={};var R=siteRecOf('site-access');var out=[];
+    var srv={id:'site-access',kind:'house',aud:'subs',n:'Site access',parking:'P',gate:'1'};
+    out.push(Sync._siteRecSnap(p,'z',prev,{type:'added'},{data:srv},R));out.push(JSON.stringify(p.siteAccess));
+    out.push(Sync._siteRecSnap(p,'z',prev,{type:'modified'},{data:srv},R));
+    p.siteAccess.gate='2';out.push(Sync._siteRecSnap(p,'z',prev,{type:'modified'},{data:srv},R));out.push(p.siteAccess.gate);
+    out.push(Sync._siteRecSnap(p,'z',prev,{type:'removed'},{data:null},R));out.push(!!p.siteAccess);
+    return JSON.stringify(out);})()`));
+  t('a pull sets the card; the same record again is not news; an edit made here wins; a removed record clears it',snap[0]===true&&snap[1]==='{"gate":"1","parking":"P"}'&&snap[2]===false&&snap[3]===false&&snap[4]==='2'&&snap[5]===true&&snap[6]===false,JSON.stringify(snap));
+  t('an old copy kept as a document is dropped on load',SRC.indexOf("p.docs=(p.docs||[]).filter(d=>!(d&&siteRecOf(d.id)));")>=0);
+  /* the builder's house page */
+  const hh=$("houseHTML("+P2+")");
+  t('the house page has Getting in and Homeowner rows, with Call for the homeowner',hh.indexOf('id="hsAccess"')>=0&&hh.indexOf('id="hsHomeowner"')>=0&&hh.indexOf('href="tel:2485550187"')>=0&&hh.indexOf('Gate code, in the app only')>=0,hh.slice(hh.indexOf('hsAccess'),hh.indexOf('hsAccess')+400));
+  t('Directions opens maps to the street (a dropped pin wins)',$("directionsHref(houseDest("+P2+"))")==='https://www.google.com/maps/dir/?api=1&destination=77%20Access%20Ct%2C%20Ferndale%2C%20MI'
+    &&$("houseDest({street:'1 A St',geo:{src:'pin',lat:42.5,lng:-83.1}})")==='42.500000,-83.100000'&&$("houseDest({street:'1 A St',geo:{src:'geocode',lat:42.5,lng:-83.1}})")==='1 A St');
+  /* the sheet */
+  $("openAccess('acc1')");
+  t('Getting in opens with the code, and the texted-links switch off',$("document.getElementById('accessScrim').classList.contains('show')")&&$("document.getElementById('accGate').value")==='4417'&&$("document.getElementById('accGateLinks').getAttribute('aria-checked')")==='false'&&$("document.getElementById('accWarn').textContent").indexOf('Texted links leave it out')>=0);
+  $("accToggleLinks()");
+  t('turning it on says anyone with a crew link can open it',$("document.getElementById('accGateLinks').getAttribute('aria-checked')")==='true'&&$("document.getElementById('accWarn').textContent").indexOf('Anyone with a crew link can open it')===0);
+  $("document.getElementById('accPhone').value='2485550142';saveAccess()");
+  t('Save keeps the switch with the code and tidies the phone',$("JSON.stringify("+P2+".siteAccess)").indexOf('"gateInLinks":true')>=0&&$(P2+".siteAccess.phone")==='(248) 555-0142'&&!$("document.getElementById('accessScrim').classList.contains('show')"));
+  $("openAccess('acc1');document.getElementById('accGate').value='';saveAccess()");
+  t('no code, no switch',$(P2+".siteAccess.gateInLinks")===undefined&&!$(P2+".siteAccess.gate"));
+  $("openAccess('acc1');document.getElementById('accGate').value='4417';accSetLinks(false);saveAccess()");
+  /* a teammate without This house reads it, and cannot save */
+  $("state.session={role:'builder',name:'Alex',member:true,rpRole:'pm',gates:{field:1,schedule:1,selections:1,site:0,jobs:1,moneyJob:0,moneyCo:0,people:1},auth:{uid:'uA'}}");
+  $("document.getElementById('infoScrim').classList.remove('show');openAccess('acc1')");
+  t('a teammate without This house sees the card read-only',$("document.getElementById('infoScrim').classList.contains('show')")&&$("document.getElementById('infoBody').textContent").indexOf('4417')>=0&&!$("document.getElementById('accessScrim').classList.contains('show')"));
+  $("try{closeInfo()}catch(e){}");
+  asBuilder();
+  /* packets: the code only when the builder turned it on */
+  const pk=JSON.parse($("(function(){var p="+P2+";var b=p.bookings[0];var off=packetSnapshot(p,b).ctx.access;p.siteAccess.gateInLinks=true;var on=packetSnapshot(p,b).ctx.access;delete p.siteAccess.gateInLinks;return JSON.stringify({off:off,on:on});})()"));
+  t('a texted packet leaves the gate code out unless it is turned on',pk.off&&!('gate' in pk.off)&&pk.off.parking&&pk.off.dest==='77 Access Ct, Ferndale, MI'&&pk.on.gate==='4417',JSON.stringify(pk));
+  t('a changed Getting in is news on the packet; Directions alone is not',$("pkDiffWhat({ctx:{access:{parking:'a'}}},{ctx:{access:{parking:'b'}}})")==='Getting in updated'&&$("pkDiffWhat({ctx:{}},{ctx:{access:{dest:'x'}}})")==='');
+  const gp=$("_gpAccessHTML({expires:Date.now()+5*864e5,ctx:{access:{gate:'4417',parking:'Street',contact:'Mike Torres, super',phone:'(248) 555-0142',dest:'1 A St'}}})");
+  t('the crew page shows the code with when the link stops working, Directions and Call Mike',gp.indexOf('4417')>=0&&gp.indexOf('this link stops working')>=0&&gp.indexOf('Directions')>=0&&gp.indexOf('Call Mike')>=0&&gp.indexOf('tel:2485550142')>=0,gp.slice(0,300));
+  t('the builder preview says when the code is left out of texted links',$("_gpAccessHTML({siteId:'acc1',expires:Date.now()+864e5,ctx:{access:{parking:'Street',dest:'1 A St'}}},true)").indexOf('The gate code is left out of texted links.')>=0&&$("_gpAccessHTML({siteId:'acc1',expires:Date.now()+864e5,ctx:{access:{parking:'Street',dest:'1 A St'}}},false)").indexOf('left out')<0);
+  t('on the crew card, Directions and Call come first',$("accessCardHTML("+P2+",'crew')").indexOf('acc-acts')<$("accessCardHTML("+P2+",'crew')").indexOf('Gate or lockbox code'));
+  const PH=require('fs').readFileSync(require('path').join(__dirname,'p.html'),'utf8');
+  t('the texted page (p.html) shows Getting in the same way, and the quiet builders line',PH.indexOf('function accessHTML(g)')>=0&&PH.indexOf('h+=accessHTML(g);')>=0&&PH.indexOf('this link stops working')>=0&&PH.indexOf('https://siteplumb.com/?ref=packet')>=0&&PH.indexOf('app/terms.html')>=0);
+  /* the crew house screen */
+  asSub('Timberline Framing');$("subSel='acc1';subTab='todo';renderSubView()");
+  const sv=$("document.getElementById('svBody').innerHTML");
+  t('the crew sees Getting in on the house with the code, Directions and Call',sv.indexOf('id="accCard"')>=0&&sv.indexOf('4417')>=0&&sv.indexOf('Keep this code to yourself.')>=0&&sv.indexOf('Directions')>=0&&sv.indexOf('href="tel:2485550142"')>=0,sv.slice(0,200));
+  t('the crew never sees the homeowner phone',sv.indexOf('555-0187')<0);
+  $("subSel=null");
+  /* the homeowner */
+  asClient('acc1');$("clientTab='home';renderClient()");
+  const cb=$("document.getElementById('clBody').textContent");
+  t('the homeowner never sees Getting in or the code',cb.indexOf('4417')<0&&cb.indexOf('Getting in')<0);
+  t('schedule status is off to start: the homeowner reads Build underway',cb.indexOf('Build underway')>=0&&cb.indexOf('behind')<0&&cb.indexOf('On track')<0,cb.slice(0,200));
+  $("renderSettings()");
+  t('homeowner Settings has the one quiet builders line',$("document.getElementById('settingsBody').innerHTML").indexOf('https://siteplumb.com/?ref=homeowner')>=0);
+  asBuilder();$("renderSettings()");
+  t('the builder Settings does not',$("document.getElementById('settingsBody').innerHTML").indexOf('?ref=homeowner')<0);
+  /* the homeowner card */
+  const tr=JSON.parse($("(function(){var p="+P2+";var SS=stagesFor(p);var cur=SS.findIndex(function(s){return !p.stageDone[s.id];});p.schedule=p.schedule||{};p.schedule[SS[cur].id]={start:Date.now()-20*864e5,end:Date.now()-10*864e5};"
+    +"var a=hoTrack(p).txt;p.hoSched={show:true,why:''};var b=hoTrack(p).txt;p.hoSched={show:true,why:'Waiting on the window delivery'};var c=hoTrack(p).txt;p.hoSched={show:false,why:''};return JSON.stringify([a,b,c]);})()"));
+  t('the builder decides: hidden says Build underway; shown says how far behind, with the reason',tr[0]==='Build underway'&&/^Running about 1\d days behind$/.test(tr[1])&&/ \u00b7 Waiting on the window delivery$/.test(tr[2]),JSON.stringify(tr));
+  t('the homeowner screen reads the same rule',$("String(renderClient)").indexOf('const track=hoTrack(p,SS,cur);')>=0&&SRC.indexOf("txt:'Running about '+dd")>=0&&(SRC.match(/Running about /g)||[]).length===1);
+  $("openHoCard('acc1')");
+  t('the Homeowner card opens with the phone, the switch off, and what the homeowner sees',$("document.getElementById('hoPhoneIn').value")==='(248) 555-0187'&&$("document.getElementById('hoSchedTg').getAttribute('aria-checked')")==='false'&&$("document.getElementById('hoSees').textContent")==='The homeowner sees: Build underway');
+  $("hoToggleSched();document.getElementById('hoWhyIn').value='Waiting on the window delivery';hoSeesPaint()");
+  t('turning it on shows the status and the reason before saving',$("document.getElementById('hoSees').textContent").indexOf('Waiting on the window delivery')>0&&$("document.getElementById('hoSees').textContent").indexOf('Running about')>0);
+  $("saveHoCard()");
+  t('Save keeps it on the house (never deleted, so a house save sends it)',$("JSON.stringify("+P2+".hoSched)")==='{"show":true,"why":"Waiting on the window delivery"}');
+  $(P2+".hoSched={show:false,why:''};true");
+  /* Call on crew rows */
+  $("Data.setActive('acc1');renderSubs()");
+  t('crew rows have Call when the crew has a phone',$("document.querySelectorAll('#subList a.call-btn[href^=\"tel:\"]').length")>=5);
+  t('the company roster rows get Call too',SRC.indexOf("callBtnHTML(x.r.phone,x.r.name,'Call','row-call')")>=0);
+  /* Needs you: act from the row */
+  const ny=JSON.parse($("JSON.stringify(_nyIssues(["+P2+"]).filter(function(x){return x.kind==='Date change'||x.kind==='Question';}).map(function(x){return [x.kind,nyActs(x,'home'),nyActs(x,'inbox')];}))"));
+  const dc=ny.find(function(x){return x[0]==='Date change';}),qq=ny.find(function(x){return x[0]==='Question';});
+  t('a date change row has OK the new dates and Call',dc&&dc[1].indexOf('OK the new dates')>=0&&dc[1].indexOf('href="tel:2485550123"')>=0,JSON.stringify(dc));
+  t('a question row has Answer and Call; from the inbox, Answer remembers the list',qq&&qq[1].indexOf('>Answer<')>=0&&qq[1].indexOf('tel:2485550123')>=0&&qq[2].indexOf('inbHold();nyOpenAsk(')>=0,JSON.stringify(qq));
+  t('the home rows and the house page carry the actions',SRC.indexOf("acts:nyActs(it,'home')")>=0&&SRC.indexOf("+(n.acts||'')+")>=0&&SRC.indexOf("nyActs(it,'house')")>=0&&SRC.indexOf("nyActs(r,'inbox')")>=0);
+  $("(function(){var p="+P2+";var b=p.bookings.find(function(x){return x.pkResp&&x.pkResp.status==='change';});window.__dcb=b.id;nyOkDates('acc1',b.id);return true;})()");
+  t('OK asks once',$("document.getElementById('confirmScrim').classList.contains('show')")&&$("document.getElementById('confirmScrim').textContent").indexOf('Confirm these dates')>=0);
+  $("ocConfirm()");
+  t('then the crew is moved to the dates they asked for',$("(function(){var b="+P2+".bookings.find(function(x){return x.id===window.__dcb;});return b.status==='confirmed'&&dayStart(b.start)===dayStart(b.pkResp.start)&&b.pkResp.status==='confirmed';})()")===true);
+  t('a crew or homeowner never gets the row actions',$("(function(){var s=state.session;state.session={role:'subs',name:'x'};var r=nyActs({kind:'Question',pid:'acc1',bid:"+P2+".bookings[0].id});state.session=s;return r;})()")==='');
+  /* How did you hear */
+  $("(function(){window.__opKeep=localStorage.getItem('plumb.orgPrefs');var o=orgPrefs();delete o.heard;localStorage.setItem('plumb.orgPrefs',JSON.stringify(o));localStorage.setItem('plumb.ref',JSON.stringify({r:'packet',t:1}));return true;})()");
+  const ha=$("heardAskHTML(true)");
+  t('How did you hear has five one-tap answers',(ha.match(/class="call-btn"/g)||[]).length===5&&ha.indexOf('A crew')>=0&&ha.indexOf('Another builder')>=0);
+  t('it only asks a live owner (never the example build)',$("heardAskHTML()")==='');
+  $("document.body.insertAdjacentHTML('beforeend','<div id=\"heardHost\">'+heardAskHTML(true)+'</div>');heardPick('crew')");
+  t('a tap saves it with the company record, with the page that sent them',$("JSON.stringify({how:orgPrefs().heard.how,ref:orgPrefs().heard.ref})")==='{"how":"crew","ref":"packet"}'&&$("document.getElementById('heardAsk').textContent")==='Thanks. That helps.'&&$("heardAskHTML(true)")==='');
+  $("document.getElementById('heardHost').remove();(function(){if(window.__opKeep==null)localStorage.removeItem('plumb.orgPrefs');else localStorage.setItem('plumb.orgPrefs',window.__opKeep);localStorage.removeItem('plumb.ref');})()");
+  t('the first-house sheet and the setup finish ask it',SRC.indexOf("b+=heardAskHTML();")>=0&&SRC.indexOf("`)+heardAskHTML());")>=0);
+  const ROOT=require('fs').readFileSync(require('path').join(__dirname,'..','index.html'),'utf8');
+  t('the site remembers which page sent the visitor',ROOT.indexOf("localStorage.setItem('plumb.ref'")>=0);
+  /* Terms */
+  const TERMS=require('fs').readFileSync(require('path').join(__dirname,'terms.html'),'utf8');
+  t('the Terms say SitePlumb, not the old name',!/\bPLUMB (IS|WILL)\b/.test(TERMS)&&(TERMS.match(/SITEPLUMB (IS|WILL)/g)||[]).length===3);
+  t('the Terms cover shared links and gate codes',TERMS.indexOf('Shared links and site access.')>=0&&TERMS.indexOf('changing gate and lockbox codes when a job is done')>=0);
+  t('the in-app notice uses the same date as the Terms',TERMS.indexOf('Effective November 25, 2026')>=0&&$("termsAt()")==='2026-11-25');
+  t('the notice is for live accounts only (none in the example build)',$("termsNoteDue()")===false&&$("termsNoteHTML()")==='');
+  t('the three homes carry the notice',SRC.indexOf("let h=termsNoteHTML();")>=0&&SRC.indexOf("h+=termsNoteHTML();")>=0&&SRC.indexOf("On this device</span></div>'+termsNoteHTML()+'")>=0);
+  /* sign in */
+  t('the Terms line sits right above the Sign in button',$("(function(){var t=document.getElementById('laTerms'),g=document.getElementById('laGo');return !!t&&!!g&&t.nextElementSibling===g;})()")===true&&(SRC.match(/By signing in or creating an account you agree/g)||[]).length===1);
+  $("laMode='signin';liveAuthToggle()");
+  t('creating an account says Agree and create account',$("document.getElementById('laGo').textContent")==='Agree and create account');
+  $("liveAuthToggle()");
+  t('signing in still says Sign in',$("document.getElementById('laGo').textContent")==='Sign in');
+  /* leftovers */
+  t('permit rows say the status once (the timeline label under the picker is hidden)',SRC.indexOf('.permit-row .permit-tl .tstep.cur .tlbl{display:none;}')>=0&&SRC.indexOf('title="${st}" role="button" aria-label="${st}"')>=0);
+  $("(function(){state.projects=state.projects.filter(function(x){return x.id!=='acc1';});if(state.projects.length)Data.setActive(state.projects[0].id);return true;})()");
 })();
 
 /* ════ CALENDAR DAYS ACROSS THE CLOCK CHANGE (2.524.0) ════
