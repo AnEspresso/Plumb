@@ -497,6 +497,8 @@ The design premise: **subs live in text messages, not apps.** So the packet arri
 - **Never map a permission-denied packet read to "this link has expired."** iMessage's in-app browser often fails App Check on the first try. Retry quietly; say "needs a connection" if it still cannot open.
 - **Do not skip waiting packet sweeps for 30 minutes.** After a send, the first stamp is "no reply." A 30-minute skip hides the sub's reply. Waiting packets refresh after 12 seconds.
 - **Confirm these dates must write the open booking fields.** A toast without refreshing `#bkStart` / `#bkEnd` lets Save write the old dates back over the accept.
+- **Gate codes and the homeowner phone never ride the house doc (2.526.0).** Every member reads `sites/{id}`, homeowners included. Getting in rides `docs/site-access` (aud `subs`: builders and crews) and the homeowner card rides `docs/site-team` (aud `team`: builders only), because `docs` is the one collection the rules filter by audience. The docs listener hands them to `p.siteAccess` / `p.siteTeam` (`Sync._siteRecSnap`), `metaOf` strips them, and a cleared field is deleted by name on push (the docs write merges). A texted packet carries the gate code only when the builder turns on "Include the code in texted crew links".
+- **A house-doc field is never deleted to turn something off.** `metaDelta` sends only the keys present, so a deleted key stays on the server. Write `{show:false}` instead (see `p.hoSched`).
 
 ---
 

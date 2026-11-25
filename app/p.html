@@ -109,6 +109,10 @@ h1,h2,h3{font-family:var(--f-serif);font-weight:600;line-height:var(--lh-tight);
 .rem{display:flex;align-items:center;gap:var(--s-2);min-height:var(--tap);font-size:var(--t-sm);color:var(--ink-2)}
 .rem input{width:auto;min-height:auto}
 .btn[disabled]{opacity:.45;pointer-events:none}
+.acc-acts{display:flex;gap:var(--s-2);margin-top:var(--s-3);}
+.acc-acts .btn{flex:1;text-decoration:none;}
+.acc-acts .btn+.btn{margin-top:0;}
+.foot a{color:inherit;}
 </style>
 </head>
 <body>
@@ -214,6 +218,24 @@ function fail(msg,retry){
 function row(title,sub,aside,asideCls){
   return '<div class="row"><div class="row-main"><div class="row-title">'+esc(title)+'</div>'+(sub?('<div class="row-sub">'+sub+'</div>'):'')+'</div>'+(aside?('<span class="row-aside'+(asideCls?(' '+asideCls):'')+'">'+esc(aside)+'</span>'):'')+'</div>';
 }
+/* 2.526.0: Getting in. The gate code is here only when the builder turned that on. */
+function accHref(dest){if(!dest)return "";var ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  return ios?("https://maps.apple.com/?daddr="+encodeURIComponent(dest)):("https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(dest));}
+function accTel(ph){var d=String(ph||"").replace(/[^0-9+]/g,"");return d.replace(/\D/g,"").length>=7?("tel:"+d):"";}
+function accessHTML(g){
+  var a=(g&&g.ctx&&g.ctx.access)||null;if(!a)return "";
+  var h='<div class="sec"><h2>Getting in</h2></div>';
+  var stop=new Date(g.expires||Date.now()).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  if(a.gate)h+=row(a.gate,"Gate or lockbox code \u00b7 keep it to yourself \u00b7 this link stops working "+esc(stop),"","");
+  if(a.parking)h+=row(a.parking,"Where to park","","");
+  if(a.power)h+=row(a.power,"Power and water","","");
+  if(a.dumpster)h+=row(a.dumpster,"Dumpster and porta-john","","");
+  if(a.contact||a.phone)h+=row([a.contact,a.phone].filter(Boolean).join(" \u00b7 "),"Who to call on site","","");
+  if(a.note)h+=row(a.note,"Anything else","","");
+  var dh=accHref(a.dest),th=accTel(a.phone),nm=String(a.contact||"").trim().split(/[\s,]+/)[0]||"";
+  if(dh||th)h+='<div class="acc-acts">'+(dh?('<a class="btn btn-secondary" href="'+esc(dh)+'" target="_blank" rel="noopener">Directions</a>'):"")+(th?('<a class="btn btn-secondary" href="'+esc(th)+'">'+esc(nm?("Call "+nm):"Call")+"</a>"):"")+"</div>";
+  return h;
+}
 function paint(){
   var g=_snap,body=document.getElementById("body");
   if(!g){fail("This link has expired or was replaced. Reply to the text you got and your builder will send a fresh one.");return;}
@@ -260,6 +282,7 @@ function paint(){
     h+='<button class="btn btn-secondary btn-block" onclick="gpToggleChange()">Suggest different dates</button>';
     h+=chgHTML();
   }
+  h+=accessHTML(g);
   var cx=g.ctx||{};
   if(cx.ready||cx.permit||cx.insp){
     if(cx.ready)h+=row("House ready",esc(cx.ready),cx.readyOk?"Ready":"Not ready",cx.readyOk?"ok":"warn");
@@ -320,7 +343,8 @@ function paint(){
     +'<option value="device"'+(cp==="device"?" selected":"")+">This device\u2019s calendar</option>"
     +'<option value="google"'+(cp==="google"?" selected":"")+">Google Calendar</option></select></div>"
     +'<div class="sub">Saved on this phone.</div></div>';
-  h+='<div class="foot">Sent with SitePlumb \u00b7 this link expires '+new Date(g.expires||Date.now()).toLocaleDateString()+"</div>";
+  h+='<div class="foot">Sent with SitePlumb \u00b7 this link expires '+new Date(g.expires||Date.now()).toLocaleDateString()
+    +'<br><a href="https://siteplumb.com/?ref=packet" target="_blank" rel="noopener">Builders: see how SitePlumb works</a> \u00b7 <a href="https://siteplumb.com/app/terms.html" target="_blank" rel="noopener">Terms</a></div>';
   body.innerHTML=h;
 }
 function chgHTML(){

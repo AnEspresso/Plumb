@@ -8,6 +8,7 @@
    a home-screen launch must never flash the sales page. */
 try{
   var q=new URLSearchParams(location.search||'');
+  try{var ref=q.get('ref')||'';if(/^[a-z-]{2,20}$/.test(ref))localStorage.setItem('plumb.ref',JSON.stringify({r:ref,t:Date.now()}));}catch(e){}
   var mode=q.get('mode')||'';
   var code=(q.get('oobCode')||'').trim();
   if(code&&(mode==='resetPassword'||mode==='verifyEmail'||mode==='recoverEmail'||mode==='signIn'))
