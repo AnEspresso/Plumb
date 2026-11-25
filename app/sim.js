@@ -45,6 +45,9 @@ function boot(){
 (async()=>{
 const w=await boot();
 const $=c=>w.$eval(c);
+/* 2.524.0: a priced approval and taking an OK back now ask first. simSignoff taps the button and, when the
+   confirm opens, taps its OK, so the money stories below still play end to end. The confirm itself is tested in its own section. */
+w.$eval("window.simSignoff=function(id){var r=clientSignoff(id);var sc=document.getElementById('confirmScrim');if(sc&&sc.classList.contains('show')){var f=_ocAction;_ocAction=null;_ocCancel=null;sc.classList.remove('show');if(typeof f==='function')return f();}return r;};true");
 /* Chip selections persist across sections - reset before asserting on them. */
 w.$eval("window._simClearChips=function(){['#areaChips','#recAreaChips'].forEach(function(id){var b=document.querySelector(id);if(!b)return;[].forEach.call(b.querySelectorAll('.chip.on'),function(c){c.classList.remove('on');});if(typeof syncAreaExclusivity==='function')syncAreaExclusivity(b);});}");
 const D=w.document;
@@ -445,7 +448,7 @@ t('2.491.0: two different houses on the same street are told apart by a short id
 $("(function(){var o=__o4;state.session=o.s;state.projects=o.p;_ovSort=o.srt;document.execCommand=o.ex;try{Object.defineProperty(navigator,'clipboard',{value:o.cb,configurable:true});}catch(e){}window._errAll=o.all;if(o.e===null)localStorage.removeItem('plumb.errors');else localStorage.setItem('plumb.errors',o.e);var b=document.getElementById('errReportBox');if(b)b.remove();delete window.__o4;return true;})()");
 }
 
-t('SEED_VERSION 21',$('SEED_VERSION')===21);
+t('SEED_VERSION 22',$('SEED_VERSION')===22);
 t('10 seed sites',$('state.projects.length')===10);
 /* 2.493.0: a signed-in account never keeps demo houses; the demo still seeds */
 t('2.493.0: the app starts with an empty list in memory',/let state=emptyState\(\);/.test(SRC));
@@ -538,10 +541,10 @@ t('Decisions stat equals union invariant', decCount===1?cl.includes('One thing s
 // pending items refuse sign-off; selected items sign
 asClient('p1');
 $("Data.updateSelection("+simSelId+",{status:'pending'})");
-$("clientSignoff("+simSelId+")");
+$("simSignoff("+simSelId+")");
 t('pending blocks sign-off',$("state.projects[0].selections.find(s=>s.id==="+simSelId+").approved")===false);
 $("Data.updateSelection("+simSelId+",{status:'selected'})");
-$("clientSignoff("+simSelId+")");
+$("simSignoff("+simSelId+")");
 const signed=$("state.projects[0].selections.find(s=>s.id==="+simSelId+").signed");
 t('sign-off recorded with buyer names',!!(signed&&signed.by&&signed.by.length),JSON.stringify(signed));
 // ledger agreement: upcharge flows to every money surface identically
@@ -605,6 +608,31 @@ cl=clientHTML('p3','docs');
 t('homeowner sees it once granted',cl.includes('Sim Internal Bid'));
 sv=subSiteHTML('Brightpath Electric','p3');
 t('sub still cannot (homeowner-only)',!sv.includes('Sim Internal Bid'));
+
+/* 2.524.0: a new document starts Team only; a packet document starts Team + crews; money papers warn before crews see them */
+S('documents start private (2.524.0)');
+asBuilder();$("state.activeId='p3'");
+$("document.getElementById('docAud').value='all';openAddDoc()");
+t('Add document opens on Team only, even after a wider pick last time',el('docAud').value==='team');
+t('no warning shows for Team only',el('docAudWarn').classList.contains('hide')&&el('docAudWarnCrew').classList.contains('hide'));
+$("document.getElementById('docType').value='Construction Contract';document.getElementById('docAud').value='subs';docAudHint()");
+t('choosing Team + crews for the contract shows the crew money warning',!el('docAudWarnCrew').classList.contains('hide')&&el('docAudWarn').classList.contains('hide'));
+$("document.getElementById('docAud').value='homeowner';docAudHint()");
+t('Team + homeowner shows the homeowner warning (it never showed before)',!el('docAudWarn').classList.contains('hide')&&el('docAudWarnCrew').classList.contains('hide'));
+$("document.getElementById('docType').value='Approved Building Plans';document.getElementById('docAud').value='subs';docAudHint()");
+t('plans shared with crews do not warn',el('docAudWarnCrew').classList.contains('hide'));
+$("closeAddDoc();addPacketDoc('plumbing')");
+t('a document added from a trade packet starts Team + crews',el('docAud').value==='subs');
+$("closeAddDoc()");
+t('example build: contracts and lien waivers are Team + homeowner, not shared with crews',$("JSON.stringify(state.projects.reduce(function(a,p){(p.docs||[]).forEach(function(d){if(/Construction Contract|Lien Waiver/.test(d.n||''))a.push(d.aud);});return a;},[]))").indexOf('"all"')<0&&$("state.projects.some(function(p){return (p.docs||[]).some(function(d){return /Construction Contract/.test(d.n||'');});})"));
+sv=subSiteHTML('Clearwater Plumbing','p2');
+t('the plumbing crew no longer sees the contract or lien waivers',!sv.includes('Construction Contract')&&!sv.includes('Lien Waiver'));
+cl=clientHTML('p2','docs');
+t('the homeowner still sees the contract and lien waivers',cl.includes('Construction Contract')&&cl.includes('Lien Waiver'));
+asBuilder();$("state.activeId='p3'");
+$("(function(){var p=state.projects.find(function(p){return p.id==='p3';});p.docs.unshift({n:'Sim Crew Contract.pdf',aud:'subs',m:'x',k:'pdf'});renderDocs();})()");
+t('a contract already shared with crews says so in the list',(el('docList')||D.body).innerHTML.indexOf('Crews can see this')>=0);
+$("(function(){var p=state.projects.find(function(p){return p.id==='p3';});p.docs=p.docs.filter(function(d){return d.n!=='Sim Crew Contract.pdf';});})()");
 
 /* 2.516.0: the crew's Documents tab shows All-trades docs (no trade) unless hidden from that trade, plus their own trade's */
 S('crew documents tab (2.516.0)');
@@ -3281,7 +3309,7 @@ const ACTIONS=[
   r=>{asBuilder();const p=PIDS[Math.floor(r()*4)];$("state.activeId='"+p+"'");const st=['site','foundation','framing','final'][Math.floor(r()*4)];$("setStageWindow('"+p+"','"+st+"')");if(el('promptScrim').classList.contains('show')){if(r()<0.5)promptOK(new Date(Date.now()+864e5*Math.floor(r()*30)).toISOString().slice(0,10));else $('closePrompt()');if(el('promptScrim').classList.contains('show'))promptOK('');}},
   r=>{asBuilder();$("state.activeId='p3'");const i=Math.floor(r()*$("(state.projects.find(p=>p.id==='p3').docs||[]).length"));$('setDocAud('+i+',DOC_AUD_ORDER['+Math.floor(r()*4)+'])');},
   r=>{const b=$("JSON.stringify((state.projects[0].bookings||[]).map(x=>x.id))");const ids=JSON.parse(b);if(!ids.length)return;const id=ids[Math.floor(r()*ids.length)];asSub('Timberline Framing');$("bkSetStatus&&(state.projects[0].bookings.find(x=>x.id==='"+id+"')||0)&&svBkConfirm('p1','"+id+"')");},
-  r=>{asClient('p1');const s=$("JSON.stringify((state.projects[0].selections||[]).map(x=>x.id))");const ids=JSON.parse(s);if(ids.length)$('clientSignoff('+ids[Math.floor(r()*ids.length)]+')');},
+  r=>{asClient('p1');const s=$("JSON.stringify((state.projects[0].selections||[]).map(x=>x.id))");const ids=JSON.parse(s);if(ids.length)$('simSignoff('+ids[Math.floor(r()*ids.length)]+')');},
   /* ── broadened catalogue (backlog): permits, inspections, concerns/ideas, modal bookings, invoice composer, wizard ── */
   r=>{asBuilder();$("state.activeId='"+PIDS[Math.floor(r()*4)]+"'");$('addPermit()');if(el('promptScrim').classList.contains('show')){if(r()<0.7)promptOK('Fuzz Permit '+Math.floor(r()*1e4));else $('closePrompt()');}},
   r=>{asBuilder();$("state.activeId='"+PIDS[Math.floor(r()*4)]+"'");const n=$("(P().permits||[]).length");if(n)$("setPermit("+Math.floor(r()*n)+",'"+['Not started','Applied','Approved','Issued','Closed'][Math.floor(r()*5)]+"')");},
@@ -3343,7 +3371,7 @@ S('money-due');
   t('money: fixture has charges not on an invoice',b.unbilled>0.005&&b.billed>0.005,JSON.stringify(b));
   t('money: due = invoiced minus received on those invoices',b.balanceDue===b.billed-b.invPaid&&b.balanceDue===2000,JSON.stringify(b));
   t('money: Money shows $2,000 due, not the uninvoiced total',/\$2,000(\.00)? due/.test(html)&&!/\$4,000(\.00)? due/.test(html),html.slice(-400));
-  t('money: paid on invoices is the invoice payments, so the row adds up',/\$3,000(\.00)? invoiced &middot; \$1,000(\.00)? paid on invoices/.test(html.replace(/<\/?span[^>]*>/g,'')),html.slice(-400));
+  t('money: paid on invoices is the invoice payments, so the row adds up',/\$3,000(\.00)? invoiced<\/div><div class="row-sub">\$1,000(\.00)? paid on invoices/.test(html.replace(/<\/?span[^>]*>/g,'')),html.slice(-400));
   t('money: uninvoiced charges get their own line',/\$2,000(\.00)? not yet invoiced/.test(html),html.slice(-400));
   t('money: no uninvoiced line when everything is invoiced',!/not yet invoiced/.test($("moneyTotHTML({id:'zy',name:'x',selections:[{id:902,price:3000}],invoices:[{id:'i2',status:'sent',total:3000,payments:[]}],payments:[],costs:[]})")));
   t('money: old due (net minus all payments) is gone',SRC.indexOf('const owed=Math.max(0,bill.out)')<0&&SRC.indexOf('const owed=bill.balanceDue')>=0);
@@ -3608,7 +3636,7 @@ S('allowances');
   t('(a) an unapproved overage is out of Contract and left',Math.abs(mid.net-before.net)<0.005&&Math.abs(mid.out-before.out)<0.005&&mid.line===before.line,JSON.stringify([before.net,mid.net,mid.line]));
   t('(a) Money shows it as waiting on the homeowner',mid.waiting===120&&mid.tot.indexOf('$120.00 waiting on the homeowner')>=0);
   t('(a) it cannot go on an invoice until approved; the ledger lists it as waiting, not as an overage',mid.unb===before.unb&&mid.led.indexOf('Sim faucet allowance')<0&&mid.led.indexOf('Waiting on the homeowner')>=0);
-  asClient('p1');$("clientSignoff("+s1.id+")");asBuilder();$("state.activeId='p1'");
+  asClient('p1');$("simSignoff("+s1.id+")");asBuilder();$("state.activeId='p1'");
   const ap=JSON.parse($("JSON.stringify((function(p){var b=billingSummary(p);return {net:b.net,waiting:b.waiting,unb:unbilledSelections(p).length,tot:moneyTotHTML(p)};})(P()))"));
   t('(a) once the homeowner approves, the overage counts and can be invoiced',Math.abs(ap.net-(before.net+120))<0.005&&ap.waiting===0&&ap.unb===before.unb+1&&ap.tot.indexOf('waiting on the homeowner')<0,JSON.stringify(ap.net));
 
@@ -3657,7 +3685,7 @@ S('allowances-2');
   const SEL=n=>"P().selections.find(function(s){return s.item==='"+n+"';})";
   const get=n=>JSON.parse($("JSON.stringify("+SEL(n)+"||null)"));
   const hint=()=>({t:el('selCostHint').textContent,clay:el('selCostHint').classList.contains('c-clay')});
-  const approve=id=>{asClient('p1');$("clientSignoff("+id+")");asBuilder();$("state.activeId='p1'");};
+  const approve=id=>{asClient('p1');$("simSignoff("+id+")");asBuilder();$("state.activeId='p1'");};
   const card=id=>{const h=clientHTML('p1','specs');asBuilder();$("state.activeId='p1'");const m=h.split('id="clsel-'+id+'"')[1];return m?m.split('class="sel-row"')[0]:'';};
   const txt=h=>h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
   asBuilder();$("state.activeId='p1'");
@@ -3755,15 +3783,15 @@ await (async function(){
   t('live house starts unapproved',btn()==='Approve');
 
   /* accepted */
-  $("window.__apP=clientSignoff(901);true");await tick();
+  $("window.__apP=simSignoff(901);true");await tick();
   t('accepted: the button says Saving… and is disabled while the server answers',btn()==='Saving…|disabled',btn());
   t('saving style: the disabled homeowner button is faded and grey, from tokens (Ink)',SRC.indexOf('.cl-sign:disabled{opacity:.5;border-color:var(--ink-3);color:var(--ink-3);')>=0&&$("getComputedStyle(document.querySelector('#clsel-901 .cl-sign')).opacity")==='0.5',$("getComputedStyle(document.querySelector('#clsel-901 .cl-sign')).opacity"));
   t('accepted: nothing is approved here and no toast before the server answers',rec().approved===false&&$("__ap.toasts.length")===0,JSON.stringify(rec())+' '+$("JSON.stringify(__ap.toasts)"));
   const w0=JSON.parse($("JSON.stringify(__ap.writes[0]||null)"));
   t('accepted: one write to sites/apv1/sel/901',$("__ap.writes.length")===1&&$("__ap.path")==='sites/apv1/sel/901',$("__ap.path"));
-  t('accepted: the write is only {data:{approved,signed},updatedAt,updatedBy} with merge',
-    !!w0&&Object.keys(w0.d).sort().join()==='data,updatedAt,updatedBy'&&Object.keys(w0.d.data).sort().join()==='approved,signed'&&w0.d.data.approved===true&&!!(w0.d.data.signed&&w0.d.data.signed.by&&w0.d.data.signed.by.length)&&w0.d.updatedBy==='devH'&&typeof w0.d.updatedAt==='number'&&!!(w0.o&&w0.o.merge),JSON.stringify(w0));
-  $("clientSignoff(901);true");await tick();
+  t('accepted: the write is only {data:{approved,approvedAt,signed},updatedAt,updatedBy} with merge (2.524.0: when, as a number)',
+    !!w0&&Object.keys(w0.d).sort().join()==='data,updatedAt,updatedBy'&&Object.keys(w0.d.data).sort().join()==='approved,approvedAt,signed'&&w0.d.data.approved===true&&typeof w0.d.data.approvedAt==='number'&&w0.d.data.signed.at===w0.d.data.approvedAt&&!!(w0.d.data.signed&&w0.d.data.signed.by&&w0.d.data.signed.by.length)&&w0.d.updatedBy==='devH'&&typeof w0.d.updatedAt==='number'&&!!(w0.o&&w0.o.merge),JSON.stringify(w0));
+  $("simSignoff(901);true");await tick();
   t('accepted: a second tap while saving writes nothing',$("__ap.writes.length")===1);
   $("__ap.pend.res()");await $("__apP");await tick();
   t('accepted: approved locally once the server took it',rec().approved===true&&!!rec().signed,JSON.stringify(rec()));
@@ -3773,9 +3801,9 @@ await (async function(){
   t('accepted: the approved record is not queued again',$("diffSiteOps(Object.assign({},Sync._shadow.apv1,{meta:_syncHash(JSON.stringify(metaOf(state.projects.find(x=>x.id==='apv1'))))}),state.projects.find(x=>x.id==='apv1')).filter(o=>o.sub==='sel'&&o.id==='901').length")===0);
 
   /* refused: taking the OK back is denied */
-  $("__ap.toasts=[];window.__apP=clientSignoff(901);true");await tick();
+  $("__ap.toasts=[];window.__apP=simSignoff(901);true");await tick();
   t('refused: Saving… while waiting',btn()==='Saving…|disabled',btn());
-  t('refused: the write takes the OK back (approved false, signed null)',$("JSON.stringify(__ap.writes[1].d.data)")==='{"approved":false,"signed":null}',$("JSON.stringify(__ap.writes[1].d.data)"));
+  t('refused: the write takes the OK back (approved false, approvedAt and signed null)',$("JSON.stringify(__ap.writes[1].d.data)")==='{"approved":false,"approvedAt":null,"signed":null}',$("JSON.stringify(__ap.writes[1].d.data)"));
   $("__ap.pend.rej({code:'permission-denied',message:'Missing or insufficient permissions.'})");await $("__apP");await tick();
   t('refused: nothing changes here',rec().approved===true&&!!rec().signed,JSON.stringify(rec()));
   t('refused: the new toast',$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Not approved yet. Ask your builder to check your access.']),$("JSON.stringify(__ap.toasts)"));
@@ -3783,7 +3811,7 @@ await (async function(){
   t('refused: the card is back to ✓ Approved and tappable',btn()==='✓ Approved',btn());
 
   /* other error */
-  $("__ap.toasts=[];window.__apP=clientSignoff(901);true");await tick();
+  $("__ap.toasts=[];window.__apP=simSignoff(901);true");await tick();
   $("__ap.pend.rej({code:'unavailable',message:'offline'})");await $("__apP");await tick();
   t('other error: nothing changes and the signal toast shows',rec().approved===true&&$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Could not save \u2014 try again with a bar of signal']),$("JSON.stringify(__ap.toasts)"));
 
@@ -3794,11 +3822,11 @@ await (async function(){
     window.__apSIV=Element.prototype.scrollIntoView;window.__apJumps=0;Element.prototype.scrollIntoView=function(){__apJumps++;b.scrollTop=999;};
     _clientFocusSel='901';b.scrollTop=200;__ap.toasts=[];return true;})()`);
   const st=()=>$("document.getElementById('clBody').scrollTop");
-  $("window.__apP=clientSignoff(902);true");await tick();
+  $("window.__apP=simSignoff(902);true");await tick();
   t('scroll: the Saving render stays put (no jump back to a deep-linked card)',st()===200&&$("__apJumps")===0&&$("_clientFocusSel")===null,st()+' jumps='+$("__apJumps"));
   $("__ap.pend.res()");await $("__apP");await tick();
   t('scroll: the accepted render stays put',st()===200&&$("__apJumps")===0&&$("state.projects.find(x=>x.id==='apv1').selections[1].approved")===true,st());
-  $("document.getElementById('clBody').scrollTop=150;_clientFocusSel='901';window.__apP=clientSignoff(902);true");await tick();
+  $("document.getElementById('clBody').scrollTop=150;_clientFocusSel='901';window.__apP=simSignoff(902);true");await tick();
   $("__ap.pend.rej({code:'permission-denied'})");await $("__apP");await tick();
   t('scroll: the refused render stays put',st()===150&&$("__apJumps")===0,st());
 
@@ -3806,7 +3834,7 @@ await (async function(){
   $("document.getElementById('clBody').scrollTop=120;_clientFocusSel='901';true");
   $("__ap.toasts=[];Object.defineProperty(navigator,'onLine',{configurable:true,get:function(){return false;}});true");
   const nW=$("__ap.writes.length");
-  await $("clientSignoff(901)");await tick();
+  await $("simSignoff(901)");await tick();
   t('offline: no write, nothing changes, the signal toast shows',$("__ap.writes.length")===nW&&rec().approved===true&&$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Could not save \u2014 try again with a bar of signal']),$("JSON.stringify(__ap.toasts)"));
   t('offline: the card is not stuck on Saving…',btn()==='✓ Approved',btn());
   t('scroll: offline does not move the list',st()===120&&$("__apJumps")===0,st());
@@ -3816,13 +3844,13 @@ await (async function(){
   $("__ap.toasts=[];state.session={role:'client',site:'p2',auth:{uid:'uH'}};renderClient();true");
   const smp=$("(function(){var s=state.projects.find(x=>x.id==='p2').selections.find(x=>x.status!=='pending'&&!x.approved);return s?s.id:-1;})()");
   const nW2=$("__ap.writes.length");
-  $("clientSignoff("+smp+")");
+  $("simSignoff("+smp+")");
   t('sample: approves at once, no server write, the existing toast',smp>=0&&$("state.projects.find(x=>x.id==='p2').selections.find(x=>x.id==="+smp+").approved")===true&&$("__ap.writes.length")===nW2&&$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Approved. Thank you.']),'sel='+smp+' '+$("JSON.stringify(__ap.toasts)"));
-  $("clientSignoff("+smp+")");
+  $("simSignoff("+smp+")");
   /* demo mode, any house: the local path */
   $("appMode=__ap.o.am;__ap.toasts=[];state.session={role:'client',site:'apv1',auth:{uid:'uH'}};true");
   const nW3=$("__ap.writes.length");
-  $("clientSignoff(901)");
+  $("simSignoff(901)");
   t('demo: the local path, no server write',rec().approved===false&&$("__ap.writes.length")===nW3&&$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Final OK removed']));
   t('wording: Agency\u2019s refused string and Saving… is reused',SRC.indexOf("toast(denied?'Not approved yet. Ask your builder to check your access.':SIGNAL)")>=0&&SRC.indexOf("disabled aria-busy=\"true\">Saving…</button>")>=0);
 
@@ -3955,7 +3983,7 @@ S('allowances-3');
   const st=n=>JSON.parse($("JSON.stringify(chargeState(selCharge("+SEL(n)+",P())))"));
   const unb=n=>$("selUnbilledAmt(P(),"+SEL(n)+")");
   const hint=()=>({t:el('selCostHint').textContent,clay:el('selCostHint').classList.contains('c-clay')});
-  const approve=id=>{asClient('p1');$("clientSignoff("+id+")");asBuilder();$("state.activeId='p1'");};
+  const approve=id=>{asClient('p1');$("simSignoff("+id+")");asBuilder();$("state.activeId='p1'");};
   const card=id=>{const h=clientHTML('p1','specs');asBuilder();$("state.activeId='p1'");const m=h.split('id="clsel-'+id+'"')[1];return m?m.split('class="sel-row"')[0]:'';};
   const txt=h=>h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
   const bs=()=>JSON.parse($("JSON.stringify((function(b){return {net:b.net,billed:b.billed,unbilled:b.unbilled,waiting:b.waiting};})(billingSummary(P())))"));
@@ -6304,6 +6332,67 @@ await (async function(){
 
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
   try{w2.close();}catch(e){}
+})();
+
+/* ════ APPROVALS SAY WHAT WAS AGREED (2.524.0) ════ */
+S('approvals say what was agreed');
+(function(){
+  const sel=id=>JSON.parse($("JSON.stringify(state.projects.find(function(p){return p.id==='p2';}).selections.find(function(s){return s.id==="+id+";}))"));
+  const conf=()=>JSON.parse($("JSON.stringify({open:document.getElementById('confirmScrim').classList.contains('show'),title:document.getElementById('ocTitle').textContent,body:document.getElementById('ocBody').textContent,ok:document.getElementById('ocGo').textContent})"));
+  asClient('p2');$("clientTab='specs';renderClient()");
+  $("clientSignoff(10)");let c=conf();
+  t('a priced item asks first, with the price on screen',c.open&&/Approve Direct-vent linear fireplace\?/.test(c.title)&&c.body.indexOf('+$2,200.00')>=0&&c.ok==='Approve',JSON.stringify(c));
+  $("ocCancel()");
+  t('Not yet leaves it unapproved',sel(10).approved===false);
+  $("clientSignoff(10)");$("ocConfirm()");let s=sel(10);
+  t('Approve saves the OK with when it was given',s.approved===true&&typeof s.approvedAt==='number'&&!!s.signed&&s.signed.at===s.approvedAt&&!!s.signed.date,JSON.stringify(s));
+  t('no price is written onto the selection itself (crews read it)',!('price' in (s.signed||{}))&&$("Object.keys(selNoMoney(state.projects.find(function(p){return p.id==='p2';}).selections.find(function(s){return s.id===10;}))).indexOf('price')")===-1);
+  $("state.projects.find(function(p){return p.id==='p2';}).selections.find(function(s){return s.id===10;}).status='ordered';renderClient()");
+  $("clientSignoff(10)");c=conf();
+  t('once ordered, the homeowner is sent to the builder instead of taking the OK back',c.open&&c.title==='Already ordered'&&c.ok==='Ask my builder',JSON.stringify(c));
+  $("ocCancel()");
+  t('Keep my OK keeps it',sel(10).approved===true);
+  $("state.projects.find(function(p){return p.id==='p2';}).selections.find(function(s){return s.id===10;}).status='selected';renderClient()");
+  $("clientSignoff(10)");c=conf();
+  t('taking an OK back asks first',c.open&&c.title==='Remove your OK?'&&c.ok==='Remove my OK',JSON.stringify(c));
+  $("ocConfirm()");s=sel(10);
+  t('Remove my OK clears it',s.approved===false&&s.approvedAt===null&&s.signed===null,JSON.stringify(s));
+  $("clientSignoff(7)");c=conf();
+  t('an item with no price is still one tap',!c.open&&sel(7).approved===true,JSON.stringify(c));
+  $("clientSignoff(7)");$("ocConfirm()");
+  /* builder: a new price on an approved upgrade goes back to the homeowner */
+  $("clientSignoff(10)");$("ocConfirm()");
+  asBuilder();$("state.activeId='p2'");
+  $("openEditSel(10);document.getElementById('selPrice').value='2,400';var __t=[];window.__oT=toast;toast=function(m){__t.push(m);};saveSel();toast=window.__oT;window.__reT=__t;true");
+  s=sel(10);
+  t('a builder price change on an approved upgrade asks the homeowner again',s.approved===false&&s.signed===null&&Number(s.price)===2400,JSON.stringify(s));
+  t('and the builder is told so, with both prices',$("(window.__reT||[]).join('|')").indexOf('The homeowner approved $2,200.00. They\u2019ll be asked to approve $2,400.00.')>=0,$("(window.__reT||[]).join('|')"));
+  $("openEditSel(10);document.getElementById('selPrice').value='2,200';saveSel();true");
+  $("state.projects.find(function(p){return p.id==='p2';}).selections.find(function(s){return s.id===9;}).approved=true");
+  $("openEditSel(9);document.getElementById('selPrice').value='800';saveSel();true");
+  t('a credit keeps its OK when the builder changes it',sel(9).approved===true,JSON.stringify(sel(9)));
+  $("openEditSel(9);document.getElementById('selPrice').value='700';saveSel();true");
+})();
+
+/* ════ CALENDAR DAYS ACROSS THE CLOCK CHANGE (2.524.0) ════
+   November 2026 in Michigan showed "1" twice and every later day one column late, because the grid stepped
+   by 24 hours and the night the clocks fall back is 25 hours long. Run the checks in a daylight-saving zone. */
+S('calendar days');
+(function(){
+  const prevTZ=process.env.TZ;process.env.TZ='America/Detroit';
+  try{
+    const keys=JSON.parse($("(function(){var g=new Date(2026,9,26).getTime(),a=[];for(var i=0;i<14;i++)a.push(dayKey(addDays(g,i)));return JSON.stringify(a);})()"));
+    t('addDays walks Oct 26 to Nov 8 one calendar day at a time in Michigan time',keys.join(',')==='2026-10-26,2026-10-27,2026-10-28,2026-10-29,2026-10-30,2026-10-31,2026-11-01,2026-11-02,2026-11-03,2026-11-04,2026-11-05,2026-11-06,2026-11-07,2026-11-08',keys.join(','));
+    const span=JSON.parse($("(function(){var a=[],lo=new Date(2026,9,30).getTime(),hi=new Date(2026,10,3).getTime();for(var d=lo;d<=hi;d=addDays(d,1))a.push(dayKey(d));return JSON.stringify(a);})()"));
+    t('a booking Oct 30 to Nov 3 is checked on all five days, the last day included',span.join(',')==='2026-10-30,2026-10-31,2026-11-01,2026-11-02,2026-11-03',span.join(','));
+    asBuilder();
+    const cells=JSON.parse($("(function(){var keep=calMonth;calMonth=new Date(2026,10,1);try{renderCal();}catch(e){return JSON.stringify({err:String(e)});}var out=[].map.call(document.querySelectorAll('.cal-day'),function(c){var m=/(?:openDay|calMoveTo)\\((\\d+)\\)/.exec(c.getAttribute('onclick')||'');return m?dayKey(+m[1]):'';});calMonth=keep;return JSON.stringify(out);})()"));
+    t('November 2026 month grid starts Mon Oct 26 and has no repeated day',Array.isArray(cells)&&cells.length===42&&cells[0]==='2026-10-26'&&cells[6]==='2026-11-01'&&cells[7]==='2026-11-02'&&new Set(cells).size===42,JSON.stringify(cells).slice(0,200));
+    t('Mon Nov 23 sits in the Monday column and Wed Nov 25 in Wednesday',Array.isArray(cells)&&cells.indexOf('2026-11-23')%7===0&&cells.indexOf('2026-11-25')%7===2,cells.indexOf&&cells.indexOf('2026-11-23'));
+    const nf=$("(function(){var t0=Date.now;Date.now=function(){return new Date(2026,9,30,9).getTime();};try{var a=[];var today=dayStart(Date.now());for(var i=0;i<6;i++)a.push(dayKey(addDays(today,i)));return a.join(',');}finally{Date.now=t0;}})()");
+    t('the next-free-day search counts real days past Nov 1',nf==='2026-10-30,2026-10-31,2026-11-01,2026-11-02,2026-11-03,2026-11-04',nf);
+    t('no day loop steps by a fixed 24 hours any more',!/gridStart\+i\*86400000|d\+=86400000\)|today\+i\*864e5|\(g\.end\|\|g\.start\)\+864e5|icsDate\(b\.end\+86400000\)/.test(SRC));
+  }finally{process.env.TZ=prevTZ===undefined?'':prevTZ;if(prevTZ===undefined)delete process.env.TZ;}
 })();
 
 /* ════ REPORT ════ */
