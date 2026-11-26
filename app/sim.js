@@ -3907,7 +3907,8 @@ await (async function(){
   const metaOps=()=>$("diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta').length");
   const tick=()=>new Promise(r=>setTimeout(r,20));
   open('inv_a2');
-  t('live house: the invoice offers Approve this invoice',btn()==='Approve this invoice',btn());
+  t('live house: the invoice offers Approve with its total (2.528.0)',btn()==='Approve $120.00',btn());
+  t('2.528.0: the note under it names the invoice, the amount and the due date',$("(function(){var b=document.querySelector('#infoBody .inv-ok');var n=b&&b.nextElementSibling;return n?n.textContent:'';})()").indexOf('INV-002 for $120.00, due 2026-10-18 looks right')>=0,$("(function(){var b=document.querySelector('#infoBody .inv-ok');var n=b&&b.nextElementSibling;return n?n.textContent:'';})()"));
 
   /* accepted */
   $("window.__ivP=invApprove('ivl1','inv_a2');true");await tick();
@@ -3918,13 +3919,15 @@ await (async function(){
   t('F-1: one write, to the invoice record sites/ivl1/inv/inv_a2 (not the house doc)',$("__iv.writes.length")===1&&!!w0&&w0.path==='sites/ivl1/inv/inv_a2',w0&&w0.path);
   t('F-1: the write is only {data,updatedAt,updatedBy} with merge (clientInvOk outer keys)',
     !!w0&&Object.keys(w0.d).sort().join()==='data,updatedAt,updatedBy'&&w0.d.updatedBy==='devH'&&Number.isInteger(w0.d.updatedAt)&&!!(w0.o&&w0.o.merge),JSON.stringify(w0&&w0.d));
-  t('F-1: data carries only status approved + an integer approvedAt (no amount, lines, payments)',
-    !!w0&&Object.keys(w0.d.data).sort().join()==='approvedAt,status'&&w0.d.data.status==='approved'&&Number.isInteger(w0.d.data.approvedAt),JSON.stringify(w0&&w0.d.data));
+  t('F-1: data carries only status approved, an integer approvedAt and what was agreed to (2.528.0: approvedTotal, approvedBy); no lines or payments',
+    !!w0&&Object.keys(w0.d.data).sort().join()==='approvedAt,approvedBy,approvedTotal,status'&&w0.d.data.status==='approved'&&Number.isInteger(w0.d.data.approvedAt)&&w0.d.data.approvedTotal===120&&w0.d.data.approvedBy==='',JSON.stringify(w0&&w0.d.data));
   t('F-1: no write anywhere carries meta or invoices',$("__iv.writes.every(function(x){return !('meta' in x.d)&&!/^sites\\/[^/]+$/.test(x.path);})")===true);
   $("invApprove('ivl1','inv_a2');true");await tick();
   t('accepted: a second tap while saving writes nothing',$("__iv.writes.length")===1);
   $("__iv.pend&&__iv.pend.res();true");await $("__ivP");await tick();
-  t('accepted: approved here once the server took it',inv(1).status==='approved'&&!!w0&&inv(1).approvedAt===w0.d.data.approvedAt,JSON.stringify(inv(1)));
+  t('accepted: approved here once the server took it',inv(1).status==='approved'&&!!w0&&inv(1).approvedAt===w0.d.data.approvedAt&&inv(1).approvedTotal===120,JSON.stringify(inv(1)));
+  open('inv_a2');
+  t('2.528.0: the approved invoice says for how much',$("document.getElementById('infoBody').textContent").indexOf('for $120.00')>=0);
   t('accepted: then the existing toast',$("__iv.toasts[__iv.toasts.length-1]")==='INV-002 approved',$("JSON.stringify(__iv.toasts)"));
   t('accepted: the invoice record is marked synced',$("(Sync._shadow.ivl1.colls.inv||{}).inv_a2")===$("_syncHash(JSON.stringify("+P1+".invoices[1]))"));
   t('accepted: no re-send - nothing queued (no house write, no inv write from a homeowner)',metaOps()===0&&$("diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta'||o.sub==='inv'||o.sub==='selm').length")===0,'ops='+$("JSON.stringify(diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta'||o.sub==='inv'||o.sub==='selm'))"));
@@ -3937,7 +3940,7 @@ await (async function(){
   t('refused: the invoice is still waiting here (no status, no approvedAt)',inv(2).status==='sent'&&inv(2).approvedAt===undefined,JSON.stringify(inv(2)));
   t('refused: #37\u2019s toast, word for word',$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Not approved yet. Ask your builder to check your access.']),$("JSON.stringify(__iv.toasts)"));
   t('refused: the error is logged as a rules refusal',$("(function(){var a=JSON.parse(localStorage.getItem('plumb.errors')||'[]');return !!a[0]&&a[0].k==='rules'&&a[0].w==='invApprove'&&a[0].m.indexOf('permission-denied')>=0;})()"));
-  t('refused: the button is back to Approve this invoice',btn()==='Approve this invoice',btn());
+  t('refused: the button is back to Approve with its total',btn()==='Approve $900.00',btn());
   t('refused: nothing is queued, so it is never sent again',metaOps()===0&&$("JSON.stringify("+P1+".invoices)")===$("__ivServer"),'meta ops='+metaOps());
   $(P1+".buildBrief={note:'Sim brief after a refusal'};true");
   const nextOp=JSON.parse($("JSON.stringify(diffSiteOps(Sync._shadow.ivl1,"+P1+").filter(o=>o.kind==='meta')[0]||null)"));
@@ -3952,14 +3955,14 @@ await (async function(){
   $("__iv.toasts=[];Object.defineProperty(navigator,'onLine',{configurable:true,get:function(){return false;}});true");
   const nW=$("__iv.writes.length");
   await $("invApprove('ivl1','inv_a3')");await tick();
-  t('offline: no write, nothing changes, the signal toast shows, not stuck on Saving…',$("__iv.writes.length")===nW&&inv(2).status==='sent'&&$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Could not save \u2014 try again with a bar of signal'])&&btn()==='Approve this invoice',$("JSON.stringify(__iv.toasts)")+' '+btn());
+  t('offline: no write, nothing changes, the signal toast shows, not stuck on Saving…',$("__iv.writes.length")===nW&&inv(2).status==='sent'&&$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Could not save \u2014 try again with a bar of signal'])&&btn()==='Approve $900.00',$("JSON.stringify(__iv.toasts)")+' '+btn());
   $("delete navigator.onLine;true");
 
   /* F-1: an invoice still only in legacy meta.invoices (no inv record once inv has answered): no write, the refused toast */
   $("__iv.toasts=[];Sync._pulled=Sync._pulled||{};Sync._pulled.ivl1={inv:true};Sync._shadow.ivl1.colls.inv={inv_a2:'x'};true");
   const nWl=$("__iv.writes.length");
   await $("invApprove('ivl1','inv_a3')");await tick();
-  t('F-1: a legacy-only invoice (not in inv) is not sent: no write, still waiting, the existing refused toast',$("__iv.writes.length")===nWl&&inv(2).status==='sent'&&$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Not approved yet. Ask your builder to check your access.'])&&btn()==='Approve this invoice',$("JSON.stringify(__iv.toasts)")+' '+btn());
+  t('F-1: a legacy-only invoice (not in inv) is not sent: no write, still waiting, the existing refused toast',$("__iv.writes.length")===nWl&&inv(2).status==='sent'&&$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Not approved yet. Ask your builder to check your access.'])&&btn()==='Approve $900.00',$("JSON.stringify(__iv.toasts)")+' '+btn());
   $("delete Sync._pulled.ivl1;true");
   /* F-1: the 2.462.0 cleanup of a refused meta.invoices approve is gone with the meta write itself */
   t('F-1: no code path writes the invoice list to the house doc, and the meta.invoices jam cleanup is gone',
@@ -6098,7 +6101,7 @@ await (async function(){
     return true;})()`);
   const ORGRUN=`(async function(opts){
     var XB='xB21QZOigOQqfXt5RdtWnxH8x5i1',HT='HTJjJ1CzR6dlMWavDrVqnEE9yax1';
-    var gets=[],sets=[],warns=[],store=opts.store||{},denySet=!!opts.denySet;
+    var gets=[],sets=[],updates=[],warns=[],store=opts.store||{},denySet=!!opts.denySet;
     function denied(){var e=new Error('Missing or insufficient permissions');e.code='permission-denied';return e;}
     var db={collection:function(c){return {doc:function(id){return {
       get:function(){gets.push(c+'/'+id);if(c!=='orgs')return Promise.resolve({exists:false,data:function(){return null;}});
@@ -6107,6 +6110,8 @@ await (async function(){
         return Promise.resolve({exists:true,data:function(){return JSON.parse(JSON.stringify(v));}});},
       set:function(data){sets.push({id:id,data:data});if(denySet||store[id]==='denied')return Promise.reject(denied());
         store[id]=JSON.parse(JSON.stringify(data));return Promise.resolve();},
+      update:function(data){updates.push({id:id,data:JSON.parse(JSON.stringify(data))});if(denySet||store[id]==='denied')return Promise.reject(denied());
+        store[id]=Object.assign({},store[id]||{},JSON.parse(JSON.stringify(data)));return Promise.resolve();},
       onSnapshot:function(ok,err){var v=store[id];if(v==='denied'){if(err)err(denied());return function(){};}
         if(ok&&v)ok({exists:true,data:function(){return JSON.parse(JSON.stringify(v));}});return function(){};}
         };
@@ -6123,7 +6128,8 @@ await (async function(){
     var boot=Org.init();if(boot&&boot.then)await boot;
     if(opts.after)await opts.after();
     if(Org._timer){clearTimeout(Org._timer);Org._timer=null;}
-    return {id:localStorage.getItem('plumb.orgId'),gets:gets.slice(),sets:sets.map(function(s){return s.id;}),warns:warns.slice(),denied:!!Org._pushDenied,getsN:gets.length};
+    return {id:localStorage.getItem('plumb.orgId'),gets:gets.slice(),sets:sets.map(function(s){return s.id;}),warns:warns.slice(),denied:!!Org._pushDenied,getsN:gets.length,
+      setData:sets.map(function(s){return s.data;}),updates:updates};
   })`;
   const HOUSES=`[{id:'h1',org:'org_n2whnbxc',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}},{id:'h2',org:'org_n2whnbxc',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}},{id:'h3',org:'org_oj3y8gcy',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder'}}]`;
   const STORE_OK=`{org_z7n4fide:'denied',org_n2whnbxc:{id:'org_n2whnbxc',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder','HTJjJ1CzR6dlMWavDrVqnEE9yax1':'builder'}},org_oj3y8gcy:{id:'org_oj3y8gcy',members:{'xB21QZOigOQqfXt5RdtWnxH8x5i1':'builder','HTJjJ1CzR6dlMWavDrVqnEE9yax1':'builder'}}}`;
@@ -6145,6 +6151,24 @@ await (async function(){
   const OG4=await $2(`(async function(){return JSON.stringify(await `+ORGRUN+`({oid:'',houses:`+HOUSES+`,store:`+STORE_OK+`}));})()`);
   const O4=JSON.parse(OG4);
   t('2.508.0: an empty stored org takes the first qualifying house org (majority, then id)',O4.id==='org_n2whnbxc',JSON.stringify(O4));
+  /* 2.528.0: the company record has an owner. The owner writes it whole; a teammate changes only setup and team invites;
+     a record from before 2.528.0 is claimed by the owner of one of its houses, naming that house. */
+  const XBU='xB21QZOigOQqfXt5RdtWnxH8x5i1',HTU='HTJjJ1CzR6dlMWavDrVqnEE9yax1';
+  const ORGP=(houses,store)=>`(async function(){return JSON.stringify(await `+ORGRUN+`({oid:'org_n2whnbxc',houses:`+houses+`,store:`+store+`,after:async function(){await Org.push();}}));})()`;
+  const asPM=`{'${XBU}':{name:'Pat PM',rpRole:'pm'}}`;
+  const H_OWN=`[{id:'h1',org:'org_n2whnbxc',members:{'${XBU}':'builder','${HTU}':'builder'}},{id:'h2',org:'org_n2whnbxc',members:{'${XBU}':'builder'}}]`;
+  const H_PM=`[{id:'h1',org:'org_n2whnbxc',members:{'${XBU}':'builder','${HTU}':'builder'},memberInfo:${asPM}},{id:'h2',org:'org_n2whnbxc',members:{'${XBU}':'builder','${HTU}':'builder'},memberInfo:${asPM}}]`;
+  const S_LEG=`{org_n2whnbxc:{id:'org_n2whnbxc',members:{'${XBU}':'builder','${HTU}':'builder'}}}`;
+  const S_MINE=`{org_n2whnbxc:{id:'org_n2whnbxc',owner:'${XBU}',members:{'${XBU}':'builder','${HTU}':'builder'}}}`;
+  const S_THEIRS=`{org_n2whnbxc:{id:'org_n2whnbxc',owner:'${HTU}',members:{'${XBU}':'builder','${HTU}':'builder'},prefs:{a:1}}}`;
+  const O5=JSON.parse(await $2(ORGP(H_OWN,S_LEG)));
+  t('2.528.0: the owner of a house claims a company record from before owners, naming that house',O5.updates.length===0&&O5.setData.length>=1&&O5.setData.every(function(d){return d.owner===XBU&&d.ownerSite==='h1'&&d.members[XBU]==='builder';}),JSON.stringify({s:O5.setData,u:O5.updates}).slice(0,300));
+  const O6=JSON.parse(await $2(ORGP(H_OWN,S_MINE)));
+  t('2.528.0: the owner writes the whole record (members and all), with no house named',O6.updates.length===0&&O6.setData.length>=1&&O6.setData.every(function(d){return d.owner===XBU&&!('ownerSite' in d)&&d.members[HTU]==='builder';}),JSON.stringify({s:O6.setData,u:O6.updates}).slice(0,300));
+  const O7=JSON.parse(await $2(ORGP(H_PM,S_THEIRS)));
+  t('2.528.0: a teammate never rewrites the record: one update with setup and team invites only (no members, no owner)',O7.setData.length===0&&O7.updates.length>=1&&O7.updates.every(function(u){return Object.keys(u.data).sort().join()==='prefs,teamInvites,updatedAt,updatedBy';}),JSON.stringify({s:O7.setData,u:O7.updates}).slice(0,300));
+  const O8=JSON.parse(await $2(ORGP(H_PM,S_LEG)));
+  t('2.528.0: a teammate on a record from before owners does not claim it',O8.setData.length===0&&O8.updates.length>=1&&O8.updates.every(function(u){return !('owner' in u.data)&&!('members' in u.data);}),JSON.stringify({s:O8.setData,u:O8.updates}).slice(0,300));
   $2(`(function(){var o=window.__orgSaved;if(!o)return true;
     Sync.db=o.db;Sync.on=o.on;Sync.mode=o.mode;Sync.uid=o.uid;Sync.deviceId=o.dev;state.session=o.sess;state.projects=o.proj;console.warn=o.warn;
     if(o.modeLs==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',o.modeLs);
