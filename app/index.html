@@ -4081,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.528.1 - Fix: no usage ping from a signed-out screen, which the server refused every minute';   /* 11/26: the 403s in the browser log on the sign-in screen. */
+const PLUMB_VERSION='2.528.2 - Fix: the sample Beaumont house no longer shows a cost note to the homeowner';   /* 11/26: the 403s in the browser log on the sign-in screen. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795711452481;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.528.1';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795712900000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.528.2';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -4674,7 +4674,7 @@ function sampleState(){
           {id:6,cap:'Steel-frame study doors delivered, staged in garage',area:'Study',crew:'',issue:false,sw:'slate',t:Date.now()-9e6,day:126,sample:true}
         ],
         logs:[
-          {date:ds(0),t:Date.now()-8e6,text:'Tile crew in primary bath - herringbone labor over estimate, logged against budget and homeowner notified. Trim package delivered. Clear, 68.'},
+          {date:ds(0),t:Date.now()-8e6,text:'Tile crew in primary bath - herringbone floor set and grouted. Trim package delivered. Clear, 68.'},
           {date:ds(5),t:Date.now()-5*D,text:'Hardwood delivered, stickered and acclimating. Moisture 8 percent.'},
           {date:ds(8),t:Date.now()-8*D,text:'Cabinet install complete including butler pantry uppers. Countertop template booked.'}
         ],
@@ -4704,7 +4704,7 @@ function sampleState(){
           {id:1,room:'Kitchen',cat:'Cabinets',item:'Inset, painted + rift oak island',status:'installed',approved:true,price:0,spec:{finish:'Alabaster perimeter, natural rift oak island',hardware:'Unlacquered brass',softclose:'Yes'}},
           {id:2,room:'Kitchen',cat:'Countertops',item:'Honed marble perimeter + oak butcher island end',status:'ordered',approved:true,note:'Templated - install after trim primer',price:0,spec:{edge:'Eased',thickness:'3cm',sink:'Undermount workstation'}},
           {id:3,room:'Kitchen',cat:'Appliances',item:'48 in pro range + custom hood',status:'delivered',approved:true,price:1250,invoicedIn:'inv_p8_1',spec:{models:'48 in pro range, panel fridge',utils:'Gas + 240v'}},
-          {id:4,room:'Primary Bath',cat:'Tile',item:'Marble herringbone floor + slab shower walls',status:'installed',approved:true,price:1900,invoicedIn:'inv_p8_1',note:'Labor over estimate - overage logged in job costs, homeowner notified',spec:{pattern:'Herringbone',grout:'White'}},
+          {id:4,room:'Primary Bath',cat:'Tile',item:'Marble herringbone floor + slab shower walls',status:'installed',approved:true,price:1900,invoicedIn:'inv_p8_1',note:'Herringbone set on the diagonal, white grout',spec:{pattern:'Herringbone',grout:'White'}},
           {id:5,room:'Study',cat:'Interior Doors',item:'Steel-frame glass doors - pair',status:'delivered',approved:true,price:3400,invoicedIn:'inv_p8_2',spec:{style:'3-lite steel',swing:'Double, in-swing'}},
           {id:6,room:'Whole House',cat:'Flooring',item:'White oak, site-finished, 5 in',status:'delivered',approved:true,note:'Acclimating - install follows trim',price:0,spec:{direction:'Parallel to entry',finish:'Matte 2-component'}},
           {id:7,room:'Whole House',cat:'Trim & Millwork',item:'Full-height casing + 3-piece crown, main floor',status:'ordered',approved:true,price:1150,invoicedIn:'inv_p8_2',spec:{profile:'3-piece crown',finish:'Painted'}},
