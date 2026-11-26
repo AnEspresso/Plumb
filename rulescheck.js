@@ -127,7 +127,7 @@ function signPlumb(d, site, nSigned, tamper) {
 /* F-2 R: an invoice (sites/{id}/inv/{invId}) and a selection's money
    (sites/{id}/selm/{selId}, doc id = the selection id), written the way the
    app writes a record ({data, updatedAt, updatedBy}). */
-const INV_DOC = (over) => ({ data: Object.assign({ id: 'inv_r1', num: 3, status: 'sent', amount: 18500,
+const INV_DOC = (over) => ({ data: Object.assign({ id: 'inv_r1', num: 3, status: 'sent', amount: 18500, total: 18500,
   lines: [{ label: 'Draw 3: framing', amount: 18500 }] }, over || {}), updatedAt: 1, updatedBy: 'dev-builder' });
 const SELM_DOC = (over) => ({ data: Object.assign({ selId: 's9a', price: 850, allowance: 1200, cost: 640,
   costLineId: 'cl_plumb_fix', invoicedIn: 'inv_r1' }, over || {}), updatedAt: 1, updatedBy: 'dev-builder' });
@@ -273,6 +273,15 @@ async function seed() {
     await setDoc(doc(db, 'invites/CLAIMCODE6'), { createdBy: U.builder, role: 'client', siteId: 'liveA' });
     await setDoc(doc(db, 'invites/PREVCODE7'), { createdBy: U.builder, role: 'client', siteId: 'liveA' });
     await setDoc(doc(db, 'orgs/org1'), { members: { [U.builder]: 'builder', [U.builder2]: 'builder' } });
+    // 2.528.0: a company record with its owner, one from before owners (orgL), and houses that name their org
+    await setDoc(doc(db, 'orgs/orgO'), { id: 'orgO', owner: U.builder, members: { [U.builder]: 'builder', [U.builder2]: 'builder' },
+      prefs: { a: 1, devGrants: [{ h: 'hx', email: 'tester@x.com' }] }, teamInvites: [], updatedAt: 1, updatedBy: 'seed' });
+    await setDoc(doc(db, 'orgs/orgL'), { id: 'orgL', members: { [U.builder]: 'builder', [U.builder2]: 'builder' }, prefs: { a: 1 }, teamInvites: [] });
+    await setDoc(doc(db, 'sites/liveOrgH'), { mode: 'live', street: 'Org house',
+      members: { [U.builder]: 'builder', [U.builder2]: 'builder' }, memberUids: [U.builder, U.builder2],
+      meta: { org: 'orgL', memberInfo: { [U.builder2]: { name: 'Pat PM', rpRole: 'pm' } } } });
+    await setDoc(doc(db, 'sites/liveOrgX'), { mode: 'live', street: 'Other org house',
+      members: { [U.builder]: 'builder' }, memberUids: [U.builder], meta: { org: 'orgOther' } });
     await setDoc(doc(db, 'users/' + U.builder), { name: 'Owner', email: 'o@x.com' });
     await setDoc(doc(db, 'telemetry/deviceOfBuilder'), { owner: U.builder, hb: 1 });
     await setDoc(doc(db, 'telemetry/deviceOfBuilder/events/e1'), { ev: 'open' });
@@ -604,8 +613,14 @@ async function main() {
     setDoc(doc(db.builder, 'sites/liveA/selm/s9a'), Object.assign(SELM_DOC({ price: 999 }), A2S(U.builder)), { merge: true }), true);
 
   // 3. clientInvOk suite
-  await INV('R2 clientInvOk: homeowner sent→approved + approvedAt - ALLOWED',
-    invWrite(db.client, 'inv_r1', invBody({ status: 'approved', approvedAt: 1791130000000 })), true);
+  await INV('R2 clientInvOk: 2.528.0 homeowner sent→approved without saying the amount - DENIED',
+    invWrite(db.client, 'inv_r1', invBody({ status: 'approved', approvedAt: 1791130000000 })), false);
+  await INV('R2 clientInvOk: 2.528.0 homeowner approving a different amount than the invoice total - DENIED',
+    invWrite(db.client, 'inv_r1', invBody({ status: 'approved', approvedAt: 1791130000000, approvedTotal: 1850, approvedBy: '' })), false);
+  await INV('R2 clientInvOk: 2.528.0 homeowner approving in someone else\'s name - DENIED',
+    invWrite(db.client, 'inv_r1', invBody({ status: 'approved', approvedAt: 1791130000000, approvedTotal: 18500, approvedBy: 'Dean Walsh' })), false);
+  await INV('R2 clientInvOk: homeowner sent→approved + approvedAt + the total they saw + their stamped name - ALLOWED',
+    invWrite(db.client, 'inv_r1', invBody({ status: 'approved', approvedAt: 1791130000000, approvedTotal: 18500, approvedBy: '' })), true);
   await INV_RULE('R2 clientInvOk: homeowner changing amount while approving - DENIED',
     invWrite(db.client, 'inv_sent2', invBody({ id: 'inv_sent2', status: 'approved', approvedAt: 1791130000001, amount: 1 })));
   await INV('R2 clientInvOk: draft→approved - DENIED',
@@ -1073,9 +1088,11 @@ async function main() {
   await INV('#4 more than 20 payments on one invoice - DENIED',
     p4w({ payments: [PAv, PB].concat(Array.from({ length: 19 }, (_, i) => ({ id: 'pm_x' + i, amount: 1, date: '2026-11-18', note: '' }))) }), false);
   // the homeowner's OK
-  await INV('#4 setup: the homeowner approves INV-041 (status + approvedAt only): ALLOWED',
-    setDoc(doc(db.client, 'sites/liveA/inv/inv_p4'), Object.assign({ data: { status: 'approved', approvedAt: 1791300000000 }, updatedAt: 42, updatedBy: 'dev-client' }, A2S(U.client)), { merge: true }), true);
-  const OK = { status: 'approved', approvedAt: 1791300000000 };
+  await INV('#4 setup: the homeowner approves INV-041 (status, approvedAt and what was agreed to): ALLOWED',
+    setDoc(doc(db.client, 'sites/liveA/inv/inv_p4'), Object.assign({ data: { status: 'approved', approvedAt: 1791300000000, approvedTotal: 250, approvedBy: '' }, updatedAt: 42, updatedBy: 'dev-client' }, A2S(U.client)), { merge: true }), true);
+  const OK = { status: 'approved', approvedAt: 1791300000000, approvedTotal: 250, approvedBy: '' };
+  await INV('#4 2.528.0: a builder write dropping what the homeowner agreed to - DENIED', p4w({ status: 'approved', approvedAt: 1791300000000, payments: [PAv, PB] }), false);
+  await INV('#4 2.528.0: a builder write changing the approved amount - DENIED', p4w(Object.assign({}, OK, { approvedTotal: 999, payments: [PAv, PB] })), false);
   await INV('#4 STALE PHONE: phone B writes its old "sent" copy over the homeowner\'s OK - DENIED', p4w({ payments: [PAv, PB] }), false);
   await INV('#4 STALE PHONE: status kept approved but approvedAt dropped - DENIED', p4w({ status: 'approved', payments: [PAv, PB] }), false);
   await INV('#4 approvedAt changed - DENIED', p4w(Object.assign({}, OK, { approvedAt: 1, payments: [PAv, PB] })), false);
@@ -1102,7 +1119,7 @@ async function main() {
   await INV('A2 M-5: a builder without the money gate DENIED reading payments', getDoc(doc(db.builder2, 'sites/liveGate/pmts/p1')), false);
   await INV('A2 M-5: a builder without the money gate DENIED writing a payment', setDoc(doc(db.builder2, 'sites/liveGate/pmts/pm_g1'), Object.assign({ data: { id: 'pm_g1', amount: 5 }, updatedAt: 1, updatedBy: 'devB2' }, A2S(U.builder2))), false);
   await INV('A2 setup: a fresh sent invoice inv_app3 (claim inv-19)', invSendBatch(db.builder, 'inv_app3', 19), true);
-  const appr = (stamp, n) => setDoc(doc(db.client, 'sites/liveA/inv/inv_app3'), Object.assign({ data: { status: 'approved', approvedAt: 1791130000020 + n }, updatedAt: 30 + n, updatedBy: 'dev-client' }, stamp), { merge: true });
+  const appr = (stamp, n) => setDoc(doc(db.client, 'sites/liveA/inv/inv_app3'), Object.assign({ data: { status: 'approved', approvedAt: 1791130000020 + n, approvedTotal: 250, approvedBy: '' }, updatedAt: 30 + n, updatedBy: 'dev-client' }, stamp), { merge: true });
   await INV('A2 M-7: a homeowner Approve naming someone else as byUid is DENIED', appr(A2S(U.builder), 1), false);
   await INV('A2 M-7: a homeowner Approve with a phone time in "at" is DENIED', appr(Object.assign(A2S(U.client), { at: 1791130000012 }), 2), false);
   await INV('A2 app: the 2.481.0 homeowner Approve (stamped, merge): ALLOWED', appr(A2S(U.client), 4), true);
@@ -1335,16 +1352,62 @@ async function main() {
   await INV('orgs: member reads', getDoc(doc(db.builder, 'orgs/org1')), true);
   await INV('orgs: non-member DENIED read of existing', getDoc(doc(db.stranger, 'orgs/org1')), false);
   await INV('orgs: signed-in get of missing org allowed', getDoc(doc(db.stranger, 'orgs/orgDoesNotExist')), true);
-  await INV('orgs: create stamping self builder allowed',
-    setDoc(doc(db.stranger, 'orgs/orgNew'), { members: { [U.stranger]: 'builder' } }), true);
+  await INV('orgs: create stamping self builder and owner allowed',
+    setDoc(doc(db.stranger, 'orgs/orgNew'), { members: { [U.stranger]: 'builder' }, owner: U.stranger }), true);
+  await INV('orgs: 2.528.0 create without naming self as owner DENIED',
+    setDoc(doc(db.stranger, 'orgs/orgNew3'), { members: { [U.stranger]: 'builder' } }), false);
+  await INV('orgs: 2.528.0 create naming someone else as owner DENIED',
+    setDoc(doc(db.stranger, 'orgs/orgNew4'), { members: { [U.stranger]: 'builder' }, owner: U.builder }), false);
   await INV('orgs: create without self-as-builder denied',
     setDoc(doc(db.sub, 'orgs/orgNew2'), { members: { [U.builder]: 'builder' } }), false);
-  await INV('orgs: builder updates keeping self builder',
-    updateDoc(doc(db.builder, 'orgs/org1'), { members: { [U.builder]: 'builder', [U.builder2]: 'builder' }, prefs: { a: 1 } }), true);
+  await INV('orgs: 2.528.0 a builder on a record with no owner yet changes setup without marking it for review - DENIED',
+    updateDoc(doc(db.builder, 'orgs/org1'), { members: { [U.builder]: 'builder', [U.builder2]: 'builder' }, prefs: { a: 1 } }), false);
+  await INV('orgs: builder updates keeping self builder (setup marked for the owner\'s review)',
+    updateDoc(doc(db.builder, 'orgs/org1'), { members: { [U.builder]: 'builder', [U.builder2]: 'builder' }, prefs: { a: 1, _prov: { approved: false } } }), true);
   await INV('orgs: update by non-member denied',
     updateDoc(doc(db.stranger, 'orgs/org1'), { prefs: { a: 2 } }), false);
   await INV('orgs: builder cannot drop own builder role in update',
     updateDoc(doc(db.builder2, 'orgs/org1'), { members: { [U.builder]: 'builder' } }), false);
+
+  /* ══════════ 2.528.0: the company record has an owner ══════════ */
+  await INV('orgs owner: the owner adds a member and changes setup', updateDoc(doc(db.builder, 'orgs/orgO'), { members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.stranger]: 'builder' }, prefs: { a: 2, devGrants: [{ h: 'hx', email: 'tester@x.com' }] } }), true);
+  await INV('orgs owner: the owner takes that member back off', updateDoc(doc(db.builder, 'orgs/orgO'), { members: { [U.builder]: 'builder', [U.builder2]: 'builder' } }), true);
+  await INV('orgs owner: the owner DENIED handing the record to someone else', updateDoc(doc(db.builder, 'orgs/orgO'), { owner: U.builder2 }), false);
+  await INV('orgs owner: the owner DENIED leaving the members', updateDoc(doc(db.builder, 'orgs/orgO'), { members: { [U.builder2]: 'builder' } }), false);
+  await INV('orgs teammate: DENIED removing the owner from the members', updateDoc(doc(db.builder2, 'orgs/orgO'), { members: { [U.builder2]: 'builder' } }), false);
+  await INV('orgs teammate: DENIED adding a member', updateDoc(doc(db.builder2, 'orgs/orgO'), { ['members.' + U.stranger]: 'builder' }), false);
+  await INV('orgs teammate: DENIED making themselves the owner', updateDoc(doc(db.builder2, 'orgs/orgO'), { owner: U.builder2 }), false);
+  await INV('orgs teammate: DENIED claiming it as if it had no owner', updateDoc(doc(db.builder2, 'orgs/orgO'), { owner: U.builder2, ownerSite: 'liveOrgH' }), false);
+  await INV('orgs teammate: DENIED changing who may open the workbench', updateDoc(doc(db.builder2, 'orgs/orgO'), { prefs: { a: 2, devGrants: [{ h: 'hx', email: 'tester@x.com' }, { h: 'hy', email: 'me@x.com' }], _prov: { approved: false } } }), false);
+  await INV('orgs teammate: DENIED a setup change marked as approved', updateDoc(doc(db.builder2, 'orgs/orgO'), { prefs: { a: 3, devGrants: [{ h: 'hx', email: 'tester@x.com' }], _prov: { approved: true } } }), false);
+  await INV('orgs teammate: a setup change waiting for the owner\'s review', updateDoc(doc(db.builder2, 'orgs/orgO'), { prefs: { a: 3, devGrants: [{ h: 'hx', email: 'tester@x.com' }], _prov: { by: 'Pat PM', approved: false } }, updatedAt: 5, updatedBy: 'devB2' }), true);
+  await INV('orgs teammate: the team invite list', updateDoc(doc(db.builder2, 'orgs/orgO'), { teamInvites: [{ code: 'T1', status: 'open' }], updatedAt: 6, updatedBy: 'devB2' }), true);
+  await INV('orgs teammate: DENIED rewriting the whole record (set)', setDoc(doc(db.builder2, 'orgs/orgO'), { id: 'orgO', owner: U.builder, members: { [U.builder]: 'builder', [U.builder2]: 'builder' }, prefs: { a: 3, devGrants: [{ h: 'hx', email: 'tester@x.com' }], _prov: { by: 'Pat PM', approved: false } }, teamInvites: [], extra: 1 }), false);
+  await INV('orgs owner: the owner approves the setup', updateDoc(doc(db.builder, 'orgs/orgO'), { prefs: { a: 3, devGrants: [{ h: 'hx', email: 'tester@x.com' }], _prov: { by: 'Pat PM', approved: true, approvedBy: 'Dean' } } }), true);
+  await INV('orgs: a stranger still DENIED', updateDoc(doc(db.stranger, 'orgs/orgO'), { teamInvites: [] }), false);
+  // a record from before owners
+  await INV('orgs claim: a teammate on a record with no owner may change the team invite list', updateDoc(doc(db.builder2, 'orgs/orgL'), { teamInvites: [{ code: 'T2', status: 'open' }] }), true);
+  await INV('orgs claim: DENIED to a builder who is not the owner of the house it names', updateDoc(doc(db.builder2, 'orgs/orgL'), { owner: U.builder2, ownerSite: 'liveOrgH' }), false);
+  await INV('orgs claim: DENIED naming a house of another company', updateDoc(doc(db.builder, 'orgs/orgL'), { owner: U.builder, ownerSite: 'liveOrgX' }), false);
+  await INV('orgs claim: DENIED naming no house', updateDoc(doc(db.builder, 'orgs/orgL'), { owner: U.builder }), false);
+  await INV('orgs claim: DENIED in someone else\'s name', updateDoc(doc(db.builder, 'orgs/orgL'), { owner: U.builder2, ownerSite: 'liveOrgH' }), false);
+  await INV('orgs claim: the owner of one of its houses claims it, naming that house', setDoc(doc(db.builder, 'orgs/orgL'), { id: 'orgL', owner: U.builder, ownerSite: 'liveOrgH', members: { [U.builder]: 'builder', [U.builder2]: 'builder' }, prefs: { a: 1 }, teamInvites: [{ code: 'T2', status: 'open' }] }), true);
+  await INV('orgs claim: ... and then the teammate can no longer drop them', updateDoc(doc(db.builder2, 'orgs/orgL'), { members: { [U.builder2]: 'builder' } }), false);
+
+  /* ══════════ 2.528.0: a sent invoice keeps its total and due date ══════════ */
+  await INV('A2 setup: a fresh sent invoice inv_t28 (claim inv-28)', invSendBatch(db.builder, 'inv_t28', 28), true);
+  const t28 = (over) => setDoc(doc(db.builder, 'sites/liveA/inv/inv_t28'), Object.assign({ data: Object.assign({ id: 'inv_t28', no: 'INV-028', title: 'Selections invoice', due: '',
+    items: [{ label: 'Tile', amount: 250 }], total: 250, status: 'sent', t: 1791000000000, sentBy: 'Dean Walsh', payments: [] }, over || {}), updatedAt: 50, updatedBy: 'devB' }, A2S(U.builder)));
+  await INV('2.528.0 a sent invoice\'s total changed without a credit or charge - DENIED', t28({ total: 2500 }), false);
+  await INV('2.528.0 a sent invoice\'s due date changed - DENIED', t28({ due: '2026-12-31' }), false);
+  await INV('2.528.0 a cents twin that disagrees with the total - DENIED', t28({ totalC: 2500 }), false);
+  await INV('2.528.0 the cents twin added to a sent invoice (agrees): ALLOWED', t28({ totalC: 25000 }), true);
+  await INV('2.528.0 a charge appended with a total that does not add up - DENIED', t28({ totalC: 25000, items: [{ label: 'Tile', amount: 250 }, { label: 'Extra grout', amount: 40, adj: true }], total: 300 }), false);
+  await INV('2.528.0 a charge appended with the new total: ALLOWED', t28({ totalC: 29000, items: [{ label: 'Tile', amount: 250 }, { label: 'Extra grout', amount: 40, adj: true }], total: 290 }), true);
+  await INV('2.528.0 a builder marking a waiting invoice approved - DENIED', t28({ totalC: 29000, items: [{ label: 'Tile', amount: 250 }, { label: 'Extra grout', amount: 40, adj: true }], total: 290, status: 'approved', approvedAt: 1791300000001, approvedTotal: 290, approvedBy: '' }), false);
+  await INV('2.528.0 a builder writing an approved amount on a waiting invoice - DENIED', t28({ totalC: 29000, items: [{ label: 'Tile', amount: 250 }, { label: 'Extra grout', amount: 40, adj: true }], total: 290, approvedTotal: 290 }), false);
+  await INV('2.528.0 the homeowner approves the new total, in their own name: ALLOWED',
+    setDoc(doc(db.client, 'sites/liveA/inv/inv_t28'), Object.assign({ data: { status: 'approved', approvedAt: 1791300000002, approvedTotal: 290, approvedBy: '' }, updatedAt: 51, updatedBy: 'dev-client' }, A2S(U.client)), { merge: true }), true);
 
   /* ══════════ USERS ══════════ */
   await INV('users: read own doc', getDoc(doc(db.builder, 'users/' + U.builder)), true);
