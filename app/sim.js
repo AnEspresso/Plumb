@@ -4868,6 +4868,42 @@ await (async function(){
   t('#10 and sends only the insulation dates',m10b.insulation&&m10b.insulation.start==='2026-11-30'&&m10b.framing.start==='2026-11-09'&&m10b.drywall.start==='2026-11-23'&&W().filter(x=>x.path==='sites/t10').some(function(x){return x.data.meta.schedule;})&&W().filter(x=>x.path==='sites/t10').every(function(x){return !x.data.meta.schedule||JSON.stringify(Object.keys(x.data.meta.schedule))==='["insulation"]';}),JSON.stringify(m10b));
   /* money stays on its own records: no money key rides on a house write */
   t('#10 the house writes carry no invoices or selection money',aW.concat(bW).every(function(x){return !('invoices' in x.data.meta)&&!('selMoney' in x.data.meta);}));
+  /* ════ 2.527.1 · the same house details with their keys in another order are not an edit ════
+     The server (and each snapshot) can list a map's fields in a different order. A homeowner phone took that for an
+     unsent edit, sent the house, was refused, and showed Not saved for good. Fingerprints now sort the keys; one saved
+     by 2.527.0 (keys as they came) still counts. */
+  $2(`(function(){var p=JSON.parse(JSON.stringify(__demo[1]));p.id='k27';p.name='Key Order';
+    p.schedule={insulation:{end:'2026-12-02',start:'2026-11-30'},roughin:{end:'2026-11-20',start:'2026-11-16'}};
+    p.packetSignoff={windows:{homeowner:{by:'Buyer',at:2},builder:{by:'You',at:1}}};p.hoSched={show:false,why:''};
+    __F.seedOld(p,${JSON.stringify(MEM)},{});return true;})()`);
+  const HK={role:'client',site:'k27',auth:{uid:'uH'}};
+  for(const [who,uid,sess,legacy] of [['builder','uB',B,false],['homeowner','uH',HK,false],['homeowner (fingerprints from 2.527.0)','uH',HK,true]]){
+    await phone(uid,sess,'devK'+uid);
+    const snapK=J(`(function(){var ps=JSON.parse(JSON.stringify(state.projects));var p=ps.find(function(x){return String(x.id)==='k27';});
+      var sh=JSON.parse(JSON.stringify(Sync._shadow));
+      if(${legacy}){var m=__F.srv.k27.doc.meta;var k=sh.k27;k.meta=_syncHash(JSON.stringify(metaOf(p)));k.mk={};
+        Object.keys(m).forEach(function(f){k.mk[f]=_syncHash(JSON.stringify(m[f]));});k.mk2={};
+        META_SUBKEYS.forEach(function(f){if(m[f]&&typeof m[f]==='object'&&!Array.isArray(m[f])){var h={};Object.keys(m[f]).forEach(function(x){h[x]=_syncHash(JSON.stringify(m[f][x]));});k.mk2[f]=h;}});}
+      else{var flip=function(o){var r={};Object.keys(o).reverse().forEach(function(x){r[x]=o[x];});return r;};
+        p.schedule=flip(p.schedule);Object.keys(p.schedule).forEach(function(x){p.schedule[x]=flip(p.schedule[x]);});
+        p.packetSignoff.windows=flip(p.packetSignoff.windows);p.hoSched=flip(p.hoSched);}
+      return {projects:JSON.stringify(ps),shadow:JSON.stringify(sh)};})()`);
+    $2("__F.restore("+JSON.stringify(snapK)+",'"+uid+"',"+JSON.stringify(sess)+",'devK"+uid+"b',true);Sync.pushAll();true");
+    await settle();
+    const kW=W().filter(x=>x.path==='sites/k27');
+    const kR=J(`(function(){var p=state.projects.find(function(x){return String(x.id)==='k27';});
+      return {refused:Object.keys(Sync._refused||{}).filter(function(k){return k.indexOf('k27|')===0;}),
+        meta:diffSiteOps(Sync._shadow.k27||{meta:'',colls:{}},p).filter(function(o){return o.kind==='meta';}).length,
+        ins:p.schedule.insulation.start,so:!!(p.packetSignoff.windows.homeowner&&p.packetSignoff.windows.builder)};})()`);
+    t('2.527.1 '+who+' phone: the same house details in another key order send nothing and never say Not saved',
+      kW.length===0&&kR.refused.length===0&&kR.meta===0&&kR.ins==='2026-11-30'&&kR.so,JSON.stringify({w:kW.map(x=>Object.keys((x.data||{}).meta||{})),r:kR}).slice(0,300));
+  }
+  /* a real edit still goes up (only that field) */
+  await phone('uB',B,'devK2');
+  $2(`(function(){var p=state.projects.find(function(x){return String(x.id)==='k27';});p.schedule.roughin={start:'2026-11-17',end:'2026-11-21'};Sync._pushOne(p);return true;})()`);
+  await settle();
+  const kE=W().filter(x=>x.path==='sites/k27');
+  t('2.527.1 a real change to one entry still goes up, and only that entry',kE.length===1&&JSON.stringify(Object.keys(kE[0].data.meta.schedule||{}))==='["roughin"]'&&J("__F.srv.k27.doc.meta.schedule.roughin.start")==='2026-11-17',JSON.stringify(kE.map(x=>x.data.meta)).slice(0,300));
   $2("delete window.__snapA2;delete __F.restore;true");
   /* #11 (2.513.0) · uploads: the document type is named from the file, a refused upload stops after CloudFiles.MAX tries,
      the file shows "didn't upload" with a retry tap, and the tap tries again */
