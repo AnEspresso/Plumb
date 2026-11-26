@@ -15,6 +15,7 @@
 **Testing.** In `app/`: `node sim.js` (jsdom, about 1045 checks) and `node qa.js` (real Chrome, 92 checks). CI runs them in `SitePlumb QA`; its `verify-live` job only passes after a merge has deployed.
 
 **Recent versions** (newest first; `git log` has the full list):
+- 2.529.0 Simple Draws v1: a Draw schedule row on Money; a stage becomes an ordinary invoice with one tap (Bill this stage). Dollars only, builder only, no homeowner schedule. **Needs the separate rules PR (draws collection) published by Peter after this is live;** until then a stage says Not saved and the app loads clean for every role. A stage keeps its own history lines (stage.hist).
 - 2.444.0 says what is missing before packet sign-off, how to turn notifications back on, and where an invite goes.
 - 2.443.0 plain words for invite and sign-in errors; Agency's invite message rewrites.
 - 2.442.0 text the install packet in one tap, even before the crew is booked.
