@@ -15,6 +15,7 @@
 **Testing.** In `app/`: `node sim.js` (jsdom, about 1045 checks) and `node qa.js` (real Chrome, 92 checks). CI runs them in `SitePlumb QA`; its `verify-live` job only passes after a merge has deployed.
 
 **Recent versions** (newest first; `git log` has the full list):
+- 2.531.0 Download this house: a printable house record (builder copy and homeowner copy) and a money spreadsheet. Builder: house page; homeowner: Home tab. App only: no rules or Functions change.
 - 2.530.0 Bad signal: every house with unsent changes goes up when signal returns, and the pill says Saved · live only when that is true. Two phones on one note, selection or daily log no longer replace each other silently. App only: no rules or Functions change.
 - 2.529.0 Simple Draws v1: a Draw schedule row on Money; a stage becomes an ordinary invoice with one tap (Bill this stage). Dollars only, builder only, no homeowner schedule. **Needs the separate rules PR (draws collection) published by Peter after this is live;** until then a stage says Not saved and the app loads clean for every role. A stage keeps its own history lines (stage.hist).
 - 2.444.0 says what is missing before packet sign-off, how to turn notifications back on, and where an invite goes.
@@ -27,6 +28,18 @@
 - 2.433.0 the app links back to the site.
 - 2.432.0 the calendar button says Open calendar.
 - 2.429.0 an invited crew sees their own bookings.
+
+## 2.531.0 - Download this house (November 26, 2026)
+
+**What changed.** A quiet **Download this house** button. Builder: bottom of the house page, next to "Mark house finished", only for the owner or a Team member with Money (Invoices) on and only on a house where this phone is the builder. It opens a small sheet with three rows: **House record, my copy** (everything, with the money, banner "Builder copy... Not for the homeowner."), **House record, homeowner copy** and **Money spreadsheet (.csv)**. Homeowner: bottom of the Home tab, under Raise a concern / Share an idea; it goes straight to the print view with the homeowner copy. Crew, and Team with Money off, get no button. The record opens in the existing print view (`#invPrintView`, Done and Print / Save as PDF); the spreadsheet goes through `_csvShare`. One quiet footer line at the end: "Builders: see how SitePlumb works at siteplumb.com". `privacy.html` now says to tap Download this house, and that photos and files still need an email. App only: no Firestore, Storage or Functions change, nothing for Peter to publish.
+
+**Option A (Peter decided 11/26/2026).** The builder sheet offers both the builder copy and the homeowner copy. The homeowner copy is the same function the homeowner's own button uses (`houseExportParts(p,'client')`), so the two cannot disagree.
+
+**The safety rule is in code.** `houseExportParts` picks the reader from the session and `siteRoleFor(p)`; a homeowner, or a phone that is not the builder on that house, always gets the homeowner subset. Job costs, budget lines and margins are never read. Change orders and invoices that have not loaded say so ("could not be loaded. Try again with signal.") instead of printing nothing; the spreadsheet refuses to save a short copy. The "made by" line uses `orgPrefs().company` when set.
+
+**Left alone.** The account-delete screen itself (the Privacy page carries the "download first" words). No photo or file ZIP, no JSON, no whole-book download.
+
+**Still to do.** A short real-phone check: iPhone Safari and the installed app, Print / Save as PDF then Save to Files on a house with many items (no row cut across pages, footer last), the spreadsheet share sheet, and a Team (Money off) phone and a crew phone showing no button.
 
 ## 2.530.0 - Bad signal (November 26, 2026)
 
