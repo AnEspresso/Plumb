@@ -256,7 +256,7 @@ service cloud.firestore {
             || verNum(request.resource.data.appV) >= get(/databases/$(database)/documents/settings/money).data.get('minAppV', 0);
         }
         /* M-7: a real person and the server clock on every write to inv, selm, pmts, costs (co is A1). */
-        function a2Coll() { return recordColl in ['inv', 'selm', 'pmts', 'costs']; }
+        function a2Coll() { return recordColl in ['inv', 'selm', 'pmts', 'costs', 'draws']; }   /* 2.529.0: draws (payment stages) carry the same stamp */
         function moneyStampOk() { return !a2Coll() || stampOk(); }
         /* M-3 + #71 gaps: a sent invoice is locked. Number, title and the original lines never change; it never goes back
            to draft (gap 2: a stale sync can't write an old draft over a sent invoice); void needs a reason and stays void;
@@ -340,6 +340,25 @@ service cloud.firestore {
             || (o.get('status', 'draft') == 'draft' ? (n.get('status', 'draft') == 'draft' || invClaimOk(n)) : invLockedOk(n, o));
         }
         /* M-5: a payment is add-only. The one change allowed is voiding it, once, with a reason; it is never deleted. */
+        /* 2.529.0 Simple Draws: one record per payment stage, builder with money only (moneyColl). Whole cents, never negative.
+           Once a stage is billed (status 'billed') its amount and name cannot change; they change again only after the stage
+           is freed (status back to 'open' with no invoice), which is what voiding its invoice does. Billing and freeing
+           themselves (status, invoiceId, billedAt) are always allowed. */
+        function drawShapeOk() {
+          let n = recNew();
+          return recordColl != 'draws'
+            || (n.get('amountC', null) is int && n.amountC > 0 && n.amountC < 100000000000
+                && n.get('title', null) is string && n.title.size() > 0 && n.title.size() <= 80
+                && n.get('status', null) in ['open', 'billed']);
+        }
+        function drawLockOk() {
+          let n = recNew();
+          let o = rec();
+          return recordColl != 'draws'
+            || o.get('status', 'open') != 'billed'
+            || n.get('status', 'open') == 'open'
+            || (n.get('amountC', null) == o.get('amountC', null) && n.get('title', null) == o.get('title', null));
+        }
         function pmtUpdateOk() {
           let ch = recNew().diff(rec()).affectedKeys();
           return recordColl != 'pmts'
@@ -473,7 +492,7 @@ service cloud.firestore {
         /* F-2 R: inv (invoices, off the house doc) and selm (a selection's
            money, doc id = the selection id) are money collections: only a
            builder who passes moneyOk() creates, updates or deletes them. */
-        function moneyColl() { return recordColl in ['costs', 'mail', 'inv', 'selm', 'pmts']; }   /* A2 M-5: pmts joins the money gate */
+        function moneyColl() { return recordColl in ['costs', 'mail', 'inv', 'selm', 'pmts', 'draws']; }   /* A2 M-5: pmts joins the money gate */
         /* PR 0 (R-1 prep): a homeowner's selection write is an allowlist.
            The app writes a whole record as {data, updatedAt, updatedBy}. A
            homeowner Approves (data.approved + data.signed, clientSignoff) and
@@ -618,7 +637,7 @@ service cloud.firestore {
            clientInvOk (Approve); create/delete stay builder-only. */
         allow read: if signedIn() && sScoped() && !newColl()
           && (recordColl == 'pmts' ? moneyOk() || sRole() == 'client'
-              : recordColl in ['mail','costs'] ? moneyOk()
+              : recordColl in ['mail','costs','draws'] ? moneyOk()   /* 2.529.0: payment stages are builder-with-money only */
               : recordColl == 'inv' ? moneyOk() || (sRole() == 'client' && invSeen())   /* #6: never a draft */
               : recordColl == 'selm' ? moneyOk() || sRole() == 'client'
               : recordColl == 'bk' ? (sRole() == 'sub' ? crewOwnBk() : (sMember() && sRole() != 'client'))   /* 2.527.0: the homeowner reads bkho */
@@ -627,13 +646,13 @@ service cloud.firestore {
 
         allow create: if signedIn() && sScoped() && !newColl()
           && selNoMoney()
-          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invCreateOk())
+          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invCreateOk() && drawShapeOk())
               || (sRole() == 'sub' && recordColl in ['items','logs'] && seeNewOk())
               || (sRole() == 'client' && clientItemNewOk() && seeNewOk()));
 
         allow update: if signedIn() && sScoped() && !newColl()
           && selNoMoney()
-          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invUpdateOk() && pmtUpdateOk())
+          && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invUpdateOk() && pmtUpdateOk() && drawShapeOk() && drawLockOk())
               || (sRole() == 'sub' && crewItemOk() && seeKeptOk())
               || (sRole() == 'sub' && crewBkRespOk())
               || (sRole() == 'client' && recordColl == 'items' && crewItemOk() && seeKeptOk())   /* #15: own notes only; 2.527.0: tags kept */
@@ -643,6 +662,7 @@ service cloud.firestore {
         allow delete: if signedIn() && sScoped() && !newColl()
           && sRole() == 'builder' && (!moneyColl() || moneyOk())
           && recordColl != 'pmts'                                              /* A2 M-5: never deleted */
+          && (recordColl != 'draws' || rec().get('status', 'open') != 'billed')   /* 2.529.0: a billed stage is never deleted */
           && (recordColl != 'inv' || rec().get('status', 'draft') == 'draft');   /* A2 M-3: only a never-sent draft */
 
         /* Rules A1: the five new collections, each its own strict rule. */

@@ -577,6 +577,67 @@ async function main() {
     await INV(`${c}: other house's builder DENIED write`, setDoc(at(db.otherBuilder, 'liveA', 'n7'), mk()), false);
     await INV(`${c}: unauth DENIED read`, getDoc(at(db.unauth, 'liveA')), false);
   }
+  /* ══════════ 2.529.0 SIMPLE DRAWS: payment stages (draws) ══════════
+     One record per stage, {data, updatedAt, updatedBy} plus the money stamp (byUid, at, appV, tappedAt). Only a builder who
+     passes moneyOk() reads or writes them; crews, the homeowner and strangers get nothing. Amount is whole cents, above zero.
+     A billed stage cannot change its amount or title until it is freed (status back to open); billing and freeing are allowed. */
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    const adb = ctx.firestore();
+    const stage = (over) => ({ data: Object.assign({ id: 'dr_open', order: 1, title: 'Slab poured', amountC: 4200000,
+      note: '', status: 'open', invoiceId: null, billedAt: null }, over || {}), updatedAt: 1, updatedBy: 'dev-builder' });
+    for (const site of ['liveA', 'liveGate', 'liveGateJ']) {
+      await setDoc(doc(adb, `sites/${site}/draws/dr_open`), stage());
+      await setDoc(doc(adb, `sites/${site}/draws/dr_billed`), stage({ id: 'dr_billed', order: 2, title: 'Framing', amountC: 1000000, status: 'billed', invoiceId: 'inv_x', billedAt: 1 }));
+    }
+  });
+  const DR = (d, site, id) => doc(d, `sites/${site}/draws/${id}`);
+  const DRDOC = (over) => ({ data: Object.assign({ id: 'dr_new', order: 3, title: 'Drywall', amountC: 250000, note: '',
+    status: 'open', invoiceId: null, billedAt: null }, over || {}), updatedAt: 2, updatedBy: 'dev-builder' });
+  // the builder who owns the house
+  await INV('draws: builder (owner) reads', getDoc(DR(db.builder, 'liveA', 'dr_open')), true);
+  await INV('draws: builder (owner) lists', getDocs(collection(db.builder, 'sites/liveA/draws')), true);
+  await INV('draws: builder (owner) creates a stamped stage', setDoc(DR(db.builder, 'liveA', 'dr_new'), Object.assign(DRDOC(), A2S(U.builder))), true);
+  await INV('draws: builder (owner) edits an open stage', updateDoc(DR(db.builder, 'liveA', 'dr_new'), Object.assign({ 'data.amountC': 260000, 'data.title': 'Drywall hung', updatedAt: 3 }, A2S(U.builder))), true);
+  await INV('draws: builder (owner) bills an open stage (status, invoiceId, billedAt)', updateDoc(DR(db.builder, 'liveA', 'dr_open'), Object.assign({ 'data.status': 'billed', 'data.invoiceId': 'inv_y', 'data.billedAt': 5, updatedAt: 4 }, A2S(U.builder))), true);
+  await INV('draws: builder (owner) deletes an open stage', deleteDoc(DR(db.builder, 'liveA', 'dr_new')), true);
+  await INV('draws: builder with moneyJob reads and creates', Promise.all([getDoc(DR(db.builder2, 'liveGateJ', 'dr_open')),
+    setDoc(DR(db.builder2, 'liveGateJ', 'dr_j'), Object.assign(DRDOC({ id: 'dr_j' }), A2S(U.builder2)))]), true);
+  // a builder without money access
+  await INV('draws: builder without money access DENIED read', getDoc(DR(db.builder2, 'liveGate', 'dr_open')), false);
+  await INV('draws: builder without money access DENIED list', getDocs(collection(db.builder2, 'sites/liveGate/draws')), false);
+  await INV('draws: builder without money access DENIED create', setDoc(DR(db.builder2, 'liveGate', 'dr_n'), Object.assign(DRDOC(), A2S(U.builder2))), false);
+  await INV('draws: builder without money access DENIED update', updateDoc(DR(db.builder2, 'liveGate', 'dr_open'), Object.assign({ 'data.note': 'x', updatedAt: 9 }, A2S(U.builder2))), false);
+  await INV('draws: builder without money access DENIED delete', deleteDoc(DR(db.builder2, 'liveGate', 'dr_open')), false);
+  // homeowner, crew, stranger, other house's builder, signed out: nothing, read or write
+  for (const [who, d] of [['homeowner', db.client], ['crew', db.sub], ['stranger', db.stranger], ["other house's builder", db.otherBuilder], ['signed-out', db.unauth]]) {
+    const uid = d === db.client ? U.client : d === db.sub ? U.sub : d === db.stranger ? U.stranger : d === db.otherBuilder ? U.otherBuilder : 'nobody';
+    await INV(`draws: ${who} DENIED read`, getDoc(DR(d, 'liveA', 'dr_billed')), false);
+    await INV(`draws: ${who} DENIED list`, getDocs(collection(d, 'sites/liveA/draws')), false);
+    await INV(`draws: ${who} DENIED create`, setDoc(DR(d, 'liveA', 'dr_x'), Object.assign(DRDOC(), A2S(uid))), false);
+    await INV(`draws: ${who} DENIED update`, updateDoc(DR(d, 'liveA', 'dr_billed'), Object.assign({ 'data.note': 'x', updatedAt: 9 }, A2S(uid))), false);
+    await INV(`draws: ${who} DENIED delete`, deleteDoc(DR(d, 'liveA', 'dr_billed')), false);
+  }
+  // the stamp (byUid, at, appV) is required
+  await INV('draws: create without the stamp DENIED', setDoc(DR(db.builder, 'liveA', 'dr_s1'), DRDOC({ id: 'dr_s1' })), false);
+  await INV('draws: create with another person\'s byUid DENIED', setDoc(DR(db.builder, 'liveA', 'dr_s2'), Object.assign(DRDOC({ id: 'dr_s2' }), A2S(U.builder2))), false);
+  await INV('draws: create with a client clock (not the server time) DENIED', setDoc(DR(db.builder, 'liveA', 'dr_s3'), Object.assign(DRDOC({ id: 'dr_s3' }), A2S(U.builder), { at: 1791200000000 })), false);
+  await INV('draws: create without appV DENIED', setDoc(DR(db.builder, 'liveA', 'dr_s4'), Object.assign(DRDOC({ id: 'dr_s4' }), A2S(U.builder), { appV: '' })), false);
+  await INV('draws: update without the stamp DENIED', updateDoc(DR(db.builder, 'liveA', 'dr_billed'), { 'data.note': 'x', updatedAt: 9 }), false);
+  // whole cents only, above zero
+  for (const [label, amountC] of [['negative', -100], ['zero', 0], ['a fraction of a cent', 10.5], ['a string', '100']])
+    await INV(`draws: ${label} amount DENIED`, setDoc(DR(db.builder, 'liveA', 'dr_bad'), Object.assign(DRDOC({ id: 'dr_bad', amountC }), A2S(U.builder))), false);
+  await INV('draws: one cent ALLOWED', setDoc(DR(db.builder, 'liveA', 'dr_pen'), Object.assign(DRDOC({ id: 'dr_pen', amountC: 1 }), A2S(U.builder))), true);
+  await INV('draws: a stage with no name DENIED', setDoc(DR(db.builder, 'liveA', 'dr_bad'), Object.assign(DRDOC({ id: 'dr_bad', title: '' }), A2S(U.builder))), false);
+  await INV('draws: a status other than open or billed DENIED', setDoc(DR(db.builder, 'liveA', 'dr_bad'), Object.assign(DRDOC({ id: 'dr_bad', status: 'paid' }), A2S(U.builder))), false);
+  // a billed stage is locked
+  await INV('draws: billed stage amount cannot change', updateDoc(DR(db.builder, 'liveA', 'dr_billed'), Object.assign({ 'data.amountC': 1, updatedAt: 6 }, A2S(U.builder))), false);
+  await INV('draws: billed stage title cannot change', updateDoc(DR(db.builder, 'liveA', 'dr_billed'), Object.assign({ 'data.title': 'Renamed', updatedAt: 6 }, A2S(U.builder))), false);
+  await INV('draws: billed stage cannot be deleted', deleteDoc(DR(db.builder, 'liveA', 'dr_billed')), false);
+  await INV('draws: a billed stage can still be reordered or its note changed', updateDoc(DR(db.builder, 'liveA', 'dr_billed'), Object.assign({ 'data.order': 1, 'data.note': 'Due Friday', updatedAt: 6 }, A2S(U.builder))), true);
+  await INV('draws: freeing a billed stage (void) is allowed', updateDoc(DR(db.builder, 'liveA', 'dr_billed'), Object.assign({ 'data.status': 'open', 'data.invoiceId': null, 'data.billedAt': null, updatedAt: 7 }, A2S(U.builder))), true);
+  await INV('draws: once freed, the amount can change again', updateDoc(DR(db.builder, 'liveA', 'dr_billed'), Object.assign({ 'data.amountC': 900000, updatedAt: 8 }, A2S(U.builder))), true);
+  await INV('draws: once freed, it can be deleted', deleteDoc(DR(db.builder, 'liveA', 'dr_billed')), true);
+
   /* #40 stays stripped: a homeowner still cannot write invoices onto the house
      doc (clientHouseOk has no invoices key). */
   await INV_LOGIC('F-2 R: homeowner writing meta.invoices on the house - DENIED by the rule (no #40 allow)',
