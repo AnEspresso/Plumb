@@ -4081,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.527.1 - Fix: a homeowner or crew phone no longer shows Not saved when the house details only came back in a different order';   /* 11/26: house fingerprints sort the keys. Found on the 2.527.0 live check. */
+const PLUMB_VERSION='2.528.0 - Privacy step 2: the company record has an owner and a teammate changes only setup and team invites, the homeowner approves an invoice for a stated amount and the OK records that amount';   /* 11/26: app first, then the rules that hold it. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795707095140;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.527.1';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795708036367;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.528.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -11929,17 +11929,37 @@ const Org={
       Sync.unsub.push(this._unsub);
     }catch(e){}},
   schedule(){if(this._pushDenied||this._timer)return;this._timer=setTimeout(()=>{this._timer=null;this.push();},700);},
+  /* 2.528.0: the company record has an owner (owner: uid). The owner's phone writes the whole record, members included.
+     A teammate's phone changes only the setup and the team invite list (update, never set), so it can't drop the owner
+     or anyone else, add a member, or change who may open the workbench; a setup change it makes waits for the owner's
+     review (_prov.approved false, which saveOrgPrefs already sets). A record made before 2.528.0 has no owner: the
+     owner of one of its houses (made it, or signed in as the owner) claims it once, naming that house (ownerSite). */
+  _ownerSite(id){const me=this._uid();if(!me||!id)return null;
+    const h=(state.projects||[]).find(p=>{if(!p||p.org!==id||(p.members||{})[me]!=='builder')return false;
+      const mi=(p.memberInfo||{})[me];return !mi||mi.rpRole==='owner'||mi.owner===true;});
+    return h?String(h.id):null;},
   async push(){
     if(!this._isBuilder()||this._pushDenied)return;
     const id=this.id();if(!id)return;
     const rec=await this._get(id);
-    if(!this._canWrite(rec,this._uid()))return;
-    const members={};(state.projects||[]).forEach(p=>{Object.keys(p.members||{}).forEach(uid=>{if(p.members[uid]==='builder')members[uid]='builder';});});
-    const me=this._uid();if(me)members[me]='builder';
+    const me=this._uid();
+    if(!this._canWrite(rec,me))return;
+    const d=(rec.exists&&rec.data)||null;
+    const claim=!!(d&&!d.owner)&&this._ownerSite(id);
+    const owner=!d||d.owner===me||!!claim;
     try{
-      const payload={id,prefs:orgPrefs(),teamInvites:laTeamInvites(),members,updatedAt:this._at()||Date.now(),updatedBy:Sync.deviceId};
-      await Sync.db.collection('orgs').doc(id).set(payload);
-      this._cache[id]={ok:true,exists:true,data:payload,denied:false};
+      if(owner){
+        const members={};(state.projects||[]).forEach(p=>{Object.keys(p.members||{}).forEach(uid=>{if(p.members[uid]==='builder')members[uid]='builder';});});
+        if(me)members[me]='builder';
+        const payload={id,prefs:orgPrefs(),teamInvites:laTeamInvites(),members,owner:me,updatedAt:this._at()||Date.now(),updatedBy:Sync.deviceId};
+        if(claim)payload.ownerSite=claim;
+        await Sync.db.collection('orgs').doc(id).set(payload);
+        this._cache[id]={ok:true,exists:true,data:payload,denied:false};
+      }else{
+        const patch={prefs:orgPrefs(),teamInvites:laTeamInvites(),updatedAt:this._at()||Date.now(),updatedBy:Sync.deviceId};
+        await Sync.db.collection('orgs').doc(id).update(patch);
+        this._cache[id]={ok:true,exists:true,data:Object.assign({},d,patch),denied:false};
+      }
     }catch(e){
       this._pushDenied=true;
       if(this._timer){clearTimeout(this._timer);this._timer=null;}
@@ -16564,6 +16584,9 @@ function clearBillers(){const p=P();p.billers=[];delete p.billingOwner;persist()
    holds none) and offered New invoice. Same gate as openInvoices. */
 function openBillingPicker(){if(!canGate('moneyCo')){toast('Invoices are off for this role');return;}invMode='owner';renderInvoices();const sc=document.getElementById('invScrim');if(sc)sc.classList.add('show');}
 function billersSummaryLine(){try{const p=P();if(!p)return 'Choose who gets invoice & past-due alerts';const set=billersOf(p);const site=p.street||p.name||'this house';return (set.length?(set.length<=2?set.join(', '):set.length+' people'):'Whole team')+' · '+site;}catch(e){return 'Choose who gets invoice & past-due alerts';}}
+/* 2.528.0: what the homeowner approved, and when a credit or charge has changed the total since. */
+function invOkText(inv){if(!inv||inv.approvedTotal==null)return '';const a=Number(inv.approvedTotal)||0,t=Number(inv.total)||0;
+  return ' for '+esc(fmtMoney(a))+(Math.abs(a-t)>0.005?' (a credit or charge since: total now '+esc(fmtMoney(t))+')':'');}
 function invStatusChip(st){const lbl={draft:'Draft',sent:'Sent',approved:'Approved',partial:'Partial',overdue:'Past due',paid:'Paid',void:'Void'}[st]||st;return `<span class="inv-chip ${st}">${lbl}</span>`;}
 function invDetailHTML(p,inv,viewer){
   const st=invState(inv);const paid=invPaidAmt(inv);const bal=invBalance(inv);
@@ -16576,7 +16599,7 @@ function invDetailHTML(p,inv,viewer){
     +`<div class="sro fw-7"><span class="k">Total</span><span class="v">${fmtMoney(inv.total)}</span></div>`
     +(paid>0?`<div class="sro"><span class="k">Paid</span><span class="v">−${fmtMoney(paid)}</span></div><div class="sro fw-7"><span class="k">Balance due</span><span class="v">${fmtMoney(bal)}</span></div>`:'')
     +`</div>`;
-  h+=`<div class="mt-2">${invStatusChip(st)}${st==='overdue'?` <span class="fs-xs c-clay">past due ${esc(invDueText(inv.due))}</span>`:''}${inv.approvedAt?` <span class="fs-xs c-ink-3">approved ${timeAgo(inv.approvedAt)}</span>`:''}${st==='paid'&&inv.paidAt?` <span class="fs-xs c-ink-3">paid ${timeAgo(inv.paidAt)}</span>`:''}${st==='void'&&inv.voidedAt?` <span class="fs-xs c-ink-3">voided ${timeAgo(inv.voidedAt)}</span>`:''}</div>`;
+  h+=`<div class="mt-2">${invStatusChip(st)}${st==='overdue'?` <span class="fs-xs c-clay">past due ${esc(invDueText(inv.due))}</span>`:''}${inv.approvedAt?` <span class="fs-xs c-ink-3">approved ${timeAgo(inv.approvedAt)}${invOkText(inv)}</span>`:''}${st==='paid'&&inv.paidAt?` <span class="fs-xs c-ink-3">paid ${timeAgo(inv.paidAt)}</span>`:''}${st==='void'&&inv.voidedAt?` <span class="fs-xs c-ink-3">voided ${timeAgo(inv.voidedAt)}</span>`:''}</div>`;
   h+=HIST.slotHTML(p,inv.id,'inv');
   if(inv.status!=='draft')h+=FLAGS.slotHTML(p,'inv',inv.id);
   // payment history
@@ -16593,8 +16616,8 @@ function invDetailHTML(p,inv,viewer){
   // client approve
   if(viewer==='client'&&invNeedsOK(inv))
     h+=(_invOkBusy[p.id+':'+inv.id]?`<button class="b1 b-go w-full mt-3 btn btn-primary inv-ok" disabled aria-busy="true">Saving…</button>`
-      :`<button class="b1 b-go w-full mt-3 btn btn-primary inv-ok" onclick="invApprove('${p.id}','${inv.id}')">Approve this invoice</button>`)+`
-      <p class="mt-2 ml-0 mr-0 mb-0 c-ink-3 fs-xs">Approving tells your builder the charges look right. Payment itself happens however you two normally settle up.</p>`;
+      :`<button class="b1 b-go w-full mt-3 btn btn-primary inv-ok" onclick="invApprove('${p.id}','${inv.id}')">Approve ${esc(fmtMoney(inv.total))}</button>`)+`
+      <p class="mt-2 ml-0 mr-0 mb-0 c-ink-3 fs-xs">Approving tells your builder that ${esc(invNoText(inv)||'this invoice')} for ${esc(fmtMoney(inv.total))}${inv.due?', due '+esc(inv.due):''} looks right. Your builder sees that you approved this amount. Payment itself happens however you two normally settle up.</p>`;
   // builder: record payment (partial or full) while a balance remains
   if(viewer==='builder'&&st!=='void'&&bal>0){
     h+=`<div class="sec"><h2>Record a payment</h2></div>
@@ -16676,17 +16699,26 @@ async function invApprove(projId,invId){
     toast('Not approved yet. Ask your builder to check your access.');return;}
   const at=Date.now();
   _invOkBusy[key]=true;_invOkRender(p,inv);
-  try{const ref=Sync.db.collection('sites').doc(String(p.id)).collection('inv').doc(String(invId));const base={data:{status:'approved',approvedAt:at},updatedAt:at,updatedBy:Sync.deviceId};
+  /* 2.528.0: the OK says what was agreed to: the total the homeowner saw (approvedTotal, the rules check it is the
+     invoice's total) and the name the server stamped for them on this house (approvedBy). */
+  const okTotal=Number(inv.total)||0,okBy=String((((p.memberInfo||{})[Sync.uid])||{}).name||'');
+  let okSaved=true;
+  try{const ref=Sync.db.collection('sites').doc(String(p.id)).collection('inv').doc(String(invId));
     /* 2.481.0: Rules A2 wants who, the server time and the app version (M-7, M-15); Rules A1 (live until A2 is published) refuses them, so try the A2 shape first and fall back once. */
     let ts=null;try{ts=Sync.uid?CO.ts():null;}catch(e){}
-    if(!ts)await ref.set(base,{merge:true});
-    else try{await ref.set(Object.assign({},base,{byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at}),{merge:true});}
-    catch(e1){if(!(e1&&e1.code==='permission-denied'))throw e1;await ref.set(base,{merge:true});}}
+    const put=async data=>{const base={data,updatedAt:at,updatedBy:Sync.deviceId};
+      if(!ts)return ref.set(base,{merge:true});
+      try{return await ref.set(Object.assign({},base,{byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at}),{merge:true});}
+      catch(e1){if(!(e1&&e1.code==='permission-denied'))throw e1;return ref.set(base,{merge:true});}};
+    /* 2.528.0: the OK with what was agreed to first; the rules before 2.528.0 refuse the two new fields, so fall back once
+       to status and approvedAt (the 2.528.0 rules refuse that one, so it never lands once they are published). */
+    try{await put({status:'approved',approvedAt:at,approvedTotal:okTotal,approvedBy:okBy});}
+    catch(e2){if(!(e2&&e2.code==='permission-denied'))throw e2;okSaved=false;await put({status:'approved',approvedAt:at});}}
   catch(e){delete _invOkBusy[key];const denied=!!(e&&e.code==='permission-denied');
     trapError(denied?'rules':'caught','Invoice approve write '+(denied?'refused':'failed')+': '+String((e&&(e.code||e.message))||'').slice(0,100),'invApprove');
     _invOkRender(p,inv);toast(denied?'Not approved yet. Ask your builder to check your access.':SIGNAL);return;}
   delete _invOkBusy[key];
-  inv.status='approved';inv.approvedAt=at;
+  inv.status='approved';inv.approvedAt=at;if(okSaved){inv.approvedTotal=okTotal;inv.approvedBy=okBy;}
   /* The server now holds this record: mark it synced (this phone's own echo is
      skipped by the inv listener). A homeowner never pushes inv records. */
   try{const sh=Sync._shadow[String(p.id)]||(Sync._shadow[String(p.id)]={meta:'',colls:{}});sh.colls=sh.colls||{};
@@ -16715,6 +16747,7 @@ function invMergeServer(loc,srv){
   const bare=a=>JSON.stringify(a.map(it=>(it&&typeof it==='object'&&!it.adj)?Object.assign({},it,{amountC:undefined}):it));   // the cents twin aside (2.495.0 heal)
   if(!(li.length>=si.length&&bare(li.slice(0,si.length))===bare(si))){out.items=cl(si);out.total=srv.total;if('totalC' in srv)out.totalC=srv.totalC;else delete out.totalC;}
   if(srv.approvedAt!=null)out.approvedAt=srv.approvedAt;
+  ['approvedTotal','approvedBy'].forEach(k=>{if(k in srv)out[k]=srv[k];else delete out[k];});   /* 2.528.0: what the homeowner agreed to is the server's */
   if(srv.status==='void'){out.status='void';out.voidedAt=srv.voidedAt;out.voidReason=srv.voidReason;}
   else if(out.status!=='void'){
     if(JSON.stringify(pays)!==JSON.stringify(lp)){   // the payments changed in the merge: paid or not follows them
