@@ -1284,6 +1284,9 @@ t('dev panel carries the QuickBooks line', $("!!document.getElementById('qbLine'
 $('qbRenderLine()');
 t('qb line explains the gate in demo', el('qbLine').innerHTML.includes('Sign in live'));
 t('telemetry beat/event are no-throw when sync is off', await $("Promise.all([Sync.beat(),Sync.event('x','y')]).then(()=>true,()=>false)")===true);
+/* 2.528.2: the sample Beaumont house (live walk 2.528.1) put a cost note in the homeowner-visible Selection note field. No sample selection note may read like a cost note. */
+t('2.528.2 sample selections: no note reads like a cost note', $("(function(){var re=/job cost|overage|over estimate|over budget|margin|markup|our cost|\\bcost\\b|invoice|\\$\\s?\\d/i;var bad=[];state.projects.forEach(function(p){(p.selections||[]).forEach(function(s){if(s.note&&re.test(s.note))bad.push(p.id+':'+s.id);});});return bad.join(',');})()")==='');
+t('2.528.2 sample Beaumont Tile note is homeowner safe', $("(function(){var p=state.projects.find(x=>x.id==='p8');var s=p.selections.find(x=>x.cat==='Tile');return /overage|job cost|homeowner notified/i.test(s.note||'');})()")===false);
 /* 2.528.1: signed out (an anonymous sign-in), the usage ping is not sent at all: the server would answer 403 every minute */
 t('2.528.1 telemetry: no ping from an anonymous sign-in, one from an account', await $(`(async function(){var calls=[];var hadFb=typeof window.firebase!=='undefined';if(!hadFb)window.firebase={};var sv={fn:fnCall,on:Sync.on,db:Sync.db,fa:window.firebase.auth};
   fnCall=function(n){calls.push(n);return Promise.resolve({});};Sync.on=true;Sync.db=Sync.db||{};
