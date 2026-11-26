@@ -4081,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.527.0 - Privacy: crews and the homeowner get only the notes and daily logs shared with them, the homeowner gets a schedule copy without the crew packet link, crew packets carry only what is pinned to them';   /* 11/25: step 1 of the privacy release. The rules that hold this on the server ship next, after a builder phone tags the notes. */
+const PLUMB_VERSION='2.527.1 - Fix: a homeowner or crew phone no longer shows Not saved when the house details only came back in a different order';   /* 11/26: house fingerprints sort the keys. Found on the 2.527.0 live check. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795654580788;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.527.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795707095140;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.527.1';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -10903,8 +10903,8 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           members:memOut,memberUids:Object.keys(mem)};                       // top-level copies: rules + scoped queries read these
         const del=fbDelete();if(del!==undefined)payload.data=del;            // retire legacy whole-blob field
         await this.db.collection('sites').doc(id).set(payload,{merge:true});
-        sh.meta=_syncHash(JSON.stringify(op.data));sh.mem=Object.assign({},mem);
-        sh.mk={};Object.keys(op.data||{}).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(op.data[k]));});sh.mk2=metaSubHashes(op.data);
+        sh.meta=_mh(op.data);sh.mem=Object.assign({},mem);
+        sh.mk={};Object.keys(op.data||{}).forEach(k=>{sh.mk[k]=_mh(op.data[k]);});sh.mk2=metaSubHashes(op.data);
         if(legClear){this._legInv[id]=[];sh.mk.invoices=_syncHash('[]');}
       } else if(op.kind==='set'){
         const ref=this.db.collection('sites').doc(id).collection(op.sub).doc(op.id);
@@ -11234,17 +11234,17 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
           else if(d.meta){const _nv=Notify.snap(p);const base=sh.mk||{};
             Object.keys(meta).forEach(k=>{if(SYNC_COLLS.some(c=>c.f===k))return;
               /* server field unchanged since this phone last synced, but edited here: keep the phone's edit (pushed after the pull) */
-              const bk=base[k];if(bk!==undefined&&_syncHash(JSON.stringify(meta[k]))===bk&&_syncHash(JSON.stringify(p[k]))!==bk){kept=true;return;}
+              const bk=base[k];if(bk!==undefined&&_mhSame(meta[k],bk)&&!_mhSame(p[k],bk)){kept=true;return;}
               /* #10: both sides changed one of the entry maps: keep this phone's unsent entries, take the server's for the rest */
               const b2=(sh.mk2||{})[k];
-              if(b2&&bk!==undefined&&META_SUBKEYS.includes(k)&&_isMap(meta[k])&&_isMap(p[k])&&_mh(p[k])!==bk){
-                const mine={};Object.keys(p[k]).forEach(x=>{if(_mh(p[k][x])!==b2[x]&&_mh(meta[k][x])===b2[x])mine[x]=p[k][x];});
+              if(b2&&bk!==undefined&&META_SUBKEYS.includes(k)&&_isMap(meta[k])&&_isMap(p[k])&&!_mhSame(p[k],bk)){
+                const mine={};Object.keys(p[k]).forEach(x=>{if(!_mhSame(p[k][x],b2[x])&&_mhSame(meta[k][x],b2[x]))mine[x]=p[k][x];});
                 p[k]=Object.assign({},meta[k],mine);if(Object.keys(mine).length)kept=true;return;}
               p[k]=meta[k];});try{Notify.scanMeta(_nv,p);}catch(e){}}
           else {const _nv=Notify.snap(p);Object.assign(p,meta);try{Notify.scanMeta(_nv,p);}catch(e){}}  // legacy whole-blob fallback
-          sh.mk={};Object.keys(meta).forEach(k=>{sh.mk[k]=_syncHash(JSON.stringify(meta[k]));});sh.mk2=metaSubHashes(meta);
+          sh.mk={};Object.keys(meta).forEach(k=>{sh.mk[k]=_mh(meta[k]);});sh.mk2=metaSubHashes(meta);
           sh.mem=Object.assign({},(meta&&meta.members)||{},d.members||{});
-          sh.meta=kept?'':_syncHash(JSON.stringify(metaOf(p)));changed=true;
+          sh.meta=kept?'':_mh(metaOf(p));changed=true;
         }
         /* F-2: every snapshot, this phone's own included (a builder's own phone
            wrote the legacy list last): dual-read, absorb or drop legacy invoices. */
@@ -12126,15 +12126,26 @@ function invOrder(p){if(!p||!Array.isArray(p.invoices))return;
    (inv, selm, pmts, costs, co) are separate documents and are unchanged. A phone with no server base sends the whole block. */
 const META_SUBKEYS=['stageDone','schedule','packetSignoff','inspections','inspMeta'];
 function _isMap(v){return !!v&&typeof v==='object'&&!Array.isArray(v);}
-function _mh(v){return v===undefined?undefined:_syncHash(JSON.stringify(v));}
+/* 2.527.1: the server, and each snapshot, may list a map's fields in a different order. A fingerprint made from the
+   text as it came made the same details look edited, so a homeowner phone sent the house, was refused, and showed
+   Not saved for good. Fingerprints now sort the keys (_stable). One saved by an older version (keys as they came)
+   still counts as the same (_mhSame), so updating sends nothing. */
+function _stable(v){
+  if(v&&typeof v.toJSON==='function')v=v.toJSON();
+  if(Array.isArray(v))return '['+v.map(function(x){return (x===undefined||typeof x==='function')?'null':_stable(x);}).join(',')+']';
+  if(v&&typeof v==='object')return '{'+Object.keys(v).sort().filter(function(k){return v[k]!==undefined&&typeof v[k]!=='function';})
+    .map(function(k){return JSON.stringify(k)+':'+_stable(v[k]);}).join(',')+'}';
+  return JSON.stringify(v);}
+function _mh(v){return v===undefined?undefined:_syncHash(_stable(v));}
+function _mhSame(v,h){if(v===undefined)return h===undefined;return h!==undefined&&h!==''&&(_mh(v)===h||_syncHash(JSON.stringify(v))===h);}
 function metaSubHashes(m){const out={};META_SUBKEYS.forEach(k=>{if(m&&_isMap(m[k])){const h={};Object.keys(m[k]).forEach(x=>{h[x]=_mh(m[k][x]);});out[k]=h;}});return out;}
 function metaDelta(sh,m){
   const mk=sh&&sh.mk;if(!mk||!Object.keys(mk).length)return null;
   const out={};
-  Object.keys(m||{}).forEach(k=>{const v=m[k];if(v===undefined||_mh(v)===mk[k])return;
+  Object.keys(m||{}).forEach(k=>{const v=m[k];if(v===undefined||_mhSame(v,mk[k]))return;
     const b2=sh.mk2&&sh.mk2[k];
     if(b2&&mk[k]!==undefined&&META_SUBKEYS.includes(k)&&_isMap(v)){
-      const d={};Object.keys(v).forEach(x=>{if(_mh(v[x])!==b2[x])d[x]=v[x];});
+      const d={};Object.keys(v).forEach(x=>{if(!_mhSame(v[x],b2[x]))d[x]=v[x];});
       if(Object.keys(d).length)out[k]=d;return;}
     out[k]=v;});
   return out;
@@ -12146,7 +12157,7 @@ function _syncHash(str){str=String(str==null?'':str);let a=0x811c9dc5,b=5381;
   for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);a^=ch;a=Math.imul(a,16777619);b=(Math.imul(b,33)+ch)|0;}
   return str.length.toString(36)+'.'+(a>>>0).toString(36)+'.'+(b>>>0).toString(36);}
 function diffSiteOps(sh,p){const ops=[];
-  const m=metaOf(p);const ms=_syncHash(JSON.stringify(m));if(ms!==sh.meta)ops.push({kind:'meta',data:m});
+  const m=metaOf(p);if(!_mhSame(m,sh.meta))ops.push({kind:'meta',data:m});
   for(const c of SYNC_COLLS){
     if((c.sub==='inv'||c.sub==='selm'||c.sub==='pmts'||c.sub==='docs'||c.sub==='invs')&&!syncWrites(p,c.sub))continue;   // F-2: only a money-gated builder writes money records; 2.512.0: only a builder writes documents and invite codes
     if(c.mirror&&siteRoleFor(p)!=='builder')continue;                 /* 2.527.0: only a builder writes the homeowner's schedule copy */
