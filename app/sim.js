@@ -6910,13 +6910,226 @@ S('2.529.0 simple draws');
   // wording: version string and jargon
   const ver=String($('PLUMB_VERSION'));
   t('the version string has no apostrophe, semicolon or backslash',!/['";\\]/.test(ver),ver);
-  t('the version says 2.529.0 and Draw schedule',/^2\.529\.0 - Draw schedule/.test(ver));
-  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.529.0'&&/CACHE\s*=\s*'plumb-v2\.529\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
+  t('the version says 2.530.0 and Bad signal',/^2\.530\.0 - Bad signal/.test(ver));
+  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.530.0'&&/CACHE\s*=\s*'plumb-v2\.530\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
   const words=(SRC.match(/function drawsRender[\s\S]*?function drawNoteHint/)||[''])[0]+(SRC.match(/const DRAWS_NOT_SAVED[^\n]*/)||[''])[0];
   t('the Draw schedule words have no jargon',!/\b(ledger|amortiz|retainage|escrow|milestone|tranche|schedule of values|SOV|payload|collection|firestore|rules)\b/i.test(words));
   t('the app has no percent entry for stages (dollars only)',!/dwPct|percent of contract/i.test(SRC));
   t('there is no homeowner schedule toggle',!/Show my payment schedule/i.test(SRC));
 })();
+
+/* ════ 2.530.0 · BAD SIGNAL: every house goes up, an honest pill, two phones on one record ════ */
+{
+S('bad-signal');
+const bsSleep=ms=>new Promise(r=>setTimeout(r,ms));
+const bsJ=c=>JSON.parse($("JSON.stringify("+c+")"));
+const bsPill=()=>$("document.querySelector('.syncpill').textContent");
+const TON="window._bsT=[];window._bsOT=window.toast;window.toast=function(m){window._bsT.push(m);};true";
+const TOFF="(function(){var r=window._bsT.slice();window.toast=window._bsOT;return JSON.stringify(r);})()";
+$(`(function(){
+  window.__bsSave={mode:localStorage.getItem('plumb.mode'),projects:state.projects,session:state.session,su:state.storeUid,ac:state.activeId,
+    sync:{mode:Sync.mode,uid:Sync.uid,authKind:Sync.authKind,deviceId:Sync.deviceId,on:Sync.on,db:Sync.db,_shadow:Sync._shadow,_refused:Sync._refused,_onServer:Sync._onServer,_pulled:Sync._pulled,_sitesPulled:Sync._sitesPulled,_listening:Sync._listening,_held:Sync._held,_pushing:Sync._pushing,_pushAgain:Sync._pushAgain,_collGen:Sync._collGen,_notifReady:Sync._notifReady,unsub:Sync.unsub}};
+  localStorage.setItem('plumb.mode','real');
+  Object.defineProperty(window.navigator,'onLine',{configurable:true,get:function(){return window.__bsOn!==false;}});
+  window.__bsOn=true;
+  window.__bs={w:[],h:{},fail:null,failCode:'permission-denied'};
+  const W=function(path,tag){if(__bs.fail&&__bs.fail(path))return Promise.reject({code:__bs.failCode,message:'Missing or insufficient permissions'});
+    __bs.w.push(path+(tag?' '+tag:''));return Promise.resolve();};
+  const lab=function(d){const x=d&&d.data;return x?(x.cap||x.text||x.item||x.v||''):'';};
+  const coll=function(id,sub){return {doc:function(k){return {set:function(d){return W(sub+'/'+k,lab(d));},delete:function(){return W('del '+sub+'/'+k);}};},
+    where:function(){return coll(id,sub);},
+    onSnapshot:function(o,h){if(typeof o==='function')h=o;__bs.h[id+'/'+sub]=h;return function(){};}};};
+  Sync.db={collection:function(){return {where:function(){return {onSnapshot:function(o,h){__bs.h.sites=h;return function(){};}};},
+    doc:function(id){return {set:function(d){return W('site/'+id);},get:function(){return Promise.resolve({exists:true});},collection:function(sub){return coll(id,sub);}};}};}};
+  __bs.mk=function(id){return {id:id,name:id,street:id+' Test Ln',phase:'frame',members:{uBS:'builder'},
+    items:[{id:1,cap:'old note '+id,area:'Whole House',crew:'',issue:false,sw:'dove',t:1,day:0,share:false,by:'Mike'}],
+    bookings:[],selections:[{id:'s1',room:'Kitchen',cat:'Counters',item:'Quartz',status:'pending',note:''}],
+    logs:[{date:'2026-11-26',t:1,text:'Poured footing',share:false}],payments:[],mailReview:[],costs:[],nextId:2};};
+  __bs.boot=async function(ids){
+    state.session={role:'builder',name:'Mike',auth:{uid:'uBS'}};state.storeUid='uBS';
+    state.projects=ids.map(__bs.mk);state.activeId=ids[0];
+    Object.assign(Sync,{mode:'live',uid:'uBS',authKind:'account',deviceId:'devBS',on:true,_listening:{},_collGen:{},_notifReady:{},_shadow:{},_refused:{},_held:{},_pushing:{},_pushAgain:{},unsub:[],_sitesPulled:true,_onServer:{},_pulled:{}});
+    ids.forEach(function(id){Sync._onServer[id]=1;Sync._pulled[id]={};syncCollsFor(siteRoleFor(P())).forEach(function(c){Sync._pulled[id][c.sub]=true;});});
+    window.__bsOn=true;__bs.w=[];__bs.fail=null;
+    await Sync.pushAll();const n=__bs.w.length;__bs.w=[];return n;};
+  __bs.fire=function(id,sub,list){const h=__bs.h[id+'/'+sub];
+    const docs=list.map(function(x){return {id:x.key,data:function(){return {data:x.data,updatedBy:'devOther',updatedByUid:'uOther'};},metadata:{hasPendingWrites:false}};});
+    h({metadata:{fromCache:false},docs:docs,docChanges:function(){return docs.map(function(d){return {type:'modified',doc:d};});}});};
+  return true;})()`);
+
+/* ── 1. house A edited with no signal, house B opened, signal returns: A goes up too ── */
+const base=await $("__bs.boot(['bsA','bsB'])");
+t('setup: the baseline push of both houses landed',base>0,base);
+$("window.__bsOn=false;state.activeId='bsA';P().items.push({id:2,cap:'poured wall photo',area:'Basement',crew:'',issue:false,sw:'dove',t:2,day:0,share:false,by:'Mike'});P().nextId=3;persist();true");
+t('no signal: the pill says Offline · saved here',bsPill()==='Offline · saved here',bsPill());
+t('no signal: nothing was sent',$("__bs.w.length")===0);
+t('no signal: the edit remembers its house (bsA is waiting)',$("(function(){var a=[];_syncDirty.forEach(function(x){a.push(x);});return a.indexOf('bsA')>=0;})()"));
+$("state.activeId='bsB';window.__bsOn=true;window.dispatchEvent(new window.Event('online'));true");
+t('signal back: the pill is not Saved · live while house A is still unsent',bsPill()==='Saving…',bsPill());
+await bsSleep(1300);
+t('signal back: house A\'s edit went up although house B was the one open',$("__bs.w.indexOf('items/2 poured wall photo')>=0"),$("__bs.w.join()"));
+t('signal back: nothing was left waiting',$("Sync.unsentHouses().length")===0);
+t('signal back: the pill ends on Saved · live',bsPill()==='Saved · live',bsPill());
+
+// an edit no one remembered (the app was closed and reopened with the edit still on the phone): the online event still sends it
+await $("__bs.boot(['bsA','bsB'])");
+$("state.projects[0].items.push({id:4,cap:'edit nobody remembered',area:'Whole House',crew:'',issue:false,sw:'dove',t:8,day:0,share:false,by:'Mike'});_syncDirty.clear();state.activeId='bsB';window.dispatchEvent(new window.Event('online'));true");
+await bsSleep(1300);
+t('signal back sends every house, even one nobody marked as waiting',$("__bs.w.indexOf('items/4 edit nobody remembered')>=0"),$("__bs.w.join()"));
+
+/* ── 2. the pill only says Saved · live when it is true ── */
+await $("__bs.boot(['bsA','bsB'])");
+$("state.activeId='bsA';P().items.push({id:9,cap:'unsent edit',area:'Whole House',crew:'',issue:false,sw:'dove',t:3,day:0,share:false,by:'Mike'});P().nextId=10;setSync('synced');true");
+t('an unsent edit: the pill says Saving…, not Saved · live',bsPill()==='Saving…',bsPill());
+t('an unsent edit: only that house is listed',JSON.stringify(bsJ("Sync.unsentHouses()"))==='["bsA"]',JSON.stringify(bsJ("Sync.unsentHouses()")));
+await $("Sync._pushOne(P())");$("setSync('synced')");
+t('after the push lands: the pill says Saved · live',bsPill()==='Saved · live',bsPill());
+$("window.__bsOn=false;setSync('offline')");
+t('no signal: the pill says Offline · saved here',bsPill()==='Offline · saved here',bsPill());
+$("window.__bsOn=true;setSync('synced')");
+// a save the server refused says Not saved first, and is not counted twice
+$("__bs.fail=function(path){return path==='items/10';};P().items.push({id:10,cap:'refused edit',area:'Whole House',crew:'',issue:false,sw:'dove',t:4,day:0,share:false,by:'Mike'});true");
+await $("Sync._pushOne(P())");$("setSync('synced')");
+t('a refused save: the pill says Not saved first',bsPill()===$("NOT_SAVED_PILL")&&$("Sync.refusedCount()")===1,bsPill());
+t('a refused save is not counted as unsent too',$("Sync.unsentHouses().length")===0);
+$("__bs.fail=null;P().items=P().items.filter(function(x){return x.id!==10;});true");
+await $("Sync._pushOne(P())");$("setSync('synced')");
+t('once the refused save is undone: Saved · live again',bsPill()==='Saved · live'&&$("Sync.refusedCount()")===0,bsPill());
+// a house the server no longer lists does not hold the pill
+$("state.projects.push(__bs.mk('bsGone'));Sync._shadow.bsGone={meta:'x',mk:{name:'x'},colls:{}};delete Sync._onServer.bsGone;state.projects[2].items.push({id:7,cap:'edit on a removed house',area:'Whole House',crew:'',issue:false,sw:'dove',t:5,day:0,share:false,by:'Mike'});setSync('synced');true");
+t('a removed house held back does not stick the pill',bsPill()==='Saved · live'&&JSON.stringify(bsJ("Sync.unsentHouses()"))==='[]',bsPill());
+$("state.projects=state.projects.filter(function(x){return x.id!=='bsGone';});true");
+// a house still sending counts as unsent
+$("Sync._pushing.bsB=true;setSync('synced')");
+t('a house still mid-push keeps the pill on Saving…',bsPill()==='Saving…',bsPill());
+$("delete Sync._pushing.bsB;setSync('synced')");
+t('...and clears when the push ends',bsPill()==='Saved · live',bsPill());
+// demo and sample houses never hold the pill
+t('a sample house never counts as unsent',$("(function(){var p=__bs.mk('bsS');p.sample=true;p.items.push({id:5,cap:'x'});state.projects.push(p);var n=Sync.unsentHouses().length;state.projects.pop();return n;})()")===0);
+
+// the stuck guard: still unsent after a pass and signal is back
+$("Sync._pushing.bsB=true;_stuckN=0;clearTimeout(_stuckTimer);queueSync();true");
+await bsSleep(1100);
+t('stuck guard: still unsent after a pass, it tries again later (not forever)',$("_stuckN")===1&&!!$("_stuckTimer")&&bsPill()==='Saving…',$("_stuckN")+' '+bsPill());
+$("clearTimeout(_stuckTimer);_stuckN=3;queueSync(true);true");
+await bsSleep(1100);
+t('stuck guard: after three tries it says Offline · saved here (true: the edits are on the phone)',bsPill()==='Offline · saved here'&&$("_stuckN")===0,bsPill()+' '+$("_stuckN"));
+$("delete Sync._pushing.bsB;clearTimeout(_stuckTimer);_stuckN=0;_syncDirty.clear();setSync('synced');true");
+t('stuck guard: a fresh edit starts the count again',(function(){$("_stuckN=2;queueSync();");return $("_stuckN")===0;})());
+await bsSleep(900);
+
+// large book: the full comparison runs only when the pill is about to say Saved · live
+const ids=[];for(let i=0;i<60;i++)ids.push('bk'+i);
+await $("__bs.boot("+JSON.stringify(ids)+")");
+$("window.__bsU=0;window.__bsUO=Sync.unsentHouses;Sync.unsentHouses=function(){window.__bsU++;return window.__bsUO.apply(Sync,arguments);};true");
+$("for(var i=0;i<25;i++){setSync('syncing');setSync('offline');setSync('local');}true");
+t('large book: 75 pill updates that are not Saved · live never run the comparison',$("window.__bsU")===0,$("window.__bsU"));
+$("setSync('synced')");
+t('large book: it runs once when the pill is about to say Saved · live',$("window.__bsU")===1&&bsPill()==='Saved · live',$("window.__bsU")+' '+bsPill());
+$("window.__bsU=0;Sync._refused['bk0|set|items|1']={sid:'bk0',kind:'set',sub:'items',id:'1',h:'h',code:'permission-denied',at:1};setSync('synced')");
+t('large book: a refused save answers first, without the comparison',bsPill()===$("NOT_SAVED_PILL")&&$("window.__bsU")===0,bsPill()+' '+$("window.__bsU"));
+$("Sync._refused={};Sync.unsentHouses=window.__bsUO;true");
+
+/* ── 3. coming back to the app pushes every house and does not claim Saved · live on its own ── */
+await $("__bs.boot(['bsA','bsB'])");
+$("state.activeId='bsB';state.projects[0].items.push({id:3,cap:'edit while the app slept',area:'Whole House',crew:'',issue:false,sw:'dove',t:6,day:0,share:false,by:'Mike'});true");
+await $("syncOnResume()");
+t('coming back with an unsent house: the pill is not Saved · live',bsPill()==='Saving…',bsPill());
+await bsSleep(1300);
+t('coming back: every house went up, not just the open one',$("__bs.w.indexOf('items/3 edit while the app slept')>=0"),$("__bs.w.join()"));
+t('coming back: the pill ends on Saved · live',bsPill()==='Saved · live',bsPill());
+t('syncOnResume no longer sets the pill to synced itself',(function(){const s=$("String(syncOnResume)");return s.indexOf("setSync('synced')")<0&&s.indexOf('markAllDirty')>=0;})());
+
+/* ── 4. the same day's log written on two phones ── */
+const conf=async(id)=>{await $("__bs.boot(['"+id+"'])");$("Sync._attachColls('"+id+"');state.activeId='"+id+"';true");};
+const logOf=()=>$("P().logs.map(function(l){return l.text;}).join('|')");
+const srvLog=(text)=>"__bs.fire('bsC','logs',[{key:'d20261126',data:seeRow(P(),'logs',{date:'2026-11-26',t:9,text:"+JSON.stringify(text)+",share:false},'builder','')}]);true";
+await conf('bsC');
+$("P().logs[0].text='Basement pour done';P().logs[0].t=5;true");   // this phone's unsent edit
+$(TON);$(srvLog('Rain delay at noon'));let ts=JSON.parse($(TOFF));
+t('two phones, one day: both texts are kept, the server\'s first, with the writer\'s name',logOf()==='Rain delay at noon\n\nMike: Basement pour done',JSON.stringify(logOf()));
+t('two phones, one day: the toast says both are kept',ts.indexOf('Two phones wrote this day’s log. Both are kept.')>=0&&ts.length===1,JSON.stringify(ts));
+t('two phones, one day: there is still one log for the day',$("P().logs.length")===1);
+await $("Sync._pushOne(P())");
+t('two phones, one day: the combined log goes up on the next push',$("__bs.w.some(function(x){return x.indexOf('logs/d20261126 Rain delay at noon')===0&&x.indexOf('Mike: Basement pour done')>0;})"),$("__bs.w.join()"));
+await conf('bsC');
+$("P().logs[0].text='Same words';true");$(TON);$(srvLog('Same words'));ts=JSON.parse($(TOFF));
+t('the same text on both phones adds nothing',logOf()==='Same words'&&ts.length===0,logOf()+' '+JSON.stringify(ts));
+await conf('bsC');
+$("P().logs[0].text='Poured footing. Framing delivered.';true");$(TON);$(srvLog('Poured footing'));ts=JSON.parse($(TOFF));
+t('this phone\'s text holds the server\'s: the longer is kept, nothing added',logOf()==='Poured footing. Framing delivered.'&&ts.length===0,logOf()+' '+JSON.stringify(ts));
+await $("Sync._pushOne(P())");
+t('...and the longer one goes up',$("__bs.w.some(function(x){return x.indexOf('logs/d20261126 Poured footing. Framing delivered.')===0;})"),$("__bs.w.join()"));
+await conf('bsC');
+$("P().logs[0].text='Poured';true");$(TON);$(srvLog('Poured footing and a delivery'));ts=JSON.parse($(TOFF));
+t('the server\'s text holds this phone\'s: the longer is kept, nothing added',logOf()==='Poured footing and a delivery'&&ts.length===0,logOf());
+
+/* ── 5. a note both phones changed (or both numbered the same) ── */
+const noteRow=(id,cap,extra)=>JSON.stringify(Object.assign({id:id,cap:cap,area:'Whole House',crew:'',issue:false,sw:'dove',t:9,day:0,share:false,by:'Mike'},extra||{}));
+const srvNote=(id,cap,extra)=>"__bs.fire('bsC','items',[{key:'"+id+"',data:seeRow(P(),'items',"+noteRow(id,cap,extra)+",'builder','')}]);true";
+const caps=()=>JSON.parse($("JSON.stringify(P().items.map(function(i){return i.id+':'+i.cap;}))"));
+await conf('bsC');
+$("P().items[0].cap='my edit in the basement';true");$(TON);$(srvNote(1,'their edit upstairs'));ts=JSON.parse($(TOFF));
+t('a note changed on both phones: the server copy replaces it',caps().indexOf('1:their edit upstairs')>=0,JSON.stringify(caps()));
+t('...and this phone\'s text is saved as a new Field Note starting Your version:',caps().some(c=>/^\d+:Your version: my edit in the basement$/.test(c))&&caps().length===2,JSON.stringify(caps()));
+t('...with the plan\'s toast',ts.length===1&&ts[0]==='Someone else changed this note too. Your version is saved in Field Notes.',JSON.stringify(ts));
+t('...the new note has its own number',$("(function(){var ids=P().items.map(function(i){return String(i.id);});return ids.length===2&&ids[0]!==ids[1]&&P().nextId>Math.max.apply(null,P().items.map(function(i){return Number(i.id);}));})()"));
+await $("Sync._pushOne(P())");
+t('...and the kept note goes up',$("__bs.w.some(function(x){return /^items\\/\\d+ Your version: my edit in the basement$/.test(x);})"),$("__bs.w.join()"));
+// both phones numbered a new note 100 with no signal
+await conf('bsC');
+$("P().items.push({id:100,cap:'note from phone one',area:'Garage',crew:'',issue:false,sw:'dove',t:7,day:0,share:false,by:'Mike'});P().nextId=101;true");
+$(TON);$(srvNote(100,'note from phone two',{area:'Deck'}));ts=JSON.parse($(TOFF));
+t('the same number on two phones: both notes are kept',caps().indexOf('100:note from phone two')>=0&&caps().some(c=>/^\d+:Your version: note from phone one$/.test(c))&&!caps().some(c=>/^100:Your version/.test(c)),JSON.stringify(caps()));
+t('the same number on two phones: the toast shows',ts.length===1&&/Someone else changed this note too/.test(ts[0]),JSON.stringify(ts));
+// a kept copy never shares a photo file with the note it came from
+await conf('bsC');
+$("P().items[0].cap='mine with a photo';P().items[0].photoId='phSHARED';true");$(TON);$(srvNote(1,'theirs with a photo',{photoId:'phSHARED'}));ts=JSON.parse($(TOFF));
+t('a shared photo is left off the kept copy, and the text says so',$("(function(){var n=P().items.filter(function(i){return /^Your version/.test(i.cap);})[0];return !!n&&!n.photoId&&/photo stays on the original/.test(n.cap);})()")&&$("P().items.find(function(i){return i.id===1;}).photoId")==='phSHARED',JSON.stringify(caps()));
+// a note nobody on this phone touched is replaced quietly, even though the server copy carries see tags this phone's raw copy lacks
+await conf('bsC');
+$(TON);$(srvNote(1,'re-marked on the other phone',{status:'open'}));ts=JSON.parse($(TOFF));
+t('a note only the other phone changed is replaced quietly: no extra note, no toast',caps().length===1&&caps()[0]==='1:re-marked on the other phone'&&ts.length===0,JSON.stringify(caps())+JSON.stringify(ts));
+await conf('bsC');
+$(TON);$("__bs.fire('bsC','items',[{key:'1',data:seeRow(P(),'items',P().items[0],'builder','')}]);true");ts=JSON.parse($(TOFF));
+t('a server copy that matches this phone adds nothing',caps().length===1&&ts.length===0,JSON.stringify(caps()));
+
+/* ── 6. a selection both phones changed ── */
+const srvSel=(item)=>"__bs.fire('bsC','sel',[{key:'s1',data:{id:'s1',room:'Kitchen',cat:'Counters',item:"+JSON.stringify(item)+",status:'pending',note:''}}]);true";
+await conf('bsC');
+$("P().selections[0].item='Quartz, Calacatta';P().selections[0].status='approved';P().selections[0].note='Client loved it';true");
+$(TON);$(srvSel('Quartz, Taj Mahal'));ts=JSON.parse($(TOFF));
+t('a selection changed on both phones: the server copy replaces it and the count does not grow',$("P().selections.length")===1&&$("P().selections[0].item")==='Quartz, Taj Mahal',$("JSON.stringify(P().selections)"));
+t('...this phone\'s version is saved as a Field Note naming the room and the item',$("(function(){var n=P().items.filter(function(i){return /^Your version/.test(i.cap);})[0];return !!n&&/Kitchen/.test(n.cap)&&/Calacatta/.test(n.cap)&&/approved/.test(n.cap)&&/Client loved it/.test(n.cap);})()")&&$("P().items.length")===2,JSON.stringify(caps()));
+t('...with the plan\'s toast',ts.length===1&&ts[0]==='Someone else changed this selection too. Your version is saved in Field Notes.',JSON.stringify(ts));
+await conf('bsC');
+$(TON);$(srvSel('Quartz, Taj Mahal'));ts=JSON.parse($(TOFF));
+t('a selection only the other phone changed is replaced quietly',$("P().selections.length")===1&&$("P().selections[0].item")==='Quartz, Taj Mahal'&&$("P().items.length")===1&&ts.length===0,JSON.stringify(ts));
+
+/* ── 7. the old rules still hold, a log only the server changed, and the push stays cheap ── */
+await conf('bsC');
+$(TON);$(srvLog('Only the other phone wrote today'));ts=JSON.parse($(TOFF));
+t('a log only the other phone changed is replaced quietly',logOf()==='Only the other phone wrote today'&&ts.length===0,logOf());
+t('queueSync still records the house and pushes only dirty houses (the "saving one house does not upload the book" source check)',(function(){const q=$("String(queueSync)").slice(0,1200);return q.indexOf('_syncDirty')>=0&&q.indexOf('_pushOne')>=0;})());
+t('the online handler and syncOnResume mark every house dirty',SRC.indexOf("window.addEventListener('online',()=>{if(Sync.ready()){setSync('syncing');markAllDirty();queueSync();}")>=0);
+
+/* ── 8. the public pages say what is true ── */
+const pitch=fs.readFileSync(path.join(__dirname,'..','pitch-a.html'),'utf8');
+const swp=fs.readFileSync(path.join(__dirname,'..','switch.html'),'utf8');
+t('pitch-a no longer says Works with no signal or Not “mostly”',!/Works with no signal/.test(pitch)&&!/Not “mostly”/.test(pitch));
+t('switch no longer says Works with no signal',!/Works with no signal/.test(swp));
+t('pitch-a uses the app\'s words: Saved · live (not Synced · live)',pitch.indexOf('Saved · live')>=0&&pitch.indexOf('Synced · live')<0);
+t('pitch-a says notes and photos work with no signal, and that invoices and approvals wait',pitch.indexOf('Notes and photos work with no signal.')>=0&&pitch.indexOf('Your notes and photos work with no signal.')>=0&&/Sending an invoice and a homeowner’s approval wait for a bar of signal/.test(pitch));
+t('switch says sending waits for signal',swp.indexOf('Notes and photos with no signal')>=0&&/Invoices and approvals wait for signal/.test(swp));
+t('the .gitignore keeps the untracked secrets folder out',/^\.secrets\/$/m.test(fs.readFileSync(path.join(__dirname,'..','.gitignore'),'utf8')));
+
+// put everything back
+await bsSleep(900);
+$(`(function(){clearTimeout(_stuckTimer);_stuckN=0;_syncDirty.clear();delete window.navigator.onLine;window.__bsOn=undefined;
+  var s=window.__bsSave;state.projects=s.projects;state.session=s.session;state.storeUid=s.su;state.activeId=s.ac;Object.assign(Sync,s.sync);
+  if(s.mode==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',s.mode);
+  try{setSync('local');}catch(e){}return true;})()`);
+}
 
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');

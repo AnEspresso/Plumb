@@ -4081,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.529.0 - Draw schedule: turn a payment stage into an invoice';   /* 11/26: Simple Draws v1 (dollars only, builder only). */
+const PLUMB_VERSION='2.530.0 - Bad signal: unsent changes on every house go up when signal returns';   /* 11/26: bad-signal sync. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795800000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.529.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795900000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.530.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -10243,6 +10243,7 @@ function fbConfig(){
 }
 function appCheckKey(){if(emuOn())return null;try{const k=(localStorage.getItem('plumb.appcheck.sitekey')||'').trim();if(k)return k;}catch(e){}return PLUMB_APPCHECK_SITEKEY||null;}
 let syncStatus='local',syncTimer=null,_syncBusy=false,_syncAgain=false;
+let _pillUnsent=false,_stuckN=0,_stuckTimer=null;   /* 2.530.0: the pill's last answer, and the stuck-guard count */
 const _syncDirty=typeof Set==='function'?new Set():{add:function(){},forEach:function(){},clear:function(){}};
 /* ── Step 3c-1 (2.470.0): the paper-trail switch and M-15 "Update to continue" ──
    DORMANT: settings/paperTrail { enabled: true } is written only by the server/console. Until it says so, and while
@@ -10839,6 +10840,17 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     Object.keys(this._refused).forEach(k=>{if(this._refused[k].sid===String(id)&&!want[k]){delete this._refused[k];ch=true;}});if(ch)this._refusedShow();},
   refusedCount(sid){const live={};(state.projects||[]).forEach(p=>{live[String(p.id)]=1;});
     return Object.keys(this._refused).filter(k=>{const r=this._refused[k];return live[r.sid]&&(sid==null||r.sid===String(sid));}).length;},
+  /* 2.530.0: houses that still differ from the server (or are mid-push). Saves the server refused are counted by Not saved
+     and left out here; a house the server no longer lists (_canPush false) is left out too, or the pill would stick.
+     Fingerprints every record, so the pill asks only when it is about to say Saved · live. */
+  unsentHouses(){const out=[];
+    if((this.mode||'demo')!=='live')return out;
+    (state.projects||[]).forEach(p=>{if(!p||p.sample)return;const id=String(p.id);
+      try{if(!this._canPush(id))return;
+        if(this._pushing[id]||this._pushAgain[id]){out.push(id);return;}
+        const ops=diffSiteOps(this._shadow[id]||{meta:'',colls:{}},p);
+        if(ops.some(op=>{const r=this._refused[this._refKey(id,op)];return !(r&&r.h===this._refHash(op));}))out.push(id);}catch(e){}});
+    return out;},
   _refusedShow(){try{setSync(syncStatus);}catch(e){}},
   /* M-7: every money write says who wrote it, when the tap happened, and which app version. updatedAt keeps its type. */
   _stamp(){const o={tappedAt:Date.now(),appV:String(PLUMB_VERSION).split(' ')[0]};try{o.at=CO.ts();}catch(e){}   /* 2.481.0 (A2 M-7): the server's clock on every money record */const u=this.uid||(state.session&&state.session.auth&&state.session.auth.uid);if(u)o.byUid=String(u);return o;},
@@ -11308,6 +11320,26 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       }
     }
     return false;},
+  /* 2.530.0: a server copy is replacing a record this phone changed and has not sent. Nothing is dropped:
+     a daily log keeps both texts (server first); a note or selection of this phone's is saved as a new Field Note. */
+  _keepBoth(p,c,srv,loc,conf){
+    if(c.sub==='logs'){const a=String((srv&&srv.text)||''),b=String((loc&&loc.text)||'');
+      if(!b.trim()||a.trim()===b.trim()||a.indexOf(b)>=0)return;                         // same, or the server's already holds it
+      let text;if(a.trim()&&b.indexOf(a)>=0)text=b;                                       // this phone's holds the server's: keep the longer
+      else{const who=(typeof noteByName==='function'&&noteByName(p))||'This phone';text=a+(a?'\n\n':'')+who+': '+b;conf.log=true;}
+      conf.logRec=Object.assign({},srv,{text:text,t:Date.now()});return;}
+    const ids=(p.items||[]).concat(conf.add).map(r=>Number(r&&r.id)||0);ids.push(Number(srv&&srv.id)||0);
+    const nid=Math.max(Number(p.nextId)||1,Math.max.apply(null,ids)+1);p.nextId=nid+1;
+    const who=(typeof noteByName==='function')?noteByName(p):'';
+    if(c.sub==='items'){const n=JSON.parse(JSON.stringify(loc));n.id=nid;n.t=Date.now();n.edits=[];
+      n.by=loc.by||who;
+      n.cap='Your version: '+String(loc.cap||'');
+      /* a deleted note takes its photo file with it: a copy sharing the original's photo leaves it off and says so */
+      if(n.photoId&&srv&&srv.photoId===n.photoId){n.photoId=null;delete n.photoUrl;delete n.fileUrl;n.cap+=' (the photo stays on the original note)';}
+      conf.add.push(n);conf.note=true;return;}
+    const bits=[String(loc.item||'').trim(),loc.status?('status '+loc.status):'',loc.note?('note: '+loc.note):''].filter(Boolean).join(' · ');
+    conf.add.push({id:nid,cap:'Your version: '+String(loc.room||'Selection')+(loc.cat?' · '+loc.cat:'')+' · '+bits,area:'Whole House',crew:'',issue:false,
+      sw:'dove',t:Date.now(),day:0,share:false,by:who});conf.sel=true;},
   _attachColls(sid){
     const gen=this._collGen[sid]=(this._collGen[sid]||0)+1;
     const p0=state.projects.find(x=>String(x.id)===sid);
@@ -11339,6 +11371,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         const isSel=c.sub==='sel';const view=r=>isSel?selNoMoney(r):r;   // F-2: a selection syncs (and compares) without its money
         const _nv=((c.sub==='inv'||c.sub==='pmts'||c.sub==='docs')&&this._notifReady[sid+c.sub])?Notify.snap(p):null;   /* 2.482.0 G3: pmts too; 2.512.0: documents (the crew's new-document notice) */
         let changed=false;
+        const conf={log:false,note:false,sel:false,add:[]};   /* 2.530.0: records this phone and another phone both changed */
         /* F-2: a phone that does not read selm keeps no selection money, even a copy saved before 2.463.0 */
         if(isSel&&!syncHas(p,'selm')){p[c.f]=p[c.f].map(r=>{if(!selHasMoney(r))return r;changed=true;return selNoMoney(r);});}
         snap.docChanges().forEach(ch=>{const d=ch.doc.data()||{};const key=ch.doc.id;
@@ -11363,11 +11396,22 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
               if(isSel&&idx>=0&&selHasMoney(rec)&&syncHas(p,'selm')&&!selHasMoney(p[c.f][idx])&&!(this._selm[sid]||{})[key]){p[c.f][idx]=selPutMoney(p[c.f][idx],rec);changed=true;}
               if(isSel&&selMoneyKeyed(rec)&&syncWrites(p,'selm'))this._held[sid]=p;
               return;}
-            const nr=isSel?this._selJoin(p,sid,rec,idx>=0?p[c.f][idx]:null):rec;
+            let nr=isSel?this._selJoin(p,sid,rec,idx>=0?p[c.f][idx]:null):rec;
+            /* 2.530.0: the server copy is about to replace a record this phone has unsent changes on, and they differ: keep both */
+            if(idx>=0&&(c.sub==='logs'||c.sub==='items'||c.sub==='sel')){const _l=p[c.f][idx];
+              /* compare the form this phone would send (a note or log carries its see tags), and only call it a conflict when
+                 this phone has a change of its own that was never sent (not just an older copy of what the server had) */
+              let _lh=null;try{const _ro=siteRoleFor(p)||'builder';_lh=_syncHash(JSON.stringify(c.see?seeRow(p,c.sub,_l,_ro,_ro!=='builder'?noteByName(p):''):view(_l)));}catch(e){}
+              if(_lh!==null&&_lh!==rh&&(prev[key]===undefined||_lh!==prev[key]))this._keepBoth(p,c,rec,_l,conf);
+              if(c.sub==='logs'&&conf.logRec){nr=conf.logRec;conf.logRec=null;}}
             if(idx>=0){const _o=p[c.f][idx];p[c.f][idx]=nr;if(c.sub==='sel'&&this._notifReady[sid+c.sub]){this._selNote(sid,key,_o,old=>{const cur=(p.selections||[]).find(x=>c.key(x)===key);if(cur&&old)Notify.selChanged(p,old,cur);});}}else{p[c.f].push(nr);if(c.sub==='items'&&this._notifReady[sid+c.sub]){try{Notify.newItem(p,rec);}catch(e){}}}prev[key]=rh;changed=true;
             /* F-2 migration (correction 2): money still on this sel record moves to
                selm and is deleted from sel on this builder's next push. */
             if(isSel&&selMoneyKeyed(rec)&&syncWrites(p,'selm')){prev[key]='f2-move';this._held[sid]=p;}}});
+        if(conf.add.length){conf.add.forEach(n=>{p.items.unshift(n);});changed=true;}
+        if(conf.log)toast('Two phones wrote this day’s log. Both are kept.');
+        if(conf.note)toast('Someone else changed this note too. Your version is saved in Field Notes.');
+        if(conf.sel)toast('Someone else changed this selection too. Your version is saved in Field Notes.');
         if(c.sub==='inv'&&changed){invOrder(p);if(_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}}
         if((c.sub==='pmts'||c.sub==='docs')&&changed&&_nv){try{Notify.scanMeta(_nv,p);}catch(e){}}
         this._notifReady[sid+c.sub]=true;                               // first snapshot is history, not news
@@ -12405,15 +12449,20 @@ function setSync(s){syncStatus=s;
   const lost=typeof Sync!=='undefined'&&!!Sync.lost&&!live;              // the account is gone: say so until sync connects again
   /* #3: while any save the server refused is outstanding, the pill never says Saved · live */
   let refused=false;try{refused=!lost&&live&&s==='synced'&&Sync.refusedCount()>0;}catch(e){}
+  /* 2.530.0: Saved · live only when every house is up. Asked only here, only when about to say it. */
+  _pillUnsent=false;
+  if(!lost&&!refused&&live&&s==='synced'){try{if(Sync.unsentHouses().length){_pillUnsent=true;s='syncing';}}catch(e){}}
   const label=lost?'Sign in again':refused?NOT_SAVED_PILL:s==='syncing'?'Saving…':s==='offline'?'Offline · saved here':(s==='synced'&&live)?'Saved · live':'On this device';
   const tap=lost?function(){accountLostPrompt();}:refused?function(){toast(NOT_SAVED_HELP);}:null;
   document.querySelectorAll('.syncpill').forEach(el=>{el.className='syncpill'+(lost?' lost':refused?' refused':s==='syncing'?' syncing':s==='offline'?' offline':(s==='synced'&&live?' live':''));el.innerHTML='<span class="sd"></span>'+label;
     if(tap){el.setAttribute('role','button');el.onclick=tap;}else{el.removeAttribute('role');el.onclick=null;}});
   const ov=document.getElementById('ovSync');if(ov){ov.textContent=label;ov.classList.toggle('c-clay',lost||refused);
     if(tap){ov.setAttribute('role','button');ov.onclick=tap;}else{ov.removeAttribute('role');ov.onclick=null;}}}
-function queueSync(){if(typeof Sync==='undefined'||!Sync.ready())return;const online=(typeof navigator!=='undefined')?navigator.onLine!==false:true;
+function markAllDirty(){try{(state.projects||[]).forEach(function(p){if(p&&!p.sample)_syncDirty.add(String(p.id));});}catch(e){}}
+function queueSync(isRetry){if(typeof Sync==='undefined'||!Sync.ready())return;const online=(typeof navigator!=='undefined')?navigator.onLine!==false:true;
+  try{if(state.activeId)_syncDirty.add(String(state.activeId));}catch(e){}   /* 2.530.0: an offline edit remembers its house */
   if(!online){setSync('offline');return;}
-  try{if(state.activeId)_syncDirty.add(String(state.activeId));}catch(e){}
+  if(isRetry!==true)_stuckN=0;
   setSync('syncing');clearTimeout(syncTimer);
   syncTimer=setTimeout(async()=>{
     if(_syncBusy){_syncAgain=true;return;}
@@ -12426,6 +12475,11 @@ function queueSync(){if(typeof Sync==='undefined'||!Sync.ready())return;const on
         if(p)await Sync._pushOne(p);
       }
       setSync('synced');
+      /* 2.530.0 stuck guard: still unsent after a pass and signal is back: try again in about 8 seconds, three times at most */
+      if(_pillUnsent){clearTimeout(_stuckTimer);
+        if(_stuckN<3&&navigator.onLine!==false){_stuckN++;_stuckTimer=setTimeout(function(){markAllDirty();queueSync(true);},8000);}
+        else{_stuckN=0;setSync('offline');}}
+      else _stuckN=0;
     }catch(e){setSync('offline');
       try{if(e&&e.code==='permission-denied'){
         let who='no-auth';try{const cu=firebase.auth().currentUser;if(cu)who=(cu.isAnonymous?'anon ':'account ')+cu.uid.slice(0,8);}catch(_){}
@@ -12434,7 +12488,7 @@ function queueSync(){if(typeof Sync==='undefined'||!Sync.ready())return;const on
   },650);}
 function pushToBackend(){return Sync.pushAll();}
 function subscribeBackend(){return Sync.subscribe();}
-if(typeof window!=='undefined'){window.addEventListener('online',()=>{if(Sync.ready()){setSync('syncing');queueSync();}else{try{if(fbConfig())Sync.init();}catch(e){}}try{CloudFiles.flush();}catch(e){}});window.addEventListener('offline',()=>{if(Sync.ready())setSync('offline');});}
+if(typeof window!=='undefined'){window.addEventListener('online',()=>{if(Sync.ready()){setSync('syncing');markAllDirty();queueSync();}else{try{if(fbConfig())Sync.init();}catch(e){}}try{CloudFiles.flush();}catch(e){}});window.addEventListener('offline',()=>{if(Sync.ready())setSync('offline');});}
 async function syncOnResume(){
   if(typeof Sync==='undefined')return;
   if(Sync.lost){try{accountLostPrompt();}catch(e){}}
@@ -12443,7 +12497,9 @@ async function syncOnResume(){
   try{if(accountExpected()&&firebase.apps.length&&!firebase.auth().currentUser){const u=await laFirebaseUser(4000);if(!u&&markAccountLost('resume')){Sync.disconnect();setSync('local');accountLostPrompt();return;}}}catch(e){}
   if(typeof navigator!=='undefined'&&navigator.onLine===false){setSync('offline');return;}
   try{const p=P();if(!p)return;
-    await Sync.db.collection('sites').doc(String(p.id)).get();setSync('synced');}
+    await Sync.db.collection('sites').doc(String(p.id)).get();
+    /* 2.530.0: reaching the server is not the same as being saved. Push every house; the pill is decided in setSync. */
+    markAllDirty();queueSync();}
   catch(e){setSync('offline');}
 }
 if(typeof document!=='undefined'){document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')syncOnResume();});
