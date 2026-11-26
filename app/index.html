@@ -4081,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.526.0 - Getting in for each house with Directions and Call, Call on crew rows, OK and Answer from Needs you, homeowner schedule status is up to the builder, updated Terms';   /* 11/25: crews get in, call, and act from Needs you. Balance rule: the builder decides what the homeowner reads about the schedule. */
+const PLUMB_VERSION='2.527.0 - Privacy: crews and the homeowner get only the notes and daily logs shared with them, the homeowner gets a schedule copy without the crew packet link, crew packets carry only what is pinned to them';   /* 11/25: step 1 of the privacy release. The rules that hold this on the server ship next, after a builder phone tags the notes. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795637529822;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.526.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795654580788;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.527.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9618,7 +9618,7 @@ function houseHTML(p){
   }
   return h;
 }
-/* \u2500\u2500 2.526.0 Getting in, Call, and the homeowner card \u2500\u2500
+/* ── 2.526.0 Getting in, Call, and the homeowner card ──
    Getting in: one card per house the builder fills once (gate or lockbox code, parking, power and water, dumpster,
    who to call, a note). Crews see it on the house in the app and on their texted packet; the gate code rides a
    texted packet only when the builder turns that on (off to start). The homeowner never gets the record (it lives
@@ -11314,6 +11314,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     /* M-5: a builder with no money access keeps no payments, even a copy saved by an older version */
     if(p0&&siteRoleFor(p0)==='builder'&&!syncHas(p0,'pmts')&&(p0.payments||[]).length){p0.payments=[];persistLocalOnly();}
     syncCollsFor(siteRoleFor(p0)).forEach(c=>{
+      if(c.mirror&&siteRoleFor(p0)!=='client')return;               /* 2.527.0: a builder writes the homeowner's schedule copy, never reads it */
       let q=this.db.collection('sites').doc(sid).collection(c.sub);
       try{
         if(siteRoleFor(p0)==='sub'&&c.sub==='bk'){
@@ -11324,6 +11325,9 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(c.sub==='docs'&&siteRoleFor(p0)==='sub')q=q.where('data.aud','in',['subs','all']);
         if(c.sub==='docs'&&siteRoleFor(p0)==='client')q=q.where('data.aud','in',['homeowner','all']);
         if(c.sub==='inv'&&siteRoleFor(p0)==='client')q=q.where('data.status','in',INV_SEEN);
+        /* 2.527.0: notes and logs, only the ones this phone may read */
+        if(c.see&&siteRoleFor(p0)==='sub'){const nm=crewBkName(p0);q=q.where('data.see','array-contains',crewTag(nm));}
+        if(c.see&&siteRoleFor(p0)==='client')q=q.where('data.see','array-contains','ho');
       }catch(e){}
       const u=q.onSnapshot({includeMetadataChanges:true},snap=>{
         const p=state.projects.find(x=>String(x.id)===sid);if(!p)return;
@@ -11376,6 +11380,9 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
             const idx=p[c.f].findIndex(r=>c.key(r)===k);if(idx>=0){p[c.f].splice(idx,1);changed=true;}
             delete prev[k];});
           got[c.sub]=true;
+          /* 2.527.0: the homeowner's phone keeps only the schedule copy: a booking an older version saved here in full
+             (questions, notes, the crew's packet link) is dropped or cut down to what the calendar shows */
+          if(c.mirror){const before=JSON.stringify(p.bookings||[]);p.bookings=(p.bookings||[]).filter(b=>b&&seen[String(b.id)]).map(bkHoRow);if(JSON.stringify(p.bookings)!==before)changed=true;}
           /* 2.512.0: now that the server has answered, line the list up with the house doc's old copy */
           if(c.sub==='docs'||c.sub==='invs'){try{if(this._legacyLists(p,sid,null))changed=true;}catch(e){}}
         }
@@ -11944,10 +11951,14 @@ function stripForSync(p){try{const c=JSON.parse(JSON.stringify(p));return c;}cat
 /* ── Granular sync: split a project into a low-churn meta doc + per-record collections.
    Concurrent edits to different records write to different docs → no overwrite. ── */
 const SYNC_COLLS=[
-  {f:'items',sub:'items',key:r=>String(r.id)},
+  {f:'items',sub:'items',key:r=>String(r.id),rows:p=>seeRows(p,'items'),see:true},   /* 2.527.0: data.see says who may read it */
   {f:'bookings',sub:'bk',key:r=>String(r.id)},
+  /* 2.527.0: the homeowner's schedule. A builder writes a copy of every booking with only what a homeowner's calendar
+     shows (crew, trade, dates, status); the homeowner reads that copy and never the booking itself, which carries the
+     crew's questions, notes and the private link to the crew's packet. */
+  {f:'bookings',sub:'bkho',key:r=>String(r.id),rows:p=>((p&&p.bookings)||[]).filter(b=>b&&b.id!=null).map(bkHoRow),mirror:true},
   {f:'selections',sub:'sel',key:r=>String(r.id),rows:p=>((p&&p.selections)||[]).map(selNoMoney)},   // F-2: sel goes up without its money
-  {f:'logs',sub:'logs',key:r=>'d'+String(r.date||r.t||'').replace(/[^\w]/g,'')},
+  {f:'logs',sub:'logs',key:r=>'d'+String(r.date||r.t||'').replace(/[^\w]/g,''),rows:p=>seeRows(p,'logs'),see:true},
   {f:'payments',sub:'pmts',key:r=>String(r.id)},
   {f:'mailReview',sub:'mail',key:r=>String(r.id)},
   {f:'costs',sub:'costs',key:r=>String(r.id)},
@@ -11983,6 +11994,67 @@ function siteRecOf(id){const k=String(id==null?'':id);return siteRecList().find(
 function siteRecTake(rec,R){const o={};R.keys.forEach(function(k){const x=rec&&rec[k];if(x===true)o[k]=true;else if(typeof x==='string'&&x.trim())o[k]=x.trim().slice(0,400);});return o;}
 function siteRecRow(p,R){const v=siteRecTake((p&&p[R.f])||null,R);if(!Object.keys(v).length)return null;return Object.assign({id:R.id,kind:'house',aud:R.aud,n:R.n},v);}
 function siteRecRows(p){return siteRecList().map(function(R){return siteRecRow(p,R);}).filter(Boolean);}
+/* ── 2.527.0 privacy: who may read a note or a day's log ──
+   Every items and logs record carries data.see, a list of who besides the builder's team may read it: 'ho' for the
+   homeowner, 'crew:<name>' for a crew (the name the sign-in was stamped with on this house). The homeowner reads a
+   note they wrote or one the builder shared; a crew reads notes for its trade, notes it wrote, and anything pinned to
+   its packet. A builder phone works the list out fresh from the house on every save, so adding a crew or a pin, or
+   sharing a note, re-tags it. A crew or homeowner phone keeps exactly what the server sent and only tags what it wrote
+   itself (it always carries its own tag, or it could not read its own note back). The listeners ask for exactly
+   these, and once the 2.527.0 rules are published the server refuses anything else. Declared as functions so load()
+   can use them before this line. */
+function crewTag(n){return 'crew:'+String(n||'');}   /* exactly the rule's 'crew:' + the stamped name (no trimming on either side) */
+/* Each crew on the house with every name it goes by: its roster row, and the name its sign-in was stamped with. */
+function crewNamesOn(p){
+  const mi=(p&&p.memberInfo)||{},mem=(p&&p.members)||{};
+  return ((p&&p.subs)||[]).filter(function(x){return x&&x.name;}).map(function(x){
+    const names=[String(x.name)];
+    Object.keys(mi).forEach(function(u){const m=mi[u]||{};if(mem[u]&&mem[u]!=='sub')return;if(!m.name)return;
+      if((m.subId&&String(m.subId)===String(x.id))||String(m.name)===String(x.name))names.push(String(m.name));});
+    return {id:x.id,trade:x.specialty,label:specLabel(x.specialty),names:names};});}
+/* A note's author who signed in as a crew on this house (even one no longer on the roster) still reads what it wrote. */
+function crewAuthorOn(p,by){if(!by)return false;
+  if(crewNamesOn(p).some(function(c){return c.names.indexOf(String(by))>=0;}))return true;
+  const mi=(p&&p.memberInfo)||{},mem=(p&&p.members)||{};
+  return Object.keys(mi).some(function(u){return mem[u]==='sub'&&String((mi[u]||{}).name||'')===String(by);});}
+/* A note the homeowner on this house wrote (signed with the name the server stamped for them). */
+function hoAuthorOn(p,by){if(!by)return false;const mi=(p&&p.memberInfo)||{},mem=(p&&p.members)||{};
+  return Object.keys(mi).some(function(u){return mem[u]==='client'&&String((mi[u]||{}).name||'')===String(by);});}
+function seeList(tags){return Object.keys(tags).filter(function(k){return k&&k!=='crew:';}).sort();}
+function itemSee(p,it){const tags={};if(!it)return [];
+  if(it.client||it.share||hoAuthorOn(p,it.by))tags.ho=1;
+  const pins=(p&&p.packetPins)||{};
+  crewNamesOn(p).forEach(function(c){
+    const onTrade=!!it.crew&&c.label===it.crew;
+    const pinned=(((pins[c.trade]||{}).items)||[]).map(String).indexOf(String(it.id))>=0;
+    if(onTrade||pinned)c.names.forEach(function(n){tags[crewTag(n)]=1;});});
+  if(crewAuthorOn(p,it.by))tags[crewTag(it.by)]=1;
+  return seeList(tags);}
+function logSee(p,l){const tags={};if(!l)return [];
+  if(l.share)tags.ho=1;
+  const pins=(p&&p.packetPins)||{};
+  crewNamesOn(p).forEach(function(c){
+    if((((pins[c.trade]||{}).logs)||[]).indexOf(l.date)>=0)c.names.forEach(function(n){tags[crewTag(n)]=1;});});
+  if(crewAuthorOn(p,l.by))tags[crewTag(l.by)]=1;
+  return seeList(tags);}
+/* One record as this phone sends it. */
+function seeRow(p,kind,r,role,me){
+  if(!r||typeof r!=='object')return r;
+  if(role==='builder'){const see=kind==='items'?itemSee(p,r):logSee(p,r);return Object.assign({},r,{see:see});}
+  if(!me||r.by!==me)return r;                                   // not mine: exactly as the server sent it
+  const mine=role==='client'?'ho':crewTag(me);
+  const cur=Array.isArray(r.see)?r.see:null;
+  if(cur&&cur.indexOf(mine)>=0)return r;
+  const t={};(cur||[]).forEach(function(x){t[x]=1;});t[mine]=1;
+  return Object.assign({},r,{see:seeList(t)});}
+function seeRows(p,kind){
+  const arr=(p&&Array.isArray(p[kind]))?p[kind]:[];
+  let role='builder',me='';
+  try{role=siteRoleFor(p)||'builder';if(role!=='builder')me=noteByName(p);}catch(e){}
+  return arr.map(function(r){return seeRow(p,kind,r,role,me);});}
+/* The homeowner's copy of a booking: what their calendar shows, nothing else. */
+const BKHO_KEYS=['id','subName','trade','start','end','status'];
+function bkHoRow(b){const o={};BKHO_KEYS.forEach(function(k){if(b&&b[k]!=null&&b[k]!=='')o[k]=b[k];});return o;}
 /* #6 (2.512.0): what a homeowner may see of invoices: never a draft (the rules ask the same) */
 const INV_SEEN=['sent','approved','paid','void'];
 const SEL_MONEY_KEYS=['price','allowance','cost','costLineId','invoicedIn','priceC','allowanceC','costC'];   // M-1: the cents twins are money too
@@ -12023,9 +12095,9 @@ function crewBkName(p){
   return (state.session&&state.session.name)||'';
 }
 function syncCollsFor(role){
-  if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='inv'&&c.sub!=='selm'&&c.sub!=='invs');
-  if(role==='client')return SYNC_COLLS.filter(c=>c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='invs');
-  let cols=SYNC_COLLS.slice();
+  if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='inv'&&c.sub!=='selm'&&c.sub!=='invs'&&c.sub!=='bkho');
+  if(role==='client')return SYNC_COLLS.filter(c=>c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='invs'&&c.sub!=='bk');   /* 2.527.0: the schedule copy, never the bookings */
+  let cols=SYNC_COLLS.filter(c=>!c.mirror);   /* 2.527.0: a builder writes the homeowner's schedule copy but never reads it (so its first answer is not awaited) */
   /* F-2: a builder without Money does not read costs or selection money; one
      without Invoices does not read invoices (Claude lock Q3). */
   try{if(role==='builder'&&(state.session||{}).role==='builder'&&typeof canGate==='function'){
@@ -12077,6 +12149,8 @@ function diffSiteOps(sh,p){const ops=[];
   const m=metaOf(p);const ms=_syncHash(JSON.stringify(m));if(ms!==sh.meta)ops.push({kind:'meta',data:m});
   for(const c of SYNC_COLLS){
     if((c.sub==='inv'||c.sub==='selm'||c.sub==='pmts'||c.sub==='docs'||c.sub==='invs')&&!syncWrites(p,c.sub))continue;   // F-2: only a money-gated builder writes money records; 2.512.0: only a builder writes documents and invite codes
+    if(c.mirror&&siteRoleFor(p)!=='builder')continue;                 /* 2.527.0: only a builder writes the homeowner's schedule copy */
+    if(c.sub==='bk'&&siteRoleFor(p)==='client')continue;              /* 2.527.0: the homeowner holds the copy, never writes a booking */
     const arr=c.rows?c.rows(p):(Array.isArray(p[c.f])?p[c.f]:[]);const cur={};arr.forEach(r=>{cur[c.key(r)]=r;});
     const prev=(sh.colls&&sh.colls[c.sub])||{};
     for(const k in cur){const rs=_syncHash(JSON.stringify(cur[k]));if(prev[k]!==rs)ops.push({kind:'set',sub:c.sub,id:k,data:cur[k]});}
@@ -19694,10 +19768,14 @@ function packetSnapshot(p,b){
          story rides along, the files stay behind the builder. */
       const tl=specLabel(trade);
       const hist=[];
-      (p.items||[]).filter(it=>(it.crew===tl||it.share)&&!(it.issue&&it.status==='open'))
+      /* 2.527.0: only what this crew may read in the app too: notes for its trade or pinned to its packet (never a
+         homeowner's note), and daily-log lines pinned to it. Before, the two latest log lines went out whether or not
+         anyone shared them, and notes shared with the homeowner rode along. */
+      const pinI=packetPins(p,trade).items.map(String),pinL=packetPins(p,trade).logs;
+      (p.items||[]).filter(it=>(it.crew===tl||pinI.indexOf(String(it.id))>=0)&&!it.client&&!(it.issue&&it.status==='open'))
         .sort((a,b2)=>(b2.t||0)-(a.t||0)).slice(0,4)
         .forEach(it=>hist.push({t:it.t||0,text:String(it.cap||'')}));
-      (p.logs||[]).slice(0,2).forEach(lg=>hist.push({t:lg.t||0,text:String(lg.text||'')}));
+      (p.logs||[]).filter(lg=>pinL.indexOf(lg.date)>=0).slice(0,2).forEach(lg=>hist.push({t:lg.t||0,text:String(lg.text||'')}));
       hist.sort((a,b2)=>(b2.t||0)-(a.t||0));
       if(hist.length)c.history=hist.slice(0,5).map(x=>({d:new Date(x.t).toLocaleDateString(undefined,{month:'short',day:'numeric'}),text:x.text.slice(0,180)}));
       /* 2.526.0: Getting in. The gate code only when the builder turned it on; dest is for Directions. */

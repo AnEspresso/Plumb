@@ -117,7 +117,7 @@ t('five z tokens are declared', SRC.indexOf('--z-nav:100')>=0&&SRC.indexOf('--z-
 S('sync-scope');
 t('builder gets all eleven colls (2.512.0: docs and invs)', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm,docs,invs');
 t('sub skips pmts+mail+costs+inv+selm+invs, reads docs', $("syncCollsFor('sub').map(c=>c.sub).join()") === 'items,bk,sel,logs,docs');
-t('client skips mail+costs+invs, keeps inv+selm+docs', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,inv,selm,docs');
+t('client skips mail+costs+invs, keeps inv+selm+docs; 2.527.0: reads the schedule copy (bkho), never the bookings', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,bkho,sel,logs,pmts,inv,selm,docs');
 t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm,docs,invs');
 /* v2.211: bookings must merge per record, never ride the whole-site meta blob.
    The old behavior let a second device silently wipe bookings it had not seen. */
@@ -222,7 +222,7 @@ t('gen-2 denial trips trapError', $("devErrors().length")>0&&$("devErrors()[0].m
 // (7) role scoping preserved through the gate path
 $("localStorage.removeItem('plumb.errors');Sync._permToasted=false;__g.attached=[];state.session={role:'client',auth:{uid:'uC'}};state.projects.push({id:'gateF',members:{uC:'client'},items:[],selections:[],logs:[],payments:[]});Sync.db=__mkdb(0);Sync._subSite('gateF');true");
 await new Promise(r=>setTimeout(r,60));
-t('client attaches only its eight colls', $("__g.attached.join()")==='items,bk,sel,logs,pmts,inv,selm,docs');
+t('client attaches only its eight colls (2.527.0: bkho, not bk)', $("__g.attached.join()")==='items,bkho,sel,logs,pmts,inv,selm,docs');
 // teardown
 $("state.projects=state.projects.filter(p=>p.id!=='gateF');state.session=null;Sync.mode=null;Sync.db=null;Sync._listening={};Sync._collGen={};Sync._reArmed={};Sync._gateDelays=null;Sync._reArmDelay=null;delete window.__g;delete window.__mkdb;true");
 
@@ -270,7 +270,7 @@ const iv=id=>{const r=(stale.items||[]).find(x=>x.id===id);return r?r.v:null;};
 t('the other phone\'s edit wins on this phone', iv('i1')==='v2', iv('i1'));
 t('a record deleted on the other phone stays deleted', iv('i2')===null);
 t('the other phone\'s rename wins', stale.name==='New name', stale.name);
-t('the old copy of an edited record is never uploaded', !wr.some(x=>/^items\/i1 /.test(x)), wr.join());
+t('the old copy of an edited record is never uploaded', !wr.some(x=>/^items\/i1 v1/.test(x)), wr.join());   /* 2.527.0: the new copy may go up once, with its see tags */
 t('a deleted record is never uploaded again', !wr.some(x=>/items\/i2/.test(x)), wr.join());
 t('the old house name is never uploaded', !wr.some(x=>/Old name/.test(x)), wr.join());
 t('this phone\'s offline edit still goes up', wr.indexOf('items/i4 v1b')>=0&&iv('i4')==='v1b', wr.join());
@@ -1436,7 +1436,20 @@ $("gpSendChange()");
 t('change request records status, dates and note', (function(){const r=JSON.parse($("JSON.stringify(_gpSnap.resp)"));return r.status==='change'&&r.start>0&&r.note==='Crew frees up Tuesday';})());
 // v2.207: self-assembled context + Q&A loop + scheduling arms the questions
 t('snapshot assembles permit, inspection and readiness context', (function(){const c=snap.ctx||{};return typeof c.ready==='string'&&(c.insp||'').indexOf(': ')>0;})());
-t('snapshot carries recent site history for context', (function(){const h=(snap.ctx||{}).history||[];return h.length>=2&&h.every(x=>typeof x.text==='string'&&x.text.length>0);})());
+t('snapshot carries recent site history for context', (function(){const h=(snap.ctx||{}).history||[];return h.length>=1&&h.every(x=>typeof x.text==='string'&&x.text.length>0);})());
+/* 2.527.0: the packet history holds only what this crew may read in the app: its trade's notes and what is pinned to it */
+const hist27=JSON.parse($(`(function(){var p=state.projects[1];var tl=specLabel('plumb');var keep=p.packetPins?JSON.stringify(p.packetPins):null;
+  var b=(p.bookings||[]).find(function(x){return x.trade==='plumb';});var lg=(p.logs||[]).find(function(l){return l&&l.text;});
+  var tmp=[{id:'h27a',cap:'Shared with the homeowner only',area:'Kitchen',share:true,t:Date.now()},{id:'h27b',cap:'Homeowner asked about the tub',area:'Primary Bath',client:true,crew:tl,t:Date.now()}];
+  p.items=(p.items||[]).concat(tmp);var ho=tmp[0],hn=tmp[1];
+  var tx=function(sn){return ((sn.ctx||{}).history||[]).map(function(x){return x.text;});};
+  p.packetPins=JSON.parse(keep||'{}');p.packetPins.plumb={items:[],logs:[]};var t0=tx(packetSnapshot(p,b));
+  p.packetPins.plumb.logs=lg?[lg.date]:[];if(ho)p.packetPins.plumb.items=[ho.id];var t1=tx(packetSnapshot(p,b));
+  if(keep)p.packetPins=JSON.parse(keep);else delete p.packetPins;p.items=p.items.filter(function(i){return tmp.indexOf(i)<0;});
+  return JSON.stringify({t0:t0,t1:t1,lg:lg?String(lg.text).slice(0,180):null,ho:ho?String(ho.cap).slice(0,180):null,hn:hn?String(hn.cap).slice(0,180):null});})()`));
+t('2.527.0 packet history: an unpinned daily-log line and a note shared only with the homeowner stay out', !!hist27.lg&&!!hist27.ho&&hist27.t0.indexOf(hist27.lg)<0&&hist27.t0.indexOf(hist27.ho)<0, JSON.stringify(hist27).slice(0,400));
+t('2.527.0 packet history: pinning them to the packet brings them in', hist27.t1.indexOf(hist27.lg)>=0&&hist27.t1.indexOf(hist27.ho)>=0, JSON.stringify(hist27.t1).slice(0,400));
+t('2.527.0 packet history: a homeowner note never rides along', !hist27.hn||(hist27.t0.indexOf(hist27.hn)<0&&hist27.t1.indexOf(hist27.hn)<0));
 t('history is text only - no photo or file references escape', (function(){const j=JSON.stringify((snap.ctx||{}).history||[]);return j.indexOf('photoId')<0&&j.indexOf('fileUrl')<0&&j.indexOf('fileId')<0;})());
 // v2.209: strict docs, colored readiness, approval, calendar, stamping, alerts
 t('untagged docs never ride along - strict trade routing', (function(){
@@ -2440,7 +2453,7 @@ t('exit example closes the overview', $("String(exitDemoToApp)").indexOf("getEle
 t('rules require ack before guest install', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('hasAll([\'ack\'])')>=0&&R.indexOf('packetPublisher')>=0&&R.indexOf('createdBy == uid()')>=0;}catch(e){return false;}})());
 t('rules bind invite revoke to creator', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf("resource.data.createdBy == uid()")>=0&&R.indexOf('clientSelOk')>=0&&R.indexOf('moneyOk')>=0;}catch(e){return false;}})());
 t('rules hold memberUids for non-owners', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf("request.resource.data.get('memberUids', []) == resource.data.get('memberUids', [])")>=0&&R.indexOf('rootMetaOnly')>=0;}catch(e){return false;}})());
-t('rules hold loc and custom spec fields', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');/* PR 0 (#32): loc is one of the install-detail keys specTechHeld holds; homeowners no longer create selections at all. */const th=(R.match(/function specTechHeld[\s\S]*?\]\);/)||[''])[0];return th.indexOf("'loc'")>=0&&R.indexOf('function specCustomOk')>=0&&/* 2.512.0 rules (#15): a homeowner still creates items, now only their own notes */R.indexOf("(sRole() == 'client' && recordColl == 'items' && crewItemOk())")>=0&&R.indexOf('clientSelCreateOk')<0;}catch(e){return false;}})());
+t('rules hold loc and custom spec fields', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');/* PR 0 (#32): loc is one of the install-detail keys specTechHeld holds; homeowners no longer create selections at all. */const th=(R.match(/function specTechHeld[\s\S]*?\]\);/)||[''])[0];return th.indexOf("'loc'")>=0&&R.indexOf('function specCustomOk')>=0&&/* 2.512.0 rules (#15): a homeowner still creates items, now only their own notes */(R.indexOf("(sRole() == 'client' && recordColl == 'items' && crewItemOk())")>=0||R.indexOf("(sRole() == 'client' && recordColl == 'items' && crewItemOk() && seeKeptOk())")>=0)&&R.indexOf('clientSelCreateOk')<0;}catch(e){return false;}})());
 t('rules apply money gate to cost writes', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('moneyColl')>=0&&R.indexOf('(!moneyColl() || moneyOk())')>=0;}catch(e){return false;}})());
 t('rules reject fp-only guest relabel', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('function workFresh')>=0&&R.indexOf('function crewWorkOk')>=0&&R.indexOf('crewBkRespOk')>=0&&R.indexOf('crewItemOk')>=0;}catch(e){return false;}})());
 t('rules retire revoked packets', (function(){try{const R=require('fs').readFileSync(require('path').join(__dirname,'../firestore.rules'),'utf8');return R.indexOf('function packetLive')>=0&&R.indexOf("get('revoked', false)")>=0&&R.indexOf("get('siteDeleted', false)")>=0;}catch(e){return false;}})());
@@ -4552,7 +4565,7 @@ await (async function(){
     var collDocs=function(sid,sub){var c=F.site(sid).colls[sub]||{};return Object.keys(c).map(function(id){return ds(id,c[id]);});};
     /* 2.512.0: F.applyWhere makes a filtered listener see only matching records (the server's query), F.wheres records every filter asked for */
     var fval=function(d,f){var v=d;String(f).split('.').forEach(function(k){v=(v&&typeof v==='object')?v[k]:undefined;});return v;};
-    var fok=function(flt,d){if(!flt)return true;if(!d)return false;var v=fval(d,flt[0]);return flt[1]==='in'?flt[2].indexOf(v)>=0:v===flt[2];};
+    var fok=function(flt,d){if(!flt)return true;if(!d)return false;var v=fval(d,flt[0]);return flt[1]==='in'?flt[2].indexOf(v)>=0:flt[1]==='array-contains'?(Array.isArray(v)&&v.indexOf(flt[2])>=0):v===flt[2];};   /* 2.527.0: array-contains for data.see */
     var fdocs=function(l,dd){return l.flt?dd.filter(function(x){return fok(l.flt,x.data());}):dd;};
     var fire=function(path,type,id,d){F.L.forEach(function(l){if(l.dead||l.path!==path)return;if(path==='sites'&&!mine(d)&&type!=='removed')return;
       var ty=(type!=='removed'&&!fok(l.flt,d))?'removed':type;
@@ -4620,13 +4633,26 @@ await (async function(){
   t('homeowner first (dual-read): every homeowner figure = 2.462.0',dHo.length===0,dHo[0]);
   await phone('uS',{role:'subs',name:'Timberline Framing',auth:{uid:'uS'}},'devS1');
   t('crew first on unmigrated houses: zero writes, no invoices and no selection money on the phone',W().length===0&&noMoneyHeld().length===0&&J("state.projects.length")===11,JSON.stringify(W().slice(0,1))+noMoneyHeld()[0]);
+  /* 2.527.0: a builder's first sync tags the old notes and logs (see) and writes the homeowner's schedule copy (bkho); nothing else in them changes */
+  const BKK=J('BKHO_KEYS');
+  const tagOnlyOf=pre=>x=>{const m=/^([^/]+)\/(items|logs)\/([^/]+)$/.exec(x.path);if(!m||x.kind!=='set')return false;const d=x.data&&x.data.data;
+    const was=((((pre[m[1]]||{}).colls||{})[m[2]]||{})[m[3]]||{}).data;if(!d||!was||!Array.isArray(d.see))return false;
+    const a=Object.assign({},d),b=Object.assign({},was);delete a.see;delete b.see;return JSON.stringify(a)===JSON.stringify(b);};
+  const hoCopy=x=>/^[^/]+\/bkho\//.test(x.path)&&x.kind==='set'&&Object.keys((x.data&&x.data.data)||{}).every(k=>BKK.indexOf(k)>=0);
+  const srvX1=J('__F.srv');const tagOnly=tagOnlyOf(srvX1);
   await phone('uX',SUP,'devX1');
+  const xW=W();
+  t('2.527.0 a builder first on old houses tags each note and log once (only see changes) and writes the schedule copy',xW.some(tagOnly)&&xW.some(hoCopy)&&xW.filter(x=>/\/(items|logs)\//.test(x.path)).every(tagOnly),JSON.stringify(xW.filter(x=>/\/(items|logs)\//.test(x.path)&&!tagOnly(x)).slice(0,1)).slice(0,300));
   /* 2.512.0: a builder without Money still copies the house doc's old documents into docs/ (any builder writes those) and clears the old list; nothing else */
   const docClear=x=>/^sites\/[^/]+$/.test(x.path)&&x.data&&x.data.meta&&Object.keys(x.data.meta).length===0&&!('members' in x.data);
-  t('builder without Money (super) first: no writes but the document copy, no money on the phone',W().every(x=>/^[^/]+\/docs\//.test(x.path)||docClear(x))&&noMoneyHeld().length===0,noMoneyHeld()[0]+JSON.stringify(W().filter(x=>!/\/docs\//.test(x.path)).slice(0,1)));
+  t('builder without Money (super) first: no writes but the document copy (2.527.0: and the tags), no money on the phone',W().every(x=>/^[^/]+\/docs\//.test(x.path)||docClear(x)||tagOnly(x)||hoCopy(x))&&noMoneyHeld().length===0,noMoneyHeld()[0]+JSON.stringify(W().filter(x=>!/\/docs\//.test(x.path)).slice(0,1)));
   const txM0=J("__F.tx||0");
+  const srvB1=J('__F.srv');
   await phone('uB',B,'devB1');
   const mw=W();const sm=srvMoney();
+  /* a fresh builder phone does not read the schedule copy, so it writes it once more: the same rows, nothing new */
+  const sameCopy=x=>{const m=/^([^/]+)\/bkho\/([^/]+)$/.exec(x.path);const was=m&&(((srvB1[m[1]]||{}).colls||{}).bkho||{})[m[2]];return !!was&&JSON.stringify(was.data)===JSON.stringify(x.data&&x.data.data);};
+  t('2.527.0 the next builder phone finds the tags already there: no note or log rewrites; the schedule copy it sends is the same',!mw.some(x=>/\/(items|logs)\//.test(x.path))&&mw.filter(x=>/\/bkho\//.test(x.path)).every(sameCopy),JSON.stringify(mw.filter(x=>/\/(items|logs)\//.test(x.path)||(/\/bkho\//.test(x.path)&&!sameCopy(x))).slice(0,1)).slice(0,300));
   /* merge of 2.510.0-2.512.0: the same push that moves documents and invite codes off the house doc saves sent invoices through
      2.511.0's read-then-write transaction, and nothing is refused (2.510.0) */
   const legM=J(`(function(){var o=[];__demo.forEach(function(p){var s=__F.srv[p.id],m=(s.doc&&s.doc.meta)||{};
@@ -4730,9 +4756,10 @@ await (async function(){
 
   /* 6b · a Money-only builder (PM) opens first: rules let it move selection money (moneyOk), it never reads or moves invoices */
   $2("window.__pmH=__demo.filter(function(p){return (p.invoices||[]).length&&p.selections.some(selHasMoney);})[1];__F.srv={};__F.seedOld(Object.assign(JSON.parse(JSON.stringify(__pmH)),{id:'f2p'}),"+JSON.stringify(MEM)+",{});true");
+  const srvP3=J('__F.srv');const tagOnlyP=tagOnlyOf(srvP3);
   await phone('uP',PM,'devP3');
   const pW=W();const pS=srvMoney();
-  t('PM first: moves selection money only (selm, then sel with explicit deletes); no inv, no house doc write',pW.length>0&&pW.every(x=>/^f2p\/(selm|sel|docs|invs)\//.test(x.path)||docClear(x))&&pW.filter(x=>/\/sel\//.test(x.path)).every(x=>MONEY.every(k=>x.dels.indexOf(k)>=0))&&pS.selMoney.length===0&&pS.metaInv.length===1,JSON.stringify(pW.filter(x=>!/\/(selm|sel)\//.test(x.path)).slice(0,1))+JSON.stringify(pS));
+  t('PM first: moves selection money only (selm, then sel with explicit deletes); no inv, no house doc write',pW.length>0&&pW.every(x=>/^f2p\/(selm|sel|docs|invs)\//.test(x.path)||docClear(x)||tagOnlyP(x)||hoCopy(x))&&pW.filter(x=>/\/sel\//.test(x.path)).every(x=>MONEY.every(k=>x.dels.indexOf(k)>=0))&&pS.selMoney.length===0&&pS.metaInv.length===1,JSON.stringify(pW.filter(x=>!/\/(selm|sel)\//.test(x.path)).slice(0,1))+JSON.stringify(pS));
   await phone('uB',B,'devB5');
   const pS2=srvMoney();const pInv=J("Object.keys(__F.srv.f2p.colls.inv||{}).length===__pmH.invoices.length");
   t('PM first, then the owner: invoices absorbed, meta.invoices cleared, nothing left on sel',pS2.metaInv.length===0&&pS2.selMoney.length===0&&pS2.orphan.length===0&&pInv===true&&W().every(x=>!/\/sel\//.test(x.path)),JSON.stringify(pS2));
@@ -6203,7 +6230,7 @@ await (async function(){
     p.invites=[{code:'HOME1',role:'client',siteId:'b3',status:'open',t:1},{code:'CREW1',role:'sub',siteId:'b3',subId:'1',name:'Timberline Framing',status:'open',t:2}];
     __F.seedOld(p,${JSON.stringify(MEM)},${JSON.stringify(INFO3)});
     var c=__F.site('b3').colls;c.inv={invD:{data:{id:'invD',title:'Draft',status:'draft',total:5,items:[]},updatedAt:1,updatedBy:'devOld'},invS:{data:{id:'invS',no:'INV-009',title:'Sent',status:'sent',total:7,items:[]},updatedAt:1,updatedBy:'devOld'}};
-    c.items=c.items||{};c.items['901']={data:{id:901,cap:'Builder note',by:'You',area:'Whole House',t:1},updatedAt:1,updatedBy:'devOld'};
+    c.items=c.items||{};c.items['901']={data:{id:901,cap:'Builder note',by:'You',area:'Whole House',t:1,share:true,see:['ho']},updatedAt:1,updatedBy:'devOld'};   /* 2.527.0: shared with the homeowner, so their phone reads it */
     return true;})()`);
   const HO3={role:'client',site:'b3',name:'Ana',auth:{uid:'uH'}},CR3={role:'subs',name:'Timberline Framing',auth:{uid:'uS'}};
   const b3=`(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};return {w:__F.writes.length,docsAll:(p.docs||[]).map(function(d){return d.n;}).sort(),
@@ -6356,6 +6383,60 @@ await (async function(){
   await settle();
   const sr5=J("(function(){var d=__F.srv.b3.colls.docs||{};return [!!d['site-access'],!!d['site-team']];})()");
   t('2.526.0: emptying both cards deletes both records',sr5[0]===false&&sr5[1]===false,JSON.stringify(sr5));
+  /* ════ 2.527.0 · privacy: a note or a daily log reaches a crew or the homeowner only when it is shared with them,
+     and the homeowner's phone gets a copy of each booking with who, trade, days and status (never the crew's packet link) ════ */
+  const pv0=J(`(function(){var p=state.projects.find(function(x){return x.id==='b3';});var now=Date.now();
+    p.subs=p.subs||[];if(!p.subs.some(function(s){return s&&s.name==='Timberline Framing';}))p.subs.push({id:'tf27',name:'Timberline Framing',specialty:'framing'});
+    var tf=p.subs.find(function(s){return s&&s.name==='Timberline Framing';});var tr=tf.specialty,tl=specLabel(tr);
+    p.items=(p.items||[]).concat([{id:27001,cap:'Shared with the owners',area:'Kitchen',share:true,by:'You',t:now},
+      {id:27002,cap:'For the framers',area:'Whole House',crew:tl,by:'You',t:now},
+      {id:27003,cap:'Team only',area:'Whole House',by:'You',t:now},
+      {id:27004,cap:'Pinned to the framing packet',area:'Whole House',by:'You',t:now}]);
+    p.logs=(p.logs||[]).concat([{date:'2030-01-02',t:now,text:'Shared day',share:true},{date:'2030-01-03',t:now,text:'Pinned day'},{date:'2030-01-04',t:now,text:'Team day'}]);
+    p.packetPins=p.packetPins||{};p.packetPins[tr]={items:[27004],logs:['2030-01-03']};
+    p.bookings=(p.bookings||[]).concat([{id:'bk27',subName:'Timberline Framing',trade:tr,start:now,end:now+86400000,status:'confirmed',pkToken:'pk27SECRET',note:'gate 4417',q:[{q:'Where is the key?'}]}]);
+    persistLocalOnly();return {tr:tr,tl:tl};})()`);
+  await $2(`(async function(){await Sync._pushOne(state.projects.find(function(x){return x.id==='b3';}));return true;})()`);await settle();
+  const pv1=J(`(function(){var c=__F.srv.b3.colls,see=function(sub,k){var r=(c[sub]||{})[k];return r&&r.data?r.data.see:'missing';};
+    return {a:see('items','27001'),b:see('items','27002'),c:see('items','27003'),d:see('items','27004'),la:see('logs','d20300102'),lb:see('logs','d20300103'),lc:see('logs','d20300104'),
+      ho:((c.bkho||{}).bk27||{}).data||null,bk:(((c.bk||{}).bk27||{}).data||{}).pkToken||null,keys:BKHO_KEYS};})()`);
+  const CT='crew:Timberline Framing';
+  t('2.527.0 the builder tags each note: shared → homeowner, its trade or pinned → that crew, team only → nobody',
+    JSON.stringify(pv1.a)==='["ho"]'&&Array.isArray(pv1.b)&&pv1.b.indexOf(CT)>=0&&pv1.b.indexOf('ho')<0&&JSON.stringify(pv1.c)==='[]'&&Array.isArray(pv1.d)&&pv1.d.indexOf(CT)>=0&&pv1.d.indexOf('ho')<0,JSON.stringify(pv1).slice(0,400));
+  t('2.527.0 the builder tags each daily log: shared → homeowner, pinned → that crew, the rest → nobody',
+    JSON.stringify(pv1.la)==='["ho"]'&&JSON.stringify(pv1.lb)===JSON.stringify([CT])&&JSON.stringify(pv1.lc)==='[]',JSON.stringify([pv1.la,pv1.lb,pv1.lc]));
+  t('2.527.0 the schedule copy carries who, trade, days and status only; the booking keeps the packet link',
+    !!pv1.ho&&Object.keys(pv1.ho).every(function(k){return pv1.keys.indexOf(k)>=0;})&&pv1.ho.subName==='Timberline Framing'&&pv1.ho.status==='confirmed'&&!('pkToken' in pv1.ho)&&!('note' in pv1.ho)&&!('q' in pv1.ho)&&pv1.bk==='pk27SECRET',JSON.stringify(pv1.ho));
+  await phone('uH',HO3,'devH27');
+  const pv2=J(`(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};var ids=(p.items||[]).map(function(i){return i.id;});var ds=(p.logs||[]).map(function(l){return l.date;});
+    var b=(p.bookings||[]).find(function(x){return x.id==='bk27';})||null;
+    return {a:ids.indexOf(27001)>=0,b:ids.indexOf(27002)>=0,c:ids.indexOf(27003)>=0,d:ids.indexOf(27004)>=0,la:ds.indexOf('2030-01-02')>=0,lb:ds.indexOf('2030-01-03')>=0,lc:ds.indexOf('2030-01-04')>=0,
+      bk:b,leak:/pk27SECRET|gate 4417|Where is the key/.test(JSON.stringify(state.projects)),
+      lis:__F.L.filter(function(l){return !l.dead&&l.sid==='b3';}).map(function(l){return l.sub;}).sort(),
+      wh:(__F.wheres||[]).filter(function(x){return x.sid==='b3'&&x.f==='data.see';}).map(function(x){return x.sub+' '+x.op+' '+x.v;}),w:__F.writes.length};})()`);
+  t('2.527.0 homeowner phone: the shared note and log only (not the crew\'s, the pinned or the team-only ones)',pv2.a&&!pv2.b&&!pv2.c&&!pv2.d&&pv2.la&&!pv2.lb&&!pv2.lc,JSON.stringify(pv2).slice(0,300));
+  t('2.527.0 homeowner phone: the schedule copy, never the packet link, the note or the questions',!!pv2.bk&&pv2.bk.subName==='Timberline Framing'&&!pv2.leak,JSON.stringify(pv2.bk));
+  t('2.527.0 homeowner phone listens to bkho, not bk, and asks for its tag on notes and logs',pv2.lis.indexOf('bkho')>=0&&pv2.lis.indexOf('bk')<0&&pv2.wh.indexOf('items array-contains ho')>=0&&pv2.wh.indexOf('logs array-contains ho')>=0,JSON.stringify([pv2.lis,pv2.wh]));
+  t('2.527.0 homeowner phone writes nothing on connect',pv2.w===0,pv2.w);
+  t('2.527.0 the homeowner\'s own note (#15) carries their tag',(function(){var r=J("(function(){var r=(__F.srv.b3.colls.items||{})['99301'];return r&&r.data&&r.data.see;})()");return Array.isArray(r)&&r.indexOf('ho')>=0;})());
+  await phone('uS',CR3,'devS27');
+  const pv3=J(`(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};var ids=(p.items||[]).map(function(i){return i.id;});var ds=(p.logs||[]).map(function(l){return l.date;});
+    return {a:ids.indexOf(27001)>=0,b:ids.indexOf(27002)>=0,c:ids.indexOf(27003)>=0,d:ids.indexOf(27004)>=0,la:ds.indexOf('2030-01-02')>=0,lb:ds.indexOf('2030-01-03')>=0,lc:ds.indexOf('2030-01-04')>=0,
+      lis:__F.L.filter(function(l){return !l.dead&&l.sid==='b3';}).map(function(l){return l.sub;}).sort(),
+      wh:(__F.wheres||[]).filter(function(x){return x.sid==='b3'&&x.f==='data.see';}).map(function(x){return x.sub+' '+x.op+' '+x.v;}),w:__F.writes.length};})()`);
+  t('2.527.0 crew phone: its trade\'s note and what is pinned to it, not the homeowner\'s or the team-only ones',!pv3.a&&pv3.b&&!pv3.c&&pv3.d&&!pv3.la&&pv3.lb&&!pv3.lc,JSON.stringify(pv3).slice(0,300));
+  t('2.527.0 crew phone asks for its own tag and never reads the schedule copy',pv3.wh.indexOf('items array-contains '+CT)>=0&&pv3.wh.indexOf('logs array-contains '+CT)>=0&&pv3.lis.indexOf('bkho')<0,JSON.stringify([pv3.lis,pv3.wh]));
+  t('2.527.0 crew phone writes nothing on connect (it never re-tags anyone\'s note)',pv3.w===0,pv3.w);
+  const pv4=J(`(function(){var was=localStorage.getItem('plumb.mode');localStorage.setItem('plumb.mode','real');state.activeId='b3';
+    try{var it=Data.addItem({id:27005,cap:'Crew note',area:'Whole House',t:Date.now()});return {by:it.by};}
+    finally{if(was==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',was);}})()`);
+  await $2(`(async function(){await Sync._pushOne(state.projects.find(function(x){return x.id==='b3';}));return true;})()`);await settle();
+  const pv5=J(`(function(){var r=(__F.srv.b3.colls.items||{})['27005'];return {see:r&&r.data&&r.data.see,by:r&&r.data&&r.data.by,w:__F.writes.map(function(x){return x.path;})};})()`);
+  t('2.527.0 a crew\'s own note goes up tagged for that crew only, so it reads it back',pv4.by==='Timberline Framing'&&JSON.stringify(pv5.see)===JSON.stringify([CT])&&pv5.w.length===1,JSON.stringify([pv4,pv5]));
+  await phone('uB',B,'devB27');
+  const pv6=J(`(function(){var p=state.projects.find(function(x){return x.id==='b3';})||{};return {crew:(p.items||[]).some(function(i){return i.id===27005;}),
+    w:__F.writes.filter(function(x){return x.path.indexOf('/items/')>=0||x.path.indexOf('/logs/')>=0;}).map(function(x){return x.path;})};})()`);
+  t('2.527.0 the builder reads the crew\'s note, and its tags already match (no rewrite)',pv6.crew&&pv6.w.length===0,JSON.stringify(pv6));
   $2("__F.applyWhere=false;__F.wheres=[];true");
 
   t('no uncaught errors in the F-2 boot',w2.__thrown.length===0,w2.__thrown[0]);
