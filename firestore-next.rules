@@ -286,7 +286,19 @@ service cloud.firestore {
             && (n.get('status', '') != 'void' || o.get('status', '') == 'void'
                 || (n.get('voidReason', '') is string && n.get('voidReason', '').size() > 0))
             && invPaymentsOk(n.get('payments', []), o.get('payments', []))
-            && invApprovalKept(n, o);
+            && invApprovalKept(n, o)
+            && invTotalOk(n, o)
+            && n.get('due', null) == o.get('due', null);
+        }
+        /* 2.528.0: the total of a sent invoice changes only by the credit or charge line appended in the same write
+           (to the cent), and its cents twin, when there, agrees with it. */
+        function invNum(m, k) { return m.get(k, 0) is number ? m.get(k, 0) : 0; }
+        function invTotalOk(n, o) {
+          let ni = n.get('items', []);
+          let oi = o.get('items', []);
+          let add = ni.size() > oi.size() ? invNum(ni[oi.size()], 'amount') : 0;
+          return math.abs(invNum(n, 'total') - (invNum(o, 'total') + add)) < 0.005
+            && (n.get('totalC', null) == null || math.abs(n.totalC - invNum(n, 'total') * 100) < 0.5);
         }
         /* #4: a stale phone's whole-record write must not drop or change a payment, or undo the homeowner's OK.
            Payments are add-only by position: every entry already there stays exactly as it is, except voiding it
@@ -307,10 +319,16 @@ service cloud.firestore {
             && pmKept(np, op, 10) && pmKept(np, op, 11) && pmKept(np, op, 12) && pmKept(np, op, 13) && pmKept(np, op, 14)
             && pmKept(np, op, 15) && pmKept(np, op, 16) && pmKept(np, op, 17) && pmKept(np, op, 18) && pmKept(np, op, 19);
         }
-        /* #4: once the homeowner approved, the OK stays: approvedAt never changes and the status never goes back to sent. */
+        /* #4: once the homeowner approved, the OK stays: approvedAt never changes and the status never goes back to sent.
+           2.528.0: what they agreed to (approvedTotal, approvedBy) stays too, and only the homeowner gives the OK: a
+           builder's write never turns a waiting invoice into an approved one. */
         function invApprovalKept(n, o) {
           return (o.get('status', '') != 'approved' && o.get('approvedAt', null) == null)
-            || (n.get('approvedAt', null) == o.get('approvedAt', null) && n.get('status', '') != 'sent');
+            ? (n.get('approvedAt', null) == null && n.get('status', '') != 'approved'
+               && n.get('approvedTotal', null) == null && n.get('approvedBy', null) == null)
+            : (n.get('approvedAt', null) == o.get('approvedAt', null) && n.get('status', '') != 'sent'
+               && n.get('approvedTotal', null) == o.get('approvedTotal', null)
+               && n.get('approvedBy', null) == o.get('approvedBy', null));
         }
         function invCreateOk() {
           return recordColl != 'inv' || recNew().get('status', 'draft') == 'draft' || invClaimOk(recNew());
@@ -563,10 +581,16 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['data', 'updatedAt', 'updatedBy', 'byUid', 'at', 'appV', 'tappedAt'])
             && stampOk()
-            && ch.hasOnly(['status', 'approvedAt'])
+            && ch.hasOnly(['status', 'approvedAt', 'approvedTotal', 'approvedBy'])
             && o.get('status', '') == 'sent'
             && n.get('status', '') == 'approved'
-            && n.approvedAt is int;
+            && n.approvedAt is int
+            /* 2.528.0: the OK says what was agreed to: the invoice's total as the homeowner saw it, and the name the
+               server stamped for them on this house */
+            && n.get('approvedTotal', null) is number
+            && o.get('total', null) is number
+            && math.abs(n.approvedTotal - o.total) < 0.005
+            && n.get('approvedBy', null) == sInfo().get('name', '');
         }
 
         /* #6 (batch 3): a homeowner reads an invoice once it is sent, never a
@@ -773,10 +797,41 @@ service cloud.firestore {
         || resource.data.members[uid()] != null
       );
       allow list: if false;
-      allow create: if signedIn() && request.resource.data.members[uid()] == 'builder';
+      /* 2.528.0: the company record has an owner. The owner changes anything but who owns it, and stays a member.
+         A teammate (another builder member) changes only the setup and the team invite list: never the members, the
+         owner or who may open the workbench (prefs.devGrants), and a setup change it makes waits for the owner's
+         review (prefs._prov.approved false). A record made before owners were recorded is claimed once by the owner
+         of one of its houses (made it, or stamped as the owner there), naming that house in ownerSite. */
+      function oNew() { return request.resource.data; }
+      function oOld() { return resource.data; }
+      function ownerOfOrgHouse(sid) {
+        let s = get(/databases/$(database)/documents/sites/$(sid)).data;
+        let mi = s.get('meta', {}).get('memberInfo', {});
+        return s.get('members', {}).get(uid(), '') == 'builder'
+          && s.get('meta', {}).get('org', '') == orgId
+          && (!mi.keys().hasAny([uid()])
+              || mi.get(uid(), {}).get('rpRole', '') == 'owner'
+              || mi.get(uid(), {}).get('owner', false) == true);
+      }
+      function teammateOk() {
+        return oOld().get('owner', '') != uid()
+          && oNew().diff(oOld()).affectedKeys().hasOnly(['prefs', 'teamInvites', 'updatedAt', 'updatedBy'])
+          && oNew().get('prefs', {}).get('devGrants', []) == oOld().get('prefs', {}).get('devGrants', [])
+          && (oNew().get('prefs', {}) == oOld().get('prefs', {})
+              || oNew().get('prefs', {}).get('_prov', {}).get('approved', true) == false);
+      }
+      allow create: if signedIn() && request.resource.data.members[uid()] == 'builder'
+        && request.resource.data.get('owner', '') == uid();
       allow update: if signedIn()
-        && resource.data.members[uid()] == 'builder'
-        && request.resource.data.members[uid()] == 'builder';
+        && oOld().members[uid()] == 'builder'
+        && oNew().members[uid()] == 'builder'
+        && (
+          (oOld().get('owner', '') == uid() && oNew().get('owner', '') == uid())
+          || (oOld().get('owner', '') == '' && oNew().get('owner', '') == uid()
+              && oNew().get('ownerSite', '') is string && oNew().get('ownerSite', '') != ''
+              && ownerOfOrgHouse(oNew().get('ownerSite', '')))
+          || teammateOk()
+        );
       allow delete: if false;
     }
 
