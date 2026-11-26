@@ -15,6 +15,7 @@
 **Testing.** In `app/`: `node sim.js` (jsdom, about 1045 checks) and `node qa.js` (real Chrome, 92 checks). CI runs them in `SitePlumb QA`; its `verify-live` job only passes after a merge has deployed.
 
 **Recent versions** (newest first; `git log` has the full list):
+- 2.530.0 Bad signal: every house with unsent changes goes up when signal returns, and the pill says Saved · live only when that is true. Two phones on one note, selection or daily log no longer replace each other silently. App only: no rules or Functions change.
 - 2.529.0 Simple Draws v1: a Draw schedule row on Money; a stage becomes an ordinary invoice with one tap (Bill this stage). Dollars only, builder only, no homeowner schedule. **Needs the separate rules PR (draws collection) published by Peter after this is live;** until then a stage says Not saved and the app loads clean for every role. A stage keeps its own history lines (stage.hist).
 - 2.444.0 says what is missing before packet sign-off, how to turn notifications back on, and where an invite goes.
 - 2.443.0 plain words for invite and sign-in errors; Agency's invite message rewrites.
@@ -26,6 +27,16 @@
 - 2.433.0 the app links back to the site.
 - 2.432.0 the calendar button says Open calendar.
 - 2.429.0 an invited crew sees their own bookings.
+
+## 2.530.0 - Bad signal (November 26, 2026)
+
+**What changed.** An edit made with no signal now remembers its house. When signal returns, or the app comes back to the front, every house is pushed, not just the one on screen (a push of a house with nothing new does nothing). The public pages (`pitch-a.html`, `switch.html`) now say notes and photos work with no signal and that sending an invoice and a homeowner's approval wait for a bar of signal. `.gitignore` now lists `.secrets/`. App only: no Firestore, Storage or Functions change, nothing for Peter to publish.
+
+**The pill rule.** `setSync` is the only place that picks the words. "Saved · live" shows only when no real house still differs from the server (`Sync.unsentHouses()`, asked only at that moment because it fingerprints every record). Otherwise "Saving…". No signal says "Offline · saved here". A save the server refused says "Not saved" first. A house the server no longer lists does not count. If houses are still unsent after a push pass, it retries about 8 seconds later, three times at most, then says "Offline · saved here".
+
+**The conflict rule (Option A, Peter decided 11/26/2026).** When a server copy is about to replace a record this phone has unsent changes on, and the two differ, nothing is dropped. A daily log keeps both texts, the server's first, with the writer's name on this phone's; if one holds the other, the longer stays. A note or selection: the server copy wins, and this phone's version is saved as a new Field Note starting "Your version:" with a toast. A shared photo is left off that copy and the note says so (`Sync._keepBoth`, called from `_attachColls`).
+
+**Still to do.** `scripts/bad-signal-walk.mjs` is the live two-phone check, run by hand after the release is live. A real iPhone in airplane mode and a no-bars basement is still worth doing once.
 
 ## History (older entries, kept for context)
 

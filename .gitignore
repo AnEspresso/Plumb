@@ -7,3 +7,4 @@ ui-debug.log
 .firebase/
 *.local.js
 *.local.mjs
+.secrets/
