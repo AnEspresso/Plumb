@@ -237,6 +237,7 @@ async function seed() {
       memberUids: [U.builder, U.builder2, U.sub],
       meta: { members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.sub]: 'sub' }, memberInfo: { [U.builder2]: { name: 'Pat PM', rpRole: 'pm' } } } });
     await setDoc(doc(db, 'sites/liveRm/items/r1'), { seeded: true });
+    await setDoc(doc(db, 'sites/liveRm/sel/r1'), { seeded: true });
     // liveB: a different builder's live site — our personas are strangers here
     await setDoc(doc(db, 'sites/liveB'), {
       mode: 'live', street: 'Live B',
@@ -305,6 +306,23 @@ async function seed() {
     await setDoc(doc(db, 'sites/liveD/inv/invPaid'), { data: { id: 'invPaid', no: 'INV-2', status: 'paid', total: 100 }, updatedAt: 1, updatedBy: 'seed' });
     for (const [id, by] of [['iHome', 'Ana Ruiz'], ['iCrew', 'Clearwater Plumbing'], ['iBuilder', 'You']])
       await setDoc(doc(db, `sites/liveD/items/${id}`), { data: { id, cap: 'note', by }, updatedAt: 1, updatedBy: 'seed' });
+    // 2.527.0 (privacy): liveP, notes and daily logs tagged with who may read them (data.see),
+    // a full booking (with the crew's packet link and a note) and the homeowner's copy of it (bkho)
+    await setDoc(doc(db, 'sites/liveP'), { mode: 'live', street: 'Live P',
+      members: { [U.builder]: 'builder', [U.sub]: 'sub', [U.client]: 'client' },
+      memberUids: [U.builder, U.sub, U.client],
+      meta: { memberInfo: { [U.sub]: { name: 'Clearwater Plumbing', trade: 'plumb' }, [U.client]: { name: 'Ana Ruiz' } } } });
+    const CW = 'crew:Clearwater Plumbing', BE = 'crew:Brightpath Electric';
+    for (const [id, see, by] of [['pShared', ['ho']], ['pCrew', [CW]], ['pOther', [BE]], ['pTeam', []], ['pNone', null],
+      ['pBoth', [CW, 'ho']], ['pCrewOwn', [CW], 'Clearwater Plumbing'], ['pCrewOwn2', [CW, 'ho'], 'Clearwater Plumbing'], ['pHomeOwn', ['ho'], 'Ana Ruiz']]) {
+      const data = { id, cap: 'note ' + id, by: by || 'You' };
+      if (see) data.see = see;
+      await setDoc(doc(db, `sites/liveP/items/${id}`), { data, updatedAt: 1, updatedBy: 'seed' });
+    }
+    for (const [id, see] of [['dShared', ['ho']], ['dCrew', [CW]], ['dTeam', []]])
+      await setDoc(doc(db, `sites/liveP/logs/${id}`), { data: { date: id, text: 'log ' + id, by: 'You', see }, updatedAt: 1, updatedBy: 'seed' });
+    await setDoc(doc(db, 'sites/liveP/bk/b1'), { data: { id: 'b1', subName: 'Clearwater Plumbing', trade: 'plumb', start: 1, end: 2, pkToken: 'pkSECRET', note: 'gate is 1234' }, updatedAt: 1, updatedBy: 'seed' });
+    await setDoc(doc(db, 'sites/liveP/bkho/b1'), { data: { id: 'b1', subName: 'Clearwater Plumbing', trade: 'plumb', start: 1, end: 2 }, updatedAt: 1, updatedBy: 'seed' });
     // #14: a packet a builder of liveD sent, and one whose creator is on no house
     await setDoc(doc(db, 'packets/pkD1'), { createdBy: U.builder, siteId: 'liveD', expires: 4102444800000, resp: null, q: [] });
   });
@@ -387,8 +405,11 @@ async function main() {
     updateDoc(doc(db.stranger, 'sites/legacyNull'), { note: 'poked' }), !HARD);
 
   /* ══════════ SITES subcollections ══════════ */
-  for (const [who, d] of [['builder', db.builder], ['sub', db.sub], ['client', db.client]])
-    await INV(`records: ${who} reads liveA items`, getDoc(doc(d, 'sites/liveA/items/r1')), true);
+  await INV('records: builder reads liveA items', getDoc(doc(db.builder, 'sites/liveA/items/r1')), true);
+  for (const [who, d] of [['sub', db.sub], ['client', db.client]]) {
+    await INV(`records: ${who} reads liveA sel`, getDoc(doc(d, 'sites/liveA/sel/r1')), true);
+    await INV(`records: 2.527.0 ${who} DENIED a note shared with no one (was allowed before)`, getDoc(doc(d, 'sites/liveA/items/r1')), false);
+  }
   await INV('records: stranger DENIED read liveA items', getDoc(doc(db.stranger, 'sites/liveA/items/r1')), false);
   await INV('records: sub of liveA DENIED read liveB pmts (cross-site)', getDoc(doc(db.sub, 'sites/liveB/pmts/r1')), false);
   await INV('records: unauth DENIED read liveA items', getDoc(doc(db.unauth, 'sites/liveA/items/r1')), false);
@@ -1160,7 +1181,7 @@ async function main() {
     rmWrite(db.builder, U.builder, U.builder2, [U.builder, U.sub]), true);
   await INV('#3 ... the removed teammate can no longer read the house records', getDoc(doc(db.builder2, 'sites/liveRm/items/r1')), false);
   await INV('#3 ... nor the house', getDoc(doc(db.builder2, 'sites/liveRm')), false);
-  await INV('#3 ... the crew still can', getDoc(doc(db.sub, 'sites/liveRm/items/r1')), true);
+  await INV('#3 ... the crew still can', getDoc(doc(db.sub, 'sites/liveRm/sel/r1')), true);   /* 2.527.0: a selection; an untagged note is builder-only now */
   /* ══════════ #1 (pre-launch review): who may make a code ══════════
      Homeowner or crew: the house owner or a builder with the money gate there.
      Team: only the owner of the house the code names. A role or money gates ride
@@ -1596,6 +1617,71 @@ async function main() {
   // that reads are member-scoped — confirms the app's scoped-listener redesign.
   await INV('propagation: unfiltered sites collection query denied',
     getDocs(collection(db.stranger, 'sites')), false);
+
+  /* ══════════ 2.527.0 (privacy): notes, daily logs and the schedule, only what is shared ══════════
+     A builder reads every note and log. A crew reads the ones tagged 'crew:' + its stamped name, a homeowner
+     the ones tagged 'ho', and each asks for exactly that (array-contains). The homeowner never reads a booking
+     (it carries the crew's packet link): they read bkho, a copy with who, trade, days and status only. */
+  {
+    const CW = 'crew:Clearwater Plumbing';
+    const n = (want, p) => p.then(r => { if (r.size !== want) throw new Error('expected ' + want + ', saw ' + r.size); return r; });
+    const seeQ = (d, c, tag) => query(collection(d, `sites/liveP/${c}`), where('data.see', 'array-contains', tag));
+    await INV('2.527.0 builder reads every note on the house', n(9, getDocs(collection(db.builder, 'sites/liveP/items'))), true);
+    await INV('2.527.0 builder reads every daily log', n(3, getDocs(collection(db.builder, 'sites/liveP/logs'))), true);
+    await INV('2.527.0 crew reads the notes tagged for it (its own, its trade, pinned)', n(4, getDocs(seeQ(db.sub, 'items', CW))), true);
+    await INV('2.527.0 crew reads a note tagged for it by id', getDoc(doc(db.sub, 'sites/liveP/items/pCrew')), true);
+    for (const id of ['pShared', 'pOther', 'pTeam', 'pNone'])
+      await INV(`2.527.0 crew DENIED note ${id} by id`, getDoc(doc(db.sub, `sites/liveP/items/${id}`)), false);
+    await INV('2.527.0 crew DENIED an unfiltered notes query', getDocs(collection(db.sub, 'sites/liveP/items')), false);
+    await INV('2.527.0 crew DENIED a query for another crew\'s tag', getDocs(seeQ(db.sub, 'items', 'crew:Brightpath Electric')), false);
+    await INV('2.527.0 crew DENIED a query for the homeowner\'s tag', getDocs(seeQ(db.sub, 'items', 'ho')), false);
+    await INV('2.527.0 crew reads the daily logs pinned to it', n(1, getDocs(seeQ(db.sub, 'logs', CW))), true);
+    await INV('2.527.0 crew DENIED a log shared only with the homeowner', getDoc(doc(db.sub, 'sites/liveP/logs/dShared')), false);
+    await INV('2.527.0 crew DENIED an unfiltered logs query', getDocs(collection(db.sub, 'sites/liveP/logs')), false);
+    await INV('2.527.0 homeowner reads the notes shared with them (and their own)', n(4, getDocs(seeQ(db.client, 'items', 'ho'))), true);
+    await INV('2.527.0 homeowner reads a shared note by id', getDoc(doc(db.client, 'sites/liveP/items/pShared')), true);
+    for (const id of ['pCrew', 'pOther', 'pTeam', 'pNone'])
+      await INV(`2.527.0 homeowner DENIED note ${id} by id`, getDoc(doc(db.client, `sites/liveP/items/${id}`)), false);
+    await INV('2.527.0 homeowner DENIED an unfiltered notes query', getDocs(collection(db.client, 'sites/liveP/items')), false);
+    await INV('2.527.0 homeowner DENIED a query for a crew tag', getDocs(seeQ(db.client, 'items', CW)), false);
+    await INV('2.527.0 homeowner reads the daily logs shared with them', n(1, getDocs(seeQ(db.client, 'logs', 'ho'))), true);
+    await INV('2.527.0 homeowner DENIED a log for the team only', getDoc(doc(db.client, 'sites/liveP/logs/dTeam')), false);
+    await INV('2.527.0 stranger DENIED the homeowner query', getDocs(seeQ(db.stranger, 'items', 'ho')), false);
+    /* bookings and the homeowner's copy */
+    await INV('2.527.0 homeowner DENIED a booking by id (it carries the crew packet link)', getDoc(doc(db.client, 'sites/liveP/bk/b1')), false);
+    await INV('2.527.0 homeowner DENIED the bookings query', getDocs(collection(db.client, 'sites/liveP/bk')), false);
+    await INV('2.527.0 builder still reads bookings', n(1, getDocs(collection(db.builder, 'sites/liveP/bk'))), true);
+    await INV('2.527.0 homeowner reads the schedule copy', n(1, getDocs(collection(db.client, 'sites/liveP/bkho'))), true);
+    await INV('2.527.0 builder reads the schedule copy', getDoc(doc(db.builder, 'sites/liveP/bkho/b1')), true);
+    await INV('2.527.0 crew DENIED the schedule copy', getDoc(doc(db.sub, 'sites/liveP/bkho/b1')), false);
+    await INV('2.527.0 stranger DENIED the schedule copy', getDocs(collection(db.stranger, 'sites/liveP/bkho')), false);
+    const hoRow = (data) => ({ data, updatedAt: 2, updatedBy: 'dev', updatedByUid: U.builder });
+    await INV('2.527.0 builder writes a schedule copy (who, trade, days, status)', setDoc(doc(db.builder, 'sites/liveP/bkho/b2'), hoRow({ id: 'b2', subName: 'Brightpath Electric', trade: 'elec', start: 3, end: 4, status: 'confirmed' }), { merge: true }), true);
+    await INV('2.527.0 builder DENIED a schedule copy carrying the packet link', setDoc(doc(db.builder, 'sites/liveP/bkho/b3'), hoRow({ id: 'b3', subName: 'X', pkToken: 'pkSECRET' })), false);
+    await INV('2.527.0 builder DENIED a schedule copy with a note', setDoc(doc(db.builder, 'sites/liveP/bkho/b3'), hoRow({ id: 'b3', subName: 'X', note: 'gate 1234' })), false);
+    await INV('2.527.0 builder DENIED an extra field beside the copy', setDoc(doc(db.builder, 'sites/liveP/bkho/b3'), Object.assign(hoRow({ id: 'b3' }), { extra: 1 })), false);
+    await INV('2.527.0 homeowner DENIED writing the schedule copy', setDoc(doc(db.client, 'sites/liveP/bkho/b1'), hoRow({ id: 'b1', start: 9 }), { merge: true }), false);
+    await INV('2.527.0 crew DENIED writing the schedule copy', setDoc(doc(db.sub, 'sites/liveP/bkho/b4'), hoRow({ id: 'b4' })), false);
+    await INV('2.527.0 homeowner DENIED deleting the schedule copy', deleteDoc(doc(db.client, 'sites/liveP/bkho/b1')), false);
+    await INV('2.527.0 builder deletes a schedule copy', deleteDoc(doc(db.builder, 'sites/liveP/bkho/b2')), true);
+    /* tags: a crew or homeowner adds only its own, to its own record, and never takes one away */
+    await INV('2.527.0 crew adds a note tagged for itself', setDoc(doc(db.sub, 'sites/liveP/items/pN1'), rowD({ id: 'pN1', cap: 'x', by: 'Clearwater Plumbing', see: [CW] })), true);
+    await INV('2.527.0 crew adds a daily log tagged for itself', setDoc(doc(db.sub, 'sites/liveP/logs/dN1'), rowD({ date: 'dN1', text: 'x', by: 'Clearwater Plumbing', see: [CW] })), true);
+    await INV('2.527.0 crew DENIED a note it tags for the homeowner', setDoc(doc(db.sub, 'sites/liveP/items/pN2'), rowD({ id: 'pN2', cap: 'x', by: 'Clearwater Plumbing', see: [CW, 'ho'] })), false);
+    await INV('2.527.0 crew DENIED a note it tags for another crew', setDoc(doc(db.sub, 'sites/liveP/items/pN3'), rowD({ id: 'pN3', cap: 'x', by: 'Clearwater Plumbing', see: ['crew:Brightpath Electric'] })), false);
+    await INV('2.527.0 crew edits its own note, tags kept', setDoc(doc(db.sub, 'sites/liveP/items/pCrewOwn'), rowD({ id: 'pCrewOwn', cap: 'edited', by: 'Clearwater Plumbing', see: [CW] })), true);
+    await INV('2.527.0 crew DENIED adding the homeowner tag to its own note', setDoc(doc(db.sub, 'sites/liveP/items/pCrewOwn'), rowD({ id: 'pCrewOwn', cap: 'edited', by: 'Clearwater Plumbing', see: [CW, 'ho'] })), false);
+    await INV('2.527.0 crew DENIED taking a tag the builder set off its own note', setDoc(doc(db.sub, 'sites/liveP/items/pCrewOwn2'), rowD({ id: 'pCrewOwn2', cap: 'edited', by: 'Clearwater Plumbing', see: [CW] })), false);
+    await INV('2.527.0 crew edits that note keeping the builder\'s tag', setDoc(doc(db.sub, 'sites/liveP/items/pCrewOwn2'), rowD({ id: 'pCrewOwn2', cap: 'edited', by: 'Clearwater Plumbing', see: [CW, 'ho'] })), true);
+    await INV('2.527.0 homeowner adds a note tagged for themselves', setDoc(doc(db.client, 'sites/liveP/items/pN4'), rowD({ id: 'pN4', cap: 'x', by: 'Ana Ruiz', see: ['ho'] })), true);
+    await INV('2.527.0 homeowner DENIED a note they tag for the crew', setDoc(doc(db.client, 'sites/liveP/items/pN5'), rowD({ id: 'pN5', cap: 'x', by: 'Ana Ruiz', see: ['ho', CW] })), false);
+    await INV('2.527.0 homeowner edits their own note, tags kept', setDoc(doc(db.client, 'sites/liveP/items/pHomeOwn'), rowD({ id: 'pHomeOwn', cap: 'edited', by: 'Ana Ruiz', see: ['ho'] })), true);
+    await INV('2.527.0 homeowner DENIED adding a crew tag to their own note', setDoc(doc(db.client, 'sites/liveP/items/pHomeOwn'), rowD({ id: 'pHomeOwn', cap: 'edited', by: 'Ana Ruiz', see: ['ho', CW] })), false);
+    await INV('2.527.0 builder shares a note with the homeowner and a crew', setDoc(doc(db.builder, 'sites/liveP/items/pTeam'), rowD({ id: 'pTeam', cap: 'note pTeam', by: 'You', see: ['ho', CW] })), true);
+    await INV('2.527.0 ... and the crew reads it now', getDoc(doc(db.sub, 'sites/liveP/items/pTeam')), true);
+    await INV('2.527.0 builder takes the homeowner back off', setDoc(doc(db.builder, 'sites/liveP/items/pTeam'), rowD({ id: 'pTeam', cap: 'note pTeam', by: 'You', see: [CW] })), true);
+    await INV('2.527.0 ... and the homeowner can no longer read it', getDoc(doc(db.client, 'sites/liveP/items/pTeam')), false);
+  }
 
   /* ---------- report ---------- */
   await testEnv.cleanup();
