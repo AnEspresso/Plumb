@@ -16702,17 +16702,23 @@ async function invApprove(projId,invId){
   /* 2.528.0: the OK says what was agreed to: the total the homeowner saw (approvedTotal, the rules check it is the
      invoice's total) and the name the server stamped for them on this house (approvedBy). */
   const okTotal=Number(inv.total)||0,okBy=String((((p.memberInfo||{})[Sync.uid])||{}).name||'');
-  try{const ref=Sync.db.collection('sites').doc(String(p.id)).collection('inv').doc(String(invId));const base={data:{status:'approved',approvedAt:at,approvedTotal:okTotal,approvedBy:okBy},updatedAt:at,updatedBy:Sync.deviceId};
+  let okSaved=true;
+  try{const ref=Sync.db.collection('sites').doc(String(p.id)).collection('inv').doc(String(invId));
     /* 2.481.0: Rules A2 wants who, the server time and the app version (M-7, M-15); Rules A1 (live until A2 is published) refuses them, so try the A2 shape first and fall back once. */
     let ts=null;try{ts=Sync.uid?CO.ts():null;}catch(e){}
-    if(!ts)await ref.set(base,{merge:true});
-    else try{await ref.set(Object.assign({},base,{byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at}),{merge:true});}
-    catch(e1){if(!(e1&&e1.code==='permission-denied'))throw e1;await ref.set(base,{merge:true});}}
+    const put=async data=>{const base={data,updatedAt:at,updatedBy:Sync.deviceId};
+      if(!ts)return ref.set(base,{merge:true});
+      try{return await ref.set(Object.assign({},base,{byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at}),{merge:true});}
+      catch(e1){if(!(e1&&e1.code==='permission-denied'))throw e1;return ref.set(base,{merge:true});}};
+    /* 2.528.0: the OK with what was agreed to first; the rules before 2.528.0 refuse the two new fields, so fall back once
+       to status and approvedAt (the 2.528.0 rules refuse that one, so it never lands once they are published). */
+    try{await put({status:'approved',approvedAt:at,approvedTotal:okTotal,approvedBy:okBy});}
+    catch(e2){if(!(e2&&e2.code==='permission-denied'))throw e2;okSaved=false;await put({status:'approved',approvedAt:at});}}
   catch(e){delete _invOkBusy[key];const denied=!!(e&&e.code==='permission-denied');
     trapError(denied?'rules':'caught','Invoice approve write '+(denied?'refused':'failed')+': '+String((e&&(e.code||e.message))||'').slice(0,100),'invApprove');
     _invOkRender(p,inv);toast(denied?'Not approved yet. Ask your builder to check your access.':SIGNAL);return;}
   delete _invOkBusy[key];
-  inv.status='approved';inv.approvedAt=at;inv.approvedTotal=okTotal;inv.approvedBy=okBy;
+  inv.status='approved';inv.approvedAt=at;if(okSaved){inv.approvedTotal=okTotal;inv.approvedBy=okBy;}
   /* The server now holds this record: mark it synced (this phone's own echo is
      skipped by the inv listener). A homeowner never pushes inv records. */
   try{const sh=Sync._shadow[String(p.id)]||(Sync._shadow[String(p.id)]={meta:'',colls:{}});sh.colls=sh.colls||{};

@@ -3936,6 +3936,10 @@ await (async function(){
   $("window.__ivServer=JSON.stringify("+P1+".invoices);__iv.toasts=[];true");open('inv_a3');
   $("window.__ivP=invApprove('ivl1','inv_a3');true");await tick();
   t('refused: Saving… while waiting',btn()==='Saving…|disabled',btn());
+  const nR0=$("__iv.writes.length");
+  $("__iv.pend&&__iv.pend.rej({code:'permission-denied',message:'Missing or insufficient permissions.'});true");await tick();
+  const wFb=JSON.parse($("JSON.stringify(__iv.writes[__iv.writes.length-1]||null)"));
+  t('2.528.0: refused with the agreed amount, it tries once more the way the rules before 2.528.0 take it (status and approvedAt only)',$("__iv.writes.length")===nR0+1&&!!wFb&&Object.keys(wFb.d.data).sort().join()==='approvedAt,status',JSON.stringify(wFb&&wFb.d.data));
   $("__iv.pend&&__iv.pend.rej({code:'permission-denied',message:'Missing or insufficient permissions.'});true");await $("__ivP");await tick();
   t('refused: the invoice is still waiting here (no status, no approvedAt)',inv(2).status==='sent'&&inv(2).approvedAt===undefined,JSON.stringify(inv(2)));
   t('refused: #37\u2019s toast, word for word',$("JSON.stringify(__iv.toasts)")===JSON.stringify(['Not approved yet. Ask your builder to check your access.']),$("JSON.stringify(__iv.toasts)"));
@@ -6071,7 +6075,7 @@ await (async function(){
   /* ---------- step 5: ready for Rules A2 (2.481.0); app side only, rules cases live in rulescheck.js ---------- */
   t('A2: the sync stamp carries the server time (M-7)',J("(function(){try{var s=Sync._stamp();return ('at' in s)&&typeof s.appV==='string'&&s.appV.split('.').length===3;}catch(e){return 'err '+e.message;}})()")===true);
   t('A2: every live money builder claims an invoice number, switch or not',SRC.indexOf("allowed(p){try{return !!(p&&typeof Sync")>=0&&SRC.indexOf("allowed(p){try{return !!(PaperTrail.on&&p")<0);
-  t('A2: the homeowner approval is stamped first and falls back to the A1 shape',SRC.indexOf("byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at")>=0&&SRC.indexOf("if(!(e1&&e1.code==='permission-denied'))throw e1;await ref.set(base,{merge:true});")>=0);
+  t('A2: the homeowner approval is stamped first and falls back to the A1 shape',SRC.indexOf("byUid:String(Sync.uid),at:ts,appV:CO.appV(),tappedAt:at")>=0&&SRC.indexOf("if(!(e1&&e1.code==='permission-denied'))throw e1;return ref.set(base,{merge:true});")>=0);   /* 2.528.0: the same fallback, inside put() */
   t('A2: voiding an invoice asks why and keeps the reason',SRC.indexOf("inv.status='void';inv.voidedAt=Date.now();inv.voidReason=why;")>=0&&SRC.indexOf("if(!why){toast('Add a reason first.');return;}")>=0);
   t('A2: a credit or charge is never removed from a sent invoice',SRC.indexOf("const canAdj=false;")>=0);
   t('2.495.0: InvNo.send writes amountC on every item, totalC on the invoice, and updatedByUid on the initial batch.set',
