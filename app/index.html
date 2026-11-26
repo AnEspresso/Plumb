@@ -4081,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.530.0 - Bad signal: unsent changes on every house go up when signal returns';   /* 11/26: bad-signal sync. */
+const PLUMB_VERSION='2.531.0 - Download this house: a printable house record and a money spreadsheet';   /* 11/26: house record and money spreadsheet. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795900000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.530.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796000000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.531.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -9616,6 +9616,7 @@ function houseHTML(p){
     if(p.doneAt)h+='<button class="add-sub-btn mt-4 btn btn-secondary" onclick="markHouseDone(\''+String(p.id)+'\',false)">'+esc(HOUSE_DONE_WORDS.putBack)+'</button>';
     else h+='<button class="add-sub-btn mt-4 btn btn-secondary" onclick="askHouseDone(\''+String(p.id)+'\')">'+esc(HOUSE_DONE_WORDS.button)+'</button>';
   }
+  if(isBuilder&&siteRoleFor(p)==='builder'&&canGate('moneyCo'))h+='<button class="la-link d-block mt-3 mb-0 mx-auto btn btn-quiet" onclick="houseExportMenu(\''+String(p.id)+'\')">Download this house</button>';
   return h;
 }
 /* ── 2.526.0 Getting in, Call, and the homeowner card ──
@@ -15624,6 +15625,7 @@ function renderClient(){
     h+='<button class="hs-door" onclick="openClientMoney()"><div class="k">Upgrades &amp; payments</div><div class="m">'+esc(clientStillToPayLine(led.out))+'</div></button>';
     h+='</div>';
     h+='<div class="row2 gap-2 mt-4 ml-0 mr-0 mb-2"><button class="cl-concern" onclick="openConcern()">Raise a concern</button><button class="cl-concern" onclick="openIdea()">Share an idea</button></div>';
+    if((state.session||{}).role==='client')h+='<button class="la-link d-block mt-3 mb-0 mx-auto btn btn-quiet" onclick="houseExportPrint(\''+esc(String(p.id))+'\',\'client\')">Download this house</button>';
   }
 
   else if(T==='progress'){
@@ -17047,12 +17049,23 @@ function _pvEnsureStyle(){
   #invPrintView .pv-doc td{padding:8px 0;border-bottom:1px solid #e7e2d8}
   #invPrintView .pv-doc tr.tot td{font-weight:700;border-bottom:none;border-top:2px solid #333}
   #invPrintView .pv-doc .pv-void{color:#b0604a;font-weight:700;margin-top:14px}
+  #invPrintView .pv-doc h2{font-size:15px;margin:24px 0 6px;padding-bottom:3px;border-bottom:2px solid #333}
+  #invPrintView .pv-doc .pv-banner{border:1px solid #b0604a;color:#7a3a28;font-size:13px;font-weight:600;padding:8px 10px;border-radius:6px;margin:0 0 6px}
+  #invPrintView .pv-doc .pv-note{color:#666;font-size:13px;margin:4px 0}
+  #invPrintView .pv-doc .pv-warn{color:#7a3a28;font-size:13px;font-weight:600;margin:4px 0}
+  #invPrintView .pv-doc .pv-s{color:#666;font-size:12px;margin-top:2px}
+  #invPrintView .pv-doc td.pv-r{text-align:right;white-space:nowrap;vertical-align:top;padding-left:12px}
+  #invPrintView .pv-doc td.pv-ind{padding-left:16px}
+  #invPrintView .pv-doc .pv-foot{margin-top:32px;font-size:11px;color:#888}
+  #invPrintView .pv-doc .pv-foot a{color:#888;text-decoration:none}
   @media print{
     body.printing>*:not(#invPrintView){display:none!important}
     body.printing{background:#fff!important}
     body.printing #invPrintView{position:static!important;overflow:visible!important;background:#fff!important}
     body.printing #invPrintView .pv-bar{display:none!important}
     body.printing #invPrintView .pv-doc td{border-color:#eee}
+    body.printing #invPrintView .pv-doc tr{break-inside:avoid;page-break-inside:avoid}
+    body.printing #invPrintView .pv-doc h2{break-after:avoid;page-break-after:avoid}
   }`;
   document.head.appendChild(s);
 }
@@ -17088,6 +17101,159 @@ function doPrintPreview(){
 function closePrintPreview(){
   document.body.classList.remove('printing');
   const v=document.getElementById('invPrintView');if(v)v.remove();
+}
+/* ── 2.531.0 Download this house ──
+   One printable house record (the same print view invoices use) and, for the builder, a money spreadsheet.
+   houseExportParts is the only place that decides what a reader may see. It looks at the session itself:
+   a homeowner, or a phone that is not the builder on this house, always gets the homeowner subset, whatever
+   the caller asked for. Plain data in, no HTML, so the page and the tests read the same rows.
+   Cost lines, budget lines and margins are never read here. */
+const HOUSE_EXPORT_FOOT='Builders: see how SitePlumb works at siteplumb.com';
+function houseExportAllowed(p){
+  try{const s=state.session||{};if(!p)return false;
+    if(s.role==='client'){const c=clientProj();return !!c&&String(c.id)===String(p.id);}
+    return s.role==='builder'&&siteRoleFor(p)==='builder'&&canGate('moneyCo');}catch(e){return false;}
+}
+function _hxBuilderPhone(p){try{return (state.session||{}).role==='builder'&&siteRoleFor(p)==='builder';}catch(e){return false;}}
+function _hxLive(){try{return typeof Sync!=='undefined'&&Sync.mode==='live'&&!!Sync.uid;}catch(e){return false;}}
+function _hxMs(t){try{if(t&&typeof t.toMillis==='function')return t.toMillis();}catch(e){}const n=Number(t);return isFinite(n)&&n>0?n:0;}
+function _hxStamp(t){if(typeof t==='string'&&/^\d{4}-\d{2}-\d{2}/.test(t))return new Date(+t.slice(0,4),+t.slice(5,7)-1,+t.slice(8,10)).getTime();return _hxMs(t);}
+function _hxDay(t){const ms=_hxStamp(t);return ms?new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';}
+function _hxIso(t){const ms=_hxStamp(t);if(!ms)return '';const d=new Date(ms);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+/* Change orders arrive on a live listener: null means not here yet, 'off' means this house has none to show, else the rows. */
+function _hxCoRows(p){
+  if(!PaperTrail.on||!_hxLive())return 'off';
+  const src=_hxBuilderPhone(p)?CO:COH,sid=String(p.id);
+  return Array.isArray(src._rows[sid])?src.list(sid):null;
+}
+function _hxWaiting(p){try{return _hxCoRows(p)===null&&!(_hxBuilderPhone(p)?CO:COH)._err[String(p.id)];}catch(e){return false;}}
+function _hxSelMoney(s,p){
+  if(selIsAllowance(s)){const m=allowanceMath(s.allowance,s.cost,houseCreditsAllowances(p));const a=['Allowance '+fmtMoney(s.allowance)];
+    if(m.priced){a.push('price '+fmtMoney(s.cost));const amt=Number(s.price)||0;
+      if(amt>0.005)a.push(fmtMoney(amt)+' over');else if(amt<-0.005)a.push(fmtMoney(-amt)+' credit');else if(m.under>0.005)a.push(fmtMoney(m.under)+' under');}
+    return a.join(' · ');}
+  return selMoney(s.price);
+}
+const _HX_INV_WORD={sent:'Sent',approved:'Approved',partial:'Partly paid',overdue:'Past due',paid:'Paid',draft:'Draft',void:'Void'};
+function houseExportParts(p,who){
+  p=p||{};const sid=String(p.id);
+  const bld=who==='builder'&&_hxBuilderPhone(p)&&canGate('moneyCo');   /* the one rule: anything less is the homeowner copy */
+  const live=_hxLive();
+  const parts={who:bld?'builder':'client',title:p.street||p.name||'House',city:p.city||'',made:_hxDay(Date.now()),by:'',banner:bld?'Builder copy. Includes team notes and payment stages. Not for the homeowner.':'',sections:[],foot:HOUSE_EXPORT_FOOT};
+  if(bld){try{const c=String((orgPrefs()||{}).company||'').trim();if(c)parts.by=c;}catch(e){}}
+  const add=(key,title,o)=>{const x=Object.assign({key:key,title:title,intro:'',notice:'',empty:'',rows:[]},o||{});parts.sections.push(x);return x;};
+  const msg=(what)=>what+' could not be loaded. Try again with signal.';
+  // House
+  {const SS=stagesFor(p),done=p.stageDone||{},cur=SS.findIndex(x=>!done[x.id]);const rows=[];
+    SS.forEach((x,i)=>{const st=done[x.id]?'Done':i===cur?'In progress':'Not started';if(!bld&&st==='Not started')return;rows.push({a:x.name,b:st});});
+    add('house','House',{intro:[p.street||p.name||'',p.city||''].filter(Boolean).join(', '),rows:rows});}
+  // Selections
+  {const showMoney=!bld||!moneyHidden('selm');const rows=(p.selections||[]).map(s=>{
+      const ap=s.approved?'Approved'+(s.signed&&s.signed.name?' by '+s.signed.name:'')+(s.approvedAt?' · '+_hxDay(s.approvedAt):''):'Not approved yet';
+      const room=s.room&&s.room!=='—'?s.room:'';const money=showMoney?_hxSelMoney(s,p):'';
+      const st=String(s.status||'pending');
+      return {a:s.item||'(unspecified)',b:st.charAt(0).toUpperCase()+st.slice(1),sub:[room,s.cat||'',money,ap,s.note||''].filter(Boolean).join(' · ')};});
+    add('selections','Selections',{rows:rows,empty:'No selections recorded.'});}
+  // Change orders
+  {const co=_hxCoRows(p);
+    if(co===null){add('co','Change orders',{notice:msg('Change orders')});}
+    else if(co!=='off'){const rows=co.filter(r=>bld||r.status==='approved').sort((a,b)=>(a.no||1e9)-(b.no||1e9)||(_hxMs(a.t)-_hxMs(b.t))).map(r=>
+        ({a:CO.label(r.no)+' · '+(r.title||''),b:CO.amountText(r.amountC),sub:[r.days?CO.daysText(r.days):'',CO.statusText(r)].filter(Boolean).join(' · ')}));
+      add('co','Change orders',{rows:rows,empty:bld?'No change orders.':'No approved change orders.'});}}
+  // Invoices and payments
+  {const sx=add('invoices','Invoices and payments');
+    if(live&&!(Sync._pulled[sid]||{}).inv)sx.notice=msg('Invoices');
+    const invs=(p.invoices||[]).filter(v=>v&&(bld||(invState(v)!=='void'&&invState(v)!=='draft')));
+    const hidden=invs.filter(v=>{const s=invState(v);return s==='draft'||s==='void';});
+    invs.filter(v=>hidden.indexOf(v)<0).forEach(v=>{const st=invState(v),paid=invPaidAmt(v);
+      sx.rows.push({a:invNoText(v)+' · '+(v.title||''),b:fmtMoney(v.total),sub:[_HX_INV_WORD[st]||st,paid>0?'Paid '+fmtMoney(paid):'',paid>0?'Balance '+fmtMoney(invBalance(v)):'',v.due?'Due '+v.due:''].filter(Boolean).join(' · ')});
+      (v.payments||[]).filter(payLive).forEach(pm=>{sx.rows.push({a:'Payment · '+(_hxDay(pm.date||pm.t)||'no date'),b:fmtMoney(pm.amount),sub:pm.note||pm.label||'',ind:true});});});
+    hidden.forEach(v=>{sx.rows.push({a:(v.no||'Draft')+' · '+(v.title||''),b:invState(v)==='void'?'Void':'Draft'});});
+    const loose=(p.payments||[]).filter(payLive);
+    loose.forEach(pm=>{sx.rows.push({a:'Payment outside invoices · '+(_hxDay(pm.date||pm.t)||'no date'),b:fmtMoney(pm.amount),sub:pm.label||pm.note||''});});
+    try{const bs=billingSummary(p);sx.rows.push({a:'Invoiced',b:fmtMoney(bs.billed),tot:true},{a:'Paid',b:fmtMoney(bs.paid)},{a:'Balance due on invoices',b:fmtMoney(bs.balanceDue)});}catch(e){}
+    if(!invs.length&&!loose.length&&!sx.notice)sx.empty='No invoices yet.';}
+  // Payment stages (builder only)
+  if(bld&&drawsOn(p)){const L=drawList(p);
+    if(L.length){const rows=L.map((d,i)=>({a:(i+1)+'. '+(d.title||'Stage'),b:fmtMoney(fromC(drawAmtC(d))),sub:drawStatusText(p,d)}));const c=drawCompareLine(p);if(c)rows.push({a:c});
+      add('stages','Payment stages',{rows:rows});}}
+  // Notes, logs and updates
+  if(bld){
+    const recs=(p.items||[]).filter(it=>!it.sample||state.showSamples).map(it=>({t:it.t||0,a:it.cap||'(note)',b:it.client?'Written by the homeowner':it.share?'Shared with homeowner':'Team only',sub:[_hxDay(it.t),areaText(it.area),it.crew?'Crew: '+it.crew:'',it.by?'By '+it.by:''].filter(Boolean).join(' · ')}));
+    const logs=(p.logs||[]).map(l=>({t:l.t||_hxStamp(l.date),a:'Daily log · '+(_hxDay(l.date||l.t)||'')+(l.text?': '+l.text:''),b:l.share?'Shared with homeowner':'Team only',sub:l.by?'By '+l.by:''}));
+    add('notes','Notes and daily logs',{rows:recs.concat(logs).sort((a,b)=>b.t-a.t),empty:'No notes or logs yet.'});
+    const ph=(p.items||[]).filter(it=>it.photoId&&(!it.sample||state.showSamples)).sort((a,b)=>(b.t||0)-(a.t||0)).map(it=>({a:it.cap||'(photo)',b:it.share?'Shared':'Team only',sub:[_hxDay(it.t),areaText(it.area)].filter(Boolean).join(' · ')}));
+    add('photos','Photos',{intro:'Photos stay in SitePlumb. This list is not the files.',rows:ph,empty:'No photos.'});
+    add('docs','Documents',{rows:(p.docs||[]).filter(d=>d&&!siteRecOf(d.id)).map(d=>({a:d.n||'(document)',b:DOC_AUD_LABEL[docAud(d)]||''})),empty:'No documents.'});
+  }else{
+    const recs=(p.items||[]).filter(it=>(!it.sample||state.showSamples)&&(it.share||it.client)).map(it=>({t:it.t||0,a:it.cap||'(update)',b:it.client?'You wrote this':'',sub:[_hxDay(it.t),areaText(it.area),it.client&&it.reply?'Your builder: '+it.reply:''].filter(Boolean).join(' · ')}));
+    const logs=(p.logs||[]).filter(l=>l.share).map(l=>({t:l.t||_hxStamp(l.date),a:'Daily log · '+(_hxDay(l.date||l.t)||'')+(l.text?': '+l.text:''),b:''}));
+    add('updates','Updates',{rows:recs.concat(logs).sort((a,b)=>b.t-a.t),empty:'No updates shared yet.'});
+    add('docs','Documents',{rows:(p.docs||[]).filter(docAudClient).map(d=>({a:d.n||'(document)'})),empty:'No documents shared yet.'});
+  }
+  return parts;
+}
+function houseExportHTML(parts){
+  const e=x=>esc(String(x==null?'':x));
+  const row=x=>'<tr'+(x.tot?' class="tot"':'')+'><td'+(x.ind?' class="pv-ind"':'')+'>'+e(x.a)+(x.sub?'<div class="pv-s">'+e(x.sub)+'</div>':'')+'</td><td class="pv-r">'+e(x.b)+'</td></tr>';
+  let h='<h1>'+e(parts.title)+'</h1><div class="pv-sub">'+e([parts.city,'Made '+parts.made,parts.by?'By '+parts.by:''].filter(Boolean).join(' · '))+'</div>';
+  if(parts.banner)h+='<div class="pv-banner">'+e(parts.banner)+'</div>';
+  parts.sections.forEach(s=>{
+    h+='<h2>'+e(s.title)+'</h2>';
+    if(s.intro)h+='<p class="pv-note">'+e(s.intro)+'</p>';
+    if(s.notice)h+='<p class="pv-warn">'+e(s.notice)+'</p>';
+    if(s.rows.length)h+='<table>'+s.rows.map(row).join('')+'</table>';
+    else if(s.empty&&!s.notice)h+='<p class="pv-note">'+e(s.empty)+'</p>';
+  });
+  h+='<div class="pv-foot"><a href="https://siteplumb.com/?ref=closeout" target="_blank" rel="noopener">'+e(parts.foot)+'</a></div>';
+  return h;
+}
+/* Waits a moment for the live change-order list, so a record is not silently short. go() runs at once when nothing is pending. */
+function houseExportReady(p,go){
+  let n=0;
+  try{if(_hxCoRows(p)===null)_hxBuilderPhone(p)?CO.attach(p):COH.attach(p);}catch(e){}
+  const tick=()=>{if(!_hxWaiting(p)||n++>=10){go();return;}setTimeout(tick,250);};
+  tick();
+}
+function _hxHouse(pid){const s=state.session||{};if(s.role==='client'){const c=clientProj();return c&&String(c.id)===String(pid)?c:null;}return (state.projects||[]).find(x=>String(x.id)===String(pid))||null;}
+function houseExportPrint(pid,who){
+  const p=_hxHouse(pid);if(!p||!houseExportAllowed(p))return false;
+  houseExportReady(p,()=>{
+    if(!houseExportAllowed(p))return;
+    const parts=houseExportParts(p,who);
+    _pvEnsureStyle();closePrintPreview();
+    const v=document.createElement('div');v.id='invPrintView';
+    v.innerHTML='<div class="pv-bar"><button class="pv-done" onclick="closePrintPreview()">Done</button><button class="pv-print" onclick="doPrintPreview()">Print / Save as PDF</button></div><div class="pv-doc">'+houseExportHTML(parts)+'</div>';
+    document.body.appendChild(v);
+  });
+  return true;
+}
+function houseMoneyCsv(p){
+  const n2=v=>(Number(v)||0).toFixed(2);const rows=[['Date','Kind','Number','Title','Amount','Paid','Balance','Status','Note']];
+  (p.invoices||[]).filter(v=>v).forEach(v=>{const st=invState(v);
+    rows.push([_hxIso(v.t),'Invoice',v.no||'Draft',v.title||'',n2(v.total),n2(invPaidAmt(v)),n2(invBalance(v)),_HX_INV_WORD[st]||st,v.due?'Due '+v.due:'']);
+    (v.payments||[]).filter(payLive).forEach(pm=>{rows.push([_hxIso(pm.date||pm.t),'Payment',v.no||'Draft',v.title||'',n2(pm.amount),'','','Received',pm.note||pm.label||'']);});});
+  (p.payments||[]).filter(payLive).forEach(pm=>{rows.push([_hxIso(pm.date||pm.t),'Payment','',pm.label||'',n2(pm.amount),'','','Received','Outside invoices'+(pm.note?' · '+pm.note:'')]);});
+  const co=_hxCoRows(p);
+  if(Array.isArray(co))co.slice().sort((a,b)=>(a.no||1e9)-(b.no||1e9)).forEach(r=>{rows.push([_hxIso(r.decidedAt||r.t),'Change order',CO.label(r.no),r.title||'',n2(fromC(Number(r.amountC)||0)),'','',CO.statusText(r),r.days?CO.daysText(r.days):'']);});
+  if(drawsOn(p))drawList(p).forEach((d,i)=>{rows.push([_hxIso(d.billedAt),'Payment stage',String(i+1),d.title||'',n2(fromC(drawAmtC(d))),'','',drawStatusText(p,d),d.note||'']);});
+  return rows.map(r=>r.map(_csvCell).join(',')).join('\r\n');
+}
+function houseExportCsv(pid){
+  const p=_hxHouse(pid);if(!p||!houseExportAllowed(p)||(state.session||{}).role!=='builder')return false;
+  houseExportReady(p,()=>{
+    if(_hxLive()&&(!(Sync._pulled[String(p.id)]||{}).inv||_hxCoRows(p)===null)){toast('Some money has not loaded yet. Try again with signal.');return;}
+    const fname=String(p.street||'house').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-money-'+new Date().toISOString().slice(0,10)+'.csv';
+    _csvShare(fname,houseMoneyCsv(p),'Money spreadsheet ready');
+  });
+  return true;
+}
+function houseExportMenu(pid){
+  const p=_hxHouse(pid);if(!p||!houseExportAllowed(p)||(state.session||{}).role!=='builder')return;
+  openChoice({title:'Download this house',items:[
+    {label:'House record, my copy',sub:'Everything on this house, with the money. For your files, not for the homeowner.',fn:()=>houseExportPrint(pid,'builder')},
+    {label:'House record, homeowner copy',sub:'Only what your homeowner can see.',fn:()=>houseExportPrint(pid,'client')},
+    {label:'Money spreadsheet (.csv)',sub:'Invoices, payments and change orders on this house.',fn:()=>houseExportCsv(pid)}]});
 }
 function renderInvoices(){
   const el=document.getElementById('invBody');if(!el)return;

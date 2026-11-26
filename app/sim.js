@@ -6910,8 +6910,8 @@ S('2.529.0 simple draws');
   // wording: version string and jargon
   const ver=String($('PLUMB_VERSION'));
   t('the version string has no apostrophe, semicolon or backslash',!/['";\\]/.test(ver),ver);
-  t('the version says 2.530.0 and Bad signal',/^2\.530\.0 - Bad signal/.test(ver));
-  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.530.0'&&/CACHE\s*=\s*'plumb-v2\.530\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
+  t('the version says 2.531.0 and Download this house',/^2\.531\.0 - Download this house/.test(ver));
+  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.531.0'&&/CACHE\s*=\s*'plumb-v2\.531\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
   const words=(SRC.match(/function drawsRender[\s\S]*?function drawNoteHint/)||[''])[0]+(SRC.match(/const DRAWS_NOT_SAVED[^\n]*/)||[''])[0];
   t('the Draw schedule words have no jargon',!/\b(ledger|amortiz|retainage|escrow|milestone|tranche|schedule of values|SOV|payload|collection|firestore|rules)\b/i.test(words));
   t('the app has no percent entry for stages (dollars only)',!/dwPct|percent of contract/i.test(SRC));
@@ -7129,6 +7129,183 @@ $(`(function(){clearTimeout(_stuckTimer);_stuckN=0;_syncDirty.clear();delete win
   var s=window.__bsSave;state.projects=s.projects;state.session=s.session;state.storeUid=s.su;state.activeId=s.ac;Object.assign(Sync,s.sync);
   if(s.mode==null)localStorage.removeItem('plumb.mode');else localStorage.setItem('plumb.mode',s.mode);
   try{setSync('local');}catch(e){}return true;})()`);
+}
+
+/* ════ 2.531.0 · DOWNLOAD THIS HOUSE: a printable house record and a money spreadsheet ════ */
+{
+S('house-export');
+const hxJ=c=>JSON.parse($("JSON.stringify("+c+")"));
+$(`(function(){
+  window.__hxSave={projects:state.projects,session:state.session,ac:state.activeId,mode:Sync.mode,uid:Sync.uid,pulled:Sync._pulled,pton:PaperTrail.on,canGate:canGate,csv:_csvShare,print:window.print};
+  var n=Date.now();
+  state.projects=[{id:'hx1',name:'Maple',street:'12 Maple Ln',city:'Ann Arbor',phase:'frame',members:{},stageDone:{site:true},
+    items:[{id:1,cap:'TEAMNOTE footing check',area:'Whole House',crew:'',issue:false,share:false,t:n-5e6,by:'Mike'},
+      {id:2,cap:'SHAREDNOTE framing up',area:'Whole House',crew:'',issue:false,share:true,t:n-4e6,photoId:'ph1'},
+      {id:3,cap:'CREWNOTE plumber rough-in',area:'Basement',crew:'Plumbing',issue:false,share:false,t:n-3e6},
+      {id:4,cap:'OWNERNOTE please move the outlet',area:'Kitchen',crew:'',issue:false,share:false,client:true,t:n-2e6}],
+    logs:[{date:'2026-11-20',t:n-9e6,text:'SHAREDLOG framing went up',share:true},{date:'2026-11-21',t:n-8e6,text:'UNSHAREDLOG crew was late',share:false}],
+    selections:[{id:'s1',room:'Kitchen',cat:'Counters',item:'Quartz',status:'selected',approved:true,approvedAt:n-7e6,signed:{name:'Ana Ruiz'},price:1200,note:'Taj Mahal'},
+      {id:'s2',room:'Bath',cat:'Tile',item:'Subway tile',status:'pending',approved:false,price:0}],
+    invoices:[{id:'i1',no:'INV-001',title:'Deposit, first',status:'sent',t:n-6e6,total:5000,due:'2026-12-01',items:[{label:'Deposit',amount:5000}],payments:[{id:'pm1',amount:2000,date:'2026-11-10',note:'Check 101, "paid"'}]},
+      {id:'i2',no:'INV-002',title:'DRAFTINV rough-in',status:'draft',t:n-5e6,total:700,items:[{label:'x',amount:700}],payments:[]},
+      {id:'i3',no:'INV-003',title:'VOIDINV mistake',status:'void',t:n-4e6,total:900,items:[{label:'y',amount:900}],payments:[]}],
+    payments:[{id:'pl1',amount:300,date:'2026-11-12',label:'Cash'}],
+    draws:[{id:'d1',order:1,title:'STAGEFOUND Foundation poured',amountC:1000000,status:'open'}],
+    docs:[{aud:'team',n:'TEAMDOC.pdf'},{aud:'subs',n:'CREWDOC.pdf'},{aud:'homeowner',n:'HODOC.pdf'},{aud:'all',n:'ALLDOC.pdf'}],
+    costs:[{id:'c1',rt:'actual',kind:'spent',payee:'SECRETCOST Lumber Co',amount:9999,t:n}],
+    siteAccess:{gate:'GATE4321'},bookings:[],nextId:9}];
+  state.activeId='hx1';
+  window.__hxCsvN=0;window.__hxCsvArgs=null;
+  _csvShare=function(f,txt){window.__hxCsvN++;window.__hxCsvArgs=[f,txt];return Promise.resolve(true);};
+  state.session={role:'builder',name:'You'};
+  Sync.mode='live';Sync.uid='uHX';Sync._pulled={hx1:{inv:true}};PaperTrail.on=true;
+  var co=[{id:'c_a',no:1,title:'Add window',amountC:150000,kind:'charge',status:'approved',decidedName:'Ana Ruiz',decidedAt:n-3e6,days:2,t:n-3e6},
+    {id:'c_b',no:2,title:'WAITINGCO Add deck',amountC:800000,kind:'charge',status:'sent',t:n-2e6}];
+  CO._rows.hx1=co.slice();COH._rows.hx1=co.slice();
+  return true;})()`);
+const hxHTML=()=>$("(function(){var v=document.getElementById('invPrintView');return v?v.innerHTML:'';})()");
+const hxText=()=>$("(function(){var v=document.getElementById('invPrintView');return v?v.querySelector('.pv-doc').textContent:'';})()");
+const hxOpen=(who)=>{$("closePrintPreview()");$("houseExportPrint('hx1','"+who+"')");return hxText();};
+const csvParse=txt=>txt.split('\r\n').map(line=>{const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(q){if(c==='"'&&line[i+1]==='"'){cur+='"';i++;}else if(c==='"')q=false;else cur+=c;}else if(c==='"')q=true;else if(c===','){out.push(cur);cur='';}else cur+=c;}out.push(cur);return out;});
+
+// 1. builder copy
+const B=hxOpen('builder');
+t('1: builder copy has every section heading',['House','Selections','Change orders','Invoices and payments','Payment stages','Notes and daily logs','Photos','Documents'].every(h=>$("[].map.call(document.querySelectorAll('#invPrintView h2'),function(x){return x.textContent;})").indexOf(h)>=0));
+t('1: builder copy has the Builder copy banner',B.indexOf('Builder copy. Includes team notes and payment stages. Not for the homeowner.')>=0);
+t('1: the title is the house address',$("document.querySelector('#invPrintView h1').textContent")==='12 Maple Ln');
+t('1: stages read Done and In progress and Not started',/Site prep|Site/.test(B)&&B.indexOf('Done')>=0&&B.indexOf('In progress')>=0&&B.indexOf('Not started')>=0);
+t('1: selections: approval who and price show',B.indexOf('Approved by Ana Ruiz')>=0&&B.indexOf('Quartz')>=0&&B.indexOf('Not approved yet')>=0&&B.indexOf('$1,200')>=0);
+t('1: change orders: approved and waiting, with the status line',B.indexOf('CO-001')>=0&&B.indexOf('CO-002')>=0&&B.indexOf('Waiting on the homeowner')>=0&&B.indexOf('Adds 2 days')>=0);
+t('1: invoices: sent invoice with paid, balance, due and its payment',B.indexOf('INV-001')>=0&&B.indexOf('Paid $2,000')>=0&&B.indexOf('Balance $3,000')>=0&&B.indexOf('Due 2026-12-01')>=0&&B.indexOf('Check 101')>=0);
+t('1: draft and void are listed by number with the word',/INV-002[^]*Draft/.test(B)&&/INV-003[^]*Void/.test(B));
+t('1: the payment outside invoices shows',B.indexOf('Payment outside invoices')>=0&&B.indexOf('$300')>=0);
+t('1: house totals match billingSummary',(function(){const bs=hxJ("(function(){var b=billingSummary(state.projects[0]);return {billed:fmtMoney(b.billed),paid:fmtMoney(b.paid),due:fmtMoney(b.balanceDue)};})()");return B.indexOf('Invoiced'+bs.billed)>=0&&B.indexOf('Paid'+bs.paid)>=0&&B.indexOf('Balance due on invoices'+bs.due)>=0;})());
+t('1: payment stages show with the status',B.indexOf('STAGEFOUND Foundation poured')>=0&&B.indexOf('Not yet billed')>=0);
+t('1: every note and log, tagged shared or team only',B.indexOf('TEAMNOTE')>=0&&B.indexOf('SHAREDNOTE')>=0&&B.indexOf('CREWNOTE')>=0&&B.indexOf('SHAREDLOG')>=0&&B.indexOf('UNSHAREDLOG')>=0&&B.indexOf('Shared with homeowner')>=0&&B.indexOf('Team only')>=0);
+t('1: photos list with the plain words, and only the note with a photo',B.indexOf('Photos stay in SitePlumb. This list is not the files.')>=0&&/Photos[^]*SHAREDNOTE framing up/.test(B.slice(B.indexOf('Photos stay'))));
+t('1: documents show who they are shared with, no links',B.indexOf('TEAMDOC.pdf')>=0&&B.indexOf('Team only')>=0&&B.indexOf('Everyone')>=0&&!/href="[^"]*\.pdf/.test(hxHTML().replace(/<a href="https:\/\/siteplumb\.com[^>]*>/,'')));
+t('1: the builder copy never carries job costs or the gate code',B.indexOf('SECRETCOST')<0&&B.indexOf('GATE4321')<0);
+$("closePrintPreview()");
+
+// 2. spreadsheet
+$("houseExportCsv('hx1')");
+t('2: the spreadsheet is saved once, named street-money-date.csv',$("window.__hxCsvN")===1&&/^12-maple-ln-money-\d{4}-\d{2}-\d{2}\.csv$/.test($("window.__hxCsvArgs[0]")),$("window.__hxCsvArgs&&window.__hxCsvArgs[0]"));
+const rows=csvParse($("window.__hxCsvArgs[1]"));
+t('2: header row is exact',rows[0].join('|')==='Date|Kind|Number|Title|Amount|Paid|Balance|Status|Note',rows[0].join('|'));
+const kinds=k=>rows.filter(r=>r[1]===k);
+t('2: one row for each invoice, payment, change order and payment stage',kinds('Invoice').length===3&&kinds('Payment').length===2&&kinds('Change order').length===2&&kinds('Payment stage').length===1,rows.map(r=>r[1]).join());
+t('2: commas and quotes stay in one cell (every row has nine cells)',rows.every(r=>r.length===9)&&rows.some(r=>r[3]==='Deposit, first')&&rows.some(r=>r[8]==='Check 101, "paid"'));
+t('2: amounts are plain numbers',kinds('Invoice')[0][4]==='5000.00'&&kinds('Invoice')[0][5]==='2000.00'&&kinds('Invoice')[0][6]==='3000.00'&&kinds('Payment stage')[0][4]==='10000.00');
+t('2: no job-cost words in the spreadsheet',$("window.__hxCsvArgs[1]").indexOf('SECRETCOST')<0&&$("window.__hxCsvArgs[1]").indexOf('GATE4321')<0);
+
+// 3. homeowner copy (the builder's own button for it)
+const H=hxOpen('client');
+t('3: homeowner copy has the safe sections',['House','Selections','Change orders','Invoices and payments','Updates','Documents'].every(h=>$("[].map.call(document.querySelectorAll('#invPrintView h2'),function(x){return x.textContent;})").indexOf(h)>=0));
+t('3: shared note, shared log, own note, approved change order, sent invoice, paid, homeowner and everyone documents',['SHAREDNOTE','SHAREDLOG','OWNERNOTE','CO-001','Add window','INV-001','$2,000','HODOC.pdf','ALLDOC.pdf','Quartz','Subway tile'].every(w=>H.indexOf(w)>=0));
+t('3: not one private word reaches the homeowner copy',['SECRETCOST','STAGEFOUND','Payment stage','TEAMNOTE','CREWNOTE','UNSHAREDLOG','TEAMDOC','CREWDOC','INV-002','INV-003','DRAFTINV','VOIDINV','WAITINGCO','CO-002','Builder copy','GATE4321','Not started'].every(w=>H.indexOf(w)<0),['SECRETCOST','STAGEFOUND','Payment stage','TEAMNOTE','CREWNOTE','UNSHAREDLOG','TEAMDOC','CREWDOC','INV-002','INV-003','DRAFTINV','VOIDINV','WAITINGCO','CO-002','Builder copy','GATE4321','Not started'].filter(w=>H.indexOf(w)>=0).join());
+t('3: no photo list on the homeowner copy',H.indexOf('Photos stay in SitePlumb')<0);
+const Hbuilder=hxJ("houseExportParts(state.projects[0],'client')");
+$("closePrintPreview()");
+
+// 4. forced subset
+$("state.session={role:'client',site:'hx1'}");
+const asC=hxJ("houseExportParts(state.projects[0],'client')"),asCb=hxJ("houseExportParts(state.projects[0],'builder')");
+t('4: a homeowner asking for the builder copy gets the homeowner copy',JSON.stringify(asC)===JSON.stringify(asCb)&&asCb.who==='client'&&!asCb.banner);
+// 5. same text as the builder's homeowner copy
+t('5: the builders homeowner copy equals the homeowners own',JSON.stringify(Hbuilder)===JSON.stringify(asC));
+// a builder phone that is only a member of this house as something else gets the homeowner copy too
+$("state.session={role:'builder',name:'You',auth:{uid:'uHX'}};state.projects[0].members={uHX:'sub'}");
+t('4: a builder-role account that is another role on this house is forced to the homeowner copy',hxJ("houseExportParts(state.projects[0],'builder')").who==='client'&&$("houseExportAllowed(state.projects[0])")===false);
+$("state.projects[0].members={}");
+t('4: with job costs hidden and the builder copy asked for, still no job-cost words',JSON.stringify(hxJ("houseExportParts(state.projects[0],'builder')")).indexOf('SECRETCOST')<0);
+
+// 6. who gets no button and no export
+const noOpen=who=>{$("closePrintPreview();window.__hxCsvN=0");const a=$("houseExportPrint('hx1','"+who+"')");const b=$("houseExportCsv('hx1')");const c=$("houseExportMenu('hx1')");return a===false&&b===false&&$("!document.getElementById('invPrintView')")&&$("window.__hxCsvN")===0&&!$("document.getElementById('choiceScrim').classList.contains('show')");};
+$("state.session={role:'builder',name:'Team'};canGate=function(k){return (k==='moneyCo'||k==='moneyJob')?false:__hxSave.canGate(k);}");
+t('6: Team with Money off: no button on the house page',hxJ("houseHTML(state.projects[0])").indexOf('Download this house')<0);
+t('6: Team with Money off: not allowed, and print, spreadsheet and menu all do nothing',$("houseExportAllowed(state.projects[0])")===false&&noOpen('builder')&&noOpen('client'));
+asSub('Ironhill Excavating');
+t('6: Crew: not allowed, and nothing opens or downloads',$("houseExportAllowed(state.projects[0])")===false&&noOpen('builder'));
+$("state.session={role:'builder',name:'Team'};canGate=function(k){return k==='moneyCo'?true:k==='moneyJob'?false:__hxSave.canGate(k);}");
+t('6: Team with only Invoices on: the button shows',$("houseHTML(state.projects[0])").split('Download this house').length===2);
+const T=hxOpen('builder');
+t('6: Team with only Invoices on: same builder copy, still no job costs',T===B&&T.indexOf('SECRETCOST')<0&&T.indexOf('INV-001')>=0);
+$("closePrintPreview();canGate=__hxSave.canGate;state.session={role:'builder',name:'You'}");
+
+// 7. placement
+const hh=$("houseHTML(state.projects[0])");
+t('7: builder house page has the button once, after Mark house finished',hh.split('Download this house').length===2&&hh.lastIndexOf('Mark house finished')>=0&&hh.lastIndexOf('Mark house finished')<hh.indexOf('Download this house')&&hh.slice(hh.lastIndexOf('Mark house finished')).split('<button').length===2);
+t('7: homeowner Home tab has the button once, after Raise a concern and Share an idea',(function(){const c=clientHTML('hx1','home');return c.split('Download this house').length===2&&c.indexOf('Share an idea')<c.indexOf('Download this house')&&c.indexOf('houseExportPrint')>=0;})());
+t('7: the homeowner button goes straight to the print view (no sheet)',(function(){$("houseExportPrint('hx1','client')");const ok=$("!!document.getElementById('invPrintView')")&&!$("document.getElementById('choiceScrim').classList.contains('show')");$("closePrintPreview()");return ok;})());
+t('7: no other tab, door or scrim was added',!/id="house[A-Za-z]*Export[A-Za-z]*Scrim"|id="[a-zA-Z]*[eE]xport[a-zA-Z]*Scrim"/.test(SRC)&&!/data-door="(export|download)/.test(SRC)&&!/>Full site<|>Billing<|>Draws</.test(SRC));
+t('7: the homeowner page has no spreadsheet button',clientHTML('hx1','home').indexOf('houseExportCsv')<0&&clientHTML('hx1','home').indexOf('Money spreadsheet')<0);
+asBuilder();$("state.session={role:'builder',name:'You'}");
+$("houseExportMenu('hx1')");
+const ch=$("document.getElementById('choiceBody').textContent");
+t('7: the builder sheet has the three rows with the decided words',$("document.getElementById('choiceTitle').textContent")==='Download this house'&&ch.indexOf('House record, my copy')>=0&&ch.indexOf('Everything on this house, with the money. For your files, not for the homeowner.')>=0&&ch.indexOf('House record, homeowner copy')>=0&&ch.indexOf('Only what your homeowner can see.')>=0&&ch.indexOf('Money spreadsheet (.csv)')>=0&&ch.indexOf('Invoices, payments and change orders on this house.')>=0);
+t('7: the three rows are the three actions',(function(){const rowsEl=$("document.querySelectorAll('#choiceBody [data-choice]').length");return rowsEl===3;})());
+$("closeChoice()");
+$("document.querySelectorAll('#choiceBody [data-choice]').length");
+
+// 8. the quiet footer
+const FOOT='Builders: see how SitePlumb works at siteplumb.com';
+for(const who of ['builder','client']){
+  hxOpen(who);
+  const foots=hxJ("[].map.call(document.querySelectorAll('#invPrintView .pv-foot'),function(x){return x.textContent;})");
+  const body=hxText();
+  t('8: '+who+' copy: exactly one footer line with the exact words, at the very end',foots.length===1&&foots[0]===FOOT&&body.endsWith(FOOT));
+  t('8: '+who+' copy: SitePlumb appears only in the footer'+(who==='builder'?' and the photo sentence':''),(body.match(/SitePlumb/g)||[]).length===(who==='builder'?2:1));
+  t('8: '+who+' copy: no image or logo, and the footer has no pitch words',$("document.querySelectorAll('#invPrintView .pv-doc img,#invPrintView .pv-doc svg').length")===0&&!/\bfree\b|upgrade|sign up|\btry\b/i.test(FOOT));
+  t('8: '+who+' copy: the footer links to siteplumb.com with the closeout ref',hxHTML().indexOf('href="https://siteplumb.com/?ref=closeout"')>=0);
+}
+
+// 9. print view reuse
+t('9: the print view has Done and Print / Save as PDF',$("document.querySelector('#invPrintView .pv-print').textContent")==='Print / Save as PDF'&&$("document.querySelector('#invPrintView .pv-done').textContent")==='Done');
+$("window.print=function(){};doPrintPreview()");
+t('9: printing sets body.printing',$("document.body.classList.contains('printing')")===true);
+$("window.dispatchEvent(new window.Event('afterprint'))");
+t('9: body.printing is removed after afterprint',$("document.body.classList.contains('printing')")===false);
+$("window.print=__hxSave.print;closePrintPreview()");
+t('9: Done closes the print view',$("!document.getElementById('invPrintView')")===true);
+t('9: the invoice print is not changed by the new styles (still scoped to #invPrintView)',!/\n\s*h2\s*\{[^}]*pv-/.test(SRC)&&SRC.indexOf('#invPrintView .pv-doc h2{')>=0);
+
+// open build items: not loaded must say so
+$("closePrintPreview();CO._rows={};CO._err={hx1:'permission-denied'};Sync._pulled={};");
+const L=hxOpen('builder');
+t('open (a): change orders not loaded say so instead of printing nothing',L.indexOf('Change orders could not be loaded. Try again with signal.')>=0&&L.indexOf('Invoices could not be loaded. Try again with signal.')>=0);
+t('open (b): invoices not pulled never say there are none',L.indexOf('No invoices yet')<0);
+$("closePrintPreview();window.__hxCsvN=0;houseExportCsv('hx1')");
+t('open (a,b): the spreadsheet refuses to save a short copy',$("window.__hxCsvN")===0&&/has not loaded/.test($("document.getElementById('toast').textContent")));
+$("CO._err={};CO._rows.hx1=[];COH._rows.hx1=[];Sync._pulled={hx1:{inv:true}};");
+t('open: loaded and empty change orders say none, not a notice',hxOpen('builder').indexOf('No change orders.')>=0);
+$("closePrintPreview()");
+$("localStorage.removeItem('plumb.orgPrefs')");
+t('open (c): no company name set: no made-by line',$("houseExportParts(state.projects[0],'builder').by")==='');
+$("localStorage.setItem('plumb.orgPrefs',JSON.stringify({company:'Hilltop Homes'}))");
+t('open (c): with a company name the builder copy says who made it, the homeowner copy does not',$("houseExportParts(state.projects[0],'builder').by")==='Hilltop Homes'&&$("houseExportParts(state.projects[0],'client').by")==='');
+$("localStorage.removeItem('plumb.orgPrefs')");
+
+// 10. privacy page
+const priv=fs.readFileSync(path.join(__dirname,'privacy.html'),'utf8');
+t('10: privacy no longer says export your records by contacting us',priv.indexOf('export your records by contacting us')<0);
+t('10: privacy says Download this house and keeps support@siteplumb.com',priv.indexOf('Download this house')>=0&&priv.indexOf('support@siteplumb.com')>=0);
+t('10: privacy: photos and files need an email',priv.indexOf('For a full archive that includes photos and files, email support@siteplumb.com.')>=0);
+t('10: the builder deletion bullet names it',/If you are a builder<\/b>[^<]*[^]*?Before you delete, tap Download this house on each house you want to keep\. That download has no photo or document files; email support@siteplumb\.com first if you need those\./.test(priv));
+t('10: the rest of the paragraph stays',priv.indexOf('Michigan')>=0&&priv.indexOf('additional rights')>=0&&priv.indexOf('within the time the applicable law requires')>=0&&priv.indexOf('mailto:support@siteplumb.com')>=0);
+
+// 11. version and cache
+const v2=String($('PLUMB_VERSION'));
+t('11: version starts 2.531.0 - Download this house with no apostrophe, semicolon or backslash',/^2\.531\.0 - Download this house/.test(v2)&&!/['";\\]/.test(v2),v2);
+t('11: cache names match and APP_VERSION went up',$('SW_CACHE_EXPECTED')==='plumb-v2.531.0'&&/CACHE\s*=\s*'plumb-v2\.531\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8'))&&$('APP_VERSION')>1795900000000);
+
+// 12. words
+const region=(SRC.match(/const HOUSE_EXPORT_FOOT[\s\S]*?function renderInvoices/)||[''])[0];
+const lits=(region.match(/'(?:[^'\\\n]|\\.)*'/g)||[]).join(' ');
+t('12: the new words have no export, archive, payload, CSV file or JSON',!/export|archive|payload|CSV file|JSON/i.test(lits.replace(/siteplumb\.com\/\?ref=closeout/g,'')),(lits.match(/export|archive|payload|CSV file|JSON/i)||[''])[0]);
+t('12: the button, sheet and rows have none either',!/export|archive|payload|CSV file|JSON/i.test(hh.replace(/houseExport\w*/g,''))&&!/export|archive|payload|CSV file|JSON/i.test(ch));
+
+// put everything back
+$(`(function(){var s=window.__hxSave;closePrintPreview();state.projects=s.projects;state.session=s.session;state.activeId=s.ac;Sync.mode=s.mode;Sync.uid=s.uid;Sync._pulled=s.pulled;PaperTrail.on=s.pton;canGate=s.canGate;_csvShare=s.csv;window.print=s.print;CO._rows={};CO._err={};COH._rows={};COH._err={};return true;})()`);
 }
 
 /* ════ REPORT ════ */
