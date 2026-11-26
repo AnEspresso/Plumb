@@ -4081,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.528.0 - Privacy step 2: the company record has an owner and a teammate changes only setup and team invites, the homeowner approves an invoice for a stated amount and the OK records that amount';   /* 11/26: app first, then the rules that hold it. */
+const PLUMB_VERSION='2.528.1 - Fix: no usage ping from a signed-out screen, which the server refused every minute';   /* 11/26: the 403s in the browser log on the sign-in screen. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795708036367;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.528.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795711452481;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.528.1';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -11400,8 +11400,12 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         this._permFail('site records',err);});
       this.unsub.push(u);});},
   startHeartbeat(){if(!this.ready())return;this.beat();clearInterval(this._hb);this._hb=setInterval(()=>this.beat(),60000);},
-  async beat(){if(!this.ready())return;const s=state.session||{};try{await fnCall('telemetryBeat',{deviceId:this.deviceId,mode:this.mode||'demo',role:s.role||'—',name:s.name||'',v:(typeof PLUMB_VERSION!=='undefined'?PLUMB_VERSION.split(' ')[0]:''),ua:(typeof navigator!=='undefined'?navigator.userAgent:'').slice(0,140)});}catch(e){}},
-  async event(name,detail){if(!this.ready())return;try{await fnCall('telemetryEvent',{deviceId:this.deviceId,name:name||'',detail:(detail==null?'':''+detail),role:(state.session&&state.session.role)||'—'});}catch(e){}},
+  /* 2.528.1: the server takes usage pings only from a signed-in account (an anonymous one gets 403 account-required).
+     Signed out, the app runs on an anonymous sign-in, so the once-a-minute ping failed every minute (the 403s in the
+     browser log on the sign-in screen). No account, no ping. */
+  _acct(){try{const u=firebase.auth().currentUser;return !!(u&&!u.isAnonymous);}catch(e){return false;}},
+  async beat(){if(!this.ready()||!this._acct())return;const s=state.session||{};try{await fnCall('telemetryBeat',{deviceId:this.deviceId,mode:this.mode||'demo',role:s.role||'—',name:s.name||'',v:(typeof PLUMB_VERSION!=='undefined'?PLUMB_VERSION.split(' ')[0]:''),ua:(typeof navigator!=='undefined'?navigator.userAgent:'').slice(0,140)});}catch(e){}},
+  async event(name,detail){if(!this.ready()||!this._acct())return;try{await fnCall('telemetryEvent',{deviceId:this.deviceId,name:name||'',detail:(detail==null?'':''+detail),role:(state.session&&state.session.role)||'—'});}catch(e){}},
   async loadUsage(){if(!this.ready())return null;
     try{const r=await fnCall('telemetryUsage',{});const out=(r&&r.devices)||[];
       out.sort((a,b)=>(b.lastActive||b.t||0)-(a.lastActive||a.t||0));return out;

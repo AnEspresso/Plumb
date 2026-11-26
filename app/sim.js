@@ -1284,6 +1284,13 @@ t('dev panel carries the QuickBooks line', $("!!document.getElementById('qbLine'
 $('qbRenderLine()');
 t('qb line explains the gate in demo', el('qbLine').innerHTML.includes('Sign in live'));
 t('telemetry beat/event are no-throw when sync is off', await $("Promise.all([Sync.beat(),Sync.event('x','y')]).then(()=>true,()=>false)")===true);
+/* 2.528.1: signed out (an anonymous sign-in), the usage ping is not sent at all: the server would answer 403 every minute */
+t('2.528.1 telemetry: no ping from an anonymous sign-in, one from an account', await $(`(async function(){var calls=[];var hadFb=typeof window.firebase!=='undefined';if(!hadFb)window.firebase={};var sv={fn:fnCall,on:Sync.on,db:Sync.db,fa:window.firebase.auth};
+  fnCall=function(n){calls.push(n);return Promise.resolve({});};Sync.on=true;Sync.db=Sync.db||{};
+  try{window.firebase.auth=function(){return {currentUser:{isAnonymous:true,uid:'anon1'}};};await Sync.beat();await Sync.event('x','y');var anon=calls.length;
+    window.firebase.auth=function(){return {currentUser:{isAnonymous:false,uid:'u1'}};};await Sync.beat();await Sync.event('x','y');
+    return anon===0&&calls.join()==='telemetryBeat,telemetryEvent';}
+  finally{fnCall=sv.fn;Sync.on=sv.on;Sync.db=sv.db;if(hadFb)window.firebase.auth=sv.fa;else delete window.firebase;}})()`)===true);
 $('closeBudget()');
 
 /* ════ 14k · ONBOARDING: splash, welcome fork, grand tour, excursions ════ */
