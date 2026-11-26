@@ -115,10 +115,10 @@ t('five z tokens are declared', SRC.indexOf('--z-nav:100')>=0&&SRC.indexOf('--z-
 
 /* ════ 1b · ROLE-AWARE SYNC SCOPING (functions live in app; Sync stays inert here) ════ */
 S('sync-scope');
-t('builder gets all eleven colls (2.512.0: docs and invs)', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm,docs,invs');
+t('builder gets all twelve colls (2.512.0: docs and invs; 2.529.0: draws)', $("syncCollsFor('builder').map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,draws,inv,selm,docs,invs');
 t('sub skips pmts+mail+costs+inv+selm+invs, reads docs', $("syncCollsFor('sub').map(c=>c.sub).join()") === 'items,bk,sel,logs,docs');
 t('client skips mail+costs+invs, keeps inv+selm+docs; 2.527.0: reads the schedule copy (bkho), never the bookings', $("syncCollsFor('client').map(c=>c.sub).join()") === 'items,bkho,sel,logs,pmts,inv,selm,docs');
-t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,inv,selm,docs,invs');
+t('unknown role defaults to all', $("syncCollsFor(null).map(c=>c.sub).join()") === 'items,bk,sel,logs,pmts,mail,costs,draws,inv,selm,docs,invs');
 /* v2.211: bookings must merge per record, never ride the whole-site meta blob.
    The old behavior let a second device silently wipe bookings it had not seen. */
 t('bookings are a synced record collection', $("SYNC_COLLS.some(c=>c.f==='bookings'&&c.sub==='bk')")===true);
@@ -190,7 +190,7 @@ $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(2);Sync._subSite('gateA');true");
 t('no listeners attach synchronously', $("__g.attached.length")===0);
 await new Promise(r=>setTimeout(r,250));
 t('gate retried through the ladder', $("__g.gets")===3);
-t('all eleven colls attach once doc lands', $("__g.attached.join()")==='items,bk,sel,logs,pmts,mail,costs,inv,selm,docs,invs');
+t('all twelve colls attach once doc lands', $("__g.attached.join()")==='items,bk,sel,logs,pmts,mail,costs,draws,inv,selm,docs,invs');
 t('site marked listening after attach', $("!!Sync._listening['gateA']")===true);
 // (2) doc never lands: give up quietly, _listening cleared so a later docChange re-gates
 $("__g.gets=0;__g.attached=[];Sync.db=__mkdb(99);Sync._subSite('gateB');true");
@@ -201,20 +201,20 @@ t('give-up clears _listening (re-gate possible)', $("!Sync._listening['gateB']")
 // (3) offline: unavailable attaches immediately on cache
 $("__g.gets=0;__g.attached=[];Sync.db={collection:()=>({doc:()=>({get:()=>{__g.gets++;return Promise.reject({code:'unavailable'});},collection:sub=>({onSnapshot:(o,h,e)=>{if(typeof o==='function'){e=h;h=o;}__g.attached.push(sub);__g.errCbs[sub]=e;return ()=>{};}})})})};Sync._subSite('gateC');true");
 await new Promise(r=>setTimeout(r,80));
-t('offline attaches without retry ladder', $("__g.gets")===1&&$("__g.attached.length")===11);
+t('offline attaches without retry ladder', $("__g.gets")===1&&$("__g.attached.length")===12);
 // (4) demo mode: gate is a no-op passthrough
 $("__g.gets=0;__g.attached=[];Sync.mode='demo';Sync.db=__mkdb(99);Sync._subSite('gateD');true");
 await new Promise(r=>setTimeout(r,60));
-t('demo attaches without any server get', $("__g.attached.length")===11&&$("__g.gets")===0);
+t('demo attaches without any server get', $("__g.attached.length")===12&&$("__g.gets")===0);
 $("Sync.mode='live';true");
 // (5) belt: first-generation denial is forgiven silently and re-attaches once
 $("localStorage.removeItem('plumb.errors');__g.gets=99;__g.attached=[];Sync.db=__mkdb(0);Sync._subSite('gateE');true");
 await new Promise(r=>setTimeout(r,80));
-t('gateE attached gen-1', $("__g.attached.length")===11);
+t('gateE attached gen-1', $("__g.attached.length")===12);
 $("__g.attached=[];__g.errCbs['items']({code:'permission-denied'});true");
 t('gen-1 denial logs no rules alarm', $("devErrors().length")===0);
 await new Promise(r=>setTimeout(r,200));
-t('belt re-attached a second generation', $("__g.attached.length")===11);
+t('belt re-attached a second generation', $("__g.attached.length")===12);
 t('re-arm consumed', $("Sync._reArmed['gateE']")===true);
 // (6) second-generation denial raises the real alarm
 $("__g.errCbs['items']({code:'permission-denied'});true");
@@ -4562,7 +4562,7 @@ await (async function(){
   t('homeowner phone: never an inv or selm write, no invoices in meta, no money on sel',who.client.inv===0&&who.client.selm===0&&!who.client.metaInv&&!who.client.selMoney,JSON.stringify(who.client));
   t('crew phone: does not listen to inv or selm and writes neither',who.crew.colls==='items,bk,sel,logs,docs'&&who.crew.inv+who.crew.selm===0&&!who.crew.metaInv&&!who.crew.selMoney,JSON.stringify(who.crew));
   t('builder without Money (super): no costs, inv, selm or mail (2.484.0); writes none',who.super.colls==='items,bk,sel,logs,docs'&&who.super.inv+who.super.selm===0&&!who.super.selMoney,JSON.stringify(who.super));
-  t('Money-only builder (PM): selm yes, inv no (Claude lock Q3)',who.pm.colls==='items,bk,sel,logs,pmts,mail,costs,selm,docs,invs'&&who.pm.inv===0&&who.pm.selm>0,JSON.stringify(who.pm));
+  t('Money-only builder (PM): selm yes, inv no (Claude lock Q3)',who.pm.colls==='items,bk,sel,logs,pmts,mail,costs,draws,selm,docs,invs'&&who.pm.inv===0&&who.pm.selm>0,JSON.stringify(who.pm));
 
   /* 5 · a fake Firestore that applies set/merge/deleteField like the server */
   $2(`(function(){
@@ -6745,6 +6745,177 @@ S('calendar days');
     t('the next-free-day search counts real days past Nov 1',nf==='2026-10-30,2026-10-31,2026-11-01,2026-11-02,2026-11-03,2026-11-04',nf);
     t('no day loop steps by a fixed 24 hours any more',!/gridStart\+i\*86400000|d\+=86400000\)|today\+i\*864e5|\(g\.end\|\|g\.start\)\+864e5|icsDate\(b\.end\+86400000\)/.test(SRC));
   }finally{process.env.TZ=prevTZ===undefined?'':prevTZ;if(prevTZ===undefined)delete process.env.TZ;}
+})();
+
+/* ════ 2.529.0 · SIMPLE DRAWS (payment stages inside Money) ════ */
+S('2.529.0 simple draws');
+(function(){
+  const say=()=>el('toast').textContent;
+  const addStage=(title,amt,note)=>{$("drawNew()");setVal('dwTitle',title);setVal('dwAmt',amt);setVal('dwNote',note||'');$("drawSave()");};
+  asBuilder();$("state.activeId='p2'");
+  $("(function(){var p=P();p.draws=[];p.invoices=(p.invoices||[]).filter(function(v){return !(v.items||[]).some(function(i){return i.drawId;});});})()");
+  $('renderBudget()');
+  const bb=el('budgetBody').innerHTML;
+  t('Money shows a Draw schedule row next to Invoices',/Draw schedule/.test(bb)&&/Invoices/.test(bb)&&bb.indexOf('Draw schedule')>bb.indexOf('openInvoices()'));
+  t('empty row says Set up your payment stages for this house.',bb.includes('Set up your payment stages for this house.'));
+  $("openDraws()");
+  t('empty sheet says the same words',el('infoBody').innerHTML.includes('Set up your payment stages for this house.'));
+  // stage math: sum of cents, no float drift, $0.01 edge
+  addStage('Deposit','0.10');addStage('Foundation poured','0.20');addStage('Penny','0.01');
+  const sumC=$("drawTotalC(P())");
+  t('stages 0.10 + 0.20 + 0.01 add to exactly 31 cents (no float drift)',sumC===31,sumC);
+  t('every stage amount is integer cents',$("drawList(P()).every(function(d){return Number.isInteger(d.amountC);})")===true);
+  t('the $0.01 stage is kept as 1 cent',$("drawList(P())[2].amountC")===1);
+  t('total line reads 3 stages · $0.31',$("drawSummaryLine(P())")==='3 stages · $0.31',$("drawSummaryLine(P())"));
+  t('a single stage reads 1 stage',$("(function(){var p={draws:[{id:'x',order:1,amountC:100}]};return drawSummaryLine(p);})()")==='1 stage · $1.00');
+  t('big amounts have no float drift (1234567.89 + 0.11)',$("(function(){var p={draws:[{id:'a',order:1,amountC:123456789},{id:'b',order:2,amountC:11}]};return drawSummaryLine(p);})()")==='2 stages · $1,234,568.00');
+  // negative / zero / letters refused, nothing added
+  const n0=$("P().draws.length");
+  $("drawNew()");setVal('dwTitle','Bad');setVal('dwAmt','-500');$("drawSave()");
+  t('a negative amount is refused',$("P().draws.length")===n0&&/minus|No minus/i.test(say()),say());
+  setVal('dwAmt','0');$("drawSave()");
+  t('a $0 stage is refused',$("P().draws.length")===n0);
+  setVal('dwAmt','12.345');$("drawSave()");
+  t('three decimals are refused',$("P().draws.length")===n0);
+  setVal('dwTitle','');setVal('dwAmt','5');$("drawSave()");
+  t('a stage with no name is refused',$("P().draws.length")===n0);
+  $("_drawMode='list';drawsRender()");
+  // note warning
+  $("drawNew()");setVal('dwNote','our cost is $4,000');$("drawNoteHint()");
+  t('the note shows the homeowner hint and the cost-word warning',el('drawRoot').innerHTML.includes('The homeowner sees this note.')&&!el('dwNoteWarn').classList.contains('hide'));
+  $("_drawMode='list';drawsRender()");
+  // reorder
+  const ids0=$("drawList(P()).map(function(d){return d.title;}).join('|')");
+  $("drawMove(drawList(P())[1].id,-1)");
+  t('up moves a stage earlier',$("drawList(P()).map(function(d){return d.title;}).join('|')")==='Foundation poured|Deposit|Penny',ids0);
+  $("drawMove(drawList(P())[0].id,1)");
+  t('down moves it back',$("drawList(P()).map(function(d){return d.title;}).join('|')")===ids0);
+  t('orders stay 1..n',$("drawList(P()).map(function(d){return d.order;}).join(',')")==='1,2,3');
+  // every add left a history line
+  t('every add wrote a history line',$("drawList(P()).every(function(d){return d.hist&&d.hist.some(function(h){return /^Added/.test(h.what);});})")===true);
+  // make a real-money stage and bill it
+  $("(function(){var p=P();p.draws=[];})()");
+  addStage('Slab poured','42000','Due when the slab passes inspection');
+  const sid=$("P().draws[0].id");
+  t('stage is open and Not yet billed',$("drawStatusText(P(),P().draws[0])")==='Not yet billed');
+  $("drawBill('"+sid+"')");
+  const comp=el('invBody').innerHTML;
+  t('Bill this stage opens the normal composer with the stage picked and titled',el('invScrim').classList.contains('show')&&/Payment stages/.test(comp)&&el('invTitle2').value==='Slab poured'&&comp.includes('☑ Slab poured'));
+  t('nothing is billed or sent just by opening the composer',$("P().draws[0].status")==='open'&&$("(P().invoices||[]).filter(function(v){return (v.items||[]).some(function(i){return i.drawId;});}).length")===0);
+  $("invSave(true)");
+  const inv=JSON.parse($("JSON.stringify((P().invoices||[]).filter(function(v){return (v.items||[]).some(function(i){return i.drawId;});}))"));
+  t('Bill creates one draft invoice',inv.length===1&&inv[0].status==='draft',inv.length);
+  t('the draft has the exact stage amount, label, drawId and total',inv[0].items.length===1&&inv[0].items[0].amountC===4200000&&inv[0].items[0].amount===42000&&inv[0].items[0].label==='Slab poured'&&inv[0].items[0].drawId===sid&&inv[0].total===42000,JSON.stringify(inv[0].items));
+  t('the stage is linked in the same save',$("P().draws[0].status")==='billed'&&$("P().draws[0].invoiceId")===inv[0].id&&$("P().draws[0].billedAt")>0);
+  t('the stage reads Billed',/^Billed/.test($("drawStatusText(P(),P().draws[0])")));
+  // second bill opens the existing invoice; composer does not offer it
+  $("invMode='list'");$("closeInvoices()");
+  $("drawBill('"+sid+"')");
+  t('a second Bill opens the existing invoice instead of billing again',$("(P().invoices||[]).filter(function(v){return (v.items||[]).some(function(i){return i.drawId;});}).length")===1&&el('invScrim').classList.contains('show')&&el('invBody').innerHTML.includes('Slab poured'));
+  $("invMode='list'");$("closeInvoices()");$("invCompose()");
+  t('the composer never offers a stage already on a live invoice',!/Payment stages/.test(el('invBody').innerHTML));
+  $("_invDraft=null;invMode='list';closeInvoices()");
+  // billed edit refused
+  const before=$("JSON.stringify(P().draws[0])");
+  $("drawEdit('"+sid+"')");
+  t('editing a billed stage is refused in plain words',/This stage is already on a draft invoice\. Delete that draft first, or add a new stage\./.test(say()),say());
+  $("(function(){_drawEditId='"+sid+"';_drawMode='edit';drawsRender();})()");setVal('dwAmt','1');$("drawSave()");
+  t('a forced save of a billed stage changes nothing',$("JSON.stringify(P().draws[0])")===before);
+  $("drawDelete('"+sid+"')");
+  t('deleting a billed stage is refused',$("P().draws.length")===1);
+  // send the invoice and see the real number in the words
+  const invId=inv[0].id;
+  $("(function(){var v=P().invoices.find(function(x){return x.id==='"+invId+"';});v.status='sent';v.no='INV-777';})()");
+  t('after sending the stage reads Billed · INV-777',$("drawStatusText(P(),P().draws[0])")==='Billed · INV-777');
+  $("drawEdit('"+sid+"')");
+  t('the refusal names the real invoice number',say()==='This stage is already on INV-777. Void that invoice first, or add a new stage.',say());
+  // stage edits (after billing) leave the invoice alone: force-free then edit is not possible; edit another stage and check invoice
+  addStage('Framing','10000');
+  t('a second stage can be added while the first is billed',$("P().draws.length")===2);
+  t('the invoice is untouched by other stage changes',$("P().invoices.find(function(x){return x.id==='"+invId+"';}).total")===42000);
+  $("(function(){P().draws[0].amountC=1;})()");
+  t('even a stage changed in memory never rewrites the invoice (separate records)',$("P().invoices.find(function(x){return x.id==='"+invId+"';}).items[0].amountC")===4200000);
+  $("(function(){P().draws[0].amountC=4200000;})()");
+  // paid follows the invoice
+  $("(function(){var v=P().invoices.find(function(x){return x.id==='"+invId+"';});v.payments=[{amount:42000,date:'2026-11-01',note:'Check'}];})()");
+  t('the stage reads Paid once the invoice is paid',$("drawStatusText(P(),P().draws[0])")==='Paid · INV-777');
+  $("(function(){P().invoices.find(function(x){return x.id==='"+invId+"';}).payments=[];})()");
+  // void frees the stage, history stays
+  $("(function(){var p=P();var v=p.invoices.find(function(x){return x.id==='"+invId+"';});v.status='void';drawReleaseInv(p,v.id,v.no+' voided');})()");
+  t('void frees the stage back to open',$("P().draws[0].status")==='open'&&$("P().draws[0].invoiceId")===null&&$("drawStatusText(P(),P().draws[0])")==='Not yet billed');
+  t('the history line stays after the void',$("P().draws[0].hist.some(function(h){return /Billed/.test(h.what);})&&P().draws[0].hist.some(function(h){return /Freed: INV-777 voided/.test(h.what);})")===true);
+  t('the voided invoice keeps its own record',$("P().invoices.find(function(x){return x.id==='"+invId+"';}).status")==='void');
+  t('a freed stage can be billed again',$("drawsBillable(P(),null).some(function(d){return d.id==='"+sid+"';})")===true);
+  // a stage whose invoice is void but still says billed is open again and editable
+  $("(function(){var d=P().draws[0];d.status='billed';d.invoiceId='"+invId+"';})()");
+  t('a stage pointing at a void invoice counts as open',$("drawBilled(P(),P().draws[0])")===false);
+  $("(function(){var d=P().draws[0];d.status='open';d.invoiceId=null;})()");
+  // deleting a draft frees its stage
+  $("drawBill('"+sid+"')");$("invSave(true)");
+  const dId=$("P().draws[0].invoiceId");
+  t('billing again makes a new draft and links it',!!dId&&dId!==invId&&$("P().draws[0].status")==='billed');
+  $("invDeleteDraft('"+dId+"')");
+  $("(function(){if(_cdAction){var f=_cdAction;_cdAction=null;f();}})()");
+  t('deleting the draft frees the stage',$("P().draws[0].status")==='open'&&$("P().draws[0].invoiceId")===null);
+  $("closeInvoices()");
+  // delete an open stage
+  $("drawDelete('"+$("P().draws[1].id")+"')");$("(function(){if(_cdAction){var f=_cdAction;_cdAction=null;f();}})()");
+  t('an open stage can be deleted and the rest renumber',$("P().draws.length")===1&&$("P().draws[0].order")===1);
+  t('delete is logged',$("(state.eventLog||[]).some(function(e){return e.type==='drawDeleted';})")===true);
+  // comparison line (only when a contract amount exists)
+  t('no comparison line without a contract amount',$("drawCompareLine(P())")==='');
+  t('contract comparison: amount not yet in a stage',$("(function(){var p={contractC:5000000,draws:[{id:'a',order:1,amountC:4200000}]};return drawCompareLine(p);})()")==='Contract $50,000.00 · $8,000.00 not yet in a stage');
+  t('contract comparison: overage',$("(function(){var p={contractC:4000000,draws:[{id:'a',order:1,amountC:4200001}]};return drawCompareLine(p);})()")==='Contract $40,000.00 · $2,000.01 more than the contract');
+  // unsafe before rules: a refused list means Not saved words, not a fake save
+  $("Sync.mode='live';Sync._drawsDenied={};Sync._drawsDenied[String(P().id)]=true");
+  const n1=$("P().draws.length");
+  $("drawNew()");
+  t('before the rules are published a new stage says Not saved and opens nothing',/^Not saved\./.test(say())&&$("P().draws.length")===n1&&$("_drawMode")==='list',say());
+  $("drawEdit('"+$("P().draws[0].id")+"')");
+  t('before the rules are published an edit says Not saved',/^Not saved\./.test(say()),say());
+  $("drawBill('"+$("P().draws[0].id")+"')");
+  t('before the rules are published Bill says Not saved and opens no composer',/^Not saved\./.test(say()));
+  $("Sync._drawsDenied={};Sync.mode='demo'");
+  // privacy: who listens
+  const subs=r=>JSON.parse($("JSON.stringify(syncCollsFor('"+r+"').map(function(c){return c.sub;}))"));
+  t('draws is a synced collection',$("SYNC_COLLS.some(function(c){return c.sub==='draws'&&c.f==='draws';})")===true);
+  t('a homeowner never listens to draws',!subs('client').includes('draws'));
+  t('a crew never listens to draws',!subs('sub').includes('draws'));
+  t('a builder with money listens to draws',subs('builder').includes('draws'));
+  t('a builder without any money access never listens to draws',$("(function(){var g=canGate;canGate=function(k){return k==='moneyJob'||k==='moneyCo'?false:g(k);};var r=syncCollsFor('builder').some(function(c){return c.sub==='draws';});canGate=g;return r;})()")===false);
+  t('a builder with only job money reads draws; one with only company money reads draws',$("(function(){var g=canGate,o=[];['moneyJob','moneyCo'].forEach(function(key){canGate=function(k){return k===key?true:(k==='moneyJob'||k==='moneyCo')?false:g(k);};o.push(syncCollsFor('builder').some(function(c){return c.sub==='draws';}));});canGate=g;return o.join(',');})()")==='true,true');
+  t('the house doc never carries draws',$("(function(){var p=P();p.draws=p.draws||[];return 'draws' in metaOf(p);})()")===false);
+  // homeowner and crew screens
+  const cl=clientHTML('p2','home')+clientHTML('p2','money');
+  t('the homeowner never sees the Draw schedule or a stage',!/Draw schedule|Payment stages|Not yet billed/.test(cl)&&!cl.includes('Slab poured'));
+  const sh=subSiteHTML($("(Object.keys(state.projects[0].crews||{})[0])||'Ironhill Excavating'"),'p2');
+  t('a crew never sees the Draw schedule or a stage',!/Draw schedule|Payment stages|Not yet billed/.test(sh));
+  asClient('p2');
+  t('Draw schedule helpers refuse a homeowner session',$("drawsOn(P())")===false);
+  $("openDraws()");
+  t('openDraws does nothing for a homeowner',!/Draw schedule/.test(el('infoBody').innerHTML)||!el('infoScrim').classList.contains('show'));
+  asSub('Ironhill Excavating');
+  t('Draw schedule helpers refuse a crew session',$("drawsOn(P())")===false);
+  asBuilder();$("state.activeId='p2'");
+  // the homeowner sees a sent stage only as an invoice line with its note
+  $("(function(){var p=P();p.invoices=p.invoices||[];p.invoices.push({id:'inv_drawsim',no:'INV-778',title:'Slab poured',due:'On receipt',status:'sent',t:Date.now(),payments:[],total:42000,items:[{label:'Slab poured',amount:42000,amountC:4200000,drawId:'zzz',note:'Due when the slab passes inspection'}]});})()");
+  const html=$("invDetailHTML(P(),P().invoices.find(function(v){return v.id==='inv_drawsim';}),'client')");
+  t('a sent stage shows the homeowner a normal invoice line and the note',html.includes('Slab poured')&&html.includes('$42,000.00')&&html.includes('Due when the slab passes inspection'));
+  t('the invoice text carries the note too',$("invText(P(),P().invoices.find(function(v){return v.id==='inv_drawsim';}))").includes('Due when the slab passes inspection'));
+  $("(function(){var p=P();p.invoices=p.invoices.filter(function(v){return v.id!=='inv_drawsim';});p.draws=[];})()");
+  // no new door, tab or room
+  t('no new tab or room: no draw scrim or tab in the page',!/id="[a-zA-Z]*[dD]raw[a-zA-Z]*Scrim"/.test(SRC)&&!/class="tab[^"]*"[^>]*>\s*Draw/.test(SRC));
+  t('no door named Full site, Billing or Draws',!/>Full site<|>Billing<|>Draws</.test(SRC));
+  t('Invoices is still a row on Money',/Invoices/.test((function(){$('renderBudget()');return el('budgetBody').innerHTML;})()));
+  // wording: version string and jargon
+  const ver=String($('PLUMB_VERSION'));
+  t('the version string has no apostrophe, semicolon or backslash',!/['";\\]/.test(ver),ver);
+  t('the version says 2.529.0 and Draw schedule',/^2\.529\.0 - Draw schedule/.test(ver));
+  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.529.0'&&/CACHE\s*=\s*'plumb-v2\.529\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
+  const words=(SRC.match(/function drawsRender[\s\S]*?function drawNoteHint/)||[''])[0]+(SRC.match(/const DRAWS_NOT_SAVED[^\n]*/)||[''])[0];
+  t('the Draw schedule words have no jargon',!/\b(ledger|amortiz|retainage|escrow|milestone|tranche|schedule of values|SOV|payload|collection|firestore|rules)\b/i.test(words));
+  t('the app has no percent entry for stages (dollars only)',!/dwPct|percent of contract/i.test(SRC));
+  t('there is no homeowner schedule toggle',!/Show my payment schedule/i.test(SRC));
 })();
 
 /* ════ REPORT ════ */

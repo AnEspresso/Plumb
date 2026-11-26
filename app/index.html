@@ -4081,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.528.2 - Fix: the sample Beaumont house no longer shows a cost note to the homeowner';   /* 11/26: the 403s in the browser log on the sign-in screen. */
+const PLUMB_VERSION='2.529.0 - Draw schedule: turn a payment stage into an invoice';   /* 11/26: Simple Draws v1 (dollars only, builder only). */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1795712900000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.528.2';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1795800000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.529.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -10908,7 +10908,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(legClear){this._legInv[id]=[];sh.mk.invoices=_syncHash('[]');}
       } else if(op.kind==='set'){
         const ref=this.db.collection('sites').doc(id).collection(op.sub).doc(op.id);
-        if(op.sub==='inv'||op.sub==='selm'){
+        if(op.sub==='inv'||op.sub==='selm'||op.sub==='draws'){
           /* F-2: a money record is the builder's whole record: replace it, so a
              key that left the invoice or the selection's money leaves the cloud too. */
           try{
@@ -11313,6 +11313,7 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
     const p0=state.projects.find(x=>String(x.id)===sid);
     /* M-5: a builder with no money access keeps no payments, even a copy saved by an older version */
     if(p0&&siteRoleFor(p0)==='builder'&&!syncHas(p0,'pmts')&&(p0.payments||[]).length){p0.payments=[];persistLocalOnly();}
+    this._drawsStrip(p0);
     syncCollsFor(siteRoleFor(p0)).forEach(c=>{
       if(c.mirror&&siteRoleFor(p0)!=='client')return;               /* 2.527.0: a builder writes the homeowner's schedule copy, never reads it */
       let q=this.db.collection('sites').doc(sid).collection(c.sub);
@@ -11331,7 +11332,8 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
       }catch(e){}
       const u=q.onSnapshot({includeMetadataChanges:true},snap=>{
         const p=state.projects.find(x=>String(x.id)===sid);if(!p)return;
-        if(c.joined){this._selmSnap(p,sid,snap);return;}              // F-2: selection money joins the selections
+        if(c.joined){this._selmSnap(p,sid,snap);return;}
+        if(c.sub==='draws'&&this._drawsDenied)delete this._drawsDenied[sid];              // F-2: selection money joins the selections
         if(!Array.isArray(p[c.f]))p[c.f]=[];
         const sh=this._shadow[sid]||(this._shadow[sid]={meta:'',colls:{}});sh.colls=sh.colls||{};const prev=sh.colls[c.sub]||(sh.colls[c.sub]={});
         const isSel=c.sub==='sel';const view=r=>isSel?selNoMoney(r):r;   // F-2: a selection syncs (and compares) without its money
@@ -11389,6 +11391,9 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
         if(changed){persistLocalOnly();rerenderCurrent();try{scheduleBackfill();}catch(e){}}
         this._saveBase();this._flushHeld();
       },err=>{
+        /* 2.529.0: until the rules for payment stages are published the server refuses this list. That is not an error to show:
+           no re-arm, no cloud banner. Stages just cannot be saved yet (drawsBlocked) and say so in plain words. */
+        if(c.sub==='draws'){(this._drawsDenied||(this._drawsDenied={}))[sid]=true;(this._pulled[sid]||(this._pulled[sid]={}))[c.sub]=true;this._flushHeld();return;}
         if(err&&err.code==='permission-denied'&&gen===1){    // first-generation denial: forgive once, re-attach silently
           if(!this._reArmed[sid]){this._reArmed[sid]=true;
             console.warn('[SitePlumb] site records denied on first attach - re-arming',sid);
@@ -11415,7 +11420,10 @@ const Sync={on:false,db:null,uid:null,deviceId:null,unsub:[],_hb:null,err:'',_sh
   _notifReady:{},
   _collGen:{},
   _reArmed:{},
-  disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._shadow={};this._selm={};this._legInv={};this._legAdded={};this._legL={};this._legLAdded={};this._legRaw={};this._pushing={};this._pushAgain={};this._notifReady={};this._sitesPulled=false;this._onServer={};this._serverList={};this._pulled={};this._held={};clearTimeout(this._liveRetryT);this._liveRetryN=0;clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
+  _drawsDenied:{},
+  /* 2.529.0: a phone that does not read payment stages holds none, even a copy left by a builder on this device */
+  _drawsStrip(p0){if(p0&&!syncHas(p0,'draws')&&(p0.draws||[]).length){p0.draws=[];persistLocalOnly();}},
+  disconnect(){this.unsub.forEach(u=>{try{u&&u();}catch(e){}});this.unsub=[];this._listening={};this._collGen={};this._reArmed={};this._drawsDenied={};this._shadow={};this._selm={};this._legInv={};this._legAdded={};this._legL={};this._legLAdded={};this._legRaw={};this._pushing={};this._pushAgain={};this._notifReady={};this._sitesPulled=false;this._onServer={};this._serverList={};this._pulled={};this._held={};clearTimeout(this._liveRetryT);this._liveRetryN=0;clearInterval(this._hb);this.on=false;this.db=null;setSync('local');}
 };
 /* ── Step 6: cloud files. A live house uploads the already-downscaled photo
    (and doc files) once sync is connected, and stores the download URL on the
@@ -11986,6 +11994,9 @@ const SYNC_COLLS=[
   {f:'payments',sub:'pmts',key:r=>String(r.id)},
   {f:'mailReview',sub:'mail',key:r=>String(r.id)},
   {f:'costs',sub:'costs',key:r=>String(r.id)},
+  /* 2.529.0: payment stages (Draw schedule). Builder only, money access only (syncCollsFor): a homeowner, a crew or a builder
+     without money never listens to this and never holds it. A stage reaches a homeowner only as an invoice. */
+  {f:'draws',sub:'draws',key:r=>String(r.id)},
   /* F-2 (2.463.0): invoices and a selection's money live in records crews never
      read (rules R: moneyOk() or the homeowner). Invoices left meta the way
      bookings did in 2.211. A selection's money stays ON the selection on the
@@ -12119,8 +12130,8 @@ function crewBkName(p){
   return (state.session&&state.session.name)||'';
 }
 function syncCollsFor(role){
-  if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='inv'&&c.sub!=='selm'&&c.sub!=='invs'&&c.sub!=='bkho');
-  if(role==='client')return SYNC_COLLS.filter(c=>c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='invs'&&c.sub!=='bk');   /* 2.527.0: the schedule copy, never the bookings */
+  if(role==='sub')return SYNC_COLLS.filter(c=>c.sub!=='draws'&&c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='inv'&&c.sub!=='selm'&&c.sub!=='invs'&&c.sub!=='bkho');
+  if(role==='client')return SYNC_COLLS.filter(c=>c.sub!=='draws'&&c.sub!=='mail'&&c.sub!=='costs'&&c.sub!=='invs'&&c.sub!=='bk');   /* 2.527.0: the schedule copy, never the bookings */
   let cols=SYNC_COLLS.filter(c=>!c.mirror);   /* 2.527.0: a builder writes the homeowner's schedule copy but never reads it (so its first answer is not awaited) */
   /* F-2: a builder without Money does not read costs or selection money; one
      without Invoices does not read invoices (Claude lock Q3). */
@@ -12128,7 +12139,7 @@ function syncCollsFor(role){
     const job=canGate('moneyJob'),co=canGate('moneyCo');
     if(!job)cols=cols.filter(c=>c.sub!=='costs');
     if(!co)cols=cols.filter(c=>c.sub!=='inv');
-    if(!job&&!co)cols=cols.filter(c=>c.sub!=='selm'&&c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='invs');}}catch(e){}   /* 2.512.0: invite codes need the same access as sending an invite */   /* M-5/M-7: a builder with no money access does not read payments either; 2.484.0: nor mail (rules: mail needs moneyOk) */
+    if(!job&&!co)cols=cols.filter(c=>c.sub!=='draws'&&c.sub!=='selm'&&c.sub!=='pmts'&&c.sub!=='mail'&&c.sub!=='invs');}}catch(e){}   /* 2.512.0: invite codes need the same access as sending an invite */   /* M-5/M-7: a builder with no money access does not read payments either; 2.484.0: nor mail (rules: mail needs moneyOk) */
   return cols;
 }
 function syncHas(p,sub){return syncCollsFor(siteRoleFor(p)).some(c=>c.sub===sub);}
@@ -12183,7 +12194,7 @@ function _syncHash(str){str=String(str==null?'':str);let a=0x811c9dc5,b=5381;
 function diffSiteOps(sh,p){const ops=[];
   const m=metaOf(p);if(!_mhSame(m,sh.meta))ops.push({kind:'meta',data:m});
   for(const c of SYNC_COLLS){
-    if((c.sub==='inv'||c.sub==='selm'||c.sub==='pmts'||c.sub==='docs'||c.sub==='invs')&&!syncWrites(p,c.sub))continue;   // F-2: only a money-gated builder writes money records; 2.512.0: only a builder writes documents and invite codes
+    if((c.sub==='inv'||c.sub==='selm'||c.sub==='pmts'||c.sub==='docs'||c.sub==='invs'||c.sub==='draws')&&!syncWrites(p,c.sub))continue;   // F-2: only a money-gated builder writes money records; 2.512.0: only a builder writes documents and invite codes
     if(c.mirror&&siteRoleFor(p)!=='builder')continue;                 /* 2.527.0: only a builder writes the homeowner's schedule copy */
     if(c.sub==='bk'&&siteRoleFor(p)==='client')continue;              /* 2.527.0: the homeowner holds the copy, never writes a booking */
     const arr=c.rows?c.rows(p):(Array.isArray(p[c.f])?p[c.f]:[]);const cur={};arr.forEach(r=>{cur[c.key(r)]=r;});
@@ -13144,6 +13155,8 @@ function moneyBillHTML(p){
   let h='';
   if(typeof canGate==='function'&&canGate('moneyCo'))
     h+='<button class="set-row mt-3 ml-0 mr-0 mb-1" onclick="openInvoices()"><div class="flex-1"><div>Invoices</div><div class="sr-d">This house \u2014 drafts, sent, paid</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="u-m16"><path d="M9 6l6 6-6 6"/></svg></button>';
+  if(drawsOn(p))
+    h+='<button class="set-row mt-1 ml-0 mr-0 mb-1" onclick="openDraws()"><div class="flex-1"><div>Draw schedule</div><div class="sr-d">'+esc(drawSummaryLine(p))+'</div></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="u-m16"><path d="M9 6l6 6-6 6"/></svg></button>';
   if(invs.length&&!moneyHidden('inv')){
     h+='<div class="bgt-grp">Invoices</div>';
     invs.forEach(function(inv){
@@ -13173,6 +13186,128 @@ function moneyBillHTML(p){
   }
   return h;
 }
+/* ── 2.529.0 Simple Draws: a short list of payment stages for this house, inside Money ──
+   A stage is a name, a dollar amount (whole cents) and an optional note. Bill this stage opens the normal invoice composer with
+   that one line filled in; nothing is sent until the builder reviews and sends it. The stage and its invoice are linked in the
+   same save as the invoice (status, invoiceId, billedAt), the composer never offers a stage that is already on a live invoice,
+   and only voiding that invoice (or deleting its draft) frees the stage. Builder with money access only: the draws records are
+   never read by a homeowner or a crew, who see a stage only as an invoice once it is sent. Each stage keeps its own history
+   lines (stage.hist) so a change to money is never silent. */
+let _drawMode='list',_drawEditId=null;
+function drawsOn(p){try{return !!p&&(state.session||{}).role==='builder'&&canGate('moneyCo');}catch(e){return false;}}
+function drawList(p){return ((p&&p.draws)||[]).filter(d=>d&&d.id!=null).slice().sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));}
+function drawAmtC(d){const c=Number(d&&d.amountC);return Number.isInteger(c)&&c>0?c:0;}
+function drawTotalC(p){let c=0;drawList(p).forEach(d=>{c+=drawAmtC(d);});return c;}
+function drawContractC(p){const c=p&&p.contractC;return Number.isInteger(c)&&c>0?c:0;}
+function drawInvOf(p,d){return d&&d.invoiceId?((p.invoices||[]).find(v=>v&&v.id===d.invoiceId)||null):null;}
+/* billed = linked to an invoice that is not void (an invoice this phone has not loaded yet still counts) */
+function drawBilled(p,d){if(!d||d.status!=='billed')return false;const v=drawInvOf(p,d);return !v||v.status!=='void';}
+function drawsBlocked(p){try{return typeof Sync!=='undefined'&&Sync.mode==='live'&&!!(Sync._drawsDenied||{})[String(p.id)];}catch(e){return false;}}
+const DRAWS_NOT_SAVED='Not saved. Payment stages are not turned on for your account yet.';
+function drawStagesWord(n){return n+' stage'+(n===1?'':'s');}
+function drawSummaryLine(p){const L=drawList(p);if(!L.length)return 'Set up your payment stages for this house.';return drawStagesWord(L.length)+' · '+fmtMoney(fromC(drawTotalC(p)));}
+function drawCompareLine(p){const k=drawContractC(p);if(!k||!drawList(p).length)return '';const t=drawTotalC(p);
+  return 'Contract '+fmtMoney(fromC(k))+' · '+(t>k?fmtMoney(fromC(t-k))+' more than the contract':fmtMoney(fromC(k-t))+' not yet in a stage');}
+function drawStatusText(p,d){
+  if(!drawBilled(p,d))return 'Not yet billed';
+  const v=drawInvOf(p,d);if(!v)return 'Billed';
+  if(invState(v)==='paid')return 'Paid · '+(v.no||'Draft');
+  return 'Billed · '+(v.no||'Draft');}
+function drawHist(d,what){d.hist=(d.hist||[]).concat([{t:Date.now(),by:(state.session||{}).name||'',what:String(what).slice(0,200)}]).slice(-40);}
+function drawsFix(p){drawList(p).forEach((d,i)=>{if(d.order!==i+1)d.order=i+1;});}
+/* a stage's money changes (or is deleted) only while it is open */
+function drawRefuseBilled(p,d){
+  if(!drawBilled(p,d))return false;const v=drawInvOf(p,d);
+  toast(v&&v.no?'This stage is already on '+v.no+'. Void that invoice first, or add a new stage.':'This stage is already on a draft invoice. Delete that draft first, or add a new stage.');
+  return true;}
+/* Frees every stage linked to this invoice. The history line stays. */
+function drawReleaseInv(p,invId,why){(p.draws||[]).forEach(d=>{if(!d||d.invoiceId!==invId)return;
+  d.status='open';d.invoiceId=null;d.billedAt=null;if(why)drawHist(d,'Freed: '+why);});}
+/* stages the composer may offer: open ones, plus the ones already on the draft being edited */
+function drawsBillable(p,editId){if(!drawsOn(p))return [];return drawList(p).filter(d=>drawAmtC(d)>0&&(!drawBilled(p,d)||(editId&&d.invoiceId===editId)));}
+function invToggleDraw(id){_invDraft.drawPicks=_invDraft.drawPicks||{};_invDraft.drawPicks[id]=!_invDraft.drawPicks[id];_invSnapInputs();renderInvoices();}
+function openDraws(){const p=P();if(!drawsOn(p))return;_drawMode='list';_drawEditId=null;drawsRender();}
+function drawsRender(){
+  const p=P();let h='';
+  if(_drawMode==='edit'){
+    const d=_drawEditId?drawList(p).find(x=>String(x.id)===String(_drawEditId)):null;
+    h+='<div class="fld-label">Stage name</div><input id="dwTitle" maxlength="80" placeholder="e.g. Foundation poured" value="'+esc(d?d.title:'')+'">'
+      +'<div class="fld-label">Amount</div><div class="setup-roster-row"><input id="dwAmt" inputmode="decimal" data-money placeholder="e.g. 42000" value="'+esc(d?fmtPlain(fromC(drawAmtC(d))):'')+'"></div>'
+      +'<div class="fld-label">Note (optional)</div><input id="dwNote" maxlength="300" placeholder="e.g. Due when the slab passes inspection" oninput="drawNoteHint()" value="'+esc(d?d.note||'':'')+'">'
+      +'<div class="fld-hint">The homeowner sees this note.</div>'
+      +'<div id="dwNoteWarn" class="fld-hint hide c-clay">⚠ This reads like a cost note, and the homeowner will see it. Keep costs in Money.</div>'
+      +'<button class="b1 b-go w-full mt-3 btn btn-primary" onclick="drawSave()">'+(d?'Save stage':'Add stage')+'</button>'
+      +(d?'<button class="add-sub-btn mt-2 c-clay btn btn-secondary" onclick="drawDelete(\''+esc(String(d.id))+'\')">Delete stage</button>':'')
+      +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="_drawMode=\'list\';drawsRender()">Cancel</button>';
+    showInfo(d?'Edit stage':'New stage','<div id="drawRoot">'+h+'</div>',true);
+    try{drawNoteHint();}catch(e){}
+    return;}
+  const L=drawList(p);
+  h+='<div class="meta">'+esc(drawSummaryLine(p))+'</div>';
+  const cmp=drawCompareLine(p);if(cmp)h+='<div class="meta">'+esc(cmp)+'</div>';
+  L.forEach((d,i)=>{const id=esc(String(d.id));const billed=drawBilled(p,d);const v=drawInvOf(p,d);
+    h+='<div class="subrow"><div class="si"><div class="n">'+(i+1)+'. '+esc(d.title||'Stage')+'</div>'
+      +'<div class="d">'+esc(fmtMoney(fromC(drawAmtC(d))))+' · '+(billed&&v?'<a href="#" class="c-gold" onclick="event.preventDefault();drawOpenInv(\''+id+'\')">'+esc(drawStatusText(p,d))+'</a>':esc(drawStatusText(p,d)))+'</div>'
+      +(d.note?'<div class="d">'+esc(d.note)+'</div>':'')+'</div>'
+      +'<div class="d-flex gap-1 ai-c">'
+      +(i>0?'<button class="lpay btn btn-quiet" aria-label="Move up" onclick="drawMove(\''+id+'\',-1)">↑</button>':'')
+      +(i<L.length-1?'<button class="lpay btn btn-quiet" aria-label="Move down" onclick="drawMove(\''+id+'\',1)">↓</button>':'')
+      +'<button class="lpay btn btn-quiet" onclick="drawEdit(\''+id+'\')">Edit</button>'
+      +(billed?'':'<button class="lpay btn btn-primary" onclick="drawBill(\''+id+'\')">Bill this stage</button>')
+      +'</div></div>';});
+  if(!L.length)h+='<div class="empty py-2 px-0">Set up your payment stages for this house.</div>';
+  h+='<button class="add-sub-btn mt-2 btn btn-secondary" onclick="drawNew()">Add a stage</button>'
+    +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button>';
+  showInfo('Draw schedule','<div id="drawRoot">'+h+'</div>',true);}
+function drawNoteHint(){const v=((document.getElementById('dwNote')||{}).value)||'';const w=document.getElementById('dwNoteWarn');
+  if(w)w.classList.toggle('hide',!/job cost|overage|over estimate|over budget|margin|markup|our cost|\bcost\b|invoice|\$\s?\d/i.test(v));}
+function drawNew(){const p=P();if(drawsBlocked(p)){toast(DRAWS_NOT_SAVED);return;}_drawMode='edit';_drawEditId=null;drawsRender();}
+function drawEdit(id){const p=P();const d=drawList(p).find(x=>String(x.id)===String(id));if(!d)return;
+  if(drawRefuseBilled(p,d))return;if(drawsBlocked(p)){toast(DRAWS_NOT_SAVED);return;}
+  _drawMode='edit';_drawEditId=String(id);drawsRender();}
+function drawSave(){
+  const p=P();if(!drawsOn(p))return;
+  if(drawsBlocked(p)){toast(DRAWS_NOT_SAVED);return;}
+  const title=((document.getElementById('dwTitle')||{}).value||'').trim().slice(0,80);
+  if(!title){toast('Give the stage a name');return;}
+  const r=moneyRead('dwAmt',{positive:true});if(!r)return;
+  const note=((document.getElementById('dwNote')||{}).value||'').trim().slice(0,300);
+  p.draws=p.draws||[];
+  if(_drawEditId){
+    const d=p.draws.find(x=>x&&String(x.id)===String(_drawEditId));if(!d){_drawMode='list';drawsRender();return;}
+    if(drawRefuseBilled(p,d))return;
+    if(d.status==='billed'){d.status='open';d.invoiceId=null;d.billedAt=null;}   /* its invoice is void: the stage is open again */
+    const bits=[];if(d.title!==title)bits.push('name '+(d.title||'')+' to '+title);if(drawAmtC(d)!==r.cents)bits.push('amount '+fmtMoney(fromC(drawAmtC(d)))+' to '+fmtMoney(fromC(r.cents)));if((d.note||'')!==note)bits.push('note');
+    if(!bits.length){_drawMode='list';drawsRender();return;}
+    d.title=title;d.amountC=r.cents;d.note=note;drawHist(d,'Changed: '+bits.join(', '));
+    persist();logEvent('drawChanged',title+' · '+fmtMoney(fromC(r.cents)));toast('Stage saved');
+  }else{
+    const d={id:'dr_'+Math.random().toString(36).slice(2,9),order:p.draws.length+1,title,amountC:r.cents,note,status:'open',invoiceId:null,billedAt:null,hist:[]};
+    drawHist(d,'Added: '+title+' · '+fmtMoney(fromC(r.cents)));
+    p.draws.push(d);drawsFix(p);
+    persist();logEvent('drawAdded',title+' · '+fmtMoney(fromC(r.cents)));toast('Stage added');
+  }
+  _drawMode='list';_drawEditId=null;drawsRender();try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}
+function drawDelete(id){const p=P();const d=drawList(p).find(x=>String(x.id)===String(id));if(!d)return;
+  if(drawRefuseBilled(p,d))return;if(drawsBlocked(p)){toast(DRAWS_NOT_SAVED);return;}
+  confirmDelete({title:'Delete this stage?',body:esc(d.title||'Stage')+' · '+esc(fmtMoney(fromC(drawAmtC(d))))+'<br><br>It was never billed. The change is kept in your activity log.',onConfirm:()=>{
+    p.draws=(p.draws||[]).filter(x=>x&&String(x.id)!==String(id));drawsFix(p);
+    persist();logEvent('drawDeleted',(d.title||'Stage')+' · '+fmtMoney(fromC(drawAmtC(d))));toast('Stage deleted');
+    _drawMode='list';_drawEditId=null;drawsRender();try{if(document.getElementById('budgetScrim').classList.contains('show'))renderBudget();}catch(e){}}});}
+function drawMove(id,dir){const p=P();if(drawsBlocked(p)){toast(DRAWS_NOT_SAVED);return;}
+  const L=drawList(p);const i=L.findIndex(x=>String(x.id)===String(id));const j=i+dir;if(i<0||j<0||j>=L.length)return;
+  const t=L[i];L[i]=L[j];L[j]=t;L.forEach((d,k)=>{d.order=k+1;});drawHist(t,'Moved to place '+(j+1));
+  persist();drawsRender();}
+function drawOpenInv(id){const p=P();const d=drawList(p).find(x=>String(x.id)===String(id));const v=d&&drawInvOf(p,d);if(!v)return;
+  try{closeInfo();}catch(e){}moneyOpenInvoice(v.id);}
+/* Bill this stage: the normal invoice composer with the stage already picked. A stage already billed opens its invoice instead. */
+function drawBill(id){
+  const p=P();if(!drawsOn(p))return;const d=drawList(p).find(x=>String(x.id)===String(id));if(!d)return;
+  if(drawBilled(p,d)){drawOpenInv(id);return;}
+  if(drawsBlocked(p)){toast(DRAWS_NOT_SAVED);return;}
+  try{closeInfo();}catch(e){}
+  invCompose();_invDraft.drawPicks={};_invDraft.drawPicks[d.id]=true;_invDraft.title=d.title||'Payment stage';
+  renderInvoices();document.getElementById('invScrim').classList.add('show');}
 function moneyNewInvoice(){invCompose();document.getElementById('invScrim').classList.add('show');}
 function moneyOpenInvoice(id){
   const p=P();const inv=(p.invoices||[]).find(function(v){return String(v.id)===String(id);});
@@ -16490,7 +16625,7 @@ function invState(inv){
 function invNeedsOK(inv){if(!inv||inv.status==='approved')return false;const st=invState(inv);return (st==='sent'||st==='overdue')&&invPaidAmt(inv)<=0.005;}
 function unbilledSelections(p){return (p.selections||[]).filter(x=>SEL_STATUS.indexOf(x.status)>=1&&Math.abs(selUnbilledAmt(p,x))>0.005);}
 function composeSelections(p){const editId=(_invDraft&&_invDraft.editId)||null;return (p.selections||[]).filter(x=>SEL_STATUS.indexOf(x.status)>=1&&Math.abs(selUnbilledAmt(p,x,editId))>0.005);}
-let invMode='list',_invDraft=null;
+let invMode='list',_invDraft=null,_drawWas={};
 let _invAnyHouse=false;
 function openInvoices(anyHouse){if(!canGate('moneyCo')){toast('Invoices are off for this role');return;}_invAnyHouse=anyHouse===true;invMode='list';renderInvoices();document.getElementById('invScrim').classList.add('show');}
 function invoicesFromSettings(){
@@ -16509,6 +16644,8 @@ function invCompose(editId){
       _invDraft={title:inv.title||'',due:inv.due||'',picks,coPicks,exLabel:exL,exAmount:exA,exCredit:exC,editId};}
     else _invDraft={title:_invDefaultTitle(),due:'',picks:{},exLabel:'',exAmount:'',editId:null};}
   else _invDraft={title:_invDefaultTitle(),due:'',picks:{},exLabel:'',exAmount:'',editId:null};
+  _invDraft.drawPicks={};
+  if(editId){const _ei=(P().invoices||[]).find(v=>v.id===editId);((_ei&&_ei.items)||[]).forEach(it=>{if(it.drawId)_invDraft.drawPicks[it.drawId]=true;});}
   invMode='compose';renderInvoices();}
 function invTogglePick(id){_invDraft.picks[id]=!_invDraft.picks[id];_invSnapInputs();renderInvoices();}
 function invDueOnReceipt(){_invSnapInputs();_invDraft.due='On receipt';renderInvoices();}
@@ -16526,6 +16663,11 @@ function invDraftItems(){
   const p=P();const items=[];
   composeSelections(p).forEach(x=>{if(_invDraft.picks[x.id]){const a=selUnbilledAmt(p,x,_invDraft.editId||null),c=toC(a);items.push({label:(x.item||'(selection)')+' — '+(x.cat||'')+(x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+x.room:''),amount:fromC(c),amountC:c,selId:x.id});}});
   {const cp=_invDraft.coPicks||{};coBillable(p,_invDraft.editId||null).forEach(r=>{if(cp[r.id]){const c=toC(fromC(r.amountC));items.push({label:CO.label(r.no)+' \u00b7 '+String(r.title||''),amount:fromC(c),amountC:c,coId:r.id});}});}
+  {const dp=_invDraft.drawPicks||{};const eInv=_invDraft.editId?(p.invoices||[]).find(v=>v.id===_invDraft.editId):null;
+    drawsBillable(p,_invDraft.editId||null).forEach(d=>{if(!dp[d.id])return;
+      /* the amount is copied now; a stage already on this draft keeps the line the draft has */
+      const old=eInv&&(eInv.items||[]).find(it=>it.drawId===d.id);const c=old&&Number.isInteger(old.amountC)?old.amountC:drawAmtC(d);
+      const it={label:(old&&old.label)||d.title||'Payment stage',amount:fromC(c),amountC:c,drawId:d.id};const nt=old?old.note:d.note;if(nt)it.note=nt;items.push(it);});}
   const exR=parseMoney(_invDraft.exAmount,{});
   if(_invDraft.exLabel.trim()&&exR.ok&&exR.cents!==0){const c=exR.cents*(_invDraft.exCredit?-1:1);items.push({label:_invDraft.exLabel.trim(),amount:fromC(c),amountC:c});}
   return items;}
@@ -16535,6 +16677,7 @@ function invSave(asDraft){
   {const _x=parseMoney(_invDraft.exAmount,{});if(!_x.ok&&!(_x.blank&&!_invDraft.exLabel.trim())){toast(_x.blank?'Enter an amount for the custom line':MONEY_WHY[_x.why]||'Check the amount');return;}}
   const p=P();const items=invDraftItems();
   if(!items.length){toast('Pick at least one line');return;}
+  if(items.some(it=>it.drawId)&&drawsBlocked(p)){toast(DRAWS_NOT_SAVED);return;}
   const total=invTotalOf(items);
   const sess=state.session||{};
   const editId=_invDraft.editId;
@@ -16543,6 +16686,7 @@ function invSave(asDraft){
     inv=(p.invoices||[]).find(v=>v.id===editId);
     if(!inv){toast('Draft not found');invMode='list';renderInvoices();return;}
     selReleaseInv(p,editId);
+    (p.draws||[]).forEach(d=>{if(d&&d.invoiceId===editId)_drawWas[d.id]=true;});drawReleaseInv(p,editId);
     inv.title=_invDraft.title.trim()||'Selections invoice';inv.due=_invDraft.due.trim()||'';inv.items=items;inv.total=total;
   }else{
     inv={id:'inv_'+Math.random().toString(36).slice(2,9),no:'',title:_invDraft.title.trim()||'Selections invoice',
@@ -16550,6 +16694,10 @@ function invSave(asDraft){
     p.invoices=p.invoices||[];p.invoices.push(inv);
   }
   items.forEach(it=>{if(it.selId){const sl=p.selections.find(x=>x.id===it.selId);if(sl)sl.invoicedIn=inv.id;}});
+  /* 2.529.0: the stage is linked in this same save as its invoice, so one never exists without the other */
+  items.forEach(it=>{if(!it.drawId)return;const d=(p.draws||[]).find(x=>x&&x.id===it.drawId);if(!d)return;
+    d.status='billed';d.invoiceId=inv.id;d.billedAt=Date.now();if(!_drawWas[d.id])drawHist(d,'Billed: '+fmtMoney(fromC(it.amountC))+' on a new invoice');});
+  _drawWas={};
   if(asDraft){
     inv.status='draft';
     persist();logEvent('invoiceDraft','Draft · '+fmtMoney(total));toast('Draft saved');
@@ -16568,7 +16716,7 @@ function invSave(asDraft){
 function invDeleteDraft(invId){
   const p=P();const inv=(p.invoices||[]).find(v=>v.id===invId);if(!inv)return;
   confirmDelete({title:'Delete draft?',body:esc(inv.title)+'<br><br>This draft was never sent. Its selections return to “Not yet invoiced.”',onConfirm:()=>{
-    selReleaseInv(p,invId);
+    selReleaseInv(p,invId);drawReleaseInv(p,invId,'draft deleted');
     p.invoices=(p.invoices||[]).filter(v=>v.id!==invId);
     persist();_invDraft=null;invMode='list';renderInvoices();try{renderSelections();}catch(e){}toast('Draft deleted');}});}
 let _billAssignees=[];
@@ -16599,7 +16747,7 @@ function invDetailHTML(p,inv,viewer){
   const canAdj=false;   /* 2.481.0 (A2 M-3): a credit or charge is appended, never removed; a mistake is a new credit or a void */
   h+='<div class="spec-ro">'+inv.items.map((it,idx)=>it.adj
       ?`<div class="sro"><span class="k fst-i">${esc(it.label)}${canAdj?` <button onclick="invDelAdjustment('${p.id}','${inv.id}',${idx})" class="ml-1 fs-xs c-clay bd-0 p-0 cur-p td-u u-m28">Remove</button>`:''}</span><span class="v fst-i">${fmtMoney(it.amount)}</span></div>`
-      :`<div class="sro"><span class="k">${esc(it.label)}</span><span class="v">${fmtMoney(it.amount)}</span></div>`).join('')
+      :`<div class="sro"><span class="k">${esc(it.label)}${it.note?`<br><span class="fs-xs c-ink-3">${esc(it.note)}</span>`:''}</span><span class="v">${fmtMoney(it.amount)}</span></div>`).join('')
     +`<div class="sro fw-7"><span class="k">Total</span><span class="v">${fmtMoney(inv.total)}</span></div>`
     +(paid>0?`<div class="sro"><span class="k">Paid</span><span class="v">−${fmtMoney(paid)}</span></div><div class="sro fw-7"><span class="k">Balance due</span><span class="v">${fmtMoney(bal)}</span></div>`:'')
     +`</div>`;
@@ -16797,7 +16945,7 @@ function invVoid(projId,invId){
     onOk:why=>{why=String(why||'').trim();if(!why){toast('Add a reason first.');return;}
       inv.status='void';inv.voidedAt=Date.now();inv.voidReason=why;
       // release the selections this invoice billed so they become unbilled again
-      selReleaseInv(p,inv.id);
+      selReleaseInv(p,inv.id);drawReleaseInv(p,inv.id,inv.no+' voided');
       persist();logEvent('invoiceVoided',inv.no);toast(inv.no+' voided');
       try{closeInfo();}catch(e){}renderInvoices();try{renderSelections();}catch(e){}
     }});
@@ -16808,7 +16956,7 @@ function invText(p,inv){
   lines.push((p.street||p.name));
   if(inv.due)lines.push('Due: '+inv.due);
   lines.push('');
-  inv.items.forEach(it=>lines.push('• '+it.label+'  '+fmtMoney(it.amount)));
+  inv.items.forEach(it=>lines.push('• '+it.label+'  '+fmtMoney(it.amount)+(it.note?' ('+it.note+')':'')));
   lines.push('');
   lines.push('Total: '+fmtMoney(inv.total));
   const paid=invPaidAmt(inv);
@@ -16910,6 +17058,8 @@ function renderInvoices(){
       <div class="sec"><h2>Unbilled selections</h2></div>`
       +(un.length?un.map(x=>`<div class="subrow cur-p" onclick="invTogglePick('${x.id}')"><div class="si"><div class="n">${_invDraft.picks[x.id]?'☑':'☐'} ${esc(x.item||'(selection)')}</div><div class="d">${esc(x.cat||'')}${x.room&&x.room!=='—'&&x.room!=='N/A'?' · '+esc(x.room):''}</div></div><b class="${selUnbilledAmt(p,x,editId)>0?'up':'cr'} fs-sm">${selMoney(selUnbilledAmt(p,x,editId))}</b></div>`).join('')
         :'<div class="empty py-2 px-0">Nothing unbilled — every priced selection is already on an invoice.</div>')
+      +(function(){const db=drawsBillable(p,editId);if(!db.length)return '';const dp=_invDraft.drawPicks||{};
+        return '<div class="sec"><h2>Payment stages</h2></div>'+db.map(d=>'<div class="subrow cur-p" onclick="invToggleDraw(\''+esc(String(d.id))+'\')"><div class="si"><div class="n">'+(dp[d.id]?'\u2611':'\u2610')+' '+esc(d.title||'Stage')+'</div><div class="d">'+esc(fmtMoney(fromC(drawAmtC(d))))+'</div></div></div>').join('');})()
       +(function(){const cb=coBillable(p,_invDraft.editId||null);if(!cb.length)return '';const cp=_invDraft.coPicks||{};
         return '<div class="sec"><h2>Approved change orders</h2></div>'+cb.map(r=>'<div class="subrow cur-p" onclick="invToggleCo(\''+esc(r.id)+'\')"><div class="si"><div class="n">'+(cp[r.id]?'\u2611':'\u2610')+' '+esc(CO.label(r.no))+' \u00b7 '+esc(r.title||'')+'</div><div class="d">'+esc(CO.amountText(r.amountC))+'</div></div></div>').join('');})()
       +`<div class="sec"><h2>Custom line</h2></div>
