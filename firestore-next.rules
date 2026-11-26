@@ -242,7 +242,7 @@ service cloud.firestore {
            Every client write to them carries byUid == uid() and at == request.time
            (a server timestamp) and an appV string (M-7; the minimum-version check
            is A2/M-15). co money is whole cents (amountC), never dollars. */
-        function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers', 'coDays', 'docs', 'invs']; }
+        function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers', 'coDays', 'docs', 'invs', 'bkho']; }
         function stampOk() {
           let r = request.resource.data;
           return r.byUid == uid() && r.at == request.time && r.appV is string && r.appV.size() > 0 && verOk();
@@ -514,6 +514,36 @@ service cloud.firestore {
             && rec().get('by', '') != ''
             && recNew().get('by', '') == rec().get('by', '');
         }
+        /* 2.527.0 (privacy): notes and daily logs carry data.see, the list of who
+           besides the builders may read them: 'ho' for the homeowner, 'crew:' + the
+           name stamped for a crew on this house. A builder phone sets it; a crew or
+           homeowner phone only adds its own tag to its own record (so it can read
+           it back) and never takes one away. The app's crew and homeowner
+           listeners ask for exactly their own tag (array-contains). */
+        function myTag() { return sRole() == 'client' ? 'ho' : 'crew:' + sInfo().get('name', ''); }
+        function seeOk() {
+          return sRole() == 'builder'
+            || (sRole() in ['sub', 'client'] && myTag() in rec().get('see', []));
+        }
+        function seeNewOk() {
+          return recNew().get('see', []) is list
+            && recNew().get('see', []).toSet().hasOnly([myTag()]);
+        }
+        function seeKeptOk() {
+          let n = recNew().get('see', []);
+          let o = rec().get('see', []);
+          return n is list
+            && n.toSet().hasAll(o.toSet())
+            && n.toSet().difference(o.toSet()).hasOnly([myTag()]);
+        }
+        /* 2.527.0: bkho/{id} is the homeowner's copy of a booking: who, which
+           trade, which days, its status. Nothing else (no packet link, no note,
+           no crew phone). A builder writes it; the homeowner reads it. */
+        function bkhoWriteOk() {
+          return recordColl == 'bkho' && sRole() == 'builder'
+            && request.resource.data.keys().hasOnly(['data', 'updatedAt', 'updatedBy', 'updatedByUid'])
+            && recNew().keys().hasOnly(['id', 'subName', 'trade', 'start', 'end', 'status']);
+        }
         /* F-2 R2: money keys never live on sel (even at $0). They live on
            selm. Create and update of a sel record refuse any of the five. */
         function selNoMoney() {
@@ -567,21 +597,22 @@ service cloud.firestore {
               : recordColl in ['mail','costs'] ? moneyOk()
               : recordColl == 'inv' ? moneyOk() || (sRole() == 'client' && invSeen())   /* #6: never a draft */
               : recordColl == 'selm' ? moneyOk() || sRole() == 'client'
-              : recordColl == 'bk' && sRole() == 'sub' ? crewOwnBk()
+              : recordColl == 'bk' ? (sRole() == 'sub' ? crewOwnBk() : (sMember() && sRole() != 'client'))   /* 2.527.0: the homeowner reads bkho */
+              : recordColl in ['items', 'logs'] ? seeOk()                                                  /* 2.527.0: only what is shared with them */
               : sMember());
 
         allow create: if signedIn() && sScoped() && !newColl()
           && selNoMoney()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invCreateOk())
-              || (sRole() == 'sub' && recordColl in ['items','logs'])
-              || (sRole() == 'client' && clientItemNewOk()));
+              || (sRole() == 'sub' && recordColl in ['items','logs'] && seeNewOk())
+              || (sRole() == 'client' && clientItemNewOk() && seeNewOk()));
 
         allow update: if signedIn() && sScoped() && !newColl()
           && selNoMoney()
           && ((sRole() == 'builder' && (!moneyColl() || moneyOk()) && moneyStampOk() && invUpdateOk() && pmtUpdateOk())
-              || (sRole() == 'sub' && crewItemOk())
+              || (sRole() == 'sub' && crewItemOk() && seeKeptOk())
               || (sRole() == 'sub' && crewBkRespOk())
-              || (sRole() == 'client' && recordColl == 'items' && crewItemOk())   /* #15: own notes only */
+              || (sRole() == 'client' && recordColl == 'items' && crewItemOk() && seeKeptOk())   /* #15: own notes only; 2.527.0: tags kept */
               || (sRole() == 'client' && clientSelOk())
               || (sRole() == 'client' && clientInvOk()));
 
@@ -598,19 +629,22 @@ service cloud.firestore {
           || (recordColl == 'numbers' && moneyOk())
           || (recordColl == 'coDays' && sMember())
           || (recordColl == 'docs' && docAudOk(rec().get('aud', 'team')))
-          || (recordColl == 'invs' && moneyOk()));
+          || (recordColl == 'invs' && moneyOk())
+          || (recordColl == 'bkho' && sRole() in ['builder', 'client']));
         allow create: if signedIn() && sScoped() && (
           docWriteOk()
+          || bkhoWriteOk()
           || (recordColl == 'invs' && moneyOk())
           || coDaysWriteOk()
           || coCreateOk()
           || (recordColl == 'consent' && consentCreateOk())
           || (recordColl == 'flags' && flagCreateOk())
           || (recordColl == 'numbers' && numberCreateOk()));
-        allow update: if signedIn() && sScoped() && (docWriteOk() || (recordColl == 'invs' && moneyOk())
+        allow update: if signedIn() && sScoped() && (docWriteOk() || bkhoWriteOk() || (recordColl == 'invs' && moneyOk())
           || coDaysWriteOk() || coBuilderUpdOk() || clientCoOk());
         allow delete: if signedIn() && sScoped() && ((recordColl == 'co' && coDeleteOk()) || (recordColl == 'coDays' && moneyOk())
-          || (recordColl == 'docs' && sRole() == 'builder') || (recordColl == 'invs' && moneyOk()));
+          || (recordColl == 'docs' && sRole() == 'builder') || (recordColl == 'invs' && moneyOk())
+          || (recordColl == 'bkho' && sRole() == 'builder'));
       }
     }
 
