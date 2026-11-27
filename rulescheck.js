@@ -681,7 +681,7 @@ async function main() {
   await INV('selok old: the builder branch still updates it as before (no proof needed)',
     setDoc(doc(db.builder, 'sites/liveSel/sel/kold'), { data: selRec({ approved: true, approvedAt: 1700000000000, signed: SOK_SIGNED, note: 'Builder note' }), updatedAt: 6, updatedBy: 'dev-builder' }, { merge: true }), true);
   await INV('selok old: the homeowner answers a question on it with no proof - ALLOWED',
-    setDoc(doc(db.client, 'sites/liveSel/sel/kold'), { data: selRec({ approved: true, approvedAt: 1700000000000, signed: SOK_SIGNED, spec: Object.assign({}, selRec().spec, { finish: 'Chrome' }) }), updatedAt: 7, updatedBy: 'dev-client' }, { merge: true }), true);
+    setDoc(doc(db.client, 'sites/liveSel/sel/kold'), { data: selRec({ approved: true, approvedAt: 1700000000000, signed: SOK_SIGNED, note: 'Builder note', spec: Object.assign({}, selRec().spec, { finish: 'Chrome' }) }), updatedAt: 7, updatedBy: 'dev-client' }, { merge: true }), true);
   await INV('selok old: the homeowner can still remove an old OK - ALLOWED',
     setDoc(doc(db.client, 'sites/liveSel/sel/kold2'), { data: selRec({ approved: false, approvedAt: null, signed: null }), updatedAt: 7, updatedBy: 'dev-client' }, { merge: true }), true);
   await INV('selok old: ... and approving it again needs the proof - bare DENIED', approveBatch(db.client, 'kold2', { noProof: true, t: SOK_T + 5 }), false);
