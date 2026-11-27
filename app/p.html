@@ -164,13 +164,48 @@ function busy(){
   return !!(ae&&(ae.id==="gpNote"||ae.id==="gpQText"||ae.id==="gpPrefCal"));
 }
 function sig(x){x=x||{};return JSON.stringify({resp:x.resp||null,q:x.q||[],docs:x.docs||[],specs:x.specs||[],note:x.note||"",start:x.start,end:x.end,ctx:x.ctx||null,lastChange:x.lastChange||"",signed:!!x.signed,stale:!!x.stale,work:x.work||null,brief:x.brief||null,specAt:x.specAt||""});}
+/* 2.533.0: offline copy. The last packet this phone loaded, kept under its token. Crew-safe: money keys are stripped before it is written. */
+var GP_OFFLINE_LINE="Offline copy · saved on this phone";
+var GP_SNAP_MAX=200000,_offline=false;
+function snapTok(){return TOKEN||String(window.__packetToken||"");}
+function snapKey(){return "plumb.packet."+snapTok();}
+var MONEYKEY=/price|cost|amount|allowance|contract|total|invoice|draw|budget|payment|paid|balance|money|dollar|cents|\$/i;
+function stripMoney(v,d){
+  if(d>8)return null;
+  if(Array.isArray(v))return v.map(function(x){return stripMoney(x,d+1);});
+  if(v&&typeof v==="object"){var o={};Object.keys(v).forEach(function(k){if(!MONEYKEY.test(k))o[k]=stripMoney(v[k],d+1);});return o;}
+  return v;
+}
+function snapSave(g){
+  try{
+    if(!snapTok()||!g||g.revoked||g.siteDeleted||(g.expires||0)<Date.now())return;
+    var raw=JSON.stringify({v:1,tok:snapTok(),savedAt:Date.now(),g:stripMoney(g,0)});
+    if(raw.length>GP_SNAP_MAX)return;
+    localStorage.setItem(snapKey(),raw);
+  }catch(e){}
+}
+function snapLoad(){
+  try{
+    if(!snapTok())return null;
+    var o=JSON.parse(localStorage.getItem(snapKey())||"null");
+    if(!o||o.v!==1||o.tok!==snapTok()||!o.g||o.g.revoked||o.g.siteDeleted||(o.g.expires||0)<Date.now())return null;
+    return o.g;
+  }catch(e){return null;}
+}
+function showOffline(){
+  var g=snapLoad();if(!g)return false;
+  _snap=g;_offline=true;paint();
+  var body=document.getElementById("body");
+  if(body){var n=document.createElement("div");n.id="gpOffline";n.setAttribute("role","status");n.style.cssText="font-size:13px;opacity:.7;text-align:center;margin:8px 0";n.textContent=GP_OFFLINE_LINE;body.insertBefore(n,body.children[1]||null);}
+  return true;
+}
 function apply(g){
   if(!g)return;
   if(g.revoked||g.siteDeleted){fail("This house is no longer on the book. Ask your builder if you still need the packet.");return;}
   if((g.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}
-  if(_snap&&sig(g)===sig(_snap))return;
+  if(!_offline&&_snap&&sig(g)===sig(_snap))return;
   if(busy()){_pending=g;return;}
-  _snap=g;paint();
+  _offline=false;_snap=g;snapSave(g);paint();
 }
 function flushPending(){if(!_pending)return;var g=_pending;_pending=null;apply(g);}
 function esc(s){return String(s||"").replace(/[&<>"']/g,function(c){return {"&":"&"+"amp;","<":"&"+"lt;",">":"&"+"gt;",'"':"&"+"quot;","'":"&#39;"}[c];});}
@@ -520,13 +555,14 @@ function boot(){
   function load(){t0=Date.now();tries=0;look();}
   function look(){
     var d=db();
-    if(!d){if(Date.now()-t0<wait){setTimeout(look,150);return;}fail("This link needs a connection to open. Get a bar of signal and tap Try again.",load);return;}
+    if(!d){if(Date.now()-t0>=Math.min(wait,4000)&&showOffline()){listen();return;}if(Date.now()-t0<wait){setTimeout(look,150);return;}fail("This link needs a connection to open. Get a bar of signal and tap Try again.",load);return;}
     d.collection("packets").doc(String(TOKEN)).get().then(function(x){
-      if(x&&x.exists){_snap=x.data();if(_snap.revoked||_snap.siteDeleted){fail("This house is no longer on the book. Ask your builder if you still need the packet.");return;}if((_snap.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}paint();listen();return;}
+      if(x&&x.exists){_snap=x.data();if(_snap.revoked||_snap.siteDeleted){fail("This house is no longer on the book. Ask your builder if you still need the packet.");return;}if((_snap.expires||0)<Date.now()){fail("This link has expired. Reply to the text you got and your builder will send a fresh one.");return;}snapSave(_snap);paint();listen();return;}
       if(++tries<8&&Date.now()-t0<wait){setTimeout(look,350);return;}
       fail("This link is no longer available. Ask your builder if you still need it.");
     }).catch(function(err){
       if(++tries<10&&Date.now()-t0<wait){setTimeout(look,400);return;}
+      if(!(err&&err.code==="permission-denied")&&showOffline()){listen();return;}
       fail("This link is no longer available. Ask your builder if you still need it.",(err&&err.code==="permission-denied")?null:load);
     });
   }
