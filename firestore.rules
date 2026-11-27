@@ -236,13 +236,13 @@ service cloud.firestore {
         }
 
         /* ───────── Rules A1 (additive): change orders and the paper trail ─────────
-           New collections only: co, hist, consent, flags, numbers. Nothing that
+           New collections only: co, hist, consent, flags, numbers (and selok, 2.532.0). Nothing that
            exists today is tightened here (that is Rules A2). The generic record
            rules below skip these five names, so each is strict from day one.
            Every client write to them carries byUid == uid() and at == request.time
            (a server timestamp) and an appV string (M-7; the minimum-version check
            is A2/M-15). co money is whole cents (amountC), never dollars. */
-        function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers', 'coDays', 'docs', 'invs', 'bkho']; }
+        function newColl() { return recordColl in ['co', 'hist', 'consent', 'flags', 'numbers', 'coDays', 'docs', 'invs', 'bkho', 'selok']; }
         function stampOk() {
           let r = request.resource.data;
           return r.byUid == uid() && r.at == request.time && r.appV is string && r.appV.size() > 0 && verOk();
@@ -513,6 +513,50 @@ service cloud.firestore {
           return n.specCustom is list
             && n.specCustom.size() == o.get('specCustom', []).size();
         }
+        /* 2.532.0 Approvals on record: selok/{selId}-{tappedAt} is what a homeowner agreed to when they tapped Approve:
+           the price in whole cents (matched to the house's own selm to the cent, no selm = 0), the name the server stamped
+           for them, the item, and the server time. Created only by the homeowner, in the same batch as the sel approve.
+           Never updated or deleted by anyone (no allow line for it). Read by a builder with money and the homeowner, never
+           a crew. The spec snapshot is kept as written but is not checked slot by slot against the live spec (the same
+           expression budget that kept specCustomOk simple). */
+        function selPath(id) { return /databases/$(database)/documents/sites/$(siteId)/sel/$(id); }
+        function selmPath(id) { return /databases/$(database)/documents/sites/$(siteId)/selm/$(id); }
+        function selokPath(id) { return /databases/$(database)/documents/sites/$(siteId)/selok/$(id); }
+        function nz(v) { return v == null ? '' : v; }
+        function selokMoneyOk(n) {
+          let m = exists(selmPath(n.selId)) ? get(selmPath(n.selId)).data.get('data', {}) : {};
+          return n.priceC is int && math.abs(n.priceC - invNum(m, 'price') * 100) <= 0.5
+            && (m.get('allowance', null) is number
+                ? (n.get('allowanceC', null) is int && math.abs(n.allowanceC - m.allowance * 100) <= 0.5)
+                : !n.keys().hasAny(['allowanceC']));
+        }
+        function selokSnapOk(n) {
+          let s = get(selPath(n.selId)).data.get('data', {});
+          return n.item == nz(s.get('item', '')) && n.cat == nz(s.get('cat', '')) && n.room == nz(s.get('room', ''))
+            && n.get('spec', {}) is map && n.get('specCustom', []) is list && n.get('specCustom', []).size() <= 40;
+        }
+        function selokCreateOk() {
+          let r = request.resource.data;
+          let n = recNew();
+          return recordColl == 'selok' && sRole() == 'client' && stampOk() && outerOk()
+            && r.keys().hasAll(['tappedAt']) && r.tappedAt is int
+            && n.keys().hasOnly(['selId', 'approvedBy', 'priceC', 'allowanceC', 'item', 'cat', 'room', 'spec', 'specCustom'])
+            && n.keys().hasAll(['selId', 'approvedBy', 'priceC', 'item', 'cat', 'room'])
+            && n.selId is string && n.selId.size() > 0
+            && recordId == n.selId + '-' + string(r.tappedAt)
+            && nameOk(n.approvedBy)
+            && selokMoneyOk(n)
+            && selokSnapOk(n);
+        }
+        /* 2.532.0 (Choice 1A): a homeowner write that makes a selection approved, or changes approvedAt on an approved
+           one, must create its selok record in the same batch (the id comes from the sel's own approvedAt, so an old
+           record can never be replayed). Taking an OK back needs nothing. */
+        function selOkProofOk(n, ch) {
+          let t = n.get('approvedAt', 0) is int ? n.get('approvedAt', 0) : 0;
+          let pp = selokPath(recordId + '-' + string(t));
+          return !(ch.hasAny(['approved', 'approvedAt']) && n.get('approved', false) == true)
+            || (t != 0 && existsAfter(pp) && !exists(pp) && getAfter(pp).data.byUid == uid());
+        }
         function clientSelOk() {
           let n = recNew();
           let o = rec();
@@ -524,7 +568,8 @@ service cloud.firestore {
             && (!ch.hasAny(['approvedAt']) || n.approvedAt == null || n.approvedAt is int)
             && (!ch.hasAny(['signed']) || n.signed == null || n.signed is map)
             && (!ch.hasAny(['spec']) || (n.spec is map && specTechHeld(n, o)))
-            && (!ch.hasAny(['specCustom']) || specCustomOk(n, o));
+            && (!ch.hasAny(['specCustom']) || specCustomOk(n, o))
+            && selOkProofOk(n, ch);   /* 2.532.0 */
         }
         function crewOwnBk() {
           return recordColl == 'bk'
@@ -674,7 +719,8 @@ service cloud.firestore {
           || (recordColl == 'coDays' && sMember())
           || (recordColl == 'docs' && docAudOk(rec().get('aud', 'team')))
           || (recordColl == 'invs' && moneyOk())
-          || (recordColl == 'bkho' && sRole() in ['builder', 'client']));
+          || (recordColl == 'bkho' && sRole() in ['builder', 'client'])
+          || (recordColl == 'selok' && (moneyOk() || sRole() == 'client')));   /* 2.532.0: never a crew, never a builder without money */
         allow create: if signedIn() && sScoped() && (
           docWriteOk()
           || bkhoWriteOk()
@@ -683,7 +729,8 @@ service cloud.firestore {
           || coCreateOk()
           || (recordColl == 'consent' && consentCreateOk())
           || (recordColl == 'flags' && flagCreateOk())
-          || (recordColl == 'numbers' && numberCreateOk()));
+          || (recordColl == 'numbers' && numberCreateOk())
+          || selokCreateOk());   /* 2.532.0: the homeowner only; there is no update and no delete line for selok, so it is append-only */
         allow update: if signedIn() && sScoped() && (docWriteOk() || bkhoWriteOk() || (recordColl == 'invs' && moneyOk())
           || coDaysWriteOk() || coBuilderUpdOk() || clientCoOk());
         allow delete: if signedIn() && sScoped() && ((recordColl == 'co' && coDeleteOk()) || (recordColl == 'coDays' && moneyOk())
