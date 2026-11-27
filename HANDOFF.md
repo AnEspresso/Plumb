@@ -15,6 +15,7 @@
 **Testing.** In `app/`: `node sim.js` (jsdom, about 1045 checks) and `node qa.js` (real Chrome, 92 checks). CI runs them in `SitePlumb QA`; its `verify-live` job only passes after a merge has deployed.
 
 **Recent versions** (newest first; `git log` has the full list):
+- 2.532.0 Approvals on record: a homeowner's selection OK now keeps the agreed price (in cents), who, and the server time in a new `selok` record. App only: no rules or Functions change; the rules are a separate draft PR.
 - 2.531.0 Download this house: a printable house record (builder copy and homeowner copy) and a money spreadsheet. Builder: house page; homeowner: Home tab. App only: no rules or Functions change.
 - 2.530.0 Bad signal: every house with unsent changes goes up when signal returns, and the pill says Saved · live only when that is true. Two phones on one note, selection or daily log no longer replace each other silently. App only: no rules or Functions change.
 - 2.529.0 Simple Draws v1: a Draw schedule row on Money; a stage becomes an ordinary invoice with one tap (Bill this stage). Dollars only, builder only, no homeowner schedule. **Needs the separate rules PR (draws collection) published by Peter after this is live;** until then a stage says Not saved and the app loads clean for every role. A stage keeps its own history lines (stage.hist).
@@ -28,6 +29,20 @@
 - 2.433.0 the app links back to the site.
 - 2.432.0 the calendar button says Open calendar.
 - 2.429.0 an invited crew sees their own bookings.
+
+## 2.532.0 - Approvals on record (November 26, 2026)
+
+**What changed.** When a homeowner approves a selection on a real house, the phone now sends one batch: the same `sel` write as before (only `approved`, `approvedAt`, `signed`) plus a new `selok` record in `sites/<id>/selok`. The record holds `priceC` (integer cents, credits negative), `allowanceC` when there is one, `approvedBy`, a snapshot of item / cat / room / spec / specCustom, and the usual stamp (`byUid`, server `at`, `appV`, `tappedAt`). Its id is `{selId}-{tappedAt}`, and `tappedAt` is the `sel.approvedAt`, which is how the current OK is found. Nothing is added to `sel`. Removing an OK is still one `sel` write and leaves the proof alone; a re-approve after a price change writes a new record.
+
+**Safe before the rules.** If the batch is refused (`selok` not allowed yet) the phone falls back once to the old `sel`-only write, so approving works exactly as before. A refused listener stays quiet. After the rules are published that fallback is refused too: the homeowner sees "Not approved yet." (with "the price may have just changed" on a priced selection) and nothing looks saved.
+
+**Choices (Peter, 11/26/2026).** 1A: after the rules publish, a bare OK without its `selok` is refused. 2A: earlier agreements are always kept, and show only as a quiet "Earlier OK" line on the **builder copy** of the house record. The homeowner copy, the builder's Signed sheet and crews never show them. `SELOK` is a read-only cache like `HIST` (never in `SYNC_COLLS`); only the homeowner and builders with Money subscribe.
+
+**Showing it.** The Signed sheet adds agreed price, allowance and recorded time for the current OK. The house record shows "agreed X" (plus "now Y" if the price moved) and says "could not be loaded" if the list is missing on a live house.
+
+**This PR is app only.** No rules, storage or Functions files. A separate **draft** rules PR adds the locked `selok` collection and the bare-OK refusal. Peter merges it and runs Publish rules only after 2.532.0 is confirmed live. Honest limits: the builder can still write `sel.approved` itself, and the `spec` snapshot is not cross-checked against the live spec.
+
+**Still to do.** A short real-phone check on the installed app: approve, remove, approve again, then open the house record. `selok` records cannot be deleted, so use a clearly named QA selection.
 
 ## 2.531.0 - Download this house (November 26, 2026)
 

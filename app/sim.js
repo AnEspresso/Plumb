@@ -3789,16 +3789,20 @@ S('allowances-2');
 S('approve-confirmed');
 await (async function(){
   $(`(function(){
-    window.__ap={writes:[],pend:null,toasts:[],o:{am:appMode,toast:toast,on:Sync.on,mode:Sync.mode,db:Sync.db,dev:Sync.deviceId,sh:Sync._shadow,pulled:Sync._sitesPulled,sess:state.session}};
+    window.__ap={writes:[],pend:null,toasts:[],o:{uid:Sync.uid,fb:window.firebase,am:appMode,toast:toast,on:Sync.on,mode:Sync.mode,db:Sync.db,dev:Sync.deviceId,sh:Sync._shadow,pulled:Sync._sitesPulled,sess:state.session}};
     appMode=function(){return 'real';};
     toast=function(m){__ap.toasts.push(m);__ap.o.toast(m);};
     const p=JSON.parse(JSON.stringify(state.projects.find(x=>x.id==='p2')||state.projects[0]));
     p.id='apv1';delete p.sample;p.members={uH:'client'};
     p.selections=[{id:901,item:'Sim live fireplace',cat:'Mechanical',room:'Great room',price:2200,status:'selected',approved:false},{id:902,item:'Sim live tile',cat:'Flooring',room:'Kitchen',price:400,status:'selected',approved:false}];
     state.projects.push(p);state.session={role:'client',site:'apv1',auth:{uid:'uH'}};
-    const sel={set:(d,o)=>{__ap.writes.push({d:JSON.parse(JSON.stringify(d)),o:o});return new Promise((res,rej)=>{__ap.pend={res:res,rej:rej};});}};
-    Sync.db={collection:c=>({doc:sid=>({collection:sub=>({doc:id=>{__ap.path=c+'/'+sid+'/'+sub+'/'+id;return sel;}})})})};
-    Object.assign(Sync,{on:true,mode:'live',deviceId:'devH',_shadow:{},_sitesPulled:false});
+    window.__ap.batches=[];window.__ap.refuseNext=0;
+    const mkRef=path=>({path:path,set:(d,o)=>{__ap.writes.push({d:JSON.parse(JSON.stringify(d)),o:o,path:path});return new Promise((res,rej)=>{__ap.pend={res:res,rej:rej};});}});
+    /* 2.532.0: an approve is a batch (sel + selok). The sel part is also recorded in writes, so the old checks read it there. */
+    const mkBatch=()=>{const ops=[];return {set:(ref,d,o)=>{ops.push({path:ref.path,raw:d,d:JSON.parse(JSON.stringify(d)),o:o});},
+      commit:()=>{__ap.batches.push(ops);const sp=ops.find(x=>x.path.indexOf('/sel/')>0);if(sp)__ap.writes.push({d:sp.d,o:sp.o,path:sp.path,batch:true});return new Promise((res,rej)=>{__ap.pend={res:res,rej:rej};});}};};
+    Sync.db={collection:c=>({doc:sid=>({collection:sub=>({doc:id=>{__ap.path=c+'/'+sid+'/'+sub+'/'+id;return mkRef(__ap.path);}})})}),batch:mkBatch};
+    Object.assign(Sync,{on:true,mode:'live',uid:'uH',deviceId:'devH',_shadow:{},_sitesPulled:false});window.firebase={firestore:{FieldValue:{serverTimestamp:function(){return 'SERVER_TS';}}}};   /* 2.532.0: the approve batch carries the server stamp */
     localStorage.removeItem('plumb.errors');clientTab='specs';renderClient();return true;})()`);
   const btn=()=>$("(function(){var b=document.querySelector('#clsel-901 .cl-sign');return b?(b.textContent+(b.disabled?'|disabled':'')):'';})()");
   const rec=()=>JSON.parse($("JSON.stringify(state.projects.find(x=>x.id==='apv1').selections[0])"));
@@ -3811,8 +3815,8 @@ await (async function(){
   t('saving style: the disabled homeowner button is faded and grey, from tokens (Ink)',SRC.indexOf('.cl-sign:disabled{opacity:.5;border-color:var(--ink-3);color:var(--ink-3);')>=0&&$("getComputedStyle(document.querySelector('#clsel-901 .cl-sign')).opacity")==='0.5',$("getComputedStyle(document.querySelector('#clsel-901 .cl-sign')).opacity"));
   t('accepted: nothing is approved here and no toast before the server answers',rec().approved===false&&$("__ap.toasts.length")===0,JSON.stringify(rec())+' '+$("JSON.stringify(__ap.toasts)"));
   const w0=JSON.parse($("JSON.stringify(__ap.writes[0]||null)"));
-  t('accepted: one write to sites/apv1/sel/901',$("__ap.writes.length")===1&&$("__ap.path")==='sites/apv1/sel/901',$("__ap.path"));
-  t('accepted: the write is only {data:{approved,approvedAt,signed},updatedAt,updatedBy} with merge (2.524.0: when, as a number)',
+  t('accepted: one write to sites/apv1/sel/901 (the sel part of the batch)',$("__ap.writes.length")===1&&$("__ap.writes[0].path")==='sites/apv1/sel/901'&&$("__ap.batches.length")===1,$("__ap.writes[0].path"));
+  t('accepted: the sel part of the batch is only {data:{approved,approvedAt,signed},updatedAt,updatedBy} with merge (2.524.0: when, as a number)',
     !!w0&&Object.keys(w0.d).sort().join()==='data,updatedAt,updatedBy'&&Object.keys(w0.d.data).sort().join()==='approved,approvedAt,signed'&&w0.d.data.approved===true&&typeof w0.d.data.approvedAt==='number'&&w0.d.data.signed.at===w0.d.data.approvedAt&&!!(w0.d.data.signed&&w0.d.data.signed.by&&w0.d.data.signed.by.length)&&w0.d.updatedBy==='devH'&&typeof w0.d.updatedAt==='number'&&!!(w0.o&&w0.o.merge),JSON.stringify(w0));
   $("simSignoff(901);true");await tick();
   t('accepted: a second tap while saving writes nothing',$("__ap.writes.length")===1);
@@ -3875,12 +3879,175 @@ await (async function(){
   const nW3=$("__ap.writes.length");
   $("simSignoff(901)");
   t('demo: the local path, no server write',rec().approved===false&&$("__ap.writes.length")===nW3&&$("JSON.stringify(__ap.toasts)")===JSON.stringify(['Final OK removed']));
-  t('wording: Agency\u2019s refused string and Saving… is reused',SRC.indexOf("toast(denied?'Not approved yet. Ask your builder to check your access.':SIGNAL)")>=0&&SRC.indexOf("disabled aria-busy=\"true\">Saving…</button>")>=0);
+  t('wording: Agency\u2019s refused string and Saving… is reused',SRC.indexOf("'Not approved yet. Ask your builder to check your access.':SIGNAL)")>=0&&SRC.indexOf("disabled aria-busy=\"true\">Saving…</button>")>=0);
 
   /* clean up */
-  $(`(function(){const o=__ap.o;toast=o.toast;appMode=o.am;Object.assign(Sync,{on:o.on,mode:o.mode,db:o.db,deviceId:o.dev,_shadow:o.sh,_sitesPulled:o.pulled});
+  $(`(function(){const o=__ap.o;toast=o.toast;appMode=o.am;Object.assign(Sync,{on:o.on,mode:o.mode,db:o.db,uid:o.uid,deviceId:o.dev,_shadow:o.sh,_sitesPulled:o.pulled});if(o.fb)window.firebase=o.fb;else delete window.firebase;
     state.projects=state.projects.filter(x=>x.id!=='apv1');state.session=o.sess;clientTab='home';localStorage.removeItem('plumb.errors');delete window.__ap;delete window.__apP;return true;})()`);
   t('clean up: the test house is gone and sync is restored',$("state.projects.some(x=>x.id==='apv1')")===false);
+})();
+
+/* ════ 2.532.0 · SELECTION APPROVAL PROOF: an OK keeps the agreed price and the server time ════
+   A real-house Approve is one batch (the sel write plus a selok record), falls back once to the sel-only write,
+   never changes what sel carries, and shows the agreement on the Signed sheet and the house record. */
+S('selection-proof');
+await (async function(){
+  $(`(function(){
+    window.__sk={batches:[],writes:[],script:[],toasts:[],listens:0,errCb:null,o:{am:appMode,toast:toast,on:Sync.on,mode:Sync.mode,db:Sync.db,dev:Sync.deviceId,uid:Sync.uid,ready:Sync.ready,sh:Sync._shadow,pulled:Sync._sitesPulled,sess:state.session,ac:state.activeId,fb:window.firebase,canGate:canGate,rows:SELOK._rows,unsub:SELOK._unsub,err:SELOK._err}};
+    window.firebase={firestore:{FieldValue:{serverTimestamp:function(){return 'SERVER_TS';}}}};
+    appMode=function(){return 'real';};
+    toast=function(m){__sk.toasts.push(m);};
+    const p=JSON.parse(JSON.stringify(state.projects.find(x=>x.id==='p2')||state.projects[0]));
+    p.id='sok1';delete p.sample;p.members={uH:'client',uB:'builder'};p.memberInfo={uH:{name:'Ana Ruiz'}};p.street='1 Proof Ln';p.city='Ann Arbor';
+    p.selections=[
+      {id:951,item:'Sim proof fireplace',cat:'Mechanical',room:'Great room',price:2200,status:'selected',approved:false,spec:{finish:'Black'},specCustom:[{label:'Mantel',value:'Oak'}]},
+      {id:952,item:'Sim proof credit',cat:'Flooring',room:'Kitchen',price:-150,status:'selected',approved:false},
+      {id:953,item:'Sim proof allowance',cat:'Lighting',room:'Hall',price:0,allowance:1200,status:'selected',approved:false},
+      {id:954,item:'Sim proof fallback',cat:'Paint',room:'Hall',price:400,status:'selected',approved:false},
+      {id:955,item:'Sim proof refused',cat:'Paint',room:'Den',price:300,status:'selected',approved:false},
+      {id:956,item:'Sim proof free',cat:'Paint',room:'Den',price:0,status:'selected',approved:false},
+      {id:958,item:'Sim proof free2',cat:'Paint',room:'Den',price:0,status:'selected',approved:false},
+      {id:957,item:'Sim proof old OK',cat:'Tile',room:'Bath',price:100,status:'selected',approved:true,approvedAt:1700000000000,signed:{date:'2023-11-14',at:1700000000000,by:['Old Name'],name:'Old Name'}}];
+    state.projects.push(p);state.session={role:'client',site:'sok1',auth:{uid:'uH'}};state.activeId='sok1';
+    const mkRef=path=>({path:path,set:(d,o)=>{__sk.writes.push({d:JSON.parse(JSON.stringify(d)),o:o,path:path,batch:false});const e=__sk.script.shift();return e?Promise.reject(e):Promise.resolve();},
+      onSnapshot:(ok,er)=>{__sk.listens++;__sk.errCb=er;return function(){};}});
+    const mkBatch=()=>{const ops=[];return {set:(ref,d,o)=>{ops.push({path:ref.path,raw:d,d:JSON.parse(JSON.stringify(d)),o:o});},
+      commit:()=>{__sk.batches.push(ops);ops.forEach(x=>{if(x.path.indexOf('/sel/')>0)__sk.writes.push({d:x.d,o:x.o,path:x.path,batch:true});});const e=__sk.script.shift();return e?Promise.reject(e):Promise.resolve();}};};
+    const coll=(sid,sub)=>({onSnapshot:(ok,er)=>{__sk.listens++;__sk.errCb=er;return function(){};},doc:id=>mkRef('sites/'+sid+'/'+sub+'/'+id)});
+    Sync.db={collection:c=>({doc:sid=>({collection:sub=>coll(sid,sub)})}),batch:mkBatch};
+    Object.assign(Sync,{on:true,mode:'live',uid:'uH',deviceId:'devH',_shadow:{},_sitesPulled:false});Sync.ready=function(){return true;};
+    SELOK._rows={};SELOK._unsub={};SELOK._err={};
+    localStorage.removeItem('plumb.errors');return true;})()`);
+  const J=c=>JSON.parse($("JSON.stringify("+c+")"));
+  const tick=()=>new Promise(r=>setTimeout(r,20));
+  const sel=id=>J("state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id=="+id+")");
+  const go=async id=>{$("__sk.toasts=[];window.__skP=simSignoff("+id+");true");await $("__skP");await tick();};
+
+  /* 1. approve: one batch, sel part unchanged, selok proof */
+  await go(951);
+  const b1=J("__sk.batches[0]||null");const raw1=$("__sk.batches[0]&&__sk.batches[0][1]&&__sk.batches[0][1].raw");
+  t('proof: one approve sends one batch of two writes: the sel and the selok',$("__sk.batches.length")===1&&!!b1&&b1.length===2&&b1[0].path==='sites/sok1/sel/951'&&b1[1].path.indexOf('sites/sok1/selok/951-')===0,JSON.stringify(b1&&b1.map(x=>x.path)));
+  t('proof: the sel part is still only {approved,approvedAt,signed} (plus updatedAt and updatedBy), merged',!!b1&&Object.keys(b1[0].d).sort().join()==='data,updatedAt,updatedBy'&&Object.keys(b1[0].d.data).sort().join()==='approved,approvedAt,signed'&&b1[0].d.data.approved===true&&typeof b1[0].d.data.approvedAt==='number'&&!!(b1[0].o&&b1[0].o.merge));
+  const r1=b1&&b1[1].d;
+  t('proof: the id is selId-tappedAt and tappedAt is the sel approvedAt',!!r1&&b1[1].path==='sites/sok1/selok/951-'+b1[0].d.data.approvedAt&&r1.tappedAt===b1[0].d.data.approvedAt&&r1.data.selId==='951');
+  t('proof: priceC is integer cents ($2,200 is 220000), no float dollars',!!r1&&r1.data.priceC===220000&&Number.isInteger(r1.data.priceC)&&r1.data.price===undefined&&r1.data.allowanceC===undefined);
+  t('proof: who, server time and the snapshot ride along',!!r1&&r1.data.approvedBy==='Ana Ruiz'&&r1.byUid==='uH'&&raw1&&raw1.at==='SERVER_TS'&&typeof raw1.at!=='number'&&/^2\.532\.0/.test(r1.appV)&&r1.data.item==='Sim proof fireplace'&&r1.data.cat==='Mechanical'&&r1.data.room==='Great room'&&r1.data.spec.finish==='Black'&&r1.data.specCustom[0].value==='Oak',JSON.stringify(r1));
+  t('proof: approved here once the server took it, with the usual toast',sel(951).approved===true&&$("__sk.toasts[__sk.toasts.length-1]")==='Approved. Thank you.');
+  t('proof: a record is never given a dollar price or a flat number for at on any write',$("__sk.batches.every(function(b){return b.every(function(x){return JSON.stringify(x.d).indexOf('\"price\":')<0||x.path.indexOf('/sel/')>0;});})"));
+  await go(952);await go(953);
+  const rc=J("__sk.batches[1][1].d.data"),ra=J("__sk.batches[2][1].d.data");
+  t('proof: a credit is negative cents',rc.priceC===-15000);
+  t('proof: an allowance keeps allowanceC and a $0 price is 0',ra.allowanceC===120000&&ra.priceC===0);
+  await go(956);const rf=J("__sk.batches[3][1].d.data");
+  t('proof: a $0 selection still writes a proof with priceC 0 and no allowanceC',rf.priceC===0&&rf.allowanceC===undefined);
+
+  /* 2. one-time fallback */
+  $("__sk.script=[{code:'permission-denied'},null]");const nb=$("__sk.batches.length"),nw=$("__sk.writes.length");
+  await go(954);
+  t('fallback: the refused batch falls back to one sel-only write, same three fields',$("__sk.batches.length")===nb+1&&$("__sk.writes.length")===nw+2&&J("__sk.writes[__sk.writes.length-1]").batch===false&&J("__sk.writes[__sk.writes.length-1]").path==='sites/sok1/sel/954'&&Object.keys(J("__sk.writes[__sk.writes.length-1].d.data")).sort().join()==='approved,approvedAt,signed');
+  t('fallback: the OK still saves, with the usual toast and no proof anywhere',sel(954).approved===true&&$("__sk.toasts[__sk.toasts.length-1]")==='Approved. Thank you.'&&$("SELOK.current(state.projects.find(x=>x.id==='sok1'),state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id===954))")===null);
+  /* 3. refused both times */
+  $("__sk.script=[{code:'permission-denied'},{code:'permission-denied'}]");const nw2=$("__sk.writes.length");
+  await go(955);
+  t('refused twice: nothing approved here and nothing queued',sel(955).approved===false&&!sel(955).signed&&$("__sk.writes.length")===nw2+2);
+  t('refused twice on a priced selection: the plain price-may-have-changed words',$("JSON.stringify(__sk.toasts)")===JSON.stringify(['Not approved yet. The price may have just changed. Check it and tap Approve again.']),$("JSON.stringify(__sk.toasts)"));
+  t('refused twice: logged as a rules refusal',$("(function(){var a=JSON.parse(localStorage.getItem('plumb.errors')||'[]');return !!a[0]&&a[0].k==='rules'&&a[0].w==='clientSignoff'&&a[0].m.indexOf('permission-denied')>=0;})()"));
+  $("__sk.script=[{code:'permission-denied'},{code:'permission-denied'}]");await go(958);
+  t('refused twice on a $0 selection: the access words, nothing approved',sel(958).approved===false&&$("JSON.stringify(__sk.toasts)")===JSON.stringify(['Not approved yet. Ask your builder to check your access.']),$("JSON.stringify(__sk.toasts)"));
+  $("__sk.script=[{code:'unavailable',message:'offline'}]");const nw3=$("__sk.writes.length");
+  await go(955);
+  t('no signal on the batch: the signal toast, no fallback write, nothing approved',sel(955).approved===false&&$("__sk.writes.length")===nw3+1&&$("JSON.stringify(__sk.toasts)")===JSON.stringify(['Could not save — try again with a bar of signal']));
+
+  /* 4. the stored proof does not follow live edits; a re-approve writes a new record */
+  $(`(function(){var p=state.projects.find(x=>x.id==='sok1');SELOK._rows.sok1=__sk.batches.map(function(b){var r=b[1];return Object.assign({},r.d.data,{id:r.path.split('/').pop(),at:1760000000000,tappedAt:r.d.tappedAt,byUid:r.d.byUid});});return true;})()`);
+  const cur0=J("SELOK.current(state.projects.find(x=>x.id==='sok1'),state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id===951))");
+  $(`(function(){var s=state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id===951);s.price=2500;s.item='Sim proof fireplace RENAMED';return true;})()`);
+  const cur1=J("SELOK.current(state.projects.find(x=>x.id==='sok1'),state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id===951))");
+  t('edit after OK: the stored record keeps the agreed price and the old name',!!cur0&&!!cur1&&cur1.priceC===220000&&cur1.item==='Sim proof fireplace'&&JSON.stringify(cur0)===JSON.stringify(cur1));
+  const rs=J("selReapproval(state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id===951),2500,state.projects.find(x=>x.id==='sok1'))");
+  t('edit after OK: a priced upgrade that changes still asks for re-approval (unchanged)',rs.reset===true);
+  $(`(function(){var s=state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id===951);s.approved=false;s.signed=null;s.approvedAt=null;return true;})()`);
+  await new Promise(r=>setTimeout(r,8));
+  const nb2=$("__sk.batches.length");await go(951);
+  const rn=J("__sk.batches[__sk.batches.length-1]");
+  t('re-approve: a new record at the new price, with a new id',$("__sk.batches.length")===nb2+1&&rn[1].d.data.priceC===250000&&rn[1].path!==J("__sk.batches[0][1].path")&&rn[1].d.data.item==='Sim proof fireplace RENAMED');
+  $(`(function(){var n=__sk.batches[__sk.batches.length-1][1];SELOK._rows.sok1.push(Object.assign({},n.d.data,{id:n.path.split('/').pop(),at:1760000900000,tappedAt:n.d.tappedAt,byUid:n.d.byUid}));return true;})()`);
+  t('re-approve: the old record is still there, the new one is current',J("SELOK.list('sok1').filter(r=>r.selId==='951').length")===2&&J("SELOK.current(state.projects.find(x=>x.id==='sok1'),state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id===951))").priceC===250000&&J("SELOK.earlier(state.projects.find(x=>x.id==='sok1'),state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id===951))").length===1);
+
+  /* 5. remove my OK: sel only, selok untouched */
+  const nb3=$("__sk.batches.length"),nw4=$("__sk.writes.length"),rows0=$("JSON.stringify(SELOK._rows.sok1)");
+  await go(954);
+  const wr=J("__sk.writes[__sk.writes.length-1]");
+  t('remove OK: one single sel write, approved false, no batch, no selok write',$("__sk.batches.length")===nb3&&$("__sk.writes.length")===nw4+1&&wr.path==='sites/sok1/sel/954'&&wr.batch===false&&JSON.stringify(wr.d.data)==='{"approved":false,"approvedAt":null,"signed":null}'&&sel(954).approved===false);
+  t('remove OK: the proof records are left exactly as they were',$("JSON.stringify(SELOK._rows.sok1)")===rows0);
+  await go(954);   /* put 954 back to approved for the checks below is not needed; leave it approved */
+  $("__sk.script=[];true");
+
+  /* 6. old approvals render */
+  $("state.session={role:'builder',name:'You',auth:{uid:'uB'}};Sync.uid='uB';renderAll&&0;true");
+  let err=null;try{$("openSignoffInfo(957)");}catch(e){err=e;}
+  const sb=$("document.getElementById('signBody').innerHTML");
+  t('old OK: the Signed sheet opens with the old three facts and no agreed-price rows',!err&&sb.indexOf('Old Name')>=0&&sb.indexOf('Agreed price')<0&&sb.indexOf('Recorded')<0,String(err));
+  /* current proof: sheet shows the agreement */
+  try{$("openSignoffInfo(951)");}catch(e){err=e;}
+  const sb2=$("document.getElementById('signBody').innerHTML");
+  t('proof: the Signed sheet shows the agreed price and the recorded time',sb2.indexOf('Agreed price')>=0&&sb2.indexOf('$2,500')>=0&&sb2.indexOf('Recorded')>=0&&sb2.indexOf('$2,200')<0,sb2.slice(0,400));
+  t('proof: an allowance shows its allowance row (current OK only)',(function(){$("openSignoffInfo(953)");const h=$("document.getElementById('signBody').innerHTML");return h.indexOf('Allowance')>=0&&h.indexOf('$1,200')>=0;})());
+  t('proof: the Signed sheet never lists earlier OKs (Choice 2A)',sb2.indexOf('Earlier')<0);
+  $("closeSignoff()");
+
+  /* 7. the house record */
+  const rec=(who)=>J("houseExportParts(state.projects.find(x=>x.id==='sok1'),'"+who+"')");
+  const selTxt=pt=>JSON.stringify((pt.sections.find(x=>x.key==='selections')||{}).rows||[]);
+  $("state.projects.find(x=>x.id==='sok1').selections.find(x=>x.id===951).price=2400;true");
+  const hb=rec('builder'),hbT=selTxt(hb),hbS=hb.sections.find(x=>x.key==='selections');
+  t('house record (builder): who, official date and the agreed price, with now when it moved',hb.who==='builder'&&hbT.indexOf('Approved by Ana Ruiz')>=0&&hbT.indexOf('agreed $2,500')>=0&&hbT.indexOf('now +$2,400')>=0,hbT.slice(0,500));
+  t('house record (builder): the earlier OK is a quiet line (price, who, date)',hbT.indexOf('Earlier OK: $2,200')>=0&&hbT.indexOf('Ana Ruiz')>=0&&hbS.rows.some(r=>/^Earlier OK/.test(r.a)&&r.ind===true));
+  t('house record (builder): no moved-price words when the price is the same',hbT.indexOf('agreed $150.00 credit')>=0&&hbT.indexOf('agreed $150.00 credit · now')<0,hbT.slice(0,900));
+  t('house record (builder): an old OK still reads Approved by Old Name with its date, and no proof words',/Approved by Old Name · Nov 1[34], 2023/.test(hbT)&&!/Old Name[^"]*agreed/.test(hbT));
+  $("state.session={role:'client',site:'sok1',auth:{uid:'uH'}};Sync.uid='uH';true");
+  const hh=rec('client'),hhT=selTxt(hh);
+  t('house record (homeowner): shows the agreed price, who and the date',hh.who==='client'&&hhT.indexOf('Approved by Ana Ruiz')>=0&&hhT.indexOf('agreed $2,500')>=0);
+  t('house record (homeowner): never shows an earlier OK',hhT.indexOf('Earlier OK')<0&&hhT.indexOf('$2,200')<0&&JSON.stringify(hh).indexOf('Earlier')<0);
+  /* not loaded on a live house */
+  $("SELOK._rows={};true");
+  const hn=rec('client').sections.find(x=>x.key==='selections');
+  t('house record: proof list not loaded on a live house says so instead of an older-looking line',hn.notice.indexOf('could not be loaded')>=0);
+  $("SELOK._err.sok1='permission-denied';true");
+  const hr=rec('client').sections.find(x=>x.key==='selections');
+  t('house record: a refused listener (rules not published) prints as before, no notice',!hr.notice&&JSON.stringify(hr.rows).indexOf('Approved')>=0&&JSON.stringify(hr.rows).indexOf('agreed')<0);
+  $("SELOK._err={};true");
+
+  /* 8. the listener: who subscribes, and a refused one stays quiet */
+  const lis=(setup)=>{$("SELOK._rows={};SELOK._unsub={};SELOK._err={};__sk.listens=0;"+setup+";SELOK.attach(state.projects.find(x=>x.id==='sok1'));true");return {n:$("__sk.listens"),held:$("SELOK.loaded('sok1')")};};
+  let L=lis("state.session={role:'client',site:'sok1',auth:{uid:'uH'}};Sync.uid='uH'");
+  t('listener: the homeowner subscribes',L.n===1);
+  L=lis("state.session={role:'builder',name:'You',auth:{uid:'uB'}};Sync.uid='uB'");
+  t('listener: a builder with Money subscribes',L.n===1);
+  L=lis("state.session={role:'builder',name:'You',auth:{uid:'uB'}};Sync.uid='uB';canGate=function(){return false;}");
+  t('listener: Team with Money off never subscribes and holds nothing',L.n===0&&L.held===false);
+  $("canGate=__sk.o.canGate;true");
+  L=lis("state.session={role:'subs',site:'sok1',auth:{uid:'uC'}};Sync.uid='uC'");
+  t('listener: a crew never subscribes and holds nothing',L.n===0&&L.held===false);
+  const hc=J("houseExportParts(state.projects.find(x=>x.id==='sok1'),'builder')");
+  t('crew: the house record is the homeowner subset with no proof line, no earlier OK, nothing held',hc.who==='client'&&selTxt(hc).indexOf('agreed')<0&&selTxt(hc).indexOf('Earlier')<0&&$("SELOK.list('sok1').length")===0);
+  L=lis("state.session={role:'builder',name:'You',auth:{uid:'uB'}};Sync.uid='uB'");
+  let threw=null;try{$("__sk.errCb({code:'permission-denied'})");}catch(e){threw=e;}
+  t('listener: a refused listener does not throw and stays quiet (no cloud-sync-blocked state)',!threw&&$("SELOK.failed('sok1')")===true&&$("SELOK.loaded('sok1')")===false);
+  $("state.session={role:'builder',name:'You'};Sync.mode='demo';true");
+  $("SELOK._unsub={};SELOK._err={};__sk.listens=0;SELOK.attach(state.projects.find(x=>x.id==='sok1'));true");
+  t('listener: never attaches off a live house',$("__sk.listens")===0);
+
+  /* 9. source rules for this version */
+  t('source: selok is read-only here (not in SYNC_COLLS) and the version string is clean',(function(){const m=SRC.match(/const SYNC_COLLS=[^;]*;/);return !!m&&m[0].indexOf('selok')<0;})()&&!/['";\\]/.test($("PLUMB_VERSION")));
+  t('source: no new tab, room, door or screen words for this',SRC.indexOf("id=\"tab-selok\"")<0&&SRC.indexOf("openSelok")<0&&SRC.indexOf("renderSelok")<0);
+  t('source: the sel patch gains no new field (approved, approvedAt, signed only)',SRC.indexOf("data:{approved:patch.approved,approvedAt:patch.approvedAt,signed:patch.signed}")>=0);
+
+  /* clean up */
+  $(`(function(){const o=__sk.o;toast=o.toast;appMode=o.am;canGate=o.canGate;Object.assign(Sync,{on:o.on,mode:o.mode,db:o.db,deviceId:o.dev,uid:o.uid,ready:o.ready,_shadow:o.sh,_sitesPulled:o.pulled});
+    SELOK._rows=o.rows;SELOK._unsub=o.unsub;SELOK._err=o.err;if(o.fb)window.firebase=o.fb;else delete window.firebase;
+    state.projects=state.projects.filter(x=>x.id!=='sok1');state.session=o.sess;state.activeId=o.ac;clientTab='home';localStorage.removeItem('plumb.errors');delete window.__sk;delete window.__skP;return true;})()`);
+  t('clean up: the proof test house is gone and sync is restored',$("state.projects.some(x=>x.id==='sok1')")===false);
 })();
 
 /* ════ APPROVE THIS INVOICE WAITS FOR THE SERVER (2.462.0; F-1 2.464.0) ════
@@ -6910,8 +7077,8 @@ S('2.529.0 simple draws');
   // wording: version string and jargon
   const ver=String($('PLUMB_VERSION'));
   t('the version string has no apostrophe, semicolon or backslash',!/['";\\]/.test(ver),ver);
-  t('the version says 2.531.0 and Download this house',/^2\.531\.0 - Download this house/.test(ver));
-  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.531.0'&&/CACHE\s*=\s*'plumb-v2\.531\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
+  t('the version says 2.532.0 and Approvals on record',/^2\.532\.0 - Approvals on record/.test(ver));
+  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.532.0'&&/CACHE\s*=\s*'plumb-v2\.532\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
   const words=(SRC.match(/function drawsRender[\s\S]*?function drawNoteHint/)||[''])[0]+(SRC.match(/const DRAWS_NOT_SAVED[^\n]*/)||[''])[0];
   t('the Draw schedule words have no jargon',!/\b(ledger|amortiz|retainage|escrow|milestone|tranche|schedule of values|SOV|payload|collection|firestore|rules)\b/i.test(words));
   t('the app has no percent entry for stages (dollars only)',!/dwPct|percent of contract/i.test(SRC));
@@ -7295,8 +7462,8 @@ t('10: the rest of the paragraph stays',priv.indexOf('Michigan')>=0&&priv.indexO
 
 // 11. version and cache
 const v2=String($('PLUMB_VERSION'));
-t('11: version starts 2.531.0 - Download this house with no apostrophe, semicolon or backslash',/^2\.531\.0 - Download this house/.test(v2)&&!/['";\\]/.test(v2),v2);
-t('11: cache names match and APP_VERSION went up',$('SW_CACHE_EXPECTED')==='plumb-v2.531.0'&&/CACHE\s*=\s*'plumb-v2\.531\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8'))&&$('APP_VERSION')>1795900000000);
+t('11: version starts 2.532.0 - Approvals on record with no apostrophe, semicolon or backslash',/^2\.532\.0 - Approvals on record/.test(v2)&&!/['";\\]/.test(v2),v2);
+t('11: cache names match and APP_VERSION went up',$('SW_CACHE_EXPECTED')==='plumb-v2.532.0'&&/CACHE\s*=\s*'plumb-v2\.532\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8'))&&$('APP_VERSION')>1796000000000);
 
 // 12. words
 const region=(SRC.match(/const HOUSE_EXPORT_FOOT[\s\S]*?function renderInvoices/)||[''])[0];
