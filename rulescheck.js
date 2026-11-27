@@ -66,7 +66,7 @@ const JOIN = applyClaimToSite({ members: { [U.builder]: 'builder' }, meta: {} },
 /* PR 0: a selection as the app stores it ({data, updatedAt, updatedBy}),
    every one of the nine install-detail spec fields and seven custom slots
    filled, plus every money field a selection carries or will carry. */
-const SEL_IDS = ['s9a', 's9b', 's9c', 's9d', 's9e', 's9f', 's9g', 's9h', 's9i', 's9j', 's9k'];
+const SEL_IDS = ['s9a', 's9b', 's9c', 's9d', 's9e', 's9f', 's9g', 's9h', 's9i', 's9j', 's9k', 's9l'];
 /* F-2 R2: money keys live on selm, not sel. Default fixture has none so
    homeowner clientSelOk writes and builder sel writes without money pass.
    selRecMoney keeps a leftover-money shape for the residual crew-read GAP. */
@@ -101,6 +101,28 @@ const approveAs = (d, id, over) => setDoc(doc(d, `sites/liveA/sel/${id}`), {
   data: selRec(Object.assign({ approved: true, signed: { date: '2026-10-04', by: ['Ana Ruiz'] } }, over || {})),
   updatedAt: 2, updatedBy: 'dev-client',
 }, { merge: true });
+
+/* 2.532.0 Approvals on record: what the homeowner's phone sends on Approve is ONE batch: the sel write (the same three
+   fields as before) plus sites/{id}/selok/{selId}-{tappedAt}. The default record matches liveSel's selm (850 / 1200). */
+const SOK_T = 1791300000000;
+const SOK_SIGNED = { date: '2026-10-04', by: ['Ana Ruiz'], name: 'Ana Ruiz' };
+const sokData = (id, over) => Object.entries(Object.assign({ selId: id, approvedBy: 'Ana Ruiz', priceC: 85000, allowanceC: 120000,
+  item: 'Brushed brass package', cat: 'Plumbing Fixtures', room: 'Primary Bath', spec: selRec().spec, specCustom: selRec().specCustom }, over || {})).reduce((o, [k, v]) => { if (v !== undefined) o[k] = v; return o; }, {});
+const sokDoc = (uid, id, over, outer) => Object.assign({ data: sokData(id, over), updatedAt: SOK_T, updatedBy: 'dev-client' },
+  { byUid: uid, at: serverTimestamp(), appV: '2.532.0', tappedAt: SOK_T }, outer || {});
+const sokPath = (site, id, t) => `sites/${site}/selok/${id}-${t || SOK_T}`;
+/* o: site, t (the sel approvedAt), pt (the tappedAt the record is stamped with), path, data, outer, sel (sel field changes), uid, noProof */
+function approveBatch(d, id, o) {
+  o = o || {}; const site = o.site || 'liveSel', t = o.t || SOK_T;
+  const b = writeBatch(d);
+  b.set(doc(d, `sites/${site}/sel/${id}`), { data: selRec(Object.assign({ approved: true, approvedAt: t, signed: SOK_SIGNED }, o.sel || {})),
+    updatedAt: 2, updatedBy: 'dev-client' }, { merge: true });
+  if (!o.noProof) b.set(doc(d, o.path || sokPath(site, id, o.pt || t)), sokDoc(o.uid || U.client, id, o.data, Object.assign({ tappedAt: o.pt || t }, o.outer || {})));
+  return b.commit();
+}
+const sokCreate = (d, id, over, outer, t, site) => setDoc(doc(d, sokPath(site || 'liveSel', id, t)), sokDoc(U.client, id, over, outer));
+/* liveA: the approve-with-proof shape the older PR 0 tests use (only s9a has a selm there) */
+const approveP = (d, id, over) => approveBatch(d, id, { site: 'liveA', sel: over, data: id === 's9a' ? {} : { priceC: 0, allowanceC: undefined } , t: SOK_T + 1 });
 
 /* House-doc sign-off: a house with N trades signed by the builder, written
    the way the app pushes a house ({meta, id, mode, ...} merged). */
@@ -218,6 +240,25 @@ async function seed() {
       await setDoc(doc(db, `sites/${id}/inv/inv_r1`), INV_DOC());
       await setDoc(doc(db, `sites/${id}/selm/s9a`), SELM_DOC());
     }
+    // 2.532.0: a house for selection approval proof. The owner has no roster entry (so money is on); builder2 is a PM
+    // without money; the homeowner has a stamped name. Every selection has the same selm (850 / 1200) except kz (no selm)
+    // and kp (a price, no allowance). kold and kold2 are old approvals: only approved / approvedAt / signed, no selok.
+    await setDoc(doc(db, 'sites/liveSel'), { mode: 'live', street: 'Live Sel',
+      members: { [U.builder]: 'builder', [U.builder2]: 'builder', [U.sub]: 'sub', [U.client]: 'client' },
+      memberUids: [U.builder, U.builder2, U.sub, U.client],
+      meta: { memberInfo: { [U.client]: { name: 'Ana Ruiz' }, [U.builder2]: { name: 'Pat PM', rpRole: 'pm' }, [U.sub]: { name: 'Clearwater Plumbing', trade: 'plumb' } } } });
+    for (const id of ['k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'k7', 'k8', 'k9', 'kc', 'kd', 'kx']) {
+      await setDoc(doc(db, `sites/liveSel/sel/${id}`), selDoc());
+      await setDoc(doc(db, `sites/liveSel/selm/${id}`), SELM_DOC({ selId: id }));
+    }
+    await setDoc(doc(db, 'sites/liveSel/sel/kz'), selDoc());
+    await setDoc(doc(db, 'sites/liveSel/sel/kp'), selDoc());
+    await setDoc(doc(db, 'sites/liveSel/selm/kp'), { data: { selId: 'kp', price: 850 }, updatedAt: 1, updatedBy: 'dev-builder' });
+    for (const id of ['kold', 'kold2']) {
+      await setDoc(doc(db, `sites/liveSel/sel/${id}`), selDoc({ approved: true, approvedAt: 1700000000000, signed: SOK_SIGNED }));
+      await setDoc(doc(db, `sites/liveSel/selm/${id}`), SELM_DOC({ selId: id }));
+    }
+    await setDoc(doc(db, 'sites/liveGateJ/selok/k1-1'), sokDoc(U.client, 'k1', {}, { tappedAt: 1 }));
     // #1: a house whose builder2 is on the roster as the owner (rpRole owner)
     await setDoc(doc(db, 'sites/liveRpOwner'), { mode: 'live', street: 'liveRpOwner',
       members: { [U.builder]: 'builder', [U.builder2]: 'builder' }, memberUids: [U.builder, U.builder2],
@@ -479,7 +520,9 @@ async function main() {
 
   /* ══════════ SELECTIONS: homeowner allowlist (PR 0, R-1 prep) ══════════ */
   await INV('sel: (a) homeowner approves a full selection - 9 spec fields + 7 custom slots filled - ALLOWED',
-    approveAs(db.client, 's9a'), true);
+    approveP(db.client, 's9a'), true);
+  await INV('sel: 2.532.0 (Choice 1A) homeowner approves with no selok proof in the batch - DENIED',
+    approveAs(db.client, 's9l'), false);
   await INV('sel: homeowner takes the final OK back (approved false, signed cleared) - ALLOWED',
     approveAs(db.client, 's9a', { approved: false, signed: null }), true);
   await INV('sel: homeowner answers their own questions (spec finish + a homeowner slot value) - ALLOWED',
@@ -489,17 +532,17 @@ async function main() {
       updatedAt: 2, updatedBy: 'dev-client' }, { merge: true }), true);
   for (const [k, v, id] of [['price', -50000, 's9c'], ['allowance', 99999, 's9d'], ['cost', 0, 's9e'],
                             ['costLineId', 'cl_other', 's9f'], ['invoicedIn', null, 's9g']])
-    await INV_RULE(`sel: (b) homeowner changing ${k} while approving - DENIED by the rule`, approveAs(db.client, id, { [k]: v }));
-  await INV('sel: homeowner marking it installed - DENIED', approveAs(db.client, 's9h', { status: 'installed' }), false);
+    await INV_RULE(`sel: (b) homeowner changing ${k} while approving - DENIED by the rule`, approveP(db.client, id, { [k]: v }));
+  await INV('sel: homeowner marking it installed - DENIED', approveP(db.client, 's9h', { status: 'installed' }), false);
   await INV('sel: homeowner changing an install detail (rough-in) - DENIED',
-    approveAs(db.client, 's9i', { spec: Object.assign({}, selRec().spec, { roughin: '4 in centerset' }) }), false);
+    approveP(db.client, 's9i', { spec: Object.assign({}, selRec().spec, { roughin: '4 in centerset' }) }), false);
   await INV('sel: homeowner adding or dropping a custom slot - DENIED',
-    approveAs(db.client, 's9j', { specCustom: selRec().specCustom.slice(0, 6) }), false);
+    approveP(db.client, 's9j', { specCustom: selRec().specCustom.slice(0, 6) }), false);
   /* GAP (PR 0, by design for the expression budget): custom slots are not
      checked one by one, so a homeowner driving the API (never the app) can
      rewrite a builder slot's text. No money lives in a slot. */
   await GAP('PR 0: homeowner can rewrite a builder custom slot through the API (no slot-by-slot check)',
-    approveAs(db.client, 's9b', { specCustom: selRec().specCustom.map((c, i) => i === 3 ? Object.assign({}, c, { value: 'none' }) : c) }), true);
+    approveP(db.client, 's9b', { specCustom: selRec().specCustom.map((c, i) => i === 3 ? Object.assign({}, c, { value: 'none' }) : c) }), true);
   await INV('sel: homeowner adding a top-level field beside the record - DENIED',
     setDoc(doc(db.client, 'sites/liveA/sel/s9k'), { price: -50000 }, { merge: true }), false);
   await INV('sel: (c) homeowner creating a priced selection (-$50,000) - DENIED',
@@ -520,6 +563,134 @@ async function main() {
 
   /* ══════════ COSTS (job costing — builder-only) ══════════ */
   await INV('costs: builder reads', getDoc(doc(db.builder, 'sites/liveA/costs/r1')), true);
+
+  /* ══════════ 2.532.0 · SELECTION APPROVAL PROOF: selok (Choice 1A) ══════════
+     A homeowner's Approve is one batch: the sel write plus its selok record. The record is created only by the homeowner,
+     is append-only (no update, no delete for anyone), carries the server time, and matches the house's own selm price to
+     the cent. A bare OK with no record is refused; taking an OK back needs nothing. */
+  await INV('selok: homeowner approves: the sel write and their own selok (own uid, server time, matching price, name, snapshot) in one batch - ALLOWED',
+    approveBatch(db.client, 'k1'), true);
+  await INV('selok: ... the record is there, with the integer cents and the stamped name',
+    getDoc(doc(db.client, sokPath('liveSel', 'k1'))).then(r => { const d = (r.data() || {}).data || {};
+      if (d.priceC !== 85000 || d.allowanceC !== 120000 || d.approvedBy !== 'Ana Ruiz' || d.item !== 'Brushed brass package') throw new Error('wrong record ' + JSON.stringify(d).slice(0, 100)); }), true);
+  await INV('selok: a house with no selm records price 0 - ALLOWED', sokCreate(db.client, 'kz', { priceC: 0, allowanceC: undefined }), true);
+  await INV('selok: a price with no allowance - ALLOWED', sokCreate(db.client, 'kp', { allowanceC: undefined }), true);
+  await INV('selok: a credit-style price must still match selm (a different sign) - DENIED', sokCreate(db.client, 'k2', { priceC: -85000 }), false);
+  /* what a homeowner cannot forge (standalone create, so the denial is the selok rule itself) */
+  const SOKBAD = [
+    ['a backdated time (not the server clock)', 'k2', {}, { at: 1791200000000 }],
+    ['another person\'s byUid', 'k2', {}, { byUid: U.builder2 }],
+    ['no appV', 'k2', {}, { appV: null }],
+    ['an empty appV', 'k2', {}, { appV: '' }],
+    ['a name that is not theirs', 'k2', { approvedBy: 'Dean Walsh' }, {}],
+    ['no name', 'k2', { approvedBy: '' }, {}],
+    ['a price one cent high', 'k2', { priceC: 85001 }, {}],
+    ['a price one cent low', 'k2', { priceC: 84999 }, {}],
+    ['dollars in place of cents', 'k2', { priceC: 850 }, {}],
+    ['a fractional cent price', 'k2', { priceC: 85000.5 }, {}],
+    ['a price of 0 when the selm says 850', 'k2', { priceC: 0 }, {}],
+    ['an allowance one cent off', 'k2', { allowanceC: 120001 }, {}],
+    ['no allowance when the selection has one', 'k2', { allowanceC: undefined }, {}],
+    ['an allowance on a selection that has none', 'kp', { allowanceC: 120000 }, {}],
+    ['a price on a selection with no selm', 'kz', { priceC: 85000, allowanceC: undefined }, {}],
+    ['a wrong item name', 'k2', { item: 'Chrome package' }, {}],
+    ['a wrong category', 'k2', { cat: 'Lighting' }, {}],
+    ['a wrong room', 'k2', { room: 'Garage' }, {}],
+    ['an extra field in data (a dollar price)', 'k2', { price: 850 }, {}],
+    ['an extra field beside data', 'k2', {}, { note: 'x' }],
+    ['a spec that is not a map', 'k2', { spec: 'x' }, {}],
+    ['a selId that is not the id', 'k2', { selId: 'k3' }, {}],
+  ];
+  for (const [what, id, over, outer] of SOKBAD)
+    await INV_A1(`selok: homeowner creating one with ${what} - DENIED`, sokCreate(db.client, id, over, outer));
+  await INV('selok: homeowner creating one for a selection that does not exist - DENIED', sokCreate(db.client, 'knone', { priceC: 0, allowanceC: undefined }), false);
+  await INV_A1('selok: homeowner creating one under the wrong id (tappedAt does not match the id) - DENIED',
+    setDoc(doc(db.client, sokPath('liveSel', 'k2', SOK_T + 7)), sokDoc(U.client, 'k2')));
+  await INV_A1('selok: homeowner creating one with a tappedAt that is not a number - DENIED', sokCreate(db.client, 'k2', {}, { tappedAt: 'now' }));
+  /* only the homeowner creates */
+  for (const [who, d, uid] of [['owner builder', db.builder, U.builder], ['second builder (no money)', db.builder2, U.builder2],
+    ['crew', db.sub, U.sub], ['stranger', db.stranger, U.stranger]])
+    await INV_A1(`selok: ${who} creating one - DENIED`, setDoc(doc(d, sokPath('liveSel', 'k2')), sokDoc(uid, 'k2')));
+  await INV('selok: the signed-out visitor creating one - DENIED', setDoc(doc(db.unauth, sokPath('liveSel', 'k2')), sokDoc(U.client, 'k2')), false);
+  /* append-only: nobody updates or deletes a record, the owner included */
+  for (const [who, d] of [['owner builder', db.builder], ['second builder', db.builder2], ['homeowner', db.client], ['crew', db.sub], ['stranger', db.stranger]]) {
+    await INV_A1(`selok: ${who} updating a record (the price) - DENIED`, updateDoc(doc(d, sokPath('liveSel', 'k1')), { 'data.priceC': 1, updatedAt: 9 }));
+    await INV_A1(`selok: ${who} deleting a record - DENIED`, deleteDoc(doc(d, sokPath('liveSel', 'k1'))));
+  }
+  await INV_A1('selok: the owner overwriting a record with setDoc - DENIED', setDoc(doc(db.builder, sokPath('liveSel', 'k1')), sokDoc(U.builder, 'k1')));
+  await INV_A1('selok: the homeowner re-creating the same id with another price - DENIED', sokCreate(db.client, 'k1', { priceC: 90000 }));
+  /* who reads */
+  await INV('selok: owner builder reads', getDoc(doc(db.builder, sokPath('liveSel', 'k1'))), true);
+  await INV('selok: a builder with the moneyJob gate reads', getDoc(doc(db.builder2, 'sites/liveGateJ/selok/k1-1')), true);
+  await INV('selok: the homeowner reads', getDoc(doc(db.client, sokPath('liveSel', 'k1'))), true);
+  await INV('selok: the homeowner lists the house\'s records', getDocs(collection(db.client, 'sites/liveSel/selok')), true);
+  await INV('selok: a builder without the money gate DENIED read', getDoc(doc(db.builder2, sokPath('liveSel', 'k1'))), false);
+  await INV('selok: a builder without the money gate DENIED listing', getDocs(collection(db.builder2, 'sites/liveSel/selok')), false);
+  await INV('selok: crew DENIED read', getDoc(doc(db.sub, sokPath('liveSel', 'k1'))), false);
+  await INV('selok: crew DENIED listing', getDocs(collection(db.sub, 'sites/liveSel/selok')), false);
+  await INV('selok: a stranger DENIED read', getDoc(doc(db.stranger, sokPath('liveSel', 'k1'))), false);
+  await INV('selok: the signed-out visitor DENIED read', getDoc(doc(db.unauth, sokPath('liveSel', 'k1'))), false);
+  await INV('selok: a builder on another house DENIED read', getDoc(doc(db.otherBuilder, sokPath('liveSel', 'k1'))), false);
+  /* Choice 1A: a bare OK is refused; taking one back is not */
+  await INV('selok 1A: homeowner approves on sel with NO selok - DENIED', approveBatch(db.client, 'k4', { noProof: true }), false);
+  await INV('selok 1A: ... and nothing was written (still not approved)',
+    getDoc(doc(db.client, 'sites/liveSel/sel/k4')).then(r => { if ((r.data().data || {}).approved) throw new Error('approved'); }), true);
+  await INV('selok 1A: homeowner approves with a proof for a different selection - DENIED',
+    approveBatch(db.client, 'k4', { path: sokPath('liveSel', 'k5'), data: { selId: 'k5' } }), false);
+  await INV('selok 1A: homeowner approves with a proof whose tappedAt is not the sel approvedAt - DENIED',
+    approveBatch(db.client, 'k4', { t: SOK_T, pt: SOK_T + 1 }), false);
+  await INV('selok 1A: homeowner approves with a proof that was refused for its price (stale phone) - DENIED',
+    approveBatch(db.client, 'k4', { data: { priceC: 70000 } }), false);
+  await INV('selok 1A: homeowner approves with no approvedAt - DENIED',
+    approveBatch(db.client, 'k4', { sel: { approvedAt: null }, noProof: true }), false);
+  await INV('selok 1A: homeowner approves with a proof that is not stamped (a phone clock) - DENIED',
+    approveBatch(db.client, 'k4', { outer: { at: 1791200000000 } }), false);
+  await INV('selok 1A: homeowner approves a second selection in one batch with its own proof - ALLOWED', approveBatch(db.client, 'k5'), true);
+  await INV('selok 1A: removing the OK needs no proof - ALLOWED',
+    setDoc(doc(db.client, 'sites/liveSel/sel/k5'), { data: selRec({ approved: false, approvedAt: null, signed: null }), updatedAt: 3, updatedBy: 'dev-client' }, { merge: true }), true);
+  await INV('selok 1A: ... the proof of the removed OK stays', getDoc(doc(db.client, sokPath('liveSel', 'k5'))).then(r => { if (!r.exists()) throw new Error('gone'); }), true);
+  await INV('selok 1A: ... putting the same approval back with no new proof (replaying the old record) - DENIED',
+    approveBatch(db.client, 'k5', { noProof: true }), false);
+  await INV('selok 1A: ... a fresh approval with a fresh record (a new tap time) - ALLOWED', approveBatch(db.client, 'k5', { t: SOK_T + 60000 }), true);
+  await INV('selok 1A: ... both records are there', getDocs(collection(db.client, 'sites/liveSel/selok')).then(q => {
+    const ids = q.docs.map(x => x.id); if (!ids.includes('k5-' + SOK_T) || !ids.includes('k5-' + (SOK_T + 60000))) throw new Error(ids.join()); }), true);
+  await INV('selok 1A: approved again with only the flag (approvedAt as it was) - DENIED',
+    setDoc(doc(db.client, 'sites/liveSel/sel/k6'), { data: selRec({ approved: true, approvedAt: SOK_T, signed: SOK_SIGNED }), updatedAt: 3, updatedBy: 'dev-client' }, { merge: true }), false);
+  await INV('selok 1A: answering their own questions on an approved selection needs no new proof - ALLOWED',
+    setDoc(doc(db.client, 'sites/liveSel/sel/k5'), { data: selRec({ approved: true, approvedAt: SOK_T + 60000, signed: SOK_SIGNED, spec: Object.assign({}, selRec().spec, { finish: 'Matte black' }) }), updatedAt: 4, updatedBy: 'dev-client' }, { merge: true }), true);
+  /* the builder keeps working exactly as before: price edit, OK reset, then a new approval at the new price */
+  await INV('selok: builder edits the live selm price (850 to 900) - ALLOWED (unchanged)',
+    setDoc(doc(db.builder, 'sites/liveSel/selm/k1'), Object.assign(SELM_DOC({ selId: 'k1', price: 900 }), A2S(U.builder)), { merge: true }), true);
+  await INV('selok: builder resets the OK on the sel as the app does - ALLOWED (unchanged)',
+    setDoc(doc(db.builder, 'sites/liveSel/sel/k1'), { data: selRec({ approved: false, signed: null, approvedAt: null }), updatedAt: 5, updatedBy: 'dev-builder' }, { merge: true }), true);
+  await INV('selok: builder edits the live item name on the sel - ALLOWED (unchanged)',
+    setDoc(doc(db.builder, 'sites/liveSel/sel/k3'), { data: selRec({ item: 'Updated package' }), updatedAt: 5, updatedBy: 'dev-builder' }, { merge: true }), true);
+  await INV('selok: ... a phone that still shows the old price (850) is refused: stale price - DENIED',
+    approveBatch(db.client, 'k1', { t: SOK_T + 120000 }), false);
+  await INV('selok: ... a phone that still shows the old item name is refused - DENIED',
+    approveBatch(db.client, 'k3', { t: SOK_T + 120000, sel: { item: 'Updated package' } }), false);
+  await INV('selok: ... the new price (900) approves with a new record - ALLOWED',
+    approveBatch(db.client, 'k1', { t: SOK_T + 120000, data: { priceC: 90000 } }), true);
+  await INV('selok: ... the first record still holds the first agreed price',
+    getDoc(doc(db.builder, sokPath('liveSel', 'k1'))).then(r => { if (r.data().data.priceC !== 85000) throw new Error('changed'); }), true);
+  await INV('selok: ... and the new one holds the new price',
+    getDoc(doc(db.builder, sokPath('liveSel', 'k1', SOK_T + 120000))).then(r => { if (r.data().data.priceC !== 90000) throw new Error('wrong'); }), true);
+  /* old records: nothing is required to gain a field, nothing blocks */
+  await INV('selok old: an old approval (only approved / approvedAt / signed) is read by the homeowner', getDoc(doc(db.client, 'sites/liveSel/sel/kold')), true);
+  await INV('selok old: ... and by crew, as before', getDoc(doc(db.sub, 'sites/liveSel/sel/kold')), true);
+  await INV('selok old: the builder branch still updates it as before (no proof needed)',
+    setDoc(doc(db.builder, 'sites/liveSel/sel/kold'), { data: selRec({ approved: true, approvedAt: 1700000000000, signed: SOK_SIGNED, note: 'Builder note' }), updatedAt: 6, updatedBy: 'dev-builder' }, { merge: true }), true);
+  await INV('selok old: the homeowner answers a question on it with no proof - ALLOWED',
+    setDoc(doc(db.client, 'sites/liveSel/sel/kold'), { data: selRec({ approved: true, approvedAt: 1700000000000, signed: SOK_SIGNED, spec: Object.assign({}, selRec().spec, { finish: 'Chrome' }) }), updatedAt: 7, updatedBy: 'dev-client' }, { merge: true }), true);
+  await INV('selok old: the homeowner can still remove an old OK - ALLOWED',
+    setDoc(doc(db.client, 'sites/liveSel/sel/kold2'), { data: selRec({ approved: false, approvedAt: null, signed: null }), updatedAt: 7, updatedBy: 'dev-client' }, { merge: true }), true);
+  await INV('selok old: ... and approving it again needs the proof - bare DENIED', approveBatch(db.client, 'kold2', { noProof: true, t: SOK_T + 5 }), false);
+  await INV('selok old: ... with the proof - ALLOWED', approveBatch(db.client, 'kold2', { t: SOK_T + 5 }), true);
+  /* GAPs: said out loud so nobody is surprised */
+  await GAP('2.532.0: the builder can still write sel.approved itself (that flag is not locked here)',
+    setDoc(doc(db.builder, 'sites/liveSel/sel/k8'), { data: selRec({ approved: true, approvedAt: SOK_T, signed: SOK_SIGNED }), updatedAt: 8, updatedBy: 'dev-builder' }, { merge: true }), true);
+  await GAP('2.532.0: the spec snapshot in a record is kept as written but is not cross-checked against the live spec',
+    sokCreate(db.client, 'k9', { spec: { finish: 'Something the builder never offered' }, specCustom: [{ label: 'x', value: 'y' }] }), true);
   await INV('costs: builder writes', setDoc(doc(db.builder, 'sites/liveA/costs/c2'), Object.assign({ line: 'Framing', budget: 42000 }, A2S(U.builder))), true);
   await INV('costs: sub DENIED write', setDoc(doc(db.sub, 'sites/liveA/costs/c3'), { x: 1 }), false);
   await INV('costs: client DENIED write', setDoc(doc(db.client, 'sites/liveA/costs/c4'), { x: 1 }), false);
