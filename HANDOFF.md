@@ -15,6 +15,7 @@
 **Testing.** In `app/`: `node sim.js` (jsdom, about 1045 checks) and `node qa.js` (real Chrome, 92 checks). CI runs them in `SitePlumb QA`; its `verify-live` job only passes after a merge has deployed.
 
 **Recent versions** (newest first; `git log` has the full list):
+- 2.533.0 Polish: App only: no rules or Functions change. A crew can reopen an already-opened packet link with no signal (a crew-safe copy kept on the phone, with no money in it), the builder can enter the house contract total so the Draw schedule Contract line works, marking a selection Ordered without the homeowner's OK now asks first, and a deleted selection's number is never reused (it showed an old Earlier OK on a new selection).
 - 2.532.0 Approvals on record: a homeowner's selection OK now keeps the agreed price (in cents), who, and the server time in a new `selok` record. App only: no rules or Functions change; the rules are a separate draft PR.
 - 2.531.0 Download this house: a printable house record (builder copy and homeowner copy) and a money spreadsheet. Builder: house page; homeowner: Home tab. App only: no rules or Functions change.
 - 2.530.0 Bad signal: every house with unsent changes goes up when signal returns, and the pill says Saved · live only when that is true. Two phones on one note, selection or daily log no longer replace each other silently. App only: no rules or Functions change.

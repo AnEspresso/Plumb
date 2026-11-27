@@ -3931,7 +3931,7 @@ await (async function(){
   const r1=b1&&b1[1].d;
   t('proof: the id is selId-tappedAt and tappedAt is the sel approvedAt',!!r1&&b1[1].path==='sites/sok1/selok/951-'+b1[0].d.data.approvedAt&&r1.tappedAt===b1[0].d.data.approvedAt&&r1.data.selId==='951');
   t('proof: priceC is integer cents ($2,200 is 220000), no float dollars',!!r1&&r1.data.priceC===220000&&Number.isInteger(r1.data.priceC)&&r1.data.price===undefined&&r1.data.allowanceC===undefined);
-  t('proof: who, server time and the snapshot ride along',!!r1&&r1.data.approvedBy==='Ana Ruiz'&&r1.byUid==='uH'&&raw1&&raw1.at==='SERVER_TS'&&typeof raw1.at!=='number'&&/^2\.532\.0/.test(r1.appV)&&r1.data.item==='Sim proof fireplace'&&r1.data.cat==='Mechanical'&&r1.data.room==='Great room'&&r1.data.spec.finish==='Black'&&r1.data.specCustom[0].value==='Oak',JSON.stringify(r1));
+  t('proof: who, server time and the snapshot ride along',!!r1&&r1.data.approvedBy==='Ana Ruiz'&&r1.byUid==='uH'&&raw1&&raw1.at==='SERVER_TS'&&typeof raw1.at!=='number'&&/^2\.5\d\d\.0/.test(r1.appV)&&r1.data.item==='Sim proof fireplace'&&r1.data.cat==='Mechanical'&&r1.data.room==='Great room'&&r1.data.spec.finish==='Black'&&r1.data.specCustom[0].value==='Oak',JSON.stringify(r1));
   t('proof: approved here once the server took it, with the usual toast',sel(951).approved===true&&$("__sk.toasts[__sk.toasts.length-1]")==='Approved. Thank you.');
   t('proof: a record is never given a dollar price or a flat number for at on any write',$("__sk.batches.every(function(b){return b.every(function(x){return JSON.stringify(x.d).indexOf('\"price\":')<0||x.path.indexOf('/sel/')>0;});})"));
   await go(952);await go(953);
@@ -7077,8 +7077,8 @@ S('2.529.0 simple draws');
   // wording: version string and jargon
   const ver=String($('PLUMB_VERSION'));
   t('the version string has no apostrophe, semicolon or backslash',!/['";\\]/.test(ver),ver);
-  t('the version says 2.532.0 and Approvals on record',/^2\.532\.0 - Approvals on record/.test(ver));
-  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.532.0'&&/CACHE\s*=\s*'plumb-v2\.532\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
+  t('the version says 2.533.0 and Polish',/^2\.533\.0 - Polish: offline crew packet, draw contract total, ordered check, and selection ID fix$/.test(ver));
+  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.533.0'&&/CACHE\s*=\s*'plumb-v2\.533\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
   const words=(SRC.match(/function drawsRender[\s\S]*?function drawNoteHint/)||[''])[0]+(SRC.match(/const DRAWS_NOT_SAVED[^\n]*/)||[''])[0];
   t('the Draw schedule words have no jargon',!/\b(ledger|amortiz|retainage|escrow|milestone|tranche|schedule of values|SOV|payload|collection|firestore|rules)\b/i.test(words));
   t('the app has no percent entry for stages (dollars only)',!/dwPct|percent of contract/i.test(SRC));
@@ -7462,8 +7462,8 @@ t('10: the rest of the paragraph stays',priv.indexOf('Michigan')>=0&&priv.indexO
 
 // 11. version and cache
 const v2=String($('PLUMB_VERSION'));
-t('11: version starts 2.532.0 - Approvals on record with no apostrophe, semicolon or backslash',/^2\.532\.0 - Approvals on record/.test(v2)&&!/['";\\]/.test(v2),v2);
-t('11: cache names match and APP_VERSION went up',$('SW_CACHE_EXPECTED')==='plumb-v2.532.0'&&/CACHE\s*=\s*'plumb-v2\.532\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8'))&&$('APP_VERSION')>1796000000000);
+t('11: version starts 2.533.0 - Polish with no apostrophe, semicolon or backslash',/^2\.533\.0 - Polish/.test(v2)&&!/['";\\]/.test(v2),v2);
+t('11: cache names match and APP_VERSION went up',$('SW_CACHE_EXPECTED')==='plumb-v2.533.0'&&/CACHE\s*=\s*'plumb-v2\.533\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8'))&&$('APP_VERSION')>1796100000000);
 
 // 12. words
 const region=(SRC.match(/const HOUSE_EXPORT_FOOT[\s\S]*?function renderInvoices/)||[''])[0];
@@ -7474,6 +7474,131 @@ t('12: the button, sheet and rows have none either',!/export|archive|payload|CSV
 // put everything back
 $(`(function(){var s=window.__hxSave;closePrintPreview();state.projects=s.projects;state.session=s.session;state.activeId=s.ac;Sync.mode=s.mode;Sync.uid=s.uid;Sync._pulled=s.pulled;PaperTrail.on=s.pton;canGate=s.canGate;_csvShare=s.csv;window.print=s.print;CO._rows={};CO._err={};COH._rows={};COH._err={};return true;})()`);
 }
+
+/* ════ 2.533.0 · POLISH: selection id never reused, offline crew packet, contract total, ordered check ════ */
+S('polish-2.533.0');
+await (async function(){
+  $(`(function(){window.__pl={sess:state.session,ac:state.activeId};
+    const p=JSON.parse(JSON.stringify(state.projects.find(x=>x.id==='p2')||state.projects[0]));p.id='pl1';delete p.sample;p.selections=[];p.invoices=[];delete p.selSeq;delete p.contractC;p.draws=[];
+    state.projects.push(p);state.activeId='pl1';state.session={role:'builder',name:'You'};return true;})()`);
+  const say=()=>el('toast').textContent;
+  const pj=c=>JSON.parse($("JSON.stringify("+c+")"));
+  const addSel=(item,status)=>{$("openAddSel('Windows')");setVal('selItem',item);setVal('selStatus',status||'selected');$("saveSel()");};
+  const byItem=item=>pj("(P().selections.find(function(x){return x.item==='"+item+"';})||null)");
+  const closeOc=()=>$("(function(){var sc=document.getElementById('confirmScrim');if(sc.classList.contains('show'))ocCancel();})()");
+
+  /* 1. selection id */
+  addSel('Sim polish A');const a=byItem('Sim polish A');
+  t('selid: a new selection gets an id and the house keeps a high-water mark',!!a&&Number.isInteger(a.id)&&$("P().selSeq")===a.id);
+  $("SELOK._rows['pl1']=[{id:'"+a.id+"-1',selId:'"+a.id+"',tappedAt:1700000000000}]");
+  $("Data.removeSelection("+a.id+")");
+  addSel('Sim polish B');const b=byItem('Sim polish B');
+  t('selid: a deleted selection id is never reused',!!b&&b.id!==a.id&&b.id>a.id,JSON.stringify([a&&a.id,b&&b.id]));
+  t('selid: the new selection shows no Earlier OK from the deleted one',$("SELOK.earlier(P(),P().selections.find(function(x){return x.id==="+(b&&b.id)+";})).length")===0);
+  $("openEditSel("+b.id+")");setVal('selNote','edited');$("saveSel()");
+  t('selid: editing a selection keeps its id',byItem('Sim polish B').id===b.id&&$("P().selections.length")===1);
+  $("(function(){var p=P();p.selSeq=0;p.invoices=[{id:'iv',status:'sent',items:[{selId:700,amount:1}],total:1,payments:[]}];SELOK._rows['pl1']=[{id:'z',selId:'500'}];})()");
+  addSel('Sim polish C');t('selid: the biggest invoice selId wins',byItem('Sim polish C').id===701);
+  $("(function(){var p=P();p.invoices=[];p.selSeq=900;})()");
+  addSel('Sim polish D');t('selid: selSeq wins when it is the biggest',byItem('Sim polish D').id===901);
+  $("(function(){var p=P();p.selSeq=1;p.invoices=[];SELOK._rows['pl1']=[{id:'z',selId:'2000'}];})()");
+  addSel('Sim polish E');t('selid: a selok selId wins and selSeq never goes back',byItem('Sim polish E').id===2001&&$("P().selSeq")===2001);
+  $("(function(){var p=P();p.selSeq=1;SELOK._rows['pl1']=[];})()");
+  addSel('Sim polish F');t('selid: live selection ids count too, and a hole in the list is not reused',byItem('Sim polish F').id===2002);
+
+  /* 4. ordered without approval */
+  addSel('Sim polish G');const g=byItem('Sim polish G');
+  $("setSelStatus("+g.id+",'ordered')");
+  t('ordered: an unapproved selection asks first and the status does not move yet',byItem('Sim polish G').status==='selected'&&$("document.getElementById('confirmScrim').classList.contains('show')")===true&&el('ocBody').textContent==='This selection has not been approved by the homeowner yet. Mark it ordered anyway?');
+  closeOc();t('ordered: Cancel leaves the status alone',byItem('Sim polish G').status==='selected');
+  $("setSelStatus("+g.id+",'ordered')");$("ocConfirm()");
+  t('ordered: Confirm marks it ordered with the usual toast',byItem('Sim polish G').status==='ordered'&&/Ordered/.test(say()));
+  $("(function(){var s=P().selections.find(function(x){return x.id==="+g.id+";});s.status='selected';s.approved=true;})()");
+  $("setSelStatus("+g.id+",'ordered')");
+  t('ordered: an approved selection goes straight to ordered, no question',byItem('Sim polish G').status==='ordered'&&$("document.getElementById('confirmScrim').classList.contains('show')")===false);
+  $("(function(){var s=P().selections.find(function(x){return x.id==="+g.id+";});s.status='selected';s.approved=false;})()");
+  $("setSelStatus("+g.id+",'installed')");
+  t('ordered: Installed without approval is still blocked, with no confirm',byItem('Sim polish G').status==='selected'&&$("document.getElementById('confirmScrim').classList.contains('show')")===false);
+  $("setSelStatus("+g.id+",'delivered')");
+  t('ordered: other moves do not ask',byItem('Sim polish G').status==='delivered'&&$("document.getElementById('confirmScrim').classList.contains('show')")===false);
+  const n0=$("P().selections.length");
+  addSel('Sim polish H','ordered');
+  t('ordered: saving a new unapproved selection as Ordered asks first',$("P().selections.length")===n0&&$("document.getElementById('confirmScrim').classList.contains('show')")===true);
+  closeOc();t('ordered: Cancel on the editor adds nothing',$("P().selections.length")===n0);
+  $("saveSel()");$("ocConfirm()");
+  t('ordered: Confirm on the editor adds it as ordered',byItem('Sim polish H')&&byItem('Sim polish H').status==='ordered'&&$("P().selections.length")===n0+1);
+  $("openEditSel("+byItem('Sim polish H').id+")");setVal('selNote','again');$("saveSel()");
+  t('ordered: editing something already ordered does not ask',$("document.getElementById('confirmScrim').classList.contains('show')")===false&&byItem('Sim polish H').note==='again');
+  $("closeAddSel()");
+
+  /* 3. contract total */
+  $("P().draws=[{id:'a',order:1,title:'Slab',amountC:4200000,status:'open'}]");
+  $("openDraws()");
+  t('contract: the builder sees the optional field on the Draw schedule',el('drawRoot').innerHTML.includes('House contract (optional)')&&!!el('dwContract'));
+  setVal('dwContract','450,000');$("drawContractSave()");
+  t('contract: saving writes integer cents',$("P().contractC")===45000000&&say()==='Contract total saved');
+  t('contract: the comparison line appears with the existing words',$("drawCompareLine(P())")==='Contract $450,000.00 · $408,000.00 not yet in a stage'&&el('drawRoot').innerHTML.includes('Contract $450,000.00 · $408,000.00 not yet in a stage'));
+  t('contract: the box shows the saved total',el('dwContract').value==='450,000.00'||el('dwContract').value==='450000'||/^450,?000/.test(el('dwContract').value),el('dwContract').value);
+  setVal('dwContract','abc');$("drawContractSave()");
+  t('contract: junk is refused and changes nothing',$("P().contractC")===45000000);
+  setVal('dwContract','30000');$("drawContractSave()");
+  t('contract: editing updates the line to more than the contract',$("P().contractC")===3000000&&$("drawCompareLine(P())")==='Contract $30,000.00 · $12,000.00 more than the contract');
+  setVal('dwContract','');$("drawContractSave()");
+  t('contract: clearing removes it and hides the line',!('contractC' in pj("P()"))&&$("drawCompareLine(P())")===''&&!el('drawRoot').innerHTML.includes('Contract $'));
+  $("closeInfo()");
+  $("P().contractC=1234500");
+  asClient('pl1');
+  t('contract: a homeowner never gets the field or the Draw schedule',$("drawsOn(P())")===false&&!/House contract|Draw schedule/.test(clientHTML('pl1','home')+clientHTML('pl1','money')));
+  $("drawContractSave()");t('contract: a homeowner session cannot change it',$("P().contractC")===1234500);
+  asSub($("(Object.keys(state.projects[0].crews||{})[0])||'Ironhill Excavating'"));
+  t('contract: a crew session cannot change it or see it',$("drawsOn(P())")===false&&(function(){$("drawContractSave()");return $("P().contractC")===1234500;})());
+  asBuilder();
+  $("(function(){var g=canGate;window.__pg=g;canGate=function(k){return k==='moneyCo'?false:g(k);};})()");
+  t('contract: Team with Money off has no Draw schedule',$("drawsOn(P())")===false);
+  $("canGate=window.__pg");
+  $("delete P().contractC");
+
+  /* put it back */
+  $("(function(){state.projects=state.projects.filter(function(x){return x.id!=='pl1';});state.session=window.__pl.sess;state.activeId=window.__pl.ac;SELOK._rows={};})()");
+})();
+
+/* 2. offline crew packet (the real p.html in its own jsdom) */
+await (async function(){
+  const PH=fs.readFileSync(path.join(__dirname,'p.html'),'utf8');
+  const fut=Date.now()+86400000*5;
+  const mk=over=>Object.assign({site:'1 Polish Ln',builder:'Sim Builder',sub:'Sim Crew',tradeLabel:'Plumbing',start:Date.now(),end:Date.now()+86400000,expires:fut,docs:[],q:[],specs:[{label:'Faucet',value:'Delta 9159',price:'$1,234.56',amountC:123456,cost:777}],ctx:{},price:'9999.99',contractTotal:55555500,invoices:[{total:4242}],draws:[{amountC:3131}]},over||{});
+  const open=(tok,opts)=>new Promise(res=>{opts=opts||{};
+    const dom=new JSDOM(PH,{runScripts:'dangerously',url:'https://sim.test/p.html?packet='+tok,pretendToBeVisual:true,beforeParse(w){
+      w.matchMedia=q=>({matches:false,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){}});
+      w.__gpWaitMs=1;if(opts.fixture)w.__packetFixture=opts.fixture;
+      Object.keys(opts.store||{}).forEach(k=>w.localStorage.setItem(k,opts.store[k]));}});
+    setTimeout(()=>res(dom.window),opts.ms||700);});
+  const store=w=>{const o={};for(let i=0;i<w.localStorage.length;i++){const k=w.localStorage.key(i);o[k]=w.localStorage.getItem(k);}return o;};
+  const live=await open('tokA',{fixture:mk()});
+  const st=store(live);const raw=st['plumb.packet.tokA']||'';
+  t('offline packet: a live load saves a snapshot under its token with a saved-at time',!!raw&&JSON.parse(raw).tok==='tokA'&&typeof JSON.parse(raw).savedAt==='number');
+  t('offline packet: the snapshot keeps the crew words',/Delta 9159/.test(raw)&&/Plumbing/.test(raw)&&/1 Polish Ln/.test(raw));
+  t('offline packet: a planted price or amount never reaches the stored snapshot',!/1,234\.56|123456|9999\.99|55555500|4242|3131|777/.test(raw),raw.slice(0,200));
+  t('offline packet: a live load shows no offline note',!live.document.getElementById('gpOffline'));
+  const off=await open('tokA',{store:st});
+  const oh=off.document.getElementById('body').innerHTML.replace(/<script[\s\S]*?<\/script>/g,'');
+  t('offline packet: no signal and no Firestore shows the saved packet with the quiet note',/1 Polish Ln/.test(oh)&&oh.indexOf('Offline copy · saved on this phone')>=0&&!!off.document.getElementById('gpOffline'),oh.slice(0,160));
+  t('offline packet: the offline view carries no planted price or amount',!/1,234\.56|123456|9999\.99|55555500|4242|3131/.test(oh));
+  t('offline packet: nothing is queued for later',Object.keys(store(off)).every(k=>k==='plumb.packet.tokA'||k==='plumbGuestCal')&&!/outbox|queue/i.test(PH),(PH.match(/.{20}(outbox|queue).{20}/i)||[''])[0]);
+  const other=await open('tokB',{store:st});
+  t('offline packet: a different token never sees that copy',!(other.document.getElementById('gpOffline')||/1 Polish Ln/.test(other.document.getElementById('body').textContent))&&/This packet will not open/.test(other.document.body.innerHTML));
+  const exp=JSON.parse(raw);exp.g.expires=Date.now()-1000;
+  const o2=await open('tokA',{store:{'plumb.packet.tokA':JSON.stringify(exp)}});
+  t('offline packet: an expired copy is not shown',!o2.document.getElementById('gpOffline')&&!/1 Polish Ln/.test(o2.document.getElementById('body').textContent));
+  const rev=JSON.parse(raw);rev.g.revoked=true;
+  const o3=await open('tokA',{store:{'plumb.packet.tokA':JSON.stringify(rev)}});
+  t('offline packet: a copy saved as revoked is not shown',!o3.document.getElementById('gpOffline')&&!/1 Polish Ln/.test(o3.document.getElementById('body').textContent));
+  const dead=await open('tokC',{fixture:mk({revoked:true})});
+  t('offline packet: a revoked packet is never saved',!store(dead)['plumb.packet.tokC']&&/no longer on the book/.test(dead.document.body.innerHTML));
+  const big=await open('tokD',{fixture:mk({note:'x'.repeat(250000)})});
+  t('offline packet: a huge packet is not stored',!store(big)['plumb.packet.tokD']);
+  t('offline packet: p.html stays small and the service worker keeps the shell',fs.statSync(path.join(__dirname,'p.html')).size<50000&&/'p\.html'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
+})();
 
 /* ════ REPORT ════ */
 console.log('sim [index.html '+String($('PLUMB_VERSION')).split(' ')[0]+']: '+passes.length+' checks across boot/scheduling/stage/selections/billing/docs/notify/isolation/fuzz');

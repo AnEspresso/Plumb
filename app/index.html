@@ -4081,15 +4081,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.532.0 - Approvals on record: a selection OK now keeps the agreed price and the server time';   /* 11/26: selok proof of a selection OK. */
+const PLUMB_VERSION='2.533.0 - Polish: offline crew packet, draw contract total, ordered check, and selection ID fix';   /* 11/26: polish. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1796100000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.532.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796200000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.533.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -13342,9 +13342,20 @@ function drawsRender(){
       +(billed?'':'<button class="lpay btn btn-primary" onclick="drawBill(\''+id+'\')">Bill this stage</button>')
       +'</div></div>';});
   if(!L.length)h+='<div class="empty py-2 px-0">Set up your payment stages for this house.</div>';
+  /* 2.533.0: the house contract total, optional. It only feeds the Contract line above. */
+  h+='<div class="fld-label mt-3">House contract (optional)</div><div class="setup-roster-row"><input id="dwContract" inputmode="decimal" data-money placeholder="e.g. 450000" value="'+esc(drawContractC(p)?fmtPlain(fromC(drawContractC(p))):'')+'"></div>'
+    +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="drawContractSave()">Save contract total</button>';
   h+='<button class="add-sub-btn mt-2 btn btn-secondary" onclick="drawNew()">Add a stage</button>'
     +'<button class="add-sub-btn mt-2 btn btn-secondary" onclick="closeInfo()">Done</button>';
   showInfo('Draw schedule','<div id="drawRoot">'+h+'</div>',true);}
+function drawContractSave(){
+  const p=P();if(!drawsOn(p))return;
+  if(drawsBlocked(p)){toast(DRAWS_NOT_SAVED);return;}
+  const r=moneyRead('dwContract',{optional:true,positive:true});if(!r)return;
+  const was=drawContractC(p);
+  if(r.blank){if(!was){return;}delete p.contractC;persist();logEvent('drawContract','House contract total cleared');toast('Contract total cleared');}
+  else{if(r.cents===was)return;p.contractC=r.cents;persist();logEvent('drawContract','House contract total '+fmtMoney(fromC(r.cents)));toast('Contract total saved');}
+  _drawMode='list';_drawEditId=null;drawsRender();}
 function drawNoteHint(){const v=((document.getElementById('dwNote')||{}).value)||'';const w=document.getElementById('dwNoteWarn');
   if(w)w.classList.toggle('hide',!/job cost|overage|over estimate|over budget|margin|markup|our cost|\bcost\b|invoice|\$\s?\d/i.test(v));}
 function drawNew(){const p=P();if(drawsBlocked(p)){toast(DRAWS_NOT_SAVED);return;}_drawMode='edit';_drawEditId=null;drawsRender();}
@@ -16305,9 +16316,12 @@ function selTimeline(s){
     return `<div class="tstep ${cls}" onclick="event.stopPropagation();setSelStatus(${s.id},'${st}')">${`<div class="dot">${chk}</div>`}<div class="tlbl">${SEL_LABEL[st]}</div></div>`;
   }).join('')+`</div>`;
 }
-function setSelStatus(id,st){const s=P().selections.find(x=>x.id===id);if(!s)return;
+const SEL_ORDER_ASK='This selection has not been approved by the homeowner yet. Mark it ordered anyway?';
+function selOrderAsk(onGo){openConfirm({title:'Ordered without approval?',body:SEL_ORDER_ASK,okLabel:'Mark ordered',cancelLabel:'Cancel',onConfirm:onGo});}
+function setSelStatus(id,st,_ok){const s=P().selections.find(x=>x.id===id);if(!s)return;
   if(st==='installed'&&!selCanInstall(s)){
     toast(!s.approved?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'The crew hasn\u2019t confirmed these instructions yet, so it can\u2019t be marked Installed.');return;}
+  if(st==='ordered'&&s.status!=='ordered'&&!s.approved&&!_ok){selOrderAsk(()=>setSelStatus(id,st,true));return;}
   Data.updateSelection(id,{status:st});logEvent('selectionStatus',(s.item||'')+' → '+st);renderSelections();toast((s.item||'Selection')+': '+SEL_LABEL[st]);}
 function selTimelineRO(s){
   const cur=SEL_STATUS.indexOf(s.status);const lastI=SEL_STATUS.length-1;
@@ -16516,6 +16530,14 @@ function closeAddSel(){document.getElementById('selScrim').classList.remove('sho
 /* 2.525.0: the selection note rides to the homeowner and crew phones (live walk: "overage logged in job costs" on the homeowner's Selections). */
 function selNoteHint(){const v=((document.getElementById('selNote')||{}).value)||'';const w=document.getElementById('selNoteWarn');
   if(w)w.classList.toggle('hide',!/job cost|overage|over estimate|over budget|margin|markup|our cost|\bcost\b|invoice|\$\s?\d/i.test(v));}
+/* 2.533.0: a selection id is never handed out twice. selSeq is the high-water mark on the house; selok rows and invoices keep naming old ids. */
+let _selOrdOk=false;
+function nextSelId(p){
+  const a=(p.selections||[]).reduce((m,s)=>Math.max(m,Number(s&&s.id)||0),0);
+  const b=(p.invoices||[]).reduce((m,v)=>Math.max(m,...((v&&v.items)||[]).map(it=>Number(it&&it.selId)||0)),0);
+  let c=0;try{c=SELOK.list(p.id).reduce((m,r)=>Math.max(m,Number(r&&r.selId)||0),0);}catch(e){}
+  const id=Math.max(Number(p.selSeq)||0,a,b,c)+1;
+  p.selSeq=id;return id;}
 function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat').value,item=document.getElementById('selItem').value.trim(),note=document.getElementById('selNote').value.trim(),status=document.getElementById('selStatus').value;
   let price=null;
   if(!_selModeAllow&&!moneyHidden('selm')){const pr=moneyRead('selPrice',{optional:true});if(!pr)return;if(!pr.blank)price=fromC(pr.cents)*(_selPriceCredit?-1:1);}
@@ -16551,9 +16573,13 @@ function saveSel(){const room=selRoomValue(),cat=document.getElementById('selCat
     if(!selCanInstall(existing)){
       toast((!existing||!existing.approved)?'The homeowner hasn\u2019t approved this yet, so it can\u2019t be marked Installed.':'The crew hasn\u2019t confirmed these instructions yet, so it can\u2019t be marked Installed.');return;}
   }
+  {/* 2.533.0: ordered before the homeowner OK asks first (a plain question, not a block) */
+    const wasOrd=!!existingSel&&existingSel.status==='ordered';
+    const willOk=!!existingSel&&existingSel.approved&&!(money&&money.approved===false);
+    if(status==='ordered'&&!wasOrd&&!willOk&&!_selOrdOk){selOrderAsk(()=>{_selOrdOk=true;try{saveSel();}finally{_selOrdOk=false;}});return;}}
   if(editingSelId!=null){const patch=Object.assign({room:room||'—',cat,item,note,price,status},money||{});if(noMoney)delete patch.price;Data.updateSelection(editingSelId,patch);logEvent('selectionEdit',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':_reOk?('The homeowner approved '+fmtMoney(_reOk.was)+'. They\u2019ll be asked to approve '+fmtMoney(_reOk.now)+'.'):'Selection updated');}
-  else{/* R-1 PR 3: never reuse an id an invoice still names (allowances bill by selId) */
-    const id=Math.max(P().selections.reduce((m,s)=>Math.max(m,s.id),0)||0,(P().invoices||[]).reduce((m,v)=>Math.max(m,...(v.items||[]).map(it=>Number(it.selId)||0)),0))+1;const ns=Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{});if(noMoney)delete ns.price;Data.addSelection(ns);logEvent('selectionAdded',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection added');}
+  else{/* R-1 PR 3 + 2.533.0: never reuse an id an invoice, an old OK record, or a deleted selection still names */
+    const id=nextSelId(P());const ns=Object.assign({id,room:room||'—',cat,item,status,approved:false,note,price},money||{});if(noMoney)delete ns.price;Data.addSelection(ns);logEvent('selectionAdded',item);toast(blankAllow?'No allowance entered, so it was saved as an upgrade or credit.':'Selection added');}
   closeAddSel();renderSelections();}
 function removeSel(id){const s=P().selections.find(x=>x.id===id);if(!s)return;
   const m=selMoney(s.price);
