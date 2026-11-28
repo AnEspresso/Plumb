@@ -2407,6 +2407,31 @@ t('the bar instructs rather than promising to open the app',
 t('boot stands the full-screen nudge down when the bar takes the screen',
   SRC.indexOf('if(!_invBarUp)maybeNudgeInstall()')>=0&&SRC.indexOf('_invBarUp=maybeInviteBar()')>=0);
 
+/* ── 2.534.0 homeowner entry: fewer steps from the text link ── */
+t('2.534.0 bar has a Join now button that stays on this page', !!el('invBarGo')&&$("typeof invBarGo")==='function'
+  &&/Join now/.test($("document.getElementById('invBarGo').textContent")));
+$("localStorage.setItem('plumbPendingInvite','PB-JOIN123')");
+$("sessionStorage.removeItem('plumbInvBarOff')");
+t('2.534.0 bar says the code is already filled in and home screen can wait',
+  SRC.indexOf('Your code is already filled in. Tap Join now and make your account. Home screen can wait: later you only sign in.')>=0);
+$("document.getElementById('invBar').classList.add('show')");
+$('invBarGo()');
+t('2.534.0 Join now closes the bar and mutes it', $("document.getElementById('invBar').classList.contains('show')")===false&&$("sessionStorage.getItem('plumbInvBarOff')")==='1');
+$("sessionStorage.removeItem('plumbInvBarOff')");$("localStorage.removeItem('plumbPendingInvite')");
+t('2.534.0 a whole pasted text yields just the code', $("invCodeIn('Hi! Your SitePlumb code is\\nPB-K7M2QX9\\nSee you soon')")==='PB-K7M2QX9');
+t('2.534.0 a bare lowercase code is still tidied', $("invCodeIn(' pb-abcd1234 ')")==='PB-ABCD1234');
+t('2.534.0 I have an invite code opens the box and pastes in one tap',
+  $("typeof lainvOpen")==='function'&&SRC.indexOf('onclick="lainvOpen(this)">I have an invite code')>=0&&$("lainvOpen.toString().indexOf('lainvPaste()')")>=0);
+$("localStorage.removeItem('plumb.profile')");
+$("(function(){const r=document.getElementById('laInviteRow');r.style.display='none';document.getElementById('laInvite').value='';if(laMode!=='signup')liveAuthToggle();syncInviteSignupChrome();})()");
+t('2.534.0 signup without an invite still asks for the password twice', $("document.getElementById('laPass2Row').style.display")==='');
+$("document.getElementById('laInvite').value='PB-JOIN123';syncInviteSignupChrome()");
+t('2.534.0 signup with an invite skips the confirm box', $("document.getElementById('laPass2Row').style.display")==='none');
+t('2.534.0 submit does not demand a match when the box is hidden', $("liveAuthSubmit.toString().indexOf(\"!invCode&&pass!==\")")>=0);
+$("document.getElementById('laInvite').value='';syncInviteSignupChrome();if(laMode==='signup')liveAuthToggle();");
+t('2.534.0 homeowners page leads with the link, then home screen', (function(){const h=require('fs').readFileSync(__dirname+'/../homeowners.html','utf8');
+  return h.indexOf('Tap the link in the text')>0&&h.indexOf('Tap the link in the text')<h.indexOf('Add it to the home screen, if you want')&&h.indexOf('Make an account and paste the code')<0;})());
+
 t('homeowner invite link names the role', $("(function(){const p=P();p.invites=p.invites||[];p.invites.push({code:'PB-HOTEST1',role:'client',status:'open'});const u=plumbInviteLink('PB-HOTEST1');p.invites=p.invites.filter(i=>i.code!=='PB-HOTEST1');return u.indexOf('invite=PB-HOTEST1')>=0&&u.indexOf('r=client')>=0;})()")===true);
 t('crew invite link names the role', $("(function(){const p=P();p.invites=p.invites||[];p.invites.push({code:'PB-CRTEST1',role:'sub',status:'open'});const u=plumbInviteLink('PB-CRTEST1');p.invites=p.invites.filter(i=>i.code!=='PB-CRTEST1');return u.indexOf('r=sub')>=0;})()")===true);
 t('invite signup does not stamp a builder role from the picker', SRC.indexOf("const rpRole=invCode?'':")>=0);
@@ -7077,8 +7102,8 @@ S('2.529.0 simple draws');
   // wording: version string and jargon
   const ver=String($('PLUMB_VERSION'));
   t('the version string has no apostrophe, semicolon or backslash',!/['";\\]/.test(ver),ver);
-  t('the version says 2.533.0 and Polish',/^2\.533\.0 - Polish: offline crew packet, draw contract total, ordered check, and selection ID fix$/.test(ver));
-  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.533.0'&&/CACHE\s*=\s*'plumb-v2\.533\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
+  t("the version says 2.534.0 and Homeowner entry",/^2\.534\.0 - Homeowner entry: join from the text link in fewer steps$/.test(ver));
+  t('the cache names match',$('SW_CACHE_EXPECTED')==='plumb-v2.534.0'&&/CACHE\s*=\s*'plumb-v2\.534\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8')));
   const words=(SRC.match(/function drawsRender[\s\S]*?function drawNoteHint/)||[''])[0]+(SRC.match(/const DRAWS_NOT_SAVED[^\n]*/)||[''])[0];
   t('the Draw schedule words have no jargon',!/\b(ledger|amortiz|retainage|escrow|milestone|tranche|schedule of values|SOV|payload|collection|firestore|rules)\b/i.test(words));
   t('the app has no percent entry for stages (dollars only)',!/dwPct|percent of contract/i.test(SRC));
@@ -7462,8 +7487,8 @@ t('10: the rest of the paragraph stays',priv.indexOf('Michigan')>=0&&priv.indexO
 
 // 11. version and cache
 const v2=String($('PLUMB_VERSION'));
-t('11: version starts 2.533.0 - Polish with no apostrophe, semicolon or backslash',/^2\.533\.0 - Polish/.test(v2)&&!/['";\\]/.test(v2),v2);
-t('11: cache names match and APP_VERSION went up',$('SW_CACHE_EXPECTED')==='plumb-v2.533.0'&&/CACHE\s*=\s*'plumb-v2\.533\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8'))&&$('APP_VERSION')>1796100000000);
+t('11: version starts 2.534.0 - Homeowner entry with no apostrophe, semicolon or backslash',/^2\.534\.0 - Homeowner entry/.test(v2)&&!/['";\\]/.test(v2),v2);
+t('11: cache names match and APP_VERSION went up',$('SW_CACHE_EXPECTED')==='plumb-v2.534.0'&&/CACHE\s*=\s*'plumb-v2\.534\.0'/.test(fs.readFileSync(path.join(__dirname,'sw.js'),'utf8'))&&$('APP_VERSION')>1796200000000);
 
 // 12. words
 const region=(SRC.match(/const HOUSE_EXPORT_FOOT[\s\S]*?function renderInvoices/)||[''])[0];

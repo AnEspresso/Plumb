@@ -2719,7 +2719,7 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
             <div class="la-links">
               <button class="la-link btn btn-quiet" id="laToggle" onclick="liveAuthToggle()">Create account</button>
               <button class="la-link btn btn-quiet" onclick="liveForgot()">Forgot password</button>
-              <button class="la-link btn btn-quiet" onclick="document.getElementById('laInviteRow').style.display='';this.style.display='none'">I have an invite code</button>
+              <button class="la-link btn btn-quiet" onclick="lainvOpen(this)">I have an invite code</button>
             </div>
             <button class="la-link la-skip btn btn-quiet" onclick="realEnter()">Continue without an account (this device only)</button>
           </div>
@@ -3033,8 +3033,9 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
     <div class="ib-t">You have been invited to a house</div>
     <div class="ib-s" id="invBarS"></div>
     <div class="ib-row">
+      <button class="ib-b pri" id="invBarGo" onclick="invBarGo()">Join now</button>
+      <button class="ib-b" onclick="invBarHowTo()">Add to home screen</button>
       <button class="ib-b" id="invBarCopy" onclick="invBarCopy()">Copy code</button>
-      <button class="ib-b pri" onclick="invBarHowTo()">Add to home screen</button>
     </div>
   </div>
 
@@ -4081,15 +4082,15 @@ body:has(.devpanel.show) .toast{z-index:var(--z-tour);}
 
 <script>
 /* ════════ constants ════════ */
-const PLUMB_VERSION='2.533.0 - Polish: offline crew packet, draw contract total, ordered check, and selection ID fix';   /* 11/26: polish. */
+const PLUMB_VERSION='2.534.0 - Homeowner entry: join from the text link in fewer steps';   /* 11/28: invite entry. */
 /* Single source of truth for repeated inline icons (was pasted by hand at each
    call site — the trash glyph alone appeared 13×). Add more here as we migrate. */
 const ICON={trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>'};
 const PLUMB_BUILD='2026-06-08';
 function normRole(r){return r===String.fromCharCode(104,105,108,108,97,110)?'builder':r;}
 
-const APP_VERSION=1796200000000;          /* build number (epoch ms), AnEspresso-style */
-const SW_CACHE_EXPECTED='plumb-v2.533.0';     /* keep in sync with sw.js CACHE on each deploy */
+const APP_VERSION=1796300000000;          /* build number (epoch ms), AnEspresso-style */
+const SW_CACHE_EXPECTED='plumb-v2.534.0';     /* keep in sync with sw.js CACHE on each deploy */
 /* Workbench access: owner account (hash, so the address is not in this file)
    plus the QA logins Peter uses for live testing (and +aliases). Grants still
    let the owner add anyone else. */
@@ -6454,7 +6455,7 @@ async function liveAuthSubmit(){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){laErr('Enter a valid email address.');return;}
   if(laMode==='signup'&&!name){laErr('Enter your name.');return;}
   if(laMode==='signup'&&pass.length<8){laErr('Password must be at least 8 characters.');return;}
-  if(laMode==='signup'&&pass!==(document.getElementById('laPass2').value||'')){laErr('Those passwords do not match.');return;}
+  if(laMode==='signup'&&!invCode&&pass!==(document.getElementById('laPass2').value||'')){laErr('Those passwords do not match.');return;}
   if(!pass){laErr('Enter your password.');return;}
   const btn=document.getElementById('laGo');btn.disabled=true;const old=btn.textContent;btn.textContent='…';
   /* 2.490.0: while this form signs in, Sync does not react to the auth change on
@@ -17938,6 +17939,8 @@ function syncInviteSignupChrome(){
   const has=!!(((document.getElementById('laInvite')||{}).value||'').trim()||(typeof invPendingCode==='function'&&invPendingCode()));
   const roleRow=document.getElementById('laRoleRow');
   const hint=document.getElementById('laJoinHint');
+  /* 2.534.0: an invited person skips the second password box (Forgot password is the way back). */
+  try{const p2=document.getElementById('laPass2Row');if(p2)p2.style.display=(laMode==='signup'&&!has)?'':'none';}catch(e){}
   if(has){
     if(roleRow)roleRow.style.display='none';
     if(hint){
@@ -18006,12 +18009,21 @@ let _invBarShowing=false;
 /* iOS makes pasting into an empty field a long-press-and-hunt exercise. One
    tap reads the clipboard instead - Safari still asks the user to allow it,
    which is the confirmation we want anyway. */
+/* 2.534.0: people copy the whole text message. Take just the PB- code out of it. */
+function invCodeIn(t){const m=String(t||'').toUpperCase().match(/PB-[A-Z0-9]{4,}/);return m?m[0]:String(t||'').trim().toUpperCase();}
+/* 2.534.0: one tap on "I have an invite code" shows the box AND pastes (Safari asks once). */
+function lainvOpen(btn){
+  document.getElementById('laInviteRow').style.display='';
+  if(btn)btn.style.display='none';
+  lainvPaste();}
 async function lainvPaste(){
   const inp=document.getElementById('laInvite');if(!inp)return;
   try{
     if(navigator.clipboard&&navigator.clipboard.readText){
       const t=String((await navigator.clipboard.readText())||'').trim();
-      if(t){inp.value=t.toUpperCase();inp.focus();try{syncInviteSignupChrome();}catch(e){}toast('Code pasted');return;}
+      if(t){inp.value=invCodeIn(t);inp.focus();
+        try{if(laMode==='signin'&&!laProfile()&&typeof liveAuthToggle==='function')liveAuthToggle();}catch(e){}
+        try{syncInviteSignupChrome();}catch(e){}toast('Code pasted');return;}
     }
   }catch(e){}
   inp.focus();
@@ -18038,6 +18050,12 @@ function invBarHowTo(){
   logEvent('inviteBarInstall','');
   try{invBarCopy();}catch(e){}
   setTimeout(()=>{try{openInstall();}catch(e){}},260);}
+/* 2.534.0: the short road. The code is already in the form, so join right here
+   in the browser; the home-screen copy only needs a sign-in afterwards. */
+function invBarGo(){
+  logEvent('inviteBarJoin','');
+  try{invBarDismiss();}catch(e){}
+  try{const f=document.getElementById(laMode==='signup'?'laName':'laEmail');if(f){f.scrollIntoView({block:'center'});setTimeout(()=>{try{f.focus();}catch(e){}},250);}}catch(e){}}
 function invBarCopy(){
   const c=invPendingCode();
   if(!c){toast('No invite code to copy');return;}
@@ -18058,7 +18076,7 @@ function maybeInviteBar(){
     if(!invPendingCode())return false;
     const bar=document.getElementById('invBar');if(!bar)return false;
     const s=document.getElementById('invBarS');
-    if(s)s.textContent='Already have SitePlumb on your home screen? Copy the code, open SitePlumb there and paste it. If you do not have it yet, Add to home screen does both for you.';
+    if(s)s.textContent='Your code is already filled in. Tap Join now and make your account. Home screen can wait: later you only sign in.';
     _invBarShowing=true;
     setTimeout(()=>{try{if(state.session){_invBarShowing=false;return;}bar.classList.add('show');}catch(e){}},700);
     logEvent('inviteBarShown','');
